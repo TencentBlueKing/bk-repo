@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.rpm.exception
 
-import com.tencent.bkrepo.rpm.pojo.RpmExceptionResponse
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus

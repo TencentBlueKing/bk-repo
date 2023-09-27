@@ -62,7 +62,6 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -90,13 +89,12 @@ import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH_SHA256
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.NONE
-import com.tencent.bkrepo.rpm.pojo.Basic
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.pojo.RepoDataPojo
-import com.tencent.bkrepo.rpm.pojo.RpmArtifactVersionData
 import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
-import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
+import com.tencent.bkrepo.rpm.pojo.response.RpmUploadResponse
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
+import com.tencent.bkrepo.rpm.servcie.RpmService
 import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
 import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
@@ -127,11 +125,12 @@ import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.nio.channels.Channels
 import java.time.LocalDateTime
+import org.springframework.scheduling.annotation.Async
 
 @Component
 class RpmLocalRepository(
-    private val stageClient: StageClient,
-    private val jobService: JobService
+    private val jobService: JobService,
+    private val rpmService: RpmService
 ) : LocalRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
@@ -424,14 +423,15 @@ class RpmLocalRepository(
         }
 
         // todo 删除多余节点
-        flushRepoMdXML(context, null)
+        flushRepoMdXML(context)
     }
 
     /**
      * 默认刷新匹配请求路径对应的repodata目录下的`repomd.xml`内容，
      * 当[repoDataPath]不为空时，刷新指定的[repoDataPath]目录下的`repomd.xml`内容
      */
-    fun flushRepoMdXML(context: ArtifactContext, repoDataPath: String?) {
+    @Async
+    fun flushRepoMdXML(context: ArtifactContext, repoDataPath: String? = null) {
         logger.info("flushRepoMdXML: artifactInfo: ${context.artifactInfo}, repoDataPath: $repoDataPath")
         // 查询添加的groups
         val rpmRepoConf = getRpmRepoConf(context)
@@ -546,7 +546,7 @@ class RpmLocalRepository(
     private fun getVersions(packageKey: String, context: ArtifactContext): Long? {
         return packageClient.findPackageByKey(
             context.projectId, context.repoName, packageKey
-        ).data?.versions ?: return null
+        ).data?.versions
     }
 
     /**
@@ -560,6 +560,7 @@ class RpmLocalRepository(
         } else {
             removeByUrl(context)
         }
+        flushRepoMdXML(context)
     }
 
     fun removeByUrl(context: ArtifactRemoveContext) {
@@ -573,27 +574,22 @@ class RpmLocalRepository(
         val rpmPackagePojo = rpmVersion.toRpmPackagePojo(fullPath)
         val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
         val version = rpmPackagePojo.version
-
         removeRpmArtifact(node, fullPath, context, packageKey, version)
     }
 
     fun removeByPackageKey(packageKey: String, context: ArtifactRemoveContext) {
         val version = HttpContextHolder.getRequest().getParameter("version")
         if (version.isNullOrBlank()) {
-            val versions = getVersions(packageKey, context)
-            val pages = packageClient.listVersionPage(
+            val versions = getVersions(packageKey, context) ?: return
+            packageClient.listVersionPage(
                 context.projectId,
                 context.repoName,
                 packageKey,
-                VersionListOption(0, versions!!.toInt(), null, null)
-
-            ).data?.records ?: return
-
-            for (packageVersion in pages) {
+                VersionListOption(pageNumber = 1, pageSize = versions.toInt())
+            ).data?.records?.forEach { packageVersion ->
                 val artifactFullPath = packageVersion.contentPath!!
                 val node = nodeClient.getNodeDetail(context.projectId, context.repoName, artifactFullPath).data
-                    ?: continue
-                removeRpmArtifact(node, artifactFullPath, context, packageKey, packageVersion.name)
+                node?.let { removeRpmArtifact(it, artifactFullPath, context, packageKey, packageVersion.name) }
             }
         } else {
             with(context.artifactInfo) {
@@ -654,7 +650,6 @@ class RpmLocalRepository(
             logger.info("Success to delete node $nodeDeleteRequest")
             deleteVersion(projectId, repoName, packageKey, version)
             logger.info("Success to delete version $projectId | $repoName : $packageKey $version")
-            flushRepoMdXML(context, null)
         }
     }
 
@@ -676,39 +671,7 @@ class RpmLocalRepository(
     override fun query(context: ArtifactQueryContext): Any? {
         val packageKey = context.request.getParameter("packageKey")
         val version = context.request.getParameter("version")
-        val name = packageKey.split(":").last()
-        val path = packageKey.removePrefix("rpm://").split(":")[0]
-        val trueVersion = packageClient.findVersionByName(
-            context.projectId,
-            context.repoName,
-            packageKey,
-            version
-        ).data ?: return null
-        val artifactPath = trueVersion.contentPath ?: return null
-        with(context.artifactInfo) {
-            val jarNode = nodeClient.getNodeDetail(
-                projectId, repoName, artifactPath
-            ).data ?: return null
-            val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
-            val packageVersion = packageClient.findVersionByName(
-                projectId, repoName, packageKey, version
-            ).data
-            val count = packageVersion?.downloads ?: 0
-            val rpmArtifactBasic = Basic(
-                path,
-                name,
-                version,
-                jarNode.size, jarNode.fullPath,
-                jarNode.createdBy, jarNode.createdDate,
-                jarNode.lastModifiedBy, jarNode.lastModifiedDate,
-                count,
-                jarNode.sha256,
-                jarNode.md5,
-                stageTag,
-                null
-            )
-            return RpmArtifactVersionData(rpmArtifactBasic, packageVersion?.packageMetadata)
-        }
+        return rpmService.versionDetail(context.projectId, context.repoName, packageKey, version)
     }
 
     fun extList(context: ArtifactSearchContext, page: Int, size: Int): Page<String> {

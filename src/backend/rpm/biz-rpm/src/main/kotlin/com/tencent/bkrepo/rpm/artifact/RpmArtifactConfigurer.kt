@@ -41,7 +41,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
 import com.tencent.bkrepo.rpm.artifact.repository.RpmRemoteRepository
 import com.tencent.bkrepo.rpm.artifact.repository.RpmVirtualRepository
-import com.tencent.bkrepo.rpm.pojo.RpmExceptionResponse
+import com.tencent.bkrepo.rpm.exception.RpmExceptionResponse
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 import org.springframework.stereotype.Component

@@ -31,124 +31,53 @@
 
 package com.tencent.bkrepo.rpm.servcie
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
-import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
-import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.rpm.FILELISTS_XML
-import com.tencent.bkrepo.rpm.OTHERS_XML
-import com.tencent.bkrepo.rpm.PRIMARY_XML
-import com.tencent.bkrepo.rpm.REPOMD_XML
-import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
-import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
-import com.tencent.bkrepo.rpm.exception.RpmConfNotFoundException
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.StageClient
+import com.tencent.bkrepo.rpm.pojo.Basic
+import com.tencent.bkrepo.rpm.pojo.RpmArtifactVersionData
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
 class RpmService(
-    private val repositoryClient: RepositoryClient
-) : ArtifactService() {
-
-    // groups 中不允许的元素
-    private val rpmIndexSet = mutableSetOf(REPOMD_XML, FILELISTS_XML, OTHERS_XML, PRIMARY_XML)
-
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    fun install(rpmArtifactInfo: RpmArtifactInfo) {
-        val context = ArtifactDownloadContext()
-        if (rpmArtifactInfo.getArtifactFullPath().endsWith(REPOMD_XML)) {
-            repository.downloadRetry(context)
-        } else {
-            repository.download(context)
-        }
-    }
-
-    private fun ArtifactRepository.downloadRetry(context: ArtifactDownloadContext) {
-        for (i in 1..4) {
-            try {
-                this.download(context)
-                break
-            } catch (e: ArtifactNotFoundException) {
-                if (i == 4) throw e
-                Thread.sleep(i * 1000L)
-            }
-        }
-    }
-
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun deploy(rpmArtifactInfo: RpmArtifactInfo, file: ArtifactFile) {
-        val context = ArtifactUploadContext(file)
-        repository.upload(context)
-    }
-
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
-        val context = ArtifactSearchContext()
-        groups.removeAll(rpmIndexSet)
-        val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
-        val oldGroups = (
-            rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
-                ?: mutableListOf()
-            ).toMutableSet()
-        oldGroups.addAll(groups)
-        rpmConfiguration.settings["groupXmlSet"] = oldGroups
-        val repoUpdateRequest = createRepoUpdateRequest(context, rpmConfiguration)
-        repositoryClient.updateRepo(repoUpdateRequest)
-        val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
-        (repository as RpmLocalRepository).flushAllRepoData(context)
-    }
-
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
-        val context = ArtifactSearchContext()
-        val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
-        val oldGroups = (
-            rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
-                ?: mutableListOf()
-            ).toMutableSet()
-        oldGroups.removeAll(groups)
-        rpmConfiguration.settings["groupXmlSet"] = oldGroups
-        val repoUpdateRequest = createRepoUpdateRequest(context, rpmConfiguration)
-        repositoryClient.updateRepo(repoUpdateRequest)
-        val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
-        (repository as RpmLocalRepository).flushAllRepoData(context)
-    }
-
-    private fun createRepoUpdateRequest(
-        context: ArtifactSearchContext,
-        rpmConfiguration: RepositoryConfiguration
-    ): RepoUpdateRequest {
-        return RepoUpdateRequest(
-            projectId = context.artifactInfo.projectId,
-            name = context.artifactInfo.repoName,
-            public = context.repositoryDetail.public,
-            description = context.repositoryDetail.description,
-            configuration = rpmConfiguration,
-            operator = context.userId
+    private val packageClient: PackageClient,
+    @Qualifier("com.tencent.bkrepo.repository.api.NodeClient")
+    private val nodeClient: NodeClient,
+    private val stageClient: StageClient
+) {
+    fun versionDetail(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
+    ): RpmArtifactVersionData? {
+        val trueVersion = packageClient.findVersionByName(
+            projectId,
+            repoName,
+            packageKey,
+            version
+        ).data ?: return null
+        val artifactPath = trueVersion.contentPath ?: return null
+        val node = nodeClient.getNodeDetail(projectId, repoName, artifactPath).data ?: return null
+        val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
+        val packageVersion = packageClient.findVersionByName(
+            projectId, repoName, packageKey, version
+        ).data
+        val count = packageVersion?.downloads ?: 0
+        val rpmArtifactBasic = Basic(
+            node.path,
+            node.name,
+            version,
+            node.size, node.fullPath,
+            node.createdBy, node.createdDate,
+            node.lastModifiedBy, node.lastModifiedDate,
+            count,
+            node.sha256,
+            node.md5,
+            stageTag,
+            null
         )
-    }
-
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
-        val context = ArtifactRemoveContext()
-        repository.remove(context)
-    }
-
-    private fun getRpmRepoConf(project: String, repoName: String): RepositoryConfiguration {
-        val repositoryInfo = repositoryClient.getRepoInfo(project, repoName).data
-            ?: throw RpmConfNotFoundException("can not found $project | $repoName conf")
-        return repositoryInfo.configuration
+        return RpmArtifactVersionData(rpmArtifactBasic, packageVersion?.packageMetadata)
     }
 }

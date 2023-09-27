@@ -31,8 +31,6 @@
 
 dependencies {
     api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-artifact:artifact-service"))
     compileOnly("org.springframework:spring-web")
-
+    compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
 }

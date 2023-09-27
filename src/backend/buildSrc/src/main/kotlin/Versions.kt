@@ -56,7 +56,7 @@ object Versions {
     const val MAVEN = "3.8.2"
     const val MavenArtifact = "3.8.3"
     const val MockitoKotlin = "4.0.0"
-    const val XStream = "1.4.19"
+    const val XStream = "1.4.20"
     const val DockerJava = "3.2.13"
     const val Mockk = "1.12.2"
     const val Swagger = "1.6.2"

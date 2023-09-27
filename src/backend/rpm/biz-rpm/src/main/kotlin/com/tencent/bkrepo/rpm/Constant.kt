@@ -36,3 +36,8 @@ const val REPOMD_XML = "repomd.xml"
 const val FILELISTS_XML = "filelists.xml"
 const val OTHERS_XML = "others.xml"
 const val PRIMARY_XML = "primary.xml"
+
+const val INDEXER = "Artifact upload success!"
+const val NO_INDEXER = "Artifact upload success, but will not indexing it. " +
+        "Because the repo : '%s' repodata_depth is '%d'. " +
+        "The request artifactUri : '%s' is equal or lesser than repodata_depth."

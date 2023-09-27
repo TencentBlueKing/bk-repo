@@ -32,6 +32,7 @@
 dependencies {
     api(project(":rpm:api-rpm"))
     api(project(":common:common-job"))
+    api(project(":common:common-artifact:artifact-service"))
     implementation("org.redline-rpm:redline:${Versions.Redline}")
     implementation("com.thoughtworks.xstream:xstream:${Versions.XStream}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")

@@ -132,7 +132,7 @@ object XmlStrUtils {
      * 按照仓库设置的repodata深度 分割请求参数
      */
     fun resolveRepodataUri(uri: String, depth: Int): RepoDataPojo {
-        val uriList = uri.removePrefix("/").removeSuffix("/").split("/")
+        val uriList = uri.trim('/').split("/")
         val repodataPath = StringBuilder("/")
         for (i in 0 until depth) {
             repodataPath.append(uriList[i]).append("/")

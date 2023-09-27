@@ -34,7 +34,6 @@ package com.tencent.bkrepo.rpm.servcie
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -68,7 +67,7 @@ class RpmWebService : ArtifactService() {
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    fun extList(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo, page: Int, size: Int): Page<String> {
+    fun extList(rpmArtifactInfo: RpmArtifactInfo, page: Int, size: Int): Page<String> {
         val context = ArtifactSearchContext()
         val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
         return (repository as RpmLocalRepository).extList(context, page, size)
