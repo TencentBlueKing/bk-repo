@@ -630,7 +630,7 @@ class RpmLocalRepository(
         // 定位对应请求的索引目录
         val rpmRepoConf = getRpmRepoConf(context)
         val repodataDepth = rpmRepoConf.repodataDepth
-        val repoData = XmlStrUtils.resolveRepodataUri(context.artifactInfo.getArtifactFullPath(), repodataDepth)
+        val repoData = XmlStrUtils.resolveRepodataUri(artifactFullPath, repodataDepth)
 
         // 更新 primary, others
         storeIndexMarkFile(

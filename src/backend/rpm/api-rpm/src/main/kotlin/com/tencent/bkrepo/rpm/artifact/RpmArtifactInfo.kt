@@ -63,7 +63,7 @@ class RpmArtifactInfo(
             if (StringUtils.isBlank(packageKey)) {
                 super.getArtifactFullPath()
             } else {
-                "/${PackageKeys.resolveRpm(packageKey)}-$version.rpm"
+                "${PackageKeys.resolveRpm(packageKey)}-$version.rpm"
             }
         } else {
             super.getArtifactFullPath()
