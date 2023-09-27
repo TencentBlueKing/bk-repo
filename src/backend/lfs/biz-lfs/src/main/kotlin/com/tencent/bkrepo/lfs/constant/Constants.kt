@@ -25,13 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.lfs.pojo
+package com.tencent.bkrepo.lfs.constant
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
-data class ActionDetail(
-    var href: String,
-    val header: MutableMap<String, String>,
-    @JsonProperty("expires_in")
-    val expiresIn: Long
-)
+val HEADER_BATCH_AUTHORIZATION = "batch-authorization"

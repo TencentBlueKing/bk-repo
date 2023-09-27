@@ -56,6 +56,7 @@ import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.lfs.artifact.LfsArtifactInfo
 import com.tencent.bkrepo.lfs.artifact.LfsProperties
 import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
+import com.tencent.bkrepo.lfs.constant.HEADER_BATCH_AUTHORIZATION
 import com.tencent.bkrepo.lfs.constant.UPLOAD_OPERATION
 import com.tencent.bkrepo.lfs.pojo.ActionDetail
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
@@ -65,6 +66,7 @@ import com.tencent.bkrepo.lfs.utils.OidUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import okhttp3.Headers.Companion.toHeaders
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import org.springframework.stereotype.Service
@@ -189,7 +191,7 @@ class ObjectService(
                             header = mapOf(
                                 HttpHeaders.AUTHORIZATION to "Temporary $token",
                                 AUTH_HEADER_UID to userId
-                            ),
+                            ).toMutableMap(),
                             expiresIn = TOKEN_EXPIRES_SECONDS
                         )
                     )
@@ -207,9 +209,12 @@ class ObjectService(
         val url = "${config.url.removePrefix(StringPool.SLASH)}/info/lfs/objects/batch"
         val authHeader = HeaderUtils.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
         val userAgent = HeaderUtils.getHeader(HttpHeaders.USER_AGENT).orEmpty()
+        val headers = mapOf(
+            HttpHeaders.AUTHORIZATION to authHeader,
+            HttpHeaders.USER_AGENT to userAgent
+        )
         val request2 = Request.Builder().url(url)
-            .addHeader(HttpHeaders.AUTHORIZATION, authHeader)
-            .addHeader(HttpHeaders.USER_AGENT, userAgent)
+            .headers(headers.toHeaders())
             .post(requestBody).build()
         httpClient.newCall(request2).execute().use {
             if (!it.isSuccessful) {
@@ -221,6 +226,7 @@ class ObjectService(
                     action.href = lfsProperties.domain.removeSuffix(StringPool.SLASH) +
                         "/lfs/${repo.projectId}/${repo.name}/${lfsObject.oid}" +
                         "?size=${lfsObject.size}&ref=${request.ref["name"]}"
+                    action.header[HEADER_BATCH_AUTHORIZATION] = authHeader
                 }
                 lfsObject
             }

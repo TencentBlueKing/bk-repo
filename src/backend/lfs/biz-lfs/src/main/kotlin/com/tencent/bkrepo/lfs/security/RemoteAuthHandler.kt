@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.security.http.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
+import com.tencent.bkrepo.lfs.constant.HEADER_BATCH_AUTHORIZATION
 import javax.servlet.http.HttpServletRequest
 
 class RemoteAuthHandler : HttpAuthHandler {
@@ -47,6 +48,7 @@ class RemoteAuthHandler : HttpAuthHandler {
             return AnonymousCredentials()
         }
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
+        val batchAuthorizationHeader = request.getHeader(HEADER_BATCH_AUTHORIZATION).orEmpty()
         return if (authorizationHeader.startsWith(BASIC_AUTH_PREFIX)) {
             try {
                 val pair = BasicAuthUtils.decode(authorizationHeader)
@@ -54,7 +56,16 @@ class RemoteAuthHandler : HttpAuthHandler {
             } catch (ignored: IllegalArgumentException) {
                 throw AuthenticationException("Invalid authorization value.")
             }
-        } else AnonymousCredentials()
+        } else if (batchAuthorizationHeader.isNotBlank()) {
+            try {
+                val pair = BasicAuthUtils.decode(batchAuthorizationHeader)
+                BasicAuthCredentials(pair.first, pair.second)
+            } catch (ignored: IllegalArgumentException) {
+                throw AuthenticationException("Invalid authorization value.")
+            }
+        } else {
+            AnonymousCredentials()
+        }
     }
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {

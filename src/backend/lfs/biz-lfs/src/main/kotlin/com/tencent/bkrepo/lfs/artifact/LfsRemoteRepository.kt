@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
 import com.tencent.bkrepo.lfs.constant.DOWNLOAD_OPERATION
+import com.tencent.bkrepo.lfs.constant.HEADER_BATCH_AUTHORIZATION
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
 import com.tencent.bkrepo.lfs.pojo.LfsObject
@@ -98,7 +99,7 @@ class LfsRemoteRepository : RemoteRepository() {
         val requestBody = batchRequest.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val config = context.getRemoteConfiguration()
         val url = "${config.url.removePrefix(StringPool.SLASH)}/info/lfs/objects/batch"
-        val authHeader = HeaderUtils.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
+        val authHeader = HeaderUtils.getHeader(HEADER_BATCH_AUTHORIZATION).orEmpty()
         val request2 = Request.Builder().url(url)
             .header(HttpHeaders.AUTHORIZATION, authHeader).post(requestBody).build()
         httpClient.newCall(request2).execute().use {
