@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.util.Date
 
 @Component
@@ -35,6 +36,11 @@ class NodeStatCompositeMongoDbBatchJob(
             FolderStatChildJob(properties, mongoTemplate, redisTemplate)
         )
     }
+
+    /**
+     * 最长加锁时间
+     */
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(14)
 
     data class Node(private val map: Map<String, Any?>) {
         // 需要通过@JvmField注解将Kotlin backing-field直接作为Java field使用，MongoDbBatchJob中才能解析出需要查询的字段

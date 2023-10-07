@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
+import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.config.RateLimitProperties
@@ -64,6 +65,7 @@ import javax.servlet.http.HttpServletRequest
 class ArtifactContextHolder(
     artifactConfigurers: List<ArtifactConfigurer>,
     compositeRepository: CompositeRepository,
+    proxyRepository: ProxyRepository,
     repositoryClient: RepositoryClient,
     nodeClient: NodeClient,
     private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
@@ -72,6 +74,7 @@ class ArtifactContextHolder(
     init {
         Companion.artifactConfigurers = artifactConfigurers
         Companion.compositeRepository = compositeRepository
+        Companion.proxyRepository = proxyRepository
         Companion.repositoryClient = repositoryClient
         Companion.nodeClient = nodeClient
         Companion.httpAuthSecurity = httpAuthSecurity
@@ -84,6 +87,7 @@ class ArtifactContextHolder(
     companion object {
         private lateinit var artifactConfigurers: List<ArtifactConfigurer>
         private lateinit var compositeRepository: CompositeRepository
+        private lateinit var proxyRepository: ProxyRepository
         private lateinit var repositoryClient: RepositoryClient
         private lateinit var nodeClient: NodeClient
         private lateinit var httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
@@ -131,6 +135,7 @@ class ArtifactContextHolder(
                 RepositoryCategory.REMOTE -> currentArtifactConfigurer.getRemoteRepository()
                 RepositoryCategory.VIRTUAL -> currentArtifactConfigurer.getVirtualRepository()
                 RepositoryCategory.COMPOSITE -> compositeRepository
+                RepositoryCategory.PROXY -> proxyRepository
             }
         }
 

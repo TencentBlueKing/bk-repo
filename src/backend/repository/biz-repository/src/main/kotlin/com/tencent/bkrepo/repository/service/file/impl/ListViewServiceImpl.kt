@@ -91,7 +91,7 @@ class ListViewServiceImpl(
 
     override fun listRepoView(projectId: String) {
         viewModelService.trailingSlash(applicationName)
-        val itemList = repositoryService.listRepo(projectId).map { RepoListViewItem.from(it) }
+        val itemList = repositoryService.listRepo(projectId, display = true).map { RepoListViewItem.from(it) }
         val title = "Repository[$projectId]"
         val headerList = listOf(
             HeaderItem("Name"),

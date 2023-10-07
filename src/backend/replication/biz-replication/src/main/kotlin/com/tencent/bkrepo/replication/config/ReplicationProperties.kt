@@ -94,5 +94,10 @@ data class ReplicationProperties(
      * 分发任务调度服务器所需账户密码
      */
     var dispatchUser: String? = null,
-    var dispatchPwd: String? = null
+    var dispatchPwd: String? = null,
+    /**
+     * 针对部分 client_max_body_size 大小限制，
+     * 导致超过该请求的文件无法使用普通上传
+     */
+    var clientMaxBodySize: Long = 10 * 1024 * 1024 * 1024L
     )
