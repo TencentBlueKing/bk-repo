@@ -32,24 +32,38 @@ import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.service.util.proxy.DefaultProxyCallHandler
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil.headers
 import com.tencent.bkrepo.svn.config.SvnProperties
+import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.slf4j.LoggerFactory
+import org.xml.sax.Attributes
+import org.xml.sax.InputSource
+import org.xml.sax.XMLReader
+import org.xml.sax.helpers.AttributesImpl
+import org.xml.sax.helpers.XMLFilterImpl
+import org.xml.sax.helpers.XMLReaderFactory
+import java.io.InputStream
+import java.io.OutputStream
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.sax.SAXSource
+import javax.xml.transform.stream.StreamResult
 
 /**
  * 制品库的SVN仓库路径前缀为/{projectId}/{repoName}，与代理的仓库可能不一致，需要调整请求与响应中的前缀
  */
-class ChangeAncestorProxyHandler(private val svnProperties: SvnProperties) : DefaultProxyCallHandler() {
+class ChangeAncestorProxyHandler(
+    private val svnProperties: SvnProperties,
+) : DefaultProxyCallHandler() {
     override fun before(
         proxyRequest: HttpServletRequest,
         proxyResponse: HttpServletResponse,
         request: Request
     ): Request {
-        val oldPrefix = if (svnProperties.repoPrefix.isEmpty()){
+        val oldPrefix = if (svnProperties.repoPrefix.isEmpty()) {
             prefix(proxyRequest.servletPath)
         } else {
             svnProperties.repoPrefix + prefix(proxyRequest.servletPath)
@@ -61,6 +75,7 @@ class ChangeAncestorProxyHandler(private val svnProperties: SvnProperties) : Def
         }
 
         val builder = request.newBuilder()
+        builder.header(HttpHeaders.HOST, hostHeader(request.url))
         proxyRequest.headers().forEach { (k, v) ->
             if (k in requestHeaders) {
                 val newHeaderValue = newPrefix + v.substringAfter(oldPrefix)
@@ -69,10 +84,13 @@ class ChangeAncestorProxyHandler(private val svnProperties: SvnProperties) : Def
         }
 
         if (proxyRequest.contentType?.startsWith("text/xml") == true) {
+            val oldBaseUrl = svnProperties.baseUrl + oldPrefix
+            val newBaseUrl = request.url.scheme + "://" + request.url.host + newPrefix
             val oldBody = proxyRequest.inputStream.readBytes().toString(Charsets.UTF_8)
-            val newBody = oldBody
-                .replace(ELEMENT_PATH_PREFIX + oldPrefix, ELEMENT_PATH_PREFIX + newPrefix)
-                .replace(ELEMENT_HREF_PREFIX + oldPrefix, ELEMENT_HREF_PREFIX + newPrefix)
+            val newBody = replace(oldBody, oldPrefix, newPrefix)
+                .replace("$TAG_SRC_PATH>$oldBaseUrl", "$TAG_SRC_PATH>$newBaseUrl")
+                .replace("$TAG_SRC_PATH>$oldPrefix", "$TAG_SRC_PATH>$newPrefix")
+            builder.header(HttpHeaders.CONTENT_LENGTH, newBody.length.toString())
             builder.method(proxyRequest.method, RequestBody.create("text/xml".toMediaType(), newBody))
         }
 
@@ -85,7 +103,7 @@ class ChangeAncestorProxyHandler(private val svnProperties: SvnProperties) : Def
         }
 
         val oldPrefix = prefix(response.request.url.encodedPath)
-        val newPrefix = if (svnProperties.repoPrefix.isEmpty()){
+        val newPrefix = if (svnProperties.repoPrefix.isEmpty()) {
             prefix(proxyRequest.servletPath)
         } else {
             svnProperties.repoPrefix + prefix(proxyRequest.servletPath)
@@ -108,13 +126,15 @@ class ChangeAncestorProxyHandler(private val svnProperties: SvnProperties) : Def
         }
 
         // 转发body
-        if (response.header(HttpHeaders.CONTENT_TYPE)?.startsWith("text/xml") == true) {
-            // 替换XML中的href标签中的路径前缀
-            val oldBody = response.body!!.string()
-            val newBody =
-                oldBody.replace(ELEMENT_HREF_PREFIX + oldPrefix, ELEMENT_HREF_PREFIX + newPrefix)
-            proxyResponse.writer.write(newBody)
-            proxyResponse.setHeader(HttpHeaders.CONTENT_LENGTH, newBody.length.toString())
+        if (oldPrefix != newPrefix && response.header(HttpHeaders.CONTENT_TYPE)?.startsWith("text/xml") == true) {
+            if (response.headers[HttpHeaders.TRANSFER_ENCODING] == "chunked") {
+                replace(response.body!!.byteStream(), proxyResponse.outputStream, oldPrefix, newPrefix)
+            } else {
+                val oldBody = response.body!!.string()
+                val newBody = replace(oldBody, oldPrefix, newPrefix)
+                proxyResponse.setHeader(HttpHeaders.CONTENT_LENGTH, newBody.length.toString())
+                proxyResponse.writer.write(newBody)
+            }
         } else {
             response.body?.byteStream()?.use {
                 it.copyTo(proxyResponse.outputStream)
@@ -157,6 +177,97 @@ class ChangeAncestorProxyHandler(private val svnProperties: SvnProperties) : Def
         return prefix?.ensurePrefix("/")?.removeSuffix("/")
     }
 
+    private fun hostHeader(httpUrl: HttpUrl): String {
+        val isHttpPort = httpUrl.port == 80 && httpUrl.scheme == "http"
+        val isHttpsPort = httpUrl.port == 443 && httpUrl.scheme == "https"
+        return if (isHttpPort || isHttpsPort) {
+            httpUrl.host
+        } else {
+            "${httpUrl.host}:${httpUrl.port}"
+        }
+    }
+
+    private fun replace(str: String, oldPrefix: String, newPrefix: String): String {
+        return str
+            .replace("$TAG_HREF>$oldPrefix", "$TAG_HREF>$newPrefix")
+            .replace("$TAG_PATH>$oldPrefix", "$TAG_PATH>$newPrefix")
+            .replace("$ATTR_BC_URL=\"$oldPrefix", "$ATTR_BC_URL=\"$newPrefix")
+    }
+
+    /**
+     * 流式替换，返回替换后输出的文件
+     */
+    private fun replace(
+        inputStream: InputStream,
+        outputStream: OutputStream,
+        oldPrefix: String,
+        newPrefix: String,
+    ) {
+        val reader = XMLReaderFactory.createXMLReader()
+        val filter = ChangeAncestorFilter(reader, oldPrefix, newPrefix, "", "")
+        val src = SAXSource(filter, InputSource(inputStream))
+        val res = StreamResult(outputStream)
+        TransformerFactory.newInstance().newTransformer().transform(src, res)
+    }
+
+    class ChangeAncestorFilter(
+        reader: XMLReader,
+        private val oldPrefix: String,
+        private val newPrefix: String,
+        private val oldBaseUrl: String,
+        private val newBaseUrl: String,
+    ) : XMLFilterImpl(reader) {
+        private var processingTag = ""
+        private val processingText = StringBuilder()
+        override fun startElement(uri: String, localName: String, qName: String, atts: Attributes) {
+            if (qName == TAG_ADD_DIRECTORY) {
+                val idx = atts.getIndex("bc-url")
+                val old = atts.getValue(idx)
+                val newAttrs = AttributesImpl(atts)
+                newAttrs.setValue(idx, old.replace(oldPrefix, newPrefix))
+                super.startElement(uri, localName, qName, newAttrs)
+                return
+            }
+
+            if (qName == TAG_HREF || qName == TAG_PATH || qName == TAG_SRC_PATH) {
+                processingTag = qName
+            }
+            super.startElement(uri, localName, qName, atts)
+        }
+
+        override fun characters(ch: CharArray, start: Int, length: Int) {
+            if (processingTag != "") {
+                processingText.append(ch, start, length)
+            }
+
+            var old = ""
+            var new = ""
+            if (processingTag == TAG_HREF || processingTag == TAG_PATH) {
+                old = oldPrefix
+                new = newPrefix
+            } else if (processingTag == TAG_SRC_PATH && oldBaseUrl.isNotEmpty() && newBaseUrl.isNotEmpty()) {
+                old = oldBaseUrl + oldPrefix
+                new = newBaseUrl + newPrefix
+            }
+
+            val idx = processingText.indexOf(old)
+            if (old.isNotEmpty() && new.isNotEmpty() && idx != -1) {
+                processingText.replace(idx, idx + old.length, new)
+                val charArray = CharArray(processingText.length)
+                processingText.getChars(0, processingText.length, charArray, 0)
+                super.characters(charArray, 0, charArray.size)
+            } else {
+                super.characters(ch, start, length)
+            }
+        }
+
+        override fun endElement(uri: String, localName: String, qName: String) {
+            processingTag = ""
+            processingText.clear()
+            super.endElement(uri, localName, qName)
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ChangeAncestorProxyHandler::class.java)
         private const val HEADER_SVN_DELTA_BASE = "X-SVN-VR-Base"
@@ -184,7 +295,10 @@ class ChangeAncestorProxyHandler(private val svnProperties: SvnProperties) : Def
         )
 
         // xml element
-        private const val ELEMENT_HREF_PREFIX = "href>"
-        private const val ELEMENT_PATH_PREFIX = "path>"
+        private const val TAG_HREF = "D:href"
+        private const val TAG_PATH = "S:path"
+        private const val TAG_SRC_PATH = "S:src-path" // 只在svn request body中存在
+        private const val TAG_ADD_DIRECTORY = "S:add-directory"
+        private const val ATTR_BC_URL = "bc-url"
     }
 }
