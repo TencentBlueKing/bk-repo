@@ -54,6 +54,7 @@ object OkHttpClientPool {
             val builder = HttpClientBuilderFactory.create(
                 clusterInfo.certificate,
                 closeTimeout = closeTimeout.seconds,
+                certificateUrl = clusterInfo.url
             ).protocols(listOf(Protocol.HTTP_1_1))
                 .readTimeout(readTimeout)
                 .writeTimeout(writeTimeout)

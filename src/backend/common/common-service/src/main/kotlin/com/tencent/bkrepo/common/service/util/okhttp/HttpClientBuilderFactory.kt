@@ -61,12 +61,18 @@ object HttpClientBuilderFactory {
         neverReadTimeout: Boolean = false,
         beanFactory: BeanFactory? = null,
         closeTimeout: Long = 0,
+        certificateUrl: String? = null,
     ): OkHttpClient.Builder {
         return defaultClient.newBuilder()
             .apply {
-                certificate?.let {
-                    val trustManager = CertTrustManager.createTrustManager(it)
-                    val sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
+                // 校验证书是否已经被替换
+                if (!certificate.isNullOrEmpty() && !certificateUrl.isNullOrEmpty()) {
+                    var trustManager = CertTrustManager.createTrustManager(certificate)
+                    var sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
+                    if (!CertTrustManager.validateSSLSocketFactory(sslSocketFactory, certificateUrl)) {
+                        sslSocketFactory = disableValidationSSLSocketFactory
+                        trustManager = disableValidationTrustManager
+                    }
                     val ssf = if (closeTimeout > 0) {
                         UnsafeSslSocketFactoryImpl(sslSocketFactory, closeTimeout)
                     } else {
@@ -74,7 +80,6 @@ object HttpClientBuilderFactory {
                     }
                     sslSocketFactory(ssf, trustManager)
                 }
-
                 if (neverReadTimeout) {
                     readTimeout(0, TimeUnit.MILLISECONDS)
                 }

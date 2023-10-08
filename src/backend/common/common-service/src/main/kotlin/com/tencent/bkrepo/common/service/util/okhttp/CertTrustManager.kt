@@ -27,11 +27,15 @@
 
 package com.tencent.bkrepo.common.service.util.okhttp
 
+import java.net.InetSocketAddress
+import java.net.URL
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSession
+import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
@@ -90,6 +94,22 @@ object CertTrustManager {
             firstTrustManager
         } catch (e: Exception) {
             disableValidationTrustManager
+        }
+    }
+
+    /**
+     * 证书校验
+     * 需要校验以下情况：证书是有效期内的，但是已经被替换调
+     */
+    fun validateSSLSocketFactory(sslSocketFactory: SSLSocketFactory, certificateUrl: String): Boolean {
+        // 校验对应的证书是否已经被替换
+        return try {
+            val sslSocket = sslSocketFactory.createSocket() as SSLSocket
+            sslSocket.connect(InetSocketAddress(URL(certificateUrl).host, 443))
+            val sslSession: SSLSession = sslSocket.session
+            sslSession.isValid
+        } catch (e: Exception) {
+            false
         }
     }
 }
