@@ -49,7 +49,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
@@ -58,6 +57,7 @@ import com.tencent.bkrepo.lfs.artifact.LfsProperties
 import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
 import com.tencent.bkrepo.lfs.constant.HEADER_BATCH_AUTHORIZATION
 import com.tencent.bkrepo.lfs.constant.UPLOAD_OPERATION
+import com.tencent.bkrepo.lfs.exception.BatchRequestException
 import com.tencent.bkrepo.lfs.pojo.ActionDetail
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
@@ -218,7 +218,7 @@ class ObjectService(
             .post(requestBody).build()
         httpClient.newCall(request2).execute().use {
             if (!it.isSuccessful) {
-                throw RemoteErrorCodeException("batch", it.code, it.body!!.string())
+                throw BatchRequestException(it.code, it.body!!.string(), it.headers)
             }
             val batchResponse = it.body!!.string().readJsonString<BatchResponse>()
             return batchResponse.objects.map {lfsObject ->
