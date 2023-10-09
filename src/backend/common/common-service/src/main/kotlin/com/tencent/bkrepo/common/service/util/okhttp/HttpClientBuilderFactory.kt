@@ -65,8 +65,8 @@ object HttpClientBuilderFactory {
         return defaultClient.newBuilder()
             .apply {
                 certificate?.let {
-                    var trustManager = CertTrustManager.createTrustManager(certificate)
-                    var sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
+                    val trustManager = CertTrustManager.createTrustManager(it)
+                    val sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
                     val ssf = if (closeTimeout > 0) {
                         UnsafeSslSocketFactoryImpl(sslSocketFactory, closeTimeout)
                     } else {
@@ -74,6 +74,7 @@ object HttpClientBuilderFactory {
                     }
                     sslSocketFactory(ssf, trustManager)
                 }
+
                 if (neverReadTimeout) {
                     readTimeout(0, TimeUnit.MILLISECONDS)
                 }
