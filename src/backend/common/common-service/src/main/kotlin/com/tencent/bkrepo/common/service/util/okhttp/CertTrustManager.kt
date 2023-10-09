@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.service.util.okhttp
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.net.ssl.HostnameVerifier
@@ -57,8 +58,13 @@ object CertTrustManager {
     val trustAllHostname = HostnameVerifier { _, _ -> true }
     val disableValidationSSLSocketFactory = createSSLSocketFactory(disableValidationTrustManager)
 
-    fun createSSLSocketFactory(certString: String): SSLSocketFactory {
-        val trustManager = createTrustManager(certString)
+    /**
+     * 证书会过期、无效或者被替换，此时不能进行平滑更新会导致连接不可用
+     * ignoreInvalid = true: 在证书校验失败的情况下保证连接可以正常使用
+     * ignoreInvalid = false: 在证书校验失败的情况下抛出异常
+     */
+    fun createSSLSocketFactory(certString: String, ignoreInvalid: Boolean = true): SSLSocketFactory {
+        val trustManager = createTrustManager(certString, ignoreInvalid)
         return createSSLSocketFactory(trustManager)
     }
 
@@ -67,7 +73,12 @@ object CertTrustManager {
         return sslContext.socketFactory
     }
 
-    fun createTrustManager(certString: String): X509TrustManager {
+    /**
+     * 证书会过期、无效或者被替换，此时不能进行平滑更新会导致连接不可用
+     * ignoreInvalid = true: 在证书校验失败的情况下保证连接可以正常使用
+     * ignoreInvalid = false: 在证书校验失败的情况下抛出异常
+     */
+    fun createTrustManager(certString: String, ignoreInvalid: Boolean = true): X509TrustManager {
         val certInputStream = certString.byteInputStream(Charsets.UTF_8)
         val certificateFactory = CertificateFactory.getInstance(X509)
         val certificate = certificateFactory.generateCertificate(certInputStream)
@@ -76,13 +87,18 @@ object CertTrustManager {
             (certificate as X509Certificate).checkValidity()
         } catch (e: Exception) {
             logger.error("The certificate $certString is currently invalid, $e")
-            return disableValidationTrustManager
+            if (ignoreInvalid) {
+                return disableValidationTrustManager
+            } else {
+                throw e
+            }
         }
-        return CustomX509TrustManager(certificate)
+        return CustomX509TrustManager(certificate, ignoreInvalid)
     }
 
     class CustomX509TrustManager(
-        private val localCertificate: X509Certificate
+        private val localCertificate: X509Certificate,
+        private val ignoreInvalid: Boolean
     ): X509TrustManager {
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
             // no-op
@@ -96,11 +112,13 @@ object CertTrustManager {
             // 校验证书链的第一个证书是否与本地证书一致
             val serverCert = chain[0]
             // 可能存在证书没有过期的情况下在服务端已经被替换
-            if (localCertificate != serverCert) {
-                logger.error(
-                    "The localCertificate ${localCertificate.subjectDN} " +
-                        "is not equal with serverCert ${serverCert.subjectDN}"
-                )
+            if (localCertificate == serverCert) return
+            logger.error(
+                "The localCertificate ${localCertificate.subjectDN} " +
+                    "is not equal with serverCert ${serverCert.subjectDN}"
+            )
+            if (!ignoreInvalid) {
+                throw CertificateException("Certificate $localCertificate is invalid")
             }
         }
 
