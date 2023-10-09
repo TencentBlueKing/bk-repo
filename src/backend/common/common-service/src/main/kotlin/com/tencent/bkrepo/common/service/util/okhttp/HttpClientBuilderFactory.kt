@@ -61,12 +61,10 @@ object HttpClientBuilderFactory {
         neverReadTimeout: Boolean = false,
         beanFactory: BeanFactory? = null,
         closeTimeout: Long = 0,
-        certificateUrl: String? = null,
     ): OkHttpClient.Builder {
         return defaultClient.newBuilder()
             .apply {
-                // 校验证书是否已经被替换
-                if (!certificate.isNullOrEmpty() && !certificateUrl.isNullOrEmpty()) {
+                certificate?.let {
                     var trustManager = CertTrustManager.createTrustManager(certificate)
                     var sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
                     val ssf = if (closeTimeout > 0) {
