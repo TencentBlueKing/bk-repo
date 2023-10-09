@@ -85,6 +85,7 @@ object CertTrustManager {
         private val localCertificate: X509Certificate
     ): X509TrustManager {
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+            // no-op
         }
 
         override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
@@ -96,7 +97,10 @@ object CertTrustManager {
             val serverCert = chain[0]
             // 可能存在证书没有过期的情况下在服务端已经被替换
             if (localCertificate != serverCert) {
-                logger.error("The localCertificate ${localCertificate.subjectDN} is not equal with serverCert ${serverCert.subjectDN}")
+                logger.error(
+                    "The localCertificate ${localCertificate.subjectDN} " +
+                        "is not equal with serverCert ${serverCert.subjectDN}"
+                )
             }
         }
 
