@@ -69,10 +69,6 @@ object HttpClientBuilderFactory {
                 if (!certificate.isNullOrEmpty() && !certificateUrl.isNullOrEmpty()) {
                     var trustManager = CertTrustManager.createTrustManager(certificate)
                     var sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
-                    if (!CertTrustManager.validateSSLSocketFactory(sslSocketFactory, certificateUrl)) {
-                        sslSocketFactory = disableValidationSSLSocketFactory
-                        trustManager = disableValidationTrustManager
-                    }
                     val ssf = if (closeTimeout > 0) {
                         UnsafeSslSocketFactoryImpl(sslSocketFactory, closeTimeout)
                     } else {

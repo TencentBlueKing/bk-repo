@@ -53,7 +53,6 @@ import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.createSSLSocketFactory
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.trustAllHostname
-import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.validateSSLSocketFactory
 import feign.Client
 import feign.Feign
 import feign.Logger
@@ -152,12 +151,7 @@ object FeignClientFactory {
         val sslContextFactory = if (remoteClusterInfo.certificate.isNullOrBlank()) {
             disableValidationSSLSocketFactory
         } else {
-            val tempSslContextFactory = createSSLSocketFactory(remoteClusterInfo.certificate.orEmpty())
-            if (!validateSSLSocketFactory(tempSslContextFactory, remoteClusterInfo.url)) {
-                disableValidationSSLSocketFactory
-            } else {
-                tempSslContextFactory
-            }
+            createSSLSocketFactory(remoteClusterInfo.certificate.orEmpty())
         }
         return Client.Default(sslContextFactory, hostnameVerifier)
     }

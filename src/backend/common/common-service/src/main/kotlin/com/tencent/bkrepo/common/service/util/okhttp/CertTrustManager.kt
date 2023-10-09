@@ -27,25 +27,21 @@
 
 package com.tencent.bkrepo.common.service.util.okhttp
 
-import java.net.InetSocketAddress
-import java.net.URL
-import java.security.KeyStore
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLSession
-import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManager
-import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
 /**
  * SSL证书管理器
  */
 object CertTrustManager {
-
+    private val logger: Logger = LoggerFactory.getLogger(CertTrustManager::class.java)
     private const val TLS = "TLS"
     private const val X509 = "X.509"
 
@@ -74,42 +70,39 @@ object CertTrustManager {
     fun createTrustManager(certString: String): X509TrustManager {
         val certInputStream = certString.byteInputStream(Charsets.UTF_8)
         val certificateFactory = CertificateFactory.getInstance(X509)
-        val certificateList = certificateFactory.generateCertificates(certInputStream)
-        require(!certificateList.isEmpty()) { "Expected non-empty set of trusted certificates." }
-        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply { load(null, null) }
-        certificateList.forEachIndexed { index, certificate ->
-            keyStore.setCertificateEntry(index.toString(), certificate)
-        }
-        val algorithm = TrustManagerFactory.getDefaultAlgorithm()
-        val trustManagerFactory = TrustManagerFactory.getInstance(algorithm).apply { init(keyStore) }
-        val trustManagers = trustManagerFactory.trustManagers
-        check(trustManagers.size == 1) { "Unexpected default trust managers size: ${trustManagers.size}" }
-        val firstTrustManager = trustManagers.first()
-        check(firstTrustManager is X509TrustManager) { "Unexpected default trust managers:$firstTrustManager" }
-        return try {
+        val certificate = certificateFactory.generateCertificate(certInputStream)
+        try {
             // 校验传入的证书是否过期或者无效
-            firstTrustManager.acceptedIssuers.forEach {
-                it.checkValidity()
-            }
-            firstTrustManager
+            (certificate as X509Certificate).checkValidity()
         } catch (e: Exception) {
-            disableValidationTrustManager
+            logger.error("The certificate $certString is currently invalid, $e")
+            return disableValidationTrustManager
         }
+        return CustomX509TrustManager(certificate)
     }
 
-    /**
-     * 证书校验
-     * 需要校验以下情况：证书是有效期内的，但是已经被替换调
-     */
-    fun validateSSLSocketFactory(sslSocketFactory: SSLSocketFactory, certificateUrl: String): Boolean {
-        // 校验对应的证书是否已经被替换
-        return try {
-            val sslSocket = sslSocketFactory.createSocket() as SSLSocket
-            sslSocket.connect(InetSocketAddress(URL(certificateUrl).host, 443))
-            val sslSession: SSLSession = sslSocket.session
-            sslSession.isValid
-        } catch (e: Exception) {
-            false
+    class CustomX509TrustManager(
+        private val localCertificate: X509Certificate
+    ): X509TrustManager {
+        override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+        }
+
+        override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+            // 校验服务端证书
+            if (chain.isNullOrEmpty()) {
+                throw IllegalArgumentException("Server certificate chain is empty");
+            }
+            // 校验证书链的第一个证书是否与本地证书一致
+            val serverCert = chain[0]
+            // 可能存在证书没有过期的情况下在服务端已经被替换
+            if (localCertificate != serverCert) {
+                logger.error("The localCertificate ${localCertificate.subjectDN} is not equal with serverCert ${serverCert.subjectDN}")
+            }
+        }
+
+        override fun getAcceptedIssuers(): Array<X509Certificate> {
+            // 返回本地证书
+            return arrayOf(localCertificate)
         }
     }
 }
