@@ -28,6 +28,10 @@
 package com.tencent.bkrepo.job.batch.node
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.constant.CUSTOM
+import com.tencent.bkrepo.common.artifact.constant.LOG
+import com.tencent.bkrepo.common.artifact.constant.PIPELINE
+import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -66,6 +70,7 @@ class EmptyFolderCleanupJob(
     override fun run(row: NodeStatCompositeMongoDbBatchJob.Node, collectionName: String, context: JobContext) {
         require(context is EmptyFolderChildContext)
         if (row.deleted != null) return
+        if (row.repoName !in TARGET_REPO_LIST) return
         if (row.folder) {
             val folderKey = buildCacheKey(
                 collectionName = collectionName, projectId = row.projectId,
@@ -191,6 +196,7 @@ class EmptyFolderCleanupJob(
     companion object {
         private val logger = LoggerHolder.jobLogger
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
+        private val TARGET_REPO_LIST = listOf(REPORT, LOG, PIPELINE, CUSTOM)
 
     }
 }
