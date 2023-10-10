@@ -25,23 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.svn.config
+package com.tencent.bkrepo.svn.interceptor
 
-import com.tencent.bkrepo.common.security.interceptor.devx.DevxProperties
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
+import org.xml.sax.InputSource
+import org.xml.sax.helpers.XMLReaderFactory
+import java.io.ByteArrayOutputStream
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.sax.SAXSource
+import javax.xml.transform.stream.StreamResult
 
-@ConfigurationProperties("svn")
-data class SvnProperties(
-    /**
-     * 仓库前缀，在使用SVN Proxy类型的仓库时需要配置
-     * 比如SVN客户端访问http://bkrepo.exmaple.com/svn/projectId/repoName，此时需要配置repoPrefix为/svn
-     */
-    var repoPrefix: String = "",
-    @NestedConfigurationProperty
-    var devx: DevxProperties = DevxProperties(),
-    /**
-     * 例如 http://bkrepo.example.com
-     */
-    var baseUrl: String = "",
-)
+class ChangeAncestorFilterTest {
+
+    @Test
+    fun test() {
+        val reader = XMLReaderFactory.createXMLReader()
+        val filter = ChangeAncestorProxyHandler.ChangeAncestorFilter(
+            reader, "/groupA/demo", "/groupB/demo", "", ""
+        )
+        val inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("testdata/test.xml")
+        val src = SAXSource(filter, InputSource(inputStream))
+        val outputStream = ByteArrayOutputStream()
+        val res = StreamResult(outputStream)
+        TransformerFactory.newInstance().newTransformer().transform(src, res)
+        Assertions.assertTrue(outputStream.toString().contains("groupB"))
+        Assertions.assertFalse(outputStream.toString().contains("groupA"))
+    }
+}
