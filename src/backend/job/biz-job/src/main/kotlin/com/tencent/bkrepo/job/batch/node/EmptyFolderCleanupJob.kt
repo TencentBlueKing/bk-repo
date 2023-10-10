@@ -97,7 +97,8 @@ class EmptyFolderCleanupJob(
     }
 
     override fun onParentJobFinished(context: ChildJobContext) {
-        logger.info("emptyFolderCleanupJob finished")
+        require(context is EmptyFolderChildContext)
+        logger.info("emptyFolderCleanupJob finished, deleted empty folder num: ${context.totalDeletedNum}")
     }
 
 
@@ -129,6 +130,7 @@ class EmptyFolderCleanupJob(
                         collectionName = collectionName
                 )) {
                     logger.info("will delete empty folder ${it.fullPath} in repo ${it.projectId}|${it.repoName}")
+                    context.totalDeletedNum.increment()
                     deleteEmptyFolders(entry.value.id, collectionName)
                 }
             }
