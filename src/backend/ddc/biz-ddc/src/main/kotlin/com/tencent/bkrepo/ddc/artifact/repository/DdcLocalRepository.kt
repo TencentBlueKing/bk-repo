@@ -34,16 +34,18 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
+import com.tencent.bkrepo.ddc.component.RefDownloadListener
+import com.tencent.bkrepo.ddc.event.RefDownloadedEvent
 import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
 import com.tencent.bkrepo.ddc.exception.NotImplementedException
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
@@ -76,6 +78,7 @@ class DdcLocalRepository(
     private val referenceService: ReferenceService,
     private val refResolver: ReferenceResolver,
     private val blobService: BlobService,
+    private val refDownloadListener: RefDownloadListener,
 ) : LocalRepository() {
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
@@ -107,19 +110,6 @@ class DdcLocalRepository(
         }
     }
 
-    fun finalizeRef(artifactInfo: ReferenceArtifactInfo) {
-        with(artifactInfo) {
-            val ref = getReference(
-                projectId, repoName, bucket, refId.toString(), checkFinalized = false
-            ) ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "No blob when attempting to finalize")
-            if (ref.blobId!!.toString() != artifactInfo.inlineBlobHash) {
-                throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
-            }
-            val res = referenceService.finalize(ref, ref.inlineBlob!!)
-            HttpContextHolder.getResponse().writer.println(res.toJsonString())
-        }
-    }
-
     private fun onUploadReference(context: ArtifactUploadContext) {
         val contentType = context.request.contentType
         val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
@@ -127,7 +117,7 @@ class DdcLocalRepository(
             MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
                 val payload = context.getArtifactFile().getInputStream().readBytes()
                 val ref = referenceService.create(Reference.from(artifactInfo, payload))
-                ref.inlineBlob?.let {
+                if (ref.inlineBlob == null) {
                     // inlineBlob为null时表示inlineBlob过大，需要存到文件中
                     val nodeCreateRequest = buildRefNodeCreateRequest(context)
                     storageManager.storeArtifactFile(
@@ -190,7 +180,8 @@ class DdcLocalRepository(
         metadata.add(
             MetadataModel(
                 key = NODE_METADATA_KEY_CONTENT_ID,
-                value = artifactInfo.contentId
+                value = artifactInfo.contentId,
+                system = true
             )
         )
 
@@ -203,9 +194,10 @@ class DdcLocalRepository(
     private fun onDownloadReference(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
-            val ref = getReference(
-                projectId, repoName, artifactInfo.bucket, artifactInfo.refId.toString(), true
+            val ref = referenceService.getReference(
+                projectId, repoName, artifactInfo.bucket, artifactInfo.refKey.toString()
             ) ?: return null
+            refDownloadListener.onRefDownloaded(RefDownloadedEvent(ref, SecurityUtils.getUserId()))
             response.addHeader(HEADER_NAME_HASH, ref.blobId.toString())
             response.addHeader(HEADER_NAME_LAST_ACCESS, ref.lastAccessDate!!.format(DATE_TIME_FORMATTER))
 
@@ -276,7 +268,7 @@ class DdcLocalRepository(
             if (binaryAttachmentCount > 1 || attachmentCount > 1 || binaryAttachmentCount != attachmentCount) {
                 throw BadRequestException(
                     CommonMessageCode.PARAMETER_INVALID,
-                    "Object ${artifactInfo.bucket} ${artifactInfo.refId} had more then 1 binary attachment field," +
+                    "Object ${artifactInfo.bucket} ${artifactInfo.refKey} had more then 1 binary attachment field," +
                             " unable to inline this object. Use compact object response instead."
                 )
             }
@@ -304,7 +296,7 @@ class DdcLocalRepository(
             } else {
                 throw BadRequestException(
                     CommonMessageCode.PARAMETER_INVALID,
-                    "Object ${artifactInfo.bucket} ${artifactInfo.refId} contained a content id " +
+                    "Object ${artifactInfo.bucket} ${artifactInfo.refKey} contained a content id " +
                             "which resolved to more then 1 blob, unable to inline this object. " +
                             "Use compact object response instead."
                 )
@@ -327,30 +319,6 @@ class DdcLocalRepository(
             } catch (e: BlobNotFoundException) {
                 null
             }
-        }
-    }
-
-    private fun getReference(
-        projectId: String, repoName: String, bucket: String, key: String, checkFinalized: Boolean
-    ): Reference? {
-        val ref = referenceService.getReference(
-            projectId, repoName, bucket, key,
-            includePayload = true,
-            checkFinalized = checkFinalized
-        ) ?: return null
-
-        if (ref.inlineBlob == null) {
-            val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
-            ref.inlineBlob = nodeClient.getNodeDetail(projectId, repoName, ref.fullPath()).data?.let {
-                storageManager.loadArtifactInputStream(it, repo.storageCredentials)?.readBytes()
-            }
-        }
-
-        return if (ref.inlineBlob == null) {
-            logger.warn("Blob was null when attempting to fetch ${ref.repoName} ${ref.bucket} ${ref.key}")
-            null
-        } else {
-            ref
         }
     }
 

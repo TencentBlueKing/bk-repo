@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.ddc.repository
 
+import com.mongodb.DuplicateKeyException
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.ddc.model.TDdcBlob
-import com.tencent.bkrepo.ddc.pojo.ReferenceKey
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndReplaceOptions
 import org.springframework.data.mongodb.core.query.Query
@@ -69,14 +69,19 @@ class BlobRepository : SimpleMongoDao<TDdcBlob>() {
             .and(TDdcBlob::repoName.name).isEqualTo(blob.repoName)
             .and(TDdcBlob::blobId.name).isEqualTo(blob.blobId)
         val options = FindAndReplaceOptions().upsert()
-        return determineMongoTemplate().findAndReplace(Query(criteria), blob, options)
+        val query = Query(criteria)
+        return try {
+            determineMongoTemplate().findAndReplace(query, blob, options)
+        } catch (e: DuplicateKeyException) {
+            findOne(query)
+        }
     }
 
-    fun addRefToBlob(projectId: String, repoName: String, bucket: String, refId: String, blobIds: Set<String>) {
+    fun addRefToBlob(projectId: String, repoName: String, bucket: String, refKey: String, blobIds: Set<String>) {
         val criteria = TDdcBlob::projectId.isEqualTo(projectId)
             .and(TDdcBlob::repoName.name).isEqualTo(repoName)
             .and(TDdcBlob::blobId.name).inValues(blobIds)
-        val update = Update().addToSet(TDdcBlob::references.name, ReferenceKey(bucket = bucket, key = refId))
+        val update = Update().addToSet(TDdcBlob::references.name, "ref/$bucket/$refKey")
         updateMulti(Query(criteria), update)
     }
 }

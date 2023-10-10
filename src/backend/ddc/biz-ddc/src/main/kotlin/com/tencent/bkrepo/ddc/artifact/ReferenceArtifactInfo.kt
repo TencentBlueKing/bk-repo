@@ -29,21 +29,21 @@ package com.tencent.bkrepo.ddc.artifact
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.ddc.pojo.RefId
+import com.tencent.bkrepo.ddc.pojo.RefKey
 
 class ReferenceArtifactInfo(
     projectId: String,
     repoName: String,
     val bucket: String,
-    val refId: RefId,
+    val refKey: RefKey,
     var inlineBlobHash: String? = null,
 ) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
 
-    override fun getArtifactName() = "/$bucket/$refId"
+    override fun getArtifactName() = "/$bucket/$refKey"
 
     override fun getArtifactFullPath(): String {
         return if(getArtifactMappingUri().isNullOrEmpty()) {
-            "/$bucket/$refId"
+            "/$bucket/$refKey"
         } else getArtifactMappingUri()!!
     }
 

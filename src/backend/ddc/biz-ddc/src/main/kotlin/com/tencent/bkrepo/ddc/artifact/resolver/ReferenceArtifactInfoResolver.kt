@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_BUCKET
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
-import com.tencent.bkrepo.ddc.pojo.RefId
+import com.tencent.bkrepo.ddc.pojo.RefKey
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
@@ -51,7 +51,7 @@ class ReferenceArtifactInfoResolver : ArtifactInfoResolver {
             projectId = projectId,
             repoName = repoName,
             bucket = attributes[PATH_VARIABLE_BUCKET].toString(),
-            refId = RefId.create(attributes[PATH_VARIABLE_REF_ID].toString())
+            refKey = RefKey.create(attributes[PATH_VARIABLE_REF_ID].toString())
         )
     }
 }

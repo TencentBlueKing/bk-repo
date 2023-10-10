@@ -78,6 +78,8 @@
                     :outer-border="false"
                     :row-border="false"
                     size="small"
+                    ref="artifactoryTable"
+                    @sort-change="orderList"
                     @row-dblclick="openFolder"
                     @selection-change="selectMultiRow">
                     <template #empty>
@@ -99,6 +101,16 @@
                                 repo-type="generic"
                                 :full-path="row.fullPath">
                             </scan-tag>
+                        </template>
+                    </bk-table-column>
+                    <bk-table-column :label="$t('size')" prop="size" width="90" sortable="custom" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ convertFileSize(row.size > 0 ? row.size : 0 ) }}
+                        </template>
+                    </bk-table-column>
+                    <bk-table-column :label="$t('fileNum')" prop="nodeNum" sortable="custom" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ row.nodeNum ? row.nodeNum : row.folder ? 0 : '--'}}
                         </template>
                     </bk-table-column>
 
@@ -123,22 +135,12 @@
                             {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('size')" width="90" show-overflow-tooltip>
-                        <template #default="{ row }">
-                            <bk-button text
-                                v-if="row.folder && !('folderSize' in row)"
-                                :disabled="row.sizeLoading"
-                                @click="calculateFolderSize(row)">{{ $t('calculate') }}</bk-button>
-                            <span v-else>
-                                {{ convertFileSize(row.size || row.folderSize || 0) }}
-                            </span>
-                        </template>
-                    </bk-table-column>
                     <bk-table-column :label="$t('operation')" width="100">
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
+                                    row.folder && { clickEvent: () => calculateFolderSize(row), label: $t('realSize') },
                                     !row.folder && getBtnDisabled(row.name) && { clickEvent: () => handlerPreviewBasicsFile(row), label: $t('preview') }, //基本类型文件 eg: txt
                                     !row.folder && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
                                     ...(!row.metadata.forbidStatus ? [
@@ -180,6 +182,7 @@
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
+        <loading ref="loading" @closeLoading="closeLoading"></loading>
     </div>
 </template>
 <script>
@@ -199,10 +202,12 @@
     import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
+    import Loading from '@repository/components/Loading/loading'
 
     export default {
         name: 'repoGeneric',
         components: {
+            Loading,
             OperationList,
             Breadcrumb,
             MoveSplitBar,
@@ -243,7 +248,9 @@
                 metadataLabelList: [],
                 debounceClickTreeNode: null,
                 inFolderSearchName: this.$route.query.fileName,
-                searchFullPath: ''
+                searchFullPath: '',
+                sortParams: [],
+                timer: null
             }
         },
         computed: {
@@ -378,6 +385,13 @@
                     on: {
                         click: () => {
                             this.sortType = column.property
+                            this.$refs.artifactoryTable.clearSort()
+                            this.sortParams = []
+                            const sortParam = {
+                                properties: column.property,
+                                direction: 'DESC'
+                            }
+                            this.sortParams.push(sortParam)
                             this.handlerPaginationChange()
                         }
                     }
@@ -420,8 +434,29 @@
                 const metadataLabelList = await this.getMetadataLabelList({
                     projectId: this.projectId
                 })
+                let sortTypes
                 this.metadataLabelList = metadataLabelList
-
+                if (this.sortParams.some(param => {
+                    return param.direction === 'ASC'
+                })) {
+                    sortTypes = {
+                        properties: [],
+                        direction: 'ASC'
+                    }
+                    sortTypes.properties.push(this.sortParams[0].properties)
+                } else {
+                    sortTypes = {
+                        properties: ['folder', 'lastModifiedDate'],
+                        direction: 'DESC'
+                    }
+                    if (this.sortParams.length > 0) {
+                        sortTypes.properties = []
+                        if (this.sortParams[0].properties === 'name' || this.sortParams[0].properties === 'lastModifiedDate') {
+                            sortTypes.properties.push('folder')
+                        }
+                        sortTypes.properties.push(this.sortParams[0].properties)
+                    }
+                }
                 this.getArtifactoryList({
                     projectId: this.projectId,
                     repoName: this.repoName,
@@ -434,7 +469,7 @@
                     ),
                     current: this.pagination.current,
                     limit: this.pagination.limit,
-                    sortType: this.sortType,
+                    sortType: sortTypes,
                     isPipeline: this.repoName === 'pipeline',
                     searchFlag: this.searchFileName
                 }).then(({ records, totalRecords }) => {
@@ -456,6 +491,54 @@
                             name: v.metadata?.displayName || v.name
                         }
                     })
+                    if (this.repoName === 'pipeline' && !this.inFolderSearchName) {
+                        const originData = this.artifactoryList
+                        const direction = this.sortParams.some(param => {
+                            return param.direction === 'ASC'
+                        })
+                        if (!direction) {
+                            const hasFolder = sortTypes.properties.some(param => {
+                                return param === 'folder'
+                            })
+                            if (hasFolder) {
+                                const hasName = sortTypes.properties.some(param => {
+                                    return param === 'name'
+                                })
+                                originData.sort(function (a) {
+                                    return a.folder
+                                }).sort(function (a, b) {
+                                    if (hasName) {
+                                        return b.name - a.name
+                                    } else {
+                                        return a.lastModifiedDate - b.lastModifiedDate
+                                    }
+                                })
+                            } else {
+                                const hasSize = sortTypes.properties.some(param => {
+                                    return param === 'size'
+                                })
+                                originData.sort(function (a, b) {
+                                    if (hasSize) {
+                                        return b.size - a.size
+                                    } else {
+                                        return b.nodeNum - a.nodeNum
+                                    }
+                                })
+                            }
+                        } else {
+                            const hasSize = sortTypes.properties.some(param => {
+                                return param === 'size'
+                            })
+                            originData.sort(function (a, b) {
+                                if (hasSize) {
+                                    return a.size - b.size
+                                } else {
+                                    return a.nodeNum - b.nodeNum
+                                }
+                            })
+                        }
+                        this.artifactoryList = originData
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -674,8 +757,8 @@
                     fullPath
                 })
             },
-            handlerDownload ({ fullPath }) {
-                const transPath = encodeURIComponent(fullPath)
+            handlerDownload (row) {
+                const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
@@ -683,12 +766,55 @@
                         '_self'
                     )
                 }).catch(e => {
-                    const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
-                    this.$bkMessage({
-                        theme: 'error',
-                        message
-                    })
+                    if (e.status === 451) {
+                        this.$refs.loading.isShow = true
+                        this.$refs.loading.complete = false
+                        this.$refs.loading.title = ''
+                        this.$refs.loading.backUp = true
+                        this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                        this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                        this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
+                        this.timerDownload(url, row.fullPath, row.name)
+                    } else {
+                        const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
+                        this.$bkMessage({
+                            theme: 'error',
+                            message
+                        })
+                    }
                 })
+            },
+            timerDownload (url, fullPath, name) {
+                this.timer = setInterval(() => {
+                    this.$ajax.head(url).then(() => {
+                        clearInterval(this.timer)
+                        this.timer = null
+                        this.$refs.loading.isShow = false
+                        window.open(
+                            '/web' + url,
+                            '_self'
+                        )
+                    }).catch(e => {
+                        if (e.status === 451) {
+                            this.$refs.loading.isShow = true
+                            this.$refs.loading.complete = false
+                            this.$refs.loading.title = ''
+                            this.$refs.loading.backUp = true
+                            this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                            this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                            this.$refs.loading.message = this.$t('backUpMessage', { 0: name })
+                        } else {
+                            clearInterval(this.timer)
+                            this.timer = null
+                            this.$refs.loading.isShow = false
+                            const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
+                            this.$bkMessage({
+                                theme: 'error',
+                                message
+                            })
+                        }
+                    })
+                }, 5000)
             },
             handlerMultiDownload () {
                 const fullPaths = this.multiSelect.map(r => r.fullPath)
@@ -712,12 +838,22 @@
             },
             calculateFolderSize (row) {
                 this.$set(row, 'sizeLoading', true)
+                this.$refs.loading.isShow = true
+                this.$refs.loading.complete = false
+                this.$refs.loading.backUp = false
+                this.$refs.loading.title = this.$t('calculateTitle')
+                this.$refs.loading.message = this.$t('calculateMsg', { 0: row.fullPath })
+                this.$refs.loading.subMessage = ''
+                this.$refs.loading.cancelMessage = this.$t('cancel')
                 this.getFolderSize({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     fullPath: row.fullPath
-                }).then(({ size }) => {
-                    this.$set(row, 'folderSize', size)
+                }).then(({ size, subNodeWithoutFolderCount }) => {
+                    this.$set(row, 'size', size)
+                    this.$set(row, 'nodeNum', subNodeWithoutFolderCount)
+                    this.$refs.loading.message = this.$t('calculateCompleteMsg', { 0: row.fullPath, 1: convertFileSize(size) })
+                    this.$refs.loading.complete = true
                 }).finally(() => {
                     this.$set(row, 'sizeLoading', false)
                 })
@@ -853,6 +989,22 @@
                     this.searchFullPath = ''
                 }
                 this.handlerPaginationChange()
+            },
+            orderList (sort) {
+                this.sortType = ''
+                this.sortParams = []
+                if (sort.prop) {
+                    const sortParam = {
+                        properties: sort.prop,
+                        direction: sort.order === 'ascending' ? 'ASC' : 'DESC'
+                    }
+                    this.sortParams.push(sortParam)
+                }
+                this.getArtifactories()
+            },
+            closeLoading () {
+                clearInterval(this.timer)
+                this.timer = null
             }
         }
     }

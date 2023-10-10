@@ -771,5 +771,15 @@
     "batchDownloadingInfo":"您批量选中的文件正在进行下载中，请稍候...",
     "errorPlanNameTips":"请输入 2-32 位字符的计划名称",
     "noBusinessTip": "无业务权限",
-    "noBusinessSubTip": "无该应用访问权限"
+    "noBusinessSubTip": "无该应用访问权限",
+    "fileNum": "文件个数",
+    "realSize": "实时大小",
+    "loadingMsg": "正在处理，请稍等...",
+    "calculateMsg": "正在计算{0}大小,请稍候。",
+    "calculateTitle": "实时计算文件夹大小",
+    "calculateCompleteMsg": "{0}的文件总大小为{1}",
+    "repoUsage": "仓库用量",
+    "downloadLater": "稍后再下载",
+    "backUpSubMessage": "仅首次下载需等待，准备时长和包大小有关，500MB的包大概需要1分钟",
+    "backUpMessage": "{0}为内部测试版本，正在准备下载，请稍等"
 }

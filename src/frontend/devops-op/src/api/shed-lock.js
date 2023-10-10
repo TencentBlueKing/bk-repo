@@ -8,3 +8,10 @@ export function listShedlock() {
     method: 'get'
   })
 }
+
+export function deleteShelock(id) {
+  return request({
+    url: `${PREFIX_SERVICES}/delete/${id}`,
+    method: 'delete'
+  })
+}

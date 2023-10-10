@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,14 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.favorite
+package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.repository.pojo.repo.RepoMetricsInfo
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-data class FavoritePageRequest(
-    var projectId: String?,
-    var repoName: String?,
-    var pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    var pageSize: Int = DEFAULT_PAGE_SIZE
+@Document("project_metrics")
+data class TProjectMetrics(
+    var id: String? = null,
+    var projectId: String,
+    var nodeNum: Long,
+    var capSize: Long,
+    val repoMetrics: List<RepoMetricsInfo>,
+    val createdDate: LocalDateTime? = LocalDateTime.now()
 )

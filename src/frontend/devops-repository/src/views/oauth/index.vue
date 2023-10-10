@@ -56,7 +56,9 @@
                     clientId: this.$route.query.client_id,
                     state: this.$route.query.state,
                     scope: this.$route.query.scope,
-                    nonce: this.$route.query.nonce
+                    nonce: this.$route.query.nonce,
+                    codeChallenge: this.$route.query.code_challenge,
+                    codeChallengeMethod: this.$route.query.code_challenge_method
                 }).then(authorizeInfo => {
                     console.log(authorizeInfo.scope.includes('PROJECT'))
                     this.userId = authorizeInfo.userId

@@ -64,6 +64,8 @@ import com.tencent.bkrepo.analyst.statemachine.task.context.StopTaskContext
 import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -207,10 +209,10 @@ class ScanServiceImpl @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     override fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean {
         val subtask = subScanTaskDao.findById(subScanTaskId)
-        if (subtask != null && subScanTaskStatus == SubScanTaskStatus.EXECUTING.name) {
+        if (subtask != null && subScanTaskStatus == EXECUTING.name) {
             val context = ExecuteSubtaskContext(subtask)
             val targetState = subtaskStateMachine.sendEvent(subtask.status, Event(SubtaskEvent.EXECUTE.name, context))
-            return targetState.transitState == SubScanTaskStatus.EXECUTING.name
+            return targetState.transitState == EXECUTING.name
         }
         return false
     }
@@ -265,7 +267,7 @@ class ScanServiceImpl @Autowired constructor(
                     "subTask[${task.id}] of parentTask[${task.parentScanTaskId}] " +
                         "exceed max execute times or timeout[${task.lastModifiedDate}]"
                 )
-                val targetState = if (task.status == SubScanTaskStatus.EXECUTING.name) {
+                val targetState = if (task.status == EXECUTING.name || task.status == PULLED.name) {
                     SubScanTaskStatus.TIMEOUT.name
                 } else {
                     SubScanTaskStatus.FAILED.name

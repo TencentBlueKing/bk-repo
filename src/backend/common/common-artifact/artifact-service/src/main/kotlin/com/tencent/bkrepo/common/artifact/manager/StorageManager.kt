@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -43,6 +44,8 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.devops.plugin.api.PluginManager
+import com.tencent.devops.plugin.api.applyExtension
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -64,6 +67,7 @@ class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
     private val nodeResourceFactoryImpl: NodeResourceFactoryImpl,
+    private val pluginManager: PluginManager
 ) {
 
     /**
@@ -133,7 +137,18 @@ class StorageManager(
         node: NodeDetail?,
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream? {
-        return loadArtifactInputStream(node?.nodeInfo, storageCredentials)
+        if (node == null) {
+            return null
+        }
+        var forwardNode: NodeDetail? = null
+        pluginManager.applyExtension<NodeForwardExtension> {
+            forwardNode = forward(node, SecurityUtils.getUserId())
+            forwardNode?.let {
+                logger.info("Load[${node.identity()}] forward to [${it.identity()}].")
+            }
+        }
+        val load = forwardNode ?: node
+        return loadArtifactInputStream(load.nodeInfo, storageCredentials)
     }
     companion object {
         private val logger = LoggerFactory.getLogger(StorageManager::class.java)

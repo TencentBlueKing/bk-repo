@@ -763,5 +763,15 @@
     "exportLeakReportInfo":"Security vulnerability information is being reported, please wait...",
     "errorPlanNameTips":"Please enter a plan name of 2-32 characters",
     "noBusinessTip": "No Business Authorization",
-    "noBusinessSubTip": "No Access To This App"
+    "noBusinessSubTip": "No Access To This App",
+    "fileNum": "File Number",
+    "realSize": "Real Size",
+    "loadingMsg": "Please wait, processing...",
+    "calculateMsg": "Please wait while calculating the {0} size.",
+    "calculateTitle": "Calculate folder size in real time",
+    "calculateCompleteMsg": "The total file size of {0} is {1}",
+    "repoUsage": "usage",
+    "downloadLater": "Download Later",
+    "backUpSubMessage": "Only the first download needs to wait. The preparation time is related to the package size. A 500MB package takes about 1 minute.",
+    "backUpMessage": "{0} is an internal testing version and is being downloaded, please wait."
 }

@@ -39,7 +39,7 @@ data class Blob(
     val size: Long,
     val blobId: ContentHash,
     val contentId: ContentHash,
-    val references: Set<ReferenceKey>? = null,
+    val references: Set<String> = emptySet(),
 ) {
     companion object {
         fun from(blob: TDdcBlob) = with(blob) {
@@ -68,23 +68,3 @@ data class Blob(
         }
     }
 }
-
-/**
- * blob被其他ref或blob引用情况
- *
- * bucket和key不为null时候表示被ref引用，blobId不为null时表示被其他blob引用
- */
-data class ReferenceKey(
-    /**
-     * ref bucket
-     */
-    val bucket: String? = null,
-    /**
-     * ref key
-     */
-    val key: String? = null,
-    /**
-     * blob id
-     */
-    val blobId: String? = null,
-)

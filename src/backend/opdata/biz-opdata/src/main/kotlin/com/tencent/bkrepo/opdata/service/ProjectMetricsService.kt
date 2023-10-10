@@ -29,6 +29,7 @@ package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
@@ -46,6 +47,12 @@ class ProjectMetricsService (
                 projectMetricsRepository.findByProjectIdOrderByCreatedDateDesc(projectId!!, pageRequest)
             } else {
                 projectMetricsRepository.findAllByOrderByCreatedDateDesc(pageRequest)
+            }
+            queryResult.content.forEach {
+                it.capSize = it.capSize / TO_GIGABYTE
+                it.repoMetrics.forEach {  repo ->
+                    repo.size = repo.size / TO_GIGABYTE
+                }
             }
             return Pages.ofResponse(pageRequest, queryResult.totalElements, queryResult.content)
         }
