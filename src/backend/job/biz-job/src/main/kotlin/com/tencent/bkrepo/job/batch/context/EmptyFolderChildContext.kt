@@ -35,7 +35,9 @@ import java.util.concurrent.atomic.LongAdder
 class EmptyFolderChildContext(
     parentContent: JobContext,
     // 用于内存缓存下存储目录统计信息
-    var folders: ConcurrentHashMap<String, FolderMetricsInfo> = ConcurrentHashMap()
+    var folders: ConcurrentHashMap<String, FolderMetricsInfo> = ConcurrentHashMap(),
+    // 总共删除的路径个数
+    var totalDeletedNum: LongAdder = LongAdder()
 ): ChildJobContext(parentContent) {
 
     data class FolderMetricsInfo(
