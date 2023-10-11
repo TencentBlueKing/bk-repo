@@ -43,5 +43,7 @@ data class UserProjectCreateRequest(
     @ApiModelProperty("描述")
     val description: String,
     @ApiModelProperty("创建本地权限")
-    val createPermission: Boolean = true
+    val createPermission: Boolean = true,
+    @ApiModelProperty("项目元数据")
+    val metadata: List<ProjectMetadata> = emptyList(),
 ) : ProjectRequest
