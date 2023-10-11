@@ -43,8 +43,11 @@ import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.FolderChildContext
+import com.tencent.bkrepo.job.batch.utils.FolderUtils.buildCacheKey
+import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
 import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
+import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.springframework.data.mongodb.core.BulkOperations.BulkMode
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -122,7 +125,7 @@ class FolderStatChildJob(
         super.onRunCollectionFinished(collectionName, context)
         require(context is FolderChildContext)
         // 如果使用的是redis作为缓存，将内存中的临时记录写入redis
-        updateRedisCache(context, force = true)
+        updateRedisCache(context, force = true, collectionName = collectionName)
         // 当表执行完成后，将属于该表的所有记录写入数据库
         storeCacheToDB(collectionName, context)
         context.projectMap.remove(collectionName)
@@ -147,8 +150,9 @@ class FolderStatChildJob(
         size: Long,
         context: FolderChildContext
     ) {
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
         val elapsedTime = measureTimeMillis {
-            if (context.cacheType == REDIS_CACHE_TYPE) {
+            if (context.cacheType == REDIS_CACHE_TYPE && collectionName in properties.redisCacheCollections) {
                 updateRedisCache(
                     collectionName = collectionName,
                     projectId = projectId,
@@ -193,7 +197,7 @@ class FolderStatChildJob(
             size = size,
             context = context
         )
-        updateRedisCache(context)
+        updateRedisCache(context, collectionName = collectionName)
     }
 
     /**
@@ -201,10 +205,15 @@ class FolderStatChildJob(
      */
     private fun updateRedisCache(
         context: FolderChildContext,
-        force: Boolean = false
+        force: Boolean = false,
+        collectionName: String
     ) {
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
         if (context.cacheType != REDIS_CACHE_TYPE) return
-        if (!force && context.folderCache.size < 10000) return
+        if (collectionName !in properties.redisCacheCollections) return
+        if (!force && context.folderCache.size < 50000) return
+        if (context.folderCache.isEmpty()) return
+
         // 避免每次设置值都创建一个 Redis 连接
         redisTemplate.execute { connection ->
             val hashCommands = connection.hashCommands()
@@ -278,7 +287,8 @@ class FolderStatChildJob(
      * 将缓存中的数据更新到DB中
      */
     private fun storeCacheToDB(collectionName: String, context: FolderChildContext) {
-        if (context.cacheType == REDIS_CACHE_TYPE) {
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
+        if (context.cacheType == REDIS_CACHE_TYPE && collectionName in properties.redisCacheCollections) {
             storeRedisCacheToDB(collectionName, context)
         } else {
             storeMemoryCacheToDB(collectionName, context)
@@ -342,7 +352,6 @@ class FolderStatChildJob(
                             .updateOne(updateList)
                             .execute()
                         updateList.clear()
-                        Thread.sleep(200)
                     }
                     hashCommands.hSet(
                         storedProjectIdKey.toByteArray(), storedFolderHkey.toByteArray(), STORED.toByteArray()
@@ -401,9 +410,11 @@ class FolderStatChildJob(
         }
         val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
         val prefix = buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
+        val storedKeys = mutableSetOf<String>()
         for(entry in context.folderCache) {
             if (!entry.key.startsWith(prefix)) continue
             extractFolderInfoFromCacheKey(entry.key)?.let {
+                storedKeys.add(entry.key)
                 updateList.add(buildUpdateClausesForFolder(
                     projectId = it.projectId,
                     repoName = it.repoName,
@@ -417,10 +428,6 @@ class FolderStatChildJob(
                     .updateOne(updateList)
                     .execute()
                 updateList.clear()
-                try {
-                    Thread.sleep(500)
-                } catch (_: Exception) {
-                }
             }
         }
         if (updateList.isEmpty()) return
@@ -428,6 +435,9 @@ class FolderStatChildJob(
             .updateOne(updateList)
             .execute()
         updateList.clear()
+        for (key in storedKeys) {
+            context.folderCache.remove(key)
+        }
     }
 
     /**
@@ -453,33 +463,6 @@ class FolderStatChildJob(
     }
 
 
-    /**
-     * 生成缓存key
-     */
-    private fun buildCacheKey(
-        projectId: String,
-        repoName: String? = null,
-        fullPath: String? = null,
-        collectionName: String? = null,
-        tag: String? = null,
-    ): String {
-        return StringBuilder().apply {
-            collectionName?.let {
-                this.append(it).append(StringPool.COLON)
-            }
-            this.append(projectId)
-            repoName?.let {
-                this.append(StringPool.COLON).append(repoName)
-            }
-            fullPath?.let {
-                this.append(StringPool.COLON).append(fullPath)
-            }
-            tag?.let {
-                this.append(StringPool.COLON).append(tag)
-            }
-        }.toString()
-    }
-
     private fun extractFolderInfoFromRedisKey(key: String): FolderInfo? {
         val values = key.split(StringPool.COLON)
         return try {
@@ -495,21 +478,7 @@ class FolderStatChildJob(
 
 
 
-    /**
-     * 从缓存key中解析出目录信息
-     */
-    private fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
-        val values = key.split(StringPool.COLON)
-        return try {
-            FolderInfo(
-                projectId = values[1],
-                repoName = values[2],
-                fullPath = values[3]
-            )
-        } catch (e: Exception) {
-            null
-        }
-    }
+
 
     /**
      * 从缓存key中解析出collectionName
@@ -522,13 +491,6 @@ class FolderStatChildJob(
             null
         }
     }
-
-
-    data class FolderInfo(
-        var projectId: String,
-        var repoName: String,
-        var fullPath: String
-    )
 
     data class StatInfo(
         var size: Long,
@@ -543,7 +505,7 @@ class FolderStatChildJob(
         private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
         private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
         private const val STORED = "stored"
-        private const val BATCH_LIMIT = 250
+        private const val BATCH_LIMIT = 500
         private const val COLLECTION_NAME_PREFIX = "node_"
     }
 }

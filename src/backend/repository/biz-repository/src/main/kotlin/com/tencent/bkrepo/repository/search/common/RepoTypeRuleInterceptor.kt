@@ -59,7 +59,7 @@ class RepoTypeRuleInterceptor(
         with(rule) {
             require(context is CommonQueryContext)
             val projectId = context.findProjectId()
-            val repoNameList = repositoryService.listRepo(projectId, name = null, type = value.toString())
+            val repoNameList = repositoryService.listRepo(projectId, name = null, type = value.toString(), true)
                 .apply { context.repoList = this }
                 .map { it.name }
             val queryRule = Rule.QueryRule(NodeInfo::repoName.name, repoNameList, OperationType.IN)

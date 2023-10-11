@@ -46,5 +46,7 @@ data class ProjectCreateRequest(
     @ApiModelProperty("创建权限", required = false)
     val createPermission: Boolean = true,
     @ApiModelProperty("操作用户", required = false)
-    val operator: String = SYSTEM_USER
+    val operator: String = SYSTEM_USER,
+    @ApiModelProperty("项目元数据", required = false)
+    val metadata: List<ProjectMetadata> = emptyList(),
 ) : ProjectRequest
