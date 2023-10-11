@@ -31,10 +31,11 @@
 
 package com.tencent.bkrepo.repository.model
 
-import java.time.LocalDateTime
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
  * 项目模型
@@ -52,5 +53,6 @@ data class TProject(
 
     var name: String,
     var displayName: String,
-    var description: String
+    var description: String,
+    var metadata: List<ProjectMetadata> = emptyList(),
 )

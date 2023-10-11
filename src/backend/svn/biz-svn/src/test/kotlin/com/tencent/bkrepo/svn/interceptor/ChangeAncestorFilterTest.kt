@@ -25,29 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.svn.config
+package com.tencent.bkrepo.svn.interceptor
 
-import com.tencent.bkrepo.svn.interceptor.ChangeAncestorProxyHandler
-import com.tencent.bkrepo.svn.interceptor.DevxSrcIpInterceptor
-import com.tencent.bkrepo.svn.interceptor.ProxyInterceptor
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-import org.springframework.core.Ordered
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
+import org.xml.sax.InputSource
+import org.xml.sax.helpers.XMLReaderFactory
+import java.io.ByteArrayOutputStream
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.sax.SAXSource
+import javax.xml.transform.stream.StreamResult
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(SvnProperties::class)
-class SvnConfiguration(
-    private val properties: SvnProperties,
-) : WebMvcConfigurer {
-    override fun addInterceptors(registry: InterceptorRegistry) {
-        registry.addInterceptor(DevxSrcIpInterceptor(properties.devx))
-            .addPathPatterns("/**")
-            .order(Ordered.HIGHEST_PRECEDENCE)
-        registry.addInterceptor(ProxyInterceptor(ChangeAncestorProxyHandler(properties)))
-            .addPathPatterns("/**")
-            .order(Ordered.HIGHEST_PRECEDENCE + 1)
-        super.addInterceptors(registry)
+class ChangeAncestorFilterTest {
+
+    @Test
+    fun test() {
+        val reader = XMLReaderFactory.createXMLReader()
+        val filter = ChangeAncestorProxyHandler.ChangeAncestorFilter(
+            reader, "/groupA/demo", "/groupB/demo", "", ""
+        )
+        val inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("testdata/test.xml")
+        val src = SAXSource(filter, InputSource(inputStream))
+        val outputStream = ByteArrayOutputStream()
+        val res = StreamResult(outputStream)
+        TransformerFactory.newInstance().newTransformer().transform(src, res)
+        Assertions.assertTrue(outputStream.toString().contains("groupB"))
+        Assertions.assertFalse(outputStream.toString().contains("groupA"))
     }
 }

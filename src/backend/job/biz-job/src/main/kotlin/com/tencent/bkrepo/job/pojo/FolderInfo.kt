@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,29 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.svn.config
+package com.tencent.bkrepo.job.pojo
 
-import com.tencent.bkrepo.svn.interceptor.ChangeAncestorProxyHandler
-import com.tencent.bkrepo.svn.interceptor.DevxSrcIpInterceptor
-import com.tencent.bkrepo.svn.interceptor.ProxyInterceptor
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-import org.springframework.core.Ordered
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
-
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(SvnProperties::class)
-class SvnConfiguration(
-    private val properties: SvnProperties,
-) : WebMvcConfigurer {
-    override fun addInterceptors(registry: InterceptorRegistry) {
-        registry.addInterceptor(DevxSrcIpInterceptor(properties.devx))
-            .addPathPatterns("/**")
-            .order(Ordered.HIGHEST_PRECEDENCE)
-        registry.addInterceptor(ProxyInterceptor(ChangeAncestorProxyHandler(properties)))
-            .addPathPatterns("/**")
-            .order(Ordered.HIGHEST_PRECEDENCE + 1)
-        super.addInterceptors(registry)
-    }
-}
+data class FolderInfo(
+    var projectId: String,
+    var repoName: String,
+    var fullPath: String
+)

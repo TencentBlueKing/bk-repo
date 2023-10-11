@@ -33,19 +33,15 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil
 import com.tencent.bkrepo.common.service.util.proxy.ProxyCallHandler
+import com.tencent.bkrepo.svn.utils.SvnProxyHelper.getRepoId
 import org.springframework.web.servlet.HandlerInterceptor
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class ProxyInterceptor(private val proxyHandler: ProxyCallHandler) : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        val paths = request.servletPath.split("/")
-        if (paths.size <= 2) {
-            return false
-        }
-        val projectId = paths[1]
-        val repoName = paths[2]
-        val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
+        val repositoryId = getRepoId(request) ?: return false
+        val repo = ArtifactContextHolder.getRepoDetail(repositoryId)
         // 只有PROXY类型的仓库才进行拦截
         if (repo.category != RepositoryCategory.PROXY) {
             return true

@@ -199,10 +199,6 @@ abstract class NodeBaseService(
         deletedTime: LocalDateTime?
     ) {
         with(node) {
-            if (isGenericRepo(repo)) {
-                publishEvent(buildCreatedEvent(node))
-            }
-            reportNode2Bkbase(node)
             val createEnd = System.currentTimeMillis()
             val timeout = createEnd - createStart > repositoryProperties.nodeCreateTimeout
             if (timeout) {
@@ -210,6 +206,10 @@ abstract class NodeBaseService(
                 rollbackCreate(parents, node, deletedTime)
                 throw ErrorCodeException(ArtifactMessageCode.NODE_CREATE_TIMEOUT, fullPath)
             }
+            if (isGenericRepo(repo)) {
+                publishEvent(buildCreatedEvent(node))
+            }
+            reportNode2Bkbase(node)
         }
     }
 

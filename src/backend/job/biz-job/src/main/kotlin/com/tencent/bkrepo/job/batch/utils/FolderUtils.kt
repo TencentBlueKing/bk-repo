@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,23 +25,55 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.svn.config
+package com.tencent.bkrepo.job.batch.utils
 
-import com.tencent.bkrepo.common.security.interceptor.devx.DevxProperties
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.job.pojo.FolderInfo
 
-@ConfigurationProperties("svn")
-data class SvnProperties(
+object FolderUtils {
+
+
     /**
-     * 仓库前缀，在使用SVN Proxy类型的仓库时需要配置
-     * 比如SVN客户端访问http://bkrepo.exmaple.com/svn/projectId/repoName，此时需要配置repoPrefix为/svn
+     * 生成缓存key
      */
-    var repoPrefix: String = "",
-    @NestedConfigurationProperty
-    var devx: DevxProperties = DevxProperties(),
+    fun buildCacheKey(
+        projectId: String,
+        repoName: String? = null,
+        fullPath: String? = null,
+        collectionName: String? = null,
+        tag: String? = null,
+    ): String {
+        return StringBuilder().apply {
+            collectionName?.let {
+                this.append(it).append(StringPool.COLON)
+            }
+            this.append(projectId)
+            repoName?.let {
+                this.append(StringPool.COLON).append(repoName)
+            }
+            fullPath?.let {
+                this.append(StringPool.COLON).append(fullPath)
+            }
+            tag?.let {
+                this.append(StringPool.COLON).append(tag)
+            }
+        }.toString()
+    }
+
     /**
-     * 例如 http://bkrepo.example.com
+     * 从缓存key中解析出节点信息
      */
-    var baseUrl: String = "",
-)
+    fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
+        val values = key.split(StringPool.COLON)
+        return try {
+            FolderInfo(
+                projectId = values[1],
+                repoName = values[2],
+                fullPath = values[3]
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+}
