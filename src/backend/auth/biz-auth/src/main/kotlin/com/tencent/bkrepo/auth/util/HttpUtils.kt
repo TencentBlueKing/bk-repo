@@ -52,8 +52,7 @@ object HttpUtils {
                 return ApiResponse(responseCode, responseContent)
             }
             throw RuntimeException(
-                "http request url ${request.url} failed, " +
-                    "code: $responseCode, responseContent: $responseContent"
+                "http request url ${request.url} failed, code: $responseCode, responseContent: $responseContent"
             )
         } catch (e: Exception) {
             if (retry > 0) {
