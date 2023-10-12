@@ -29,11 +29,14 @@ package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.context.RequestContext
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
 
+@Order(Ordered.HIGHEST_PRECEDENCE)
 class ReactiveRequestContextFilter : WebFilter {
 
     override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
