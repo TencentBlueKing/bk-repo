@@ -76,7 +76,7 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_PROJECT_ID, projectCode).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(HttpStatus.FORBIDDEN.value))
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             logger.debug("validateProjectUsers url[$url],result[${apiResponse.code},${apiResponse.content}]")
             if (apiResponse.code == HttpStatus.OK.value) {
                 val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
@@ -105,7 +105,7 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_PROJECT_ID, projectCode).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
             logger.debug("validateProjectManager url[$url], result[${apiResponse.content}]")
             resourcePermissionCache.put(cacheKey, responseObject.data)
@@ -141,7 +141,7 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode)
                 .header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken()).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(HttpStatus.FORBIDDEN.value))
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             logger.debug(
                 "validateProjectSuperAdmin , requestUrl: [$url]," + " result : [${
                     apiResponse.content.replace("\n", "")
@@ -185,7 +185,7 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(HttpStatus.FORBIDDEN.value))
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
             logger.debug("validateUserResourcePermission,requestUrl: [$url], result : [${apiResponse.content}]")
             resourcePermissionCache.put(cacheKey, responseObject.data)
@@ -205,7 +205,7 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
                     "action=${action.value}&resourceType=${resourceType.value}"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(HttpStatus.FORBIDDEN.value))
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
             logger.debug("getUserResourceByPermission, requestUrl: [$url], result : [${apiResponse.content}]")
             return responseObject.data
@@ -220,7 +220,7 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
             val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/users/$user"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_GATEWAY_TAG, DEVOPS_PROD_V3).header(DEVOPS_UID, user).get().build()
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, setOf(HttpStatus.FORBIDDEN.value))
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
             logger.debug("getProjectListByUser, requestUrl: [$url], result : [${apiResponse.content}]")
             return responseObject.data
@@ -232,6 +232,8 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
 
     companion object {
         private val logger = LoggerFactory.getLogger(CIAuthService::class.java)
+        private val allowHttpStatusSet =
+            setOf(HttpStatus.FORBIDDEN.value, HttpStatus.BAD_REQUEST.value, HttpStatus.NOT_FOUND.value)
         const val DEVOPS_BK_TOKEN = "X-DEVOPS-BK-TOKEN"
         const val DEVOPS_UID = "X-DEVOPS-UID"
         const val DEVOPS_PROJECT_ID = "X-DEVOPS-PROJECT-ID"

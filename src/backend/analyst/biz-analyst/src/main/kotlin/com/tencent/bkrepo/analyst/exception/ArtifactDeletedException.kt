@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.filter
+package com.tencent.bkrepo.analyst.exception
 
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
-import com.tencent.bkrepo.fs.server.context.RequestContext
-import org.springframework.core.Ordered
-import org.springframework.core.annotation.Order
-import org.springframework.web.server.ServerWebExchange
-import org.springframework.web.server.WebFilter
-import org.springframework.web.server.WebFilterChain
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 
-@Order(Ordered.HIGHEST_PRECEDENCE)
-class ReactiveRequestContextFilter : WebFilter {
-
-    override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
-        val requestContext = RequestContext(
-            request = exchange.request,
-            response = exchange.response,
-            exchange = exchange
-        )
-        return chain.filter(exchange).contextWrite {
-            it.put(ReactiveRequestContextHolder.REQUEST_CONTEXT_KEY, requestContext)
-        }
-    }
-}
+class ArtifactDeletedException(val sha256: String) :
+    ErrorCodeException(ScannerMessageCode.ANALYST_ARTIFACT_DELETED, sha256)
