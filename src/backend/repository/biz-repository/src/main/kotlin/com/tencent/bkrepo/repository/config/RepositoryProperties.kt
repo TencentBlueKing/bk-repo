@@ -50,4 +50,5 @@ data class RepositoryProperties(
     var repoStorageMapping: RepoStorageMapping = RepoStorageMapping(),
     var allowUserAddSystemMetadata: List<String> = emptyList(),
     var gitUrl: String = "",
+    var svnUrl: String = "",
 )
