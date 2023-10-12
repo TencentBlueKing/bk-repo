@@ -25,32 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.lfs.artifact
+package com.tencent.bkrepo.lfs.exception
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.lfs.security.RemoteAuthHandler
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestControllerAdvice
 
-@Configuration
-@EnableConfigurationProperties(LfsProperties::class)
-class LfsArtifactConfigurer : ArtifactConfigurerSupport() {
-    override fun getRepositoryType(): RepositoryType = RepositoryType.LFS
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
+@RestControllerAdvice
+class LfsExceptionHandler {
 
-    override fun getLocalRepository(): LocalRepository = SpringContextUtils.getBean<LfsLocalRepository>()
-
-    override fun getRemoteRepository(): RemoteRepository = SpringContextUtils.getBean<LfsRemoteRepository>()
-
-    override fun getVirtualRepository(): VirtualRepository = SpringContextUtils.getBean<LfsVirtualRepository>()
-
-    override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer {
-        it.withPrefix("/lfs")
-        it.addHttpAuthHandler(RemoteAuthHandler())
+    @ExceptionHandler(BatchRequestException::class)
+    fun handleException(exception: BatchRequestException) {
+        HttpContextHolder.getResponse().status = exception.status
+        exception.headers.forEach {
+            HttpContextHolder.getResponse().addHeader(it.first, it.second)
+        }
+        HttpContextHolder.getResponse().writer.println(exception.message)
     }
 }
