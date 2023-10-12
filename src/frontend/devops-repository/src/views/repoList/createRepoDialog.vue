@@ -63,7 +63,7 @@
                         <bk-form-item :label="$t('whiteUser')" :label-width="80"
                             :property="`${type}.whitelistUser`" error-display-type="normal">
                             <bk-input v-if="isCommunity" class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
-                            <bk-member-selector v-else v-model="repoBaseInfo[type].whitelistUser" class="w250" :placeholder="$t('whiteUserPlaceholder')"></bk-member-selector>
+                            <bk-member-selector v-else v-model="repoBaseInfo[type].whitelistUser" class="member-selector" :placeholder="$t('whiteUserPlaceholder')"></bk-member-selector>
                         </bk-form-item>
                     </template>
                 </bk-form-item>
@@ -380,6 +380,12 @@
             width: 80px;
             height: 60px;
         }
+    }
+    .member-selector{
+        ::v-deep.bk-tag-selector .bk-tag-input {
+            height: auto;
+        }
+        width: 250px;
     }
 }
 </style>
