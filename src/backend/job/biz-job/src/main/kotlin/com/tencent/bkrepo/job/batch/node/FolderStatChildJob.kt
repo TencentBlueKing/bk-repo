@@ -43,8 +43,11 @@ import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.FolderChildContext
+import com.tencent.bkrepo.job.batch.utils.FolderUtils.buildCacheKey
+import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
 import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
+import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.springframework.data.mongodb.core.BulkOperations.BulkMode
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -460,33 +463,6 @@ class FolderStatChildJob(
     }
 
 
-    /**
-     * 生成缓存key
-     */
-    private fun buildCacheKey(
-        projectId: String,
-        repoName: String? = null,
-        fullPath: String? = null,
-        collectionName: String? = null,
-        tag: String? = null,
-    ): String {
-        return StringBuilder().apply {
-            collectionName?.let {
-                this.append(it).append(StringPool.COLON)
-            }
-            this.append(projectId)
-            repoName?.let {
-                this.append(StringPool.COLON).append(repoName)
-            }
-            fullPath?.let {
-                this.append(StringPool.COLON).append(fullPath)
-            }
-            tag?.let {
-                this.append(StringPool.COLON).append(tag)
-            }
-        }.toString()
-    }
-
     private fun extractFolderInfoFromRedisKey(key: String): FolderInfo? {
         val values = key.split(StringPool.COLON)
         return try {
@@ -502,21 +478,7 @@ class FolderStatChildJob(
 
 
 
-    /**
-     * 从缓存key中解析出目录信息
-     */
-    private fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
-        val values = key.split(StringPool.COLON)
-        return try {
-            FolderInfo(
-                projectId = values[1],
-                repoName = values[2],
-                fullPath = values[3]
-            )
-        } catch (e: Exception) {
-            null
-        }
-    }
+
 
     /**
      * 从缓存key中解析出collectionName
@@ -529,13 +491,6 @@ class FolderStatChildJob(
             null
         }
     }
-
-
-    data class FolderInfo(
-        var projectId: String,
-        var repoName: String,
-        var fullPath: String
-    )
 
     data class StatInfo(
         var size: Long,

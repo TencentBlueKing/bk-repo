@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.opdata.model
 
+import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.beans.factory.annotation.Autowired
@@ -52,6 +53,11 @@ class StorageCredentialsModel @Autowired constructor(
                 } else {
                     result[it.credentialsKey!!] = value
                 }
+            }
+        }
+        if (metrics == StatMetrics.SIZE) {
+            result.keys.forEach {
+                result[it] = result[it]!! / TO_GIGABYTE
             }
         }
         return result

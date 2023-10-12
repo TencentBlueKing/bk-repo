@@ -75,7 +75,8 @@ class UserProjectController(
                 displayName = displayName,
                 description = description,
                 operator = userId,
-                createPermission = createPermission
+                createPermission = createPermission,
+                metadata = metadata
             )
         }
         projectService.createProject(createRequest)

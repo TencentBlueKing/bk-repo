@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,55 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.filter
+package com.tencent.bkrepo.job.batch.utils
 
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
-import com.tencent.bkrepo.fs.server.context.RequestContext
-import org.springframework.core.Ordered
-import org.springframework.core.annotation.Order
-import org.springframework.web.server.ServerWebExchange
-import org.springframework.web.server.WebFilter
-import org.springframework.web.server.WebFilterChain
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.job.pojo.FolderInfo
 
-@Order(Ordered.HIGHEST_PRECEDENCE)
-class ReactiveRequestContextFilter : WebFilter {
+object FolderUtils {
 
-    override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
-        val requestContext = RequestContext(
-            request = exchange.request,
-            response = exchange.response,
-            exchange = exchange
-        )
-        return chain.filter(exchange).contextWrite {
-            it.put(ReactiveRequestContextHolder.REQUEST_CONTEXT_KEY, requestContext)
+
+    /**
+     * 生成缓存key
+     */
+    fun buildCacheKey(
+        projectId: String,
+        repoName: String? = null,
+        fullPath: String? = null,
+        collectionName: String? = null,
+        tag: String? = null,
+    ): String {
+        return StringBuilder().apply {
+            collectionName?.let {
+                this.append(it).append(StringPool.COLON)
+            }
+            this.append(projectId)
+            repoName?.let {
+                this.append(StringPool.COLON).append(repoName)
+            }
+            fullPath?.let {
+                this.append(StringPool.COLON).append(fullPath)
+            }
+            tag?.let {
+                this.append(StringPool.COLON).append(tag)
+            }
+        }.toString()
+    }
+
+    /**
+     * 从缓存key中解析出节点信息
+     */
+    fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
+        val values = key.split(StringPool.COLON)
+        return try {
+            FolderInfo(
+                projectId = values[1],
+                repoName = values[2],
+                fullPath = values[3]
+            )
+        } catch (e: Exception) {
+            null
         }
     }
+
 }

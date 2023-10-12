@@ -39,5 +39,9 @@ data class SvnProperties(
      */
     var repoPrefix: String = "",
     @NestedConfigurationProperty
-    var devx: DevxProperties = DevxProperties()
+    var devx: DevxProperties = DevxProperties(),
+    /**
+     * 例如 http://bkrepo.example.com
+     */
+    var baseUrl: String = "",
 )

@@ -113,6 +113,11 @@ const val X_CHECKSUM_SHA256 = "X-Checksum-Sha256"
 const val PIPELINE = "pipeline"
 
 /**
+ * 自定义仓库
+ */
+const val CUSTOM = "custom"
+
+/**
  * 报告仓库
  */
 const val REPORT = "report"

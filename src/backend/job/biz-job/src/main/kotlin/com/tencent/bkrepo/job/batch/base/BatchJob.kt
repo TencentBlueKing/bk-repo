@@ -118,6 +118,7 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         }
         if (!wasExecuted) {
             logger.info("Job[${getJobName()}] already execution.")
+            return wasExecuted
         }
         stop = true
         return wasExecuted

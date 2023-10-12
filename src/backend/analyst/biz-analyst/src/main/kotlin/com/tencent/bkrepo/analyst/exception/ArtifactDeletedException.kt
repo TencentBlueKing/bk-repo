@@ -25,29 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.svn.config
+package com.tencent.bkrepo.analyst.exception
 
-import com.tencent.bkrepo.svn.interceptor.ChangeAncestorProxyHandler
-import com.tencent.bkrepo.svn.interceptor.DevxSrcIpInterceptor
-import com.tencent.bkrepo.svn.interceptor.ProxyInterceptor
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-import org.springframework.core.Ordered
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(SvnProperties::class)
-class SvnConfiguration(
-    private val properties: SvnProperties,
-) : WebMvcConfigurer {
-    override fun addInterceptors(registry: InterceptorRegistry) {
-        registry.addInterceptor(DevxSrcIpInterceptor(properties.devx))
-            .addPathPatterns("/**")
-            .order(Ordered.HIGHEST_PRECEDENCE)
-        registry.addInterceptor(ProxyInterceptor(ChangeAncestorProxyHandler(properties)))
-            .addPathPatterns("/**")
-            .order(Ordered.HIGHEST_PRECEDENCE + 1)
-        super.addInterceptors(registry)
-    }
-}
+class ArtifactDeletedException(val sha256: String) :
+    ErrorCodeException(ScannerMessageCode.ANALYST_ARTIFACT_DELETED, sha256)
