@@ -31,10 +31,14 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.ddc.controller.LegacyReferencesController.Companion.LEGACY_PREFIX
 
 @RestController
 class HealthController {
-    @GetMapping("/{projectId}/health/ready")
+    @GetMapping(
+        "/{projectId}/health/ready",
+        "$LEGACY_PREFIX{projectId}/health/ready"
+    )
     fun ready() {
         HttpContextHolder.getResponse().apply {
             status = HttpStatus.OK.value

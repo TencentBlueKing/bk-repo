@@ -74,7 +74,7 @@ class RefDownloadListener(
 
     fun onRefDownloaded(event: RefDownloadedEvent) {
         with(event.ref) {
-            cache.put(RefId(projectId, repoName, bucket, key.toString()), LocalDateTime.now())
+            cache.put(RefId(projectId, repoName, bucket, key.toString(), legacy), LocalDateTime.now())
         }
     }
 

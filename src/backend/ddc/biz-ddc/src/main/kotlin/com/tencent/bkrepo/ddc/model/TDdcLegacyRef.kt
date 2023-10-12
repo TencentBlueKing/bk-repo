@@ -25,30 +25,48 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.ddc.artifact
+package com.tencent.bkrepo.ddc.model
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.ddc.pojo.RefKey
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-class ReferenceArtifactInfo(
+/**
+ * DDC Ref,用于兼容UE4.26-4.27
+ */
+@Document("ddc_legacy_ref")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "projectId_repoName_bucket_key_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'bucket': 1, 'key': 1}",
+        unique = true,
+        background = true
+    )
+)
+class TDdcLegacyRef(
+    createdBy: String,
+    createdDate: LocalDateTime,
+    lastModifiedBy: String,
+    lastModifiedDate: LocalDateTime,
+    lastAccessDate: LocalDateTime,
     projectId: String,
     repoName: String,
-    val bucket: String,
-    val refKey: RefKey,
+    bucket: String,
+    key: String,
+
     /**
-     * 是通过旧接口调用
+     * 实际存放缓存的blob的id
      */
-    var legacy: Boolean = false,
-    var inlineBlobHash: String? = null,
-) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
-
-    override fun getArtifactName() = "/$bucket/$refKey"
-
-    override fun getArtifactFullPath() = "/$bucket/$refKey"
-
-    companion object {
-        const val PATH_VARIABLE_BUCKET = "bucket"
-        const val PATH_VARIABLE_REF_ID = "key"
-    }
-}
+    var contentHash: String,
+): TDdcRefBase(
+    createdBy = createdBy,
+    createdDate = createdDate,
+    lastModifiedBy = lastModifiedBy,
+    lastModifiedDate = lastModifiedDate,
+    lastAccessDate = lastAccessDate,
+    projectId = projectId,
+    repoName = repoName,
+    bucket = bucket,
+    key = key
+)

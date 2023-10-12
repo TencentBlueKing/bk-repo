@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.ddc.model.TDdcBlob
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndReplaceOptions
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
@@ -82,6 +83,16 @@ class BlobRepository : SimpleMongoDao<TDdcBlob>() {
             .and(TDdcBlob::repoName.name).isEqualTo(repoName)
             .and(TDdcBlob::blobId.name).inValues(blobIds)
         val update = Update().addToSet(TDdcBlob::references.name, "ref/$bucket/$refKey")
+        updateMulti(Query(criteria), update)
+    }
+
+    fun removeRefFromBlob(projectId: String, repoName: String, bucket: String, refKey: String) {
+        // 从blob ref列表中移除ref
+        val criteria = Criteria
+            .where(TDdcBlob::projectId.name).isEqualTo(projectId)
+            .and(TDdcBlob::repoName.name).isEqualTo(repoName)
+            .and(TDdcBlob::references.name).inValues("ref/${bucket}/${refKey}")
+        val update = Update().pull(TDdcBlob::references.name, refKey)
         updateMulti(Query(criteria), update)
     }
 }

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.ddc.pojo
 
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
+import com.tencent.bkrepo.ddc.model.TDdcLegacyRef
 import com.tencent.bkrepo.ddc.model.TDdcRef
 import java.time.LocalDateTime
 
@@ -40,6 +41,7 @@ data class Reference(
     val lastAccessDate: LocalDateTime? = null,
     var blobId: ContentHash? = null,
     var inlineBlob: ByteArray? = null,
+    var legacy: Boolean = false,
 ) {
     fun fullPath() = "/$bucket/$key"
 
@@ -59,6 +61,7 @@ data class Reference(
             if (other.inlineBlob == null) return false
             if (!inlineBlob.contentEquals(other.inlineBlob)) return false
         } else if (other.inlineBlob != null) return false
+        if (legacy != other.legacy) return false
 
         return true
     }
@@ -71,6 +74,7 @@ data class Reference(
         result = 31 * result + blobId.hashCode()
         result = 31 * result + finalized.hashCode()
         result = 31 * result + (inlineBlob?.contentHashCode() ?: 0)
+        result = 31 * result + legacy.hashCode()
         return result
     }
 
@@ -84,6 +88,18 @@ data class Reference(
             blobId = ContentHash.fromHex(ref.blobId),
             finalized = ref.finalized,
             inlineBlob = ref.inlineBlob?.data
+        )
+
+        fun from(ref: TDdcLegacyRef) = Reference(
+            projectId = ref.projectId,
+            repoName = ref.repoName,
+            bucket = ref.bucket,
+            key = RefKey.create(ref.key, true),
+            lastAccessDate = ref.lastAccessDate,
+            blobId = ContentHash.fromHex(ref.contentHash),
+            finalized = true,
+            inlineBlob = null,
+            legacy = true
         )
 
         fun from(artifactInfo: ReferenceArtifactInfo, payload: ByteArray) = with(artifactInfo) {

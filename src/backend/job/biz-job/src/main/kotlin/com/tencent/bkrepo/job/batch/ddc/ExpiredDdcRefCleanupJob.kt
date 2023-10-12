@@ -52,7 +52,7 @@ class ExpiredDdcRefCleanupJob(
     private val mongoTemplate: MongoTemplate,
     private val nodeClient: NodeClient,
 ) : DefaultContextMongoDbJob<ExpiredDdcRefCleanupJob.Ref>(properties) {
-    override fun collectionNames(): List<String> = listOf(COLLECTION_NAME)
+    override fun collectionNames(): List<String> = listOf(COLLECTION_NAME, COLLECTION_NAME_LEGACY)
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
@@ -79,7 +79,7 @@ class ExpiredDdcRefCleanupJob(
     override fun run(row: Ref, collectionName: String, context: JobContext) {
         // 清理过期ref
         mongoTemplate.remove(Query(Criteria.where(ID).isEqualTo(row.id)), collectionName)
-        if (row.inlineBlob == null) {
+        if (row.inlineBlob == null && collectionName == COLLECTION_NAME) {
             // inlineBlob为null时表示inlineBlob不存在数据库中而是单独存放于后端存储中，需要一并清理
             nodeClient.deleteNode(
                 NodeDeleteRequest(row.projectId, row.repoName, "/${row.bucket}/${row.key}", SYSTEM_USER)
@@ -107,5 +107,6 @@ class ExpiredDdcRefCleanupJob(
 
     companion object {
         const val COLLECTION_NAME = "ddc_ref"
+        const val COLLECTION_NAME_LEGACY = "ddc_legacy_ref"
     }
 }

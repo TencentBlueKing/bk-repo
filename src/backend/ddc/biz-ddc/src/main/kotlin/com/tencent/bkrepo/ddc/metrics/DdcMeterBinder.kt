@@ -46,6 +46,11 @@ class DdcMeterBinder(private val registry: MeterRegistry) : MeterBinder {
     lateinit var refLoadTimer: Timer
 
     /**
+     * legacy ref 加载耗时
+     */
+    lateinit var legacyRefLoadTimer: Timer
+
+    /**
      * blob 加载耗时
      */
     lateinit var blobLoadTimer: Timer
@@ -55,28 +60,44 @@ class DdcMeterBinder(private val registry: MeterRegistry) : MeterBinder {
      */
     lateinit var refStoreTimer: Timer
 
+    /**
+     * legacy ref 加载耗时
+     */
+    lateinit var legacyRefStoreTimer: Timer
+
     override fun bindTo(registry: MeterRegistry) {
         refInlineLoadTimer = Timer
-            .builder(DDC_REF)
-            .tag("type", "inline")
-            .tag("method", "load")
+            .builder(DDC_REF_LOAD)
+            .tag("inline", "true")
+            .tag("legacy", "false")
             .register(registry)
 
         refLoadTimer = Timer
-            .builder(DDC_REF)
-            .tag("type", "cb")
-            .tag("method", "load")
+            .builder(DDC_REF_LOAD)
+            .tag("inline", "false")
+            .tag("legacy", "false")
+            .register(registry)
+
+        legacyRefLoadTimer = Timer
+            .builder(DDC_REF_LOAD)
+            .tag("inline", "false")
+            .tag("legacy", "true")
+            .register(registry)
+
+        refStoreTimer = Timer
+            .builder(DDC_REF_STORE)
+            .tag("legacy", "false")
+            .register(registry)
+
+        legacyRefStoreTimer = Timer
+            .builder(DDC_REF_STORE)
+            .tag("legacy", "true")
             .register(registry)
 
         blobLoadTimer = Timer
             .builder(DDC_BLOB)
             .tag("type", "compressed")
             .tag("method", "load")
-            .register(registry)
-
-        refStoreTimer = Timer
-            .builder(DDC_REF)
-            .tag("method", "store")
             .register(registry)
     }
 
@@ -109,7 +130,8 @@ class DdcMeterBinder(private val registry: MeterRegistry) : MeterBinder {
 
     companion object {
         private const val DDC_REF_GETS = "ddc.ref.gets"
-        private const val DDC_REF = "ddc.ref"
+        private const val DDC_REF_LOAD = "ddc.ref.load"
+        private const val DDC_REF_STORE = "ddc.ref.store"
         private const val DDC_BLOB = "ddc.blob"
     }
 }

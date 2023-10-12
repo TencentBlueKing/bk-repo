@@ -73,6 +73,10 @@ data class TDdcBlob(
      */
     var sha256: String,
     /**
+     * 仅再legacy ref引用的blob中存在值
+     */
+    var sha1: String? = null,
+    /**
      * blob size
      */
     var size: Long,

@@ -25,30 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.ddc.artifact
+package com.tencent.bkrepo.ddc.model
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.ddc.pojo.RefKey
+import java.time.LocalDateTime
 
-class ReferenceArtifactInfo(
-    projectId: String,
-    repoName: String,
-    val bucket: String,
-    val refKey: RefKey,
+abstract class TDdcRefBase(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+    var lastAccessDate: LocalDateTime,
+
+    var projectId: String,
+    var repoName: String,
     /**
-     * 是通过旧接口调用
+     * ref bucket
      */
-    var legacy: Boolean = false,
-    var inlineBlobHash: String? = null,
-) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
-
-    override fun getArtifactName() = "/$bucket/$refKey"
-
-    override fun getArtifactFullPath() = "/$bucket/$refKey"
-
-    companion object {
-        const val PATH_VARIABLE_BUCKET = "bucket"
-        const val PATH_VARIABLE_REF_ID = "key"
-    }
-}
+    var bucket: String,
+    /**
+     * ref key, blake3 hash
+     */
+    var key: String,
+)

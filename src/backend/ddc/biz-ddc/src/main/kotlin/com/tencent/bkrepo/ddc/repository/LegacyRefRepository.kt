@@ -25,30 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.ddc.artifact
+package com.tencent.bkrepo.ddc.repository
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.ddc.pojo.RefKey
+import com.tencent.bkrepo.ddc.model.TDdcLegacyRef
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
-class ReferenceArtifactInfo(
-    projectId: String,
-    repoName: String,
-    val bucket: String,
-    val refKey: RefKey,
-    /**
-     * 是通过旧接口调用
-     */
-    var legacy: Boolean = false,
-    var inlineBlobHash: String? = null,
-) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
-
-    override fun getArtifactName() = "/$bucket/$refKey"
-
-    override fun getArtifactFullPath() = "/$bucket/$refKey"
-
-    companion object {
-        const val PATH_VARIABLE_BUCKET = "bucket"
-        const val PATH_VARIABLE_REF_ID = "key"
+@Repository
+class LegacyRefRepository : RefBaseRepository<TDdcLegacyRef>() {
+    fun find(projectId: String, repoName: String, bucket: String, key: String): TDdcLegacyRef? {
+        val criteria = TDdcLegacyRef::projectId.isEqualTo(projectId)
+            .and(TDdcLegacyRef::repoName.name).isEqualTo(repoName)
+            .and(TDdcLegacyRef::bucket.name).isEqualTo(bucket)
+            .and(TDdcLegacyRef::key.name).isEqualTo(key)
+        return findOne(Query(criteria))
     }
 }

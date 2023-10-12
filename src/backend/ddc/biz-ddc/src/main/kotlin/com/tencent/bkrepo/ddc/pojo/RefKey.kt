@@ -28,16 +28,40 @@
 package com.tencent.bkrepo.ddc.pojo
 
 import com.tencent.bkrepo.common.api.exception.BadRequestException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 
-data class RefKey(private var text: String) {
+data class RefKey(
+    private var text: String,
+    val legacy: Boolean = false
+) {
     init {
-        text = text.toLowerCase()
+        if (legacy) {
+            checkLegacyKey(text)
+        } else {
+            checkKey(text)
+            text = text.toLowerCase()
+        }
+    }
+
+    private fun checkKey(text: String) {
         if (text.length != 40) {
-            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "IoHashKeys must be exactly 40 bytes.")
+            throw BadRequestException(PARAMETER_INVALID, "IoHashKeys must be exactly 40 bytes.")
         }
         if (text.any { !isValidCharacter(it) }) {
-            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "${this.text} contains invalid character.")
+            throw BadRequestException(PARAMETER_INVALID, "${this.text} contains invalid character.")
+        }
+    }
+
+    private fun checkLegacyKey(text: String) {
+        if (text.isEmpty()) {
+            throw BadRequestException(PARAMETER_INVALID, "Keys must have at least one character.")
+        }
+
+        if (text.length > LEGACY_KEY_MAX_LENGTH) {
+            throw BadRequestException(
+                PARAMETER_INVALID,
+                "Keys may not be longer than $LEGACY_KEY_MAX_LENGTH characters"
+            )
         }
     }
 
@@ -46,6 +70,7 @@ data class RefKey(private var text: String) {
     private fun isValidCharacter(c: Char): Boolean = c in 'a'..'z' || c in '0'..'9'
 
     companion object {
-        fun create(s: String): RefKey = RefKey(s.toLowerCase())
+        private const val LEGACY_KEY_MAX_LENGTH = 250
+        fun create(s: String, legacy: Boolean = false): RefKey = RefKey(s, legacy)
     }
 }

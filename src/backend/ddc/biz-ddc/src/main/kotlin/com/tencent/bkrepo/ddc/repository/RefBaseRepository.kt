@@ -27,33 +27,45 @@
 
 package com.tencent.bkrepo.ddc.repository
 
+import com.mongodb.DuplicateKeyException
+import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.ddc.model.TDdcRef
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.ddc.model.TDdcRefBase
+import com.tencent.bkrepo.ddc.pojo.RefId
+import org.springframework.data.mongodb.core.FindAndReplaceOptions
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
-@Repository
-class RefRepository : RefBaseRepository<TDdcRef>() {
-    fun find(projectId: String, repoName: String, bucket: String, key: String, includePayload: Boolean): TDdcRef? {
-        val criteria = TDdcRef::projectId.isEqualTo(projectId)
-            .and(TDdcRef::repoName.name).isEqualTo(repoName)
-            .and(TDdcRef::bucket.name).isEqualTo(bucket)
-            .and(TDdcRef::key.name).isEqualTo(key)
-        val query = Query(criteria)
-        if (!includePayload) {
-            query.fields().exclude(TDdcRef::inlineBlob.name)
-        }
-        return findOne(query)
-    }
-
-    fun finalize(projectId: String, repoName: String, bucket: String, key: String): UpdateResult {
-        val criteria = TDdcRef::projectId.isEqualTo(projectId)
-            .and(TDdcRef::repoName.name).isEqualTo(repoName)
-            .and(TDdcRef::bucket.name).isEqualTo(bucket)
-            .and(TDdcRef::key.name).isEqualTo(key)
-        val update = Update.update(TDdcRef::finalized.name, true)
+abstract class RefBaseRepository<E : TDdcRefBase> : SimpleMongoDao<E>() {
+    fun updateLastAccess(refId: RefId, lastAccessDate: LocalDateTime): UpdateResult {
+        val criteria = refIdCriteria(refId.projectId, refId.repoName, refId.bucket, refId.key)
+        val update = Update.update(TDdcRefBase::lastAccessDate.name, lastAccessDate)
         return updateFirst(Query(criteria), update)
     }
+
+    fun replace(ref: TDdcRefBase): E? {
+        val criteria = refIdCriteria(ref.projectId, ref.repoName, ref.bucket, ref.key)
+        val query = Query(criteria)
+        val options = FindAndReplaceOptions().upsert()
+        return try {
+            determineMongoTemplate().findAndReplace(query, ref, options) as E?
+        } catch (e: DuplicateKeyException) {
+            findOne(query)
+        }
+    }
+
+    fun delete(projectId: String, repoName: String, bucket: String, key: String): DeleteResult {
+        val criteria = refIdCriteria(projectId, repoName, bucket, key)
+        return remove(Query(criteria))
+    }
+
+    private fun refIdCriteria(projectId: String, repoName: String, bucket: String, key: String): Criteria =
+        TDdcRefBase::projectId.isEqualTo(projectId)
+            .and(TDdcRefBase::repoName.name).isEqualTo(repoName)
+            .and(TDdcRefBase::bucket.name).isEqualTo(bucket)
+            .and(TDdcRefBase::key.name).isEqualTo(key)
 }
