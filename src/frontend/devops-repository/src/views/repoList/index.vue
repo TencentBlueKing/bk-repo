@@ -332,6 +332,27 @@
                             this.$set(this.repoList[i], 'fileNum', 0)
                         }
                     }
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'PROJECT',
+                                uid: this.userInfo.name
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    action: 'READ',
+                                    repoName: '',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                 })
             },
             orderByMetrics (sort) {
