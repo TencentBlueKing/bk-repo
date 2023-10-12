@@ -104,7 +104,7 @@ class FinishSubtaskAction(
         require(context is FinishSubtaskContext)
         with(context) {
             if (targetState != SubScanTaskStatus.SUCCESS.name) {
-                logger.error(
+                logger.warn(
                     "task[${subtask.parentScanTaskId}], subtask[${subtask.id}], " +
                         "scan failed: $scanExecutorResult"
                 )
