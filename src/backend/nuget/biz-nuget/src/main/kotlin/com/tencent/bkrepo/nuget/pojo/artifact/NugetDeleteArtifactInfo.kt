@@ -13,7 +13,11 @@ class NugetDeleteArtifactInfo(
 
     private val nugetFullPath = NugetUtils.getNupkgFullPath(packageName, version)
 
-    override fun getArtifactFullPath(): String = nugetFullPath
+    override fun getArtifactFullPath(): String {
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            nugetFullPath
+        } else getArtifactMappingUri()!!
+    }
 
     override fun getArtifactName(): String = packageName
 

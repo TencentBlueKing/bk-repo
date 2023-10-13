@@ -54,7 +54,11 @@ open class NpmArtifactInfo(
      */
     private val tarballFullPath: String = NpmUtils.formatTarballPath(packageName, version, delimiter)
 
-    override fun getArtifactFullPath() = tarballFullPath
+    override fun getArtifactFullPath(): String {
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            tarballFullPath
+        } else getArtifactMappingUri()!!
+    }
 
     override fun getArtifactVersion() = version
 

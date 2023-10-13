@@ -46,7 +46,10 @@ class HelmDeleteArtifactInfo(
 
     private val chartFullPath = HelmUtils.getChartFileFullPath(name, version)
 
-    override fun getArtifactFullPath(): String = chartFullPath
+    override fun getArtifactFullPath(): String {
+        return if(getArtifactMappingUri().isNullOrEmpty()) chartFullPath
+        else getArtifactMappingUri()!!
+    }
 
     override fun getArtifactName(): String = name
 

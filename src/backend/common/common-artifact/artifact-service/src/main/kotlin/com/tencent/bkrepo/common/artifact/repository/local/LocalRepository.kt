@@ -56,7 +56,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = ArtifactContextHolder.getNodeDetail()
+            val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
             node?.let { downloadIntercept(context, it) }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()

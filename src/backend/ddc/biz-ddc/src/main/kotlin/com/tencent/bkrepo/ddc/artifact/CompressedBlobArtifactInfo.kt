@@ -40,7 +40,11 @@ class CompressedBlobArtifactInfo(
 
     override fun getArtifactName() = "/$DIR_BLOBS/$compressedContentId"
 
-    override fun getArtifactFullPath() = "/$DIR_BLOBS/$compressedContentId"
+    override fun getArtifactFullPath() = if(getArtifactMappingUri().isNullOrEmpty()) {
+        "/$DIR_BLOBS/$compressedContentId"
+    } else {
+        getArtifactMappingUri()!!
+    }
 
     companion object {
         const val PATH_VARIABLE_CONTENT_ID = "id"

@@ -10,7 +10,10 @@ class GitPackFileArtifactInfo(
     companion object {
         const val PACKS = "packs"
     }
+
     override fun getArtifactFullPath(): String {
-        return "$PACKS/$fileName"
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            "$PACKS/$fileName"
+        } else getArtifactMappingUri()!!
     }
 }
