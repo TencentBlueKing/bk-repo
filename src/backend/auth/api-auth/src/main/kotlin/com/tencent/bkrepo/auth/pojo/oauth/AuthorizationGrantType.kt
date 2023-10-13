@@ -32,8 +32,8 @@ enum class AuthorizationGrantType {
     AUTHORIZATION_CODE,
     // 简化模式，尚未支持
 //    IMPLICIT,
-    // 客户端模式，尚未支持
-//    CLIENT_CREDENTIALS,
+    // 客户端模式
+    CLIENT_CREDENTIALS,
     // 密码模式，尚未支持
 //    PASSWORD,
     // 平台账号验证

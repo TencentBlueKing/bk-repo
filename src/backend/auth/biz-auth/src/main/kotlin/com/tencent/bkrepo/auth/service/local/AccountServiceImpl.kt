@@ -297,8 +297,7 @@ class AccountServiceImpl constructor(
     private fun findAccountAndCheckOwner(appId: String, userId: String): TAccount {
         val account = accountRepository.findOneByAppId(appId)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-        val admin = userService.getUserInfoById(userId)?.admin ?: false
-        if (!account.owner.isNullOrBlank() && userId != account.owner && !admin) {
+        if (!account.owner.isNullOrBlank() && userId != account.owner) {
             throw ErrorCodeException(AuthMessageCode.AUTH_OWNER_CHECK_FAILED)
         }
         return account
