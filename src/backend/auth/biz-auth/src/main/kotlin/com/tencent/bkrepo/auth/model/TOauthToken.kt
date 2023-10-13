@@ -40,7 +40,7 @@ data class TOauthToken(
     val expireSeconds: Long?,
     val type: String,
     val accountId: String,
-    val userId: String,
+    var userId: String,
     var scope: Set<ResourceType>?,
     var issuedAt: Instant,
     var idToken: IdToken?
