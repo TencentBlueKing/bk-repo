@@ -218,6 +218,7 @@ class OauthAuthorizationServiceImpl(
         if (client.scope != tOauthToken.scope) {
             tOauthToken.scope = client.scope!!
         }
+        tOauthToken.accessToken = idToken.toJwtToken()
         tOauthToken.idToken = if (openId) idToken else null
         tOauthToken.issuedAt = Instant.now(Clock.systemDefaultZone())
         oauthTokenRepository.save(tOauthToken)
