@@ -663,6 +663,7 @@ class RepositoryServiceImpl(
             return tRepository?.let {
                 handlerConfiguration(it)
                 RepositoryInfo(
+                    id = it.id,
                     name = it.name,
                     type = it.type,
                     category = it.category,

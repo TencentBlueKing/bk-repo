@@ -73,6 +73,10 @@ const val AUTH_CLUSTER_PERMISSION_PREFIX = "/cluster/permission"
 const val AUTH_API_ROLE_PREFIX = "/api/role"
 const val AUTH_SERVICE_ROLE_PREFIX = "/service/role"
 
+
+const val AUTH_SERVICE_BKIAMV3_PREFIX = "/service/bkiamv3"
+
+
 const val AUTH_API_USER_PREFIX = "/api/user"
 const val AUTH_SERVICE_USER_PREFIX = "/service/user"
 const val AUTH_CLUSTER_USER_PREFIX = "/cluster/permission"
@@ -99,6 +103,7 @@ const val AUTH_API_PERMISSION_USER_PREFIX = "api/permission/user"
 const val AUTH_API_USER_UPDATE_PREFIX = "api/user/update/info"
 const val AUTH_API_USER_DELETE_PREFIX = "api/user/delete"
 const val AUTH_API_USER_ASSET_USER_GROUP_PREFIX = "api/user/group"
+const val AUTH_API_USER_BKIAMV3_PREFIX = "api/user/auth"
 
 const val AUTH_CLUSTER_TOKEN_INFO_PREFIX = "/cluster/temporary/token/info"
 const val AUTH_CLUSTER_TOKEN_DELETE_PREFIX = "/cluster/temporary/token/delete"

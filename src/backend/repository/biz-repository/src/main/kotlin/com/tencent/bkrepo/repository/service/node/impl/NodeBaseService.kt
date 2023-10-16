@@ -415,6 +415,7 @@ abstract class NodeBaseService(
             return tNode?.let {
                 val metadata = MetadataUtils.toMap(it.metadata)
                 NodeInfo(
+                    id = it.id,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,

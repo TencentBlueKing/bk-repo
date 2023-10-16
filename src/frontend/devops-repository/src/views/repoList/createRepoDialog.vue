@@ -34,6 +34,14 @@
                     <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
+            <bk-form-item
+                :label="$t('bkPermissionCheck')"
+                v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
+                <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
+                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                </bk-radio-group>
+            </bk-form-item>
             <template v-if="repoBaseInfo.type === 'generic' || repoBaseInfo.type === 'ddc'">
                 <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
@@ -106,12 +114,14 @@
             <bk-button @click="cancel">{{$t('cancel')}}</bk-button>
             <bk-button class="ml10" :loading="loading" theme="primary" @click="confirm">{{$t('confirm')}}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
-    import { repoEnum } from '@repository/store/publicEnum'
-    import { mapActions } from 'vuex'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import { repoEnum, specialRepoEnum } from '@repository/store/publicEnum'
+    import { mapActions, mapState } from 'vuex'
 
     const getRepoBaseInfo = () => {
         return {
@@ -140,23 +150,32 @@
                 officeNetwork: false,
                 ipSegment: '',
                 whitelistUser: ''
+            },
+            configuration: {
+                settings: {
+                    bkiamv3Check: false
+                }
             }
         }
     }
 
     export default {
         name: 'createRepo',
-        components: { CardRadioGroup },
+        components: { CardRadioGroup, iamDenyDialog },
         data () {
             return {
                 repoEnum,
+                specialRepoEnum,
                 show: false,
                 loading: false,
                 repoBaseInfo: getRepoBaseInfo(),
+                showIamDenyDialog: false,
+                showData: {},
                 title: this.$t('createRepository')
             }
         },
         computed: {
+            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -275,7 +294,7 @@
             }
         },
         methods: {
-            ...mapActions(['createRepo', 'checkRepoName']),
+            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl']),
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
@@ -317,33 +336,37 @@
                         }
                     })
                 }
-                this.loading = true
-                this.createRepo({
-                    body: {
-                        projectId: this.projectId,
-                        type: this.repoBaseInfo.type.toUpperCase(),
-                        name: this.repoBaseInfo.name,
-                        public: this.repoBaseInfo.public,
-                        display: this.repoBaseInfo.display,
-                        description: this.repoBaseInfo.description,
-                        category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
-                        configuration: {
-                            type: 'composite',
-                            settings: {
-                                system: this.repoBaseInfo.system,
-                                interceptors: interceptors.length ? interceptors : undefined,
-                                ...(
-                                    this.repoBaseInfo.type === 'rpm'
-                                        ? {
-                                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
-                                            repodataDepth: this.repoBaseInfo.repodataDepth,
-                                            groupXmlSet: this.repoBaseInfo.groupXmlSet
-                                        }
-                                        : {}
-                                )
-                            }
+                const body = {
+                    projectId: this.projectId,
+                    type: this.repoBaseInfo.type.toUpperCase(),
+                    name: this.repoBaseInfo.name,
+                    public: this.repoBaseInfo.public,
+                    display: this.repoBaseInfo.display,
+                    description: this.repoBaseInfo.description,
+                    category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
+                    configuration: {
+                        type: 'composite',
+                        settings: {
+                            system: this.repoBaseInfo.system,
+                            interceptors: interceptors.length ? interceptors : undefined,
+                            ...(
+                                this.repoBaseInfo.type === 'rpm'
+                                    ? {
+                                        enabledFileLists: this.repoBaseInfo.enabledFileLists,
+                                        repodataDepth: this.repoBaseInfo.repodataDepth,
+                                        groupXmlSet: this.repoBaseInfo.groupXmlSet
+                                    }
+                                    : {}
+                            )
                         }
                     }
+                }
+                if (!specialRepoEnum.includes(this.repoBaseInfo.name)) {
+                    body.configuration.settings.bkiamv3Check = this.repoBaseInfo.configuration.settings.bkiamv3Check
+                }
+                this.loading = true
+                this.createRepo({
+                    body: body
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
@@ -351,6 +374,32 @@
                     })
                     this.cancel()
                     this.$emit('refresh')
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'WRITE',
+                                resourceType: 'PROJECT',
+                                uid: this.userInfo.name
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: '',
+                                    action: 'WRITE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
+                                })
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.loading = false
                 })
