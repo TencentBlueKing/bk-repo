@@ -25,50 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.reactive.dao
+package com.tencent.bkrepo.fs.server.handler
 
-import com.mongodb.client.result.DeleteResult
-import com.mongodb.client.result.UpdateResult
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
+import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
+import com.tencent.bkrepo.fs.server.request.ClientListRequest
+import com.tencent.bkrepo.fs.server.service.ClientService
+import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
+import kotlinx.coroutines.reactor.awaitSingle
+import org.springframework.web.reactive.function.server.ServerRequest
+import org.springframework.web.reactive.function.server.ServerResponse
 
-/**
- * mongo db reactive 数据访问层接口
- */
-interface MongoReactiveDao<E> {
+class ClientHandler(
+    private val clientService: ClientService
+) {
 
-    /**
-     * 通过查询对象查询单条文档，返回元素类型由clazz指定
-     */
-    suspend fun <T> findOne(query: Query, clazz: Class<T>): T?
+    suspend fun createClient(request: ServerRequest): ServerResponse {
+        val createRequest = request.bodyToMono(ClientCreateRequest::class.java).awaitSingle()
+        return ReactiveResponseBuilder.success(clientService.createClient(createRequest))
+    }
 
-    /**
-     * 通过查询对象查询文档集合，返回元素类型由clazz指定
-     */
-    suspend fun <T> find(query: Query, clazz: Class<T>): List<T>
+    suspend fun removeClient(request: ServerRequest): ServerResponse {
+        val clientId = request.pathVariable("clientId")
+        return ReactiveResponseBuilder.success(clientService.removeClient(clientId))
+    }
 
-    /**
-     * 新增文档到数据库的集合中
-     */
-    suspend fun save(entity: E): E
+    suspend fun listClient(request: ServerRequest): ServerResponse {
+        val clientListRequest = ClientListRequest(request)
+        return ReactiveResponseBuilder.success(clientService.listClient(clientListRequest))
+    }
 
-    /**
-     * 更新文档
-     */
-    suspend fun updateMulti(query: Query, update: Update): UpdateResult
-
-    /**
-     * 删除文档
-     */
-    suspend fun remove(query: Query): DeleteResult
-
-    /**
-     * update or insert
-     */
-    suspend fun upsert(query: Query, update: Update): UpdateResult
-
-    /**
-     * count
-     */
-    suspend fun count(query: Query): Long
+    suspend fun heartbeat(request: ServerRequest): ServerResponse {
+        val clientId = request.pathVariable("clientId")
+        clientService.heartbeat(clientId)
+        return ReactiveResponseBuilder.success()
+    }
 }

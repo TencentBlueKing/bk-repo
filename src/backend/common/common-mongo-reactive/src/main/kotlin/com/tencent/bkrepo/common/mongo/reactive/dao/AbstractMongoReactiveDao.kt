@@ -115,6 +115,15 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         }
     }
 
+    override suspend fun count(query: Query): Long {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao count: [$query]")
+        }
+        val mongoOperations = determineReactiveMongoOperations()
+        val collectName = determineCollectionName(query)
+        return mongoOperations.count(query, collectName).awaitSingle()
+    }
+
     protected open fun determineCollectionName(): String {
         var collectionName: String? = null
         if (classType.isAnnotationPresent(Document::class.java)) {
