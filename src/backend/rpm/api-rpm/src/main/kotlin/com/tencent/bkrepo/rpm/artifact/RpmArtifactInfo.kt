@@ -56,17 +56,19 @@ class RpmArtifactInfo(
     }
 
     override fun getArtifactFullPath(): String {
-        val action = HttpContextHolder.getRequest().method
-        return if (action.equals("delete", ignoreCase = true)) {
-            val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
-            val version = HttpContextHolder.getRequest().getParameter("version")
-            if (StringUtils.isBlank(packageKey)) {
-                super.getArtifactFullPath()
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            val action = HttpContextHolder.getRequest().method
+            if (action.equals("delete", ignoreCase = true)) {
+                val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
+                val version = HttpContextHolder.getRequest().getParameter("version")
+                if (StringUtils.isBlank(packageKey)) {
+                    super.getArtifactFullPath()
+                } else {
+                    "/${PackageKeys.resolveRpm(packageKey)}-$version.rpm"
+                }
             } else {
-                "/${PackageKeys.resolveRpm(packageKey)}-$version.rpm"
+                super.getArtifactFullPath()
             }
-        } else {
-            super.getArtifactFullPath()
-        }
+        } else getArtifactMappingUri()!!
     }
 }

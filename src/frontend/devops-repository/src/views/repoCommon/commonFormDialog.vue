@@ -28,12 +28,15 @@
             <bk-button theme="default" @click.stop="cancel">{{$t('cancel')}}</bk-button>
             <bk-button class="ml5" :loading="formDialog.loading" theme="primary" @click="submit">{{$t('confirm')}}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
     import { mapActions, mapState } from 'vuex'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     export default {
         name: 'commonForm',
+        components: { iamDenyDialog },
         data () {
             return {
                 formDialog: {
@@ -45,7 +48,8 @@
                     default: '',
                     tag: '',
                     id: '',
-                    name: ''
+                    name: '',
+                    path: ''
                 },
                 rules: {
                     tag: [
@@ -63,11 +67,13 @@
                         }
                     ]
                 },
-                scanList: []
+                scanList: [],
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['scannerSupportPackageType']),
+            ...mapState(['scannerSupportPackageType', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -85,7 +91,8 @@
             ...mapActions([
                 'changeStageTag',
                 'startScanSingle',
-                'getScanAll'
+                'getScanAll',
+                'getPermissionUrl'
             ]),
             setData (data) {
                 this.formDialog = {
@@ -118,6 +125,30 @@
                     packageKey: this.packageKey,
                     version: this.formDialog.version,
                     tag: this.formDialog.tag
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'UPDATE',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: this.formDialog.path
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'UPDATE',
+                                    url: res,
+                                    path: this.formDialog.path
+                                }
+                            }
+                        })
+                    }
                 })
             },
             submitScanFile () {

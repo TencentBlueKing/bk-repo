@@ -58,7 +58,8 @@ enum class ScannerMessageCode(
     EXPORT_REPORT_STATUS_UN_QUALITY("export.report.status.un.quality", 26),
     EXPORT_REPORT_STATUS_QUALITY_PASS("export.report.status.quality.pass", 27),
     EXPORT_REPORT_STATUS_QUALITY_UN_PASS("export.report.status.quality.un.pass", 28),
-    EXPORT_REPORT_STATUS_FAILED("export.report.status.failed", 29);
+    EXPORT_REPORT_STATUS_FAILED("export.report.status.failed", 29),
+    ANALYST_ARTIFACT_DELETED("analyst.artifact.deleted", 30);
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

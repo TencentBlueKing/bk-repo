@@ -75,10 +75,7 @@ class CosRedirectService(
             return false
         }
 
-        val node = ArtifactContextHolder.getNodeDetail(
-            context.repositoryDetail.projectId,
-            context.repositoryDetail.name
-        )
+        val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)
         // 从request uri中获取artifact信息，artifact为null时表示非单制品下载请求，此时不支持重定向
         val artifact = ArtifactContextHolder.getArtifactInfo()
         // node为null时表示制品不存在，或者是Remote仓库的制品尚未被缓存，此时不支持重定向
@@ -115,10 +112,7 @@ class CosRedirectService(
     override fun redirect(context: ArtifactDownloadContext) {
         val credentials = context.repositoryDetail.storageCredentials ?: storageProperties.defaultStorageCredentials()
         require(credentials is InnerCosCredentials)
-        val node = ArtifactContextHolder.getNodeDetail(
-            projectId = context.repositoryDetail.projectId,
-            repoName = context.repositoryDetail.name
-        )!!
+        val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)!!
 
         // 创建请求并签名
         val clientConfig = ClientConfig(credentials).apply {

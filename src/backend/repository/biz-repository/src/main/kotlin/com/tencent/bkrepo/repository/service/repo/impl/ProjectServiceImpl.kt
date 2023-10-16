@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl
 
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
@@ -79,7 +80,8 @@ import java.util.regex.Pattern
 class ProjectServiceImpl(
     private val projectDao: ProjectDao,
     private val servicePermissionClient: ServicePermissionClient,
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 ) : ProjectService {
 
     @Autowired
@@ -126,14 +128,20 @@ class ProjectServiceImpl(
                 query.with(Sort.by(Sort.Direction.valueOf(it.first), it.second))
             }
         }
-        return if (option?.pageNumber == null && option?.pageSize == null) {
-            projectDao.find(query).map { convert(it)!! }
+        val projectList = if (option?.pageNumber == null && option?.pageSize == null) {
+            projectDao.find(query)
         } else {
             val pageRequest = Pages.ofRequest(
                 option.pageNumber ?: DEFAULT_PAGE_NUMBER,
                 option.pageSize ?: DEFAULT_PAGE_SIZE
             )
-            projectDao.find(query.with(pageRequest)).map { convert(it)!! }
+            projectDao.find(query.with(pageRequest))
+        }
+        val projectIdList = projectList.map { it.name }
+        val existProjectMap = serviceBkiamV3ResourceClient.getExistRbacDefaultGroupProjectIds(projectIdList).data
+        return projectList.map {
+            val exist = existProjectMap?.get(it.name) ?: false
+            convert(it, exist)!!
         }
     }
 
@@ -259,6 +267,10 @@ class ProjectServiceImpl(
         private const val DISPLAY_NAME_LENGTH_MAX = 32
 
         private fun convert(tProject: TProject?): ProjectInfo? {
+            return convert(tProject, false)
+        }
+
+        private fun convert(tProject: TProject?, rbacFlag: Boolean): ProjectInfo? {
             return tProject?.let {
                 ProjectInfo(
                     name = it.name,

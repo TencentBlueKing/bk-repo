@@ -29,7 +29,6 @@
  * SOFTWARE.
  */
 dependencies {
-    api(fileTree(mapOf("dir" to "lib", "include" to listOf("*.jar"))))
     implementation(project(":common:common-api"))
     api(project(":common:common-operate:operate-annotation"))
     compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")

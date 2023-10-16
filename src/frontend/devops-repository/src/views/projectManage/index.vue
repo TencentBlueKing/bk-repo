@@ -54,6 +54,11 @@
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>
             </bk-table-column>
+            <bk-table-column :label="$t('bkPermissionGeneration')" show-overflow-tooltip v-if="iamStatus">
+                <template #default="{ row }">
+                    <bk-button theme="primary" @click="createPermission(row.name)" v-if="row.rbacFlag === false">{{ $t('generate') }}</bk-button>
+                </template>
+            </bk-table-column>
         </bk-table>
         <bk-pagination
             class="p10"
@@ -91,7 +96,8 @@
                 focusContent: this.$t('toggle'),
                 direction: this.$route.query.direction || 'DESC',
                 filterProjectList: [],
-                property: 'createdDate'
+                property: 'createdDate',
+                iamStatus: false
             }
         },
         computed: {
@@ -99,11 +105,12 @@
         },
         created () {
             this.queryProjects()
+            this.getIamPermissionStatus().then(res => {
+                this.iamStatus = res
+            })
         },
         methods: {
-            ...mapActions([
-                'queryProjectList'
-            ]),
+            ...mapActions(['refreshIamPermission', 'getIamPermissionStatus', 'queryProjectList', 'getProjectList']),
             formatDate,
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
@@ -154,6 +161,21 @@
                 this.filterProjectList = res.filter(project => {
                     return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
                 }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
+            },
+            createPermission (projectId) {
+                this.refreshIamPermission({ projectId: projectId }).then(res => {
+                    if (res === true) {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: this.$t('permissionsGeneratedSuccessTip')
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: this.$t('permissionsGeneratedFailTip')
+                        })
+                    }
+                })
             }
         }
     }

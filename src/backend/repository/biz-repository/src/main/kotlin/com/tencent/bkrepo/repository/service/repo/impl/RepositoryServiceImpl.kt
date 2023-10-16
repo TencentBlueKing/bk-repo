@@ -663,6 +663,7 @@ class RepositoryServiceImpl(
             return tRepository?.let {
                 handlerConfiguration(it)
                 RepositoryInfo(
+                    id = it.id,
                     name = it.name,
                     type = it.type,
                     category = it.category,
@@ -689,6 +690,11 @@ class RepositoryServiceImpl(
                     type == RepositoryType.GIT
                 ) {
                     config.url = "${repositoryProperties.gitUrl}/$projectId/$name.git"
+                } else if (config is com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration &&
+                    type == RepositoryType.SVN &&
+                    repositoryProperties.svnUrl.isNotEmpty()
+                ) {
+                    config.url = "${repositoryProperties.svnUrl}/$projectId/$name"
                 }
                 configuration = config.toJsonString()
             }

@@ -88,6 +88,7 @@
                 <repo-guide class="pt20 pb20 pl10 pr10" :article="articleGuide"></repo-guide>
             </template>
         </bk-sideslider>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
@@ -96,10 +97,11 @@
     import repoGuide from '@repository/views/repoCommon/repoGuide'
     import emptyGuide from '@repository/views/repoCommon/emptyGuide'
     import repoGuideMixin from '@repository/views/repoCommon/repoGuideMixin'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageList',
-        components: { InfiniteScroll, packageCard, repoGuide, emptyGuide },
+        components: { InfiniteScroll, packageCard, repoGuide, emptyGuide, iamDenyDialog },
         mixins: [repoGuideMixin],
         data () {
             return {
@@ -114,11 +116,13 @@
                     count: 0,
                     limitList: [10, 20, 40]
                 },
-                showGuide: false
+                showGuide: false,
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['repoListAll', 'permission']),
+            ...mapState(['repoListAll', 'permission', 'userInfo']),
             currentRepo () {
                 return this.repoListAll.find(repo => repo.name === this.repoName) || {}
             }
@@ -131,7 +135,8 @@
             ...mapActions([
                 'getRepoListAll',
                 'searchPackageList',
-                'deletePackage'
+                'deletePackage',
+                'getPermissionUrl'
             ]),
             changeDirection () {
                 this.direction = this.direction === 'ASC' ? 'DESC' : 'ASC'
@@ -168,27 +173,72 @@
                 }).then(({ records, totalRecords }) => {
                     load ? this.packageList.push(...records) : (this.packageList = records)
                     this.pagination.count = totalRecords
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
             },
-            deletePackageHandler ({ key }) {
+            deletePackageHandler (pkg) {
                 this.$confirm({
                     theme: 'danger',
                     message: this.$t('deletePackageTitle', { name: '' }),
-                    subMessage: key,
+                    subMessage: pkg.key,
                     confirmFn: () => {
                         return this.deletePackage({
                             projectId: this.projectId,
                             repoType: this.repoType,
                             repoName: this.repoName,
-                            packageKey: key
+                            packageKey: pkg.key
                         }).then(() => {
                             this.handlerPaginationChange()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'REPO',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            packageName: pkg.name,
+                                            url: res
+                                        }
+                                    }
+                                })
+                            }
                         })
                     }
                 })

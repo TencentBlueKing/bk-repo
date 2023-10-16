@@ -33,21 +33,31 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.lfs.artifact.LfsArtifactInfo
 import com.tencent.bkrepo.lfs.artifact.LfsProperties
 import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
+import com.tencent.bkrepo.lfs.constant.HEADER_BATCH_AUTHORIZATION
 import com.tencent.bkrepo.lfs.constant.UPLOAD_OPERATION
+import com.tencent.bkrepo.lfs.exception.BatchRequestException
 import com.tencent.bkrepo.lfs.pojo.ActionDetail
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
@@ -56,6 +66,9 @@ import com.tencent.bkrepo.lfs.utils.OidUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import okhttp3.Headers.Companion.toHeaders
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
 import org.springframework.stereotype.Service
 
 @Service
@@ -67,18 +80,23 @@ class ObjectService(
     private val lfsProperties: LfsProperties
 ) : ArtifactService() {
 
+    private val httpClient = HttpClientBuilderFactory.create().build()
+
     /**
      * [batch api实现](https://github.com/git-lfs/git-lfs/blob/main/docs/api/batch.md)
      */
     fun batch(projectId: String, repoName: String, request: BatchRequest): BatchResponse {
         Preconditions.checkArgument(request.transfers.contains(BASIC_TRANSFER), BatchRequest::transfers.name)
-        val permissionAction = if (request.operation == UPLOAD_OPERATION) {
-            PermissionAction.WRITE
-        } else {
-            PermissionAction.READ
-        }
-        permissionManager.checkRepoPermission(permissionAction, projectId, repoName)
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data!!
+        if (repo.category != RepositoryCategory.REMOTE) {
+            val permissionAction = if (request.operation == UPLOAD_OPERATION) {
+                PermissionAction.WRITE
+            } else {
+                PermissionAction.READ
+            }
+            permissionManager.checkRepoPermission(permissionAction, projectId, repoName)
+        }
+
         if (request.operation == UPLOAD_OPERATION && !repoAllowUpload(repo)) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, BatchRequest::operation)
         }
@@ -88,6 +106,15 @@ class ObjectService(
 
     fun upload(lfsArtifactInfo: LfsArtifactInfo, file: ArtifactFile) {
         with(lfsArtifactInfo) {
+            val repo = ArtifactContextHolder.getRepoDetail()
+            if (repo?.category != RepositoryCategory.REMOTE) {
+                permissionManager.checkNodePermission(
+                    PermissionAction.WRITE,
+                    projectId,
+                    repoName,
+                    getArtifactFullPath()
+                )
+            }
             nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data ?: return
         }
         val context = ArtifactUploadContext(file)
@@ -95,6 +122,12 @@ class ObjectService(
     }
 
     fun download(lfsArtifactInfo: LfsArtifactInfo) {
+        with(lfsArtifactInfo) {
+            val repo = ArtifactContextHolder.getRepoDetail()
+            if (repo?.category != RepositoryCategory.REMOTE) {
+                permissionManager.checkNodePermission(PermissionAction.READ, projectId, repoName, getArtifactFullPath())
+            }
+        }
         val context = ArtifactDownloadContext()
         repository.download(context)
     }
@@ -119,6 +152,24 @@ class ObjectService(
         request: BatchRequest,
         repo: RepositoryDetail
     ): List<LfsObject> {
+        return when (repo.category) {
+            RepositoryCategory.LOCAL -> {
+                buildLocalRepoLfsObjects(request, repo)
+            }
+            RepositoryCategory.REMOTE -> {
+                buildRemoteRepoLfsObject(request, repo)
+            }
+            RepositoryCategory.COMPOSITE -> {
+                buildLocalRepoLfsObjects(request, repo)
+            }
+            else -> throw UnsupportedOperationException()
+        }
+    }
+
+    private fun buildLocalRepoLfsObjects(
+        request: BatchRequest,
+        repo: RepositoryDetail
+    ): List<LfsObject> {
         val userId = SecurityUtils.getUserId()
         val tokenType = if (request.operation == UPLOAD_OPERATION) {
             TokenType.UPLOAD
@@ -140,11 +191,44 @@ class ObjectService(
                             header = mapOf(
                                 HttpHeaders.AUTHORIZATION to "Temporary $token",
                                 AUTH_HEADER_UID to userId
-                            ),
+                            ).toMutableMap(),
                             expiresIn = TOKEN_EXPIRES_SECONDS
                         )
                     )
                 )
+            }
+        }
+    }
+
+    private fun buildRemoteRepoLfsObject(
+        request: BatchRequest,
+        repo: RepositoryDetail
+    ): List<LfsObject> {
+        val requestBody = request.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
+        val config = repo.configuration as RemoteConfiguration
+        val url = "${config.url.removePrefix(StringPool.SLASH)}/info/lfs/objects/batch"
+        val authHeader = HeaderUtils.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
+        val userAgent = HeaderUtils.getHeader(HttpHeaders.USER_AGENT).orEmpty()
+        val headers = mapOf(
+            HttpHeaders.AUTHORIZATION to authHeader,
+            HttpHeaders.USER_AGENT to userAgent
+        )
+        val request2 = Request.Builder().url(url)
+            .headers(headers.toHeaders())
+            .post(requestBody).build()
+        httpClient.newCall(request2).execute().use {
+            if (!it.isSuccessful) {
+                throw BatchRequestException(it.code, it.body!!.string(), it.headers)
+            }
+            val batchResponse = it.body!!.string().readJsonString<BatchResponse>()
+            return batchResponse.objects.map {lfsObject ->
+                lfsObject.actions?.values?.forEach { action ->
+                    action.href = lfsProperties.domain.removeSuffix(StringPool.SLASH) +
+                        "/lfs/${repo.projectId}/${repo.name}/${lfsObject.oid}" +
+                        "?size=${lfsObject.size}&ref=${request.ref["name"]}"
+                    action.header[HEADER_BATCH_AUTHORIZATION] = authHeader
+                }
+                lfsObject
             }
         }
     }

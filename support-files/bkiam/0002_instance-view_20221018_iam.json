@@ -1,0 +1,59 @@
+{
+    "system_id": "bk-repo",
+    "operations": [
+        {
+            "operation": "upsert_instance_selection",
+            "data": {
+                "id": "project_instance",
+                "name": "项目视图",
+                "name_en": "projecInstance",
+                "resource_type_chain": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "project"
+                    }
+                ]
+            }
+        },
+        {
+            "operation": "upsert_instance_selection",
+            "data": {
+                "id": "repo_instance",
+                "name": "仓库视图",
+                "name_en": "repoInstance",
+                "resource_type_chain": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "project"
+                    },
+                    {
+                        "system_id": "bk-repo",
+                        "id": "repo"
+                    }
+                ]
+            }
+        },
+        {
+            "operation": "upsert_instance_selection",
+            "data": {
+                "id": "node_instance",
+                "name": "节点视图",
+                "name_en": "nodeInstance",
+                "resource_type_chain": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "project"
+                    },
+                    {
+                        "system_id": "bk-repo",
+                        "id": "repo"
+                    },
+                    {
+                        "system_id": "bk-repo",
+                        "id": "node"
+                    }
+                ]
+            }
+        }
+    ]
+}

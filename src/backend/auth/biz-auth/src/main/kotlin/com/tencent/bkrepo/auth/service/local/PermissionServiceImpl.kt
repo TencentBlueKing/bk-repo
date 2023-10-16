@@ -79,8 +79,8 @@ open class PermissionServiceImpl constructor(
     private val account: AccountRepository,
     private val permissionRepository: PermissionRepository,
     private val mongoTemplate: MongoTemplate,
-    private val repoClient: RepositoryClient,
-    private val projectClient: ProjectClient
+    val repoClient: RepositoryClient,
+    val projectClient: ProjectClient
 ) : PermissionService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
 
     override fun deletePermission(id: String): Boolean {

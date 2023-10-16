@@ -67,10 +67,7 @@ class EdgeNodeRedirectService(
     }
 
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
-        val node = ArtifactContextHolder.getNodeDetail(
-            context.repositoryDetail.projectId,
-            context.repositoryDetail.name
-        )
+        val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)
         val selfClusterName = clusterProperties.self.name
         if (logger.isDebugEnabled) {
             logger.debug("node cluster: ${node?.clusterNames.orEmpty().toJsonString()},in cluster $selfClusterName")
@@ -102,10 +99,7 @@ class EdgeNodeRedirectService(
      * 获取边缘节点名称
      * */
     private fun getEdgeClusterName(context: ArtifactDownloadContext): String? {
-        val node = ArtifactContextHolder.getNodeDetail(
-            context.repositoryDetail.projectId,
-            context.repositoryDetail.name
-        )
+        val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)
         return node?.clusterNames?.firstOrNull()
     }
 

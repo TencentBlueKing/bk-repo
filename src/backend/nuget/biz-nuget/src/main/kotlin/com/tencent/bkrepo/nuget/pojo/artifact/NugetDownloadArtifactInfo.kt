@@ -16,7 +16,11 @@ class NugetDownloadArtifactInfo(
     private val nupkgFullPath = NugetUtils.getNupkgFullPath(packageName, version)
     private val nuspecFullPath = NugetUtils.getNuspecFullPath(packageName, version)
 
-    override fun getArtifactFullPath(): String = if (type == MANIFEST) nuspecFullPath else nupkgFullPath
+    override fun getArtifactFullPath(): String {
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            if (type == MANIFEST) nuspecFullPath else nupkgFullPath
+        } else getArtifactMappingUri()!!
+    }
 
     override fun getArtifactName(): String = packageName
 

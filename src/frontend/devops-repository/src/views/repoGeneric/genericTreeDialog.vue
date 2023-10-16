@@ -28,14 +28,16 @@
             <bk-button @click="genericTreeData.show = false">{{ $t('cancel') }}</bk-button>
             <bk-button class="ml10" :loading="genericTreeData.loading" theme="primary" @click="submit">{{ $t('confirm') }}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
     import { mapState, mapActions } from 'vuex'
     import RepoTree from '@repository/components/RepoTree'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     export default {
         name: 'genericTreeDialog',
-        components: { RepoTree },
+        components: { RepoTree, iamDenyDialog },
         data () {
             return {
                 importantSearch: '',
@@ -47,11 +49,13 @@
                     path: '',
                     openList: [],
                     selectedNode: {}
-                }
+                },
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['genericTree']),
+            ...mapState(['genericTree', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -62,7 +66,8 @@
         methods: {
             ...mapActions([
                 'moveNode',
-                'copyNode'
+                'copyNode',
+                'getPermissionUrl'
             ]),
             // 树组件选中文件夹
             itemClickHandler (node) {
@@ -126,6 +131,38 @@
                         theme: 'success',
                         message: this.$t(type) + this.$t('space') + this.$t('success')
                     })
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'WRITE',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'WRITE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: err.message
+                        })
+                    }
                 }).finally(() => {
                     this.genericTreeData.loading = false
                 })
