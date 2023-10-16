@@ -37,6 +37,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
+import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.xml.sax.Attributes
 import org.xml.sax.InputSource
@@ -73,6 +74,8 @@ class ChangeAncestorProxyHandler(
             logger.warn("prefix not found: oldPrefix[$oldPrefix], newPrefix[$newPrefix]")
             return request
         }
+        val oldBaseUrl = svnProperties.baseUrl + oldPrefix
+        val newBaseUrl = request.url.scheme + "://" + request.url.host + newPrefix
 
         val builder = request.newBuilder()
         builder.header(HttpHeaders.HOST, hostHeader(request.url))
@@ -81,15 +84,18 @@ class ChangeAncestorProxyHandler(
                 val newHeaderValue = newPrefix + v.substringAfter(oldPrefix)
                 builder.header(k, newHeaderValue)
             }
+            if (k == HEADER_SVN_DESTINATION) {
+                builder.header(k, newBaseUrl + v.substringAfter(oldBaseUrl))
+            }
         }
 
         if (proxyRequest.contentType?.startsWith("text/xml") == true) {
-            val oldBaseUrl = svnProperties.baseUrl + oldPrefix
-            val newBaseUrl = request.url.scheme + "://" + request.url.host + newPrefix
             val oldBody = proxyRequest.inputStream.readBytes().toString(Charsets.UTF_8)
-            val newBody = replace(oldBody, oldPrefix, newPrefix)
-                .replace("$TAG_SRC_PATH>$oldBaseUrl", "$TAG_SRC_PATH>$newBaseUrl")
-                .replace("$TAG_SRC_PATH>$oldPrefix", "$TAG_SRC_PATH>$newPrefix")
+            val newBody = StringUtils.replaceEach(
+                oldBody,
+                buildSearchList(oldPrefix, oldBaseUrl, true),
+                buildReplacementList(newPrefix, newBaseUrl, true)
+            )
             builder.header(HttpHeaders.CONTENT_LENGTH, newBody.length.toString())
             builder.method(proxyRequest.method, RequestBody.create("text/xml".toMediaType(), newBody))
         }
@@ -131,7 +137,11 @@ class ChangeAncestorProxyHandler(
                 replace(response.body!!.byteStream(), proxyResponse.outputStream, oldPrefix, newPrefix)
             } else {
                 val oldBody = response.body!!.string()
-                val newBody = replace(oldBody, oldPrefix, newPrefix)
+                val newBody = StringUtils.replaceEach(
+                    oldBody,
+                    buildSearchList(oldPrefix),
+                    buildReplacementList(newPrefix)
+                )
                 proxyResponse.setHeader(HttpHeaders.CONTENT_LENGTH, newBody.length.toString())
                 proxyResponse.writer.write(newBody)
             }
@@ -187,11 +197,44 @@ class ChangeAncestorProxyHandler(
         }
     }
 
-    private fun replace(str: String, oldPrefix: String, newPrefix: String): String {
-        return str
-            .replace("$TAG_HREF>$oldPrefix", "$TAG_HREF>$newPrefix")
-            .replace("$TAG_PATH>$oldPrefix", "$TAG_PATH>$newPrefix")
-            .replace("$ATTR_BC_URL=\"$oldPrefix", "$ATTR_BC_URL=\"$newPrefix")
+    private fun buildSearchList(
+        oldPrefix: String,
+        oldBaseUrl: String? = null,
+        request: Boolean = false
+    ): Array<String> {
+        return if (request) {
+            arrayOf(
+                "$TAG_HREF>$oldPrefix",
+                "$TAG_PATH>$oldPrefix",
+                "$ATTR_BC_URL=\"$oldPrefix",
+                "$TAG_SRC_PATH>$oldBaseUrl",
+                "$TAG_SRC_PATH>$oldPrefix",
+                "$TAG_DST_PATH>$oldBaseUrl",
+                "$TAG_DST_PATH>$oldPrefix",
+            )
+        } else {
+            arrayOf("$TAG_HREF>$oldPrefix", "$TAG_PATH>$oldPrefix", "$ATTR_BC_URL=\"$oldPrefix")
+        }
+    }
+
+    private fun buildReplacementList(
+        newPrefix: String,
+        newBaseUrl: String? = null,
+        request: Boolean = false
+    ): Array<String> {
+        return if (request) {
+            arrayOf(
+                "$TAG_HREF>$newPrefix",
+                "$TAG_PATH>$newPrefix",
+                "$ATTR_BC_URL=\"$newPrefix",
+                "$TAG_SRC_PATH>$newBaseUrl",
+                "$TAG_SRC_PATH>$newPrefix",
+                "$TAG_DST_PATH>$newBaseUrl",
+                "$TAG_DST_PATH>$newPrefix"
+            )
+        } else {
+            arrayOf("$TAG_HREF>$newPrefix", "$TAG_PATH>$newPrefix", "$ATTR_BC_URL=\"$newPrefix")
+        }
     }
 
     /**
@@ -280,6 +323,7 @@ class ChangeAncestorProxyHandler(
         private const val HEADER_SVN_TXN_ROOT_STUB = "SVN-Txn-Root-Stub"
         private const val HEADER_SVN_VTXN_STUB = "SVN-VTxn-Stub"
         private const val HEADER_SVN_VTXN_ROOT_STUB = "SVN-VTxn-Root-Stub"
+        private const val HEADER_SVN_DESTINATION = "Destination"
 
         val requestHeaders = arrayOf(HEADER_SVN_DELTA_BASE)
         val responseHeaders = arrayOf(
@@ -297,7 +341,8 @@ class ChangeAncestorProxyHandler(
         // xml element
         private const val TAG_HREF = "D:href"
         private const val TAG_PATH = "S:path"
-        private const val TAG_SRC_PATH = "S:src-path" // 只在svn request body中存在
+        private const val TAG_SRC_PATH = "S:src-path"
+        private const val TAG_DST_PATH = "S:dst-path"
         private const val TAG_ADD_DIRECTORY = "S:add-directory"
         private const val ATTR_BC_URL = "bc-url"
     }
