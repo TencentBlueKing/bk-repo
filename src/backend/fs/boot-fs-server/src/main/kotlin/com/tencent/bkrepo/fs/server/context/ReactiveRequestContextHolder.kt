@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.context
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.http.server.reactive.ServerHttpResponse
@@ -53,6 +54,11 @@ object ReactiveRequestContextHolder {
         return Mono.deferContextual {
             Mono.just(it.get(REQUEST_CONTEXT_KEY))
         }.awaitSingle().exchange
+    }
+
+    suspend fun getClientAddress(): String {
+        val request = getRequest()
+        return request.remoteAddress?.address?.hostAddress ?: StringPool.UNKNOWN
     }
 
     fun getWebExchangeMono(): Mono<ServerWebExchange> {
