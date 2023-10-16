@@ -268,5 +268,11 @@ export default {
             `${authPrefix}/user/create/project`,
             body
         )
+    },
+    // 判断蓝鲸权限是否开启
+    getBkiamStatus () {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/user/auth/bkiamv3/status`
+        )
     }
 }

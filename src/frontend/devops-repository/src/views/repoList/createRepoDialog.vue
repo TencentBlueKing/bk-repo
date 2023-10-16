@@ -36,7 +36,7 @@
             </bk-form-item>
             <bk-form-item
                 :label="$t('bkPermissionCheck')"
-                v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
+                v-if="!specialRepoEnum.includes(repoBaseInfo.name) && rbacStatus">
                 <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
                     <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
@@ -171,7 +171,8 @@
                 repoBaseInfo: getRepoBaseInfo(),
                 showIamDenyDialog: false,
                 showData: {},
-                title: this.$t('createRepository')
+                title: this.$t('createRepository'),
+                rbacStatus: true
             }
         },
         computed: {
@@ -293,8 +294,13 @@
                 ]
             }
         },
+        created () {
+            this.getBkiamStatus().then(res => {
+                this.rbacStatus = res
+            })
+        },
         methods: {
-            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl']),
+            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'getBkiamStatus']),
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
