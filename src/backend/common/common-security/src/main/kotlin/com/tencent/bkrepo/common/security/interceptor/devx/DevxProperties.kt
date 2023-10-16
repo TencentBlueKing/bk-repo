@@ -47,4 +47,9 @@ data class DevxProperties(
      * 查询云研发工作空间的URL
      * */
     var workspaceUrl: String = "",
+    /**
+     * 配置属于项目的CVM
+     * key 为项目ip， value为CVM配置
+     */
+    var projectCvmWhiteList: Map<String, Set<String>> = emptyMap(),
 )

@@ -94,9 +94,11 @@ open class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : Ha
             logger.error("${response.code} $errorMsg")
             return emptySet()
         }
-        return response.body!!.byteStream().readJsonString<QueryResponse>().data.map {
+        val ips = HashSet<String>()
+        devxProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
+        return response.body!!.byteStream().readJsonString<QueryResponse>().data.mapTo(ips) {
             it.inner_ip.substringAfter('.')
-        }.toSet()
+        }
     }
 
     data class ApiAuth(
