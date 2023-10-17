@@ -59,6 +59,8 @@ class FsClientOfflineJob(
         while (true) {
             val result = mongoTemplate.updateMulti(query, update, COLLECTION)
             logger.info("${result.modifiedCount} client(s) change to offline")
+            jobContext.total.addAndGet(result.matchedCount)
+            jobContext.success.addAndGet(result.modifiedCount)
             if (result.modifiedCount < batchSize) {
                 return
             }

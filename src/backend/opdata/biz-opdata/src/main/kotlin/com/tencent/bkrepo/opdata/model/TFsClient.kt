@@ -27,24 +27,22 @@
  *
  */
 
-package com.tencent.bkrepo.fs.server.request
+package com.tencent.bkrepo.opdata.model
 
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.queryParamOrNull
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-/**
- * 客户端列表请求
- */
-data class ClientListRequest(
+@Document("client")
+data class TFsClient(
+    val id: String? = null,
     val projectId: String,
-    val repoName: String?,
-    val pageNumber: Int,
-    val pageSize: Int
-) {
-    constructor(request: ServerRequest): this(
-        projectId = request.pathVariable("projectId"),
-        repoName = request.queryParamOrNull("repoName"),
-        pageNumber = request.queryParamOrNull("pageNumber")?.toInt() ?: 1,
-        pageSize = request.queryParamOrNull("pageSize")?.toInt() ?: 20
-    )
-}
+    val repoName: String,
+    val mountPoint: String,
+    val userId: String,
+    val ip: String,
+    val version: String,
+    val os: String,
+    val arch: String,
+    var online: Boolean,
+    var heartbeatTime: LocalDateTime
+)
