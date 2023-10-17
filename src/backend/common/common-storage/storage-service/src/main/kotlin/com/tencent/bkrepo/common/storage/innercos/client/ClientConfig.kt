@@ -69,7 +69,7 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     /**
      * 分片最小数量
      */
-    val minimumPartSize: Long = DataSize.ofMegabytes(MIN_PART_SIZE).toBytes()
+    val minimumPartSize: Long = DataSize.ofMegabytes(credentials.download.minimumPartSize).toBytes()
 
     /**
      * cos访问域名构造器
