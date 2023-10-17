@@ -97,6 +97,7 @@ class ClientService(
         val client = clientRepository.findOne(query)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
         client.heartbeatTime = LocalDateTime.now()
+        client.online = true
         clientRepository.save(client)
     }
 
@@ -143,5 +144,4 @@ class ClientService(
             heartbeatTime = heartbeatTime
         )
     }
-
 }
