@@ -103,10 +103,10 @@ class RouteConfiguration(
         }
 
         "/client".nest {
-            POST("/create", clientHandler::createClient)
-            DELETE("/delete/{clientId}", clientHandler::removeClient)
-            GET("/list/{projectId}", clientHandler::listClient)
-            POST("/heartbeat/{clientId}", clientHandler::heartbeat)
+            POST("/create/{projectId}/{repoName}", clientHandler::createClient)
+            DELETE("/delete/{projectId}/{repoName}/{clientId}", clientHandler::removeClient)
+            GET("/list/{projectId}/{repoName}", clientHandler::listClient)
+            POST("/heartbeat/{projectId}/{repoName}/{clientId}", clientHandler::heartbeat)
         }
 
         accept(APPLICATION_OCTET_STREAM).nest {
