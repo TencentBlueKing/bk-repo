@@ -29,8 +29,10 @@
 
 package com.tencent.bkrepo.fs.server.model
 
+import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
+@Document("client")
 data class TClient(
     val id: String? = null,
     val projectId: String,
