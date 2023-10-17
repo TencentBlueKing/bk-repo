@@ -27,22 +27,13 @@
  *
  */
 
-package com.tencent.bkrepo.fs.server.model
+package com.tencent.bkrepo.job.config.properties
 
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@Document("client")
-data class TClient(
-    val id: String? = null,
-    val projectId: String,
-    val repoName: String,
-    val mountPoint: String,
-    val userId: String,
-    val ip: String,
-    val version: String,
-    val os: String,
-    val arch: String,
-    var online: Boolean,
-    var heartbeatTime: LocalDateTime
-)
+@ConfigurationProperties("job.fs-client-offline")
+data class FsClientOfflineProperties(
+    override var enabled: Boolean = true,
+    override var fixedDelay: Long = 60 * 1000L,
+    override var initialDelay: Long = 60 * 1000L
+): MongodbJobProperties()
