@@ -41,7 +41,8 @@ class ClientHandler(
 
     suspend fun createClient(request: ServerRequest): ServerResponse {
         val createRequest = request.bodyToMono(ClientCreateRequest::class.java).awaitSingle()
-        return ReactiveResponseBuilder.success(clientService.createClient(createRequest))
+        val clientDetail = clientService.createClient(createRequest)
+        return ReactiveResponseBuilder.success(clientDetail)
     }
 
     suspend fun removeClient(request: ServerRequest): ServerResponse {
