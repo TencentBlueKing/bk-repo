@@ -106,7 +106,6 @@ class RouteConfiguration(
         "/client".nest {
             POST("/create/{projectId}/{repoName}", clientHandler::createClient)
             DELETE("/delete/{projectId}/{repoName}/{clientId}", clientHandler::removeClient)
-            GET("/list/{projectId}/{repoName}", clientHandler::listClient)
             POST("/heartbeat/{projectId}/{repoName}/{clientId}", clientHandler::heartbeat)
         }
 

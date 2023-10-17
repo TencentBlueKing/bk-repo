@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.fs.server.handler
 
 import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
-import com.tencent.bkrepo.fs.server.request.ClientListRequest
 import com.tencent.bkrepo.fs.server.service.ClientService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import kotlinx.coroutines.reactor.awaitSingle
@@ -48,11 +47,6 @@ class ClientHandler(
     suspend fun removeClient(request: ServerRequest): ServerResponse {
         val clientId = request.pathVariable("clientId")
         return ReactiveResponseBuilder.success(clientService.removeClient(clientId))
-    }
-
-    suspend fun listClient(request: ServerRequest): ServerResponse {
-        val clientListRequest = ClientListRequest(request)
-        return ReactiveResponseBuilder.success(clientService.listClient(clientListRequest))
     }
 
     suspend fun heartbeat(request: ServerRequest): ServerResponse {

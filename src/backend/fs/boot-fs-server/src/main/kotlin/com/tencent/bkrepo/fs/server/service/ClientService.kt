@@ -31,14 +31,11 @@ package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.model.TClient
 import com.tencent.bkrepo.fs.server.pojo.ClientDetail
-import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
 import com.tencent.bkrepo.fs.server.repository.ClientRepository
-import com.tencent.bkrepo.fs.server.request.ClientListRequest
+import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -74,19 +71,6 @@ class ClientService(
         val result = clientRepository.remove(query)
         if (result.deletedCount == 0L) {
             throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
-        }
-    }
-
-    suspend fun listClient(request: ClientListRequest): Page<ClientDetail> {
-        with(request) {
-            val query = Query(
-                Criteria.where(TClient::projectId.name).isEqualTo(projectId)
-                    .apply { repoName?.let { and(TClient::repoName.name).isEqualTo(it) } }
-            )
-            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-            val clientList = clientRepository.find(query.with(pageRequest)).map { it.convert() }
-            val count = clientRepository.count(query)
-            return Pages.ofResponse(pageRequest, count, clientList)
         }
     }
 
