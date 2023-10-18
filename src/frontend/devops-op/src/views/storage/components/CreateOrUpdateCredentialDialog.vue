@@ -144,6 +144,13 @@
           controls-position="right"
           :min="1"
         />
+        <el-tooltip
+          effect="dark"
+          content="单位Mb"
+          placement="top-start"
+        >
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
       </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_S3" label="Endpoint" prop="endpoint" required>
         <el-input v-model="credential.endpoint" :disabled="!createMode" />
