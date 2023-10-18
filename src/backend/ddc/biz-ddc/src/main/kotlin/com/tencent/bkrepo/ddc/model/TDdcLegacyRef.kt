@@ -27,13 +27,15 @@
 
 package com.tencent.bkrepo.ddc.model
 
-import org.bson.types.Binary
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("ddc_ref")
+/**
+ * DDC Ref,用于兼容UE4.26-4.27
+ */
+@Document("ddc_legacy_ref")
 @CompoundIndexes(
     CompoundIndex(
         name = "projectId_repoName_bucket_key_idx",
@@ -42,7 +44,7 @@ import java.time.LocalDateTime
         background = true
     )
 )
-class TDdcRef(
+class TDdcLegacyRef(
     createdBy: String,
     createdDate: LocalDateTime,
     lastModifiedBy: String,
@@ -52,23 +54,12 @@ class TDdcRef(
     repoName: String,
     bucket: String,
     key: String,
+
     /**
-     * 是否所有blob都上传完成
+     * 实际存放缓存的blob的id
      */
-    var finalized: Boolean,
-    /**
-     * inline blob id
-     */
-    var blobId: String,
-    /**
-     * inline blob，为null时表示inline blob较大，被存放到实际后端存储中
-     */
-    var inlineBlob: Binary? = null,
-    /**
-     * 过期时间
-     */
-    var expireDate: LocalDateTime? = null,
-) : TDdcRefBase(
+    var contentHash: String,
+): TDdcRefBase(
     createdBy = createdBy,
     createdDate = createdDate,
     lastModifiedBy = lastModifiedBy,

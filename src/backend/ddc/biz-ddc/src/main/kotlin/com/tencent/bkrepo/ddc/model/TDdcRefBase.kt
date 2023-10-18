@@ -27,55 +27,24 @@
 
 package com.tencent.bkrepo.ddc.model
 
-import org.bson.types.Binary
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("ddc_ref")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "projectId_repoName_bucket_key_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'bucket': 1, 'key': 1}",
-        unique = true,
-        background = true
-    )
-)
-class TDdcRef(
-    createdBy: String,
-    createdDate: LocalDateTime,
-    lastModifiedBy: String,
-    lastModifiedDate: LocalDateTime,
-    lastAccessDate: LocalDateTime,
-    projectId: String,
-    repoName: String,
-    bucket: String,
-    key: String,
+abstract class TDdcRefBase(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+    var lastAccessDate: LocalDateTime,
+
+    var projectId: String,
+    var repoName: String,
     /**
-     * 是否所有blob都上传完成
+     * ref bucket
      */
-    var finalized: Boolean,
+    var bucket: String,
     /**
-     * inline blob id
+     * ref key, blake3 hash
      */
-    var blobId: String,
-    /**
-     * inline blob，为null时表示inline blob较大，被存放到实际后端存储中
-     */
-    var inlineBlob: Binary? = null,
-    /**
-     * 过期时间
-     */
-    var expireDate: LocalDateTime? = null,
-) : TDdcRefBase(
-    createdBy = createdBy,
-    createdDate = createdDate,
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedDate = lastModifiedDate,
-    lastAccessDate = lastAccessDate,
-    projectId = projectId,
-    repoName = repoName,
-    bucket = bucket,
-    key = key
+    var key: String,
 )

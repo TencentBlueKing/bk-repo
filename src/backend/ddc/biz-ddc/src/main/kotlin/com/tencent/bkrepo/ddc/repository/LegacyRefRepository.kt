@@ -25,57 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.ddc.model
+package com.tencent.bkrepo.ddc.repository
 
-import org.bson.types.Binary
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.tencent.bkrepo.ddc.model.TDdcLegacyRef
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
-@Document("ddc_ref")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "projectId_repoName_bucket_key_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'bucket': 1, 'key': 1}",
-        unique = true,
-        background = true
-    )
-)
-class TDdcRef(
-    createdBy: String,
-    createdDate: LocalDateTime,
-    lastModifiedBy: String,
-    lastModifiedDate: LocalDateTime,
-    lastAccessDate: LocalDateTime,
-    projectId: String,
-    repoName: String,
-    bucket: String,
-    key: String,
-    /**
-     * 是否所有blob都上传完成
-     */
-    var finalized: Boolean,
-    /**
-     * inline blob id
-     */
-    var blobId: String,
-    /**
-     * inline blob，为null时表示inline blob较大，被存放到实际后端存储中
-     */
-    var inlineBlob: Binary? = null,
-    /**
-     * 过期时间
-     */
-    var expireDate: LocalDateTime? = null,
-) : TDdcRefBase(
-    createdBy = createdBy,
-    createdDate = createdDate,
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedDate = lastModifiedDate,
-    lastAccessDate = lastAccessDate,
-    projectId = projectId,
-    repoName = repoName,
-    bucket = bucket,
-    key = key
-)
+@Repository
+class LegacyRefRepository : RefBaseRepository<TDdcLegacyRef>() {
+    fun find(projectId: String, repoName: String, bucket: String, key: String): TDdcLegacyRef? {
+        val criteria = TDdcLegacyRef::projectId.isEqualTo(projectId)
+            .and(TDdcLegacyRef::repoName.name).isEqualTo(repoName)
+            .and(TDdcLegacyRef::bucket.name).isEqualTo(bucket)
+            .and(TDdcLegacyRef::key.name).isEqualTo(key)
+        return findOne(Query(criteria))
+    }
+}
