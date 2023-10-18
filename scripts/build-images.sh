@@ -12,6 +12,7 @@ ALL=1
 GATEWAY=0
 BACKEND=0
 INIT=0
+INIT_RBAC=0
 VERSION=latest
 PUSH=0
 ALL_IN_ONE=0
@@ -41,6 +42,7 @@ usage () {
             [ --all-in-one          [可选] 打包all in one镜像]
             [ --slim-package-path   [可选] slim包路径，打包all in one镜像需要]
             [ --init                [可选] 打包init镜像 ]
+            [ --init-rbac           [可选] 打包init-rbac镜像 ]
             [ -v, --version         [可选] 镜像版本tag, 默认latest ]
             [ -p, --push            [可选] 推送镜像到docker远程仓库，默认不推送 ]
             [ -l, --latest          [可选] 是否更新并推送latest tag ]
@@ -90,6 +92,10 @@ while (( $# > 0 )); do
         --init )
             ALL=0
             INIT=1
+            ;;
+        --init-rbac )
+            ALL=0
+            INIT_RBAC=1
             ;;
         -v | --version )
             shift
@@ -210,6 +216,18 @@ if [[ $ALL -eq 1 || $INIT -eq 1 ]] ; then
     docker build -f $IMAGE_DIR/init/init.Dockerfile -t $REGISTRY/$NAMESPACE/bkrepo-init:$VERSION $tmp_dir --no-cache --network=host
     if [[ $PUSH -eq 1 ]] ; then
         docker push $REGISTRY/$NAMESPACE/bkrepo-init:$VERSION
+    fi
+fi
+
+# 构建init-rbac镜像
+if [[ $ALL -eq 1 || $INIT_RBAC -eq 1 ]] ; then
+    log "构建init-rbac镜像..."
+    rm -rf $tmp_dir/*
+    mkdir -p $tmp_dir/support-files/bkiam
+    cp -rf $ROOT_DIR/support-files/bkiam/* $tmp_dir/support-files/bkiam
+    docker build -f init/init-rbac.Dockerfile -t $REGISTRY/bkrepo-init-rbac:$VERSION $tmp_dir --no-cache --network=host
+    if [[ $PUSH -eq 1 ]] ; then
+        docker push $REGISTRY/bkrepo-init-rbac:$VERSION
     fi
 fi
 

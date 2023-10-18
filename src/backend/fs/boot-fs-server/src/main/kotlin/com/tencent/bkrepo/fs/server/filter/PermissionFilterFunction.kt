@@ -44,9 +44,12 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
     private val matcher = AntPathMatcher()
     override suspend fun filter(
         request: ServerRequest,
-        next: suspend (ServerRequest) -> ServerResponse
+        next: suspend (ServerRequest) -> ServerResponse,
     ): ServerResponse {
-        if (request.path().startsWith("/login") || request.path().startsWith("/service")) {
+        if (request.path().startsWith("/login") ||
+            request.path().startsWith("/service") ||
+            request.path().startsWith("/token")
+        ) {
             return next(request)
         }
         val action = request.getAction()
@@ -92,7 +95,7 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
             "/node/delete/**",
             "/node/mkdir/**",
             "/node/set-length/**",
-            "/block/**"
+            "/block/**",
         )
     }
 }

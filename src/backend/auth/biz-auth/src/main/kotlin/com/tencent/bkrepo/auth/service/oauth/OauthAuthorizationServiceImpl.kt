@@ -117,7 +117,6 @@ class OauthAuthorizationServiceImpl(
     }
 
     override fun createToken(generateTokenRequest: GenerateTokenRequest) {
-        Preconditions.checkNotNull(generateTokenRequest.code, GenerateTokenRequest::code.name)
         val authorization = HeaderUtils.getHeader(HttpHeaders.AUTHORIZATION)?.removePrefix(BASIC_AUTH_PREFIX)
         val clientId: String
         val clientSecret: String?
@@ -130,37 +129,14 @@ class OauthAuthorizationServiceImpl(
             clientId = data.first()
             clientSecret = data.last()
         }
-        val code = generateTokenRequest.code!!
-        val userIdKey = "$clientId:$code:userId"
-        val openIdKey = "$clientId:$code:openId"
-        val nonceKey = "$clientId:$code:nonce"
-        val userId = redisOperation.get(userIdKey) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CODE_CHECK_FAILED)
-        val openId = redisOperation.get(openIdKey).toBoolean()
-        val nonce = redisOperation.get(nonceKey)
-        val client = checkClientSecret(clientId, clientSecret, code, generateTokenRequest.codeVerifier)
-        var tOauthToken = oauthTokenRepository.findFirstByAccountIdAndUserId(clientId, userId)
-        val idToken = generateOpenIdToken(clientId, userId, nonce)
-        if (tOauthToken == null) {
-            tOauthToken = TOauthToken(
-                accessToken = idToken.toJwtToken(),
-                refreshToken = OauthUtils.generateRefreshToken(),
-                expireSeconds = oauthProperties.expiredDuration.seconds,
-                type = "Bearer",
-                accountId = clientId,
-                userId = userId,
-                scope = client.scope,
-                issuedAt = Instant.now(Clock.systemDefaultZone()),
-                idToken = if (openId) idToken else null
-            )
-        }
-        if (client.scope != tOauthToken.scope) {
-            tOauthToken.scope = client.scope!!
-        }
-        tOauthToken.idToken = if (openId) idToken else null
-        tOauthToken.issuedAt = Instant.now(Clock.systemDefaultZone())
-        oauthTokenRepository.save(tOauthToken)
-
-        userService.addUserAccount(userId, client.id!!)
+        val tOauthToken =
+            if (generateTokenRequest.grantType.equals(AuthorizationGrantType.AUTHORIZATION_CODE.value(), true)) {
+                createAuthorizationCodeToken(generateTokenRequest, clientId, clientSecret)
+            } else if (generateTokenRequest.grantType.equals(AuthorizationGrantType.CLIENT_CREDENTIALS.value(), true)) {
+                createClientCredentialsToken(clientId, clientSecret)
+            } else {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "grant_type")
+            }
 
         val token = transfer(tOauthToken)
         responseToken(token)
@@ -183,6 +159,71 @@ class OauthAuthorizationServiceImpl(
             oauthTokenRepository.save(token)
             responseToken(transfer(token))
         }
+    }
+
+    private fun createAuthorizationCodeToken(
+        generateTokenRequest: GenerateTokenRequest,
+        clientId: String,
+        clientSecret: String?
+    ): TOauthToken {
+        Preconditions.checkNotNull(generateTokenRequest.code, GenerateTokenRequest::code.name)
+        val code = generateTokenRequest.code!!
+        val userIdKey = "$clientId:$code:userId"
+        val openIdKey = "$clientId:$code:openId"
+        val nonceKey = "$clientId:$code:nonce"
+        val userId = redisOperation.get(userIdKey) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CODE_CHECK_FAILED)
+        val openId = redisOperation.get(openIdKey).toBoolean()
+        val nonce = redisOperation.get(nonceKey)
+        val client = checkClientSecret(clientId, clientSecret, code, generateTokenRequest.codeVerifier)
+        val tOauthToken = buildOauthToken(userId, nonce, client, openId)
+
+        userService.addUserAccount(userId, client.id!!)
+        return tOauthToken
+    }
+
+    private fun createClientCredentialsToken(
+        clientId: String,
+        clientSecret: String?
+    ): TOauthToken {
+        Preconditions.checkNotBlank(clientSecret, "client_secret")
+        val client = accountRepository.findById(clientId)
+            .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
+        client.credentials.find {
+            it.authorizationGrantType == AuthorizationGrantType.CLIENT_CREDENTIALS && it.secretKey == clientSecret
+        } ?: throw ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST)
+        return buildOauthToken(client.owner!!, null, client, false)
+    }
+
+    private fun buildOauthToken(
+        userId: String,
+        nonce: String?,
+        client: TAccount,
+        openId: Boolean
+    ): TOauthToken {
+        var tOauthToken = oauthTokenRepository.findFirstByAccountIdAndUserId(client.id!!, userId)
+        val idToken = generateOpenIdToken(client.id, userId, nonce)
+        if (tOauthToken == null) {
+            tOauthToken = TOauthToken(
+                accessToken = idToken.toJwtToken(),
+                refreshToken = OauthUtils.generateRefreshToken(),
+                expireSeconds = oauthProperties.expiredDuration.seconds,
+                type = "Bearer",
+                accountId = client.id,
+                userId = userId,
+                scope = client.scope,
+                issuedAt = Instant.now(Clock.systemDefaultZone()),
+                idToken = if (openId) idToken else null
+            )
+        }
+        if (client.scope != tOauthToken.scope) {
+            tOauthToken.scope = client.scope!!
+        }
+        tOauthToken.userId = userId
+        tOauthToken.accessToken = idToken.toJwtToken()
+        tOauthToken.idToken = if (openId) idToken else null
+        tOauthToken.issuedAt = Instant.now(Clock.systemDefaultZone())
+        oauthTokenRepository.save(tOauthToken)
+        return tOauthToken
     }
 
     private fun responseToken(token: OauthToken) {
@@ -336,6 +377,7 @@ class OauthAuthorizationServiceImpl(
             "plain" -> challenge == codeVerifier
             "S256" -> Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(HashAlgorithm.SHA256().digest(codeVerifier.orEmpty().byteInputStream())) == challenge
+
             else -> false
         }
         if (!pass) {

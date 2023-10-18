@@ -71,6 +71,7 @@
 
         <common-form-dialog ref="commonFormDialog" @refresh="refresh"></common-form-dialog>
         <loading ref="loading" @closeLoading="closeLoading"></loading>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
@@ -78,11 +79,12 @@
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import VersionDetail from '@repository/views/repoCommon/commonVersionDetail'
     import commonFormDialog from '@repository/views/repoCommon/commonFormDialog'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
     import Loading from '@repository/components/Loading/loading'
     export default {
         name: 'commonPackageDetail',
-        components: { Loading, OperationList, InfiniteScroll, VersionDetail, commonFormDialog },
+        components: { Loading, OperationList, InfiniteScroll, VersionDetail, commonFormDialog, iamDenyDialog },
         data () {
             return {
                 tabName: 'commonVersion',
@@ -99,7 +101,7 @@
                     tag: [
                         {
                             required: true,
-                            message: this.$t('pleaseSelect') + this.$t('tag'),
+                            message: this.$t('pleaseSelect') + this.$t('space') + this.$t('tag'),
                             trigger: 'blur'
                         }
                     ]
@@ -121,11 +123,13 @@
                     limit: 20,
                     limitList: [10, 20, 40]
                 },
+                showIamDenyDialog: false,
+                showData: {},
                 timer: null
             }
         },
         computed: {
-            ...mapState(['permission', 'scannerSupportPackageType']),
+            ...mapState(['permission', 'scannerSupportPackageType', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId || ''
             },
@@ -163,7 +167,8 @@
                 'changeStageTag',
                 'deleteVersion',
                 'forbidPackageMetadata',
-                'refreshSupportPackageTypeList'
+                'refreshSupportPackageTypeList',
+                'getPermissionUrl'
             ]),
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}, load) {
                 this.pagination.current = current
@@ -244,7 +249,8 @@
                     type: 'upgrade',
                     version: row.name,
                     default: row.stageTag,
-                    tag: ''
+                    tag: '',
+                    path: this.currentVersion.contentPath
                 })
             },
             scanPackageHandler (row = this.currentVersion) {
@@ -255,7 +261,8 @@
                     type: 'scan',
                     id: '',
                     name: this.pkg.name,
-                    version: row.name
+                    version: row.name,
+                    path: this.currentVersion.contentPath
                 })
             },
             changeForbidStatusHandler (row = this.currentVersion) {
@@ -273,6 +280,30 @@
                         message: (row.metadata.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse')) + this.$t('space') + this.$t('success')
                     })
                     this.refresh(row.name)
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'UPDATE',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: this.currentVersion.contentPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'UPDATE',
+                                    url: res,
+                                    path: this.currentVersion.contentPath
+                                }
+                            }
+                        })
+                    }
                 })
             },
             downloadPackageHandler (row = this.currentVersion) {
@@ -350,8 +381,33 @@
                             this.getVersionListHandler()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'NODE',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName,
+                                        path: this.currentVersion.contentPath
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            url: res,
+                                            packageName: this.currentVersion.metadata.name,
+                                            packageVersion: this.currentVersion.metadata.version
+                                        }
+                                    }
+                                })
+                            }
                         })
                     }
                 })

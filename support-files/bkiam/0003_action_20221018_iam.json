@@ -1,0 +1,384 @@
+{
+    "system_id": "bk-repo",
+    "operations": [
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id": "project_view",
+                "name": "查看项目",
+                "name_en": "project view",
+                "type": "view",
+                "auth_type":"rbac",
+                "related_resource_types": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "project",
+                        "related_instance_selections": [
+                            {
+                                "system_id": "bk-repo",
+                                "id": "project_instance",
+                                "ignore_iam_path":true
+                            }
+                        ]
+                    }
+                ],
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id": "project_edit",
+                "name": "项目更新",
+                "name_en": "project edit",
+                "type": "edit",
+                "auth_type":"rbac",
+                "related_resource_types": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "project",
+                        "related_instance_selections": [
+                            {
+                                "system_id": "bk-repo",
+                                "id": "project_instance",
+                                "ignore_iam_path":true
+                            }
+                        ]
+                    }
+                ],
+                "related_actions": [
+                    "project_view"
+                ],
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id": "project_manage",
+                "name": "项目管理",
+                "name_en": "project manage",
+                "type": "manage",
+                "auth_type":"rbac",
+                "related_resource_types": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "project",
+                        "related_instance_selections": [
+                            {
+                                "system_id": "bk-repo",
+                                "id": "project_instance",
+                                "ignore_iam_path":true
+                            }
+                        ]
+                    }
+                ],
+                "related_actions": [
+                    "project_view",
+                    "project_edit"
+                ],
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id": "repo_create",
+                "name": "仓库创建",
+                "name_en": "create repo",
+                "type": "create",
+                "auth_type":"rbac",
+                "related_resource_types": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "project",
+                        "related_instance_selections": [
+                            {
+                                "system_id": "bk-repo",
+                                "id": "project_instance",
+                                "ignore_iam_path":true
+                            }
+                        ]
+                    }
+                ],
+                "related_actions": [
+                    "project_view"
+                ],
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id": "repo_view",
+                "name": "查看仓库",
+                "name_en": "repo view",
+                "type": "view",
+                "auth_type":"rbac",
+                "related_resource_types": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "repo",
+                        "related_instance_selections": [
+                            {
+                                "system_id": "bk-repo",
+                                "id": "repo_instance",
+                                "ignore_iam_path":true
+                            }
+                        ]
+                    }
+                ],
+                "related_actions": [
+                    "project_view"
+                ],
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id": "repo_edit",
+                "name": "仓库更新",
+                "name_en": "repo edit",
+                "type": "edit",
+                "auth_type":"rbac",
+                "related_resource_types": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "repo",
+                        "related_instance_selections": [
+                            {
+                                "system_id": "bk-repo",
+                                "id": "repo_instance",
+                                "ignore_iam_path":true
+                            }
+                        ]
+                    }
+                ],
+                "related_actions": [
+                    "project_view",
+                    "repo_view"
+                ],
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id": "repo_manage",
+                "name": "仓库管理",
+                "name_en": "repo manage",
+                "type": "manage",
+                "auth_type":"rbac",
+                "related_resource_types": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "repo",
+                        "related_instance_selections": [
+                            {
+                                "system_id": "bk-repo",
+                                "id": "repo_instance",
+                                "ignore_iam_path":true
+                            }
+                        ]
+                    }
+                ],
+                "related_actions": [
+                    "project_view",
+                    "repo_view",
+                    "repo_edit",
+                    "repo_delete"
+                ],
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id": "repo_delete",
+                "name": "仓库删除",
+                "name_en": "repo ",
+                "type": "delete",
+                "auth_type":"rbac",
+                "related_resource_types": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "repo",
+                        "related_instance_selections": [
+                            {
+                                "system_id": "bk-repo",
+                                "id": "repo_instance",
+                                "ignore_iam_path":true
+                            }
+                        ]
+                    }
+                ],
+                "related_actions": [
+                    "project_view",
+                    "repo_view"
+                ],
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id":"node_create",
+                "name":"节点创建",
+                "name_en":"node create",
+                "type":"create",
+                "auth_type":"rbac",
+                "related_resource_types":[{
+                    "system_id":"bk-repo",
+                    "id":"repo",
+                    "related_instance_selections":[
+                        {
+                            "system_id":"bk-repo",
+                            "id":"repo_instance",
+                            "ignore_iam_path":true
+                        }
+                    ]
+                }],
+                "related_actions": [
+                    "project_view",
+                    "repo_view"
+                ],
+                "version":1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id":"node_view",
+                "name":"查看节点",
+                "name_en":"node view",
+                "type":"view",
+                "auth_type":"rbac",
+                "related_resource_types":[{
+                    "system_id":"bk-repo",
+                    "id":"node",
+                    "related_instance_selections":[
+                        {
+                            "system_id":"bk-repo",
+                            "id":"node_instance",
+                            "ignore_iam_path":true
+                        }
+                    ]
+                }],
+                "related_actions": [
+                    "project_view",
+                    "repo_view"
+                ],
+                "version":1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id":"node_download",
+                "name":"下载节点",
+                "name_en":"node download",
+                "type":"execute",
+                "auth_type":"rbac",
+                "related_resource_types":[{
+                    "system_id":"bk-repo",
+                    "id":"node",
+                    "related_instance_selections":[
+                        {
+                            "system_id":"bk-repo",
+                            "id":"node_instance",
+                            "ignore_iam_path":true
+                        }
+                    ]
+                }],
+                "related_actions":[
+                    "project_view",
+                    "repo_view",
+                    "node_view"
+                ],
+                "version":1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id":"node_edit",
+                "name":"节点更新",
+                "name_en":"node edit",
+                "type":"edit",
+                "auth_type":"rbac",
+                "related_resource_types":[{
+                    "system_id":"bk-repo",
+                    "id":"node",
+                    "related_instance_selections":[
+                        {
+                            "system_id":"bk-repo",
+                            "id":"node_instance",
+                            "ignore_iam_path":true
+                        }
+                    ]
+                }],
+                "related_actions":[
+                    "project_view",
+                    "repo_view",
+                    "node_view"
+                ],
+                "version":1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id":"node_write",
+                "name":"节点编辑",
+                "name_en":"node write",
+                "type":"create",
+                "auth_type":"rbac",
+                "related_resource_types":[{
+                    "system_id":"bk-repo",
+                    "id":"node",
+                    "related_instance_selections":[
+                        {
+                            "system_id":"bk-repo",
+                            "id":"node_instance",
+                            "ignore_iam_path":true
+                        }
+                    ]
+                }],
+                "related_actions":[
+                    "project_view",
+                    "repo_view",
+                    "node_view"
+                ],
+                "version":1
+            }
+        },
+        {
+            "operation": "upsert_action",
+            "data": {
+                "id":"node_delete",
+                "name":"节点删除",
+                "name_en":"node delete",
+                "type":"delete",
+                "auth_type":"rbac",
+                "related_resource_types":[{
+                    "system_id":"bk-repo",
+                    "id":"node",
+                    "related_instance_selections":[
+                        {
+                            "system_id":"bk-repo",
+                            "id":"node_instance",
+                            "ignore_iam_path":true
+                        }
+                    ]
+                }],
+                "related_actions":[
+                    "project_view",
+                    "repo_view",
+                    "node_view"
+                ],
+                "version":1
+            }
+        }
+    ]
+}

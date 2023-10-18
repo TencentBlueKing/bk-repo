@@ -41,6 +41,7 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("节点信息")
 data class NodeInfo(
+    var id: String? = null,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")

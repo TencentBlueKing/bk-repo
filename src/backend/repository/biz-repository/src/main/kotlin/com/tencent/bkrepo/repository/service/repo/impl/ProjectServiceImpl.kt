@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl
 
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
@@ -79,7 +80,8 @@ import java.util.regex.Pattern
 class ProjectServiceImpl(
     private val projectDao: ProjectDao,
     private val servicePermissionClient: ServicePermissionClient,
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 ) : ProjectService {
 
     @Autowired
@@ -126,14 +128,20 @@ class ProjectServiceImpl(
                 query.with(Sort.by(Sort.Direction.valueOf(it.first), it.second))
             }
         }
-        return if (option?.pageNumber == null && option?.pageSize == null) {
-            projectDao.find(query).map { convert(it)!! }
+        val projectList = if (option?.pageNumber == null && option?.pageSize == null) {
+            projectDao.find(query)
         } else {
             val pageRequest = Pages.ofRequest(
                 option.pageNumber ?: DEFAULT_PAGE_NUMBER,
                 option.pageSize ?: DEFAULT_PAGE_SIZE
             )
-            projectDao.find(query.with(pageRequest)).map { convert(it)!! }
+            projectDao.find(query.with(pageRequest))
+        }
+        val projectIdList = projectList.map { it.name }
+        val existProjectMap = serviceBkiamV3ResourceClient.getExistRbacDefaultGroupProjectIds(projectIdList).data
+        return projectList.map {
+            val exist = existProjectMap?.get(it.name) ?: false
+            convert(it, exist)!!
         }
     }
 
@@ -182,7 +190,8 @@ class ProjectServiceImpl(
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
+                metadata = metadata,
             )
             return try {
                 projectDao.insert(project)
@@ -223,6 +232,10 @@ class ProjectServiceImpl(
             request.displayName?.let { this.set(TProject::displayName.name, it) }
             request.description?.let { this.set(TProject::description.name, it) }
         }
+        if (request.metadata.isNotEmpty()) {
+            // 直接使用request的metadata，不存在于request的metadata会被删除，存在的会被覆盖
+            update.set(TProject::metadata.name, request.metadata)
+        }
         val updateResult = projectDao.updateFirst(query, update)
         return if (updateResult.modifiedCount == 1L) {
             logger.info("Update project [$name] success.")
@@ -254,6 +267,10 @@ class ProjectServiceImpl(
         private const val DISPLAY_NAME_LENGTH_MAX = 32
 
         private fun convert(tProject: TProject?): ProjectInfo? {
+            return convert(tProject, false)
+        }
+
+        private fun convert(tProject: TProject?, rbacFlag: Boolean): ProjectInfo? {
             return tProject?.let {
                 ProjectInfo(
                     name = it.name,
@@ -262,7 +279,8 @@ class ProjectServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    metadata = it.metadata
                 )
             }
         }

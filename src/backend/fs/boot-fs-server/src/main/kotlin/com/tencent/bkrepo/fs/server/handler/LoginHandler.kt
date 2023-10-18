@@ -50,7 +50,7 @@ import org.springframework.web.reactive.function.server.ServerResponse
 class LoginHandler(
     private val permissionService: PermissionService,
     private val securityManager: SecurityManager,
-    private val rAuthClient: RAuthClient
+    private val rAuthClient: RAuthClient,
 ) {
 
     /**
@@ -70,7 +70,11 @@ class LoginHandler(
         if (tokenRes.data != true) {
             throw AuthenticationException()
         }
+        val token = createToken(projectId, repoName, username)
+        return ReactiveResponseBuilder.success(token)
+    }
 
+    private suspend fun createToken(projectId: String, repoName: String, username: String): String {
         val claims = mutableMapOf(JWT_CLAIMS_REPOSITORY to "$projectId/$repoName")
         val writePermit = permissionService.checkPermission(projectId, repoName, PermissionAction.WRITE, username)
         if (writePermit) {
@@ -83,8 +87,20 @@ class LoginHandler(
         }
         val token = securityManager.generateToken(
             subject = username,
-            claims = claims
+            claims = claims,
         )
-        return ReactiveResponseBuilder.success(token)
+        return token
+    }
+
+    suspend fun refresh(request: ServerRequest): ServerResponse {
+        val token = request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull().orEmpty()
+        val jws = securityManager.validateToken(token)
+        val claims = jws.body
+        val username = claims.subject
+        val parts = claims[JWT_CLAIMS_REPOSITORY].toString().split("/")
+        val projectId = parts[0]
+        val repoName = parts[1]
+        val newToken = createToken(projectId, repoName, username)
+        return ReactiveResponseBuilder.success(newToken)
     }
 }

@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.component.RefDownloadListener
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.ddc.event.RefDownloadedEvent
 import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
 import com.tencent.bkrepo.ddc.exception.NotImplementedException
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
+import com.tencent.bkrepo.ddc.metrics.DdcMeterBinder
 import com.tencent.bkrepo.ddc.pojo.Blob
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.pojo.UploadCompressedBlobResponse
@@ -72,6 +74,7 @@ import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit.NANOSECONDS
 
 @Component
 class DdcLocalRepository(
@@ -79,6 +82,7 @@ class DdcLocalRepository(
     private val refResolver: ReferenceResolver,
     private val blobService: BlobService,
     private val refDownloadListener: RefDownloadListener,
+    private val ddcMeterBinder: DdcMeterBinder,
 ) : LocalRepository() {
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
@@ -95,9 +99,19 @@ class DdcLocalRepository(
     override fun onUpload(context: ArtifactUploadContext) {
         val artifactInfo = context.artifactInfo
         if (artifactInfo is ReferenceArtifactInfo) {
+            val startTime = System.nanoTime()
             onUploadReference(context)
+            ddcMeterBinder.refStoreTimer.record(System.nanoTime() - startTime, NANOSECONDS)
         } else {
             onUploadBlob(context)
+        }
+    }
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        val artifactInfo = context.artifactInfo
+        if (artifactInfo is ReferenceArtifactInfo) {
+            ddcMeterBinder.incCacheCount(artifactInfo.projectId, artifactInfo.repoName)
         }
     }
 
@@ -106,7 +120,22 @@ class DdcLocalRepository(
         return if (artifactInfo is ReferenceArtifactInfo) {
             onDownloadReference(context)
         } else {
-            onDownloadBlob(context)
+            val startTime = System.nanoTime()
+            onDownloadBlob(context)?.apply {
+                ddcMeterBinder.blobLoadTimer.record(System.nanoTime() - startTime, NANOSECONDS)
+            }
+        }
+    }
+
+    override fun onDownloadSuccess(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource,
+        throughput: Throughput
+    ) {
+        super.onDownloadSuccess(context, artifactResource, throughput)
+        val artifactInfo = context.artifactInfo
+        if (artifactInfo is ReferenceArtifactInfo) {
+            ddcMeterBinder.incCacheHitCount(artifactInfo.projectId, artifactInfo.repoName)
         }
     }
 
@@ -193,6 +222,7 @@ class DdcLocalRepository(
 
     private fun onDownloadReference(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
+            val startTime = System.nanoTime()
             val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
             val ref = referenceService.getReference(
                 projectId, repoName, artifactInfo.bucket, artifactInfo.refKey.toString()
@@ -207,11 +237,16 @@ class DdcLocalRepository(
                         ByteArrayInputStream(ref.inlineBlob),
                         Range.full(ref.inlineBlob!!.size.toLong())
                     )
-                    ArtifactResource(ais, artifactInfo.getResponseName()).apply { contentType = responseType }
+                    ArtifactResource(ais, artifactInfo.getResponseName()).apply {
+                        contentType = responseType
+                        ddcMeterBinder.refLoadTimer.record(System.nanoTime() - startTime, NANOSECONDS)
+                    }
                 }
 
                 MEDIA_TYPE_JUPITER_INLINED_PAYLOAD -> {
-                    onInlineDownload(context, ref.inlineBlob!!, responseType)
+                    onInlineDownload(context, ref.inlineBlob!!, responseType)?.apply {
+                        ddcMeterBinder.refInlineLoadTimer.record(System.nanoTime() - startTime, NANOSECONDS)
+                    }
                 }
 
                 else -> throw NotImplementedException("Unknown expected response type $responseType")

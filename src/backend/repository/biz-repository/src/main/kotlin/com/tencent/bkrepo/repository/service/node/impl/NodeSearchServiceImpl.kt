@@ -49,6 +49,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
+import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
 /**
@@ -130,7 +131,7 @@ class NodeSearchServiceImpl(
         if (time > repositoryProperties.slowLogTimeThreshold) {
             logger.warn("search node slow log, " +
                 "query[${query.toJsonString().replace(System.lineSeparator(), "")}], " +
-                "cost ${HumanReadable.time(time)}")
+                "cost ${HumanReadable.time(time, TimeUnit.MILLISECONDS)}")
         }
         // metadata格式转换，并排除id字段
         nodeList.forEach {

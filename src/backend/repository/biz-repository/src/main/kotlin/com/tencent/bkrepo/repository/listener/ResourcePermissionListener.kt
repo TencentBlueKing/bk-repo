@@ -31,11 +31,14 @@
 
 package com.tencent.bkrepo.repository.listener
 
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
+import com.tencent.bkrepo.common.artifact.event.repo.RepoDeletedEvent
+import com.tencent.bkrepo.common.artifact.event.repo.RepoUpdatedEvent
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
@@ -48,7 +51,8 @@ import org.springframework.stereotype.Component
 @Component
 class ResourcePermissionListener(
     private val roleResource: ServiceRoleClient,
-    private val userResource: ServiceUserClient
+    private val userResource: ServiceUserClient,
+    private val bkiamV3Resource: ServiceBkiamV3ResourceClient
 ) {
 
     /**
@@ -62,6 +66,7 @@ class ResourcePermissionListener(
             if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
                 userResource.addUserRole(userId, projectManagerRoleId)
+                bkiamV3Resource.createProjectManage(userId, projectId)
             }
         }
     }
@@ -76,7 +81,29 @@ class ResourcePermissionListener(
             if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
                 val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
                 userResource.addUserRole(userId, repoManagerRoleId)
+                bkiamV3Resource.createRepoManage(userId, projectId, repoName)
             }
+        }
+    }
+
+    @Async
+    @EventListener(RepoUpdatedEvent::class)
+    fun handle(event: RepoUpdatedEvent) {
+        with(event) {
+            if (isAuthedNormalUser(userId) && isNeedLocalPermission(projectId)) {
+                bkiamV3Resource.createRepoManage(userId, projectId, repoName)
+            }
+        }
+    }
+
+    /**
+     * 删除仓库时，需要删除当前在权限中心创建的分级管理员
+     */
+    @Async
+    @EventListener(RepoDeletedEvent::class)
+    fun handle(event: RepoDeletedEvent) {
+        with(event) {
+            bkiamV3Resource.deleteRepoManageGroup(userId, projectId, repoName)
         }
     }
 

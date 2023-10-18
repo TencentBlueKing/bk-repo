@@ -58,6 +58,23 @@ open class ArtifactInfo(
     private val normalizedUri = PathUtils.normalizeFullPath(artifactUri)
 
     /**
+     * 构件实际映射路径, 默认情况为空
+     * 存在着特殊场景下传入构件url与实际存储路径需要进行转换的场景
+     * 如构建路径为/archive/file/tmp.data 实际映射路径可能为/archive/file/tmp/tmp.data
+     */
+    private var artifactMappingUri: String? = null
+
+
+    /**
+     * 设置构件实际映射路径
+     */
+    open fun setArtifactMappingUri(artifactMappingUri: String) {
+        this.artifactMappingUri = PathUtils.normalizeFullPath(artifactMappingUri)
+    }
+
+    fun getArtifactMappingUri(): String? = artifactMappingUri
+
+    /**
      * 构件名称，不同依赖源解析规则不一样，可以override
      *
      * 默认使用传入的artifactUri作为名称
@@ -75,7 +92,11 @@ open class ArtifactInfo(
      *
      * 默认使用传入的artifactUri作为名称
      */
-    open fun getArtifactFullPath(): String = normalizedUri
+    open fun getArtifactFullPath(): String = if (artifactMappingUri.isNullOrEmpty()) {
+        normalizedUri
+    } else {
+        artifactMappingUri!!
+    }
 
     /**
      * 构件下载显示名称，不同依赖源解析规则不一样，可以override

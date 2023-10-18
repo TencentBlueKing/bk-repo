@@ -74,6 +74,7 @@ class RouteConfiguration(
         before(RouteConfiguration::initArtifactContext)
         filter(permissionFilterFunction::filter)
         POST("/login/{projectId}/{repoName}", loginHandler::login)
+        POST("/token/refresh/{projectId}/{repoName}", loginHandler::refresh)
 
         "/service/block".nest {
             GET("/list$DEFAULT_MAPPING_URI", fsNodeHandler::listBlocks)

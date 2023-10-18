@@ -395,10 +395,12 @@ class OciRegistryLocalRepository(
     }
 
     private fun getNodeDetail(artifactInfo: OciArtifactInfo, fullPath: String): NodeDetail? {
-        return ArtifactContextHolder.getNodeDetail(fullPath = fullPath) ?: run {
+        artifactInfo.setArtifactMappingUri(fullPath)
+        return ArtifactContextHolder.getNodeDetail(artifactInfo) ?: run {
             val oldDockerPath = ociOperationService.getDockerNode(artifactInfo)
                 ?: return null
-            ArtifactContextHolder.getNodeDetail(fullPath = oldDockerPath)
+            artifactInfo.setArtifactMappingUri(oldDockerPath)
+            ArtifactContextHolder.getNodeDetail(artifactInfo)
         }
     }
 

@@ -214,7 +214,7 @@ export default {
                     if (xhr.status === 200) {
                         resolve(xhr.response)
                     } else {
-                        reject(xhr.response)
+                        reject(xhr)
                     }
                 }
             }

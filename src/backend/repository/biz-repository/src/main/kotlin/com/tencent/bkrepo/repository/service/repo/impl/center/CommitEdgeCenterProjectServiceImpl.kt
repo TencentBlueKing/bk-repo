@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl.center
 
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.dao.ProjectDao
@@ -40,9 +41,11 @@ import org.springframework.stereotype.Service
 class CommitEdgeCenterProjectServiceImpl(
     projectDao: ProjectDao,
     servicePermissionClient: ServicePermissionClient,
-    projectMetricsRepository: ProjectMetricsRepository
+    projectMetricsRepository: ProjectMetricsRepository,
+    serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 ) : ProjectServiceImpl(
     projectDao,
     servicePermissionClient,
-    projectMetricsRepository
+    projectMetricsRepository,
+    serviceBkiamV3ResourceClient
 )

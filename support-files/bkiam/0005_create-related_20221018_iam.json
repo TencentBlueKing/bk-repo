@@ -1,0 +1,87 @@
+{
+    "system_id": "bk-repo",
+    "operations": [
+        {
+            "operation": "upsert_resource_creator_actions",
+            "data": {
+                "config": [
+                    {
+                        "id": "project",
+                        "actions": [
+                            {
+                                "id": "project_manage",
+                                "required": false
+                            },
+                            {
+                                "id": "project_view",
+                                "required": false
+                            },
+                            {
+                                "id": "project_edit",
+                                "required": false
+                            },
+                            {
+                                "id": "repo_create",
+                                "required": false
+                            }
+                        ],
+                        "sub_resource_types": [
+                            {
+                                "id": "repo",
+                                "actions": [
+                                    {
+                                        "id": "repo_manage",
+                                        "required": false
+                                    },
+                                    {
+                                        "id": "repo_view",
+                                        "required": false
+                                    },
+                                    {
+                                        "id": "repo_edit",
+                                        "required": false
+                                    },
+                                    {
+                                        "id": "repo_delete",
+                                        "required": false
+                                    },
+                                    {
+                                        "id": "node_create",
+                                        "required": false
+                                    }
+                                ],
+                                "sub_resource_types": [
+                                    {
+                                        "id": "node",
+                                        "actions": [
+                                            {
+                                                "id": "node_view",
+                                                "required": false
+                                            },
+                                            {
+                                                "id": "node_write",
+                                                "required": false
+                                            },
+                                            {
+                                                "id": "node_download",
+                                                "required": false
+                                            },
+                                            {
+                                                "id": "node_edit",
+                                                "required": false
+                                            },
+                                            {
+                                                "id": "node_delete",
+                                                "required": false
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

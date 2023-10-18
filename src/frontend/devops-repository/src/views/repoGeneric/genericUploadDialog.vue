@@ -14,14 +14,16 @@
             <bk-button @click="uploadDialog.loading ? abortUpload() : (uploadDialog.show = false)">{{ $t('cancel') }}</bk-button>
             <bk-button class="ml10" :loading="uploadDialog.loading" theme="primary" @click="submitUpload">{{ $t('confirm') }}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
     import ArtifactoryUpload from '@repository/components/ArtifactoryUpload'
-    import { mapActions } from 'vuex'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import { mapActions, mapState } from 'vuex'
     export default {
         name: 'genericUpload',
-        components: { ArtifactoryUpload },
+        components: { ArtifactoryUpload, iamDenyDialog },
         props: {
             heightNum: {
                 type: String,
@@ -40,10 +42,13 @@
                     uploadXHR: null,
                     uploadStatus: 'primary',
                     uploadProgress: 0
-                }
+                },
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
+            ...mapState(['userInfo']),
             projectId () {
                 return this.uploadDialog.projectId || this.$route.params.projectId
             },
@@ -53,7 +58,8 @@
         },
         methods: {
             ...mapActions([
-                'uploadArtifactory'
+                'uploadArtifactory',
+                'getPermissionUrl'
             ]),
             setData (data, refresh = false) {
                 if (refresh) {
@@ -103,10 +109,37 @@
                 }).catch(e => {
                     this.uploadDialog.uploadStatus = 'primary'
                     this.uploadDialog.uploadProgress = 0
-                    e && this.$bkMessage({
-                        theme: 'error',
-                        message: e.message || e
-                    })
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'WRITE',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'WRITE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        e && this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 }).finally(() => {
                     this.uploadDialog.loading = false
                 })
@@ -126,11 +159,31 @@
                         if (e.status === 404) {
                             this.uploadFile(file)
                         } else if (e.status === 403) {
-                            this.$bkMessage({
-                                theme: 'error',
-                                message: e.message
+                            this.getPermissionUrl({
+                                body: {
+                                    projectId: this.projectId,
+                                    action: 'WRITE',
+                                    resourceType: 'REPO',
+                                    uid: this.userInfo.name,
+                                    repoName: this.repoName
+                                }
+                            }).then(res => {
+                                if (res !== '') {
+                                    this.showIamDenyDialog = true
+                                    this.showData = {
+                                        projectId: this.projectId,
+                                        repoName: this.repoName,
+                                        action: 'WRITE',
+                                        url: res
+                                    }
+                                } else {
+                                    this.$bkMessage({
+                                        theme: 'error',
+                                        message: e.message
+                                    })
+                                    this.uploadDialog.loading = false
+                                }
                             })
-                            this.uploadDialog.loading = false
                         }
                     })
                 } else {

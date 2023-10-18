@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
@@ -104,6 +105,9 @@ open class ServiceBaseTest {
 
     @MockBean
     lateinit var servicePermissionClient: ServicePermissionClient
+
+    @MockBean
+    lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
     @MockBean
     lateinit var permissionManager: PermissionManager

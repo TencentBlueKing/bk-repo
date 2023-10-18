@@ -29,12 +29,15 @@ package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.EXPIRED_SECONDS
+import com.tencent.bkrepo.analyst.exception.ArtifactDeletedException
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
@@ -125,7 +128,13 @@ class TemporaryScanTokenServiceImpl(
     }
 
     override fun getToolInput(subtaskId: String, token: String): ToolInput {
-        return getToolInput(scanService.get(subtaskId).apply { this.token = token })
+        try {
+            return getToolInput(scanService.get(subtaskId).apply { this.token = token })
+        } catch (e: ArtifactDeletedException) {
+            logger.warn("artifact [${e.sha256}] was deleted, set subtask[$subtaskId] to failed")
+            scanService.reportResult(ReportResultRequest(subtaskId, SubScanTaskStatus.FAILED.name))
+            throw e
+        }
     }
 
     override fun pullToolInput(executionCluster: String, token: String): ToolInput? {
@@ -133,7 +142,13 @@ class TemporaryScanTokenServiceImpl(
         return subtask?.let {
             logger.info("executionCluster[$executionCluster] pull subtask[${it.taskId}]")
             subtask.token = token
-            getToolInput(it)
+            try {
+                getToolInput(it)
+            } catch (e: ArtifactDeletedException) {
+                logger.warn("artifact [${e.sha256}] was deleted, set subtask[${it.taskId}] to failed")
+                scanService.reportResult(ReportResultRequest(it.taskId, SubScanTaskStatus.FAILED.name))
+                null
+            }
         }
     }
 
@@ -221,9 +236,13 @@ class TemporaryScanTokenServiceImpl(
                     .build()
             )
 
-            if (res.isNotOk() || res.data!!.records.isEmpty()) {
+            if (res.isNotOk()) {
                 logger.error("get node of layer[$it] failed, msg[${res.message}]")
                 throw SystemErrorException()
+            }
+
+            if (res.data!!.records.isEmpty()) {
+                throw ArtifactDeletedException(it)
             }
 
             res.data!!.records.first()
