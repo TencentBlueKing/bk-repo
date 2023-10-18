@@ -45,13 +45,17 @@ class ClientHandler(
     }
 
     suspend fun removeClient(request: ServerRequest): ServerResponse {
+        val projectId = request.pathVariable("projectId")
+        val repoName = request.pathVariable("repoName")
         val clientId = request.pathVariable("clientId")
-        return ReactiveResponseBuilder.success(clientService.removeClient(clientId))
+        return ReactiveResponseBuilder.success(clientService.removeClient(projectId, repoName, clientId))
     }
 
     suspend fun heartbeat(request: ServerRequest): ServerResponse {
+        val projectId = request.pathVariable("projectId")
+        val repoName = request.pathVariable("repoName")
         val clientId = request.pathVariable("clientId")
-        clientService.heartbeat(clientId)
+        clientService.heartbeat(projectId, repoName, clientId)
         return ReactiveResponseBuilder.success()
     }
 }

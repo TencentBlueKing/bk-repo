@@ -41,6 +41,7 @@ import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import java.time.LocalDateTime
 
@@ -66,9 +67,11 @@ class ClientService(
         }
     }
 
-    suspend fun removeClient(clientId: String) {
+    suspend fun removeClient(projectId: String, repoName: String, clientId: String) {
         val query = Query(
-            Criteria.where(TClient::id.name).isEqualTo(clientId)
+            Criteria.where(TClient::projectId.name).isEqualTo(projectId)
+                .and(TClient::repoName.name).isEqualTo(repoName)
+                .and(TClient::id.name).isEqualTo(clientId)
         )
         val result = clientRepository.remove(query)
         if (result.deletedCount == 0L) {
@@ -76,15 +79,18 @@ class ClientService(
         }
     }
 
-    suspend fun heartbeat(clientId: String) {
+    suspend fun heartbeat(projectId: String, repoName: String, clientId: String) {
         val query = Query(
-            Criteria.where(TClient::id.name).isEqualTo(clientId)
+            Criteria.where(TClient::projectId.name).isEqualTo(projectId)
+                .and(TClient::repoName.name).isEqualTo(repoName)
+                .and(TClient::id.name).isEqualTo(clientId)
         )
-        val client = clientRepository.findOne(query)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
-        client.heartbeatTime = LocalDateTime.now()
-        client.online = true
-        clientRepository.save(client)
+        val update = Update().set(TClient::heartbeatTime.name, LocalDateTime.now())
+            .set(TClient::online.name, true)
+        val result = clientRepository.upsert(query, update)
+        if (result.matchedCount == 0L) {
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
+        }
     }
 
     private suspend fun insertClient(request: ClientCreateRequest): TClient {
