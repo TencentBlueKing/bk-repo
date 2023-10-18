@@ -213,7 +213,7 @@
                 ipSegmentRule,
                 showIamDenyDialog: false,
                 showData: {},
-                rbacStatus: true
+                rbacStatus: false
             }
         },
         computed: {
@@ -303,12 +303,12 @@
         created () {
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
-            this.getBkiamStatus().then(res => {
+            this.getIamPermissionStatus().then(res => {
                 this.rbacStatus = res
             })
         },
         methods: {
-            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl', 'getBkiamStatus']),
+            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl', 'getIamPermissionStatus']),
             toRepoList () {
                 this.$router.push({
                     name: 'repositories'

@@ -172,7 +172,7 @@
                 showIamDenyDialog: false,
                 showData: {},
                 title: this.$t('createRepository'),
-                rbacStatus: true
+                rbacStatus: false
             }
         },
         computed: {
@@ -294,17 +294,15 @@
                 ]
             }
         },
-        created () {
-            this.getBkiamStatus().then(res => {
-                this.rbacStatus = res
-            })
-        },
         methods: {
-            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'getBkiamStatus']),
+            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'getIamPermissionStatus']),
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
                 this.$refs.repoBaseInfo && this.$refs.repoBaseInfo.clearError()
+                this.getIamPermissionStatus().then(res => {
+                    this.rbacStatus = res
+                })
             },
             cancel () {
                 this.show = false

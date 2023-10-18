@@ -257,6 +257,7 @@ export default {
             `${authPrefix}/user/auth/bkiamv3/project/refresh/${projectId}`
         )
     },
+    // 判断蓝鲸权限是否开启
     getIamPermissionStatus () {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/auth/bkiamv3/status`
@@ -267,12 +268,6 @@ export default {
         return Vue.prototype.$ajax.post(
             `${authPrefix}/user/create/project`,
             body
-        )
-    },
-    // 判断蓝鲸权限是否开启
-    getBkiamStatus () {
-        return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/auth/bkiamv3/status`
         )
     }
 }
