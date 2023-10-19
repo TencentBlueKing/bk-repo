@@ -29,14 +29,11 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":opdata:api-opdata"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-mongo"))
-    api(project(":fs:api-fs-server"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation("org.influxdb:influxdb-java")
-    compileOnly("org.springframework.cloud:spring-cloud-starter-consul-discovery")
-    compileOnly("org.springframework.cloud:spring-cloud-starter-consul-config")
-}
+package com.tencent.bkrepo.fs.server.repository
+
+import com.tencent.bkrepo.common.mongo.reactive.dao.SimpleMongoReactiveDao
+import com.tencent.bkrepo.fs.server.model.TClient
+import org.springframework.stereotype.Repository
+
+@Repository
+class ClientRepository: SimpleMongoReactiveDao<TClient>()

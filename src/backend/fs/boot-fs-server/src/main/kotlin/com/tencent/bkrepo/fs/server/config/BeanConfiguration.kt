@@ -35,17 +35,19 @@ import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
 import com.tencent.bkrepo.fs.server.filter.PermissionFilterFunction
 import com.tencent.bkrepo.fs.server.filter.ReactiveRequestContextFilter
+import com.tencent.bkrepo.fs.server.handler.ClientHandler
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import com.tencent.bkrepo.fs.server.service.BlockNodeServiceImpl
+import com.tencent.bkrepo.fs.server.service.ClientService
 import com.tencent.bkrepo.fs.server.service.FileNodeService
 import com.tencent.bkrepo.fs.server.service.FileOperationService
 import com.tencent.bkrepo.fs.server.service.PermissionService
-import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
+import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import com.tencent.bkrepo.fs.server.utils.SpringContextUtils
 import com.tencent.devops.service.config.ServiceProperties
@@ -62,6 +64,7 @@ val beans = beans {
     bean<FileOperationsHandler>()
     bean<FsNodeHandler>()
     bean<LoginHandler>()
+    bean<ClientHandler>()
     bean<PermissionService>()
     bean<AuthHandlerFilterFunction>()
     bean<RepositoryCache>()
@@ -75,6 +78,7 @@ val beans = beans {
     bean<ArtifactFileCleanupFilterFunction>()
     bean<FileNodeService>()
     bean<FileOperationService>()
+    bean<ClientService>()
     bean<SecurityManager>()
     bean<JwtAuthProperties>()
     bean<SpringContextUtils>()
@@ -82,7 +86,7 @@ val beans = beans {
     bean<PermissionFilterFunction>()
     bean<ErrorCodeDecoder>()
     bean {
-        RouteConfiguration(ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref()).router()
+        RouteConfiguration(ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref()).router()
     }
     bean {
         CoroutineScope(Dispatchers.IO + SupervisorJob())

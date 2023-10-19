@@ -29,14 +29,22 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":opdata:api-opdata"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-mongo"))
-    api(project(":fs:api-fs-server"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation("org.influxdb:influxdb-java")
-    compileOnly("org.springframework.cloud:spring-cloud-starter-consul-discovery")
-    compileOnly("org.springframework.cloud:spring-cloud-starter-consul-config")
-}
+package com.tencent.bkrepo.fs.server.model
+
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
+
+@Document("client")
+data class TClient(
+    val id: String? = null,
+    val projectId: String,
+    val repoName: String,
+    val mountPoint: String,
+    val userId: String,
+    val ip: String,
+    val version: String,
+    val os: String,
+    val arch: String,
+    var online: Boolean,
+    var heartbeatTime: LocalDateTime
+)
