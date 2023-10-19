@@ -2,6 +2,7 @@ package com.tencent.bkrepo.job.batch.node
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
@@ -82,16 +83,20 @@ class ProjectRepoStatChildJob(
             sizeDistributionMetrics.add(TSizeDistributionMetrics(projectId, repoName, sizeDistribution))
         }
         // insert project repo metrics
-        val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
+        var criteria = Criteria.where(PROJECT).isEqualTo(projectId).and(CREATED_DATE).isEqualTo(statDate)
+
+        mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
         logger.info("start to insert project's metrics ")
         mongoTemplate.insert(projectMetric.toDO(statDate), COLLECTION_NAME_PROJECT_METRICS)
         logger.info("stat project metrics done")
 
         // insert folder metrics
+        mongoTemplate.remove(Query(criteria), COLLECTION_NAME_FOLDER_METRICS)
         logger.info("start to insert folder's metrics ")
         mongoTemplate.insert(folderMetrics, COLLECTION_NAME_FOLDER_METRICS)
         logger.info("stat folder metrics done")
 
+        criteria = Criteria.where(PROJECT).isEqualTo(projectId)
         // insert ext metrics
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_EXTENSION_METRICS)
         logger.info("start to insert extension's metrics ")
