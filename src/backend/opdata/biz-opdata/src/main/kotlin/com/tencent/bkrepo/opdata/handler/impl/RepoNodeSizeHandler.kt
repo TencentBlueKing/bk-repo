@@ -49,7 +49,7 @@ class RepoNodeSizeHandler(
     override val metric: Metrics get() = Metrics.REPONODESIZE
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
-        val projects = projectMetricsRepository.findAll()
+        val projects = projectMetricsRepository.findAllByCreatedDate()
         val tmpMap = HashMap<String, Long>()
         projects.forEach { it ->
             val projectId = it.projectId

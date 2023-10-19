@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo
+package com.tencent.bkrepo.job.batch.context
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import java.time.LocalDate
-import java.time.LocalDateTime
+import com.tencent.bkrepo.job.batch.base.ChildJobContext
+import com.tencent.bkrepo.job.batch.base.JobContext
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.LongAdder
 
-data class ProjectMetricsOption(
-    var projectId: String? = null,
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    val pageSize: Int = DEFAULT_PAGE_SIZE,
-    val createdDate: LocalDateTime = LocalDate.now().atStartOfDay()
-)
+class EmptyFolderChildContext(
+    parentContent: JobContext,
+    // 用于内存缓存下存储目录统计信息
+    var folders: ConcurrentHashMap<String, FolderMetricsInfo> = ConcurrentHashMap(),
+    // 总共删除的路径个数
+    var totalDeletedNum: LongAdder = LongAdder()
+): ChildJobContext(parentContent) {
+
+    data class FolderMetricsInfo(
+        var id: String? = null,
+        var nodeNum: LongAdder = LongAdder()
+    )
+}
