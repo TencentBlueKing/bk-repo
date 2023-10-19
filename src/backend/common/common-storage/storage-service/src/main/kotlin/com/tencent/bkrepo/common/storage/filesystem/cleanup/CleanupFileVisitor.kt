@@ -55,14 +55,14 @@ class CleanupFileVisitor(
 ) : ArtifactFileVisitor() {
 
     val result = CleanupResult()
-    private val expireDays = credentials.cache.expireDays
+    private val expireDuration = credentials.cache.expireDuration
     private val rateLimiter = RateLimiter.create(permitsPerSecond)
 
     @Throws(IOException::class)
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         val size = attributes.size()
         try {
-            if (isExpired(attributes, expireDays) && !isNFSTempFile(filePath)) {
+            if (isExpired(attributes, expireDuration) && !isNFSTempFile(filePath)) {
                 if (isTempFile(filePath) || existInStorage(filePath)) {
                     rateLimiter.acquire()
                     Files.delete(filePath)
@@ -106,17 +106,17 @@ class CleanupFileVisitor(
     }
 
     override fun needWalk(): Boolean {
-        return expireDays > 0
+        return expireDuration.seconds > 0
     }
 
     /**
      * 判断文件是否过期
      * 根据上次访问时间和上次修改时间判断
      */
-    private fun isExpired(attributes: BasicFileAttributes, expireDays: Int): Boolean {
+    private fun isExpired(attributes: BasicFileAttributes, expireDuration: Duration): Boolean {
         val lastAccessTime = attributes.lastAccessTime().toMillis()
         val lastModifiedTime = attributes.lastModifiedTime().toMillis()
-        val expiredTime = System.currentTimeMillis() - Duration.ofDays(expireDays.toLong()).toMillis()
+        val expiredTime = System.currentTimeMillis() - expireDuration.toMillis()
         return lastAccessTime < expiredTime && lastModifiedTime < expiredTime
     }
 
