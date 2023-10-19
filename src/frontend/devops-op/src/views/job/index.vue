@@ -44,7 +44,7 @@
         width="100"
       >
         <template slot-scope="scope">
-          {{scope.row.running ? "是":"否"}}
+          {{ scope.row.running ? "是":"否" }}
         </template>
       </el-table-column>
       <el-table-column
