@@ -46,9 +46,14 @@ class ProjectRepoStatChildJob(
         require(context is ProjectRepoChildContext)
 
         val prefix = buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
+        val storedKeys = mutableListOf<String>()
         for (entry in context.metrics) {
             if (!entry.key.contains(prefix)) continue
             storeMetrics(context.statDate, entry.value)
+            storedKeys.add(entry.key)
+        }
+        storedKeys.forEach {
+            context.metrics.remove(it)
         }
     }
 
