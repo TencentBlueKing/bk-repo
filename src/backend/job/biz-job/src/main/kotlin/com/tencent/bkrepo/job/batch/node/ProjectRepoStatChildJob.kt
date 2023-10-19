@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 class ProjectRepoStatChildJob(
@@ -56,7 +57,7 @@ class ProjectRepoStatChildJob(
     }
 
     override fun createChildJobContext(parentJobContext: JobContext): ChildJobContext {
-        return ProjectRepoChildContext(parentJobContext, statDate = LocalDateTime.now())
+        return ProjectRepoChildContext(parentJobContext, statDate = LocalDate.now().atStartOfDay())
     }
 
 
