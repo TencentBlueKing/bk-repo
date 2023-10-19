@@ -43,7 +43,13 @@ interface QueryHandler {
     fun handle(target: Target, result: MutableList<Any>): Any
 
     fun convToDisplayData(mapData: HashMap<String, Long>, result: MutableList<Any>): List<Any> {
-        mapData.toList().sortedByDescending { it.second }.subList(0, OPDATA_STAT_LIMIT).forEach {
+        if (mapData.isEmpty()) return result
+        val max = if (mapData.size > OPDATA_STAT_LIMIT) {
+            OPDATA_STAT_LIMIT
+        } else {
+            mapData.size
+        }
+        mapData.toList().sortedByDescending { it.second }.subList(0, max).forEach {
             val projectId = it.first
             val data = listOf(it.second, System.currentTimeMillis())
             val element = listOf(data)

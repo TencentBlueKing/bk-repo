@@ -54,7 +54,7 @@ class CapSizeHandler(
 
     override fun handle(target: Target, result: MutableList<Any>) {
         var size = 0L
-        val projects = projectMetricsRepository.findAll()
+        val projects = projectMetricsRepository.findAllByCreatedDate()
         projects.forEach {
             size += it.capSize
         }

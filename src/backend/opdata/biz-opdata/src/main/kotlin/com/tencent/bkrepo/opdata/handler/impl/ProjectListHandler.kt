@@ -62,7 +62,7 @@ class ProjectListHandler(
     override fun handle(target: Target, result: MutableList<Any>) {
         val rows = mutableListOf<List<Any>>()
         val columns = mutableListOf<Columns>()
-        val info = projectMetricsRepository.findAll()
+        val info = projectMetricsRepository.findAllByCreatedDate()
         columns.add(Columns(TProjectMetrics::projectId.name, OPDATA_GRAFANA_STRING))
         columns.add(Columns(TProjectMetrics::nodeNum.name, OPDATA_GRAFANA_NUMBER))
         columns.add(Columns(TProjectMetrics::capSize.name, OPDATA_GRAFANA_NUMBER))
