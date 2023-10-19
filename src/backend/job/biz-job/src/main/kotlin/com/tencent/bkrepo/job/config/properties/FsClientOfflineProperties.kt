@@ -29,14 +29,13 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":opdata:api-opdata"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-mongo"))
-    api(project(":fs:api-fs-server"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation("org.influxdb:influxdb-java")
-    compileOnly("org.springframework.cloud:spring-cloud-starter-consul-discovery")
-    compileOnly("org.springframework.cloud:spring-cloud-starter-consul-config")
-}
+package com.tencent.bkrepo.job.config.properties
+
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("job.fs-client-offline")
+data class FsClientOfflineProperties(
+    override var enabled: Boolean = true,
+    override var fixedDelay: Long = 60 * 1000L,
+    override var initialDelay: Long = 60 * 1000L
+): MongodbJobProperties()

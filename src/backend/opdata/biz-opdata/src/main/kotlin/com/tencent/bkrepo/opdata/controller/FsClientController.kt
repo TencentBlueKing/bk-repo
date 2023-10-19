@@ -29,14 +29,34 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":opdata:api-opdata"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-mongo"))
-    api(project(":fs:api-fs-server"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation("org.influxdb:influxdb-java")
-    compileOnly("org.springframework.cloud:spring-cloud-starter-consul-discovery")
-    compileOnly("org.springframework.cloud:spring-cloud-starter-consul-config")
+package com.tencent.bkrepo.opdata.controller
+
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.fs.server.api.FsClientClient
+import com.tencent.bkrepo.fs.server.pojo.ClientDetail
+import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+@RequestMapping("/api/fs-client")
+class FsClientController(
+    private val fsClientClient: FsClientClient,
+    private val permissionManager: PermissionManager
+) {
+
+    @GetMapping("/list")
+    fun getClients(request: ClientListRequest): Response<Page<ClientDetail>> {
+        permissionManager.checkProjectPermission(PermissionAction.READ, request.projectId)
+        return fsClientClient.listClients(
+            request.projectId,
+            request.repoName,
+            request.pageNumber,
+            request.pageSize
+        )
+    }
 }
