@@ -35,10 +35,9 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.fs.server.api.FsClientClient
 import com.tencent.bkrepo.fs.server.pojo.ClientDetail
-import com.tencent.bkrepo.opdata.pojo.ClientListRequest
-import com.tencent.bkrepo.opdata.service.FsClientService
+import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -46,13 +45,18 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/fs-client")
 class FsClientController(
-    private val fsClientService: FsClientService,
+    private val fsClientClient: FsClientClient,
     private val permissionManager: PermissionManager
 ) {
 
     @GetMapping("/list")
     fun getClients(request: ClientListRequest): Response<Page<ClientDetail>> {
         permissionManager.checkProjectPermission(PermissionAction.READ, request.projectId)
-        return ResponseBuilder.success(fsClientService.listClients(request))
+        return fsClientClient.listClients(
+            request.projectId,
+            request.repoName,
+            request.pageNumber,
+            request.pageSize
+        )
     }
 }

@@ -27,12 +27,16 @@
 
 package com.tencent.bkrepo.fs.server.handler
 
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
+import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
 import com.tencent.bkrepo.fs.server.service.ClientService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.queryParamOrNull
 
 class ClientHandler(
     private val clientService: ClientService
@@ -57,5 +61,15 @@ class ClientHandler(
         val clientId = request.pathVariable("clientId")
         clientService.heartbeat(projectId, repoName, clientId)
         return ReactiveResponseBuilder.success()
+    }
+
+    suspend fun listClients(request: ServerRequest): ServerResponse {
+        val listRequest = ClientListRequest(
+            projectId = request.pathVariable(ClientListRequest::projectId.name),
+            repoName = request.pathVariable(ClientListRequest::repoName.name),
+            pageNumber = request.queryParamOrNull(ClientListRequest::pageNumber.name)?.toInt() ?: DEFAULT_PAGE_NUMBER,
+            pageSize = request.queryParamOrNull(ClientListRequest::pageSize.name)?.toInt() ?: DEFAULT_PAGE_SIZE
+        )
+        return ReactiveResponseBuilder.success(clientService.listClients(listRequest))
     }
 }
