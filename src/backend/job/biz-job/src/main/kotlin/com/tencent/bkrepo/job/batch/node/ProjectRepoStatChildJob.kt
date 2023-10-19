@@ -95,13 +95,14 @@ class ProjectRepoStatChildJob(
         mongoTemplate.insert(projectMetric.toDO(statDate), COLLECTION_NAME_PROJECT_METRICS)
         logger.info("stat project metrics done")
 
+        criteria = Criteria.where(PROJECT).isEqualTo(projectId)
+
         // insert folder metrics
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_FOLDER_METRICS)
         logger.info("start to insert folder's metrics ")
         mongoTemplate.insert(folderMetrics, COLLECTION_NAME_FOLDER_METRICS)
         logger.info("stat folder metrics done")
 
-        criteria = Criteria.where(PROJECT).isEqualTo(projectId)
         // insert ext metrics
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_EXTENSION_METRICS)
         logger.info("start to insert extension's metrics ")
