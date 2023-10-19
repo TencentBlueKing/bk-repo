@@ -52,7 +52,7 @@ class EffectiveProjectNumHandler(
     override val metric: Metrics get() = Metrics.EFFECTIVEPROJECTNUM
 
     override fun handle(target: Target, result: MutableList<Any>) {
-        val projects = projectMetricsRepository.findAll()
+        val projects = projectMetricsRepository.findAllByCreatedDate()
         val count = projects.filter { it.capSize > 0 }.size.toLong()
         val columns = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(count)

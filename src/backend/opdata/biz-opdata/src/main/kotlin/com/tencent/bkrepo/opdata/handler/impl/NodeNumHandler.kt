@@ -53,7 +53,7 @@ class NodeNumHandler(
 
     override fun handle(target: Target, result: MutableList<Any>) {
         var num = 0L
-        val projects = projectMetricsRepository.findAll()
+        val projects = projectMetricsRepository.findAllByCreatedDate()
         projects.forEach {
             num += it.nodeNum
         }
