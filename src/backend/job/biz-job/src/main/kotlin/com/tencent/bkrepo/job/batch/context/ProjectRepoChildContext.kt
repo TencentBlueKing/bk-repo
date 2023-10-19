@@ -8,12 +8,14 @@ import com.tencent.bkrepo.job.batch.node.NodeStatCompositeMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.node.ProjectRepoStatChildJob
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import org.apache.commons.io.FileUtils
+import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.LongAdder
 
 class ProjectRepoChildContext(
     parentContent: JobContext,
     var metrics: ConcurrentHashMap<String, ProjectMetrics> = ConcurrentHashMap(),
+    var statDate: LocalDateTime
 ) : ChildJobContext(parentContent) {
 
     companion object {
@@ -50,7 +52,7 @@ class ProjectRepoChildContext(
             repo.addSizeDistributionMetrics(row)
         }
 
-        fun toDO(): ProjectRepoStatChildJob.TProjectMetrics {
+        fun toDO(statDate: LocalDateTime = LocalDateTime.now()): ProjectRepoStatChildJob.TProjectMetrics {
             logger.info("project: [${projectId}], size: [${capSize.toLong()}]")
             val repoMetrics = ArrayList<ProjectRepoStatChildJob.TRepoMetrics>(repoMetrics.size)
             this.repoMetrics.values.forEach { repo ->
@@ -66,7 +68,8 @@ class ProjectRepoChildContext(
                 projectId = projectId,
                 nodeNum = nodeNum.toLong(),
                 capSize = capSize.toLong(),
-                repoMetrics = repoMetrics
+                repoMetrics = repoMetrics,
+                createdDate = statDate
             )
         }
     }
@@ -154,14 +157,18 @@ class ProjectRepoChildContext(
         var nodeNum: LongAdder = LongAdder(),
         var capSize: LongAdder = LongAdder()
     ) {
-        fun toDO(projectId: String, repoName: String, credentialsKey: String): ProjectRepoStatChildJob.TFolderMetrics {
+        fun toDO(
+            projectId: String, repoName: String, credentialsKey: String,
+            statDate: LocalDateTime = LocalDateTime.now()
+        ): ProjectRepoStatChildJob.TFolderMetrics {
             return ProjectRepoStatChildJob.TFolderMetrics(
                 projectId = projectId,
                 repoName = repoName,
                 credentialsKey = credentialsKey,
                 folderPath = path,
                 nodeNum = nodeNum.toLong(),
-                capSize = capSize.toLong()
+                capSize = capSize.toLong(),
+                createdDate = statDate
             )
         }
     }
