@@ -158,8 +158,11 @@
       <el-form-item v-if="credential.cache.enabled" label="优先加载缓存" prop="cache.loadCacheFirst">
         <el-switch v-model="credential.cache.loadCacheFirst" />
       </el-form-item>
-      <el-form-item v-if="credential.cache.enabled" label="缓存天数" prop="cache.expireDays">
+      <el-form-item v-if="credential.cache.enabled" label="缓存天数（已废弃）" prop="cache.expireDays">
         <el-input-number v-model="credential.cache.expireDays" controls-position="right" :min="0" :max="30" />
+      </el-form-item>
+      <el-form-item v-if="credential.cache.enabled" label="缓存时间(秒)" prop="cache.expireDuration">
+        <el-input-number v-model="credential.cache.expireDuration" controls-position="right" :min="0" />
       </el-form-item>
     </el-form>
     <div slot="footer">
