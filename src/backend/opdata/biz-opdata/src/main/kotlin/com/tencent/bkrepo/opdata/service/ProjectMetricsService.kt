@@ -44,9 +44,11 @@ class ProjectMetricsService (
         with(option) {
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val queryResult = if (!projectId.isNullOrEmpty()) {
-                projectMetricsRepository.findByProjectIdOrderByCreatedDateDesc(projectId!!, pageRequest)
+                projectMetricsRepository.findByProjectIdAndCreatedDateOrderByCreatedDateDesc(
+                    projectId!!, createdDate, pageRequest
+                )
             } else {
-                projectMetricsRepository.findAllByOrderByCreatedDateDesc(pageRequest)
+                projectMetricsRepository.findByCreatedDateOrderByCreatedDateDesc(createdDate, pageRequest)
             }
             queryResult.content.forEach {
                 it.capSize = it.capSize / TO_GIGABYTE
