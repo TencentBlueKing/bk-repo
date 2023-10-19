@@ -33,11 +33,14 @@ package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.model.TClient
 import com.tencent.bkrepo.fs.server.pojo.ClientDetail
 import com.tencent.bkrepo.fs.server.repository.ClientRepository
 import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
+import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -89,6 +92,17 @@ class ClientService(
         client.heartbeatTime = LocalDateTime.now()
         client.online = true
         clientRepository.save(client)
+    }
+
+    suspend fun listClients(request: ClientListRequest): Page<ClientDetail> {
+        val pageRequest = Pages.ofRequest(request.pageNumber, request.pageSize)
+        val query = Query(
+            Criteria.where(TClient::projectId.name).isEqualTo(request.projectId)
+                .and(TClient::repoName.name).isEqualTo(request.repoName)
+        )
+        val count = clientRepository.count(query)
+        val data = clientRepository.find(query.with(pageRequest))
+        return Pages.ofResponse(pageRequest, count, data.map { it.convert() })
     }
 
     private suspend fun insertClient(request: ClientCreateRequest): TClient {

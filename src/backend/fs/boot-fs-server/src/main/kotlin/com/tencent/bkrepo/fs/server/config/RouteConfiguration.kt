@@ -109,6 +109,10 @@ class RouteConfiguration(
             POST("/heartbeat/{projectId}/{repoName}/{clientId}", clientHandler::heartbeat)
         }
 
+        "/service/client".nest {
+            GET("/list/{projectId}/{repoName}", clientHandler::listClients)
+        }
+
         accept(APPLICATION_OCTET_STREAM).nest {
             GET(DEFAULT_MAPPING_URI, fileOperationsHandler::read)
             addMetrics(serverMetrics.downloadingCount)
