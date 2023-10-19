@@ -96,7 +96,7 @@ class StorageCredentialServiceImpl(
         storageCredentials.apply {
             cache = cache.copy(
                 loadCacheFirst = request.credentials.cache.loadCacheFirst,
-                expireDays = request.credentials.cache.expireDays
+                expireDuration = request.credentials.cache.expireDuration
             )
             upload = upload.copy(localPath = request.credentials.upload.localPath)
             credentialUpdaters[StorageCredentialsUpdater.name(this::class.java)]?.update(this, request)
