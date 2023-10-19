@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,51 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo
+package com.tencent.bkrepo.analyst.pojo.request
 
-data class TaskMetadata(
-    val key: String,
-    val value: String
-) {
-    companion object {
-        /**
-         * 所属构建id metadata key
-         */
-        const val TASK_METADATA_KEY_BID = "BUILD_ID"
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-        /**
-         * 所属流水线的构建号
-         */
-        const val TASK_METADATA_BUILD_NUMBER = "BUILD_NUMBER"
-
-        /**
-         * 所属流水线id metadata key
-         */
-        const val TASK_METADATA_KEY_PID = "PIPELINE_ID"
-
-        /**
-         * 所属流水线名
-         */
-        const val TASK_METADATA_PIPELINE_NAME = "PIPELINE_NAME"
-
-        /**
-         * 流水线中使用的插件名
-         */
-        const val TASK_METADATA_PLUGIN_NAME = "PLUGIN_NAME"
-
-        /**
-         * 只扫描单个制品时，可以通过该元数据指定扫描器加载的文件名
-         */
-        const val TASK_METADATA_FILE_NAME = "FILE_NAME"
-
-        /**
-         * 指定任务使用哪个分发器分发子任务
-         */
-        const val TASK_METADATA_DISPATCHER = "DISPATCHER"
-
-        /**
-         * 标记任务是否为全局扫描任务
-         */
-        const val TASK_METADATA_GLOBAL = "GLOBAL"
-    }
-}
+@ApiModel("全局扫描请求")
+data class GlobalScanRequest(
+    @ApiModelProperty("扫描器名")
+    val scanner: String,
+    @ApiModelProperty("扫描文件匹配规则")
+    val rule: Rule,
+    @ApiModelProperty("是否强制扫描，为true时无论是否存在扫描结果都会执行扫描")
+    val force: Boolean = false,
+    @ApiModelProperty("项目元数据，用于筛选待扫描项目")
+    val projectMetadata: List<ProjectMetadata> = emptyList(),
+    @ApiModelProperty("任务元数据")
+    val metadata: List<TaskMetadata> = emptyList()
+)
