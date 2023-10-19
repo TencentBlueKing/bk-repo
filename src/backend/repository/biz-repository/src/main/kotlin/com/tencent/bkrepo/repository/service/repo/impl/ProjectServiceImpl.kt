@@ -215,7 +215,7 @@ class ProjectServiceImpl(
     }
 
     override fun getProjectMetricsInfo(name: String): ProjectMetricsInfo? {
-        return convert(projectMetricsRepository.findByProjectId(name))
+        return convert(projectMetricsRepository.findFirstByProjectIdOrderByCreatedDateDesc(name))
     }
 
     override fun updateProject(name: String, request: ProjectUpdateRequest): Boolean {
