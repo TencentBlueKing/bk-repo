@@ -27,6 +27,10 @@
 
 package com.tencent.bkrepo.oci.pojo.artifact
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.oci.constant.DOCKER_DISTRIBUTION_MANIFEST_LIST_V2
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 
 class OciManifestArtifactInfo(
@@ -41,9 +45,20 @@ class OciManifestArtifactInfo(
     override fun getArtifactFullPath(): String {
         return if(getArtifactMappingUri().isNullOrEmpty()) {
             if (isValidDigest) {
-                OciLocationUtils.buildDigestManifestPathWithReference(packageName, reference)
+                // PUT 请求时取 digest 做为tag名
+                if (HttpContextHolder.getRequest().method.equals("PUT", ignoreCase = true)) {
+                    OciLocationUtils.buildManifestPath(packageName, reference)
+                } else {
+                    OciLocationUtils.buildDigestManifestPathWithReference(packageName, reference)
+                }
             } else {
-                OciLocationUtils.buildManifestPath(packageName, reference)
+                // 根据 Content-type 区分 manifest.json / list.manifest.json
+                val mediaType = HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE)
+                if (mediaType == DOCKER_DISTRIBUTION_MANIFEST_LIST_V2) {
+                    OciLocationUtils.buildManifestListPath(packageName, reference)
+                } else {
+                    OciLocationUtils.buildManifestPath(packageName, reference)
+                }
             }
         } else getArtifactMappingUri()!!
 

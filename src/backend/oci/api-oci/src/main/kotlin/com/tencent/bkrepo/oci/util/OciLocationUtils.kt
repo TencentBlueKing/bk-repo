@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.oci.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.oci.constant.OCI_MANIFEST_LIST
 import com.tencent.bkrepo.oci.constant.OCI_MANIFEST
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
@@ -36,6 +37,10 @@ object OciLocationUtils {
 
     fun buildManifestPath(packageName: String, tag: String): String {
         return buildManifestVersionFolderPath(packageName, tag) + OCI_MANIFEST
+    }
+
+    fun buildManifestListPath(packageName: String, tag: String): String {
+        return buildManifestVersionFolderPath(packageName, tag) + OCI_MANIFEST_LIST
     }
 
     fun buildManifestVersionFolderPath(packageName: String, tag: String): String {

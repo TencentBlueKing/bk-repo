@@ -44,6 +44,8 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
 import com.tencent.bkrepo.oci.config.OciProperties
+import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
+import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_CODE
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_MESSAGE
@@ -72,6 +74,7 @@ class OciExceptionHandler(
     fun handleException(exception: AuthenticationException) {
         val response = HttpContextHolder.getResponse()
         response.contentType = MediaTypes.APPLICATION_JSON
+        response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         response.addHeader(
             HttpHeaders.WWW_AUTHENTICATE,
             OciLoginAuthHandler.AUTH_CHALLENGE_SERVICE_SCOPE.format(

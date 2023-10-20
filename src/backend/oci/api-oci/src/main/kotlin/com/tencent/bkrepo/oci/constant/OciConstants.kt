@@ -37,6 +37,9 @@ const val DOCKER_API_VERSION = "registry/2.0"
 const val DOCKER_CONTENT_DIGEST = "Docker-Content-Digest"
 const val DOCKER_UPLOAD_UUID = "Docker-Upload-Uuid"
 const val BLOB_UPLOAD_SESSION_ID = "Blob-Upload-Session-ID"
+const val ARCHITECTURE = "architecture"
+const val OS = "os"
+const val VARIANT = "variant"
 
 const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
 const val HTTP_PROTOCOL_HTTP = "http"
@@ -101,6 +104,7 @@ const val EMPTY_FILE_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca
 
 
 const val OCI_MANIFEST = "manifest.json"
+const val OCI_MANIFEST_LIST = "list.manifest.json"
 const val STAGE_TAG = "stageTag"
 
 const val TAG_LIST_REQUEST = "tagList"
@@ -128,6 +132,8 @@ const val LEGACY_CHART_LAYER_MEDIA_TYPE = "application/tar+gzip"
 const val OCI_IMAGE_MANIFEST_MEDIA_TYPE = "application/vnd.oci.image.manifest.v1+json"
 
 const val DOCKER_DISTRIBUTION_MANIFEST_V2 = "application/vnd.docker.distribution.manifest.v2+json"
+
+const val DOCKER_DISTRIBUTION_MANIFEST_LIST_V2 = "application/vnd.docker.distribution.manifest.list.v2+json"
 
 // Content Descriptor
 const val CONTENT_DESCRIPTOR_MEDIA_TYPE = "application/vnd.oci.descriptor.v1+json"

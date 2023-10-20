@@ -374,7 +374,7 @@ class OciRegistryLocalRepository(
         }
 
         logger.info(
-            "The mediaType of Artifact $fullPath is $mediaType and it's contentType is $contentType" +
+            "The mediaType of Artifact ${node.fullPath} is $mediaType and it's contentType is $contentType" +
                 "in repo: ${context.artifactInfo.getRepoIdentify()}"
         )
         OciResponseUtils.buildDownloadResponse(
@@ -400,7 +400,15 @@ class OciRegistryLocalRepository(
             val oldDockerPath = ociOperationService.getDockerNode(artifactInfo)
                 ?: return null
             artifactInfo.setArtifactMappingUri(oldDockerPath)
-            ArtifactContextHolder.getNodeDetail(artifactInfo)
+            ArtifactContextHolder.getNodeDetail(artifactInfo) ?: run {
+                if (artifactInfo !is OciManifestArtifactInfo) return null
+                // 兼容 list.manifest.json
+                val manifestListPath = OciLocationUtils.buildManifestListPath(
+                    artifactInfo.packageName, artifactInfo.reference
+                )
+                artifactInfo.setArtifactMappingUri(manifestListPath)
+                ArtifactContextHolder.getNodeDetail(artifactInfo)
+            }
         }
     }
 
