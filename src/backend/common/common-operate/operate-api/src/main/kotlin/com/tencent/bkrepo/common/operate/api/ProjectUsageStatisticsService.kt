@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation("com.alibaba:easyexcel:3.1.1")
-    implementation(project(":analyst:api-analyst"))
-    implementation(project(":analysis-executor:api-analysis-executor"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":common:common-notify:notify-service"))
-    implementation(project(":common:common-service"))
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-lock"))
-    implementation(project(":common:common-job"))
-    implementation(project(":common:common-statemachine"))
-    implementation(project(":opdata:api-opdata"))
-    implementation("io.kubernetes:client-java:${Versions.KubernetesClient}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+package com.tencent.bkrepo.common.operate.api
+
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
+import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatisticsListOption
+
+interface ProjectUsageStatisticsService {
+    /**
+     * 增加上传次数
+     *
+     * @param projectId 项目ID
+     * @param reqCount 增加的请求次数
+     * @param receivedBytes 增加上传流量大小
+     * @param responseBytes 增加下载流量大小
+     */
+    fun inc(projectId: String, reqCount: Long = 0L, receivedBytes: Long = 0L, responseBytes: Long = 0L)
+
+    /**
+     * 获取项目使用情况列表
+     *
+     * @param options 查询参数
+     *
+     * @return 项目使用情况统计数据
+     */
+    fun page(options: ProjectUsageStatisticsListOption): Page<ProjectUsageStatistics>
+
+    /**
+     * 删除指定时间范围内的数据数据
+     *
+     * @param start 起始时间， 包含
+     * @param end 结束时间，不包含
+     */
+    fun delete(start: Long? = null, end: Long)
 }
