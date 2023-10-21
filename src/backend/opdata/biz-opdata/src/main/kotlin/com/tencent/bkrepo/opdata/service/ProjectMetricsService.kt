@@ -31,7 +31,9 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
+import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.stereotype.Service
 
@@ -58,5 +60,25 @@ class ProjectMetricsService (
             }
             return Pages.ofResponse(pageRequest, queryResult.totalElements, queryResult.content)
         }
+    }
+
+    fun list(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
+        val queryResult = if (metricsRequest.oldDataFlag) {
+            projectMetricsRepository.findAllByCreatedDateNot()
+        } else {
+            projectMetricsRepository.findAllByCreatedDateAfter()
+        }
+        val result = mutableListOf<ProjectMetrics>()
+        queryResult.map {
+                if (it.capSize >= metricsRequest.limitSize) {
+                    result.add(ProjectMetrics(
+                        projectId = it.projectId,
+                        capSize = it.capSize / TO_GIGABYTE,
+                        nodeNum = it.nodeNum,
+                        createdDate = it.createdDate
+                    ))
+                }
+            }
+        return result
     }
 }

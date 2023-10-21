@@ -33,7 +33,9 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
+import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
 import com.tencent.bkrepo.opdata.service.ProjectMetricsService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -54,5 +56,15 @@ class ProjectController(
         option: ProjectMetricsOption
     ): Response<Page<TProjectMetrics>> {
         return ResponseBuilder.success(projectMetricsService.page(option))
+    }
+
+    /**
+     * 获取项目的统计数据
+     */
+    @GetMapping("/list/project/capSize")
+    fun getProjectCapSizeMetrics(
+        metricsRequest: ProjectMetricsRequest
+    ): Response<List<ProjectMetrics>> {
+        return ResponseBuilder.success(projectMetricsService.list(metricsRequest))
     }
 }
