@@ -36,5 +36,5 @@ data class ProjectMetricsOption(
     var projectId: String? = null,
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
     val pageSize: Int = DEFAULT_PAGE_SIZE,
-    val createdDate: LocalDateTime = LocalDate.now().atStartOfDay()
+    val createdDate: LocalDateTime = LocalDate.now().minusDays(1).atStartOfDay()
 )

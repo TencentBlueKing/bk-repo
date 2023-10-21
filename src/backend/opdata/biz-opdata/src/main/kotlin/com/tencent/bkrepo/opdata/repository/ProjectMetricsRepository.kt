@@ -48,6 +48,6 @@ interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>{
         createdDate: LocalDateTime, pageable: Pageable
     ): Page<TProjectMetrics>
     fun findAllByCreatedDate(
-        createdDate: LocalDateTime = LocalDate.now().atStartOfDay()
+        createdDate: LocalDateTime = LocalDate.now().minusDays(1).atStartOfDay()
     ): List<TProjectMetrics>
 }
