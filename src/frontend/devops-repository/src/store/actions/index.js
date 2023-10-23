@@ -122,7 +122,7 @@ export default {
                 action: 'toggleLoginDialog'
             }, '*')
             // eslint-disable-next-line no-undef
-            if (ADD_FROM_LOGOUT === 'not') {
+            if (window.ADD_FROM_LOGOUT === 'not') {
                 location.href = window.getLoginUrl()
             } else {
                 location.href = window.getLoginUrl() + '&is_from_logout=1'
