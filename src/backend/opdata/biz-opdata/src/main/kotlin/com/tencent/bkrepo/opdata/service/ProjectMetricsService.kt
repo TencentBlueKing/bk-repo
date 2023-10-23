@@ -36,6 +36,7 @@ import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.stereotype.Service
+import java.time.LocalDate
 
 @Service
 class ProjectMetricsService (
@@ -66,7 +67,8 @@ class ProjectMetricsService (
         val queryResult = if (metricsRequest.oldDataFlag) {
             projectMetricsRepository.findAllByCreatedDateNot()
         } else {
-            projectMetricsRepository.findAllByCreatedDateAfter()
+            val createdDate = LocalDate.now().minusDays(metricsRequest.minusDay).atStartOfDay()
+            projectMetricsRepository.findAllByCreatedDateAfter(createdDate)
         }
         val result = mutableListOf<ProjectMetrics>()
         queryResult.map {
