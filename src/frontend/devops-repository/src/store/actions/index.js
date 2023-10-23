@@ -121,7 +121,7 @@ export default {
             window.postMessage({
                 action: 'toggleLoginDialog'
             }, '*')
-            location.href = window.getLoginUrl()
+            location.href = window.getLoginUrl() + '?is_from_logout=' + window.IS_FROM_LOGOUT
         } else {
             cookie.remove('bkrepo_ticket')
             commit('SHOW_LOGIN_DIALOG', true)
