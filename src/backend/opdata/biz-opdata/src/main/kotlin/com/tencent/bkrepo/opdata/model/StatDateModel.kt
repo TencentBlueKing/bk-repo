@@ -48,12 +48,16 @@ class StatDateModel @Autowired constructor(
     }
 
     fun getShedLockInfo(id: String = JOB_NAME): LocalDateTime {
-        val query = Query(Criteria.where(ID).isEqualTo(id))
-        val result = mongoTemplate.find(query, ShedlockInfo::class.java, SHED_LOCK_COLLECTION_NAME)
-        return if (result.isEmpty()) {
+        return try {
+            val query = Query(Criteria.where(ID).isEqualTo(id))
+            val result = mongoTemplate.find(query, ShedlockInfo::class.java, SHED_LOCK_COLLECTION_NAME)
+            if (result.isEmpty()) {
+                LocalDate.now().minusDays(1).atStartOfDay()
+            } else {
+                getLockedAtDate(result.first())
+            }
+        } catch (e: Exception) {
             LocalDate.now().minusDays(1).atStartOfDay()
-        } else {
-            getLockedAtDate(result.first())
         }
     }
 
