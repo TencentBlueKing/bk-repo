@@ -119,7 +119,6 @@ class SubtaskStatusChangedEventListener(
 
     fun addScanStatus(subtask: TPlanArtifactLatestSubScanTask, metadata: ArrayList<MetadataModel>) {
         with(subtask) {
-            logger.debug("getArtifactPlanStatus ${subtask.toJsonString()}")
             //状态转换, 存到元数据中
             val artifactPlanStatus = scanPlanService.artifactPlanStatus(
                 ArtifactPlanRelationRequest(
@@ -131,7 +130,6 @@ class SubtaskStatusChangedEventListener(
                     fullPath = fullPath
                 )
             ) ?: return
-            logger.info("artifactPlanStatus:$artifactPlanStatus")
             metadata.add(
                 MetadataModel(
                     key = SCAN_STATUS,
