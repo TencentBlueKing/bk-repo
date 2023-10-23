@@ -64,14 +64,10 @@ class ProjectMetricsService (
     }
 
     fun list(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
-        val queryResult = if (metricsRequest.oldDataFlag) {
-            projectMetricsRepository.findAllByCreatedDateNot()
-        } else {
-            val createdDate = LocalDate.now().minusDays(metricsRequest.minusDay).atStartOfDay()
-            projectMetricsRepository.findAllByCreatedDateAfter(createdDate)
-        }
+        val createdDate = LocalDate.now().minusDays(metricsRequest.minusDay).atStartOfDay()
+        val queryResult = projectMetricsRepository.findAllByCreatedDate(createdDate)
         val result = mutableListOf<ProjectMetrics>()
-        queryResult.map {
+        queryResult.forEach {
                 if (it.capSize >= metricsRequest.limitSize) {
                     result.add(ProjectMetrics(
                         projectId = it.projectId,

@@ -29,6 +29,5 @@ package com.tencent.bkrepo.opdata.pojo
 
 data class ProjectMetricsRequest(
     val limitSize: Long = 1024 * 1024 * 1024L,
-    val oldDataFlag: Boolean = false,
     val minusDay: Long = 1
 )
