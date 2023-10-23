@@ -27,11 +27,21 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
+import com.alibaba.excel.annotation.ExcelProperty
+import com.alibaba.excel.annotation.write.style.ColumnWidth
 import java.time.LocalDateTime
 
 data class ProjectMetrics(
+    @ColumnWidth(30)
+    @ExcelProperty(value = ["项目ID"], order = 0)
     var projectId: String,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["节点个数"], order = 1)
     var nodeNum: Long,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["项目大小(GB)"], order = 2)
     var capSize: Long,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["统计时间"], order = 3)
     val createdDate: LocalDateTime? = LocalDateTime.now()
 )

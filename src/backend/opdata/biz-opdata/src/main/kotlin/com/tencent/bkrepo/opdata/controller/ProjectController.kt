@@ -67,4 +67,13 @@ class ProjectController(
     ): Response<List<ProjectMetrics>> {
         return ResponseBuilder.success(projectMetricsService.list(metricsRequest))
     }
+    /**
+     * 获取项目的统计数据
+     */
+    @GetMapping("/list/project/capSize/download")
+    fun downloadProjectCapSizeMetrics(
+        metricsRequest: ProjectMetricsRequest
+    ) {
+        projectMetricsService.download(metricsRequest)
+    }
 }

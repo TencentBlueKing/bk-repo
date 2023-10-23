@@ -30,17 +30,20 @@ package com.tencent.bkrepo.opdata.service
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
+import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 
 @Service
 class ProjectMetricsService (
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val statDateModel: StatDateModel
     ){
 
     fun page(option: ProjectMetricsOption): Page<TProjectMetrics> {
@@ -64,19 +67,40 @@ class ProjectMetricsService (
     }
 
     fun list(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
-        val createdDate = LocalDate.now().minusDays(metricsRequest.minusDay).atStartOfDay()
+       return getProjectMetrics(metricsRequest)
+    }
+
+    fun download(metricsRequest: ProjectMetricsRequest) {
+        val records = getProjectMetrics(metricsRequest)
+        // 导出
+        val includeColumns = mutableSetOf(
+            ProjectMetrics::projectId.name,
+            ProjectMetrics::nodeNum.name,
+            ProjectMetrics::capSize.name,
+            ProjectMetrics::createdDate.name
+        )
+        val fileName = "大于${metricsRequest.limitSize/TO_GIGABYTE}GB的项目信息"
+        EasyExcelUtils.download(records, fileName, ProjectMetrics::class.java, includeColumns)
+    }
+
+    private fun getProjectMetrics(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
+        val createdDate = if (metricsRequest.default) {
+            statDateModel.getShedLockInfo()
+        } else {
+            LocalDate.now().minusDays(metricsRequest.minusDay).atStartOfDay()
+        }
         val queryResult = projectMetricsRepository.findAllByCreatedDate(createdDate)
         val result = mutableListOf<ProjectMetrics>()
         queryResult.forEach {
-                if (it.capSize >= metricsRequest.limitSize) {
-                    result.add(ProjectMetrics(
-                        projectId = it.projectId,
-                        capSize = it.capSize / TO_GIGABYTE,
-                        nodeNum = it.nodeNum,
-                        createdDate = it.createdDate
-                    ))
-                }
+            if (it.capSize >= metricsRequest.limitSize) {
+                result.add(ProjectMetrics(
+                    projectId = it.projectId,
+                    capSize = it.capSize / TO_GIGABYTE,
+                    nodeNum = it.nodeNum,
+                    createdDate = it.createdDate
+                ))
             }
-        return result
+        }
+        return result.sortedByDescending { it.capSize }
     }
 }
