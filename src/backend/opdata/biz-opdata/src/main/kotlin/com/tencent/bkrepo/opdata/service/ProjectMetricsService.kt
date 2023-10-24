@@ -92,19 +92,7 @@ class ProjectMetricsService (
         val queryResult = projectMetricsRepository.findAllByCreatedDate(createdDate)
         val result = mutableListOf<ProjectMetrics>()
         queryResult.forEach {
-            val (sizeOfRepoType, nodeNumOfRepoType) = if (metricsRequest.type.isNullOrEmpty()) {
-                Pair(it.capSize , it.nodeNum)
-            } else {
-                var sizeOfRepoType: Long = 0
-                var nodeNumOfRepoType: Long = 0
-                it.repoMetrics.forEach { repo ->
-                    if (repo.type == metricsRequest.type) {
-                        sizeOfRepoType += repo.size
-                        nodeNumOfRepoType += repo.num
-                    }
-                }
-                Pair(sizeOfRepoType, nodeNumOfRepoType)
-            }
+            val (sizeOfRepoType, nodeNumOfRepoType) = getSizeAndNodeNum(metricsRequest.type, it)
             if (sizeOfRepoType >= metricsRequest.limitSize) {
                 result.add(ProjectMetrics(
                     projectId = it.projectId,
@@ -117,4 +105,20 @@ class ProjectMetricsService (
         return result.sortedByDescending { it.capSize }
     }
 
+
+    private fun getSizeAndNodeNum(type: String?, projectMetrics: TProjectMetrics): Pair<Long, Long> {
+        return if (type.isNullOrEmpty()) {
+            Pair(projectMetrics.capSize , projectMetrics.nodeNum)
+        } else {
+            var sizeOfRepoType: Long = 0
+            var nodeNumOfRepoType: Long = 0
+            projectMetrics.repoMetrics.forEach { repo ->
+                if (repo.type == type) {
+                    sizeOfRepoType += repo.size
+                    nodeNumOfRepoType += repo.num
+                }
+            }
+            Pair(sizeOfRepoType, nodeNumOfRepoType)
+        }
+    }
 }
