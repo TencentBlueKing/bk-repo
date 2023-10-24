@@ -41,5 +41,7 @@ data class RepoMetrics(
     @ApiModelProperty("size")
     var size: Long,
     @ApiModelProperty("num")
-    val num: Long
+    val num: Long,
+    @ApiModelProperty("type")
+    val type: String? = null
 )
