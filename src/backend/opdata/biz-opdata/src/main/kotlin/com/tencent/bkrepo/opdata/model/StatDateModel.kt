@@ -33,7 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -44,32 +43,40 @@ class StatDateModel @Autowired constructor(
 ) {
 
     companion object {
-        private const val JOB_NAME = "NodeStatCompositeMongoDbBatchJob"
+        private val JOB_NAMES = listOf("NodeStatCompositeMongoDbBatchJob", "ProjectRepoMetricsStatJob")
     }
 
-    fun getShedLockInfo(id: String = JOB_NAME): LocalDateTime {
+    fun getShedLockInfo(ids: List<String> = JOB_NAMES): LocalDateTime {
         return try {
-            val query = Query(Criteria.where(ID).isEqualTo(id))
+            val query = Query(Criteria.where(ID).`in`(ids))
             val result = mongoTemplate.find(query, ShedlockInfo::class.java, SHED_LOCK_COLLECTION_NAME)
-            if (result.isEmpty()) {
-                LocalDate.now().minusDays(1).atStartOfDay()
-            } else {
-                getLockedAtDate(result.first())
-            }
+            getLockedAtDate(result)
         } catch (e: Exception) {
             LocalDate.now().minusDays(1).atStartOfDay()
         }
     }
 
 
-    private fun getLockedAtDate(lockInfo: ShedlockInfo): LocalDateTime {
-        with(lockInfo) {
-            return if (lockUntil!!.isBefore(LocalDateTime.now())) {
-                lockedAt!!.toLocalDate().atStartOfDay()
+    private fun getLockedAtDate(lockInfos: List<ShedlockInfo>): LocalDateTime {
+        if (lockInfos.isEmpty()) {
+            return LocalDate.now().minusDays(1).atStartOfDay()
+        }
+        var statDateTime: LocalDateTime? = null
+        lockInfos.forEach {
+            val tempStatDate = if (it.lockUntil!!.isBefore(LocalDateTime.now())) {
+                it.lockedAt!!.toLocalDate().atStartOfDay()
             } else {
-                lockedAt!!.toLocalDate().minusDays(1).atStartOfDay()
+                it.lockedAt!!.toLocalDate().minusDays(1).atStartOfDay()
+            }
+            if (statDateTime == null) {
+                statDateTime = tempStatDate
+            } else {
+                if (statDateTime!!.isBefore(tempStatDate)) {
+                    statDateTime = tempStatDate
+                }
             }
         }
+        return statDateTime!!
     }
 
     data class ShedlockInfo(
