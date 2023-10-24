@@ -92,15 +92,8 @@ class ProjectMetricsService (
         val queryResult = projectMetricsRepository.findAllByCreatedDate(createdDate)
         val result = mutableListOf<ProjectMetrics>()
         queryResult.forEach {
-            if (metricsRequest.type.isNullOrEmpty()) {
-                if (it.capSize >= metricsRequest.limitSize) {
-                    result.add(ProjectMetrics(
-                        projectId = it.projectId,
-                        capSize = it.capSize / TO_GIGABYTE,
-                        nodeNum = it.nodeNum,
-                        createdDate = it.createdDate
-                    ))
-                }
+            val (sizeOfRepoType, nodeNumOfRepoType) = if (metricsRequest.type.isNullOrEmpty()) {
+                Pair(it.capSize , it.nodeNum)
             } else {
                 var sizeOfRepoType: Long = 0
                 var nodeNumOfRepoType: Long = 0
@@ -110,16 +103,18 @@ class ProjectMetricsService (
                         nodeNumOfRepoType += repo.num
                     }
                 }
-                if (sizeOfRepoType >= metricsRequest.limitSize) {
-                    result.add(ProjectMetrics(
-                        projectId = it.projectId,
-                        capSize = sizeOfRepoType / TO_GIGABYTE,
-                        nodeNum = nodeNumOfRepoType,
-                        createdDate = it.createdDate
-                    ))
-                }
+                Pair(sizeOfRepoType, nodeNumOfRepoType)
+            }
+            if (sizeOfRepoType >= metricsRequest.limitSize) {
+                result.add(ProjectMetrics(
+                    projectId = it.projectId,
+                    capSize = sizeOfRepoType / TO_GIGABYTE,
+                    nodeNum = nodeNumOfRepoType,
+                    createdDate = it.createdDate
+                ))
             }
         }
         return result.sortedByDescending { it.capSize }
     }
+
 }
