@@ -152,6 +152,19 @@
           <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
         </el-tooltip>
       </el-form-item>
+      <el-form-item
+        v-if="credential.type === STORAGE_TYPE_INNER_COS"
+        label="下载分片数量"
+        prop="download.maxDownloadParts"
+        required
+      >
+        <el-input-number
+          v-model="credential.download.maxDownloadParts"
+          controls-position="right"
+          :min="1"
+        />
+        <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+      </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_S3" label="Endpoint" prop="endpoint" required>
         <el-input v-model="credential.endpoint" :disabled="!createMode" />
       </el-form-item>
@@ -359,6 +372,7 @@ export default {
             credential.download.downloadTimeLowWaterMark = 5 * 1000
             credential.download.taskInterval = 10
             credential.download.minimumPartSize = 10
+            credential.download.maxDownloadParts = 10 * 1000
           }
           credential.secretKey = ''
           credential.bucket = ''
