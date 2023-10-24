@@ -225,7 +225,7 @@ class CosClient(val credentials: InnerCosCredentials) {
     private fun multipartUpload(key: String, file: File): PutObjectResponse {
         // 计算分片大小
         val length = file.length()
-        val optimalPartSize = calculateOptimalPartSize(length)
+        val optimalPartSize = calculateOptimalPartSize(length, true)
         // 获取uploadId
         val uploadId = initiateMultipartUpload(key)
         // 生成分片请求
@@ -309,9 +309,14 @@ class CosClient(val credentials: InnerCosCredentials) {
         return length > config.multipartThreshold
     }
 
-    private fun calculateOptimalPartSize(length: Long): Long {
-        val optimalPartSize = length.toDouble() / config.maxUploadParts
-        return max(ceil(optimalPartSize).toLong(), config.minimumPartSize)
+    private fun calculateOptimalPartSize(length: Long, uploadFlag: Boolean): Long {
+        val (maxParts, minimumPartSize) = if (uploadFlag) {
+            Pair(config.maxUploadParts, config.minimumUploadPartSize)
+        } else {
+            Pair(config.maxDownloadParts, config.minimumDownloadPartSize)
+        }
+        val optimalPartSize = length.toDouble() / maxParts
+        return max(ceil(optimalPartSize).toLong(), minimumPartSize)
     }
 
     private fun <T> HttpResponseHandler<T>.enableSpeedSlowLog(): SlowLogHandler<T> {
@@ -341,7 +346,7 @@ class CosClient(val credentials: InnerCosCredentials) {
      * */
     private fun chunkedLoad(key: String, start: Long, end: Long, dir: Path, executor: ThreadPoolExecutor): InputStream {
         val len = end - start - 1
-        val optimalPartSize = calculateOptimalPartSize(len)
+        val optimalPartSize = calculateOptimalPartSize(len, false)
         val factory = DownloadPartRequestFactory(key, optimalPartSize, start, end)
         val futureList = mutableListOf<ChunkedFuture<File>>()
         val activeCount = AtomicInteger()
