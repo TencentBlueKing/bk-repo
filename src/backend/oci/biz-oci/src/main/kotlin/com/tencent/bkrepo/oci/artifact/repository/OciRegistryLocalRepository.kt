@@ -57,6 +57,7 @@ import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OLD_DOCKER_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OLD_DOCKER_VERSION
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PATCH
 import com.tencent.bkrepo.oci.constant.POST
@@ -335,7 +336,9 @@ class OciRegistryLocalRepository(
         if (context.request.method == HttpMethod.HEAD.name) {
             return null
         }
-        val version = artifactResource.node?.metadata?.get(IMAGE_VERSION)?.toString() ?: return null
+        val version = artifactResource.node?.metadata?.get(IMAGE_VERSION)?.toString() ?: run {
+            artifactResource.node?.metadata?.get(OLD_DOCKER_VERSION)?.toString() ?: return null
+        }
         return PackageDownloadRecord(
             projectId = context.projectId,
             repoName = context.repoName,
@@ -454,7 +457,9 @@ class OciRegistryLocalRepository(
         with(context) {
             val artifactInfo = context.artifactInfo as OciArtifactInfo
             val packageKey = PackageKeys.ofName(repo.type, artifactInfo.packageName)
-            val version = node.metadata[IMAGE_VERSION]?.toString() ?: return null
+            val version = node.metadata[IMAGE_VERSION]?.toString() ?: run {
+                node.metadata[OLD_DOCKER_VERSION]?.toString() ?: return null
+            }
             return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
         }
     }
