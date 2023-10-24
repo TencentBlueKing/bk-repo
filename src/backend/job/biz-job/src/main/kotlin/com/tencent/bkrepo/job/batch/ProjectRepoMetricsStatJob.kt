@@ -99,7 +99,6 @@ class ProjectRepoMetricsStatJob(
                     metric.nodeNum.add(nodeNum)
                 }
                 metric.capSize.add(it.size)
-                metric.nodeNum.increment()
                 metric.addRepoMetrics(row = it, credentialsKey = credentialsKey, repoType = type)
             }
         }
@@ -130,8 +129,7 @@ class ProjectRepoMetricsStatJob(
     ) {
         val projectId = projectMetric.projectId
         // insert project repo metrics
-        var criteria = Criteria.where(PROJECT).isEqualTo(projectId).and(CREATED_DATE).isEqualTo(statDate)
-
+        val criteria = Criteria.where(PROJECT).isEqualTo(projectId).and(CREATED_DATE).isEqualTo(statDate)
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
         logger.info("start to insert project's metrics ")
         mongoTemplate.insert(projectMetric.toDO(statDate), COLLECTION_NAME_PROJECT_METRICS)
@@ -155,25 +153,20 @@ class ProjectRepoMetricsStatJob(
     }
 
     data class Node(
-        val id: String,
         val projectId: String,
         val repoName: String,
-        val path: String,
-        val fullPath: String,
         val folder: Boolean,
+        val fullPath: String,
         val size: Long,
-        val nodeNum: Long? = null,
-        val createdDate: LocalDateTime,
-        val deleted: LocalDateTime? = null
+        val nodeNum: Long? = null
     ) {
         constructor(map: Map<String, Any?>) : this(
-            map[Node::id.name].toString(), map[Node::projectId.name].toString(),
-            map[Node::repoName.name].toString(), map[Node::path.name].toString(),
-            map[Node::fullPath.name].toString(), map[Node::folder.name] as Boolean,
+            map[Node::projectId.name].toString(),
+            map[Node::repoName.name].toString(),
+            map[Node::folder.name] as Boolean,
+            map[Node::fullPath.name].toString(),
             map[Node::size.name].toString().toLong(),
-            map[Node::nodeNum.name]?.toString()?.toLong(),
-            TimeUtils.parseMongoDateTimeStr(map[Node::createdDate.name].toString())!!,
-            map[Node::deleted.name]?.let { TimeUtils.parseMongoDateTimeStr(it.toString()) }
+            map[Node::nodeNum.name]?.toString()?.toLong()
         )
     }
 
