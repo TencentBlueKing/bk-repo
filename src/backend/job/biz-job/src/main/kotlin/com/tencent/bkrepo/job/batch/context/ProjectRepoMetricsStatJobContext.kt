@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.job.batch.context
 
-import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.batch.ProjectRepoMetricsStatJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import java.time.LocalDateTime
@@ -38,10 +37,6 @@ data class ProjectRepoMetricsStatJobContext(
     var metrics: ConcurrentHashMap<String, ProjectMetrics> = ConcurrentHashMap(),
     var statDate: LocalDateTime
 ) : JobContext() {
-
-    companion object {
-        private val logger = LoggerHolder.jobLogger
-    }
 
     data class ProjectMetrics(
         val projectId: String,
@@ -62,7 +57,6 @@ data class ProjectRepoMetricsStatJobContext(
         }
 
         fun toDO(statDate: LocalDateTime = LocalDateTime.now()): ProjectRepoMetricsStatJob.TProjectMetrics {
-            logger.info("stat project: [${projectId}], size: [${capSize.toLong()}]")
             val repoMetrics = ArrayList<ProjectRepoMetricsStatJob.TRepoMetrics>(repoMetrics.size)
             this.repoMetrics.values.forEach { repo ->
                 val num = repo.num.toLong()

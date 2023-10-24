@@ -111,10 +111,12 @@ class ProjectRepoMetricsStatJob(
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
         super.onRunCollectionFinished(collectionName, context)
         require(context is ProjectRepoMetricsStatJobContext)
+        logger.info("start to insert project's metrics ")
         for (entry in context.metrics) {
             storeMetrics(context.statDate, entry.value)
         }
         context.metrics.clear()
+        logger.info("stat project metrics done")
     }
 
     override fun createJobContext(): ProjectRepoMetricsStatJobContext{
@@ -131,9 +133,8 @@ class ProjectRepoMetricsStatJob(
         // insert project repo metrics
         val criteria = Criteria.where(PROJECT).isEqualTo(projectId).and(CREATED_DATE).isEqualTo(statDate)
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
-        logger.info("start to insert project's metrics ")
+        logger.info("stat project: [${projectId}], size: [${projectMetric.capSize.toLong()}]")
         mongoTemplate.insert(projectMetric.toDO(statDate), COLLECTION_NAME_PROJECT_METRICS)
-        logger.info("stat project metrics done")
     }
 
     data class Repository(
