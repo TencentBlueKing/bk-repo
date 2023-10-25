@@ -85,5 +85,7 @@ data class NodeInfo(
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val deleted: String? = null,
     @ApiModelProperty("集群信息")
-    val clusterNames: Set<String>? = null
+    val clusterNames: Set<String>? = null,
+    @ApiModelProperty("是否归档")
+    val archived: Boolean? = null,
 )
