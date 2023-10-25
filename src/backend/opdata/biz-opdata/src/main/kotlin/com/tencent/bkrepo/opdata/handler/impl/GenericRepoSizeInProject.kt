@@ -27,10 +27,7 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
-import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
-import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.StatDateModel
-import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.stereotype.Component
@@ -40,28 +37,14 @@ import org.springframework.stereotype.Component
  */
 @Component
 class GenericRepoSizeInProject(
-    private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel
-) : QueryHandler {
+    projectMetricsRepository: ProjectMetricsRepository,
+    statDateModel: StatDateModel
+) : RepoSizeInProject(projectMetricsRepository, statDateModel) {
 
-    override val metric: Metrics get() = Metrics.GENERICREPOSIZEINPROJECT
-
-    override fun handle(target: Target, result: MutableList<Any>): Any {
-        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
-        val tmpMap = HashMap<String, Long>()
-        projects.forEach { tP ->
-            val projectId = tP.projectId
-            var dockerSize = 0L
-            tP.repoMetrics.filter { !it.type.isNullOrEmpty()&& it.type == GENERIC_TYPE }.forEach {repo ->
-                dockerSize += repo.size
-            }
-            val gbSize = dockerSize / TO_GIGABYTE
-            if (gbSize != 0L) {
-                tmpMap[projectId] = gbSize
-            }
-        }
-        return convToDisplayData(tmpMap, result)
-    }
+    override val metric: Metrics
+    get() = Metrics.GENERICREPOSIZEINPROJECT
+    override val repoType: List<String>
+    get() = listOf(GENERIC_TYPE)
 
     companion object {
         private const val GENERIC_TYPE = "GENERIC"
