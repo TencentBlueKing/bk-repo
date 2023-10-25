@@ -59,6 +59,8 @@ import com.tencent.bkrepo.oci.constant.BLOB_PATH_REFRESHED_KEY
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_KEY
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_VALUE
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
+import com.tencent.bkrepo.oci.constant.DOCKER_MANIFEST_DIGEST
+import com.tencent.bkrepo.oci.constant.DOCKER_REPO_NAME
 import com.tencent.bkrepo.oci.constant.DOWNLOADS
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_BY
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_DATE
@@ -70,6 +72,8 @@ import com.tencent.bkrepo.oci.constant.OCI_MANIFEST_LIST
 import com.tencent.bkrepo.oci.constant.OCI_NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_NODE_SIZE
 import com.tencent.bkrepo.oci.constant.OCI_PACKAGE_NAME
+import com.tencent.bkrepo.oci.constant.OLD_DOCKER_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OLD_DOCKER_VERSION
 import com.tencent.bkrepo.oci.constant.OS
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PROXY_URL
@@ -102,6 +106,7 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils.buildBlobsFolderPath
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
+import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -486,12 +491,20 @@ class OciOperationServiceImpl(
         if (nodeDetail.name == OCI_MANIFEST_LIST) {
             val manifestList = loadManifestList(nodeDetail.sha256!!, nodeDetail.size, storageCredentials)
             mediaType = manifestList!!.mediaType
+            val metadata = mutableMapOf<String, Any>(
+                OLD_DOCKER_VERSION to ociArtifactInfo.reference,
+                SHA256 to nodeDetail.sha256!!,
+                DOCKER_REPO_NAME to ociArtifactInfo.packageName,
+                DOCKER_MANIFEST_DIGEST to OciDigest.fromSha256(nodeDetail.sha256!!).toString(),
+                OLD_DOCKER_MEDIA_TYPE to mediaType,
+            )
             doPackageOperations(
                 manifestPath = nodeDetail.fullPath,
                 ociArtifactInfo = ociArtifactInfo,
                 manifestDigest = OciDigest.fromSha256(nodeDetail.sha256!!),
                 size = nodeDetail.size,
                 sourceType = sourceType,
+                metadata = metadata,
                 userId = SecurityUtils.getUserId()
             )
         } else {
@@ -655,6 +668,15 @@ class OciOperationServiceImpl(
         )
         // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
         if (existFlag) {
+            val mediaType = manifest.mediaType ?: HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE)
+            ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            val metadata = mutableMapOf<String, Any>(
+                OLD_DOCKER_VERSION to ociArtifactInfo.reference,
+                SHA256 to nodeDetail.sha256!!,
+                DOCKER_REPO_NAME to ociArtifactInfo.packageName,
+                DOCKER_MANIFEST_DIGEST to OciDigest.fromSha256(nodeDetail.sha256!!).toString(),
+                OLD_DOCKER_MEDIA_TYPE to mediaType
+            )
             // 第三方同步的索引更新等所有文件全部上传完成后才去进行
             // 根据flag生成package信息以及package version信息
             doPackageOperations(
@@ -663,6 +685,7 @@ class OciOperationServiceImpl(
                 manifestDigest = OciDigest.fromSha256(nodeDetail.sha256!!),
                 size = size,
                 sourceType = sourceType,
+                metadata = metadata,
                 userId = userId
             )
             return true
@@ -791,6 +814,7 @@ class OciOperationServiceImpl(
         manifestDigest: OciDigest,
         size: Long,
         sourceType: ArtifactChannel? = null,
+        metadata: MutableMap<String, Any>,
         userId: String = SecurityUtils.getUserId()
     ) {
         with(ociArtifactInfo) {
@@ -798,10 +822,8 @@ class OciOperationServiceImpl(
             // 针对支持多仓库类型，如docker和oci
             val repoType = repositoryClient.getRepoDetail(projectId, repoName).data!!.type.name
             val packageKey = PackageKeys.ofName(repoType.toLowerCase(), packageName)
-            val metadata = mutableMapOf<String, Any>(MANIFEST_DIGEST to manifestDigest.toString())
-                .apply {
-                    sourceType?.let { this[SOURCE_TYPE] = sourceType }
-                }
+            metadata[MANIFEST_DIGEST] = manifestDigest.toString()
+            sourceType?.let { metadata.put(SOURCE_TYPE, sourceType) }
             val request = ObjectBuildUtils.buildPackageVersionCreateRequest(
                 ociArtifactInfo = this,
                 packageName = packageName,

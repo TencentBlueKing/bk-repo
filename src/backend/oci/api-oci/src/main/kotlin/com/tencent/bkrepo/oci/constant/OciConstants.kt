@@ -112,6 +112,9 @@ const val TAG_LIST_REQUEST = "tagList"
 const val CATALOG_REQUEST = "catalog"
 const val REQUEST_IMAGE = "image"
 
+const val DOCKER_REPO_NAME = "docker.repoName"
+const val DOCKER_MANIFEST_DIGEST = "docker.manfiest.digest"
+
 // OCIScheme is the URL scheme for OCI-based requests
 const val OCI_SCHEME = "oci"
 
