@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RestController
 class ObjectController(
     private val objectService: ObjectService
 ) {
-    @PostMapping("/{projectId}/{repoName}/objects/batch")
+    @PostMapping("/{projectId}/{repoName}/objects/batch", "/{projectId}/**/{repoName}/info/lfs/objects/batch")
     fun batch(
         @PathVariable projectId: String,
         @PathVariable repoName: String,

@@ -31,6 +31,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("lfs")
 data class LfsProperties(
-    var domain: String = "http://bkrepo.example.com"
+    var domain: String = "http://bkrepo.example.com",
+    var enabledGitProxy: Boolean = false,
+    var gitProxyDomain: String = "http://git.example.com"
 )
 
