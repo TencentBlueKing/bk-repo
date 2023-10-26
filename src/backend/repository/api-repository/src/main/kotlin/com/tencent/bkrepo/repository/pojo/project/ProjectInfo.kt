@@ -49,5 +49,7 @@ data class ProjectInfo(
     @ApiModelProperty("上次修改者")
     val lastModifiedBy: String,
     @ApiModelProperty("上次修改日期")
-    val lastModifiedDate: String
+    val lastModifiedDate: String,
+    @ApiModelProperty("项目元数据")
+    val metadata: List<ProjectMetadata> = emptyList(),
 )

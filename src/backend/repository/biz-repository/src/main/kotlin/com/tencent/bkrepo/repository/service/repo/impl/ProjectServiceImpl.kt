@@ -182,7 +182,8 @@ class ProjectServiceImpl(
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
+                metadata = metadata,
             )
             return try {
                 projectDao.insert(project)
@@ -223,6 +224,10 @@ class ProjectServiceImpl(
             request.displayName?.let { this.set(TProject::displayName.name, it) }
             request.description?.let { this.set(TProject::description.name, it) }
         }
+        if (request.metadata.isNotEmpty()) {
+            // 直接使用request的metadata，不存在于request的metadata会被删除，存在的会被覆盖
+            update.set(TProject::metadata.name, request.metadata)
+        }
         val updateResult = projectDao.updateFirst(query, update)
         return if (updateResult.modifiedCount == 1L) {
             logger.info("Update project [$name] success.")
@@ -262,7 +267,8 @@ class ProjectServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    metadata = it.metadata
                 )
             }
         }
