@@ -71,6 +71,7 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : ScannerSimpleMongo
                 criteria.and(SubScanTaskDefinition::createdDate.name).gte(startDateTime!!).lte(endDateTime!!)
             }
             qualityRedLine?.let { criteria.and(SubScanTaskDefinition::qualityRedLine.name).isEqualTo(qualityRedLine) }
+            unQuality?.let { criteria.and(SubScanTaskDefinition::qualityRedLine.name).nin(listOf(true, false)) }
 
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val query = Query(criteria)
