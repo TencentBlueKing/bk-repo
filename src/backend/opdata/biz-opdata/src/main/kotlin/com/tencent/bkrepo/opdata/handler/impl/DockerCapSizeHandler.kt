@@ -46,4 +46,10 @@ class DockerCapSizeHandler(
 
     override val columnsText: String = OPDATA_DOCKER_CAP_SIZE
 
+    override val repoType: List<String>
+        get() = DOCKER_TYPES
+
+    companion object {
+        private val DOCKER_TYPES = listOf("DOCKER", "OCI")
+    }
 }

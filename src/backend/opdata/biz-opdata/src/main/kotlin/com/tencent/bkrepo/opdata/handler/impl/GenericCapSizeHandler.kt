@@ -45,4 +45,11 @@ class GenericCapSizeHandler(
     override val metric: Metrics get() = Metrics.GENERICCAPSIZE
 
     override val columnsText: String = OPDATA_GENERIC_CAP_SIZE
+
+    override val repoType: List<String>
+        get() = listOf(GENERIC_TYPE)
+
+    companion object {
+        private const val GENERIC_TYPE = "GENERIC"
+    }
 }
