@@ -43,7 +43,7 @@ class StatDateModel @Autowired constructor(
 ) {
 
     companion object {
-        private val JOB_NAMES = listOf("NodeStatCompositeMongoDbBatchJob", "ProjectRepoMetricsStatJob")
+        private val JOB_NAMES = listOf("ProjectRepoMetricsStatJob")
     }
 
     fun getShedLockInfo(ids: List<String> = JOB_NAMES): LocalDateTime {
