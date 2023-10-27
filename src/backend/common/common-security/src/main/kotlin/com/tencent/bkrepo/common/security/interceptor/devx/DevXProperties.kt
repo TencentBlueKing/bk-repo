@@ -34,7 +34,7 @@ import org.springframework.core.Ordered
  * 云研发配置
  * */
 @ConfigurationProperties("devx")
-data class DevxProperties(
+data class DevXProperties(
     /**
      * 是否开启云研发相关配置
      * */

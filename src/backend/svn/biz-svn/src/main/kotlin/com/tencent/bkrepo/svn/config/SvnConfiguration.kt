@@ -27,9 +27,14 @@
 
 package com.tencent.bkrepo.svn.config
 
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXAccessInterceptor
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.svn.interceptor.ChangeAncestorProxyHandler
 import com.tencent.bkrepo.svn.interceptor.ProxyInterceptor
+import com.tencent.bkrepo.svn.interceptor.SvnDevXAccessInterceptor
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
@@ -45,5 +50,11 @@ class SvnConfiguration(
             .addPathPatterns("/**")
             .order(Ordered.HIGHEST_PRECEDENCE + 1)
         super.addInterceptors(registry)
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = ["devx.enabled"])
+    fun devXAccessInterceptor(properties: DevXProperties): DevXAccessInterceptor {
+        return SvnDevXAccessInterceptor(properties)
     }
 }
