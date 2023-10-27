@@ -79,5 +79,5 @@ data class DevxProperties(
     /**
      * devx拦截器优先级，如果需要取用户信息优先级需要比[HttpAuthInterceptor]拦截器低
      */
-    var interceptorOrder: Long = (Ordered.LOWEST_PRECEDENCE - 100).toLong(),
+    var interceptorOrder: Int = Ordered.LOWEST_PRECEDENCE - 100,
 )

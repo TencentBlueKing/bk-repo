@@ -116,7 +116,7 @@ class SecurityAutoConfiguration {
                 // 不应用到服务间调用
                 registry.addInterceptor(DevxSrcIpInterceptor(properties))
                     // 需要在[httpAuthInterceptor]之后执行才能取得用户信息, 100为随机取值
-                    .order(properties.interceptorOrder.toInt())
+                    .order(properties.interceptorOrder)
                     .excludePathPatterns("/service/**", "/replica/**")
             }
         }
