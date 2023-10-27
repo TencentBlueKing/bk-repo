@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo
+package com.tencent.bkrepo.opdata.handler.impl
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import java.time.LocalDate
-import java.time.LocalDateTime
+import com.tencent.bkrepo.opdata.model.StatDateModel
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import org.springframework.stereotype.Component
 
-data class ProjectMetricsOption(
-    var projectId: String? = null,
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    val pageSize: Int = DEFAULT_PAGE_SIZE,
-    val createdDate: LocalDateTime = LocalDate.now().minusDays(1).atStartOfDay()
-)
+/**
+ * 项目中镜像仓库总大小
+ */
+@Component
+class DockerRepoSizeInProject(
+    projectMetricsRepository: ProjectMetricsRepository,
+    statDateModel: StatDateModel
+) : RepoSizeInProject(projectMetricsRepository, statDateModel) {
+
+    override val metric: Metrics
+        get() = Metrics.DOCKERREPOSIZEINPROJECT
+    override val repoType: List<String>
+        get() = DOCKER_TYPES
+
+    companion object {
+        private val DOCKER_TYPES = listOf("DOCKER", "OCI")
+    }
+}

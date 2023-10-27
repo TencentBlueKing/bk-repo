@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,14 +27,21 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import java.time.LocalDate
+import com.alibaba.excel.annotation.ExcelProperty
+import com.alibaba.excel.annotation.write.style.ColumnWidth
 import java.time.LocalDateTime
 
-data class ProjectMetricsOption(
-    var projectId: String? = null,
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    val pageSize: Int = DEFAULT_PAGE_SIZE,
-    val createdDate: LocalDateTime = LocalDate.now().minusDays(1).atStartOfDay()
+data class ProjectMetrics(
+    @ColumnWidth(30)
+    @ExcelProperty(value = ["项目ID"], order = 0)
+    var projectId: String,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["节点个数"], order = 1)
+    var nodeNum: Long,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["项目大小(GB)"], order = 2)
+    var capSize: Long,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["统计时间"], order = 3)
+    val createdDate: LocalDateTime? = LocalDateTime.now()
 )
