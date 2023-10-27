@@ -27,9 +27,7 @@
 
 package com.tencent.bkrepo.svn.config
 
-import com.tencent.bkrepo.common.security.interceptor.devx.DevxProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
 
 @ConfigurationProperties("svn")
 data class SvnProperties(
@@ -38,8 +36,6 @@ data class SvnProperties(
      * 比如SVN客户端访问http://bkrepo.exmaple.com/svn/projectId/repoName，此时需要配置repoPrefix为/svn
      */
     var repoPrefix: String = "",
-    @NestedConfigurationProperty
-    var devx: DevxProperties = DevxProperties(),
     /**
      * 例如 http://bkrepo.example.com
      */
