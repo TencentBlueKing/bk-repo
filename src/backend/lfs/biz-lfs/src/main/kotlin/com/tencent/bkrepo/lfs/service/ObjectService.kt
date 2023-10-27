@@ -177,7 +177,7 @@ class ObjectService(
     private fun buildProxyRepoLfsObjects(request: BatchRequest, repo: RepositoryDetail): List<LfsObject> {
         val requestBody = request.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val config = repo.configuration as ProxyConfiguration
-        val url = "${config.url?.removePrefix(StringPool.SLASH)}/info/lfs/objects/batch"
+        val url = "${config.proxy.url.removePrefix(StringPool.SLASH)}/info/lfs/objects/batch"
         val request2 = Request.Builder().url(url)
             .headers(HttpContextHolder.getRequest().headers().toHeaders())
             .post(requestBody).build()
