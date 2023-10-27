@@ -25,42 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.interceptor.devx
+package com.tencent.bkrepo.fs.server.filter
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
+import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
+import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
-import org.springframework.web.servlet.HandlerInterceptor
-import org.springframework.web.servlet.HandlerMapping
+import org.springframework.http.HttpStatus
+import org.springframework.web.reactive.function.client.ClientResponse
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBody
+import org.springframework.web.reactive.function.server.ServerRequest
+import org.springframework.web.reactive.function.server.ServerResponse
+import reactor.core.publisher.Mono
 import java.util.concurrent.TimeUnit
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
-/**
- * 云研发源ip拦截器，只允许项目的云桌面ip通过
- * */
-open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : HandlerInterceptor {
-    private val httpClient = OkHttpClient.Builder().build()
-    private val projectIpsCache: LoadingCache<String, Set<String>> = CacheBuilder.newBuilder()
+class DevXAccessFilter(
+    private val devXProperties: DevXProperties
+) : CoHandlerFilterFunction {
+    private val httpClient = WebClient.create()
+    private val projectIpsCache: LoadingCache<String, Mono<Set<String>>> = CacheBuilder.newBuilder()
         .maximumSize(MAX_CACHE_PROJECT_SIZE)
         .expireAfterWrite(CACHE_EXPIRE_TIME, TimeUnit.SECONDS)
         .build(CacheLoader.from { key -> listIpFromProject(key) })
 
-    override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        val user = SecurityUtils.getUserId()
+    override suspend fun filter(
+        request: ServerRequest,
+        next: suspend (ServerRequest) -> ServerResponse
+    ): ServerResponse {
+        val user = ReactiveSecurityUtils.getUser()
         if (!devXProperties.enabled || user in devXProperties.userWhiteList) {
-            return true
+            return next(request)
         }
 
         if (devXProperties.srcHeaderName.isNullOrEmpty() || devXProperties.srcHeaderValues.size < 2) {
@@ -70,28 +77,34 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
             )
         }
 
-        val headerValue = request.getHeader(devXProperties.srcHeaderName)
-        return when (headerValue) {
+        val headerValue = request.headers().firstHeader(devXProperties.srcHeaderName!!)
+        when (headerValue) {
             devXProperties.srcHeaderValues[0] -> {
                 getProjectId(request)?.let { projectId ->
-                    val srcIp = HttpContextHolder.getClientAddress()
+                    val srcIp = ReactiveRequestContextHolder.getClientAddress()
                     checkIpBelongToProject(projectId, srcIp)
                 }
-                true
             }
 
             devXProperties.srcHeaderValues[1] -> {
                 devXProperties.restrictedUserPrefix.forEach { checkUserSuffixAndPrefix(user, prefix = it) }
                 devXProperties.restrictedUserSuffix.forEach { checkUserSuffixAndPrefix(user, suffix = it) }
-                true
             }
+        }
 
-            else -> true
+        return next(request)
+    }
+
+    private fun getProjectId(request: ServerRequest): String? {
+        return try {
+            request.pathVariable(PROJECT_ID)
+        } catch (e: IllegalArgumentException) {
+            null
         }
     }
 
-    private fun checkIpBelongToProject(projectId: String, srcIp: String) {
-        if (!inWhiteList(srcIp, projectId)) {
+    private suspend fun checkIpBelongToProject(projectId: String, srcIp: String) {
+        if (srcIp !in projectIpsCache.get(projectId).awaitSingle()) {
             logger.info("Illegal src ip[$srcIp] in project[$projectId].")
             throw PermissionException()
         }
@@ -107,42 +120,37 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         }
     }
 
-    protected open fun getProjectId(request: HttpServletRequest): String? {
-        val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) ?: return null
-        require(uriAttribute is Map<*, *>)
-        return uriAttribute[PROJECT_ID]?.toString()
-    }
-
-    private fun inWhiteList(ip: String, projectId: String): Boolean {
-        return projectIpsCache.get(projectId).contains(ip)
-    }
-
-    private fun listIpFromProject(projectId: String): Set<String> {
+    private fun listIpFromProject(projectId: String): Mono<Set<String>> {
         val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
         val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
         val workspaceUrl = devXProperties.workspaceUrl
-        val request = Request.Builder()
-            .url("$workspaceUrl?project_id=$projectId")
-            .header("X-Bkapi-Authorization", token)
-            .build()
+
         logger.info("Update project[$projectId] ips.")
-        val response = httpClient.newCall(request).execute()
-        if (!response.isSuccessful || response.body == null) {
-            val errorMsg = response.body?.bytes()?.let { String(it) }
-            logger.error("${response.code} $errorMsg")
-            return emptySet()
-        }
-        val ips = HashSet<String>()
-        devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
-        return response.body!!.byteStream().readJsonString<QueryResponse>().data.mapTo(ips) {
-            it.innerIp.substringAfter('.')
+        return httpClient
+            .get()
+            .uri("$workspaceUrl?project_id=$projectId")
+            .header("X-Bkapi-Authorization", token)
+            .exchangeToMono {
+                mono { parseResponse(it, projectId) }
+            }
+    }
+
+    private suspend fun parseResponse(response: ClientResponse, projectId: String): Set<String> {
+        return if (response.statusCode() != HttpStatus.OK) {
+            val errorMsg = response.awaitBody<String>()
+            logger.error("${response.statusCode()} $errorMsg")
+            emptySet()
+        } else {
+            val ips = HashSet<String>()
+            devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
+            response.awaitBody<QueryResponse>().data.mapTo(ips) {
+                it.innerIp.substringAfter('.')
+            }
         }
     }
 
-
-
     companion object {
-        private val logger = LoggerFactory.getLogger(DevXAccessInterceptor::class.java)
+        private val logger = LoggerFactory.getLogger(DevXAccessFilter::class.java)
         private const val MAX_CACHE_PROJECT_SIZE = 1000L
         private const val CACHE_EXPIRE_TIME = 60L
     }
