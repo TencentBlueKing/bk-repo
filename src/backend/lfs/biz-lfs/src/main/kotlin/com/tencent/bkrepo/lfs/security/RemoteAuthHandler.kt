@@ -43,8 +43,8 @@ import javax.servlet.http.HttpServletRequest
 
 class RemoteAuthHandler : HttpAuthHandler {
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
-        val repoDetail = ArtifactContextHolder.getRepoDetail()
-        if (repoDetail?.category != RepositoryCategory.REMOTE) {
+        val repoDetail = ArtifactContextHolder.getRepoDetailOrNull()
+        if (repoDetail != null && repoDetail.category != RepositoryCategory.REMOTE) {
             return AnonymousCredentials()
         }
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
