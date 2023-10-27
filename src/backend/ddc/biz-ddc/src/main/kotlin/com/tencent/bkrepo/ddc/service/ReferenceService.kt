@@ -86,7 +86,7 @@ class ReferenceService(
             inlineBlob = inlineBlob?.let { Binary(it) },
             expireDate = null // TODO 设置expireDate
         )
-        refRepository.replace(tRef)
+        refRepository.createIfNotExists(tRef)
         return Reference.from(tRef)
     }
 
@@ -105,7 +105,7 @@ class ReferenceService(
             key = ref.key.toString(),
             contentHash = ref.blobId!!.toString(),
         )
-        legacyRefRepository.replace(tRef)
+        legacyRefRepository.createIfNotExists(tRef)
         return Reference.from(tRef)
     }
 

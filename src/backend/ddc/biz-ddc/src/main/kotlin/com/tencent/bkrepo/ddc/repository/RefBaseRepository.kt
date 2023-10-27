@@ -27,13 +27,12 @@
 
 package com.tencent.bkrepo.ddc.repository
 
-import com.mongodb.DuplicateKeyException
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.ddc.model.TDdcRefBase
 import com.tencent.bkrepo.ddc.pojo.RefId
-import org.springframework.data.mongodb.core.FindAndReplaceOptions
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -47,13 +46,12 @@ abstract class RefBaseRepository<E : TDdcRefBase> : SimpleMongoDao<E>() {
         return updateFirst(Query(criteria), update)
     }
 
-    fun replace(ref: TDdcRefBase): E? {
-        val criteria = refIdCriteria(ref.projectId, ref.repoName, ref.bucket, ref.key)
-        val query = Query(criteria)
-        val options = FindAndReplaceOptions().upsert()
+    fun createIfNotExists(ref: TDdcRefBase): E? {
         return try {
-            determineMongoTemplate().findAndReplace(query, ref, options) as E?
+            insert(ref as E)
         } catch (e: DuplicateKeyException) {
+            val criteria = refIdCriteria(ref.projectId, ref.repoName, ref.bucket, ref.key)
+            val query = Query(criteria)
             findOne(query)
         }
     }

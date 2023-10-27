@@ -27,11 +27,10 @@
 
 package com.tencent.bkrepo.ddc.repository
 
-import com.mongodb.DuplicateKeyException
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.ddc.model.TDdcBlob
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.FindAndReplaceOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -65,15 +64,14 @@ class BlobRepository : SimpleMongoDao<TDdcBlob>() {
         return find(query)
     }
 
-    fun replace(blob: TDdcBlob): TDdcBlob? {
-        val criteria = TDdcBlob::projectId.isEqualTo(blob.projectId)
-            .and(TDdcBlob::repoName.name).isEqualTo(blob.repoName)
-            .and(TDdcBlob::blobId.name).isEqualTo(blob.blobId)
-        val options = FindAndReplaceOptions().upsert()
-        val query = Query(criteria)
+    fun createIfNotExists(blob: TDdcBlob): TDdcBlob? {
         return try {
-            determineMongoTemplate().findAndReplace(query, blob, options)
+            insert(blob)
         } catch (e: DuplicateKeyException) {
+            val criteria = TDdcBlob::projectId.isEqualTo(blob.projectId)
+                .and(TDdcBlob::repoName.name).isEqualTo(blob.repoName)
+                .and(TDdcBlob::blobId.name).isEqualTo(blob.blobId)
+            val query = Query(criteria)
             findOne(query)
         }
     }
