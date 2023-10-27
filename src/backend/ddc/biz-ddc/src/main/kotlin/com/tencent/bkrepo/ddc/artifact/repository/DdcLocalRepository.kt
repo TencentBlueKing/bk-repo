@@ -431,7 +431,7 @@ class DdcLocalRepository(
             val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
             val blobs = refResolver.getReferencedBlobs(context.projectId, context.repoName, cb)
             if (blobs.size == 1) {
-                context.response.addHeader(HEADER_NAME_INLINE_PAYLOAD_HASH, blobs[0].toString())
+                context.response.addHeader(HEADER_NAME_INLINE_PAYLOAD_HASH, blobs[0].blobId.toString())
                 blobToArtifactResource(context, blobs[0], responseType)
             } else if (blobs.isEmpty()) {
                 null
