@@ -63,7 +63,7 @@ class BlobService(
                 size = size,
                 sha1 = sha1,
             )
-            blobRepository.replace(tBlob)
+            blobRepository.createIfNotExists(tBlob)
 
             return Blob.from(tBlob)
         }
