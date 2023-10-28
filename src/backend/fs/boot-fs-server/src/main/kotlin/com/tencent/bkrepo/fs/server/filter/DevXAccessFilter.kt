@@ -50,15 +50,14 @@ import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import reactor.core.publisher.Mono
-import java.util.concurrent.TimeUnit
 
 class DevXAccessFilter(
     private val devXProperties: DevXProperties
 ) : CoHandlerFilterFunction {
     private val httpClient = WebClient.create()
     private val projectIpsCache: LoadingCache<String, Mono<Set<String>>> = CacheBuilder.newBuilder()
-        .maximumSize(MAX_CACHE_PROJECT_SIZE)
-        .expireAfterWrite(CACHE_EXPIRE_TIME, TimeUnit.SECONDS)
+        .maximumSize(devXProperties.cacheSize)
+        .expireAfterWrite(devXProperties.cacheExpireTime)
         .build(CacheLoader.from { key -> listIpFromProject(key) })
 
     override suspend fun filter(
@@ -151,7 +150,5 @@ class DevXAccessFilter(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevXAccessFilter::class.java)
-        private const val MAX_CACHE_PROJECT_SIZE = 1000L
-        private const val CACHE_EXPIRE_TIME = 60L
     }
 }

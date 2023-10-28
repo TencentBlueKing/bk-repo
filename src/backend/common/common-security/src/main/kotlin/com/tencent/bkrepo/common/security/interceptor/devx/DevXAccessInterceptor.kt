@@ -43,7 +43,6 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
-import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -53,8 +52,8 @@ import javax.servlet.http.HttpServletResponse
 open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : HandlerInterceptor {
     private val httpClient = OkHttpClient.Builder().build()
     private val projectIpsCache: LoadingCache<String, Set<String>> = CacheBuilder.newBuilder()
-        .maximumSize(MAX_CACHE_PROJECT_SIZE)
-        .expireAfterWrite(CACHE_EXPIRE_TIME, TimeUnit.SECONDS)
+        .maximumSize(devXProperties.cacheSize)
+        .expireAfterWrite(devXProperties.cacheExpireTime)
         .build(CacheLoader.from { key -> listIpFromProject(key) })
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
@@ -143,7 +142,5 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevXAccessInterceptor::class.java)
-        private const val MAX_CACHE_PROJECT_SIZE = 1000L
-        private const val CACHE_EXPIRE_TIME = 60L
     }
 }

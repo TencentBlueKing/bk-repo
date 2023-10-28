@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.security.interceptor.devx
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.core.Ordered
+import java.time.Duration
 
 /**
  * 云研发配置
@@ -51,6 +52,14 @@ data class DevXProperties(
      * 查询云研发工作空间的URL
      * */
     var workspaceUrl: String = "",
+    /**
+     * 缓存的项目ip过期时间
+     */
+    var cacheExpireTime: Duration = Duration.ofMinutes(1L),
+    /**
+     * 缓存的项目数量
+     */
+    var cacheSize: Long = 1000L,
     /**
      * 配置属于项目的CVM
      * key 为项目ip， value为CVM配置
