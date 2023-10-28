@@ -33,5 +33,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class DistributedDockerImageCleanupJobProperties(
     override var enabled: Boolean = false,
     var repositoryTypes: List<String> = listOf("OCI", "DOCKER"),
+    // 保留分发的镜像天数
+    var keepDays: Long = 1,
     override var cron: String = "0 0 5 * * ?"
 ): MongodbJobProperties()

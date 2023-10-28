@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.TYPE
@@ -67,7 +68,8 @@ class DistributedDockerImageCleanupJob(
 
     override fun buildQuery(): Query {
         return Query(
-            Criteria.where(TYPE).`in`(properties.repositoryTypes)
+            Criteria.where(TYPE).`in`(properties.repositoryTypes).
+                and(REPO_NAME).isEqualTo(DISTRIBUTION_IMAGE_REPO)
         )
     }
 
@@ -105,7 +107,7 @@ class DistributedDockerImageCleanupJob(
     private fun filterDistributedAndScannedImage(versionData: PackageVersionData): Boolean {
         with(versionData) {
             // 避免误删，只删除最后更新时间是前一天的镜像
-            if (versionData.lastModifiedDate.isAfter(LocalDateTime.now().minusDays(1))) return false
+            if (versionData.lastModifiedDate.isAfter(LocalDateTime.now().minusDays(properties.keepDays))) return false
             if (metadata.isEmpty()) return false
             val enableDistribution = metadata.firstOrNull { it[METADATA_KEY] == DISTRIBUTION_METADATA_KEY }
                 ?.get(METADATA_VALUE) as? Boolean ?: return false
@@ -159,6 +161,7 @@ class DistributedDockerImageCleanupJob(
         private const val PACKAGE_ID = "packageId"
         private val SCAN_RUNNING_STATUS = listOf("INIT", "RUNNING")
         private const val DISTRIBUTION_FINISH_STATUS = "finished"
+        private const val DISTRIBUTION_IMAGE_REPO = "image"
 
     }
 }
