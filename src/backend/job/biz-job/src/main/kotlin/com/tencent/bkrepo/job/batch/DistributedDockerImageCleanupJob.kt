@@ -108,11 +108,11 @@ class DistributedDockerImageCleanupJob(
             if (versionData.lastModifiedDate.isAfter(LocalDateTime.now().minusDays(1))) return false
             if (metadata.isEmpty()) return false
             val enableDistribution = metadata.firstOrNull { it[METADATA_KEY] == DISTRIBUTION_METADATA_KEY }
-                ?.get(METADATA_VALUE) as? String ?: return false
+                ?.get(METADATA_VALUE) as? Boolean ?: return false
             // 如果未标记为开启镜像分发，则保留
-            if (!enableDistribution.toBoolean())  return false
+            if (!enableDistribution)  return false
             val enableImageScan =  metadata.firstOrNull { it[METADATA_KEY] == IMAGE_SCAN_METADATA_KEY }
-                ?.get(METADATA_VALUE) as? String
+                ?.get(METADATA_VALUE) as? Boolean
             val scanStatus =  metadata.firstOrNull { it[METADATA_KEY] == SCAN_STATUS }
                 ?.get(METADATA_VALUE) as? String?
             val distributionStatus = metadata.firstOrNull { it[METADATA_KEY] == DISTRIBUTION_STATUS_METADATA_KEY }
@@ -120,8 +120,8 @@ class DistributedDockerImageCleanupJob(
             // 镜像分发未结束，不进行删除
             if (distributionStatus.isNullOrEmpty() || distributionStatus != DISTRIBUTION_FINISH_STATUS) return false
             // 不开启镜像扫描，删除
-            if ((enableImageScan.isNullOrEmpty() || !enableImageScan.toBoolean())) return true
-            if (scanStatus !in SCAN_RUNNING_STATUS) return true
+            if ((enableImageScan == null || !enableImageScan)) return true
+            if (!scanStatus.isNullOrEmpty()  && scanStatus !in SCAN_RUNNING_STATUS) return true
             return false
         }
     }
