@@ -4,5 +4,5 @@ data class ManifestDescriptor(
     override var mediaType: String,
     override var size: Long,
     override var digest: String,
-    var platform: Map<String, String> = emptyMap()
-):Descriptor(mediaType, size, digest)
+    var platform: Map<String, Any> = emptyMap()
+) : Descriptor(mediaType, size, digest)
