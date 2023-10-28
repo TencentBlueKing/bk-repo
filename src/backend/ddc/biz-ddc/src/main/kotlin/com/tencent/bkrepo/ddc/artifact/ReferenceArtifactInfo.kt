@@ -36,6 +36,10 @@ class ReferenceArtifactInfo(
     repoName: String,
     val bucket: String,
     val refKey: RefKey,
+    /**
+     * 是通过旧接口调用
+     */
+    var legacy: Boolean = false,
     var inlineBlobHash: String? = null,
 ) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
 

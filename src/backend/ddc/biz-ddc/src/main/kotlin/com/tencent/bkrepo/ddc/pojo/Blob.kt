@@ -40,6 +40,7 @@ data class Blob(
     val blobId: ContentHash,
     val contentId: ContentHash,
     val references: Set<String> = emptySet(),
+    val sha1: String? = null,
 ) {
     companion object {
         fun from(blob: TDdcBlob) = with(blob) {
@@ -52,6 +53,7 @@ data class Blob(
                 blobId = ContentHash.fromHex(blobId),
                 contentId = ContentHash.fromHex(contentId),
                 references = references,
+                sha1 = sha1
             )
         }
 

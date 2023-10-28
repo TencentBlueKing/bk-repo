@@ -34,6 +34,7 @@ package com.tencent.bkrepo.opdata.handler.impl
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
 import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
@@ -46,14 +47,15 @@ import org.springframework.stereotype.Component
  */
 @Component
 class NodeNumHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val statDateModel: StatDateModel
 ) : QueryHandler {
 
     override val metric: Metrics get() = Metrics.NODENUM
 
     override fun handle(target: Target, result: MutableList<Any>) {
         var num = 0L
-        val projects = projectMetricsRepository.findAll()
+        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
         projects.forEach {
             num += it.nodeNum
         }

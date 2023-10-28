@@ -39,12 +39,13 @@ import org.springframework.stereotype.Service
 
 @Service
 class StorageCredentialsModel @Autowired constructor(
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val statDateModel: StatDateModel
 ) {
 
     fun getStorageCredentialsStat(metrics: StatMetrics): Map<String, Long> {
         val result = mutableMapOf<String, Long>()
-        val projectMetricsList = projectMetricsRepository.findAll()
+        val projectMetricsList = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
         projectMetricsList.forEach { projectMetrics ->
             projectMetrics.repoMetrics.forEach {
                 val value = if (metrics == StatMetrics.NUM) it.num else it.size

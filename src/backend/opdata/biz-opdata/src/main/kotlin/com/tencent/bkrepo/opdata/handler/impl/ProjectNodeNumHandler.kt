@@ -33,6 +33,7 @@ package com.tencent.bkrepo.opdata.handler.impl
 
 import com.tencent.bkrepo.opdata.constant.PROJECT_NAME
 import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
@@ -43,13 +44,14 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ProjectNodeNumHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val statDateModel: StatDateModel
 ) : QueryHandler {
 
     override val metric: Metrics get() = Metrics.PROJECTNODENUM
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
-        val projects = projectMetricsRepository.findAll()
+        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
         val tmpMap = HashMap<String, Long>()
         projects.forEach {
             val projectId = it.projectId

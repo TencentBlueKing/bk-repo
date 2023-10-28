@@ -36,9 +36,18 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Repository
 interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>{
-    fun findByProjectIdOrderByCreatedDateDesc(projectId:String, pageable: Pageable): Page<TProjectMetrics>
-    fun findAllByOrderByCreatedDateDesc(pageable: Pageable): Page<TProjectMetrics>
+    fun findByProjectIdAndCreatedDateOrderByCreatedDateDesc(
+        projectId:String, createdDate: LocalDateTime, pageable: Pageable
+    ): Page<TProjectMetrics>
+    fun findByCreatedDateOrderByCreatedDateDesc(
+        createdDate: LocalDateTime, pageable: Pageable
+    ): Page<TProjectMetrics>
+    fun findAllByCreatedDate(
+        createdDate: LocalDateTime = LocalDate.now().minusDays(1).atStartOfDay()
+    ): List<TProjectMetrics>
 }

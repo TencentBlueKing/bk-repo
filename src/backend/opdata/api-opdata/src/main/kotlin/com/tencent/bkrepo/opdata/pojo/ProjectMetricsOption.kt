@@ -29,9 +29,12 @@ package com.tencent.bkrepo.opdata.pojo
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class ProjectMetricsOption(
     var projectId: String? = null,
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    val pageSize: Int = DEFAULT_PAGE_SIZE
+    val pageSize: Int = DEFAULT_PAGE_SIZE,
+    val createdDate: LocalDateTime = LocalDate.now().minusDays(1).atStartOfDay()
 )

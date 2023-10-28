@@ -52,6 +52,8 @@ const val OPDATA_PIPELINE_SIZE = "pipelineSize"
 
 const val OPDATA_PROJECT_NUM = "ProjectNum"
 const val OPDATA_CAP_SIZE = "CapSize"
+const val OPDATA_DOCKER_CAP_SIZE = "DockerCapSize"
+const val OPDATA_GENERIC_CAP_SIZE = "GenericCapSize"
 const val OPDATA_NODE_NUM = "NodeNum"
 
 const val OPDATA_PROJECT = "project"

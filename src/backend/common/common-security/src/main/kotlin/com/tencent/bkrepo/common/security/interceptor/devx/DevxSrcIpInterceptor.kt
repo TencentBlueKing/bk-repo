@@ -30,10 +30,13 @@ package com.tencent.bkrepo.common.security.interceptor.devx
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -55,18 +58,53 @@ open class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : Ha
         .build(CacheLoader.from { key -> listIpFromProject(key) })
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        if (!devxProperties.enabled) {
+        val user = SecurityUtils.getUserId()
+        if (!devxProperties.enabled || user in devxProperties.userWhiteList) {
             return true
         }
 
-        val projectId = getProjectId(request) ?: return false
-        val srcIp = HttpContextHolder.getClientAddress()
+        if (devxProperties.srcHeaderName.isNullOrEmpty() || devxProperties.srcHeaderValues.size < 2) {
+            throw SystemErrorException(
+                CommonMessageCode.SYSTEM_ERROR,
+                "devx srcHeaderName or srcHeaderValues not configured"
+            )
+        }
+
+        val headerValue = request.getHeader(devxProperties.srcHeaderName)
+        return when (headerValue) {
+            devxProperties.srcHeaderValues[0] -> {
+                getProjectId(request)?.let { projectId ->
+                    val srcIp = HttpContextHolder.getClientAddress()
+                    checkIpBelongToProject(projectId, srcIp)
+                }
+                true
+            }
+
+            devxProperties.srcHeaderValues[1] -> {
+                devxProperties.restrictedUserPrefix.forEach { checkUserSuffixAndPrefix(user, prefix = it) }
+                devxProperties.restrictedUserSuffix.forEach { checkUserSuffixAndPrefix(user, suffix = it) }
+                true
+            }
+
+            else -> true
+        }
+    }
+
+    private fun checkIpBelongToProject(projectId: String, srcIp: String) {
         if (!inWhiteList(srcIp, projectId)) {
             logger.info("Illegal src ip[$srcIp] in project[$projectId].")
             throw PermissionException()
         }
-        logger.info("Allow ip[$srcIp] to access $projectId.")
-        return true
+    }
+
+    private fun checkUserSuffixAndPrefix(user: String, prefix: String? = null, suffix: String? = null) {
+        val matchPrefix = prefix?.let { user.startsWith(it) } ?: false
+        val matchSuffix = suffix?.let { user.endsWith(it) } ?: false
+
+        if (matchPrefix || matchSuffix) {
+            logger.info("User[$user] access from src ip[${HttpContextHolder.getClientAddress()}] was forbidden")
+            throw PermissionException()
+        }
     }
 
     protected open fun getProjectId(request: HttpServletRequest): String? {
@@ -94,9 +132,11 @@ open class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : Ha
             logger.error("${response.code} $errorMsg")
             return emptySet()
         }
-        return response.body!!.byteStream().readJsonString<QueryResponse>().data.map {
+        val ips = HashSet<String>()
+        devxProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
+        return response.body!!.byteStream().readJsonString<QueryResponse>().data.mapTo(ips) {
             it.inner_ip.substringAfter('.')
-        }.toSet()
+        }
     }
 
     data class ApiAuth(

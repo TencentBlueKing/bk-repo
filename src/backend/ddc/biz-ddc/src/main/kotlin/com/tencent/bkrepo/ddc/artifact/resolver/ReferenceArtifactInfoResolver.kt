@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_BUCKET
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
+import com.tencent.bkrepo.ddc.controller.LegacyReferencesController.Companion.LEGACY_PREFIX
 import com.tencent.bkrepo.ddc.pojo.RefKey
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
@@ -46,12 +47,14 @@ class ReferenceArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): ReferenceArtifactInfo {
+        val legacy = request.requestURI.startsWith(LEGACY_PREFIX)
         val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
         return ReferenceArtifactInfo(
             projectId = projectId,
             repoName = repoName,
             bucket = attributes[PATH_VARIABLE_BUCKET].toString(),
-            refKey = RefKey.create(attributes[PATH_VARIABLE_REF_ID].toString())
+            refKey = RefKey.create(attributes[PATH_VARIABLE_REF_ID].toString(), legacy),
+            legacy = legacy
         )
     }
 }

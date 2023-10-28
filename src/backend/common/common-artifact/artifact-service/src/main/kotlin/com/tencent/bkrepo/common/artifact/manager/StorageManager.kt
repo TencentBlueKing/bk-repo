@@ -124,6 +124,9 @@ class StorageManager(
         if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         }
+        if (node.archived == true) {
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_ARCHIVED, node.fullPath)
+        }
         val nodeResource = nodeResourceFactoryImpl.getNodeResource(node, range, storageCredentials)
         return nodeResource.getArtifactInputStream()
     }

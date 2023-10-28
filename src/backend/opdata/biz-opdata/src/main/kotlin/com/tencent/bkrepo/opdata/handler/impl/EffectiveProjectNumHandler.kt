@@ -34,6 +34,7 @@ package com.tencent.bkrepo.opdata.handler.impl
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NUM
 import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
@@ -46,13 +47,14 @@ import org.springframework.stereotype.Component
  */
 @Component
 class EffectiveProjectNumHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val statDateModel: StatDateModel
 ) : QueryHandler {
 
     override val metric: Metrics get() = Metrics.EFFECTIVEPROJECTNUM
 
     override fun handle(target: Target, result: MutableList<Any>) {
-        val projects = projectMetricsRepository.findAll()
+        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
         val count = projects.filter { it.capSize > 0 }.size.toLong()
         val columns = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(count)

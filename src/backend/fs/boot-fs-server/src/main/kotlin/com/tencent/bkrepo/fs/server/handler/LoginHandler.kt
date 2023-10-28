@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.fs.server.api.RAuthClient
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
+import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
@@ -80,7 +81,9 @@ class LoginHandler(
         if (writePermit) {
             claims[JWT_CLAIMS_PERMIT] = PermissionAction.WRITE.name
         } else {
-            val readPermit = permissionService.checkPermission(projectId, repoName, PermissionAction.READ, username)
+            val repoDetail = ReactiveArtifactContextHolder.getRepoDetail()
+            val readPermit = repoDetail.public ||
+                permissionService.checkPermission(projectId, repoName, PermissionAction.READ, username)
             if (readPermit) {
                 claims[JWT_CLAIMS_PERMIT] = PermissionAction.READ.name
             }

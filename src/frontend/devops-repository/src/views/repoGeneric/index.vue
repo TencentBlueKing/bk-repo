@@ -52,7 +52,7 @@
                             {{$t('batchDownload')}}
                         </bk-button>
                         <bk-button
-                            v-if="multiSelect.length && repoName !== 'pipeline'"
+                            v-if="multiSelect.length && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline')"
                             class="ml10"
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}

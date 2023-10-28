@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.git.interceptor
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -57,19 +58,30 @@ class ProxyInterceptor : HandlerInterceptor {
             val rootNode = JsonUtils.objectMapper.readTree(body)
             rootNode.path("objects")
                 .forEach {
-                    val actionDetailNode = it.path("actions").get("download")
-                        ?: it.path("actions").get("upload") ?: return body
-                    if (actionDetailNode.has("href")) {
-                        val originHref = actionDetailNode.get("href").asText()
-                        val subAfter = originHref.removePrefix(originHref.substringBefore(LFS_CONTENT_URI))
-                        val newHref = replace + subAfter
-                        logger.info("Replace href $originHref -> $newHref")
-                        (actionDetailNode as ObjectNode).put("href", newHref)
-                    } else {
-                        error("Not found href: $body.")
+                    val downloadActionNode = it.path("actions").get("download")
+                    val uploadActionNode = it.path("actions").get("upload")
+                    val verifyActionNode = it.path("actions").get("verify")
+                    if (downloadActionNode == null && uploadActionNode == null && verifyActionNode == null) {
+                        return body
                     }
+                    downloadActionNode?.let { node -> replaceHref(node, replace, body) }
+                    uploadActionNode?.let { node -> replaceHref(node, replace, body) }
+                    verifyActionNode?.let { node -> replaceHref(node, replace, body) }
                 }
             return rootNode.toJsonString()
+        }
+
+        private fun replaceHref(actionDetailNode: JsonNode, replace: String, body: String) {
+            if (actionDetailNode.has("href")) {
+                val originHref = actionDetailNode.get("href").asText()
+                val prefix = originHref.substringBefore(LFS_CONTENT_URI).substringBefore(LFS_VERIFY_URI)
+                val subAfter = originHref.removePrefix(prefix)
+                val newHref = replace + subAfter
+                logger.info("Replace href $originHref -> $newHref")
+                (actionDetailNode as ObjectNode).put("href", newHref)
+            } else {
+                error("Not found href: $body.")
+            }
         }
 
         companion object {
@@ -80,5 +92,6 @@ class ProxyInterceptor : HandlerInterceptor {
     companion object {
         private const val LFS_BATCH_URI = "/info/lfs/objects/batch"
         private const val LFS_CONTENT_URI = "/content/lfs/objects"
+        private const val LFS_VERIFY_URI = "/verify/lfs/objects"
     }
 }

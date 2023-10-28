@@ -35,13 +35,14 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -50,11 +51,14 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil.headers
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.lfs.artifact.LfsArtifactInfo
 import com.tencent.bkrepo.lfs.artifact.LfsProperties
 import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
+import com.tencent.bkrepo.lfs.constant.DOWNLOAD_OPERATION
 import com.tencent.bkrepo.lfs.constant.HEADER_BATCH_AUTHORIZATION
 import com.tencent.bkrepo.lfs.constant.UPLOAD_OPERATION
 import com.tencent.bkrepo.lfs.exception.BatchRequestException
@@ -87,8 +91,8 @@ class ObjectService(
      */
     fun batch(projectId: String, repoName: String, request: BatchRequest): BatchResponse {
         Preconditions.checkArgument(request.transfers.contains(BASIC_TRANSFER), BatchRequest::transfers.name)
-        val repo = repositoryClient.getRepoDetail(projectId, repoName).data!!
-        if (repo.category != RepositoryCategory.REMOTE) {
+        val repo = getRepoDetail(projectId, repoName)
+        if (repo.category != RepositoryCategory.REMOTE && repo.category != RepositoryCategory.PROXY) {
             val permissionAction = if (request.operation == UPLOAD_OPERATION) {
                 PermissionAction.WRITE
             } else {
@@ -97,9 +101,6 @@ class ObjectService(
             permissionManager.checkRepoPermission(permissionAction, projectId, repoName)
         }
 
-        if (request.operation == UPLOAD_OPERATION && !repoAllowUpload(repo)) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, BatchRequest::operation)
-        }
         val objects = buildLfsObjects(request, repo)
         return BatchResponse(BASIC_TRANSFER, objects)
     }
@@ -156,13 +157,44 @@ class ObjectService(
             RepositoryCategory.LOCAL -> {
                 buildLocalRepoLfsObjects(request, repo)
             }
+
             RepositoryCategory.REMOTE -> {
                 buildRemoteRepoLfsObject(request, repo)
             }
+
+            RepositoryCategory.PROXY -> {
+                buildProxyRepoLfsObjects(request, repo)
+            }
+
             RepositoryCategory.COMPOSITE -> {
                 buildLocalRepoLfsObjects(request, repo)
             }
+
             else -> throw UnsupportedOperationException()
+        }
+    }
+
+    private fun buildProxyRepoLfsObjects(request: BatchRequest, repo: RepositoryDetail): List<LfsObject> {
+        val requestBody = request.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
+        val config = repo.configuration as ProxyConfiguration
+        val url = "${config.proxy.url.removePrefix(StringPool.SLASH)}/info/lfs/objects/batch"
+        val request2 = Request.Builder().url(url)
+            .headers(HttpContextHolder.getRequest().headers().toHeaders())
+            .post(requestBody).build()
+        httpClient.newCall(request2).execute().use {
+            if (!it.isSuccessful) {
+                throw BatchRequestException(it.code, it.body!!.string(), it.headers)
+            }
+            val batchResponse = it.body!!.string().readJsonString<BatchResponse>()
+            return batchResponse.objects.map { lfsObject ->
+                lfsObject.actions?.values?.forEach { action ->
+                    action.href = action.href.replaceBefore(
+                        ".git",
+                        "${lfsProperties.gitProxyDomain}/${repo.projectId}/${repo.name}"
+                    )
+                }
+                lfsObject
+            }
         }
     }
 
@@ -207,28 +239,39 @@ class ObjectService(
         val requestBody = request.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val config = repo.configuration as RemoteConfiguration
         val url = "${config.url.removePrefix(StringPool.SLASH)}/info/lfs/objects/batch"
-        val authHeader = HeaderUtils.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
-        val userAgent = HeaderUtils.getHeader(HttpHeaders.USER_AGENT).orEmpty()
-        val headers = mapOf(
-            HttpHeaders.AUTHORIZATION to authHeader,
-            HttpHeaders.USER_AGENT to userAgent
-        )
         val request2 = Request.Builder().url(url)
-            .headers(headers.toHeaders())
+            .headers(HttpContextHolder.getRequest().headers().toHeaders())
             .post(requestBody).build()
         httpClient.newCall(request2).execute().use {
             if (!it.isSuccessful) {
                 throw BatchRequestException(it.code, it.body!!.string(), it.headers)
             }
             val batchResponse = it.body!!.string().readJsonString<BatchResponse>()
-            return batchResponse.objects.map {lfsObject ->
-                lfsObject.actions?.values?.forEach { action ->
-                    action.href = lfsProperties.domain.removeSuffix(StringPool.SLASH) +
-                        "/lfs/${repo.projectId}/${repo.name}/${lfsObject.oid}" +
-                        "?size=${lfsObject.size}&ref=${request.ref["name"]}"
-                    action.header[HEADER_BATCH_AUTHORIZATION] = authHeader
+            return if (request.operation == DOWNLOAD_OPERATION) {
+                val authHeader = HeaderUtils.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
+                batchResponse.objects.map { lfsObject ->
+                    lfsObject.actions?.values?.forEach { action ->
+                        action.href = lfsProperties.domain.removeSuffix(StringPool.SLASH) +
+                            "/lfs/${repo.projectId}/${repo.name}/${lfsObject.oid}" +
+                            "?size=${lfsObject.size}&ref=${request.ref["name"]}"
+                        action.header[HEADER_BATCH_AUTHORIZATION] = authHeader
+                    }
+                    lfsObject
                 }
-                lfsObject
+            } else if (lfsProperties.enabledGitProxy) {
+                val repoName =
+                    config.url.removeSuffix(StringPool.SLASH).split(StringPool.SLASH).last().removeSuffix(".git")
+                batchResponse.objects.map { lfsObject ->
+                    lfsObject.actions?.values?.forEach { action ->
+                        action.href = action.href.replaceBefore(
+                            ".git",
+                            "${lfsProperties.gitProxyDomain}/${repo.projectId}/$repoName"
+                        )
+                    }
+                    lfsObject
+                }
+            } else {
+                batchResponse.objects
             }
         }
     }
@@ -239,11 +282,23 @@ class ObjectService(
         return node != null
     }
 
-    private fun repoAllowUpload(repo: RepositoryDetail): Boolean {
-        return repo.category == RepositoryCategory.LOCAL || repo.category == RepositoryCategory.COMPOSITE
+    private fun getRepoDetail(projectId: String, repoName: String): RepositoryDetail {
+        if (!lfsProperties.enabledGitProxy) {
+            return repositoryClient.getRepoDetail(projectId, repoName).data
+                ?: throw RepoNotFoundException("$projectId/$repoName")
+        }
+        val repo = if (!repoName.startsWith(LFS_REPO_PREFIX)) {
+            LFS_REPO_PREFIX + repoName.removeSuffix(".git")
+        } else {
+            repoName
+        }
+        return repositoryClient.getRepoDetail(projectId, repo, RepositoryType.LFS.name).data
+            ?: repositoryClient.getRepoDetail(projectId, repoName.removeSuffix(".git"), RepositoryType.GIT.name).data
+            ?: throw RepoNotFoundException("$projectId/$repoName")
     }
 
     companion object {
         private const val TOKEN_EXPIRES_SECONDS = 86400L
+        private const val LFS_REPO_PREFIX = "Lfs_"
     }
 }

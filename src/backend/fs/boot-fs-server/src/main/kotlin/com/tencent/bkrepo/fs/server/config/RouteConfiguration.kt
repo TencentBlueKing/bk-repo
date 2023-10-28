@@ -38,6 +38,7 @@ import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
 import com.tencent.bkrepo.fs.server.filter.PermissionFilterFunction
 import com.tencent.bkrepo.fs.server.getOrNull
+import com.tencent.bkrepo.fs.server.handler.ClientHandler
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
@@ -64,6 +65,7 @@ class RouteConfiguration(
     private val fileOperationsHandler: FileOperationsHandler,
     private val loginHandler: LoginHandler,
     private val fsNodeHandler: FsNodeHandler,
+    private val clientHandler: ClientHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
     private val permissionFilterFunction: PermissionFilterFunction,
@@ -99,6 +101,16 @@ class RouteConfiguration(
             PUT("/write-flush/{offset}$DEFAULT_MAPPING_URI", fileOperationsHandler::writeAndFlush)
             PUT("/{offset}$DEFAULT_MAPPING_URI", fileOperationsHandler::write)
             addMetrics(serverMetrics.uploadingCount)
+        }
+
+        "/client".nest {
+            POST("/create/{projectId}/{repoName}", clientHandler::createClient)
+            DELETE("/delete/{projectId}/{repoName}/{clientId}", clientHandler::removeClient)
+            POST("/heartbeat/{projectId}/{repoName}/{clientId}", clientHandler::heartbeat)
+        }
+
+        "/service/client".nest {
+            GET("/list/{projectId}/{repoName}", clientHandler::listClients)
         }
 
         accept(APPLICATION_OCTET_STREAM).nest {
