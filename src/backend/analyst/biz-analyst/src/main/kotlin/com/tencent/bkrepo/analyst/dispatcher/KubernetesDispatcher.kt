@@ -154,6 +154,8 @@ class KubernetesDispatcher(
         val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize)
         val k8sProps = executionCluster.kubernetesProperties
         val body = v1Job {
+            apiVersion = "batch/v1"
+            kind = "Job"
             metadata {
                 namespace = k8sProps.namespace
                 name = jobName
