@@ -41,8 +41,8 @@ import com.tencent.bkrepo.common.security.crypto.CryptoConfiguration
 import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
 import com.tencent.bkrepo.common.security.http.HttpAuthConfiguration
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import com.tencent.bkrepo.common.security.interceptor.devx.DevxProperties
-import com.tencent.bkrepo.common.security.interceptor.devx.DevxSrcIpInterceptor
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXAccessInterceptor
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
@@ -51,6 +51,7 @@ import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -71,7 +72,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
     ActuatorAuthConfiguration::class,
     CryptoConfiguration::class
 )
-@EnableConfigurationProperties(DevxProperties::class)
+@EnableConfigurationProperties(DevXProperties::class)
 class SecurityAutoConfiguration {
 
     @Bean
@@ -110,15 +111,25 @@ class SecurityAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = ["devx.enabled"])
-    fun devxSrcIpInterceptorConfigure(properties: DevxProperties): WebMvcConfigurer {
+    fun devXAccessInterceptorConfigure(
+        properties: DevXProperties,
+        devXAccessInterceptor: DevXAccessInterceptor,
+    ): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
                 // 不应用到服务间调用
-                registry.addInterceptor(DevxSrcIpInterceptor(properties))
+                registry.addInterceptor(devXAccessInterceptor)
                     // 需要在[httpAuthInterceptor]之后执行才能取得用户信息, 100为随机取值
-                    .order(properties.interceptorOrder.toInt())
+                    .order(properties.interceptorOrder)
                     .excludePathPatterns("/service/**", "/replica/**")
             }
         }
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = ["devx.enabled"])
+    @ConditionalOnMissingBean
+    fun devXAccessInterceptor(properties: DevXProperties): DevXAccessInterceptor {
+        return DevXAccessInterceptor(properties)
     }
 }

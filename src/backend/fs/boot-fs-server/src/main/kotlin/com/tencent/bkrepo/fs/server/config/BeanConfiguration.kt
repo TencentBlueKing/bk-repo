@@ -28,11 +28,13 @@
 package com.tencent.bkrepo.fs.server.config
 
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.fs.server.RepositoryCache
 import com.tencent.bkrepo.fs.server.config.feign.ErrorCodeDecoder
 import com.tencent.bkrepo.fs.server.filter.ActuatorAuthFilter
 import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
+import com.tencent.bkrepo.fs.server.filter.DevXAccessFilter
 import com.tencent.bkrepo.fs.server.filter.PermissionFilterFunction
 import com.tencent.bkrepo.fs.server.filter.ReactiveRequestContextFilter
 import com.tencent.bkrepo.fs.server.handler.ClientHandler
@@ -83,10 +85,12 @@ val beans = beans {
     bean<JwtAuthProperties>()
     bean<SpringContextUtils>()
     bean<NettyWebServerAccessLogCustomizer>()
+    bean<DevXAccessFilter>()
+    bean<DevXProperties>()
     bean<PermissionFilterFunction>()
     bean<ErrorCodeDecoder>()
     bean {
-        RouteConfiguration(ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref()).router()
+        RouteConfiguration(ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref()).router()
     }
     bean {
         CoroutineScope(Dispatchers.IO + SupervisorJob())

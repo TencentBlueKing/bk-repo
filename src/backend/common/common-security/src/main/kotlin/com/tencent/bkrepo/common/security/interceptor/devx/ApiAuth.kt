@@ -25,15 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.svn.interceptor
+package com.tencent.bkrepo.common.security.interceptor.devx
 
-import com.tencent.bkrepo.common.security.interceptor.devx.DevxProperties
-import com.tencent.bkrepo.common.security.interceptor.devx.DevxSrcIpInterceptor
-import com.tencent.bkrepo.svn.utils.SvnProxyHelper.getRepoId
-import javax.servlet.http.HttpServletRequest
+import com.fasterxml.jackson.annotation.JsonProperty
 
-class DevxSrcIpInterceptor(devxProperties: DevxProperties) : DevxSrcIpInterceptor(devxProperties) {
-    override fun getProjectId(request: HttpServletRequest): String? {
-        return getRepoId(request)?.projectId
-    }
-}
+data class ApiAuth(
+    @JsonProperty("bk_app_code")
+    val bkAppCode: String,
+    @JsonProperty("bk_app_secret")
+    val bkAppSecret: String,
+)
