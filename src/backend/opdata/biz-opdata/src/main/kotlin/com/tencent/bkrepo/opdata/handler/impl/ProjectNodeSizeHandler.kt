@@ -51,7 +51,7 @@ class ProjectNodeSizeHandler(
     override val metric: Metrics get() = Metrics.PROJECTNODESIZE
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
-        val tmpMap = calculateMetricMap(target)
+        val tmpMap = calculateMetricValue(target)
         val gbResult = HashMap<String, Long>()
         tmpMap.forEach {
             val gbSize = it.value / TO_GIGABYTE

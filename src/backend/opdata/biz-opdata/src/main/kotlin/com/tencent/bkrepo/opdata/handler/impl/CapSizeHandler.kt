@@ -55,7 +55,7 @@ class CapSizeHandler(
     override val metric: Metrics get() = Metrics.CAPSIZE
 
     override fun handle(target: Target, result: MutableList<Any>) {
-        val size = calculateMetricValue(target)
+        val size = calculateMetricValue(target).values.first()
         val column = Columns(OPDATA_CAP_SIZE, OPDATA_GRAFANA_NUMBER)
         val row = listOf(size / TO_GIGABYTE)
         val data = QueryResult(listOf(column), listOf(row), target.type)

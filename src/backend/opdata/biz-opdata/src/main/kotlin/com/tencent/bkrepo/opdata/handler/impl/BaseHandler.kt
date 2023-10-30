@@ -44,7 +44,7 @@ open class BaseHandler(
     private val statDateModel: StatDateModel
 ) {
 
-    fun calculateMetricValue(target: Target): Long {
+    fun calculateMetricValue(target: Target): HashMap<String, Long> {
         val (filterType, filterValue) = getFilterInfo(target)
         val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
         return when (filterType) {
@@ -60,106 +60,51 @@ open class BaseHandler(
         }
     }
 
-    fun calculateMetricMap(target: Target): HashMap<String, Long> {
-        val (filterType, filterValue) = getFilterInfo(target)
-        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
-        return when (filterType) {
-            FilterType.REPO_TYPE -> {
-                calculateMetricsMap(projects, target.target, filterValue)
-            }
-            FilterType.REPO_NAME -> {
-                calculateMetricsMap(projects, target.target, repoName = filterValue)
-            }
-            else -> {
-                calculateMetricsMap(projects, target.target)
-            }
-        }
-    }
-
     private fun calculateMetrics(
-        projects: List<TProjectMetrics>, metrics: Metrics,
-        repoType: String? = null, repoName: String? = null
-    ): Long {
-        val repoTypeList = when (repoType) {
-            RepositoryType.DOCKER.name -> {
-                DOCKER_TYPES
-            }
-            null -> null
-            else -> listOf(repoType)
-        }
-        var result = 0L
-        projects.forEach { project ->
-            if (repoTypeList.isNullOrEmpty() && repoName.isNullOrEmpty()) {
-                when (metrics) {
-                    Metrics.CAPSIZE -> {
-                        result += project.capSize
-                    }
-                    Metrics.NODENUM -> {
-                        result += project.nodeNum
-                    }
-                    else -> {}
-                }
-            } else {
-                project.repoMetrics.filter {
-                    filterRepo(repoTypeList, repoName, it)
-                }.forEach { repo ->
-                    when (metrics) {
-                        Metrics.CAPSIZE -> {
-                            result += repo.size
-                        }
-                        Metrics.NODENUM -> {
-                            result += repo.num
-                        }
-                        else -> {}
-                    }
-                }
-            }
-        }
-        return result
-    }
-
-    private fun calculateMetricsMap(
         projects: List<TProjectMetrics>, metrics: Metrics,
         repoType: String? = null, repoName: String? = null
     ): HashMap<String, Long> {
         val tmpMap = HashMap<String, Long>()
-        val repoTypeList = when (repoType) {
+        val repoTypeList = getRepoTypes(repoType)
+        projects.forEach { project ->
+            if (repoTypeList.isNullOrEmpty() && repoName.isNullOrEmpty()) {
+                addProjectMetrics(
+                    metrics = metrics, projectMetrics = project, tmpMap = tmpMap
+                )
+            } else {
+                project.repoMetrics.filter {
+                    filterRepo(repoTypeList, repoName, it)
+                }.forEach { repo ->
+                    addRepoMetrics(
+                        metrics = metrics, repoMetrics = repo,
+                        projectId = project.projectId, tmpMap = tmpMap
+                    )
+                }
+            }
+        }
+        return tmpMap
+    }
+
+    private fun getFilterInfo(target: Target): Pair<FilterType, String?> {
+        val reqData = if (target.data is Map<*, *>) {
+            target.data as Map<String, Any>
+        } else {
+            null
+        }
+        val filterType = FilterType.valueOf((reqData?.get(FILTER_TYPE) as? String) ?: FilterType.ALL.name)
+        val filterValue = reqData?.get(FILTER_VALUE) as? String
+        return Pair(filterType, filterValue)
+    }
+
+
+    private fun getRepoTypes(repoType: String? = null): List<String>? {
+        return when (repoType) {
             RepositoryType.DOCKER.name -> {
                 DOCKER_TYPES
             }
             null -> null
             else -> listOf(repoType)
         }
-        projects.forEach { project ->
-            if (repoTypeList.isNullOrEmpty() && repoName.isNullOrEmpty()) {
-                when (metrics) {
-                    Metrics.PROJECTNODESIZE -> {
-                        tmpMap[project.projectId] = project.capSize
-                    }
-                    Metrics.PROJECTNODENUM -> {
-                        tmpMap[project.projectId] = project.nodeNum
-                    }
-                    else -> {}
-                }
-            } else {
-                project.repoMetrics.filter {
-                    filterRepo(repoTypeList, repoName, it)
-                }.forEach { repo ->
-                    when (metrics) {
-                        Metrics.PROJECTNODESIZE -> {
-                            val current = tmpMap[project.projectId] ?: 0
-                            tmpMap[project.projectId] = current + repo.size
-                        }
-                        Metrics.PROJECTNODENUM -> {
-                            val current = tmpMap[project.projectId] ?: 0
-                            tmpMap[project.projectId] = current + repo.num
-                        }
-                        else -> {}
-                    }
-                }
-            }
-        }
-        return tmpMap
     }
 
     private fun filterRepo(repoTypeList: List<String>?, repoName: String?, repoMetrics: RepoMetrics): Boolean {
@@ -178,14 +123,55 @@ open class BaseHandler(
         }
     }
 
-    private fun getFilterInfo(target: Target): Pair<FilterType, String?> {
-        val reqData = if (target.data is Map<*, *>) {
-            target.data as Map<String, Any>
-        } else {
-            null
+    private fun addProjectMetrics(
+        metrics: Metrics, projectMetrics: TProjectMetrics,
+        tmpMap: HashMap<String, Long>
+    ) {
+        when (metrics) {
+            Metrics.PROJECTNODESIZE -> {
+                tmpMap[projectMetrics.projectId] = projectMetrics.capSize
+            }
+            Metrics.PROJECTNODENUM -> {
+                tmpMap[projectMetrics.projectId] = projectMetrics.nodeNum
+            }
+            Metrics.CAPSIZE -> {
+                val current = tmpMap[DEFAULT_KEY] ?: 0
+                tmpMap[DEFAULT_KEY] = projectMetrics.capSize + current
+            }
+            Metrics.NODENUM -> {
+                val current = tmpMap[DEFAULT_KEY] ?: 0
+                tmpMap[DEFAULT_KEY] = projectMetrics.nodeNum + current
+            }
+            else -> {}
         }
-        val filterType = FilterType.valueOf((reqData?.get(FILTER_TYPE) as? String) ?: FilterType.ALL.name)
-        val filterValue = reqData?.get(FILTER_VALUE) as? String
-        return Pair(filterType, filterValue)
+    }
+
+    private fun addRepoMetrics(
+        metrics: Metrics, projectId: String, repoMetrics: RepoMetrics,
+        tmpMap: HashMap<String, Long>
+    ) {
+        when (metrics) {
+            Metrics.PROJECTNODESIZE -> {
+                val current = tmpMap[projectId] ?: 0
+                tmpMap[projectId] = current + repoMetrics.size
+            }
+            Metrics.PROJECTNODENUM -> {
+                val current = tmpMap[projectId] ?: 0
+                tmpMap[projectId] = current + repoMetrics.num
+            }
+            Metrics.CAPSIZE -> {
+                val current = tmpMap[DEFAULT_KEY] ?: 0
+                tmpMap[DEFAULT_KEY] = repoMetrics.size + current
+            }
+            Metrics.NODENUM -> {
+                val current = tmpMap[DEFAULT_KEY] ?: 0
+                tmpMap[DEFAULT_KEY] = repoMetrics.num + current
+            }
+            else -> {}
+        }
+    }
+
+    companion object {
+        private const val DEFAULT_KEY = "ALL*"
     }
 }

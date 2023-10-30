@@ -50,7 +50,7 @@ class ProjectNodeNumHandler(
     override val metric: Metrics get() = Metrics.PROJECTNODENUM
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
-        val tmpMap = calculateMetricMap(target)
+        val tmpMap = calculateMetricValue(target)
         return convToDisplayData(tmpMap, result)
     }
 }
