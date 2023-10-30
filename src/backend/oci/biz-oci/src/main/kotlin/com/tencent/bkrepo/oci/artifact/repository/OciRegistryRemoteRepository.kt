@@ -399,11 +399,10 @@ class OciRegistryRemoteRepository(
         }
     }
 
-
     private fun getScope(remoteUrl: String, imageName: String): String {
         val baseUrl = URL(remoteUrl)
-        val target = baseUrl.path.removePrefix(StringPool.SLASH)
-            .removeSuffix(StringPool.SLASH) + StringPool.SLASH + imageName
+        val path = baseUrl.path.removePrefix(StringPool.SLASH).removeSuffix(StringPool.SLASH)
+        val target = if (path.isBlank()) imageName else path + StringPool.SLASH + imageName
         return "repository:$target:pull"
     }
 
