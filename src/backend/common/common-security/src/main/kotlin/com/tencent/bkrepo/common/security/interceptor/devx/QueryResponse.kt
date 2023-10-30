@@ -27,57 +27,7 @@
 
 package com.tencent.bkrepo.common.security.interceptor.devx
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.core.Ordered
-
-/**
- * 云研发配置
- * */
-@ConfigurationProperties("devx")
-data class DevxProperties(
-    /**
-     * 是否开启云研发相关配置
-     * */
-    var enabled: Boolean = false,
-    /**
-     * apigw app code
-     * */
-    var appCode: String = "",
-    /**
-     * apigw app secret
-     * */
-    var appSecret: String = "",
-    /**
-     * 查询云研发工作空间的URL
-     * */
-    var workspaceUrl: String = "",
-    /**
-     * 配置属于项目的CVM
-     * key 为项目ip， value为CVM配置
-     */
-    var projectCvmWhiteList: Map<String, Set<String>> = emptyMap(),
-    /**
-     * 可以从任意来源访问的用户
-     */
-    var userWhiteList: Set<String> = emptySet(),
-    /**
-     * 访问受限的用户ID前缀
-     */
-    var restrictedUserPrefix: Set<String> = emptySet(),
-    /**
-     * 访问受限的用户ID后缀
-     */
-    var restrictedUserSuffix: Set<String> = emptySet(),
-    /**
-     * 请求来源区分header-name
-     */
-    var srcHeaderName: String? = null,
-    /**
-     * 请求来源区分header-value
-     */
-    var srcHeaderValues: List<String> = emptyList(),
-    /**
-     * devx拦截器优先级，如果需要取用户信息优先级需要比[HttpAuthInterceptor]拦截器低
-     */
-    var interceptorOrder: Long = (Ordered.LOWEST_PRECEDENCE - 100).toLong(),
+data class QueryResponse(
+    val status: Int,
+    val data: List<DevXWorkSpace>,
 )

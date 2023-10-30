@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.fs.server.constant.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
+import com.tencent.bkrepo.fs.server.filter.DevXAccessFilter
 import com.tencent.bkrepo.fs.server.filter.PermissionFilterFunction
 import com.tencent.bkrepo.fs.server.getOrNull
 import com.tencent.bkrepo.fs.server.handler.ClientHandler
@@ -68,11 +69,13 @@ class RouteConfiguration(
     private val clientHandler: ClientHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
+    private val devXAccessFilter: DevXAccessFilter,
     private val permissionFilterFunction: PermissionFilterFunction,
     private val artifactFileCleanupFilterFunction: ArtifactFileCleanupFilterFunction
 ) {
     fun router() = coRouter {
         filter(authHandlerFilterFunction::filter)
+        filter(devXAccessFilter::filter)
         before(RouteConfiguration::initArtifactContext)
         filter(permissionFilterFunction::filter)
         POST("/login/{projectId}/{repoName}", loginHandler::login)

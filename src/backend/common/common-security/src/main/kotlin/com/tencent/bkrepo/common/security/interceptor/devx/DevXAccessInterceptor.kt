@@ -43,36 +43,35 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
-import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 /**
  * 云研发源ip拦截器，只允许项目的云桌面ip通过
  * */
-open class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : HandlerInterceptor {
+open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : HandlerInterceptor {
     private val httpClient = OkHttpClient.Builder().build()
     private val projectIpsCache: LoadingCache<String, Set<String>> = CacheBuilder.newBuilder()
-        .maximumSize(MAX_CACHE_PROJECT_SIZE)
-        .expireAfterWrite(CACHE_EXPIRE_TIME, TimeUnit.SECONDS)
+        .maximumSize(devXProperties.cacheSize)
+        .expireAfterWrite(devXProperties.cacheExpireTime)
         .build(CacheLoader.from { key -> listIpFromProject(key) })
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val user = SecurityUtils.getUserId()
-        if (!devxProperties.enabled || user in devxProperties.userWhiteList) {
+        if (!devXProperties.enabled || user in devXProperties.userWhiteList) {
             return true
         }
 
-        if (devxProperties.srcHeaderName.isNullOrEmpty() || devxProperties.srcHeaderValues.size < 2) {
+        if (devXProperties.srcHeaderName.isNullOrEmpty() || devXProperties.srcHeaderValues.size < 2) {
             throw SystemErrorException(
                 CommonMessageCode.SYSTEM_ERROR,
                 "devx srcHeaderName or srcHeaderValues not configured"
             )
         }
 
-        val headerValue = request.getHeader(devxProperties.srcHeaderName)
+        val headerValue = request.getHeader(devXProperties.srcHeaderName)
         return when (headerValue) {
-            devxProperties.srcHeaderValues[0] -> {
+            devXProperties.srcHeaderValues[0] -> {
                 getProjectId(request)?.let { projectId ->
                     val srcIp = HttpContextHolder.getClientAddress()
                     checkIpBelongToProject(projectId, srcIp)
@@ -80,9 +79,9 @@ open class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : Ha
                 true
             }
 
-            devxProperties.srcHeaderValues[1] -> {
-                devxProperties.restrictedUserPrefix.forEach { checkUserSuffixAndPrefix(user, prefix = it) }
-                devxProperties.restrictedUserSuffix.forEach { checkUserSuffixAndPrefix(user, suffix = it) }
+            devXProperties.srcHeaderValues[1] -> {
+                devXProperties.restrictedUserPrefix.forEach { checkUserSuffixAndPrefix(user, prefix = it) }
+                devXProperties.restrictedUserSuffix.forEach { checkUserSuffixAndPrefix(user, suffix = it) }
                 true
             }
 
@@ -102,7 +101,7 @@ open class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : Ha
         val matchSuffix = suffix?.let { user.endsWith(it) } ?: false
 
         if (matchPrefix || matchSuffix) {
-            logger.info("User[$user] access from src ip[${HttpContextHolder.getClientAddress()}] was forbidden")
+            logger.info("User[$user] was forbidden because of suffix or prefix")
             throw PermissionException()
         }
     }
@@ -118,9 +117,9 @@ open class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : Ha
     }
 
     private fun listIpFromProject(projectId: String): Set<String> {
-        val apiAuth = ApiAuth(devxProperties.appCode, devxProperties.appSecret)
+        val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
         val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
-        val workspaceUrl = devxProperties.workspaceUrl
+        val workspaceUrl = devXProperties.workspaceUrl
         val request = Request.Builder()
             .url("$workspaceUrl?project_id=$projectId")
             .header("X-Bkapi-Authorization", token)
@@ -133,33 +132,15 @@ open class DevxSrcIpInterceptor(private val devxProperties: DevxProperties) : Ha
             return emptySet()
         }
         val ips = HashSet<String>()
-        devxProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
+        devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
         return response.body!!.byteStream().readJsonString<QueryResponse>().data.mapTo(ips) {
-            it.inner_ip.substringAfter('.')
+            it.innerIp.substringAfter('.')
         }
     }
 
-    data class ApiAuth(
-        val bk_app_code: String,
-        val bk_app_secret: String,
-    )
 
-    data class QueryResponse(
-        val status: Int,
-        val data: List<DevxWorkSpace>,
-    )
-
-    data class DevxWorkSpace(
-        val workspace_name: String,
-        val project_id: String,
-        val creator: String,
-        val region_id: String,
-        val inner_ip: String,
-    )
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DevxSrcIpInterceptor::class.java)
-        private const val MAX_CACHE_PROJECT_SIZE = 1000L
-        private const val CACHE_EXPIRE_TIME = 60L
+        private val logger = LoggerFactory.getLogger(DevXAccessInterceptor::class.java)
     }
 }
