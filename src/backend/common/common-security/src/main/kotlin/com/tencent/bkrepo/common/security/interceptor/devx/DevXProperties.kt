@@ -86,7 +86,15 @@ data class DevXProperties(
      */
     var srcHeaderValues: List<String> = emptyList(),
     /**
-     * devx拦截器优先级，如果需要取用户信息优先级需要比[HttpAuthInterceptor]拦截器低
+     * devX拦截器优先级，如果需要取用户信息优先级需要比[HttpAuthInterceptor]拦截器低
      */
     var interceptorOrder: Int = Ordered.LOWEST_PRECEDENCE - 100,
+    /**
+     * 不应用devX拦截器的接口
+     */
+    var excludePatterns: List<String> = emptyList(),
+    /**
+     * 应用devX拦截器的接口
+     */
+    var includePatterns: List<String> = emptyList(),
 )

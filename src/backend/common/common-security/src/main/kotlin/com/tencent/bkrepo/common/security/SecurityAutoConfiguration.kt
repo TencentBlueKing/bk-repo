@@ -118,10 +118,16 @@ class SecurityAutoConfiguration {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
                 // 不应用到服务间调用
-                registry.addInterceptor(devXAccessInterceptor)
+                val registration = registry.addInterceptor(devXAccessInterceptor)
                     // 需要在[httpAuthInterceptor]之后执行才能取得用户信息, 100为随机取值
                     .order(properties.interceptorOrder)
                     .excludePathPatterns("/service/**", "/replica/**")
+                if (properties.excludePatterns.isNotEmpty()) {
+                    registration.excludePathPatterns(properties.excludePatterns)
+                }
+                if (properties.includePatterns.isNotEmpty()) {
+                    registration.addPathPatterns(properties.includePatterns)
+                }
             }
         }
     }
