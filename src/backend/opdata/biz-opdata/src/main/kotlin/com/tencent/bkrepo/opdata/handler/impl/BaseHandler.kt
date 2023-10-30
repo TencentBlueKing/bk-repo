@@ -39,6 +39,10 @@ import com.tencent.bkrepo.opdata.pojo.enums.FilterType
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 
+/**
+ * 通过在指标 target 中的 data 字段添加参数，过滤出对应条件下的指标数据
+ *       "data": {    "filterType": "REPO_NAME",    "filterValue": "custom"}
+ */
 open class BaseHandler(
     private val projectMetricsRepository: ProjectMetricsRepository,
     private val statDateModel: StatDateModel

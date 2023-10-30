@@ -54,7 +54,7 @@ class NodeNumHandler(
     override val metric: Metrics get() = Metrics.NODENUM
 
     override fun handle(target: Target, result: MutableList<Any>) {
-        var num = calculateMetricValue(target)
+        var num = calculateMetricValue(target).values.first()
         val column = Columns(OPDATA_NODE_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(num)
         val data = QueryResult(listOf(column), listOf(row), target.type)
