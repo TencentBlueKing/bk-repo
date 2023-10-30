@@ -64,6 +64,13 @@ class DevXAccessFilter(
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse
     ): ServerResponse {
+        if (request.path().startsWith("/login") ||
+            request.path().startsWith("/service") ||
+            request.path().startsWith("/token")
+        ) {
+            return next(request)
+        }
+
         val user = ReactiveSecurityUtils.getUser()
         if (!devXProperties.enabled || user in devXProperties.userWhiteList) {
             return next(request)
