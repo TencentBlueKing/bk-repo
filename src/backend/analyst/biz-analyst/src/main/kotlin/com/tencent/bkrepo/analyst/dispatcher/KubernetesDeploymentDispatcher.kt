@@ -178,6 +178,8 @@ class KubernetesDeploymentDispatcher(
         val token = tokenService.createExecutionClusterToken(executionCluster.name)
         val cmd = buildCommand(scanner.cmd, token)
         val body = v1Deployment {
+            apiVersion = "apps/v1"
+            kind = "Deployment"
             metadata {
                 namespace = k8sProps.namespace
                 name = deploymentName
