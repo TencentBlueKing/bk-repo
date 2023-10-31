@@ -632,6 +632,7 @@ class RepositoryServiceImpl(
         private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
         private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\.\\-_]{1,63}"
         private const val REPO_DESC_MAX_LENGTH = 200
+        private const val SETTING_CLIENT_URL = "clientUrl"
         private lateinit var repositoryProperties: RepositoryProperties
 
         fun convertToDetail(
@@ -639,6 +640,7 @@ class RepositoryServiceImpl(
             storageCredentials: StorageCredentials? = null,
         ): RepositoryDetail? {
             return tRepository?.let {
+                handlerConfiguration(it)
                 RepositoryDetail(
                     name = it.name,
                     type = it.type,
@@ -689,11 +691,15 @@ class RepositoryServiceImpl(
                     type == RepositoryType.GIT
                 ) {
                     config.url = "${repositoryProperties.gitUrl}/$projectId/$name.git"
+                    config.settings[SETTING_CLIENT_URL] = config.url!!
                 } else if (config is com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration &&
                     type == RepositoryType.SVN &&
                     repositoryProperties.svnUrl.isNotEmpty()
                 ) {
                     config.url = "${repositoryProperties.svnUrl}/$projectId/$name"
+                    config.settings[SETTING_CLIENT_URL] = config.url!!
+                } else if (config is RemoteConfiguration && type == RepositoryType.LFS) {
+                    config.settings[SETTING_CLIENT_URL] = "${repositoryProperties.gitUrl}/lfs/$projectId/$name/"
                 }
                 configuration = config.toJsonString()
             }
