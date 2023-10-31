@@ -32,6 +32,7 @@
 
 package com.tencent.bkrepo.common.storage.innercos.client
 
+import com.google.common.util.concurrent.RateLimiter
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.concurrent.ComparableFutureTask
 import com.tencent.bkrepo.common.api.concurrent.PriorityCallable
@@ -96,6 +97,7 @@ import kotlin.system.measureNanoTime
 /**
  * Cos Client
  */
+@Suppress("UnstableApiUsage")
 class CosClient(val credentials: InnerCosCredentials) {
     private val config: ClientConfig = ClientConfig(credentials)
 
@@ -363,9 +365,10 @@ class CosClient(val credentials: InnerCosCredentials) {
             * */
             var i = 0
             var priority = System.currentTimeMillis()
+            val rateLimiter = RateLimiter.create(config.qps.toDouble())
             while (factory.hasMoreRequests()) {
                 val downloadPartRequest = factory.nextDownloadPartRequest()
-                val task = DownloadTask(i, downloadPartRequest, tempRootPath, session, priority)
+                val task = DownloadTask(i, downloadPartRequest, tempRootPath, session, priority, rateLimiter)
                 val futureTask = ComparableFutureTask(task)
                 executor.execute(futureTask)
                 val futureWrapper = EnhanceFileChunkedFutureWrapper(futureTask) {
@@ -457,13 +460,15 @@ class CosClient(val credentials: InnerCosCredentials) {
         val downloadPartRequest: GetObjectRequest,
         private val rootPath: Path,
         private val session: DownloadSession,
-        private val priority: Long
+        private val priority: Long,
+        private val rateLimiter: RateLimiter,
     ) : PriorityCallable<File, DownloadTask>() {
 
         override fun call(): File {
             // 任务可以取消，所以可能会产生中断异常，如果调用方获取结果，则可以捕获异常。
             // 但是通常是由于调用方异常而提前终止相关任务，所以这里产生的中断异常大部分情况下无影响。
             retry(RETRY_COUNT) {
+                rateLimiter.acquire()
                 session.activeCount.incrementAndGet()
                 // 为防止重试导致文件名重复
                 val fileName = "$DOWNLOADING_CHUNkED_PREFIX${seq}_${priority}_${it}$DOWNLOADING_CHUNkED_SUFFIX"
