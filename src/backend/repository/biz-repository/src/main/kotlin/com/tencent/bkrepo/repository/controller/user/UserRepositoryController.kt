@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoUpdateRequest
@@ -96,7 +97,7 @@ class UserRepositoryController(
     fun createRepo(
         @RequestAttribute userId: String,
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
-    ): Response<Void> {
+    ): Response<RepositoryDetail> {
         val createRequest = with(userRepoCreateRequest) {
             permissionManager.checkProjectPermission(
                 action = if (pluginRequest) PermissionAction.WRITE else PermissionAction.MANAGE,
@@ -117,8 +118,7 @@ class UserRepositoryController(
                 display = display
             )
         }
-        repositoryService.createRepo(createRequest)
-        return ResponseBuilder.success()
+        return ResponseBuilder.success(repositoryService.createRepo(createRequest))
     }
 
     @ApiOperation("查询有权限的仓库列表")
@@ -228,7 +228,7 @@ class UserRepositoryController(
     fun create(
         @RequestAttribute userId: String,
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
-    ): Response<Void> {
+    ): Response<RepositoryDetail> {
         return this.createRepo(userId, userRepoCreateRequest)
     }
 }
