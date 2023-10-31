@@ -224,7 +224,7 @@ class RepositoryServiceImpl(
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             // 确保项目一定存在
             if (!projectService.checkExist(projectId)) {
-                throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
+                throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, projectId)
             }
             // 确保同名仓库不存在
             if (checkExist(projectId, name)) {

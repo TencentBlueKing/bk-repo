@@ -47,6 +47,7 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
         next: suspend (ServerRequest) -> ServerResponse,
     ): ServerResponse {
         if (request.path().startsWith("/login") ||
+            request.path().startsWith("/devx/login") ||
             request.path().startsWith("/service") ||
             request.path().startsWith("/token")
         ) {

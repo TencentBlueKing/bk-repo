@@ -48,7 +48,7 @@ class AuthHandlerFilterFunction(
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse
     ): ServerResponse {
-        if (request.path().startsWith("/login")) {
+        if (request.path().startsWith("/login") || request.path().startsWith("/devx/login")) {
             return next(request)
         }
         var user = ANONYMOUS_USER
