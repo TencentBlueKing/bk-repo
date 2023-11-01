@@ -77,4 +77,13 @@ interface OciClient {
         @PathVariable repoName: String,
         @RequestParam packageName: String
     ): Response<Void>
+
+    @ApiOperation("删除仓库下的包版本")
+    @DeleteMapping("version/delete/{projectId}/{repoName}")
+    fun deleteVersion(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageName: String,
+        @RequestParam version: String
+    ): Response<Void>
 }
