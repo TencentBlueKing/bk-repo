@@ -42,6 +42,7 @@ import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.util.RequestUtil.buildProjectAdminRequest
 import com.tencent.bkrepo.auth.util.RequestUtil.buildRepoAdminRequest
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
@@ -66,6 +67,7 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("创建角色")
     @PostMapping("/create")
+    @LogOperate(type = "USER_ROLE_CREATE")
     fun createRole(@RequestBody request: CreateRoleRequest): Response<String?> {
         // todo check request
         val id = roleService.createRole(request)
@@ -74,6 +76,7 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("创建项目管理员")
     @PostMapping("/create/project/manage/{projectId}")
+    @LogOperate(type = "PROJECT_ADMIN_CREATE")
     fun createProjectManage(@PathVariable projectId: String): Response<String?> {
         val request = buildProjectAdminRequest(projectId)
         val id = roleService.createRole(request)
@@ -82,6 +85,7 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("创建仓库管理员")
     @PostMapping("/create/repo/manage/{projectId}/{repoName}")
+    @LogOperate(type = "REPO_ADMIN_CREATE")
     fun createRepoManage(@PathVariable projectId: String, @PathVariable repoName: String): Response<String?> {
         val request = buildRepoAdminRequest(projectId, repoName)
         val id = roleService.createRole(request)
@@ -90,6 +94,7 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("删除角色")
     @DeleteMapping("/delete/{id}")
+    @LogOperate(type = "USER_ROLE_DELETE")
     fun deleteRole(@PathVariable id: String): Response<Boolean> {
         roleService.deleteRoleByid(id)
         return ResponseBuilder.success(true)
@@ -127,6 +132,7 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("编辑用户组信息")
     @PutMapping("/{id}")
+    @LogOperate(type = "USERS_INFO_UPDATE")
     @Transactional(rollbackFor = [Exception::class])
     fun updateRoleInfo(
         @PathVariable id: String,
