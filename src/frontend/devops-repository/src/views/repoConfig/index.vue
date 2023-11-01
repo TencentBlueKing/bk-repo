@@ -26,7 +26,7 @@
                     </bk-form-item>
                     <bk-form-item
                         :label="$t('bkPermissionCheck')"
-                        v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
+                        v-if="!specialRepoEnum.includes(repoBaseInfo.name) && rbacStatus">
                         <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
                             <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                             <bk-radio :value="false">{{ $t('close') }}</bk-radio>
@@ -212,7 +212,8 @@
                 metadataRule,
                 ipSegmentRule,
                 showIamDenyDialog: false,
-                showData: {}
+                showData: {},
+                rbacStatus: false
             }
         },
         computed: {
@@ -302,9 +303,12 @@
         created () {
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
+            this.getIamPermissionStatus().then(res => {
+                this.rbacStatus = res
+            })
         },
         methods: {
-            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl']),
+            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl', 'getIamPermissionStatus']),
             toRepoList () {
                 this.$router.push({
                     name: 'repositories'
