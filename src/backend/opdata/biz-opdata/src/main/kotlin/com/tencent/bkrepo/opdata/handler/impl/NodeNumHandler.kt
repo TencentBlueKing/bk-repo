@@ -47,18 +47,14 @@ import org.springframework.stereotype.Component
  */
 @Component
 class NodeNumHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel
-) : QueryHandler {
+    projectMetricsRepository: ProjectMetricsRepository,
+    statDateModel: StatDateModel
+) : QueryHandler, BaseHandler(projectMetricsRepository, statDateModel) {
 
     override val metric: Metrics get() = Metrics.NODENUM
 
     override fun handle(target: Target, result: MutableList<Any>) {
-        var num = 0L
-        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
-        projects.forEach {
-            num += it.nodeNum
-        }
+        var num = calculateMetricValue(target).values.first()
         val column = Columns(OPDATA_NODE_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(num)
         val data = QueryResult(listOf(column), listOf(row), target.type)
