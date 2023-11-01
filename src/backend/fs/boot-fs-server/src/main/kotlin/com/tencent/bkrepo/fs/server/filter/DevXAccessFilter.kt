@@ -44,17 +44,28 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import reactor.core.publisher.Mono
+import reactor.netty.http.client.HttpClient
+import reactor.netty.http.client.PrematureCloseException
+import reactor.netty.resources.ConnectionProvider
+import reactor.util.retry.RetryBackoffSpec
+import java.time.Duration
 
 class DevXAccessFilter(
     private val devXProperties: DevXProperties
 ) : CoHandlerFilterFunction {
-    private val httpClient = WebClient.create()
+    private val httpClient by lazy {
+        val provider = ConnectionProvider.builder("DevX").maxIdleTime(Duration.ofSeconds(30L)).build()
+        val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(30L))
+        val connector = ReactorClientHttpConnector(client)
+        WebClient.builder().clientConnector(connector).build()
+    }
     private val projectIpsCache: LoadingCache<String, Mono<Set<String>>> = CacheBuilder.newBuilder()
         .maximumSize(devXProperties.cacheSize)
         .expireAfterWrite(devXProperties.cacheExpireTime)
@@ -139,13 +150,22 @@ class DevXAccessFilter(
             .exchangeToMono {
                 mono { parseResponse(it, projectId) }
             }
+            .retryWhen(
+                RetryBackoffSpec
+                    .backoff(2L, Duration.ofSeconds(1))
+                    .filter {
+                        val retry = it.cause is PrematureCloseException
+                        logger.warn("request ips of project[$projectId] failed, will retry: $retry")
+                        retry
+                    }
+            )
     }
 
     private suspend fun parseResponse(response: ClientResponse, projectId: String): Set<String> {
         return if (response.statusCode() != HttpStatus.OK) {
             val errorMsg = response.awaitBody<String>()
             logger.error("${response.statusCode()} $errorMsg")
-            emptySet()
+            devXProperties.projectCvmWhiteList[projectId] ?: emptySet()
         } else {
             val ips = HashSet<String>()
             devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
