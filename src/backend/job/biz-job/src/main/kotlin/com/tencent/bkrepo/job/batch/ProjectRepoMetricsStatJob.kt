@@ -44,7 +44,6 @@ import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobPropert
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.BulkOperations
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -60,7 +59,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(ProjectRepoMetricsStatJobProperties::class)
 class ProjectRepoMetricsStatJob(
     private val properties: ProjectRepoMetricsStatJobProperties,
-    private val mongoTemplate: MongoTemplate
 ) : DefaultContextMongoDbJob<ProjectRepoMetricsStatJob.Repository>(properties) {
     override fun collectionNames(): List<String> {
         return listOf(COLLECTION_REPOSITORY_NAME)

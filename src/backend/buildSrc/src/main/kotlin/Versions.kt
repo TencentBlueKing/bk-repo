@@ -66,4 +66,5 @@ object Versions {
     const val Jasypt = "3.0.5"
     const val CryptoJavaSdk = "1.1.0"
     const val IamJavaSdk = "1.0.30-SNAPSHOT"
+    const val XzJava = "1.9"
 }

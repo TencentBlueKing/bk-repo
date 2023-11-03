@@ -85,7 +85,7 @@ interface RepositoryService {
         pageNumber: Int,
         pageSize: Int,
         name: String? = null,
-        type: String? = null
+        type: String? = null,
     ): Page<RepositoryInfo>
 
     /**
@@ -98,7 +98,7 @@ interface RepositoryService {
     fun listPermissionRepo(
         userId: String,
         projectId: String,
-        option: RepoListOption
+        option: RepoListOption,
     ): List<RepositoryInfo>
 
     /**
@@ -112,7 +112,7 @@ interface RepositoryService {
         projectId: String,
         pageNumber: Int,
         pageSize: Int,
-        option: RepoListOption
+        option: RepoListOption,
     ): Page<RepositoryInfo>
 
     /**
@@ -162,8 +162,9 @@ interface RepositoryService {
      */
     fun deleteRepo(repoDeleteRequest: RepoDeleteRequest)
 
-
     fun allRepos(projectId: String?, repoName: String?, repoType: RepositoryType?): List<RepositoryInfo?>
 
     fun statRepo(projectId: String, repoName: String): NodeSizeInfo
+
+    fun getArchivableSize(projectId: String, repoName: String?, days: Int): Long
 }

@@ -56,9 +56,11 @@ import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
+import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
@@ -80,6 +82,7 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
+import java.time.Duration
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
@@ -377,7 +380,7 @@ class RepositoryServiceImpl(
         return NodeSizeInfo(
             subNodeCount = repoMetrics?.num ?: 0,
             subNodeWithoutFolderCount = repoMetrics?.num ?: 0,
-            size = repoMetrics?.size ?: 0
+            size = repoMetrics?.size ?: 0,
         )
     }
 
@@ -597,6 +600,22 @@ class RepositoryServiceImpl(
                 defaultStorageCredentialsKey
             }
         }
+    }
+
+    override fun getArchivableSize(projectId: String, repoName: String?, days: Int): Long {
+        val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(days.toLong()))
+        val criteria = where(TNode::folder).isEqualTo(false)
+            .and(TNode::deleted).isEqualTo(null)
+            .and(TNode::sha256).ne(FAKE_SHA256)
+            .and(TNode::archived).ne(true)
+            .and(TNode::projectId).isEqualTo(projectId)
+            .orOperator(
+                where(TNode::lastAccessDate).isEqualTo(null),
+                where(TNode::lastAccessDate).lt(cutoffTime),
+            ).apply {
+                repoName?.let { and(TNode::repoName).isEqualTo(it) }
+            }
+        return nodeService.aggregateComputeSize(criteria)
     }
 
     /**

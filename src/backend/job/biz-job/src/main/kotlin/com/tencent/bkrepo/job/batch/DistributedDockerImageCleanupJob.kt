@@ -37,7 +37,6 @@ import com.tencent.bkrepo.job.config.properties.DistributedDockerImageCleanupJob
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.oci.api.OciClient
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -53,7 +52,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(DistributedDockerImageCleanupJobProperties::class)
 class DistributedDockerImageCleanupJob(
     private val properties: DistributedDockerImageCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val ociClient: OciClient
 ) : DefaultContextMongoDbJob<DistributedDockerImageCleanupJob.PackageData>(properties) {
 

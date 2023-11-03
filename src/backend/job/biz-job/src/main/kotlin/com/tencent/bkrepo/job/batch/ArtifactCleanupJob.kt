@@ -53,7 +53,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import org.bson.types.ObjectId
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -71,7 +70,6 @@ import java.util.regex.Pattern
 @EnableConfigurationProperties(ArtifactCleanupJobProperties::class)
 class ArtifactCleanupJob(
     private val properties: ArtifactCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val ociClient: OciClient,
     private val nodeClient: NodeClient
 ) : DefaultContextMongoDbJob<ArtifactCleanupJob.RepoData>(properties) {

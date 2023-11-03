@@ -95,7 +95,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
     @Autowired
-    private lateinit var mongoTemplate: MongoTemplate
+    protected lateinit var mongoTemplate: MongoTemplate
 
     /**
      * job批处理执行器

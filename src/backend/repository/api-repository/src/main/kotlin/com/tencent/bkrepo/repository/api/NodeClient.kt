@@ -41,6 +41,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -58,6 +59,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -205,5 +207,17 @@ interface NodeClient {
         @RequestParam sha256: String
     ): Response<NodeDetail?>
 
+    /**
+     * 归档文件成功通知
+     * */
+    @ApiOperation("归档节点")
+    @PutMapping("/archive/")
+    fun archiveNode(@RequestBody nodeArchiveRequest: NodeArchiveRequest): Response<Void>
 
+    /**
+     * 恢复文件成功通知
+     * */
+    @ApiOperation("恢复节点")
+    @PutMapping("/archive/restore/")
+    fun restoreNode(@RequestBody nodeArchiveRequest: NodeArchiveRequest): Response<Void>
 }
