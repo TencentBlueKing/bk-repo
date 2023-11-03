@@ -54,7 +54,7 @@
       <el-table-column prop="version" label="版本" />
       <el-table-column prop="os" label="操作系统" />
       <el-table-column prop="arch" label="架构" />
-      <el-table-column prop="online" label="是否在线" >
+      <el-table-column prop="online" label="是否在线">
         <template slot-scope="scope">
           {{ scope.row.online ? "是":"否" }}
         </template>
