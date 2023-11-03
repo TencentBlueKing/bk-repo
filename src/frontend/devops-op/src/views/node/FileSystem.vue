@@ -1,7 +1,7 @@
 <template>
   <div class="app-container node-container">
     <el-form ref="form" :inline="true" :model="clientQuery">
-      <el-form-item ref="project-form-item" label="项目ID" prop="projectId">
+      <el-form-item ref="project-form-item" label="项目ID" prop="projectId" required>
         <el-autocomplete
           v-model="clientQuery.projectId"
           class="inline-input"
@@ -20,6 +20,7 @@
         style="margin-left: 15px"
         label="仓库"
         prop="repoName"
+        required
       >
         <el-autocomplete
           v-model="clientQuery.repoName"
@@ -39,6 +40,7 @@
         <el-button
           size="mini"
           type="primary"
+          :disabled="!clientQuery.repoName"
           @click="changeRouteQueryParams(1)"
         >查询</el-button>
       </el-form-item>
@@ -151,6 +153,9 @@ export default {
     onRouteUpdate(route) {
       const query = route.query
       const clientQuery = this.clientQuery
+      if (!query.projectId) {
+        return
+      }
       clientQuery.projectId = query.projectId ? query.projectId : ''
       clientQuery.repoName = query.repoName ? query.repoName : ''
       clientQuery.pageNumber = query.page ? Number(query.page) : 1
