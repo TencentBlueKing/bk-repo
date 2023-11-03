@@ -293,7 +293,7 @@
                     time: 7
                 })
             },
-            // ci模式下generic的查询repoName的MIN条件会和repoType的In组装条件会异常（更改为传递查询repoName，去掉repoType传递）
+            // ci模式下generic的查询repoName的NIN条件会和repoType的In组装条件会异常（更改为传递查询repoName，去掉repoType传递）
             changeQuery (scrollLoad) {
                 if (this.repoType === 'generic' && MODE_CONFIG === 'ci' && !this.init) {
                     this.searchRepoList({
