@@ -226,7 +226,7 @@ class TemporaryScanTokenServiceImpl(
 
     private fun getNodes(projectId: String, repoName: String, sha256: List<String>): List<Map<String, Any?>> {
         return sha256.toSet().map {
-            val res = nodeClient.search(
+            val res = nodeClient.queryWithoutCount(
                 NodeQueryBuilder()
                     .projectId(projectId)
                     .repoName(repoName)

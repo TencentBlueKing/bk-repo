@@ -232,7 +232,7 @@ class PypiLocalRepository(
             select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
             rule = rule
         )
-        val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
+        val nodeList: List<Map<String, Any?>>? = nodeClient.queryWithoutCount(queryModel).data?.records
         if (nodeList != null) {
             return XmlUtil.nodeLis2Values(nodeList)
         }

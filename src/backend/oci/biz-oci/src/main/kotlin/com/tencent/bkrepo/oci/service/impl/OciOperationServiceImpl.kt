@@ -804,7 +804,7 @@ class OciOperationServiceImpl(
                     this.path(path, OperationType.PREFIX)
                 }
             }
-        val result = nodeClient.search(queryModel.build()).data
+        val result = nodeClient.queryWithoutCount(queryModel.build()).data
         if (result == null || result.records.isEmpty()) {
             logger.warn(
                 "Could not find $digestStr " +

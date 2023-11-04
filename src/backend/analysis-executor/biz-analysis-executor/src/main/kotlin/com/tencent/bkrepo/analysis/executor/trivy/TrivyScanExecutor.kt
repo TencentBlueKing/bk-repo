@@ -193,7 +193,7 @@ class TrivyScanExecutor @Autowired constructor(
             .sort(Sort.Direction.DESC, "lastModifiedDate", "createdDate")
             .select("fullPath", "size", "sha256", "md5")
             .build()
-        val nodeRes = nodeClient.search(queryModel)
+        val nodeRes = nodeClient.queryWithoutCount(queryModel)
         if (nodeRes.isNotOk()) {
             logger.error(
                 "Get node info failed: code[${nodeRes.code}], message[${nodeRes.message}]," +
