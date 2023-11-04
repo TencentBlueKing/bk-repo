@@ -15,6 +15,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.micrometer:micrometer-registry-influx")
+    implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("com.google.guava:guava")
     implementation("org.springframework.cloud:spring-cloud-starter-sleuth")
     api(project(":common:common-stream"))

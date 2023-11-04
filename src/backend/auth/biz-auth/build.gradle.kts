@@ -42,4 +42,5 @@ dependencies {
     implementation("com.tencent.bk.sdk:iam-java-sdk:${Versions.IamJavaSdk}")
     implementation("org.apache.httpcomponents:httpclient")
     implementation("com.tencent.bk.sdk:crypto-java-sdk")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 }
