@@ -43,9 +43,10 @@ import org.springframework.data.mongodb.core.query.Query
 
 open class CommonQueryContext(
     override var queryModel: QueryModel,
+    override var permissionChecked: Boolean,
     override val mongoQuery: Query,
     override val interpreter: MongoQueryInterpreter
-) : QueryContext(queryModel, mongoQuery, interpreter) {
+) : QueryContext(queryModel, permissionChecked, mongoQuery, interpreter) {
 
     private var projectId: String? = null
     var repoList: List<RepositoryInfo>? = null

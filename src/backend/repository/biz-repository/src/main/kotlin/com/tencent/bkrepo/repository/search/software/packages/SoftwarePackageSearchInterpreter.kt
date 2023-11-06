@@ -60,6 +60,6 @@ class SoftwarePackageSearchInterpreter(
     }
 
     override fun initContext(queryModel: QueryModel, mongoQuery: Query): QueryContext {
-        return PackageQueryContext(queryModel, mongoQuery, this)
+        return PackageQueryContext(queryModel, false, mongoQuery, this)
     }
 }

@@ -120,7 +120,7 @@ open class MongoQueryInterpreter {
     }
 
     open fun initContext(queryModel: QueryModel, mongoQuery: Query): QueryContext {
-        return QueryContext(queryModel, mongoQuery, this)
+        return QueryContext(queryModel, false, mongoQuery, this)
     }
 
     fun addRuleInterceptor(interceptor: QueryRuleInterceptor) {
