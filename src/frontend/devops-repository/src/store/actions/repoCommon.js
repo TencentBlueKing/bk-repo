@@ -119,7 +119,7 @@ export default {
                                 operation: 'EQ'
                             }]
                             : []),
-                        ...(!isGeneric && repoType
+                        ...((MODE_CONFIG === 'ci' ? !isGeneric : true) && repoType
                             ? [{
                                 field: 'repoType',
                                 value: repoType.toUpperCase(),

@@ -320,13 +320,13 @@
         created () {
             this.getRepoListAll({ projectId: this.projectId })
             this.initTree()
+            this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
             this.pathChange()
             window.repositoryVue.$on('upload-refresh', debounce((path) => {
                 if (path.replace(/\/[^/]+$/, '').includes(this.selectedTreeNode.fullPath)) {
                     this.itemClickHandler(this.selectedTreeNode)
                 }
             }))
-            this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
             if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
@@ -421,17 +421,36 @@
             pathChange () {
                 const paths = (this.$route.query.path || '').split('/').filter(Boolean)
                 paths.pop() // 定位到文件/文件夹的上级目录
-                paths.reduce(async (chain, path) => {
-                    const node = await chain
-                    if (!node) return
-                    await this.updateGenericTreeNode(node)
-                    const child = node.children.find(child => child.name === path)
-                    if (!child) return
-                    this.sideTreeOpenList.push(child.roadMap)
-                    return child
-                }, Promise.resolve(this.genericTree[0])).then(node => {
-                    this.itemClickHandler(node || this.genericTree[0])
-                })
+                const tempPaths = paths
+                const num = paths.length
+                let tempTree = this.genericTree[0]
+                if (tempTree.children.length === 0 && num > 0) {
+                    paths.reduce(async (chain, path) => {
+                        const node = await chain
+                        if (!node) return
+                        await this.updateGenericTreeNode(node)
+                        const child = node.children.find(child => child.name === path)
+                        if (!child) return
+                        this.sideTreeOpenList.push(child.roadMap)
+                        return child
+                    }, Promise.resolve(this.genericTree[0])).then(node => {
+                        this.itemClickHandler(node || this.genericTree[0])
+                    })
+                } else {
+                    let destNode
+                    while (tempPaths.length !== 0) {
+                        tempTree = tempTree.children.find(node => node.name === tempPaths[0])
+                        if (tempPaths.length === 1) {
+                            destNode = tempTree
+                        }
+                        tempPaths.shift()
+                    }
+                    if (num !== 0) {
+                        this.itemClickHandler(destNode)
+                    } else {
+                        this.itemClickHandler(this.genericTree[0])
+                    }
+                }
             },
             // 获取中间列表数据
             async getArtifactories () {
@@ -560,29 +579,31 @@
                 this.debounceClickTreeNode(node)
             },
             clickTreeNodeHandler (node) {
-                this.selectedTreeNode = node
+                if (node.fullPath + '/default' === this.$route.query.path) {
+                    this.selectedTreeNode = node
 
-                this.handlerPaginationChange()
-                // 更新已展开文件夹数据
-                const reg = new RegExp(`^${node.roadMap}`)
-                const openList = this.sideTreeOpenList
-                openList.splice(0, openList.length, ...openList.filter(v => !reg.test(v)))
-                // 打开选中节点的左侧树的所有祖先节点
-                node.roadMap.split(',').forEach((v, i, arr) => {
-                    const roadMap = arr.slice(0, i + 1).join(',')
-                    !openList.includes(roadMap) && openList.push(roadMap)
-                })
-                // 更新子文件夹
-                if (node.loading) return
-                this.updateGenericTreeNode(node)
-
-                // 更新url参数
-                this.$router.replace({
-                    query: {
-                        ...this.$route.query,
-                        path: `${node.fullPath}/default`
-                    }
-                })
+                    this.handlerPaginationChange()
+                    // 更新已展开文件夹数据
+                    const reg = new RegExp(`^${node.roadMap}`)
+                    const openList = this.sideTreeOpenList
+                    openList.splice(0, openList.length, ...openList.filter(v => !reg.test(v)))
+                    // 打开选中节点的左侧树的所有祖先节点
+                    node.roadMap.split(',').forEach((v, i, arr) => {
+                        const roadMap = arr.slice(0, i + 1).join(',')
+                        !openList.includes(roadMap) && openList.push(roadMap)
+                    })
+                    // 更新子文件夹
+                    if (node.loading) return
+                    this.updateGenericTreeNode(node)
+                } else {
+                    // 更新url参数
+                    this.$router.replace({
+                        query: {
+                            ...this.$route.query,
+                            path: `${node.fullPath}/default`
+                        }
+                    })
+                }
             },
             iconClickHandler (node) {
                 // 更新已展开文件夹数据
