@@ -32,6 +32,7 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
@@ -113,7 +114,8 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
     }
 
     private fun inWhiteList(ip: String, projectId: String): Boolean {
-        return projectIpsCache.get(projectId).contains(ip)
+        val projectIps = projectIpsCache.get(projectId)
+        return ip in projectIps || projectIps.any { it.contains('/') && IpUtils.isInRange(ip, it) }
     }
 
     private fun listIpFromProject(projectId: String): Set<String> {
