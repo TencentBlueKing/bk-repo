@@ -247,6 +247,7 @@
                     },
                     query: {
                         repoName: name,
+                        path: '/default',
                         ...this.$route.query,
                         c: this.pagination.current,
                         l: this.pagination.limit
