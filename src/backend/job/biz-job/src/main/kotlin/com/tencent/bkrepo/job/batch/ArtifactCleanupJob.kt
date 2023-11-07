@@ -93,8 +93,8 @@ class ArtifactCleanupJob(
     override fun run(row: RepoData, collectionName: String, context: JobContext) {
         try {
             val config = row.configuration.readJsonString<RepositoryConfiguration>()
-            val cleanupStrategy = config.getStringSetting(CLEAN_UP_STRATEGY)
-                ?.readJsonString<CleanupStrategy>() ?: return
+            val cleanupStrategyMap = config.getSetting<Map<String, Any>>(CLEAN_UP_STRATEGY) ?: return
+            val cleanupStrategy = toCleanupStrategy(cleanupStrategyMap) ?: return
             if (!filterConfig(row.projectId, cleanupStrategy)) return
             when (row.type) {
                 RepositoryType.GENERIC.name -> {
@@ -119,6 +119,18 @@ class ArtifactCleanupJob(
         }
     }
 
+    private fun toCleanupStrategy(map: Map<String, Any>): CleanupStrategy? {
+        val cleanupStrategy = CleanupStrategy(
+            enable = map[CleanupStrategy::enable.name] as? Boolean ?: false,
+            cleanupType = map[CleanupStrategy::cleanupType.name] as? String,
+            cleanupValue = map[CleanupStrategy::cleanupValue.name] as? String,
+            cleanTargets = map[CleanupStrategy::cleanTargets.name] as? List<String>,
+            )
+        if (cleanupStrategy.cleanupValue.isNullOrEmpty() || cleanupStrategy.cleanupValue.isNullOrEmpty())
+            return null
+        return cleanupStrategy
+    }
+
     private fun filterConfig(projectId: String, cleanupStrategy: CleanupStrategy): Boolean {
         if (properties.projectList.isNotEmpty() && !properties.projectList.contains(projectId)) return false
         if (properties.repoList.isNotEmpty() && !properties.repoList.contains(projectId)) return false
@@ -130,7 +142,7 @@ class ArtifactCleanupJob(
         val cleanupDate = when (cleanupStrategy.cleanupType) {
             // 只保留距离当前时间天数以内的制品
             CleanupStrategyEnum.RETENTION_DAYS.value -> {
-                LocalDateTime.now().minusDays(cleanupStrategy.cleanupValue.toLong())
+                LocalDateTime.now().minusDays(cleanupStrategy.cleanupValue!!.toLong())
             }
             // 只保留设置的时间之后的制品
             CleanupStrategyEnum.RETENTION_DATE.value -> {
@@ -220,7 +232,7 @@ class ArtifactCleanupJob(
         when (cleanupStrategy.cleanupType) {
             // 只保留距离当前时间天数以内的制品
             CleanupStrategyEnum.RETENTION_DAYS.value -> {
-                val cleanupDate = LocalDateTime.now().minusDays(cleanupStrategy.cleanupValue.toLong())
+                val cleanupDate = LocalDateTime.now().minusDays(cleanupStrategy.cleanupValue!!.toLong())
                 versionList.forEach {
                     if (cleanupDate.isAfter(it.lastModifiedDate)) {
                         ociClient.deleteVersion(projectId, repoName, packageName, it.name)
@@ -238,9 +250,9 @@ class ArtifactCleanupJob(
             }
             // 只保留设置个数的制品，根据修改时间排序
             CleanupStrategyEnum.RETENTION_NUMS.value -> {
-                if (versionList.size > cleanupStrategy.cleanupValue.toLong()) {
+                if (versionList.size > cleanupStrategy.cleanupValue!!.toInt()) {
                     versionList.sortedByDescending { it.lastModifiedDate }
-                        .subList(cleanupStrategy.cleanupValue.toInt(), versionList.size).forEach {
+                        .subList(cleanupStrategy.cleanupValue!!.toInt(), versionList.size).forEach {
                         ociClient.deleteVersion(projectId, repoName, packageName, it.name)
                     }
                 }
@@ -279,13 +291,13 @@ class ArtifactCleanupJob(
 
     data class CleanupStrategy(
         // 清理策略类型
-        val cleanupType: String,
+        val cleanupType: String? = null,
         // 清理策略类型对应的实际值
-        val cleanupValue: String,
+        val cleanupValue: String? = null,
         // 指定路径或者package
         val cleanTargets: List<String>? = null,
         // 是否启用
-        val enable: Boolean
+        val enable: Boolean = false
     )
 
 
