@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.mongo.constant.ID
@@ -87,7 +88,7 @@ class ArtifactCleanupJob(
         return Query()
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(14)
 
 
     override fun run(row: RepoData, collectionName: String, context: JobContext) {
@@ -96,6 +97,7 @@ class ArtifactCleanupJob(
             val cleanupStrategyMap = config.getSetting<Map<String, Any>>(CLEAN_UP_STRATEGY) ?: return
             val cleanupStrategy = toCleanupStrategy(cleanupStrategyMap) ?: return
             if (!filterConfig(row.projectId, cleanupStrategy)) return
+            logger.info("Will clean the artifacts in repo ${row.projectId}|${row.name}")
             when (row.type) {
                 RepositoryType.GENERIC.name -> {
                     // 清理generic制品
@@ -171,7 +173,7 @@ class ArtifactCleanupJob(
                     .and(LAST_MODIFIED_DATE).lt(cleanupDate).and(ID).gt(lastId)
                     .apply {
                         if (!cleanupFolders.isNullOrEmpty()) {
-                            this.and(PATH).`in`(cleanupFolders)
+                            this.and(PATH).`in`(cleanupFolders.map { toPath(it) })
                         }
                     }
             ).limit(BATCH_SIZE)
