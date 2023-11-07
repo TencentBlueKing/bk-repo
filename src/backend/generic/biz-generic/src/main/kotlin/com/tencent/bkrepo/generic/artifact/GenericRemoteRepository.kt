@@ -31,13 +31,40 @@
 
 package com.tencent.bkrepo.generic.artifact
 
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
+import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
+import com.tencent.bkrepo.generic.config.GenericProperties
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Interceptor
 import org.springframework.stereotype.Component
 
 @Component
-class GenericRemoteRepository : RemoteRepository() {
+class GenericRemoteRepository(
+    private val genericProperties: GenericProperties
+) : RemoteRepository() {
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
+    }
+
+    override fun createAuthenticateInterceptor(configuration: RemoteConfiguration): Interceptor? {
+        val username = configuration.credentials.username
+        val password = configuration.credentials.password
+
+        // basic认证
+        if (!username.isNullOrEmpty() && !password.isNullOrEmpty()) {
+            return BasicAuthInterceptor(username, password)
+        }
+
+        // platform认证
+        val url = configuration.url.toHttpUrl()
+        genericProperties.platformAccounts.firstOrNull { it.host == url.host }?.let {
+            return PlatformAuthInterceptor(it.accessKey, it.secretKey, SecurityUtils.getUserId())
+        }
+
+        return null
     }
 }

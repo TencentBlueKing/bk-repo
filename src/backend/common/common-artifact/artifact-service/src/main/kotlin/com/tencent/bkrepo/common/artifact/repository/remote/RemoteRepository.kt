@@ -231,7 +231,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         builder.proxy(createProxy(configuration.network.proxy))
         builder.proxyAuthenticator(createProxyAuthenticator(configuration.network.proxy))
         if (addInterceptor) {
-            createAuthenticateInterceptor(configuration.credentials)?.let { builder.addInterceptor(it) }
+            createAuthenticateInterceptor(configuration)?.let { builder.addInterceptor(it) }
         }
         builder.retryOnConnectionFailure(true)
         return builder.build()
@@ -263,9 +263,9 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 创建身份认证拦截器
      */
-    private fun createAuthenticateInterceptor(configuration: RemoteCredentialsConfiguration): Interceptor? {
-        val username = configuration.username
-        val password = configuration.password
+    protected open fun createAuthenticateInterceptor(configuration: RemoteConfiguration): Interceptor? {
+        val username = configuration.credentials.username
+        val password = configuration.credentials.password
         return if (username != null && password != null) {
             BasicAuthInterceptor(username, password)
         } else null
