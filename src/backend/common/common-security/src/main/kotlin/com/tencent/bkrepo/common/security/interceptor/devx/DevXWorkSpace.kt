@@ -39,5 +39,5 @@ data class DevXWorkSpace(
     @JsonProperty("region_id")
     val regionId: String,
     @JsonProperty("inner_ip")
-    val innerIp: String,
+    val innerIp: String? = null,
 )

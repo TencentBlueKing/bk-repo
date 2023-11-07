@@ -147,13 +147,14 @@ class DevXAccessFilter(
         return if (response.statusCode() != HttpStatus.OK) {
             val errorMsg = response.awaitBody<String>()
             logger.error("${response.statusCode()} $errorMsg")
-            emptySet()
+            devXProperties.projectCvmWhiteList[projectId] ?: emptySet()
         } else {
             val ips = HashSet<String>()
             devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
-            response.awaitBody<QueryResponse>().data.mapTo(ips) {
-                it.innerIp.substringAfter('.')
+            response.awaitBody<QueryResponse>().data.forEach { workspace ->
+                workspace.innerIp?.substringAfter('.')?.let { ips.add(it) }
             }
+            ips
         }
     }
 
