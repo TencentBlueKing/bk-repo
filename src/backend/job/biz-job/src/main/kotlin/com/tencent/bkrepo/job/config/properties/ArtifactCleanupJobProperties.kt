@@ -29,11 +29,12 @@ package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties(value = "job.docker-image-cleanup")
-data class DockerImageCleanupJobProperties(
+@ConfigurationProperties(value = "job.artifact-cleanup")
+data class ArtifactCleanupJobProperties(
     override var enabled: Boolean = false,
-    var repositoryTypes: List<String> = listOf("OCI", "DOCKER"),
-    // 如配置项目，则只清理该项目下的镜像仓库
+    // 如配置项目，则只清理该项目下的仓库
     var projectList: List<String> = listOf(),
+    // 如配置仓库，则只清理该仓库下的仓库
+    var repoList: List<String> = listOf(),
     override var cron: String = "0 0 5 * * ?"
 ): MongodbJobProperties()

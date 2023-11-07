@@ -28,17 +28,30 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.FOLDER
+import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
+import com.tencent.bkrepo.job.PATH
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
-import com.tencent.bkrepo.job.TYPE
+import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.DockerImageCleanupJobProperties
+import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
+import com.tencent.bkrepo.job.config.properties.ArtifactCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.oci.api.OciClient
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
+import org.bson.types.ObjectId
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
@@ -50,15 +63,16 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
- * 根据仓库配置的清理策略清理镜像仓库下的镜像
+ * 根据仓库配置的清理策略清理对应仓库下的制品
  */
 @Component
-@EnableConfigurationProperties(DockerImageCleanupJobProperties::class)
-class DockerImageCleanupJob(
-    private val properties: DockerImageCleanupJobProperties,
+@EnableConfigurationProperties(ArtifactCleanupJobProperties::class)
+class ArtifactCleanupJob(
+    private val properties: ArtifactCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,
-    private val ociClient: OciClient
-) : DefaultContextMongoDbJob<DockerImageCleanupJob.RepoData>(properties) {
+    private val ociClient: OciClient,
+    private val nodeClient: NodeClient
+) : DefaultContextMongoDbJob<ArtifactCleanupJob.RepoData>(properties) {
 
 
     override fun entityClass(): Class<RepoData> {
@@ -70,9 +84,7 @@ class DockerImageCleanupJob(
     }
 
     override fun buildQuery(): Query {
-        return Query(
-            Criteria.where(TYPE).`in`(properties.repositoryTypes)
-        )
+        return Query()
     }
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
@@ -83,12 +95,22 @@ class DockerImageCleanupJob(
             val config = row.configuration.readJsonString<RepositoryConfiguration>()
             val cleanupStrategy = config.getStringSetting(CLEAN_UP_STRATEGY)
                 ?.readJsonString<CleanupStrategy>() ?: return
-            if (properties.projectList.isNotEmpty() && !properties.projectList.contains(row.projectId)) return
-            deletePackages(
-                projectId = row.projectId,
-                repoName = row.name,
-                cleanupStrategy = cleanupStrategy
-            )
+            if (!filterConfig(row.projectId, cleanupStrategy)) return
+            when (row.type) {
+                RepositoryType.GENERIC.name -> {
+                    // 清理generic制品
+                    deleteNodes(row.projectId, row.name, cleanupStrategy)
+                }
+                RepositoryType.DOCKER.name, RepositoryType.OCI.name -> {
+                    // 清理镜像制品
+                    deletePackages(
+                        projectId = row.projectId,
+                        repoName = row.name,
+                        cleanupStrategy = cleanupStrategy
+                    )
+                }
+                else -> return
+            }
         } catch (e: Exception) {
             throw JobExecuteException(
                 "Failed to send  cleanup docker repository for " +
@@ -97,10 +119,79 @@ class DockerImageCleanupJob(
         }
     }
 
+    private fun filterConfig(projectId: String, cleanupStrategy: CleanupStrategy): Boolean {
+        if (properties.projectList.isNotEmpty() && !properties.projectList.contains(projectId)) return false
+        if (properties.repoList.isNotEmpty() && !properties.repoList.contains(projectId)) return false
+        return cleanupStrategy.enable
+    }
+
+
+    private fun deleteNodes(projectId: String, repoName: String, cleanupStrategy: CleanupStrategy) {
+        val cleanupDate = when (cleanupStrategy.cleanupType) {
+            // 只保留距离当前时间天数以内的制品
+            CleanupStrategyEnum.RETENTION_DAYS.value -> {
+                LocalDateTime.now().minusDays(cleanupStrategy.cleanupValue.toLong())
+            }
+            // 只保留设置的时间之后的制品
+            CleanupStrategyEnum.RETENTION_DATE.value -> {
+                LocalDateTime.parse(cleanupStrategy.cleanupValue, DateTimeFormatter.ISO_DATE_TIME)
+
+            }
+            else -> return
+        }
+        doNodeCleanup(projectId, repoName, cleanupDate, cleanupStrategy.cleanTargets)
+    }
+
+    private fun doNodeCleanup(
+        projectId: String, repoName: String, cleanupDate: LocalDateTime,
+        cleanupFolders: List<String>? = null
+    ) {
+        val pageSize = BATCH_SIZE
+        var querySize: Int
+        var lastId = ObjectId(MIN_OBJECT_ID)
+        val nodeCollectionName = COLLECTION_NODE_PREFIX +
+            MongoShardingUtils.shardingSequence(projectId, SHARDING_COUNT)
+
+        do {
+            val query = Query(
+                Criteria.where(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(repoName)
+                    .and(FOLDER).isEqualTo(false).and(DELETED_DATE).isEqualTo(null)
+                    .and(LAST_MODIFIED_DATE).lt(cleanupDate).and(ID).gt(lastId)
+                    .apply {
+                        if (!cleanupFolders.isNullOrEmpty()) {
+                            this.and(PATH).`in`(cleanupFolders)
+                        }
+                    }
+            ).limit(BATCH_SIZE)
+                .with(Sort.by(LAST_MODIFIED_DATE).ascending())
+
+            val data = mongoTemplate.find<NodeData>(
+                query,
+                nodeCollectionName
+            )
+            if (data.isEmpty()) {
+                break
+            }
+            nodeClient.deleteNodes(NodesDeleteRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPaths = data.map { it.fullPath },
+                operator = SYSTEM_USER
+            ))
+            querySize = data.size
+            lastId = data.last().id as ObjectId
+        } while (querySize == pageSize)
+    }
 
 
     private fun deletePackages(projectId: String, repoName: String, cleanupStrategy: CleanupStrategy) {
-        val packageQuery = Query(Criteria(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(repoName))
+        val packageQuery = Query(
+            Criteria(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(repoName).apply {
+                if (!cleanupStrategy.cleanTargets.isNullOrEmpty()) {
+                    this.and(PACKAGE_NAME).`in`(cleanupStrategy.cleanTargets)
+                }
+            }
+        )
         val packageList = mongoTemplate.find<PackageData>(
             packageQuery, PACKAGE_COLLECTION_NAME
         )
@@ -127,7 +218,7 @@ class DockerImageCleanupJob(
         cleanupStrategy: CleanupStrategy, packageName: String,
         versionList: List<PackageVersionData>) {
         when (cleanupStrategy.cleanupType) {
-            // 只保留距离当前时间天数以内的镜像
+            // 只保留距离当前时间天数以内的制品
             CleanupStrategyEnum.RETENTION_DAYS.value -> {
                 val cleanupDate = LocalDateTime.now().minusDays(cleanupStrategy.cleanupValue.toLong())
                 versionList.forEach {
@@ -136,7 +227,7 @@ class DockerImageCleanupJob(
                     }
                 }
             }
-            // 只保留设置的时间之后的镜像
+            // 只保留设置的时间之后的制品
             CleanupStrategyEnum.RETENTION_DATE.value -> {
                 val cleanupDate = LocalDateTime.parse(cleanupStrategy.cleanupValue, DateTimeFormatter.ISO_DATE_TIME)
                 versionList.forEach {
@@ -145,7 +236,7 @@ class DockerImageCleanupJob(
                     }
                 }
             }
-            // 只保留设置个数的镜像，根据修改时间排序
+            // 只保留设置个数的制品，根据修改时间排序
             CleanupStrategyEnum.RETENTION_NUMS.value -> {
                 if (versionList.size > cleanupStrategy.cleanupValue.toLong()) {
                     versionList.sortedByDescending { it.lastModifiedDate }
@@ -158,11 +249,6 @@ class DockerImageCleanupJob(
         }
     }
 
-    enum class CleanupStrategyEnum(val value: String) {
-        RETENTION_DAYS("retentionDays"),
-        RETENTION_DATE("retentionDate"),
-        RETENTION_NUMS("retentionNums"),
-    }
 
 
     data class PackageData(
@@ -179,6 +265,11 @@ class DockerImageCleanupJob(
         val lastModifiedDate: LocalDateTime
     )
 
+    data class NodeData(
+        val id: String,
+        val fullPath: String,
+   )
+
     data class RepoData(private val map: Map<String, Any?>) {
         val name: String by map
         val projectId: String by map
@@ -187,9 +278,22 @@ class DockerImageCleanupJob(
     }
 
     data class CleanupStrategy(
+        // 清理策略类型
         val cleanupType: String,
-        val cleanupValue: String
+        // 清理策略类型对应的实际值
+        val cleanupValue: String,
+        // 指定路径或者package
+        val cleanTargets: List<String>? = null,
+        // 是否启用
+        val enable: Boolean
     )
+
+
+    enum class CleanupStrategyEnum(val value: String) {
+        RETENTION_DAYS("retentionDays"),
+        RETENTION_DATE("retentionDate"),
+        RETENTION_NUMS("retentionNums"),
+    }
 
     override fun mapToEntity(row: Map<String, Any?>): RepoData {
         return RepoData(row)
@@ -202,5 +306,9 @@ class DockerImageCleanupJob(
         private const val PACKAGE_VERSION_NAME = "package_version"
         private const val PACKAGE_ID = "packageId"
         private const val CLEAN_UP_STRATEGY = "cleanupStrategy"
+        private const val COLLECTION_NODE_PREFIX = "node_"
+        private const val PACKAGE_NAME = "name"
+        private const val BATCH_SIZE = 1000
+
     }
 }

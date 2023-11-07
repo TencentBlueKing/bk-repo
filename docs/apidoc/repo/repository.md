@@ -67,6 +67,39 @@
   }
   ```
 
+
+  - 增加依赖源仓库清理配置
+
+  ```json
+  {
+      "configuration":{
+          "type":"composite",
+          "cleanupStrategy":{
+              "enable": true,
+              "cleanupType":"retentionDays",
+              "cleanupValue":"30",
+              "cleanTargets":["xxx","xxx"]
+          }
+      }
+  }
+  ```
+
+  - 增加Generic仓库清理配置
+
+  ```json
+  {
+      "configuration":{
+          "type":"composite",
+          "cleanupStrategy":{
+              "enable": true,
+              "cleanupType":"retentionDays",
+              "cleanupValue":"30",
+              "cleanTargets":["xxx","xxx"]
+          }
+      }
+  }
+  ```
+
 - 请求字段说明
 
   |字段|类型|是否必须|默认值|说明|Description|
@@ -76,6 +109,18 @@
   |public|boolean|否|无|是否公开。null则不修改|is public repo|
   |description|string|否|无|仓库描述。null则不修改|repo description|
   |configuration|RepositoryConfiguration|否|无|仓库配置，参考后文。null则不修改|repo configuration|
+
+
+- **cleanupStrategy**
+  | 字段            | 类型    | 是否必须           | 默认值 | 说明             | Description            |
+  | --------------- | ------- | ------------------ | ------ | ---------------- | ---------------------- |
+  | enable       | boolean | 是                 | false  | 是否开启清理 | enable repo clean or not     |
+  | cleanupType | String    | 清理策略类型 | 无     | 清理策略类型： 包含retentionDays/retentionDate/retentionNums   retentionDays： 保留天数，清理（当前日期-保留天数）之前的制品；retentionDate: 保留日期，清理保留日志之前的制品； retentionNums： 保留个数（只针对依赖源有效）， 每个package只保留多少个制品    | cleanup type |
+  | cleanupValue     | String    | 清理策略对应的实际值 | 无     | 清理策略对应的实际值，对应值例如:   retentionDate： 2023-07-01T00:00:00.00；  retentionNums：10； retentionDays：30  | cleanup type value     |
+  | cleanTargets            | List<String>    | 否                 | 无     | 清理目标（generic仓库可以指定待清理目录，依赖源可以指定对应package，不指定则为整个仓库）  | clean target  |
+
+
+
 
 - 响应体
 
