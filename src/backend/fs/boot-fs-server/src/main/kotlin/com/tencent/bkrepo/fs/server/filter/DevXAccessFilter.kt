@@ -32,6 +32,7 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.security.exception.PermissionException
@@ -110,7 +111,8 @@ class DevXAccessFilter(
     }
 
     private suspend fun checkIpBelongToProject(projectId: String, srcIp: String) {
-        if (srcIp !in projectIpsCache.get(projectId).awaitSingle()) {
+        val projectIps = projectIpsCache.get(projectId).awaitSingle()
+        if (srcIp !in projectIps && !projectIps.any { it.contains('/') && IpUtils.isInRange(srcIp, it) }) {
             logger.info("Illegal src ip[$srcIp] in project[$projectId].")
             throw PermissionException()
         }
