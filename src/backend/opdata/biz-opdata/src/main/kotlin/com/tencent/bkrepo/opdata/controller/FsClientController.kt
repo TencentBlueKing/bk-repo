@@ -35,6 +35,8 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.fs.server.api.FsClientClient
 import com.tencent.bkrepo.fs.server.pojo.ClientDetail
 import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
@@ -51,7 +53,11 @@ class FsClientController(
 
     @GetMapping("/list")
     fun getClients(request: ClientListRequest): Response<Page<ClientDetail>> {
-        permissionManager.checkProjectPermission(PermissionAction.READ, request.projectId)
+        if (request.projectId.isNullOrBlank()) {
+            permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+        } else {
+            permissionManager.checkProjectPermission(PermissionAction.READ, request.projectId!!)
+        }
         return fsClientClient.listClients(
             request.projectId,
             request.repoName,
