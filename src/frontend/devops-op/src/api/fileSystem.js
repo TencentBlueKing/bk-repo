@@ -10,8 +10,8 @@ export function queryFileSystemClient(projectId, repoName, pageNumber) {
     params: {
       pageNumber: pageNumber,
       pageSize: DEFAULT_PAGE_SIZE,
-      projectId: projectId,
-      repoName: repoName
+      projectId: projectId === '' ? null : projectId,
+      repoName: repoName === '' ? null : repoName
     }
   })
 }
