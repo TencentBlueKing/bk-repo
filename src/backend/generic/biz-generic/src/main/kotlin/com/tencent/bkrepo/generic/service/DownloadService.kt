@@ -69,23 +69,26 @@ class DownloadService(
     fun download(artifactInfo: GenericArtifactInfo) {
         with(artifactInfo) {
             val node = ArtifactContextHolder.getNodeDetail(this)
-                ?: throw NodeNotFoundException(getArtifactFullPath())
-            val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
             val context = ArtifactDownloadContext()
+            if (node != null) {
+                // 仓库未开启自动创建目录索引时不允许访问目录
+                val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
+                if (node.folder && autoIndexSettings?.enabled == false) {
+                    throw ErrorCodeException(
+                        messageCode = GenericMessageCode.LIST_DIR_NOT_ALLOWED,
+                        params = arrayOf(context.repoName, getArtifactFullPath()),
+                        status = HttpStatus.FORBIDDEN
+                    )
+                }
 
-            // 仓库未开启自动创建目录索引时不允许访问目录
-            val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
-            if (node.folder && autoIndexSettings?.enabled == false) {
-                throw ErrorCodeException(
-                    messageCode = GenericMessageCode.LIST_DIR_NOT_ALLOWED,
-                    params = arrayOf(context.repoName, getArtifactFullPath()),
-                    status = HttpStatus.FORBIDDEN
-                )
-            }
-
-            if (node.folder && !download) {
-                renderListView(node, this)
+                val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
+                if (node.folder && !download) {
+                    renderListView(node, this)
+                } else {
+                    repository.download(context)
+                }
             } else {
+                // 如果仓库类型不是Local，可能Node在远程仓库中，尝试下载
                 repository.download(context)
             }
         }
