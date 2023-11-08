@@ -190,7 +190,7 @@ class UserNodeController(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) date: LocalDateTime
     ): Response<NodeDeleteResult> {
         return ResponseBuilder.success(
-            nodeService.deleteBeforeDate(artifactInfo.projectId, artifactInfo.repoName, date, userId)
+            nodeService.deleteBeforeDate(artifactInfo.projectId, artifactInfo.repoName, date, userId, artifactInfo.getArtifactFullPath())
         )
     }
 
