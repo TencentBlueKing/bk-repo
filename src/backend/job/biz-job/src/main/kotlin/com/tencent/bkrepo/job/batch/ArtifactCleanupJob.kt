@@ -149,7 +149,6 @@ class ArtifactCleanupJob(
             // 只保留设置的时间之后的制品
             CleanupStrategyEnum.RETENTION_DATE.value -> {
                 LocalDateTime.parse(cleanupStrategy.cleanupValue, DateTimeFormatter.ISO_DATE_TIME)
-
             }
             else -> return
         }
@@ -177,7 +176,7 @@ class ArtifactCleanupJob(
                         }
                     }
             ).limit(BATCH_SIZE)
-                .with(Sort.by(LAST_MODIFIED_DATE).ascending())
+                .with(Sort.by(ID).ascending())
 
             val data = mongoTemplate.find<NodeData>(
                 query,
@@ -193,7 +192,7 @@ class ArtifactCleanupJob(
                 operator = SYSTEM_USER
             ))
             querySize = data.size
-            lastId = data.last().id as ObjectId
+            lastId = ObjectId(data.last().id)
         } while (querySize == pageSize)
     }
 
@@ -254,7 +253,7 @@ class ArtifactCleanupJob(
             CleanupStrategyEnum.RETENTION_NUMS.value -> {
                 if (versionList.size > cleanupStrategy.cleanupValue!!.toInt()) {
                     versionList.sortedByDescending { it.lastModifiedDate }
-                        .subList(cleanupStrategy.cleanupValue!!.toInt(), versionList.size).forEach {
+                        .subList(cleanupStrategy.cleanupValue.toInt(), versionList.size).forEach {
                         ociClient.deleteVersion(projectId, repoName, packageName, it.name)
                     }
                 }
