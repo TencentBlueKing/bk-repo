@@ -33,13 +33,22 @@ package com.tencent.bkrepo.generic.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BATCH_MAPPING_URI
@@ -53,6 +62,7 @@ import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.CompressedFileService
 import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.UploadService
+import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -181,5 +191,30 @@ class GenericController(
         @RequestParam fromApp: Boolean
     ): Response<Boolean> {
         return ResponseBuilder.success(downloadService.allowDownload(artifactInfo, ip, fromApp))
+    }
+
+    @ApiOperation("根据路径查看节点详情")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
+    @GetMapping("/detail/${DefaultArtifactInfo.DEFAULT_MAPPING_URI}")
+    fun query(@ArtifactPathVariable artifactInfo: GenericArtifactInfo): Response<Any> {
+        val node = downloadService.query(artifactInfo)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
+        return ResponseBuilder.success(node)
+    }
+
+
+    @ApiOperation("自定义查询节点")
+    @PostMapping("/{projectId}/{repoName}/search")
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    fun search(
+        @PathVariable("projectId") projectId: String,
+        @PathVariable("repoName") repoName: String,
+        @RequestBody queryModel: QueryModel
+    ): Response<Page<Any>> {
+        // 设置artifact，避免创建context失败
+        HttpContextHolder.getRequest().setAttribute(ARTIFACT_INFO_KEY, ArtifactInfo(projectId, repoName, ""))
+        val pageRequest = Pages.ofRequest(queryModel.page.pageNumber, queryModel.page.pageSize)
+        val page = Pages.ofResponse(pageRequest, 0L, downloadService.search(queryModel))
+        return ResponseBuilder.success(page)
     }
 }
