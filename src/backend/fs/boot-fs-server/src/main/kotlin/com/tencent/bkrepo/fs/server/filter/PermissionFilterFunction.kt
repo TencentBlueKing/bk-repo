@@ -46,11 +46,7 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse,
     ): ServerResponse {
-        if (request.path().startsWith("/login") ||
-            request.path().startsWith("/devx/login") ||
-            request.path().startsWith("/service") ||
-            request.path().startsWith("/token")
-        ) {
+        if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
         val action = request.getAction()
@@ -98,5 +94,6 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
             "/node/set-length/**",
             "/block/**",
         )
+        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/service", "/token")
     }
 }

@@ -48,11 +48,7 @@ class DevXAccessFilter(
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse
     ): ServerResponse {
-        if (request.path().startsWith("/login") ||
-            request.path().startsWith("/devx/login") ||
-            request.path().startsWith("/service") ||
-            request.path().startsWith("/token")
-        ) {
+        if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
 
@@ -115,5 +111,6 @@ class DevXAccessFilter(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevXAccessFilter::class.java)
+        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/service", "/token")
     }
 }
