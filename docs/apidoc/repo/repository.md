@@ -73,12 +73,14 @@
   ```json
   {
       "configuration":{
-          "type":"composite",
-          "cleanupStrategy":{
-              "enable": true,
-              "cleanupType":"retentionDays",
-              "cleanupValue":"30",
-              "cleanTargets":["xxx","xxx"]
+          "type":"xxx",
+          "settings": {
+            "cleanupStrategy":{
+                "enable": true,
+                "cleanupType":"retentionDays",
+                "cleanupValue":"30",
+                "cleanTargets":["xxx","xxx"]
+            }
           }
       }
   }
@@ -89,12 +91,14 @@
   ```json
   {
       "configuration":{
-          "type":"composite",
-          "cleanupStrategy":{
-              "enable": true,
-              "cleanupType":"retentionDays",
-              "cleanupValue":"30",
-              "cleanTargets":["xxx","xxx"]
+          "type":"xxx",
+          "settings": {
+            "cleanupStrategy":{
+                "enable": true,
+                "cleanupType":"retentionDays",
+                "cleanupValue":"30",
+                "cleanTargets":["xxx","xxx"]
+            }
           }
       }
   }
