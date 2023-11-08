@@ -55,7 +55,7 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            !row.readOnly && { label: $t('setting'), clickEvent: () => showScanConfig(row) },
+                            { label: $t('setting'), clickEvent: () => showScanConfig(row) },
                             { label: $t('suspend'), clickEvent: () => stopScanHandler(row) },
                             !row.readOnly && { label: $t('scanImmediately'), clickEvent: () => startScanHandler(row) },
                             !row.readOnly && { label: $t('delete'), clickEvent: () => deleteScanHandler(row) }

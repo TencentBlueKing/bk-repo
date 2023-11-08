@@ -15,7 +15,7 @@
                 </bk-date-picker>
                 <bk-button class="mr10" theme="default" @click="stopScanHandler">{{ $t('abortScan') }}</bk-button>
                 <bk-button v-if="!scanPlan.readOnly" class="mr10" theme="default" @click="startScanHandler">{{ $t('scanImmediately') }}</bk-button>
-                <bk-button v-if="!scanPlan.readOnly" theme="default" @click="scanSettingHandler">{{ $t('setting') }}</bk-button>
+                <bk-button theme="default" @click="scanSettingHandler">{{ $t('setting') }}</bk-button>
             </div>
         </div>
         <div class="mt10 flex-align-center">
