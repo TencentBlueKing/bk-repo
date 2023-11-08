@@ -71,6 +71,7 @@ data class InnerCosCredentials(
         var taskInterval: Long = 10,
         var timeout: Long = 10_000,
         var minimumPartSize: Long = 10,
-        var maxDownloadParts: Int = 10000
+        var maxDownloadParts: Int = 10000,
+        var qps: Int = 10,
     )
 }

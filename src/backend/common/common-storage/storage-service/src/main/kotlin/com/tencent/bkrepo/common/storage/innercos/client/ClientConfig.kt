@@ -126,6 +126,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
 
     var timeout: Long = credentials.download.timeout
 
+    /**
+     * 下载分块的qps限速
+     * */
+    var qps: Int = credentials.download.qps
+
     private fun createEndpointResolver(): EndpointResolver {
         return if (credentials.modId != null && credentials.cmdId != null) {
             PolarisEndpointResolver(credentials.modId!!, credentials.cmdId!!)
