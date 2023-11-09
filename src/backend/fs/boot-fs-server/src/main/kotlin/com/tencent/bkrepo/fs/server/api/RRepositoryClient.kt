@@ -113,4 +113,10 @@ interface RRepositoryClient {
         @PathVariable repoName: String,
         @RequestParam fullPath: String
     ): Mono<Response<Map<String, Any>>>
+
+    @GetMapping("/repo/stat/{projectId}/{repoName}")
+    fun statRepo(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+    ): Mono<Response<NodeSizeInfo>>
 }
