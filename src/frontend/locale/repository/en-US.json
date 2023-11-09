@@ -436,7 +436,7 @@
     "endTime":"End time",
     "scanArtifactNum":"Artifacts scanned",
     "scanCompletionTime":"Scan completion time",
-    "overview":"Overview",
+    "overview":"Artifact view",
     "taskView":"Task view",
     "stopScanSuccessMsg": "Aborted scan successfully",
     "confirmStopScanMsg":"Confirm to abort the scan task",
