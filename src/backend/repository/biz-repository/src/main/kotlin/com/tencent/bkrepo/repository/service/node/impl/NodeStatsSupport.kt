@@ -90,11 +90,18 @@ open class NodeStatsSupport(
 
     /**
      * 计算目录大小信息的估计值
-     * 不计算不包含文件夹的子节点数
+     *
      */
     private fun computeEstimatedSize(node: TNode): NodeSizeInfo {
+        val countCriteria = NodeQueryHelper.nodeListCriteria(
+            projectId = node.projectId,
+            repoName = node.repoName,
+            path = node.fullPath,
+            option = NodeListOption(includeFolder = true, deep = true)
+        )
+        val count = nodeDao.count(Query(countCriteria))
         if (node.fullPath != StringPool.ROOT) {
-            return NodeSizeInfo(node.nodeNum ?: 0, -1, node.size)
+            return NodeSizeInfo(count, node.nodeNum ?: 0, node.size)
         }
         val criteria = NodeQueryHelper.nodeListCriteria(
             projectId = node.projectId,
@@ -111,8 +118,8 @@ open class NodeStatsSupport(
         val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
         val data = aggregateResult.mappedResults.firstOrNull()
         return NodeSizeInfo(
-            subNodeCount = data?.get(NodeSizeInfo::subNodeCount.name) as? Long ?: 0,
-            subNodeWithoutFolderCount = -1,
+            subNodeCount = count,
+            subNodeWithoutFolderCount = data?.get(NodeSizeInfo::subNodeCount.name) as? Long ?: 0,
             size = data?.get(NodeSizeInfo::size.name) as? Long ?: 0
         )
     }
