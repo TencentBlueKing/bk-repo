@@ -619,7 +619,7 @@
     "stopPlanSuccess": "停用计划成功",
     "asyncPlanStatusEnum": {
         "RUNNING": "进行中",
-        "SUCCESS": "已完成",
+        "SUCCESS": "同步成功",
         "FAILED": "同步异常"
     },
     "conflictStrategy":"冲突策略",

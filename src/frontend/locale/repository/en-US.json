@@ -33,7 +33,7 @@
     "fileDownloadError": "The artifact you are downloading does not comply with the download rules, please contact the ({0}) project administrator",
     "origin": "Origin",
     "address": "Address",
-    "operation": "Actions",
+    "operation": "Operational",
     "publicProxy": "Public proxy",
     "privateProxy": "Private proxy",
     "allTypes": "All types",
@@ -607,7 +607,7 @@
     "asyncPlanStatusEnum": {
         "RUNNING": "Running",
         "SUCCESS": "Success",
-        "FAILED": "Failed"
+        "FAILED": "Fail"
     },
     "conflictStrategy":"Conflict Strategy",
     "syncObject":"Object",
