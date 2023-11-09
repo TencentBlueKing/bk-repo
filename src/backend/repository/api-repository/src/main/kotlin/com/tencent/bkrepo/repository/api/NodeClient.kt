@@ -147,7 +147,9 @@ interface NodeClient {
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
         @ApiParam(value = "节点完整路径", required = true)
-        @RequestParam fullPath: String
+        @RequestParam fullPath: String,
+        @ApiParam(value = "估计值", required = false)
+        @RequestParam estimated: Boolean = false
     ): Response<NodeSizeInfo>
 
     @ApiOperation("查询文件节点数量")

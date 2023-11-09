@@ -87,7 +87,8 @@ interface RRepositoryClient {
     fun computeSize(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestParam fullPath: String
+        @RequestParam fullPath: String,
+        @RequestParam estimated: Boolean = false
     ): Mono<Response<NodeSizeInfo>>
 
     @GetMapping("/repo/detail/{projectId}/{repoName}")

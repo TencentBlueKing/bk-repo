@@ -153,7 +153,7 @@ class NodeOperationsHandler(
             var res = statCache.getIfPresent(cacheKey)
             if (res == null) {
                 val cap = ReactiveArtifactContextHolder.getRepoDetail().quota
-                val nodeStat = rRepositoryClient.computeSize(projectId, repoName, fullPath).awaitSingle().data
+                val nodeStat = rRepositoryClient.computeSize(projectId, repoName, fullPath, true).awaitSingle().data
 
                 res = StatResponse(
                     subNodeCount = nodeStat?.subNodeCount ?: UNKNOWN,

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -55,7 +56,7 @@ open class NodeStatsSupport(
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
 
-    override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
+    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
         val projectId = artifact.projectId
         val repoName = artifact.repoName
         val fullPath = artifact.getArtifactFullPath()
@@ -64,6 +65,9 @@ open class NodeStatsSupport(
         // 节点为文件直接返回
         if (!node.folder) {
             return NodeSizeInfo(subNodeCount = 0, subNodeWithoutFolderCount = 0, size = node.size)
+        }
+        if (estimated) {
+            return computeEstimatedSize(node)
         }
         val listOption = NodeListOption(includeFolder = true, deep = true)
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, node.fullPath, listOption)
@@ -82,6 +86,35 @@ open class NodeStatsSupport(
             nodeNum = countWithOutFolder
         )
         return NodeSizeInfo(subNodeCount = count, subNodeWithoutFolderCount = countWithOutFolder, size = size)
+    }
+
+    /**
+     * 计算目录大小信息的估计值
+     * 不计算不包含文件夹的子节点数
+     */
+    private fun computeEstimatedSize(node: TNode): NodeSizeInfo {
+        if (node.fullPath != StringPool.ROOT) {
+            return NodeSizeInfo(node.nodeNum ?: 0, -1, node.size)
+        }
+        val criteria = NodeQueryHelper.nodeListCriteria(
+            projectId = node.projectId,
+            repoName = node.repoName,
+            path = node.fullPath,
+            option = NodeListOption(includeFolder = true, deep = false)
+        )
+
+        val aggregation = newAggregation(
+            match(criteria),
+            group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
+                .sum(TNode::nodeNum.name).`as`(NodeSizeInfo::subNodeCount.name)
+        )
+        val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
+        val data = aggregateResult.mappedResults.firstOrNull()
+        return NodeSizeInfo(
+            subNodeCount = data?.get(NodeSizeInfo::subNodeCount.name) as? Long ?: 0,
+            subNodeWithoutFolderCount = -1,
+            size = data?.get(NodeSizeInfo::size.name) as? Long ?: 0
+        )
     }
 
     override fun countFileNode(artifact: ArtifactInfo): Long {

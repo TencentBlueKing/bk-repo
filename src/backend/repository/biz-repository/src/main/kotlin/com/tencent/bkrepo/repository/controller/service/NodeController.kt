@@ -137,9 +137,14 @@ class NodeController(
         )
     }
 
-    override fun computeSize(projectId: String, repoName: String, fullPath: String): Response<NodeSizeInfo> {
+    override fun computeSize(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        estimated: Boolean
+    ): Response<NodeSizeInfo> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
-        return ResponseBuilder.success(nodeService.computeSize(artifactInfo))
+        return ResponseBuilder.success(nodeService.computeSize(artifactInfo, estimated))
     }
 
     override fun countFileNode(projectId: String, repoName: String, path: String): Response<Long> {

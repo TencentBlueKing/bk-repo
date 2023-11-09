@@ -83,8 +83,8 @@ class EdgeNodeServiceImpl(
     messageSupplier,
     clusterProperties
 ) {
-    override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
-        return NodeStatsSupport(this).computeSize(artifact)
+    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
+        return NodeStatsSupport(this).computeSize(artifact, estimated)
     }
 
     override fun aggregateComputeSize(criteria: Criteria): Long {
