@@ -135,9 +135,10 @@ class EdgeNodeServiceImpl(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator)
+        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
