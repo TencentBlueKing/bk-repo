@@ -59,7 +59,7 @@ class OciTagArtifactInfoResolver : ArtifactInfoResolver {
         return when {
             requestURL.contains(TAGS_LIST_SUFFIX) -> {
                 val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-                val packageName = requestUrl.removePrefix("/$projectId/$repoName/v2/").removeSuffix(TAGS_LIST_SUFFIX)
+                val packageName = requestUrl.removePrefix("/v2/$projectId/$repoName/").removeSuffix(TAGS_LIST_SUFFIX)
                 validate(packageName)
                 val tag = request.getParameter(OCI_TAG) ?: StringPool.EMPTY
                 OciTagArtifactInfo(projectId, repoName, packageName, tag)
