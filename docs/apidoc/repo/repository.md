@@ -597,6 +597,49 @@
 |username|string|否|无|代理源认证用户名|channel username|
 |password|string|否|无|代理源认证密码|channel password|
 
+### generic仓库下载限制配置项
+```json
+"configuration" : {
+      "settings" : {
+        "interceptors" : [ {
+          "type" : "MOBILE",
+          "rules" : {
+            "filename" : "*.apk",
+            "metadata" : "key:value"
+          }
+        }, {
+          "type" : "WEB",
+          "rules" : {
+            "filename" : "*.txt",
+            "metadata" : "key:value"
+          }
+        }, {
+          "type" : "IP_SEGMENT",
+          "rules" : {
+            "ipSegment" : [ "10.0.0.0/24", "11.1.0.0/16" ],
+            "whitelistUser" : [ "userId" ],
+            "officeNetwork" : false
+          }
+        } ]
+      }
+    },
+```
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|type|String|是|无|下载限制类型，MOBILE移动端下载限制，WEB网页端下载限制，IP_SEGMENT IP段下载限制|download interceptor type|
+|rules|Map|是|无|下载限制规则，符合规则的可以下载|download interceptor rules|
+
+- **移动端下载限制**
+  - filename 文件名规则，支持通配符*
+  - metadata 元数据规则，格式为key:value
+- **网页端下载限制**
+  - filename 文件名规则，支持通配符*
+  - metadata 元数据规则，格式为key:value
+- **IP段下载限制**
+  - ipSegmnt Ip段规则，支持多个Ip段
+  - officeNetwork 办公网下载规则，办公网网段由后台配置的，开启后ip段添加办公网网段
+  - whitelistUser 白名单用户，不受Ip段下载限制约束
+
 ### 依赖源的差异化配置项
 
 各个依赖源的差异化配置通过`settings`进行配置，每项配置的具体含义请参考依赖源文档。 
