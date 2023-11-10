@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -57,8 +58,12 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publi
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
@@ -75,6 +80,7 @@ import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
@@ -110,6 +116,8 @@ class RepositoryServiceImpl(
     private val repositoryProperties: RepositoryProperties,
     private val messageSupplier: MessageSupplier,
     private val servicePermissionClient: ServicePermissionClient,
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val nodeDao: NodeDao
 ) : RepositoryService {
 
     init {
@@ -366,6 +374,23 @@ class RepositoryServiceImpl(
         repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
         val result = repositoryDao.find(Query(criteria))
         return result.map { convertToInfo(it) }
+    }
+
+    override fun statRepo(projectId: String, repoName: String): NodeSizeInfo {
+        val query = Query(NodeQueryHelper.nodeListCriteria(
+            projectId = projectId,
+            repoName = repoName,
+            path = StringPool.ROOT,
+            option = NodeListOption(includeFolder = true, deep = true)
+        ))
+        val count = nodeDao.count(query)
+        val projectMetrics = projectMetricsRepository.findFirstByProjectIdOrderByCreatedDateDesc(projectId)
+        val repoMetrics = projectMetrics?.repoMetrics?.firstOrNull { it.repoName == repoName }
+        return NodeSizeInfo(
+            subNodeCount = count,
+            subNodeWithoutFolderCount = repoMetrics?.num ?: 0,
+            size = repoMetrics?.size ?: 0
+        )
     }
 
     /**

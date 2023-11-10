@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -95,5 +96,9 @@ class RepositoryController(
         option: RepoListOption
     ): Response<List<RepositoryInfo>> {
         return ResponseBuilder.success(repositoryService.listPermissionRepo(userId, projectId, option))
+    }
+
+    override fun statRepo(projectId: String, repoName: String): Response<NodeSizeInfo> {
+        return ResponseBuilder.success(repositoryService.statRepo(projectId, repoName))
     }
 }

@@ -55,9 +55,11 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import kotlinx.coroutines.reactor.awaitSingle
+import org.slf4j.LoggerFactory
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
+import reactivefeign.client.ReadTimeoutException
 import java.time.Duration
 
 /**
@@ -153,7 +155,12 @@ class NodeOperationsHandler(
             var res = statCache.getIfPresent(cacheKey)
             if (res == null) {
                 val cap = ReactiveArtifactContextHolder.getRepoDetail().quota
-                val nodeStat = rRepositoryClient.computeSize(projectId, repoName, fullPath).awaitSingle().data
+                val nodeStat = try {
+                    rRepositoryClient.computeSize(projectId, repoName, fullPath, true).awaitSingle().data
+                } catch (e: ReadTimeoutException) {
+                    logger.warn("get repo[$projectId/$repoName] stat timeout")
+                    rRepositoryClient.statRepo(projectId, repoName).awaitSingle().data
+                }
 
                 res = StatResponse(
                     subNodeCount = nodeStat?.subNodeCount ?: UNKNOWN,
@@ -280,5 +287,6 @@ class NodeOperationsHandler(
 
     companion object {
         private const val UNKNOWN = -1L
+        private val logger = LoggerFactory.getLogger(NodeOperationsHandler::class.java)
     }
 }

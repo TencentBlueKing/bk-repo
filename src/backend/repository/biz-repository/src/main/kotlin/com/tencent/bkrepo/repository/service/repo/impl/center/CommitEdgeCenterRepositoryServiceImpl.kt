@@ -45,7 +45,9 @@ import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -72,7 +74,9 @@ class CommitEdgeCenterRepositoryServiceImpl(
     private val repositoryProperties: RepositoryProperties,
     messageSupplier: MessageSupplier,
     servicePermissionClient: ServicePermissionClient,
-    private val clusterProperties: ClusterProperties
+    private val clusterProperties: ClusterProperties,
+    projectMetricsRepository: ProjectMetricsRepository,
+    nodeDao: NodeDao
 ) : RepositoryServiceImpl(
     repositoryDao,
     nodeService,
@@ -81,7 +85,9 @@ class CommitEdgeCenterRepositoryServiceImpl(
     proxyChannelService,
     repositoryProperties,
     messageSupplier,
-    servicePermissionClient
+    servicePermissionClient,
+    projectMetricsRepository,
+    nodeDao
 ) {
 
     override fun determineStorageKey(request: RepoCreateRequest): String? {
