@@ -116,8 +116,7 @@ class RepositoryServiceImpl(
     private val repositoryProperties: RepositoryProperties,
     private val messageSupplier: MessageSupplier,
     private val servicePermissionClient: ServicePermissionClient,
-    private val projectMetricsRepository: ProjectMetricsRepository,
-    private val nodeDao: NodeDao
+    private val projectMetricsRepository: ProjectMetricsRepository
 ) : RepositoryService {
 
     init {
@@ -377,17 +376,10 @@ class RepositoryServiceImpl(
     }
 
     override fun statRepo(projectId: String, repoName: String): NodeSizeInfo {
-        val query = Query(NodeQueryHelper.nodeListCriteria(
-            projectId = projectId,
-            repoName = repoName,
-            path = StringPool.ROOT,
-            option = NodeListOption(includeFolder = true, deep = true)
-        ))
-        val count = nodeDao.count(query)
         val projectMetrics = projectMetricsRepository.findFirstByProjectIdOrderByCreatedDateDesc(projectId)
         val repoMetrics = projectMetrics?.repoMetrics?.firstOrNull { it.repoName == repoName }
         return NodeSizeInfo(
-            subNodeCount = count,
+            subNodeCount = repoMetrics?.num ?: 0,
             subNodeWithoutFolderCount = repoMetrics?.num ?: 0,
             size = repoMetrics?.size ?: 0
         )

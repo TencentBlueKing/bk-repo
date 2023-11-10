@@ -63,8 +63,7 @@ class EdgeRepositoryServiceImpl(
     messageSupplier: MessageSupplier,
     servicePermissionClient: ServicePermissionClient,
     clusterProperties: ClusterProperties,
-    projectMetricsRepository: ProjectMetricsRepository,
-    nodeDao: NodeDao
+    projectMetricsRepository: ProjectMetricsRepository
 ) : RepositoryServiceImpl(
     repositoryDao,
     nodeService,
@@ -74,8 +73,7 @@ class EdgeRepositoryServiceImpl(
     repositoryProperties,
     messageSupplier,
     servicePermissionClient,
-    projectMetricsRepository,
-    nodeDao
+    projectMetricsRepository
 ) {
 
     private val centerRepoClient: ClusterRepositoryClient by lazy {

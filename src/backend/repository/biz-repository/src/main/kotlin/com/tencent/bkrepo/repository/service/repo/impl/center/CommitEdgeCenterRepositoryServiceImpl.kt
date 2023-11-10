@@ -75,8 +75,7 @@ class CommitEdgeCenterRepositoryServiceImpl(
     messageSupplier: MessageSupplier,
     servicePermissionClient: ServicePermissionClient,
     private val clusterProperties: ClusterProperties,
-    projectMetricsRepository: ProjectMetricsRepository,
-    nodeDao: NodeDao
+    projectMetricsRepository: ProjectMetricsRepository
 ) : RepositoryServiceImpl(
     repositoryDao,
     nodeService,
@@ -86,8 +85,7 @@ class CommitEdgeCenterRepositoryServiceImpl(
     repositoryProperties,
     messageSupplier,
     servicePermissionClient,
-    projectMetricsRepository,
-    nodeDao
+    projectMetricsRepository
 ) {
 
     override fun determineStorageKey(request: RepoCreateRequest): String? {
