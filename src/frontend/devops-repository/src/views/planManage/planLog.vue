@@ -9,8 +9,8 @@
                     v-model="status"
                     @change="handlerPaginationChange()">
                     <bk-radio class="ml50" value="">{{ $t('total') }}</bk-radio>
-                    <bk-radio class="ml50" value="SUCCESS">{{ $t('success') }}</bk-radio>
-                    <bk-radio class="ml50" value="FAILED">{{ $t('fail') }}</bk-radio>
+                    <bk-radio class="ml50" value="SUCCESS">{{ $t('asyncPlanStatusEnum.SUCCESS') }}</bk-radio>
+                    <bk-radio class="ml50" value="FAILED">{{ $t('asyncPlanStatusEnum.FAILED') }}</bk-radio>
                 </bk-radio-group>
                 <bk-table
                     class="mt10"
@@ -22,7 +22,7 @@
                     size="small"
                     @row-click="showLogDetailHandler">
                     <bk-table-column type="index" :label="$t('NO')" width="70"></bk-table-column>
-                    <bk-table-column :label="$t('runningStatus')" width="80">
+                    <bk-table-column :label="$t('runningStatus')" width="110">
                         <template #default="{ row }">
                             <span class="repo-tag" :class="row.status">{{$t(`asyncPlanStatusEnum.${row.status}`) || $t('notExecuted')}}</span>
                         </template>

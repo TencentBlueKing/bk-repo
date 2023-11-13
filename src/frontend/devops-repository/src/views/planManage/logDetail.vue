@@ -17,8 +17,8 @@
                 v-model="status"
                 :placeholder="$t('syncStatus')"
                 @change="handlerSearchSelectChange()">
-                <bk-option id="SUCCESS" :name="$t('success')"></bk-option>
-                <bk-option id="FAILED" :name="$t('fail')"></bk-option>
+                <bk-option id="SUCCESS" :name="$t('asyncPlanStatusEnum.SUCCESS')"></bk-option>
+                <bk-option id="FAILED" :name="$t('asyncPlanStatusEnum.FAILED')"></bk-option>
             </bk-select>
         </div>
         <bk-table
