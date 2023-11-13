@@ -62,6 +62,7 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.regex.Pattern
 
 /**
  * 根据仓库配置的清理策略清理对应仓库下的制品
@@ -172,7 +173,7 @@ class ArtifactCleanupJob(
                     .and(LAST_MODIFIED_DATE).lt(cleanupDate).and(ID).gt(lastId)
                     .apply {
                         if (!cleanupFolders.isNullOrEmpty()) {
-                            this.and(PATH).`in`(cleanupFolders.map { toPath(it) })
+                            this.and(PATH).`in`(cleanupFolders.map { Pattern.compile("^${toPath(it)}") })
                         }
                     }
             ).limit(BATCH_SIZE)
