@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.common.service.exception
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -50,6 +52,7 @@ open class AbstractExceptionHandler {
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
         LoggerHolder.logErrorCodeException(exception, "[${exception.messageCode.getCode()}]$errorMessage")
         HttpContextHolder.getResponse().status = exception.status.value
+        updateContentType()
         return ResponseBuilder.fail(exception.messageCode.getCode(), errorMessage)
     }
 
@@ -63,6 +66,21 @@ open class AbstractExceptionHandler {
         val code = CommonMessageCode.SYSTEM_ERROR.getCode()
         LoggerHolder.logException(exception, "[$code]${exception.message}", true)
         HttpContextHolder.getResponse().status = HttpStatus.INTERNAL_SERVER_ERROR.value
+        updateContentType()
         return ResponseBuilder.fail(code, errorMessage)
+    }
+
+    protected fun updateContentType(contentType: String? = null) {
+        if (contentType != null) {
+            HttpContextHolder.getResponse().contentType = contentType
+            return
+        }
+        val accept = HttpContextHolder.getRequest().getHeader(HttpHeaders.ACCEPT)
+        if (HttpContextHolder.getResponse().contentType == null &&
+            !accept.startsWith(MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET, true) &&
+            !accept.startsWith(MediaTypes.APPLICATION_XML_WITHOUT_CHARSET, true)
+        ) {
+            HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_JSON
+        }
     }
 }
