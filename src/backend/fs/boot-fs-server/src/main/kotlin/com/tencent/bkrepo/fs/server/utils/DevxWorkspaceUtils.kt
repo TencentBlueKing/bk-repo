@@ -27,9 +27,6 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
@@ -49,6 +46,7 @@ import reactor.netty.http.client.PrematureCloseException
 import reactor.netty.resources.ConnectionProvider
 import reactor.util.retry.RetryBackoffSpec
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 
 class DevxWorkspaceUtils(
     devXProperties: DevXProperties
@@ -67,13 +65,15 @@ class DevxWorkspaceUtils(
             val connector = ReactorClientHttpConnector(client)
             WebClient.builder().clientConnector(connector).build()
         }
-        private val projectIpsCache: LoadingCache<String, Mono<Set<String>>> by lazy { CacheBuilder.newBuilder()
-            .maximumSize(devXProperties.cacheSize)
-            .expireAfterWrite(devXProperties.cacheExpireTime)
-            .build(CacheLoader.from { key -> listIpFromProject(key) }) }
+
+        private val projectIpsCache: ConcurrentHashMap<String, Mono<Set<String>>> by lazy {
+            ConcurrentHashMap(devXProperties.cacheSize.toInt())
+        }
 
         fun getIpList(projectId: String): Mono<Set<String>> {
-            return projectIpsCache.get(projectId)
+            return projectIpsCache[projectId] ?: synchronized(DevxWorkspaceUtils::class) {
+                projectIpsCache.getOrPut(projectId) { listIpFromProject(projectId) }
+            }
         }
 
         suspend fun getWorkspace(): Mono<DevXWorkSpace?> {
@@ -120,10 +120,11 @@ class DevxWorkspaceUtils(
                             logger.warn("request ips of project[$projectId] failed, will retry: $retry")
                             retry
                         }
-                )
+                ).cache(devXProperties.cacheExpireTime)
         }
 
         private suspend fun parseResponse(response: ClientResponse, projectId: String): Set<String> {
+            logger.info("Parse project[$projectId] ips.")
             return if (response.statusCode() != HttpStatus.OK) {
                 val errorMsg = response.awaitBody<String>()
                 logger.error("${response.statusCode()} $errorMsg")
