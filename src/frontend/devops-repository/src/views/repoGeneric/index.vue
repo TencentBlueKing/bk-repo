@@ -57,6 +57,11 @@
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
+                        <bk-button class="ml10" v-if="multiSelect.length && multiSelect.some(key => (
+                            key.folder === true
+                        ))" @click="clean">
+                            {{ $t('clean') }}
+                        </bk-button>
                         <bk-input
                             class="w250 ml10"
                             v-model.trim="inFolderSearchName"
@@ -176,6 +181,7 @@
             </div>
         </div>
 
+        <generic-clean-dialog ref="genericCleanDialog" @refresh="refreshNodeChange"></generic-clean-dialog>
         <generic-detail ref="genericDetail"></generic-detail>
         <generic-form-dialog ref="genericFormDialog" @refresh="refreshNodeChange"></generic-form-dialog>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
@@ -201,10 +207,12 @@
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate, debounce } from '@repository/utils'
+    import { beforeMonths, beforeYears } from '@repository/utils/date'
     import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
     import Loading from '@repository/components/Loading/loading'
+    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
 
     export default {
         name: 'repoGeneric',
@@ -222,7 +230,8 @@
             genericTreeDialog,
             previewBasicFileDialog,
             compressedFileTable,
-            iamDenyDialog
+            iamDenyDialog,
+            genericCleanDialog
         },
         data () {
             return {
@@ -1233,6 +1242,42 @@
             closeLoading () {
                 clearInterval(this.timer)
                 this.timer = null
+            },
+            clean () {
+                const fullPaths = []
+                const displayPaths = []
+                this.multiSelect.forEach(value => {
+                    let tempTree = this.genericTree[0]
+                    let tempDisplayName = '/'
+                    if (value.folder === true) {
+                        const pas = value.fullPath.split('/').filter(Boolean)
+                        while (pas.length !== 0) {
+                            tempTree = tempTree.children.find(node => node.name === pas[0])
+                            tempDisplayName = tempDisplayName + tempTree.displayName + '/'
+                            pas.shift()
+                        }
+                        displayPaths.push({
+                            path: tempDisplayName,
+                            isComplete: false
+                        })
+                        fullPaths.push({
+                            path: value.fullPath,
+                            isComplete: false
+                        })
+                    }
+                })
+                this.$refs.genericCleanDialog.show = true
+                this.$refs.genericCleanDialog.repoName = this.repoName
+                this.$refs.genericCleanDialog.projectId = this.projectId
+                this.$refs.genericCleanDialog.paths = fullPaths
+                this.$refs.genericCleanDialog.displayPaths = displayPaths
+                this.$refs.genericCleanDialog.loading = false
+                this.$refs.genericCleanDialog.isComplete = false
+                if (this.repoName === 'pipeline') {
+                    this.$refs.genericCleanDialog.date = beforeMonths(2)
+                } else {
+                    this.$refs.genericCleanDialog.date = beforeYears(1)
+                }
             }
         }
     }

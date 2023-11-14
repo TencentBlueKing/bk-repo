@@ -790,5 +790,12 @@
     "repoUsage": "usage",
     "downloadLater": "Download Later",
     "backUpSubMessage": "Only the first download needs to wait. The preparation time is related to the package size. A 500MB package takes about 1 minute.",
-    "backUpMessage": "{0} is an internal testing version and is being downloaded, please wait."
+    "backUpMessage": "{0} is an internal testing version and is being downloaded, please wait.",
+    "deadline": "Deadline",
+    "clean": "Clean",
+    "cleanNode": "Clean Folder",
+    "cleanNodeTitle": "Clean Folder",
+    "complete": "Done",
+    "cleanFolderTip": "Files uploaded before the deadline will be cleared",
+    "cleanRepo": "Clean"
 }
