@@ -147,7 +147,8 @@ class EmptyFolderCleanupJob(
                     path = folderInfo.fullPath,
                     collectionName = collectionName
                 )) {
-                logger.info("will delete empty folder ${folderInfo.fullPath} in repo ${folderInfo.projectId}|${folderInfo.repoName}")
+                logger.info("will delete empty folder ${folderInfo.fullPath}" +
+                                " in repo ${folderInfo.projectId}|${folderInfo.repoName}")
                 val deletedResult = doEmptyFolderDelete(
                     projectId = folderInfo.projectId,
                     repoName = folderInfo.repoName,
