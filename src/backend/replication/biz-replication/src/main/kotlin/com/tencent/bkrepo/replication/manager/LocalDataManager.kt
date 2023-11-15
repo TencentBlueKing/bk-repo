@@ -189,8 +189,9 @@ class LocalDataManager(
             .projectId(projectId)
             .repoName(repoName)
             .sha256(sha256)
+            .page(1, 1)
             .sortByAsc(NODE_FULL_PATH)
-        val result = nodeClient.search(queryModel.build()).data
+        val result = nodeClient.queryWithoutCount(queryModel.build()).data
         if (result == null || result.records.isEmpty()) {
             throw NodeNotFoundException(sha256)
         }

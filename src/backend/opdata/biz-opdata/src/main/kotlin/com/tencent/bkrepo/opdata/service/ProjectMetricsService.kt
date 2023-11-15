@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.constant.CUSTOM
+import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.model.StatDateModel
@@ -77,7 +79,9 @@ class ProjectMetricsService (
             ProjectMetrics::projectId.name,
             ProjectMetrics::nodeNum.name,
             ProjectMetrics::capSize.name,
-            ProjectMetrics::createdDate.name
+            ProjectMetrics::createdDate.name,
+            ProjectMetrics::pipelineCapSize.name,
+            ProjectMetrics::customCapSize.name
         )
         val fileName = "大于${metricsRequest.limitSize/TO_GIGABYTE}GB的项目信息"
         EasyExcelUtils.download(records, fileName, ProjectMetrics::class.java, includeColumns)
@@ -92,23 +96,34 @@ class ProjectMetricsService (
         val queryResult = projectMetricsRepository.findAllByCreatedDate(createdDate)
         val result = mutableListOf<ProjectMetrics>()
         queryResult.forEach {
-            val (sizeOfRepoType, nodeNumOfRepoType) = getSizeAndNodeNum(metricsRequest.type, it)
-            if (sizeOfRepoType >= metricsRequest.limitSize) {
+            val projectInfo = getProjectMetrics(metricsRequest.type, it)
+            if (projectInfo.capSize >= metricsRequest.limitSize) {
                 result.add(ProjectMetrics(
                     projectId = it.projectId,
-                    capSize = sizeOfRepoType / TO_GIGABYTE,
-                    nodeNum = nodeNumOfRepoType,
-                    createdDate = it.createdDate
+                    capSize = projectInfo.capSize / TO_GIGABYTE,
+                    nodeNum = projectInfo.nodeNum,
+                    createdDate = it.createdDate,
+                    pipelineCapSize = projectInfo.pipelineCapSize / TO_GIGABYTE,
+                    customCapSize = projectInfo.customCapSize / TO_GIGABYTE
                 ))
             }
         }
         return result.sortedByDescending { it.capSize }
     }
 
-
-    private fun getSizeAndNodeNum(type: String?, projectMetrics: TProjectMetrics): Pair<Long, Long> {
+    private fun getProjectMetrics(type: String?, projectMetrics: TProjectMetrics): ProjectMetrics {
         return if (type.isNullOrEmpty()) {
             Pair(projectMetrics.capSize , projectMetrics.nodeNum)
+            var pipelineCapSize = projectMetrics.repoMetrics.filter { it.repoName == PIPELINE }.firstOrNull()?.size ?: 0
+            var customCapSize = projectMetrics.repoMetrics.filter { it.repoName == CUSTOM }.firstOrNull()?.size ?: 0
+            ProjectMetrics(
+                projectId = projectMetrics.projectId,
+                nodeNum = projectMetrics.nodeNum,
+                capSize = projectMetrics.capSize,
+                createdDate = projectMetrics.createdDate,
+                pipelineCapSize = pipelineCapSize,
+                customCapSize = customCapSize
+            )
         } else {
             var sizeOfRepoType: Long = 0
             var nodeNumOfRepoType: Long = 0
@@ -118,7 +133,14 @@ class ProjectMetricsService (
                     nodeNumOfRepoType += repo.num
                 }
             }
-            Pair(sizeOfRepoType, nodeNumOfRepoType)
+            ProjectMetrics(
+                projectId = projectMetrics.projectId,
+                nodeNum = nodeNumOfRepoType,
+                capSize = sizeOfRepoType,
+                createdDate = projectMetrics.createdDate,
+                pipelineCapSize = 0,
+                customCapSize = 0
+            )
         }
     }
 }

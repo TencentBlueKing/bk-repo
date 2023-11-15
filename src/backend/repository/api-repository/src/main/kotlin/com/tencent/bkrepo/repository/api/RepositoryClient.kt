@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -128,4 +129,11 @@ interface RepositoryClient {
         @PathVariable projectId: String,
         @RequestBody option: RepoListOption
     ): Response<List<RepositoryInfo>>
+
+    @ApiOperation("查询仓库大小信息")
+    @GetMapping("/stat/{projectId}/{repoName}")
+    fun statRepo(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+    ): Response<NodeSizeInfo>
 }

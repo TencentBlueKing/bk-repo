@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -57,8 +58,12 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publi
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
@@ -75,6 +80,7 @@ import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
@@ -110,6 +116,8 @@ class RepositoryServiceImpl(
     private val repositoryProperties: RepositoryProperties,
     private val messageSupplier: MessageSupplier,
     private val servicePermissionClient: ServicePermissionClient,
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val nodeDao: NodeDao
 ) : RepositoryService {
 
     init {
@@ -224,7 +232,7 @@ class RepositoryServiceImpl(
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             // 确保项目一定存在
             if (!projectService.checkExist(projectId)) {
-                throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
+                throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, projectId)
             }
             // 确保同名仓库不存在
             if (checkExist(projectId, name)) {
@@ -366,6 +374,23 @@ class RepositoryServiceImpl(
         repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
         val result = repositoryDao.find(Query(criteria))
         return result.map { convertToInfo(it) }
+    }
+
+    override fun statRepo(projectId: String, repoName: String): NodeSizeInfo {
+        val query = Query(NodeQueryHelper.nodeListCriteria(
+            projectId = projectId,
+            repoName = repoName,
+            path = StringPool.ROOT,
+            option = NodeListOption(includeFolder = true, deep = true)
+        ))
+        val count = nodeDao.count(query)
+        val projectMetrics = projectMetricsRepository.findFirstByProjectIdOrderByCreatedDateDesc(projectId)
+        val repoMetrics = projectMetrics?.repoMetrics?.firstOrNull { it.repoName == repoName }
+        return NodeSizeInfo(
+            subNodeCount = count,
+            subNodeWithoutFolderCount = repoMetrics?.num ?: 0,
+            size = repoMetrics?.size ?: 0
+        )
     }
 
     /**
@@ -632,6 +657,7 @@ class RepositoryServiceImpl(
         private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
         private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\.\\-_]{1,63}"
         private const val REPO_DESC_MAX_LENGTH = 200
+        private const val SETTING_CLIENT_URL = "clientUrl"
         private lateinit var repositoryProperties: RepositoryProperties
 
         fun convertToDetail(
@@ -639,6 +665,7 @@ class RepositoryServiceImpl(
             storageCredentials: StorageCredentials? = null,
         ): RepositoryDetail? {
             return tRepository?.let {
+                handlerConfiguration(it)
                 RepositoryDetail(
                     name = it.name,
                     type = it.type,
@@ -690,11 +717,15 @@ class RepositoryServiceImpl(
                     type == RepositoryType.GIT
                 ) {
                     config.url = "${repositoryProperties.gitUrl}/$projectId/$name.git"
+                    config.settings[SETTING_CLIENT_URL] = config.url!!
                 } else if (config is com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration &&
                     type == RepositoryType.SVN &&
                     repositoryProperties.svnUrl.isNotEmpty()
                 ) {
                     config.url = "${repositoryProperties.svnUrl}/$projectId/$name"
+                    config.settings[SETTING_CLIENT_URL] = config.url!!
+                } else if (config is RemoteConfiguration && type == RepositoryType.LFS) {
+                    config.settings[SETTING_CLIENT_URL] = "${repositoryProperties.gitUrl}/lfs/$projectId/$name/"
                 }
                 configuration = config.toJsonString()
             }

@@ -25,28 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.handler.impl
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.opdata.model.StatDateModel
-import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
-import org.springframework.stereotype.Component
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 项目中镜像仓库总大小
- */
-@Component
-class DockerRepoSizeInProject(
-    projectMetricsRepository: ProjectMetricsRepository,
-    statDateModel: StatDateModel
-) : RepoSizeInProject(projectMetricsRepository, statDateModel) {
-
-    override val metric: Metrics
-        get() = Metrics.DOCKERREPOSIZEINPROJECT
-    override val repoType: List<String>
-        get() = DOCKER_TYPES
-
-    companion object {
-        private val DOCKER_TYPES = listOf("DOCKER", "OCI")
-    }
-}
+@ConfigurationProperties(value = "job.artifact-cleanup")
+data class ArtifactCleanupJobProperties(
+    override var enabled: Boolean = false,
+    // 如配置项目，则只清理该项目下的仓库
+    var projectList: List<String> = listOf(),
+    // 如配置仓库，则只清理该仓库下的仓库
+    var repoList: List<String> = listOf(),
+    override var cron: String = "0 0 5 * * ?"
+): MongodbJobProperties()

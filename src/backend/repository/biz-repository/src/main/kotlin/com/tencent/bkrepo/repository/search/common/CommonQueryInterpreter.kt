@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,31 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.handler.impl
+package com.tencent.bkrepo.repository.search.common
 
-import com.tencent.bkrepo.opdata.constant.OPDATA_GENERIC_CAP_SIZE
-import com.tencent.bkrepo.opdata.model.StatDateModel
-import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
+import com.tencent.bkrepo.common.query.interceptor.QueryContext
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 
-/**
- * GENERIC 仓库总容量统计
- */
-@Component
-class GenericCapSizeHandler(
-    projectMetricsRepository: ProjectMetricsRepository,
-    statDateModel: StatDateModel
-) : BaseCapSizeHandler(projectMetricsRepository, statDateModel) {
-
-    override val metric: Metrics get() = Metrics.GENERICCAPSIZE
-
-    override val columnsText: String = OPDATA_GENERIC_CAP_SIZE
-
-    override val repoType: List<String>
-        get() = listOf(GENERIC_TYPE)
-
-    companion object {
-        private const val GENERIC_TYPE = "GENERIC"
+open class CommonQueryInterpreter(
+    private val permissionManager: PermissionManager,
+) : MongoQueryInterpreter() {
+    override fun interpret(queryModel: QueryModel): QueryContext {
+        val context = super.interpret(queryModel) as CommonQueryContext
+        if (!context.permissionChecked) {
+            permissionManager.checkProjectPermission(PermissionAction.READ, context.findProjectId())
+            context.permissionChecked = true
+        }
+        return context
     }
 }

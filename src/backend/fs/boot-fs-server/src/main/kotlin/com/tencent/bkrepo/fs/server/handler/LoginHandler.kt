@@ -38,10 +38,13 @@ import com.tencent.bkrepo.fs.server.api.RAuthClient
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
+import com.tencent.bkrepo.fs.server.pojo.DevxLoginResponse
 import com.tencent.bkrepo.fs.server.service.PermissionService
+import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 
@@ -73,6 +76,14 @@ class LoginHandler(
         }
         val token = createToken(projectId, repoName, username)
         return ReactiveResponseBuilder.success(token)
+    }
+
+    suspend fun devxLogin(request: ServerRequest): ServerResponse {
+        val workspace = DevxWorkspaceUtils.getWorkspace().awaitSingleOrNull() ?: throw AuthenticationException()
+        val repoName = request.pathVariable(REPO_NAME)
+        val token = createToken(workspace.projectId, repoName, workspace.owner)
+        val response = DevxLoginResponse(workspace.projectId, token)
+        return ReactiveResponseBuilder.success(response)
     }
 
     private suspend fun createToken(projectId: String, repoName: String, username: String): String {

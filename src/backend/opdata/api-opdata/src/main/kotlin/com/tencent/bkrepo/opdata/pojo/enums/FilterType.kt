@@ -25,31 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.handler.impl
+package com.tencent.bkrepo.opdata.pojo.enums
 
-import com.tencent.bkrepo.opdata.constant.OPDATA_DOCKER_CAP_SIZE
-import com.tencent.bkrepo.opdata.model.StatDateModel
-import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
-import org.springframework.stereotype.Component
-
-/**
- * DOCKER 仓库总容量统计
- */
-@Component
-class DockerCapSizeHandler(
-    projectMetricsRepository: ProjectMetricsRepository,
-    statDateModel: StatDateModel
-) : BaseCapSizeHandler(projectMetricsRepository, statDateModel) {
-
-    override val metric: Metrics get() = Metrics.DOCKERCAPSIZE
-
-    override val columnsText: String = OPDATA_DOCKER_CAP_SIZE
-
-    override val repoType: List<String>
-        get() = DOCKER_TYPES
-
-    companion object {
-        private val DOCKER_TYPES = listOf("DOCKER", "OCI")
-    }
+enum class FilterType {
+    ALL,
+    REPO_TYPE,
+    REPO_NAME,
 }

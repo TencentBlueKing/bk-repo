@@ -43,5 +43,11 @@ data class ProjectMetrics(
     var capSize: Long,
     @ColumnWidth(20)
     @ExcelProperty(value = ["统计时间"], order = 3)
-    val createdDate: LocalDateTime? = LocalDateTime.now()
+    val createdDate: LocalDateTime? = LocalDateTime.now(),
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["流水线仓库大小(GB)"], order = 4)
+    var pipelineCapSize: Long = 0,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["自定义仓库大小(GB)"], order = 5)
+    var customCapSize: Long = 0,
 )

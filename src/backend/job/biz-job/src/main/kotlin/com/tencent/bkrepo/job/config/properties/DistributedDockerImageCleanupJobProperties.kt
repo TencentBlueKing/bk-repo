@@ -25,28 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.handler.impl
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.opdata.model.StatDateModel
-import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
-import org.springframework.stereotype.Component
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 项目中generic仓库总大小
- */
-@Component
-class GenericRepoSizeInProject(
-    projectMetricsRepository: ProjectMetricsRepository,
-    statDateModel: StatDateModel
-) : RepoSizeInProject(projectMetricsRepository, statDateModel) {
-
-    override val metric: Metrics
-    get() = Metrics.GENERICREPOSIZEINPROJECT
-    override val repoType: List<String>
-    get() = listOf(GENERIC_TYPE)
-
-    companion object {
-        private const val GENERIC_TYPE = "GENERIC"
-    }
-}
+@ConfigurationProperties(value = "job.distributed-docker-image-cleanup")
+data class DistributedDockerImageCleanupJobProperties(
+    override var enabled: Boolean = false,
+    var repositoryTypes: List<String> = listOf("OCI", "DOCKER"),
+    // 保留分发的镜像天数
+    var keepDays: Long = 1,
+    override var cron: String = "0 0 5 * * ?"
+): MongodbJobProperties()

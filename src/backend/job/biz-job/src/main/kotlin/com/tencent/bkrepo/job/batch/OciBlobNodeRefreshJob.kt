@@ -41,6 +41,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 /**
  * 用于将存储在blobs目录下的公共blob节点全部迁移到对应版本目录下，
@@ -73,6 +74,8 @@ class OciBlobNodeRefreshJob(
             Criteria.where(TYPE).`in`(properties.repositoryTypes)
         )
     }
+
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     override fun run(row: PackageData, collectionName: String, context: JobContext) {
         with(row) {

@@ -261,7 +261,6 @@
     "versionPlaceHolder": "请输入版本, 按Enter键搜索",
     "liftBan": "解除禁止",
     "forbiddenUse": "禁止使用",
-    "promotion": "晋级",
     "associatedUser": "关联用户",
     "normalUser": "普通用户",
     "totalVersionCount": "共计{0}个版本",
@@ -450,7 +449,7 @@
     "endTime":"结束时间",
     "scanArtifactNum":"扫描制品数",
     "scanCompletionTime":"扫描完成时间",
-    "overview":"总览视图",
+    "overview":"制品视图",
     "taskView":"任务视图",
     "stopScanSuccessMsg": "中止扫描成功",
     "confirmStopScanMsg":"确认中止扫描任务",
@@ -620,7 +619,7 @@
     "stopPlanSuccess": "停用计划成功",
     "asyncPlanStatusEnum": {
         "RUNNING": "进行中",
-        "SUCCESS": "已完成",
+        "SUCCESS": "同步成功",
         "FAILED": "同步异常"
     },
     "conflictStrategy":"冲突策略",

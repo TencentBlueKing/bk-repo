@@ -44,22 +44,21 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ProjectNodeSizeHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel
-) : QueryHandler {
+    projectMetricsRepository: ProjectMetricsRepository,
+    statDateModel: StatDateModel
+) : QueryHandler, BaseHandler(projectMetricsRepository, statDateModel) {
 
     override val metric: Metrics get() = Metrics.PROJECTNODESIZE
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
-        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
-        val tmpMap = HashMap<String, Long>()
-        projects.forEach {
-            val projectId = it.projectId
-            val gbSize = it.capSize / TO_GIGABYTE
+        val tmpMap = calculateMetricValue(target)
+        val gbResult = HashMap<String, Long>()
+        tmpMap.forEach {
+            val gbSize = it.value / TO_GIGABYTE
             if (gbSize != 0L) {
-                tmpMap[projectId] = gbSize
+                gbResult[it.key] = gbSize
             }
         }
-        return convToDisplayData(tmpMap, result)
+        return convToDisplayData(gbResult, result)
     }
 }

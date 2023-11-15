@@ -83,8 +83,8 @@ class EdgeNodeServiceImpl(
     messageSupplier,
     clusterProperties
 ) {
-    override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
-        return NodeStatsSupport(this).computeSize(artifact)
+    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
+        return NodeStatsSupport(this).computeSize(artifact, estimated)
     }
 
     override fun aggregateComputeSize(criteria: Criteria): Long {
@@ -135,9 +135,10 @@ class EdgeNodeServiceImpl(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator)
+        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

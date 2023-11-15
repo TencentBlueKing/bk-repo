@@ -208,13 +208,15 @@ class CommitEdgeCenterNodeServiceImpl(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String
     ): NodeDeleteResult {
         return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteBeforeDate(
             projectId,
             repoName,
             date,
-            operator
+            operator,
+            path
         )
     }
 

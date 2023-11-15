@@ -122,7 +122,7 @@ class JobService(
         if (logger.isDebugEnabled) {
             logger.debug("queryRepodata: $queryModel")
         }
-        val page = nodeClient.search(queryModel).data!!
+        val page = nodeClient.queryWithoutCount(queryModel).data!!
         return page.records.map { it["fullPath"] as String }
     }
 
@@ -331,7 +331,7 @@ class JobService(
             ),
             rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
-        var nodeList = nodeClient.search(queryModel).data!!.records.map { resolveNode(it) }
+        var nodeList = nodeClient.queryWithoutCount(queryModel).data!!.records.map { resolveNode(it) }
         val regex = Regex(
             "${IndexType.PRIMARY.value}.xml.gz" +
                 "|${IndexType.OTHER.value}.xml.gz" +
@@ -346,7 +346,7 @@ class JobService(
             if (nodeList.isEmpty()) {
                 logger.debug("Init [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value} index] ")
                 initIndex(repo, repodataPath, indexType)
-                nodeList = nodeClient.search(queryModel).data!!.records.map { resolveNode(it) }
+                nodeList = nodeClient.queryWithoutCount(queryModel).data!!.records.map { resolveNode(it) }
             }
             if (nodeList.isEmpty()) {
                 throw NodeNotFoundException(

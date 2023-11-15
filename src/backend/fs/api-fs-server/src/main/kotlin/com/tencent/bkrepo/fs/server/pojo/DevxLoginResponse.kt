@@ -27,15 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.pojo
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-
-/**
- * 客户端列表请求
- */
-data class ClientListRequest(
-    val projectId: String?,
-    val repoName: String?,
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    val pageSize: Int = DEFAULT_PAGE_SIZE
+data class DevxLoginResponse(
+    val projectId: String,
+    val token: String
 )

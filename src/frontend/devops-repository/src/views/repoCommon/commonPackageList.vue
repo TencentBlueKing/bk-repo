@@ -250,7 +250,11 @@
                         // 需要保留之前制品列表页的筛选项和页码相关参数
                         ...this.$route.query,
                         repoName: this.repoName,
-                        packageKey: pkg.key
+                        packageKey: pkg.key,
+                        // 此时需要将version清除掉，否则在进入仓库详情页后再返回包列表页，然后选择其他的包进入版本详情页，
+                        // 会导致出现无效请求，且packageKey为最新版本的，但是版本号是之前版本的，进而导致请求出错
+                        // 因为在版本详情页存在一个version的watch，只有version有值的时候才会请求版本详情
+                        version: undefined
                     }
                 })
             }
