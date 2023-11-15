@@ -41,4 +41,8 @@ data class EmptyFolderCleanupJobContext(
     data class FolderMetricsInfo(
         var nodeNum: LongAdder = LongAdder()
     )
+
+    override fun toString(): String {
+        return "Success[$success], failed[$failed], total[$total], deletedFolderNum[${totalDeletedNum.toLong()}]"
+    }
 }

@@ -83,6 +83,7 @@ class EmptyFolderCleanupJob(
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         if (row.deleted != null) return
+        // 暂时只清理generic类型仓库下的空目录
         if (RepositoryCommonUtils.getRepositoryDetail(
                 row.projectId, row.repoName
             ).type != RepositoryType.GENERIC) return
@@ -193,6 +194,7 @@ class EmptyFolderCleanupJob(
         fullPath: String,
     ): Boolean {
         return try {
+            // 删除空目录改为调用接口删除，避免监听删除事件的场景无法触发
             nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, fullPath, SYSTEM_USER))
             true
         } catch (e: Exception) {
@@ -217,22 +219,18 @@ class EmptyFolderCleanupJob(
 
 
     data class Node(
-        val id: String,
         val projectId: String,
         val repoName: String,
         val folder: Boolean,
         val fullPath: String,
-        val size: Long,
         val deleted: String? = null
     ) {
         constructor(map: Map<String, Any?>) : this(
-            map[Node::id.name].toString(),
             map[Node::projectId.name].toString(),
             map[Node::repoName.name].toString(),
             map[Node::folder.name] as Boolean,
             map[Node::fullPath.name].toString(),
-            map[Node::size.name].toString().toLong(),
-            map[Node::deleted.name].toString(),
+            map[Node::deleted.name]?.toString(),
             )
     }
 
