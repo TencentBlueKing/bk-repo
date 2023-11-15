@@ -43,6 +43,7 @@ import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -112,10 +113,13 @@ class ProjectRepoMetricsStatJob(
         super.onRunCollectionFinished(collectionName, context)
         require(context is ProjectRepoMetricsStatJobContext)
         logger.info("start to insert project's metrics ")
+        val projectMetrics = ArrayList<TProjectMetrics>(context.metrics.size)
         for (entry in context.metrics) {
-            storeMetrics(context.statDate, entry.value)
+            projectMetrics.add(entry.value.toDO(context.statDate))
         }
+        storeMetrics(context.statDate, projectMetrics)
         context.metrics.clear()
+        projectMetrics.clear()
         logger.info("stat project metrics done")
     }
 
@@ -127,14 +131,14 @@ class ProjectRepoMetricsStatJob(
 
     private fun storeMetrics(
         statDate: LocalDateTime,
-        projectMetric: ProjectRepoMetricsStatJobContext.ProjectMetrics
+        projectMetrics: List<TProjectMetrics>
     ) {
-        val projectId = projectMetric.projectId
         // insert project repo metrics
-        val criteria = Criteria.where(PROJECT).isEqualTo(projectId).and(CREATED_DATE).isEqualTo(statDate)
+        val criteria = Criteria.where(CREATED_DATE).isEqualTo(statDate)
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
-        logger.info("stat project: [${projectId}], size: [${projectMetric.capSize.toLong()}]")
-        mongoTemplate.insert(projectMetric.toDO(statDate), COLLECTION_NAME_PROJECT_METRICS)
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, COLLECTION_NAME_PROJECT_METRICS)
+            .insert(projectMetrics)
+            .execute()
     }
 
     data class Repository(
