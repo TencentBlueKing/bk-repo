@@ -70,17 +70,23 @@ open class AbstractExceptionHandler {
         return ResponseBuilder.fail(code, errorMessage)
     }
 
-    protected fun updateContentType(contentType: String? = null) {
+    protected open fun updateContentType(contentType: String? = null) {
         if (contentType != null) {
             HttpContextHolder.getResponse().contentType = contentType
             return
         }
-        val accept = HttpContextHolder.getRequest().getHeader(HttpHeaders.ACCEPT)
-        if (HttpContextHolder.getResponse().contentType == null &&
-            !accept.startsWith(MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET, true) &&
-            !accept.startsWith(MediaTypes.APPLICATION_XML_WITHOUT_CHARSET, true)
-        ) {
-            HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_JSON
+        val acceptHeader = HttpContextHolder.getRequest().getHeader(HttpHeaders.ACCEPT)
+        if (acceptHeader.isNullOrEmpty() || !HttpContextHolder.getResponse().contentType.isNullOrEmpty()) {
+            return
+        }
+
+        val acceptXml = acceptHeader.contains(MediaTypes.TEXT_XML, true) ||
+                acceptHeader.contains(MediaTypes.APPLICATION_XML_WITHOUT_CHARSET, true)
+
+        if (acceptXml) {
+            HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_XML_WITHOUT_CHARSET
+        } else {
+            HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
         }
     }
 }
