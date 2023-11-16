@@ -28,6 +28,10 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.constant.CUSTOM
+import com.tencent.bkrepo.common.artifact.constant.LOG
+import com.tencent.bkrepo.common.artifact.constant.PIPELINE
+import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.job.DELETED_DATE
@@ -84,7 +88,7 @@ class EmptyFolderCleanupJob(
         require(context is EmptyFolderCleanupJobContext)
         if (row.deleted != null) return
         // 暂时只清理generic类型仓库下的空目录
-        if (RepositoryCommonUtils.getRepositoryDetail(
+        if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
                 row.projectId, row.repoName
             ).type != RepositoryType.GENERIC) return
         if (row.folder) {
@@ -240,5 +244,6 @@ class EmptyFolderCleanupJob(
         private val logger = LoggerFactory.getLogger(EmptyFolderCleanupJob::class.java)
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
         private const val COLLECTION_NAME_PREFIX = "node_"
+        private val TARGET_REPO_LIST = listOf(REPORT, LOG, PIPELINE, CUSTOM, "remote-mirrors")
     }
 }
