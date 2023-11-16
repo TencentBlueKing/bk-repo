@@ -53,14 +53,24 @@ interface QueryHandler {
         return reqData?.get(TOP_VALUE)?.toString()?.toIntOrNull() ?: defaultTop
     }
 
-    fun convToDisplayData(mapData: HashMap<String, Long>, result: MutableList<Any>, top: Int): List<Any> {
+    fun convToDisplayData(
+        mapData: Map<String, Long>,
+        result: MutableList<Any>,
+        top: Int
+    ): List<Any> {
         if (mapData.isEmpty()) return result
         val max = if (mapData.size > top) {
             top
         } else {
             mapData.size
         }
-        mapData.toList().sortedByDescending { it.second }.subList(0, max).forEach {
+        val allNegative = mapData.all { it.value < 0 }
+        val list = if (allNegative) {
+            mapData.toList().sortedBy { it.second }
+        } else {
+            mapData.toList().sortedByDescending { it.second }
+        }
+        list.subList(0, max).forEach {
             val projectId = it.first
             val data = listOf(it.second, System.currentTimeMillis())
             val element = listOf(data)

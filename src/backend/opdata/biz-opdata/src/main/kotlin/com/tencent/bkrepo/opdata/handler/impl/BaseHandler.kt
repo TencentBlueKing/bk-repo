@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.opdata.handler.impl
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.opdata.constant.DELTA_POSITIVE
 import com.tencent.bkrepo.opdata.constant.DOCKER_TYPES
 import com.tencent.bkrepo.opdata.constant.DURATION
 import com.tencent.bkrepo.opdata.constant.END_DATE
@@ -53,7 +54,8 @@ import java.time.format.DateTimeFormatter
  *       "filterValue": "custom",
  *       "startDate":"2023-11-10",
  *       "endDate":"2023-11-14",
- *       "duration":1
+ *       "duration":1,
+ *       "deltaPositive: false"
  *       }
  */
 open class BaseHandler(
@@ -63,7 +65,7 @@ open class BaseHandler(
 
 
 
-    fun calculateMetricValue(target: Target): HashMap<String, Long> {
+    fun calculateMetricValue(target: Target): Map<String, Long> {
         val metricFilterInfo = getMetricFilterInfo(target)
         val latestMetricsResult = getMetricsResult(
             date = metricFilterInfo.endDate!!,
@@ -78,7 +80,16 @@ open class BaseHandler(
             filterType = metricFilterInfo.filterType,
             filterValue = metricFilterInfo.filterValue
         )
-        return findDeltaValue(olderMetricsResult, latestMetricsResult)
+        val deltaValue = findDeltaValue(olderMetricsResult, latestMetricsResult)
+        return if (metricFilterInfo.deltaPositive == null) {
+            deltaValue
+        } else {
+            if (metricFilterInfo.deltaPositive == true) {
+                deltaValue.filter { it.value >= 0 }
+            } else {
+                deltaValue.filter { it.value < 0 }
+            }
+        }
     }
 
     private fun getMetricsResult(
@@ -139,6 +150,8 @@ open class BaseHandler(
         val startDateStr =  reqData?.get(START_DATE) as? String
         val endDateStr =  reqData?.get(END_DATE) as? String
         val duration =  reqData?.get(DURATION)?.toString()?.toLongOrNull()
+        val deltaPositive =  reqData?.get(DELTA_POSITIVE)?.toString()?.toBoolean()
+
         val endDate = if (endDateStr.isNullOrEmpty()) {
             statDateModel.getShedLockInfo()
         } else {
@@ -155,7 +168,8 @@ open class BaseHandler(
             filterValue = filterValue,
             startDate = startDate,
             endDate = endDate,
-            compareFlag = !startDateStr.isNullOrEmpty() || duration != null
+            compareFlag = !startDateStr.isNullOrEmpty() || duration != null,
+            deltaPositive = deltaPositive
         )
     }
 
