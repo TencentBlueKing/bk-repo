@@ -32,8 +32,7 @@ class NodeStatCompositeMongoDbBatchJob(
 
     override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
         return listOf(
-            FolderStatChildJob(properties, mongoTemplate, redisTemplate),
-            EmptyFolderCleanupJob(properties, mongoTemplate)
+            FolderStatChildJob(properties, mongoTemplate, redisTemplate)
         )
     }
 
@@ -83,6 +82,5 @@ class NodeStatCompositeMongoDbBatchJob(
             projectId = map[Node::projectId.name] as String
             repoName = map[Node::repoName.name] as String
         }
-
     }
 }

@@ -25,23 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.context
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.job.batch.base.ChildJobContext
-import com.tencent.bkrepo.job.batch.base.JobContext
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.LongAdder
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-class EmptyFolderChildContext(
-    parentContent: JobContext,
-    // 用于内存缓存下存储目录统计信息
-    var folders: ConcurrentHashMap<String, FolderMetricsInfo> = ConcurrentHashMap(),
-    // 总共删除的路径个数
-    var totalDeletedNum: LongAdder = LongAdder()
-): ChildJobContext(parentContent) {
-
-    data class FolderMetricsInfo(
-        var id: String? = null,
-        var nodeNum: LongAdder = LongAdder()
-    )
-}
+/**
+ * 空目录清理任务配置项
+ */
+@ConfigurationProperties("job.empty-folder-cleanup")
+data class EmptyFolderCleanupJobProperties(
+    override var enabled: Boolean = true,
+    override var cron: String = "0 0 18 * * ?"
+) : MongodbJobProperties()
