@@ -48,7 +48,13 @@ import java.time.format.DateTimeFormatter
 
 /**
  * 通过在指标 target 中的 data 字段添加参数，过滤出对应条件下的指标数据
- *       "data": {    "filterType": "REPO_NAME",    "filterValue": "custom", "startDate":"2023-11-10", "endDate":"2023-11-14", "duration":1}
+ *       "data": {
+ *       "filterType": "REPO_NAME",
+ *       "filterValue": "custom",
+ *       "startDate":"2023-11-10",
+ *       "endDate":"2023-11-14",
+ *       "duration":1
+ *       }
  */
 open class BaseHandler(
     private val projectMetricsRepository: ProjectMetricsRepository,
