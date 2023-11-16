@@ -42,6 +42,7 @@ import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.FilterType
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -135,13 +136,13 @@ open class BaseHandler(
         val endDate = if (endDateStr.isNullOrEmpty()) {
             statDateModel.getShedLockInfo()
         } else {
-            LocalDateTime.parse(endDateStr, DateTimeFormatter.ISO_DATE_TIME).toLocalDate().atStartOfDay()
+            LocalDate.parse(endDateStr, DateTimeFormatter.ISO_DATE).atStartOfDay()
         }
         val startDate = if (startDateStr.isNullOrEmpty()) {
             val minusDays = duration ?: 1
             statDateModel.getShedLockInfo().minusDays(minusDays).toLocalDate().atStartOfDay()
         } else {
-            LocalDateTime.parse(startDateStr, DateTimeFormatter.ISO_DATE_TIME).toLocalDate().atStartOfDay()
+            LocalDate.parse(startDateStr, DateTimeFormatter.ISO_DATE).atStartOfDay()
         }
         return MetricFilterInfo(
             filterType = filterType,
