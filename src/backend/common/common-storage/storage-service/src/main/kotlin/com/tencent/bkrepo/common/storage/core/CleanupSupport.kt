@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.storage.core
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFileExpireResolver
 
 /**
  * 文件清理操作实现类
@@ -39,7 +40,16 @@ abstract class CleanupSupport : HealthCheckSupport() {
     override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempPath = getTempPath(credentials)
-        val visitor = CleanupFileVisitor(tempPath, tempPath, null, fileStorage, fileLocator, credentials)
+        val fileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
+        val visitor = CleanupFileVisitor(
+            tempPath,
+            tempPath,
+            null,
+            fileStorage,
+            fileLocator,
+            credentials,
+            fileExpireResolver,
+        )
         getTempClient(credentials).walk(visitor)
         return visitor.result
     }
