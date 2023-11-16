@@ -29,37 +29,68 @@ package com.tencent.bkrepo.opdata.handler.impl
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.opdata.constant.DOCKER_TYPES
+import com.tencent.bkrepo.opdata.constant.DURATION
+import com.tencent.bkrepo.opdata.constant.END_DATE
 import com.tencent.bkrepo.opdata.constant.FILTER_TYPE
 import com.tencent.bkrepo.opdata.constant.FILTER_VALUE
+import com.tencent.bkrepo.opdata.constant.START_DATE
 import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import com.tencent.bkrepo.opdata.pojo.MetricFilterInfo
 import com.tencent.bkrepo.opdata.pojo.RepoMetrics
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.FilterType
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 通过在指标 target 中的 data 字段添加参数，过滤出对应条件下的指标数据
- *       "data": {    "filterType": "REPO_NAME",    "filterValue": "custom"}
+ *       "data": {    "filterType": "REPO_NAME",    "filterValue": "custom", "startDate":"xxx", "endDate":"xxx"}
  */
 open class BaseHandler(
     private val projectMetricsRepository: ProjectMetricsRepository,
     private val statDateModel: StatDateModel
 ) {
 
+
+
     fun calculateMetricValue(target: Target): HashMap<String, Long> {
-        val (filterType, filterValue) = getFilterInfo(target)
-        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
+        val metricFilterInfo = getMetricFilterInfo(target)
+        val latestMetricsResult = getMetricsResult(
+            date = metricFilterInfo.endDate!!,
+            target = target.target,
+            filterType = metricFilterInfo.filterType,
+            filterValue = metricFilterInfo.filterValue
+        )
+        if (!metricFilterInfo.compareFlag) return latestMetricsResult
+        val olderMetricsResult = getMetricsResult(
+            date = metricFilterInfo.startDate!!,
+            target = target.target,
+            filterType = metricFilterInfo.filterType,
+            filterValue = metricFilterInfo.filterValue
+        )
+        return findDeltaValue(olderMetricsResult, latestMetricsResult)
+    }
+
+    private fun getMetricsResult(
+        date: LocalDateTime,
+        target: Metrics,
+        filterType: FilterType?,
+        filterValue: String?,
+    ): HashMap<String, Long> {
+        val projectMetrics = projectMetricsRepository.findAllByCreatedDate(date)
+
         return when (filterType) {
             FilterType.REPO_TYPE -> {
-                calculateMetrics(projects, target.target, filterValue)
+                calculateMetrics(projectMetrics, target, filterValue)
             }
             FilterType.REPO_NAME -> {
-                calculateMetrics(projects, target.target, repoName = filterValue)
+                calculateMetrics(projectMetrics, target, repoName = filterValue)
             }
             else -> {
-                calculateMetrics(projects, target.target)
+                calculateMetrics(projectMetrics, target)
             }
         }
     }
@@ -89,7 +120,8 @@ open class BaseHandler(
         return tmpMap
     }
 
-    private fun getFilterInfo(target: Target): Pair<FilterType, String?> {
+
+    private fun getMetricFilterInfo(target: Target): MetricFilterInfo {
         val reqData = if (target.data is Map<*, *>) {
             target.data as Map<String, Any>
         } else {
@@ -97,9 +129,28 @@ open class BaseHandler(
         }
         val filterType = FilterType.valueOf((reqData?.get(FILTER_TYPE) as? String) ?: FilterType.ALL.name)
         val filterValue = reqData?.get(FILTER_VALUE) as? String
-        return Pair(filterType, filterValue)
+        val startDateStr =  reqData?.get(START_DATE) as? String
+        val endDateStr =  reqData?.get(END_DATE) as? String
+        val duration =  reqData?.get(DURATION)?.toString()?.toLongOrNull()
+        val endDate = if (endDateStr.isNullOrEmpty()) {
+            statDateModel.getShedLockInfo()
+        } else {
+            LocalDateTime.parse(endDateStr, DateTimeFormatter.ISO_DATE_TIME).toLocalDate().atStartOfDay()
+        }
+        val startDate = if (startDateStr.isNullOrEmpty()) {
+            val minusDays = duration ?: 1
+            statDateModel.getShedLockInfo().minusDays(minusDays).toLocalDate().atStartOfDay()
+        } else {
+            LocalDateTime.parse(startDateStr, DateTimeFormatter.ISO_DATE_TIME).toLocalDate().atStartOfDay()
+        }
+        return MetricFilterInfo(
+            filterType = filterType,
+            filterValue = filterValue,
+            startDate = startDate,
+            endDate = endDate,
+            compareFlag = !startDateStr.isNullOrEmpty() || duration != null
+        )
     }
-
 
     private fun getRepoTypes(repoType: String? = null): List<String>? {
         return when (repoType) {
@@ -173,6 +224,18 @@ open class BaseHandler(
             }
             else -> {}
         }
+    }
+
+    private fun findDeltaValue(older: HashMap<String, Long>, latest: HashMap<String, Long>): HashMap<String, Long> {
+        val deltaValue = HashMap<String, Long>()
+        val differentProjects = older.filterKeys { latest[it] == null }
+        latest.forEach {
+            deltaValue[it.key] = it.value - (older[it.key] ?: 0)
+        }
+        differentProjects.forEach {
+            deltaValue[it.key] = 0 - (older[it.key] ?: 0)
+        }
+        return deltaValue
     }
 
     companion object {
