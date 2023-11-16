@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
+import com.tencent.bkrepo.opdata.config.OpProjectMetricsProperties
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.StatDateModel
@@ -45,8 +46,9 @@ import org.springframework.stereotype.Component
 @Component
 class ProjectNodeSizeHandler(
     projectMetricsRepository: ProjectMetricsRepository,
-    statDateModel: StatDateModel
-) : QueryHandler, BaseHandler(projectMetricsRepository, statDateModel) {
+    statDateModel: StatDateModel,
+    private val opProjectMetricsProperties: OpProjectMetricsProperties,
+    ) : QueryHandler, BaseHandler(projectMetricsRepository, statDateModel) {
 
     override val metric: Metrics get() = Metrics.PROJECTNODESIZE
 
@@ -59,6 +61,7 @@ class ProjectNodeSizeHandler(
                 gbResult[it.key] = gbSize
             }
         }
-        return convToDisplayData(gbResult, result)
+        val top = getTopValue(target, opProjectMetricsProperties.top)
+        return convToDisplayData(gbResult, result, top)
     }
 }

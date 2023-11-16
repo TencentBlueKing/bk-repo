@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.opdata.handler
 
 import com.tencent.bkrepo.opdata.constant.OPDATA_STAT_LIMIT
+import com.tencent.bkrepo.opdata.constant.TOP_VALUE
 import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
@@ -42,10 +43,20 @@ interface QueryHandler {
 
     fun handle(target: Target, result: MutableList<Any>): Any
 
-    fun convToDisplayData(mapData: HashMap<String, Long>, result: MutableList<Any>): List<Any> {
+
+    fun getTopValue(target: Target, defaultTop: Int = OPDATA_STAT_LIMIT): Int {
+        val reqData = if (target.data is Map<*, *>) {
+            target.data as Map<String, Any>
+        } else {
+            null
+        }
+        return reqData?.get(TOP_VALUE)?.toString()?.toIntOrNull() ?: defaultTop
+    }
+
+    fun convToDisplayData(mapData: HashMap<String, Long>, result: MutableList<Any>, top: Int): List<Any> {
         if (mapData.isEmpty()) return result
-        val max = if (mapData.size > OPDATA_STAT_LIMIT) {
-            OPDATA_STAT_LIMIT
+        val max = if (mapData.size > top) {
+            top
         } else {
             mapData.size
         }

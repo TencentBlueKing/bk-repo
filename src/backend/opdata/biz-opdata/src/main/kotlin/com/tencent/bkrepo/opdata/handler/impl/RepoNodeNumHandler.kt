@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
+import com.tencent.bkrepo.opdata.config.OpProjectMetricsProperties
 import com.tencent.bkrepo.opdata.constant.PROJECT_NAME
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.StatDateModel
@@ -45,8 +46,9 @@ import org.springframework.stereotype.Component
 @Component
 class RepoNodeNumHandler(
     private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel
-) : QueryHandler {
+    private val statDateModel: StatDateModel,
+    private val opProjectMetricsProperties: OpProjectMetricsProperties,
+    ) : QueryHandler {
 
     override val metric: Metrics get() = Metrics.REPONODENUM
 
@@ -62,6 +64,7 @@ class RepoNodeNumHandler(
                 }
             }
         }
-        return convToDisplayData(tmpMap, result)
+        val top = getTopValue(target, opProjectMetricsProperties.top)
+        return convToDisplayData(tmpMap, result, top)
     }
 }

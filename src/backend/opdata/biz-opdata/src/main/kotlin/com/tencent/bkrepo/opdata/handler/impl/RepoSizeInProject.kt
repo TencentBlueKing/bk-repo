@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
+import com.tencent.bkrepo.opdata.config.OpProjectMetricsProperties
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.StatDateModel
@@ -36,8 +37,9 @@ import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 
 open class RepoSizeInProject(
     private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel
-) : QueryHandler {
+    private val statDateModel: StatDateModel,
+    private val opProjectMetricsProperties: OpProjectMetricsProperties,
+    ) : QueryHandler {
 
     override val metric: Metrics get() = Metrics.DEFAULT
 
@@ -57,6 +59,7 @@ open class RepoSizeInProject(
                 tmpMap[projectId] = gbSize
             }
         }
-        return convToDisplayData(tmpMap, result)
+        val top = getTopValue(target, opProjectMetricsProperties.top)
+        return convToDisplayData(tmpMap, result, top)
     }
 }
