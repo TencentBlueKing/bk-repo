@@ -73,16 +73,26 @@ class ProjectMetricsService (
     }
 
     fun download(metricsRequest: ProjectMetricsRequest) {
+        metricsRequest.showDelta = true
         val records = getProjectMetrics(metricsRequest)
         // 导出
         val includeColumns = mutableSetOf(
             ProjectMetrics::projectId.name,
             ProjectMetrics::nodeNum.name,
             ProjectMetrics::capSize.name,
-            ProjectMetrics::createdDate.name,
+            ProjectMetrics::capSizeOfOneDayBefore.name,
+            ProjectMetrics::capSizeOfOneWeekBefore.name,
+            ProjectMetrics::capSizeOfOneMonthBefore.name,
             ProjectMetrics::pipelineCapSize.name,
-            ProjectMetrics::customCapSize.name
-        )
+            ProjectMetrics::pCapSizeOfOneDayBefore.name,
+            ProjectMetrics::pCapSizeOfOneWeekBefore.name,
+            ProjectMetrics::pCapSizeOfOneMonthBefore.name,
+            ProjectMetrics::customCapSize.name,
+            ProjectMetrics::cCapSizeOfOneDayBefore.name,
+            ProjectMetrics::cCapSizeOfOneWeekBefore.name,
+            ProjectMetrics::cCapSizeOfOneMonthBefore.name,
+            ProjectMetrics::createdDate.name,
+            )
         val fileName = "大于${metricsRequest.limitSize/TO_GIGABYTE}GB的项目信息"
         EasyExcelUtils.download(records, fileName, ProjectMetrics::class.java, includeColumns)
     }
@@ -93,54 +103,147 @@ class ProjectMetricsService (
         } else {
             LocalDate.now().minusDays(metricsRequest.minusDay).atStartOfDay()
         }
-        val queryResult = projectMetricsRepository.findAllByCreatedDate(createdDate)
+        var oneDayBeforeMetrics: List<TProjectMetrics>? = null
+        var oneWeekBeforeMetrics: List<TProjectMetrics>? = null
+        var oneMonthBeforeMetrics: List<TProjectMetrics>? = null
+
+        if (metricsRequest.showDelta) {
+            val oneDayBefore = createdDate.minusDays(1).toLocalDate().atStartOfDay()
+            val oneWeekBefore = createdDate.minusDays(7).toLocalDate().atStartOfDay()
+            val oneMonthBefore = createdDate.minusDays(30).toLocalDate().atStartOfDay()
+
+            oneDayBeforeMetrics = projectMetricsRepository.findAllByCreatedDate(oneDayBefore)
+            oneWeekBeforeMetrics = projectMetricsRepository.findAllByCreatedDate(oneWeekBefore)
+            oneMonthBeforeMetrics = projectMetricsRepository.findAllByCreatedDate(oneMonthBefore)
+        }
+
+
+        val currentMetrics = projectMetricsRepository.findAllByCreatedDate(createdDate)
+
+        return getMetricsResult(
+            type = metricsRequest.type,
+            limitSize = metricsRequest.limitSize,
+            currentMetrics = currentMetrics,
+            oneDayBeforeMetrics = oneDayBeforeMetrics,
+            oneWeekBeforeMetrics = oneWeekBeforeMetrics,
+            oneMonthBeforeMetrics = oneMonthBeforeMetrics,
+        )
+    }
+
+    private fun getMetricsResult(
+        type: String?,
+        limitSize: Long,
+        currentMetrics: List<TProjectMetrics>,
+        oneDayBeforeMetrics: List<TProjectMetrics>? = null,
+        oneWeekBeforeMetrics: List<TProjectMetrics>? = null,
+        oneMonthBeforeMetrics: List<TProjectMetrics>? = null,
+    ): List<ProjectMetrics> {
         val result = mutableListOf<ProjectMetrics>()
-        queryResult.forEach {
-            val projectInfo = getProjectMetrics(metricsRequest.type, it)
-            if (projectInfo.capSize >= metricsRequest.limitSize) {
+        currentMetrics.forEach { current ->
+            val projectInfo = getProjectMetrics(
+                current = current,
+                type = type,
+                oneDayBefore = oneDayBeforeMetrics?.firstOrNull { it.projectId == current.projectId },
+                oneWeekBefore = oneWeekBeforeMetrics?.firstOrNull { it.projectId == current.projectId },
+                oneMonthBefore = oneMonthBeforeMetrics?.firstOrNull { it.projectId == current.projectId },
+                )
+            if (projectInfo.capSize >= limitSize) {
                 result.add(ProjectMetrics(
-                    projectId = it.projectId,
+                    projectId = current.projectId,
                     capSize = projectInfo.capSize / TO_GIGABYTE,
+                    capSizeOfOneDayBefore = projectInfo.capSizeOfOneDayBefore / TO_GIGABYTE ,
+                    capSizeOfOneWeekBefore = projectInfo.capSizeOfOneWeekBefore / TO_GIGABYTE,
+                    capSizeOfOneMonthBefore = projectInfo.capSizeOfOneMonthBefore / TO_GIGABYTE,
                     nodeNum = projectInfo.nodeNum,
-                    createdDate = it.createdDate,
+                    createdDate = current.createdDate,
                     pipelineCapSize = projectInfo.pipelineCapSize / TO_GIGABYTE,
-                    customCapSize = projectInfo.customCapSize / TO_GIGABYTE
+                    pCapSizeOfOneDayBefore = projectInfo.pCapSizeOfOneDayBefore / TO_GIGABYTE,
+                    pCapSizeOfOneWeekBefore = projectInfo.pCapSizeOfOneWeekBefore / TO_GIGABYTE,
+                    pCapSizeOfOneMonthBefore = projectInfo.pCapSizeOfOneMonthBefore / TO_GIGABYTE,
+                    customCapSize = projectInfo.customCapSize / TO_GIGABYTE,
+                    cCapSizeOfOneDayBefore = projectInfo.cCapSizeOfOneDayBefore / TO_GIGABYTE,
+                    cCapSizeOfOneWeekBefore = projectInfo.cCapSizeOfOneWeekBefore / TO_GIGABYTE,
+                    cCapSizeOfOneMonthBefore = projectInfo.cCapSizeOfOneMonthBefore / TO_GIGABYTE,
                 ))
             }
         }
         return result.sortedByDescending { it.capSize }
     }
 
-    private fun getProjectMetrics(type: String?, projectMetrics: TProjectMetrics): ProjectMetrics {
+
+    private fun getProjectMetrics(
+        current: TProjectMetrics,
+        type: String?,
+        oneDayBefore: TProjectMetrics? = null,
+        oneWeekBefore: TProjectMetrics? = null,
+        oneMonthBefore: TProjectMetrics? = null,
+    ): ProjectMetrics {
         return if (type.isNullOrEmpty()) {
-            Pair(projectMetrics.capSize , projectMetrics.nodeNum)
-            var pipelineCapSize = projectMetrics.repoMetrics.filter { it.repoName == PIPELINE }.firstOrNull()?.size ?: 0
-            var customCapSize = projectMetrics.repoMetrics.filter { it.repoName == CUSTOM }.firstOrNull()?.size ?: 0
+
+            val pipelineCapSize = filterByRepoName(current, PIPELINE)
+            val pCapSizeOfOneDayBefore = filterByRepoName(oneDayBefore, PIPELINE)
+            val pCapSizeOfOneWeekBefore = filterByRepoName(oneWeekBefore, PIPELINE)
+            val pCapSizeOfOneMonthBefore = filterByRepoName(oneMonthBefore, PIPELINE)
+
+
+            val customCapSize = filterByRepoName(current, CUSTOM)
+            val cCapSizeOfOneDayBefore = filterByRepoName(oneDayBefore, CUSTOM)
+            val cCapSizeOfOneWeekBefore = filterByRepoName(oneWeekBefore, CUSTOM)
+            val cCapSizeOfOneMonthBefore = filterByRepoName(oneMonthBefore, CUSTOM)
+
             ProjectMetrics(
-                projectId = projectMetrics.projectId,
-                nodeNum = projectMetrics.nodeNum,
-                capSize = projectMetrics.capSize,
-                createdDate = projectMetrics.createdDate,
+                projectId = current.projectId,
+                nodeNum = current.nodeNum,
+                capSize = current.capSize,
+                capSizeOfOneDayBefore = current.capSize - (oneDayBefore?.capSize ?: 0),
+                capSizeOfOneWeekBefore = current.capSize - (oneWeekBefore?.capSize ?: 0),
+                capSizeOfOneMonthBefore = current.capSize - (oneMonthBefore?.capSize ?: 0),
+                createdDate = current.createdDate,
                 pipelineCapSize = pipelineCapSize,
-                customCapSize = customCapSize
+                pCapSizeOfOneDayBefore = pipelineCapSize - pCapSizeOfOneDayBefore,
+                pCapSizeOfOneWeekBefore = pipelineCapSize - pCapSizeOfOneWeekBefore,
+                pCapSizeOfOneMonthBefore = pipelineCapSize - pCapSizeOfOneMonthBefore,
+                customCapSize = customCapSize,
+                cCapSizeOfOneDayBefore = customCapSize - cCapSizeOfOneDayBefore,
+                cCapSizeOfOneWeekBefore = customCapSize - cCapSizeOfOneWeekBefore,
+                cCapSizeOfOneMonthBefore = customCapSize - cCapSizeOfOneMonthBefore,
             )
         } else {
-            var sizeOfRepoType: Long = 0
-            var nodeNumOfRepoType: Long = 0
-            projectMetrics.repoMetrics.forEach { repo ->
-                if (repo.type == type) {
-                    sizeOfRepoType += repo.size
-                    nodeNumOfRepoType += repo.num
-                }
-            }
+
+            val (sizeOfRepoType, nodeNumOfRepoType) = filterByRepoType(current, type)
+            val (sizeOfOneDayBefore, _) = filterByRepoType(oneDayBefore, type)
+            val (sizeOfOneWeekBefore, _) = filterByRepoType(oneWeekBefore, type)
+            val (sizeOfOneMonthBefore, _) = filterByRepoType(oneMonthBefore, type)
+
             ProjectMetrics(
-                projectId = projectMetrics.projectId,
+                projectId = current.projectId,
                 nodeNum = nodeNumOfRepoType,
                 capSize = sizeOfRepoType,
-                createdDate = projectMetrics.createdDate,
+                capSizeOfOneDayBefore = sizeOfRepoType - sizeOfOneDayBefore,
+                capSizeOfOneWeekBefore = sizeOfRepoType - sizeOfOneWeekBefore,
+                capSizeOfOneMonthBefore = sizeOfRepoType - sizeOfOneMonthBefore,
+                createdDate = current.createdDate,
                 pipelineCapSize = 0,
                 customCapSize = 0
             )
         }
+    }
+
+
+
+    private fun filterByRepoName(metric: TProjectMetrics?, repoName: String): Long {
+        return metric?.repoMetrics?.firstOrNull { it.repoName == repoName }?.size ?: 0
+    }
+
+    private fun filterByRepoType(metric: TProjectMetrics?, repoType: String): Pair<Long, Long> {
+        var sizeOfRepoType: Long = 0
+        var nodeNumOfRepoType: Long = 0
+        metric?.repoMetrics?.forEach { repo ->
+            if (repo.type == repoType) {
+                sizeOfRepoType += repo.size
+                nodeNumOfRepoType += repo.num
+            }
+        }
+        return Pair(sizeOfRepoType, nodeNumOfRepoType)
     }
 }
