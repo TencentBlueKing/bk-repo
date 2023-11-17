@@ -54,14 +54,7 @@ class ProjectNodeSizeHandler(
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
         val tmpMap = calculateMetricValue(target)
-        val gbResult = HashMap<String, Long>()
-        tmpMap.forEach {
-            val gbSize = it.value / TO_GIGABYTE
-            if (gbSize != 0L) {
-                gbResult[it.key] = gbSize
-            }
-        }
         val top = getTopValue(target, opProjectMetricsProperties.top)
-        return convToDisplayData(gbResult, result, top)
+        return convToDisplayData(tmpMap, result, top)
     }
 }
