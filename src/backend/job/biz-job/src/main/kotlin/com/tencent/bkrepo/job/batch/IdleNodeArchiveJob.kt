@@ -114,17 +114,34 @@ class IdleNodeArchiveJob(
                 // 快速归档
                 createArchiveFile(credentialsKey, context, row)
             } else {
-                // 普通归档
-                // 只缓存有的情况,宁愿不归档，也不要归错档。并且如果没有使用，则会创建归档记录，也可避免重复搜索。
-                val inUse = nodeUseInfoCache[nodeDataId] ?: checkUse(sha256, credentialsKey)
-                if (inUse) {
-                    nodeUseInfoCache[nodeDataId] = true
-                } else {
-                    createArchiveFile(credentialsKey, context, row)
+                synchronized(sha256.intern()) {
+                    slowArchive(row, credentialsKey, context)
                 }
             }
         } else {
             logger.info("Archive[$row] job already exist[${af.status}].")
+        }
+    }
+
+    private fun slowArchive(
+        row: Node,
+        credentialsKey: String?,
+        context: NodeContext,
+    ) {
+        with(row) {
+            val af = archiveClient.get(sha256, credentialsKey).data
+            if (af == null) {
+                val nodeDataId = NodeDataId(sha256, credentialsKey)
+                val inUse = nodeUseInfoCache[nodeDataId] ?: checkUse(sha256, credentialsKey)
+                if (inUse) {
+                    // 只需要缓存被使用的情况，这可以避免sha256被重复搜索。当sha256未被使用时，它会创建一条归档记录，所以无需缓存。
+                    nodeUseInfoCache[nodeDataId] = true
+                } else {
+                    createArchiveFile(credentialsKey, context, row)
+                }
+            } else {
+                logger.info("Archive[$row] job already exist[${af.status}].")
+            }
         }
     }
 
