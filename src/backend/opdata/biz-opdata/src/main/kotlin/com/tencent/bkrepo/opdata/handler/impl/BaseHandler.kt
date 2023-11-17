@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.opdata.constant.DELTA_POSITIVE
 import com.tencent.bkrepo.opdata.constant.DOCKER_TYPES
@@ -46,6 +49,7 @@ import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 
 /**
  * 通过在指标 target 中的 data 字段添加参数，过滤出对应条件下的指标数据
@@ -63,6 +67,17 @@ open class BaseHandler(
     private val statDateModel: StatDateModel
 ) {
 
+    private val metricsCache: LoadingCache<LocalDateTime, List<TProjectMetrics>> by lazy {
+        val cacheLoader = object : CacheLoader<LocalDateTime, List<TProjectMetrics>>() {
+            override fun load(key: LocalDateTime): List<TProjectMetrics> {
+                return projectMetricsRepository.findAllByCreatedDate(key)
+            }
+        }
+        CacheBuilder.newBuilder()
+            .maximumSize(10)
+            .expireAfterWrite(15, TimeUnit.MINUTES)
+            .build(cacheLoader)
+    }
 
 
     fun calculateMetricValue(target: Target): Map<String, Long> {
@@ -98,7 +113,7 @@ open class BaseHandler(
         filterType: FilterType?,
         filterValue: String?,
     ): HashMap<String, Long> {
-        val projectMetrics = projectMetricsRepository.findAllByCreatedDate(date)
+        val projectMetrics = metricsCache.get(date)
 
         return when (filterType) {
             FilterType.REPO_TYPE -> {
