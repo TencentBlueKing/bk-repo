@@ -29,40 +29,6 @@
  * SOFTWARE.
  */
 
-import com.tencent.devops.utils.findPropertyOrNull
-
-val otelExporterEnabled: String? by project
 dependencies {
-    api(project(":common:common-api"))
-    api("com.tencent.devops:devops-boot-starter-service")
-    api("com.tencent.devops:devops-boot-starter-circuitbreaker")
-    api("io.github.resilience4j:resilience4j-bulkhead")
-
-    api("io.micrometer:micrometer-registry-influx")
-
-    api("io.jsonwebtoken:jjwt-api")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson")
-
-    api("com.google.guava:guava")
-    api("org.springframework.cloud:spring-cloud-starter-sleuth") {
-        exclude("org.springframework.cloud", "spring-cloud-sleuth-brave")
-    }
-    api("org.springframework.cloud:spring-cloud-sleuth-otel-autoconfigure")
-    implementation("io.opentelemetry:opentelemetry-sdk-extension-resources")
-    // 默认不添加otel exporter
-    if (otelExporterEnabled.toBoolean()) {
-        implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-    }
-
-    api("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
-    compileOnly(project(":common:common-mongo"))
-
-    val assemblyMode = project.findPropertyOrNull("devops.assemblyMode")
-    if (assemblyMode == null || assemblyMode.toUpperCase() == "CONSUL") {
-        api("org.springframework.cloud:spring-cloud-starter-config")
-    }
-    api("org.springframework.retry:spring-retry")
-    api("com.github.ulisesbocchio:jasypt-spring-boot-starter:${Versions.Jasypt}")
-    api("org.dom4j:dom4j:${Versions.dom4j}")
+    implementation(project(":s3:biz-s3"))
 }

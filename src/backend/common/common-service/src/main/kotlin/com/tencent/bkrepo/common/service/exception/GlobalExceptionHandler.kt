@@ -33,10 +33,13 @@ package com.tencent.bkrepo.common.service.exception
 
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.AWS4AuthenticationException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.S3NotFoundException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.S3ExceptionCommonResponse
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -147,4 +150,15 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
     fun handleException(exception: Exception): Response<Void> {
         return response(exception)
     }
+
+    @ExceptionHandler(AWS4AuthenticationException::class)
+    fun handleException(exception: AWS4AuthenticationException) {
+        S3ExceptionCommonResponse.buildUnauthorizedResponse(exception)
+    }
+
+    @ExceptionHandler(S3NotFoundException::class)
+    fun handleException(exception: S3NotFoundException) {
+        S3ExceptionCommonResponse.buildNotFoundResponse(exception)
+    }
+
 }
