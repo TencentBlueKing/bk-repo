@@ -1,0 +1,3 @@
+spring.application.name: svn
+server.port: 25818
+

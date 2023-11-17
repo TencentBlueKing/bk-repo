@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.service.repo
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -63,7 +64,12 @@ interface RepositoryService {
     /**
      * 查询项目[projectId]下的所有仓库
      */
-    fun listRepo(projectId: String, name: String? = null, type: String? = null): List<RepositoryInfo>
+    fun listRepo(
+        projectId: String,
+        name: String? = null,
+        type: String? = null,
+        display: Boolean? = null,
+    ): List<RepositoryInfo>
 
     /**
      * 分页查询仓库列表
@@ -158,4 +164,6 @@ interface RepositoryService {
 
 
     fun allRepos(projectId: String?, repoName: String?, repoType: RepositoryType?): List<RepositoryInfo?>
+
+    fun statRepo(projectId: String, repoName: String): NodeSizeInfo
 }

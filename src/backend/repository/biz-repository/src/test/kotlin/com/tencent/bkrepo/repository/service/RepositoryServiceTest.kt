@@ -73,6 +73,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import java.time.Duration
 
 @DisplayName("仓库服务测试")
 @DataMongoTest
@@ -93,7 +94,7 @@ class RepositoryServiceTest @Autowired constructor(
         path = "test"
         cache.enabled = true
         cache.path = "cache-test"
-        cache.expireDays = 10
+        cache.expireDuration = Duration.ofHours(10)
     }
 
     @BeforeAll

@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.replicator.base.remote
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.OCI_BLOBS_UPLOAD_FIRST_STEP_URL
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -48,16 +49,15 @@ class RemoteClusterArtifactReplicationHandler(
 ) : ArtifactReplicationHandler(localDataManager, replicationProperties) {
 
 
-    override fun getBlobSha256AndSize(
+    override fun getBlobFileInfo(
         filePushContext: FilePushContext
-    ): Pair<String, Long> {
+    ): FileInfo {
         val realSha256 = filePushContext.digest!!.split(":").last()
-        val realSize = localDataManager.getNodeBySha256(
+        return localDataManager.getNodeBySha256(
             filePushContext.context.localProjectId,
             filePushContext.context.localRepoName,
             realSha256
         )
-        return Pair(realSha256, realSize)
     }
 
     override fun handleChunkUploadException(e: Exception): DefaultHandlerResult {
@@ -91,7 +91,7 @@ class RemoteClusterArtifactReplicationHandler(
     }
 
     override fun buildSessionCloseRequestParam(
-        sha256: String,
+        fileInfo: FileInfo,
         filePushContext: FilePushContext
     ) : String {
         return "digest=${filePushContext.digest!!}"

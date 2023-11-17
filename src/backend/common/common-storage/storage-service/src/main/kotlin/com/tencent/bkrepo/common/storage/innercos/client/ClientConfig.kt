@@ -52,6 +52,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     val maxUploadParts: Int = MAX_PARTS
 
     /**
+     * 分片上传最小数量
+     */
+    val minimumUploadPartSize: Long = DataSize.ofMegabytes(MIN_PART_SIZE).toBytes()
+
+    /**
      * 签名过期时间
      */
     var signExpired: Duration = Duration.ofDays(1)
@@ -67,9 +72,14 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     val multipartThreshold: Long = DataSize.ofMegabytes(MULTIPART_THRESHOLD_SIZE).toBytes()
 
     /**
-     * 分片最小数量
+     * 分片下载最大分片数量
      */
-    val minimumPartSize: Long = DataSize.ofMegabytes(MIN_PART_SIZE).toBytes()
+    val maxDownloadParts: Int = credentials.download.maxDownloadParts
+
+    /**
+     * 分片下载最小数量
+     */
+    val minimumDownloadPartSize: Long = DataSize.ofMegabytes(credentials.download.minimumPartSize).toBytes()
 
     /**
      * cos访问域名构造器
@@ -115,6 +125,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     var downloadTaskInterval: Long = credentials.download.taskInterval
 
     var timeout: Long = credentials.download.timeout
+
+    /**
+     * 下载分块的qps限速
+     * */
+    var qps: Int = credentials.download.qps
 
     private fun createEndpointResolver(): EndpointResolver {
         return if (credentials.modId != null && credentials.cmdId != null) {

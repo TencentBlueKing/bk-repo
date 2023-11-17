@@ -156,10 +156,11 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String
     ): NodeDeleteResult {
         val option = NodeListOption(includeFolder = false, deep = true)
-        val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, PathUtils.ROOT, option)
+        val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
             .and(TNode::createdDate).lt(date)
         val query = Query(criteria)
         return delete(query, operator, criteria, projectId, repoName)

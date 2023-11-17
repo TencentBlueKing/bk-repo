@@ -73,13 +73,11 @@ open class NodeMoveCopySupport(
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         moveCopy(moveRequest, true)
-        publishEvent(NodeEventFactory.buildMovedEvent(moveRequest))
         logger.info("Move node success: [$moveRequest]")
     }
 
     override fun copyNode(copyRequest: NodeMoveCopyRequest) {
         moveCopy(copyRequest, false)
-        publishEvent(NodeEventFactory.buildCopiedEvent(copyRequest))
         logger.info("Copy node success: [$copyRequest]")
     }
 
@@ -97,10 +95,12 @@ open class NodeMoveCopySupport(
             } else {
                 moveCopyFile(this)
             }
-            // 更新源节点父目录的最后修改信息
             if (move) {
                 val srcParentFullPath = PathUtils.toFullPath(resolveParent(srcNode.fullPath))
                 nodeBaseService.updateModifiedInfo(srcRepo.projectId, srcRepo.name, srcParentFullPath, operator)
+                publishEvent(NodeEventFactory.buildMovedEvent(request))
+            } else {
+                publishEvent(NodeEventFactory.buildCopiedEvent(request))
             }
         }
     }
@@ -189,6 +189,8 @@ open class NodeMoveCopySupport(
                 path = dstPath,
                 name = dstName,
                 fullPath = dstFullPath,
+                size = if (node.folder) 0 else node.size,
+                nodeNum = if (node.folder) null else node.nodeNum,
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )

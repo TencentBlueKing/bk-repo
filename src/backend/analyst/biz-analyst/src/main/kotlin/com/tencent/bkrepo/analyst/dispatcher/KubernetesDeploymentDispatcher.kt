@@ -178,10 +178,16 @@ class KubernetesDeploymentDispatcher(
         val token = tokenService.createExecutionClusterToken(executionCluster.name)
         val cmd = buildCommand(scanner.cmd, token)
         val body = v1Deployment {
+            apiVersion = "apps/v1"
+            kind = "Deployment"
             metadata {
                 namespace = k8sProps.namespace
                 name = deploymentName
                 labels = mapOf("app" to deploymentName)
+                annotations = mapOf(
+                    // 用于支持BCS跨集群调度
+                    "federation.bkbcs.tencent.com/scheduling-strategy" to "dividing"
+                )
             }
             spec {
                 replicas = targetReplicas

@@ -36,12 +36,20 @@ class ReferenceArtifactInfo(
     repoName: String,
     val bucket: String,
     val refKey: RefKey,
+    /**
+     * 是通过旧接口调用
+     */
+    var legacy: Boolean = false,
     var inlineBlobHash: String? = null,
 ) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
 
     override fun getArtifactName() = "/$bucket/$refKey"
 
-    override fun getArtifactFullPath() = "/$bucket/$refKey"
+    override fun getArtifactFullPath(): String {
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            "/$bucket/$refKey"
+        } else getArtifactMappingUri()!!
+    }
 
     companion object {
         const val PATH_VARIABLE_BUCKET = "bucket"

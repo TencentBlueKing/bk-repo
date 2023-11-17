@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL_STRING
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.service.BlobChunkedService
@@ -107,18 +108,31 @@ class BlobChunkedServiceImpl(
 
     override fun finishChunkedUpload(
         projectId: String, repoName: String,
-        credentials: StorageCredentials, sha256: String, artifactFile: ArtifactFile, uuid: String
+        credentials: StorageCredentials, sha256: String,
+        artifactFile: ArtifactFile, uuid: String,
+        size: Long?, md5: String?
     ) {
         storageService.append(
             appendId = uuid,
             artifactFile = artifactFile,
             storageCredentials = credentials
         )
-        val fileInfo = storageService.finishAppend(uuid, credentials)
+        // 当传递了 md5和size 以后，分块文件合并时不计算 sha256 与 md5,只校验 size 是否一致
+        val originalFileInfo = if (size != null && md5 != null) {
+            FileInfo(sha256, md5, size)
+        } else {
+            null
+        }
+        val fileInfo = storageService.finishAppend(uuid, credentials, originalFileInfo)
         logger.info(
             "The file with sha256 $sha256 in repo $projectId|$repoName has been uploaded with uuid: $uuid," +
                         " received sha256 of file is ${fileInfo.sha256}")
-        if (fileInfo.sha256 != sha256) {
+        // 没传递 size， 校验合并的文件生成的 sha256 与传递的 sha256 是否一致
+        if (size == null && fileInfo.sha256 != sha256) {
+            throw BadRequestException(ReplicationMessageCode.REPLICA_ARTIFACT_BROKEN, sha256)
+        }
+        // 传递 size， 校验合并的文件size 与传递的 size 是否一致
+        if (size != null && fileInfo.size != size) {
             throw BadRequestException(ReplicationMessageCode.REPLICA_ARTIFACT_BROKEN, sha256)
         }
         uploadResponse(

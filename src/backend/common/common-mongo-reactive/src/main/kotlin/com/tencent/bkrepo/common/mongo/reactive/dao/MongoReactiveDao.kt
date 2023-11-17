@@ -66,4 +66,9 @@ interface MongoReactiveDao<E> {
      * update or insert
      */
     suspend fun upsert(query: Query, update: Update): UpdateResult
+
+    /**
+     * count
+     */
+    suspend fun count(query: Query): Long
 }

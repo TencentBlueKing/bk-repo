@@ -32,3 +32,5 @@ const val BASIC_TRANSFER = "basic"
 const val UPLOAD_OPERATION = "upload"
 const val DOWNLOAD_OPERATION = "download"
 const val VERIFY_OPERATION = "verify"
+
+const val HEADER_BATCH_AUTHORIZATION = "batch-authorization"

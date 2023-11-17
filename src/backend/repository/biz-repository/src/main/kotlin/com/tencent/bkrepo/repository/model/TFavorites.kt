@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.model
 
+import com.tencent.bkrepo.repository.pojo.favorite.FavoriteType
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -40,16 +41,17 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(
         name = "favorites_idx",
-        def = "{'userId': 1, 'repoName': 1, 'projectId': 1, 'path': 1}",
+        def = "{'userId': 1, 'projectId': 1,'repoName': 1, 'path': 1, 'type':1}",
         background = true,
         unique = true
     )
 )
 data class TFavorites(
-    var id: String? = null,
-    var userId: String,
+    var id: String?,
+    var userId: String?,
     var projectId: String,
     var repoName: String,
     var path: String,
-    var createdDate: LocalDateTime
+    var createdDate: LocalDateTime,
+    var type: FavoriteType
 )

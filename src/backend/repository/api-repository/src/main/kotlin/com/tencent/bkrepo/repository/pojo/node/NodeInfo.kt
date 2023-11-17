@@ -41,6 +41,7 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("节点信息")
 data class NodeInfo(
+    var id: String? = null,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")
@@ -84,5 +85,7 @@ data class NodeInfo(
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val deleted: String? = null,
     @ApiModelProperty("集群信息")
-    val clusterNames: Set<String>? = null
+    val clusterNames: Set<String>? = null,
+    @ApiModelProperty("是否归档")
+    val archived: Boolean? = null,
 )

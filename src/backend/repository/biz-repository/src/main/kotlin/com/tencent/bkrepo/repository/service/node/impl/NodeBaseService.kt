@@ -238,10 +238,6 @@ abstract class NodeBaseService(
         deletedTime: LocalDateTime?
     ) {
         with(node) {
-            if (isGenericRepo(repo)) {
-                publishEvent(buildCreatedEvent(node))
-            }
-            reportNode2Bkbase(node)
             val createEnd = System.currentTimeMillis()
             val timeout = createEnd - createStart > repositoryProperties.nodeCreateTimeout
             if (timeout) {
@@ -249,6 +245,10 @@ abstract class NodeBaseService(
                 rollbackCreate(parents, node, deletedTime)
                 throw ErrorCodeException(ArtifactMessageCode.NODE_CREATE_TIMEOUT, fullPath)
             }
+            if (isGenericRepo(repo)) {
+                publishEvent(buildCreatedEvent(node))
+            }
+            reportNode2Bkbase(node)
         }
     }
 
@@ -498,6 +498,7 @@ abstract class NodeBaseService(
             return tNode?.let {
                 val metadata = MetadataUtils.toMap(it.metadata)
                 NodeInfo(
+                    id = it.id,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
@@ -520,7 +521,8 @@ abstract class NodeBaseService(
                     copyIntoCredentialsKey = it.copyIntoCredentialsKey,
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
-                    clusterNames = it.clusterNames
+                    clusterNames = it.clusterNames,
+                    archived = it.archived
                 )
             }
         }

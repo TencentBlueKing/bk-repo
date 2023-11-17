@@ -52,6 +52,12 @@ class ReferenceArtifactService(
         repository.upload(ArtifactUploadContext(file))
     }
 
+    fun deleteRef(artifactInfo: ReferenceArtifactInfo) {
+        with(artifactInfo) {
+            referenceService.deleteReference(projectId, repoName, bucket, refKey.toString(), legacy)
+        }
+    }
+
     fun finalize(artifactInfo: ReferenceArtifactInfo) {
         with(artifactInfo) {
             val ref = referenceService.getReference(

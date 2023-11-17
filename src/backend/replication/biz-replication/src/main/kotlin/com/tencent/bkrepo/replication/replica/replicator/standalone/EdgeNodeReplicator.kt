@@ -119,7 +119,8 @@ class EdgeNodeReplicator(
                                 context = context,
                                 name = node.fullPath,
                                 size = node.size,
-                                sha256 = node.sha256
+                                sha256 = node.sha256,
+                                md5 = node.md5
                             ),
                             pushType = type,
                             downGrade = downGrade

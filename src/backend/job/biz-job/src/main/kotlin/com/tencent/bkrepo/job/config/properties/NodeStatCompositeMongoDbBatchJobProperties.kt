@@ -17,5 +17,10 @@ class NodeStatCompositeMongoDbBatchJobProperties (
      * false: 一次性将所有表执行完
      * true: 分7天去执行所有表，每天执行 node_num%7 +1 == 当天的node表
      */
-    var multipleExecutions: Boolean = false
+    var multipleExecutions: Boolean = false,
+    /**
+     * 可用于将部分表的统计数据使用redis缓存存储临时存储
+     * 避免使用内存进行缓存时导致使用内存过大
+     */
+    var redisCacheCollections: List<String> = emptyList()
 ): CompositeJobProperties()

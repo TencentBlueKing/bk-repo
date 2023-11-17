@@ -52,7 +52,7 @@
                             {{$t('batchDownload')}}
                         </bk-button>
                         <bk-button
-                            v-if="multiSelect.length && repoName !== 'pipeline'"
+                            v-if="multiSelect.length && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline')"
                             class="ml10"
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
@@ -105,7 +105,7 @@
                     </bk-table-column>
                     <bk-table-column :label="$t('size')" prop="size" width="90" sortable="custom" show-overflow-tooltip>
                         <template #default="{ row }">
-                            {{ convertFileSize(row.size) }}
+                            {{ convertFileSize(row.size > 0 ? row.size : 0 ) }}
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('fileNum')" prop="nodeNum" sortable="custom" show-overflow-tooltip>
@@ -182,7 +182,8 @@
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
-        <loading ref="loading"></loading>
+        <loading ref="loading" @closeLoading="closeLoading"></loading>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
@@ -197,6 +198,7 @@
     import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
     import previewBasicFileDialog from './previewBasicFileDialog'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate, debounce } from '@repository/utils'
     import { customizeDownloadFile } from '@repository/utils/downloadFile'
@@ -219,7 +221,8 @@
             genericShareDialog,
             genericTreeDialog,
             previewBasicFileDialog,
-            compressedFileTable
+            compressedFileTable,
+            iamDenyDialog
         },
         data () {
             return {
@@ -249,11 +252,14 @@
                 debounceClickTreeNode: null,
                 inFolderSearchName: this.$route.query.fileName,
                 searchFullPath: '',
-                sortParams: []
+                showIamDenyDialog: false,
+                showData: {},
+                sortParams: [],
+                timer: null
             }
         },
         computed: {
-            ...mapState(['repoListAll', 'userList', 'permission', 'genericTree', 'scannerSupportFileNameExt']),
+            ...mapState(['repoListAll', 'userList', 'permission', 'genericTree', 'scannerSupportFileNameExt', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -345,7 +351,8 @@
                 'previewCompressedFileList',
                 'forbidMetadata',
                 'refreshSupportFileNameExtList',
-                'getMultiFolderNumOfFolder'
+                'getMultiFolderNumOfFolder',
+                'getPermissionUrl'
             ]),
             showRepoScan (node) {
                 const indexOfLastDot = node.name.lastIndexOf('.')
@@ -490,6 +497,54 @@
                             name: v.metadata?.displayName || v.name
                         }
                     })
+                    if (this.repoName === 'pipeline' && !this.inFolderSearchName) {
+                        const originData = this.artifactoryList
+                        const direction = this.sortParams.some(param => {
+                            return param.direction === 'ASC'
+                        })
+                        if (!direction) {
+                            const hasFolder = sortTypes.properties.some(param => {
+                                return param === 'folder'
+                            })
+                            if (hasFolder) {
+                                const hasName = sortTypes.properties.some(param => {
+                                    return param === 'name'
+                                })
+                                originData.sort(function (a) {
+                                    return a.folder
+                                }).sort(function (a, b) {
+                                    if (hasName) {
+                                        return b.name - a.name
+                                    } else {
+                                        return a.lastModifiedDate - b.lastModifiedDate
+                                    }
+                                })
+                            } else {
+                                const hasSize = sortTypes.properties.some(param => {
+                                    return param === 'size'
+                                })
+                                originData.sort(function (a, b) {
+                                    if (hasSize) {
+                                        return b.size - a.size
+                                    } else {
+                                        return b.nodeNum - a.nodeNum
+                                    }
+                                })
+                            }
+                        } else {
+                            const hasSize = sortTypes.properties.some(param => {
+                                return param === 'size'
+                            })
+                            originData.sort(function (a, b) {
+                                if (hasSize) {
+                                    return a.size - b.size
+                                } else {
+                                    return a.nodeNum - b.nodeNum
+                                }
+                            })
+                        }
+                        this.artifactoryList = originData
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -552,6 +607,28 @@
                     fullPath: item.fullPath,
                     roadMap: item.roadMap,
                     isPipeline: this.repoName === 'pipeline'
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.$set(item, 'loading', false)
                 })
@@ -678,6 +755,44 @@
                                     message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
                                 })
                             }
+                            this.$bkMessage({
+                                theme: 'success',
+                                message: this.$t('delete') + this.$t('success')
+                            })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'NODE',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName,
+                                        path: fullPath
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            path: fullPath,
+                                            url: res
+                                        }
+                                    } else {
+                                        this.$bkMessage({
+                                            theme: 'error',
+                                            message: e.message
+                                        })
+                                    }
+                                })
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
                         })
                     }
                 })
@@ -708,8 +823,8 @@
                     fullPath
                 })
             },
-            handlerDownload ({ fullPath }) {
-                const transPath = encodeURIComponent(fullPath)
+            handlerDownload (row) {
+                const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
@@ -717,12 +832,83 @@
                         '_self'
                     )
                 }).catch(e => {
-                    const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
-                    this.$bkMessage({
-                        theme: 'error',
-                        message
-                    })
+                    if (e.status === 451) {
+                        this.$refs.loading.isShow = true
+                        this.$refs.loading.complete = false
+                        this.$refs.loading.title = ''
+                        this.$refs.loading.backUp = true
+                        this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                        this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                        this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
+                        this.timerDownload(url, row.fullPath, row.name)
+                    } else if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: row.fullPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    path: row.fullPath,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            } else {
+                                const message = this.$t('fileDownloadError', [this.$route.params.projectId])
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message
+                                })
+                            }
+                        })
+                    } else {
+                        const message = this.$t('fileError')
+                        this.$bkMessage({
+                            theme: 'error',
+                            message
+                        })
+                    }
                 })
+            },
+            timerDownload (url, fullPath, name) {
+                this.timer = setInterval(() => {
+                    this.$ajax.head(url).then(() => {
+                        clearInterval(this.timer)
+                        this.timer = null
+                        this.$refs.loading.isShow = false
+                        window.open(
+                            '/web' + url,
+                            '_self'
+                        )
+                    }).catch(e => {
+                        if (e.status === 451) {
+                            this.$refs.loading.isShow = true
+                            this.$refs.loading.complete = false
+                            this.$refs.loading.title = ''
+                            this.$refs.loading.backUp = true
+                            this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                            this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                            this.$refs.loading.message = this.$t('backUpMessage', { 0: name })
+                        } else {
+                            clearInterval(this.timer)
+                            this.timer = null
+                            this.$refs.loading.isShow = false
+                            const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
+                            this.$bkMessage({
+                                theme: 'error',
+                                message
+                            })
+                        }
+                    })
+                }, 5000)
             },
             handlerMultiDownload () {
                 const fullPaths = this.multiSelect.map(r => r.fullPath)
@@ -742,14 +928,51 @@
                         message: (forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse')) + this.$t('space') + this.$t('success')
                     })
                     this.getArtifactories()
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'UPDATE',
+                                resourceType: 'NODE',
+                                path: fullPath,
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'UPDATE',
+                                    path: fullPath,
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
             },
             calculateFolderSize (row) {
                 this.$set(row, 'sizeLoading', true)
                 this.$refs.loading.isShow = true
                 this.$refs.loading.complete = false
+                this.$refs.loading.backUp = false
                 this.$refs.loading.title = this.$t('calculateTitle')
                 this.$refs.loading.message = this.$t('calculateMsg', { 0: row.fullPath })
+                this.$refs.loading.subMessage = ''
+                this.$refs.loading.cancelMessage = this.$t('cancel')
                 this.getFolderSize({
                     projectId: this.projectId,
                     repoName: this.repoName,
@@ -778,6 +1001,38 @@
                     repoName: this.repoName,
                     paths: paths,
                     isFolder: true
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'DELETE',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'DELETE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
                 this.$confirm({
                     theme: 'danger',
@@ -816,6 +1071,40 @@
                     projectId: row.projectId,
                     repoName: row.repoName,
                     path: row.fullPath
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: row.fullPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    path: row.fullPath,
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
                 this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
             },
@@ -838,6 +1127,40 @@
                     projectId: row.projectId,
                     repoName: row.repoName,
                     path: row.fullPath
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: row.fullPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    path: row.fullPath,
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 })
 
                 this.compressedData = res.reduce((acc, item) => {
@@ -906,6 +1229,10 @@
                     this.sortParams.push(sortParam)
                 }
                 this.getArtifactories()
+            },
+            closeLoading () {
+                clearInterval(this.timer)
+                this.timer = null
             }
         }
     }

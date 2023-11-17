@@ -1,0 +1,53 @@
+# 初始化iam
+{{ if .Values.init.iam.enabled }}
+{{- if .Values.auth.config.iam.apigwBaseUrl -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.names.fullname" . }}-init-iam-rbac
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: init-iam-rbac
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: init-iam-rbac
+    spec:
+      containers:
+        - name: init-iam-rbac
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.iam.image "global" .Values.global "bkrepo" .Values.common) }}
+          imagePullPolicy: {{ .Values.init.iam.image.pullPolicy }}
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+            requests:
+              cpu: "0.5"
+              memory: "500Mi"
+          workingDir: /data/workspace/support-files/bkiam
+          command:
+            - "/bin/bash"
+            - "-c"
+            - |
+              echo "run do_migrate command";
+              # 修改auth链接
+              sed -i 's/bkrepo.example.com/{{- .Values.gateway.host -}}\/auth/g' *.json
+              # 导入模型
+              for i in $(find . -name '*.json'|sort)
+              do
+               python3 do_migrate.py -t {{ .Values.auth.config.iam.apigwBaseUrl }} -a "{{ .Values.auth.config.iam.appCode }}" -s "{{ .Values.auth.config.iam.appSecret }}" -f  $i --apigateway
+              done
+              echo "do_migrate finished";
+      restartPolicy: OnFailure
+{{- end -}}
+{{- end -}}

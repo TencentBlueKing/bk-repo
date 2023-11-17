@@ -42,24 +42,16 @@ import java.time.LocalDateTime
         background = true
     )
 )
-data class TDdcRef(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-    var lastAccessDate: LocalDateTime,
-
-    var projectId: String,
-    var repoName: String,
-    /**
-     * ref bucket
-     */
-    var bucket: String,
-    /**
-     * ref key, blake3 hash
-     */
-    var key: String,
+class TDdcRef(
+    createdBy: String,
+    createdDate: LocalDateTime,
+    lastModifiedBy: String,
+    lastModifiedDate: LocalDateTime,
+    lastAccessDate: LocalDateTime,
+    projectId: String,
+    repoName: String,
+    bucket: String,
+    key: String,
     /**
      * 是否所有blob都上传完成
      */
@@ -76,4 +68,14 @@ data class TDdcRef(
      * 过期时间
      */
     var expireDate: LocalDateTime? = null,
+) : TDdcRefBase(
+    createdBy = createdBy,
+    createdDate = createdDate,
+    lastModifiedBy = lastModifiedBy,
+    lastModifiedDate = lastModifiedDate,
+    lastAccessDate = lastAccessDate,
+    projectId = projectId,
+    repoName = repoName,
+    bucket = bucket,
+    key = key
 )

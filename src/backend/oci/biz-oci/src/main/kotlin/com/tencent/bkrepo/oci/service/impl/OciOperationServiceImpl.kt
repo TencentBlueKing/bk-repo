@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
@@ -797,12 +798,13 @@ class OciOperationServiceImpl(
             .projectId(projectId)
             .repoName(repoName)
             .sha256(ociDigest.getDigestHex())
+            .page(DEFAULT_PAGE_NUMBER, 1)
             .sortByAsc(NODE_FULL_PATH).apply {
                 path?.let {
                     this.path(path, OperationType.PREFIX)
                 }
             }
-        val result = nodeClient.search(queryModel.build()).data
+        val result = nodeClient.queryWithoutCount(queryModel.build()).data
         if (result == null || result.records.isEmpty()) {
             logger.warn(
                 "Could not find $digestStr " +

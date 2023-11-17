@@ -34,11 +34,14 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.config.DdcProperties
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
+import com.tencent.bkrepo.ddc.model.TDdcLegacyRef
 import com.tencent.bkrepo.ddc.model.TDdcRef
 import com.tencent.bkrepo.ddc.pojo.ContentHash
 import com.tencent.bkrepo.ddc.pojo.CreateRefResponse
 import com.tencent.bkrepo.ddc.pojo.RefId
 import com.tencent.bkrepo.ddc.pojo.Reference
+import com.tencent.bkrepo.ddc.repository.LegacyRefRepository
+import com.tencent.bkrepo.ddc.repository.RefBaseRepository
 import com.tencent.bkrepo.ddc.repository.RefRepository
 import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.utils.hasAttachments
@@ -55,6 +58,7 @@ class ReferenceService(
     private val blobService: BlobService,
     private val refResolver: ReferenceResolver,
     private val refRepository: RefRepository,
+    private val legacyRefRepository: LegacyRefRepository,
     private val nodeClient: NodeClient,
     private val storageManager: StorageManager,
 ) {
@@ -68,7 +72,6 @@ class ReferenceService(
         val userId = SecurityUtils.getUserId()
         val now = LocalDateTime.now()
         val tRef = TDdcRef(
-            id = null,
             createdBy = userId,
             createdDate = now,
             lastModifiedBy = userId,
@@ -83,8 +86,36 @@ class ReferenceService(
             inlineBlob = inlineBlob?.let { Binary(it) },
             expireDate = null // TODO 设置expireDate
         )
-        refRepository.replace(tRef)
+        refRepository.createIfNotExists(tRef)
         return Reference.from(tRef)
+    }
+
+    fun createLegacyReference(ref: Reference): Reference {
+        val userId = SecurityUtils.getUserId()
+        val now = LocalDateTime.now()
+        val tRef = TDdcLegacyRef(
+            createdBy = userId,
+            createdDate = now,
+            lastModifiedBy = userId,
+            lastModifiedDate = now,
+            lastAccessDate = now,
+            projectId = ref.projectId,
+            repoName = ref.repoName,
+            bucket = ref.bucket,
+            key = ref.key.toString(),
+            contentHash = ref.blobId!!.toString(),
+        )
+        legacyRefRepository.createIfNotExists(tRef)
+        return Reference.from(tRef)
+    }
+
+    fun getLegacyReference(
+        projectId: String,
+        repoName: String,
+        bucket: String,
+        key: String,
+    ): Reference? {
+        return legacyRefRepository.find(projectId, repoName, bucket, key)?.let { Reference.from(it) }
     }
 
     fun getReference(
@@ -118,6 +149,22 @@ class ReferenceService(
         }
     }
 
+    fun deleteReference(
+        projectId: String,
+        repoName: String,
+        bucket: String,
+        key: String,
+        legacy: Boolean = false
+    ) {
+        if (getRepository(legacy).delete(projectId, repoName, bucket, key).deletedCount == 0L) {
+            throw BadRequestException(
+                CommonMessageCode.PARAMETER_INVALID,
+                "Deleted 0 records, most likely the object did not exist"
+            )
+        }
+        blobService.removeRefFromBlobs(projectId, repoName, bucket, key)
+    }
+
     fun finalize(ref: Reference, payload: ByteArray): CreateRefResponse {
         val cbObject = CbObject(ByteBuffer.wrap(payload))
         var missingBlobs = emptyList<ContentHash>()
@@ -138,7 +185,13 @@ class ReferenceService(
     }
 
     fun updateLastAccess(refId: RefId, lastAccessDate: LocalDateTime) {
-        refRepository.updateLastAccess(refId, lastAccessDate)
+        getRepository(refId.legacy).updateLastAccess(refId, lastAccessDate)
+    }
+
+    private fun getRepository(legacy: Boolean): RefBaseRepository<*> = if (legacy) {
+        legacyRefRepository
+    } else {
+        refRepository
     }
 
     companion object {

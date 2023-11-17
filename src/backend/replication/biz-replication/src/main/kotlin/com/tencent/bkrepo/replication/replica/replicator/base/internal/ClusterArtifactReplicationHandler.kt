@@ -30,12 +30,14 @@ package com.tencent.bkrepo.replication.replica.replicator.base.internal
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
 import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL_STRING
 import com.tencent.bkrepo.replication.constant.FILE
+import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.replication.constant.STORAGE_KEY
@@ -45,19 +47,19 @@ import com.tencent.bkrepo.replication.fdtp.FdtpAFTClientFactory
 import com.tencent.bkrepo.replication.fdtp.FdtpServerProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
+import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.replicator.base.ArtifactReplicationHandler
-import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import io.netty.channel.ChannelProgressiveFuture
 import io.netty.channel.ChannelProgressiveFutureListener
-import java.net.ConnectException
 import okhttp3.MultipartBody
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.context.config.annotation.RefreshScope
 import org.springframework.stereotype.Component
+import java.net.ConnectException
 import java.util.concurrent.TimeUnit
 
 @RefreshScope
@@ -85,7 +87,11 @@ class ClusterArtifactReplicationHandler(
         downGrade: Boolean
     ) : Boolean {
         val newType = filterRepoWithPushType(
-            pushType, filePushContext.context.localProjectId, filePushContext.context.localRepoName, downGrade
+            pushType = pushType,
+            projectId = filePushContext.context.localProjectId,
+            repoName = filePushContext.context.localRepoName,
+            downGrade = downGrade,
+            size = filePushContext.size
         )
         return when (newType) {
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value -> {
@@ -102,24 +108,30 @@ class ClusterArtifactReplicationHandler(
     }
 
     private fun filterRepoWithPushType(
-        pushType: String, projectId: String, repoName: String, downGrade: Boolean
+        pushType: String, projectId: String,
+        repoName: String, downGrade: Boolean,
+        size: Long?
     ): String {
-        if (downGrade) return pushType
+        if (downGrade && !filterFileSize(size)) {
+            return pushType
+        }
         return if (filterProjectRepo(projectId, repoName, chunkedRepos)) {
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value
         } else if (filterProjectRepo(projectId, repoName, fdtpRepos)) {
-            return WayOfPushArtifact.PUSH_WITH_FDTP.value
+            WayOfPushArtifact.PUSH_WITH_FDTP.value
         } else if (filterProjectRepo(projectId, repoName, httpRepos)) {
-            return WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+            WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+        } else if (filterFileSize(size)){
+            WayOfPushArtifact.PUSH_WITH_CHUNKED.value
         } else {
-            return pushType
+            pushType
         }
     }
 
-    override fun getBlobSha256AndSize(
+    override fun getBlobFileInfo(
         filePushContext: FilePushContext
-    ): Pair<String, Long> {
-        return Pair(filePushContext.sha256!!, filePushContext.size!!)
+    ): FileInfo {
+        return FileInfo(filePushContext.sha256!!, filePushContext.md5!!, filePushContext.size!!)
     }
 
     override fun buildSessionRequestInfo(filePushContext: FilePushContext) : Pair<String, String?> {
@@ -138,10 +150,15 @@ class ClusterArtifactReplicationHandler(
     }
 
     override fun buildSessionCloseRequestParam(
-        sha256: String,
+        fileInfo: FileInfo,
         filePushContext: FilePushContext
     ) : String {
-        return buildParams(sha256, filePushContext)
+        return buildParams(
+            sha256 = fileInfo.sha256,
+            filePushContext = filePushContext,
+            md5 = fileInfo.md5,
+            size = fileInfo.size
+        )
     }
 
 
@@ -251,17 +268,25 @@ class ClusterArtifactReplicationHandler(
 
     private fun buildParams(
         sha256: String,
-        filePushContext: FilePushContext
+        filePushContext: FilePushContext,
+        md5: String? = null,
+        size: Long? = null
     ): String {
-        val params = "$SHA256=$sha256"
+        val builder = StringBuilder("$SHA256=$sha256")
         filePushContext.context.remoteRepo?.storageCredentials?.key?.let {
-            "$params&$STORAGE_KEY=$it"
+            builder.append("&$STORAGE_KEY=$it")
         }
-        return params
+        md5?.let {
+            builder.append("&$MD5=$it")
+        }
+        size?.let {
+            builder.append("&$SIZE=$it")
+        }
+        return builder.toString()
     }
 
     /**
-     * 只针对配置的仓库进行删除
+     * 针对仓库特殊配置进行过滤
      */
     private fun filterProjectRepo(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {
         if (contains(StringPool.POUND, StringPool.POUND, includeRepositories)) {
@@ -277,6 +302,13 @@ class ClusterArtifactReplicationHandler(
             return true
         }
         return false
+    }
+
+    /**
+     * 针对client_max_body_size有最大值限制，文件分发时，超过该值的请求使用分块分发
+     */
+    private fun filterFileSize(size: Long?): Boolean {
+        return size != null && replicationProperties.clientMaxBodySize <= size
     }
 
     private fun contains(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {

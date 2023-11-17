@@ -147,7 +147,9 @@ interface NodeClient {
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
         @ApiParam(value = "节点完整路径", required = true)
-        @RequestParam fullPath: String
+        @RequestParam fullPath: String,
+        @ApiParam(value = "估计值", required = false)
+        @RequestParam estimated: Boolean = false
     ): Response<NodeSizeInfo>
 
     @ApiOperation("查询文件节点数量")
@@ -161,11 +163,11 @@ interface NodeClient {
         @RequestParam path: String
     ): Response<Long>
 
-    @ApiOperation("自定义查询节点")
+    @ApiOperation("自定义查询节点，如不关注总记录数请使用queryWithoutCount")
     @PostMapping("/search")
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 
-    @ApiOperation("自定义查询节点")
+    @ApiOperation("自定义查询节点，不计算总记录数")
     @PostMapping("/queryWithoutCount")
     fun queryWithoutCount(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 

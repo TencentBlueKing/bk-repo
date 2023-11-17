@@ -41,7 +41,6 @@ import javax.net.ssl.X509TrustManager
  * SSL证书管理器
  */
 object CertTrustManager {
-
     private const val TLS = "TLS"
     private const val X509 = "X.509"
 
@@ -57,8 +56,15 @@ object CertTrustManager {
     val trustAllHostname = HostnameVerifier { _, _ -> true }
     val disableValidationSSLSocketFactory = createSSLSocketFactory(disableValidationTrustManager)
 
-    fun createSSLSocketFactory(certString: String): SSLSocketFactory {
-        val trustManager = createTrustManager(certString)
+    /**
+     * 生成 SSLSocketFactory。
+     * 当使用传递的证书去生成TrustManager时存在问题：证书过期、无效或者服务端已经替换的场景下会导致连接不可用，需要手动更新配置的证书。
+     * @param useCertString 是否使用传递进的证书。
+     *        true: 使用传递的证书；
+     *        false: 不使用传递的证书。
+     */
+    fun createSSLSocketFactory(certString: String, useCertString: Boolean = false): SSLSocketFactory {
+        val trustManager = createTrustManager(certString, useCertString)
         return createSSLSocketFactory(trustManager)
     }
 
@@ -67,21 +73,32 @@ object CertTrustManager {
         return sslContext.socketFactory
     }
 
-    fun createTrustManager(certString: String): X509TrustManager {
-        val certInputStream = certString.byteInputStream(Charsets.UTF_8)
-        val certificateFactory = CertificateFactory.getInstance(X509)
-        val certificateList = certificateFactory.generateCertificates(certInputStream)
-        require(!certificateList.isEmpty()) { "Expected non-empty set of trusted certificates." }
-        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply { load(null, null) }
-        certificateList.forEachIndexed { index, certificate ->
-            keyStore.setCertificateEntry(index.toString(), certificate)
+    /**
+     * 生成 X509TrustManager。
+     * 当使用传递的证书去生成TrustManager时存在问题：证书过期、无效或者服务端已经替换的场景下会导致连接不可用，需要手动更新配置的证书。
+     * @param useCertString 是否使用传递进的证书。
+     *        true: 使用传递的证书；
+     *        false: 不使用传递的证书。
+     */
+    fun createTrustManager(certString: String, useCertString: Boolean = false): X509TrustManager {
+        return if (useCertString) {
+            val certInputStream = certString.byteInputStream(Charsets.UTF_8)
+            val certificateFactory = CertificateFactory.getInstance(X509)
+            val certificateList = certificateFactory.generateCertificates(certInputStream)
+            require(!certificateList.isEmpty()) { "Expected non-empty set of trusted certificates." }
+            val keyStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply { load(null, null) }
+            certificateList.forEachIndexed { index, certificate ->
+                keyStore.setCertificateEntry(index.toString(), certificate)
+            }
+            val algorithm = TrustManagerFactory.getDefaultAlgorithm()
+            val trustManagerFactory = TrustManagerFactory.getInstance(algorithm).apply { init(keyStore) }
+            val trustManagers = trustManagerFactory.trustManagers
+            check(trustManagers.size == 1) { "Unexpected default trust managers size: ${trustManagers.size}" }
+            val firstTrustManager = trustManagers.first()
+            check(firstTrustManager is X509TrustManager) { "Unexpected default trust managers:$firstTrustManager" }
+            firstTrustManager
+        } else {
+            disableValidationTrustManager
         }
-        val algorithm = TrustManagerFactory.getDefaultAlgorithm()
-        val trustManagerFactory = TrustManagerFactory.getInstance(algorithm).apply { init(keyStore) }
-        val trustManagers = trustManagerFactory.trustManagers
-        check(trustManagers.size == 1) { "Unexpected default trust managers size: ${trustManagers.size}" }
-        val firstTrustManager = trustManagers.first()
-        check(firstTrustManager is X509TrustManager) { "Unexpected default trust managers:$firstTrustManager" }
-        return firstTrustManager
     }
 }

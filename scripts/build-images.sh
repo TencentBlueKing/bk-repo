@@ -12,6 +12,7 @@ ALL=1
 GATEWAY=0
 BACKEND=0
 INIT=0
+INIT_RBAC=0
 VERSION=latest
 PUSH=0
 ALL_IN_ONE=0
@@ -20,6 +21,7 @@ NAMESPACE=bkrepo
 USERNAME=
 PASSWORD=
 SLIM_PACKAGE_PATH=
+LATEST=0
 BACKENDS=(repository auth generic oci helm npm pypi replication opdata)
 
 cd $(dirname $0)
@@ -40,8 +42,10 @@ usage () {
             [ --all-in-one          [可选] 打包all in one镜像]
             [ --slim-package-path   [可选] slim包路径，打包all in one镜像需要]
             [ --init                [可选] 打包init镜像 ]
+            [ --init-rbac           [可选] 打包init-rbac镜像 ]
             [ -v, --version         [可选] 镜像版本tag, 默认latest ]
             [ -p, --push            [可选] 推送镜像到docker远程仓库，默认不推送 ]
+            [ -l, --latest          [可选] 是否更新并推送latest tag ]
             [ -r, --registry        [可选] docker仓库地址, 默认docker.io ]
             [ -n, --namespace        [可选] docker仓库地址, 默认docker.io ]
             [ --username            [可选] docker仓库用户名 ]
@@ -89,12 +93,19 @@ while (( $# > 0 )); do
             ALL=0
             INIT=1
             ;;
+        --init-rbac )
+            ALL=0
+            INIT_RBAC=1
+            ;;
         -v | --version )
             shift
             VERSION=$1
             ;;
         -p | --push )
             PUSH=1
+            ;;
+        -l | --latest )
+            LATEST=1
             ;;
         -r | --registry )
             shift
@@ -147,8 +158,14 @@ if [[ ($ALL -eq 1 || $ALL_IN_ONE -eq 1)  && -n "$SLIM_PACKAGE_PATH" ]] ; then
     rm -rf $tmp_dir/*
     cp $SLIM_PACKAGE_PATH $tmp_dir/
     docker build -f $ROOT_DIR/support-files/docker/bkrepo.Dockerfile -t $REGISTRY/$NAMESPACE/bkrepo:$VERSION $tmp_dir --no-cache --network=host
+    if [[ $LATEST -eq 1 ]] ; then
+        docker tag   $REGISTRY/$NAMESPACE/bkrepo:latest $REGISTRY/$NAMESPACE/bkrepo:$VERSION
+    fi
     if [[ $PUSH -eq 1 ]] ; then
         docker push $REGISTRY/$NAMESPACE/bkrepo:$VERSION
+        if [[ $LATEST -eq 1 ]] ; then
+            docker push $REGISTRY/$NAMESPACE/bkrepo:latest
+        fi
     fi
 fi
 
@@ -199,6 +216,18 @@ if [[ $ALL -eq 1 || $INIT -eq 1 ]] ; then
     docker build -f $IMAGE_DIR/init/init.Dockerfile -t $REGISTRY/$NAMESPACE/bkrepo-init:$VERSION $tmp_dir --no-cache --network=host
     if [[ $PUSH -eq 1 ]] ; then
         docker push $REGISTRY/$NAMESPACE/bkrepo-init:$VERSION
+    fi
+fi
+
+# 构建init-rbac镜像
+if [[ $ALL -eq 1 || $INIT_RBAC -eq 1 ]] ; then
+    log "构建init-rbac镜像..."
+    rm -rf $tmp_dir/*
+    mkdir -p $tmp_dir/support-files/bkiam
+    cp -rf $ROOT_DIR/support-files/bkiam/* $tmp_dir/support-files/bkiam
+    docker build -f init/init-rbac.Dockerfile -t $REGISTRY/bkrepo-init-rbac:$VERSION $tmp_dir --no-cache --network=host
+    if [[ $PUSH -eq 1 ]] ; then
+        docker push $REGISTRY/bkrepo-init-rbac:$VERSION
     fi
 fi
 

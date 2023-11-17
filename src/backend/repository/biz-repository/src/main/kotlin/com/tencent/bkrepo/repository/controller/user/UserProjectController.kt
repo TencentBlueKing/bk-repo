@@ -75,7 +75,8 @@ class UserProjectController(
                 displayName = displayName,
                 description = description,
                 operator = userId,
-                createPermission = createPermission
+                createPermission = createPermission,
+                metadata = metadata
             )
         }
         projectService.createProject(createRequest)
@@ -113,6 +114,7 @@ class UserProjectController(
             @PathVariable name: String,
             @RequestBody projectUpdateRequest: ProjectUpdateRequest
     ): Response<Boolean> {
+        permissionManager.checkProjectPermission(PermissionAction.UPDATE, name)
         return ResponseBuilder.success(projectService.updateProject(name, projectUpdateRequest))
     }
 

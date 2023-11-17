@@ -32,4 +32,5 @@ data class RefId(
     val repoName: String,
     val bucket: String,
     val key: String,
+    val legacy: Boolean = false,
 )

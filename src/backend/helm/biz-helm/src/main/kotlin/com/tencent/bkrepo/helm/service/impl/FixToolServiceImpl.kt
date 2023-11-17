@@ -372,7 +372,7 @@ class FixToolServiceImpl(
             select = mutableListOf(),
             rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
-        return nodeClient.search(queryModel).data!!
+        return nodeClient.queryWithoutCount(queryModel).data!!
     }
 
     private fun resolveNode(record: Map<String, Any?>): NodeInfo {

@@ -45,7 +45,7 @@ class ServerMetrics : MeterBinder {
     }
 
     companion object {
-        const val FILE_DOWNLOAD_COUNT = "file_download_count"
-        const val FILE_UPLOAD_COUNT = "file_upload_count"
+        const val FILE_DOWNLOAD_COUNT = "artifact.downloading.count"
+        const val FILE_UPLOAD_COUNT = "artifact.uploading.count"
     }
 }

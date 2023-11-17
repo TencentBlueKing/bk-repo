@@ -385,7 +385,11 @@ object ScanPlanConverter {
             ScanStatus.INIT -> listOf(SubScanTaskStatus.CREATED, SubScanTaskStatus.PULLED)
             ScanStatus.RUNNING -> listOf(SubScanTaskStatus.EXECUTING)
             ScanStatus.STOP -> listOf(SubScanTaskStatus.STOPPED)
-            ScanStatus.FAILED -> listOf(SubScanTaskStatus.FAILED)
+            ScanStatus.FAILED -> listOf(
+                SubScanTaskStatus.FAILED,
+                SubScanTaskStatus.BLOCK_TIMEOUT,
+                SubScanTaskStatus.TIMEOUT
+            )
             ScanStatus.SUCCESS,
             ScanStatus.UN_QUALITY,
             ScanStatus.QUALITY_PASS,

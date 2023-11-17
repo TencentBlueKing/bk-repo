@@ -28,25 +28,35 @@
 package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.constant.CUSTOM
+import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
+import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
+import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import org.springframework.stereotype.Service
+import java.time.LocalDate
 
 @Service
 class ProjectMetricsService (
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val statDateModel: StatDateModel
     ){
 
     fun page(option: ProjectMetricsOption): Page<TProjectMetrics> {
         with(option) {
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val queryResult = if (!projectId.isNullOrEmpty()) {
-                projectMetricsRepository.findByProjectIdOrderByCreatedDateDesc(projectId!!, pageRequest)
+                projectMetricsRepository.findByProjectIdAndCreatedDateOrderByCreatedDateDesc(
+                    projectId!!, createdDate, pageRequest
+                )
             } else {
-                projectMetricsRepository.findAllByOrderByCreatedDateDesc(pageRequest)
+                projectMetricsRepository.findByCreatedDateOrderByCreatedDateDesc(createdDate, pageRequest)
             }
             queryResult.content.forEach {
                 it.capSize = it.capSize / TO_GIGABYTE
@@ -55,6 +65,82 @@ class ProjectMetricsService (
                 }
             }
             return Pages.ofResponse(pageRequest, queryResult.totalElements, queryResult.content)
+        }
+    }
+
+    fun list(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
+       return getProjectMetrics(metricsRequest)
+    }
+
+    fun download(metricsRequest: ProjectMetricsRequest) {
+        val records = getProjectMetrics(metricsRequest)
+        // 导出
+        val includeColumns = mutableSetOf(
+            ProjectMetrics::projectId.name,
+            ProjectMetrics::nodeNum.name,
+            ProjectMetrics::capSize.name,
+            ProjectMetrics::createdDate.name,
+            ProjectMetrics::pipelineCapSize.name,
+            ProjectMetrics::customCapSize.name
+        )
+        val fileName = "大于${metricsRequest.limitSize/TO_GIGABYTE}GB的项目信息"
+        EasyExcelUtils.download(records, fileName, ProjectMetrics::class.java, includeColumns)
+    }
+
+    private fun getProjectMetrics(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
+        val createdDate = if (metricsRequest.default) {
+            statDateModel.getShedLockInfo()
+        } else {
+            LocalDate.now().minusDays(metricsRequest.minusDay).atStartOfDay()
+        }
+        val queryResult = projectMetricsRepository.findAllByCreatedDate(createdDate)
+        val result = mutableListOf<ProjectMetrics>()
+        queryResult.forEach {
+            val projectInfo = getProjectMetrics(metricsRequest.type, it)
+            if (projectInfo.capSize >= metricsRequest.limitSize) {
+                result.add(ProjectMetrics(
+                    projectId = it.projectId,
+                    capSize = projectInfo.capSize / TO_GIGABYTE,
+                    nodeNum = projectInfo.nodeNum,
+                    createdDate = it.createdDate,
+                    pipelineCapSize = projectInfo.pipelineCapSize / TO_GIGABYTE,
+                    customCapSize = projectInfo.customCapSize / TO_GIGABYTE
+                ))
+            }
+        }
+        return result.sortedByDescending { it.capSize }
+    }
+
+    private fun getProjectMetrics(type: String?, projectMetrics: TProjectMetrics): ProjectMetrics {
+        return if (type.isNullOrEmpty()) {
+            Pair(projectMetrics.capSize , projectMetrics.nodeNum)
+            var pipelineCapSize = projectMetrics.repoMetrics.filter { it.repoName == PIPELINE }.firstOrNull()?.size ?: 0
+            var customCapSize = projectMetrics.repoMetrics.filter { it.repoName == CUSTOM }.firstOrNull()?.size ?: 0
+            ProjectMetrics(
+                projectId = projectMetrics.projectId,
+                nodeNum = projectMetrics.nodeNum,
+                capSize = projectMetrics.capSize,
+                createdDate = projectMetrics.createdDate,
+                pipelineCapSize = pipelineCapSize,
+                customCapSize = customCapSize
+            )
+        } else {
+            var sizeOfRepoType: Long = 0
+            var nodeNumOfRepoType: Long = 0
+            projectMetrics.repoMetrics.forEach { repo ->
+                if (repo.type == type) {
+                    sizeOfRepoType += repo.size
+                    nodeNumOfRepoType += repo.num
+                }
+            }
+            ProjectMetrics(
+                projectId = projectMetrics.projectId,
+                nodeNum = nodeNumOfRepoType,
+                capSize = sizeOfRepoType,
+                createdDate = projectMetrics.createdDate,
+                pipelineCapSize = 0,
+                customCapSize = 0
+            )
         }
     }
 }

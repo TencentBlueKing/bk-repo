@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
@@ -92,12 +93,14 @@ class FdtpAFTTest {
     private fun mockPrerequisites() {
         val artifactConfigurer = Mockito.mock(ArtifactConfigurer::class.java)
         val compositeRepository = Mockito.mock(CompositeRepository::class.java)
+        val proxyRepository = Mockito.mock(ProxyRepository::class.java)
         val repositoryClient = Mockito.mock(RepositoryClient::class.java)
         val nodeClient = Mockito.mock(NodeClient::class.java)
         val httpAuthSecurity = SimpleObjectProvider<HttpAuthSecurity>(null)
         ArtifactContextHolder(
             listOf(artifactConfigurer),
             compositeRepository,
+            proxyRepository,
             repositoryClient,
             nodeClient,
             httpAuthSecurity,

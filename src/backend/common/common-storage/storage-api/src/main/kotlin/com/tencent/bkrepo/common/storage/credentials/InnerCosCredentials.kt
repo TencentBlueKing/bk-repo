@@ -69,6 +69,9 @@ data class InnerCosCredentials(
         var downloadTimeHighWaterMark: Long = 8_000,
         var downloadTimeLowWaterMark: Long = 3_000,
         var taskInterval: Long = 10,
-        var timeout: Long = 10_000
+        var timeout: Long = 10_000,
+        var minimumPartSize: Long = 10,
+        var maxDownloadParts: Int = 10000,
+        var qps: Int = 10,
     )
 }

@@ -67,6 +67,43 @@
   }
   ```
 
+
+  - 增加依赖源仓库清理配置
+
+  ```json
+  {
+      "configuration":{
+          "type":"xxx",
+          "settings": {
+            "cleanupStrategy":{
+                "enable": true,
+                "cleanupType":"retentionDays",
+                "cleanupValue":"30",
+                "cleanTargets":["xxx","xxx"]
+            }
+          }
+      }
+  }
+  ```
+
+  - 增加Generic仓库清理配置
+
+  ```json
+  {
+      "configuration":{
+          "type":"xxx",
+          "settings": {
+            "cleanupStrategy":{
+                "enable": true,
+                "cleanupType":"retentionDays",
+                "cleanupValue":"30",
+                "cleanTargets":["xxx","xxx"]
+            }
+          }
+      }
+  }
+  ```
+
 - 请求字段说明
 
   |字段|类型|是否必须|默认值|说明|Description|
@@ -76,6 +113,18 @@
   |public|boolean|否|无|是否公开。null则不修改|is public repo|
   |description|string|否|无|仓库描述。null则不修改|repo description|
   |configuration|RepositoryConfiguration|否|无|仓库配置，参考后文。null则不修改|repo configuration|
+
+
+- **cleanupStrategy**
+  | 字段            | 类型    | 是否必须           | 默认值 | 说明             | Description            |
+  | --------------- | ------- | ------------------ | ------ | ---------------- | ---------------------- |
+  | enable       | boolean | 是                 | false  | 是否开启清理 | enable repo clean or not     |
+  | cleanupType | String    | 清理策略类型 | 无     | 清理策略类型： 包含retentionDays/retentionDate/retentionNums   retentionDays： 保留天数，清理（当前日期-保留天数）之前的制品；retentionDate: 保留日期，清理保留日志之前的制品； retentionNums： 保留个数（只针对依赖源有效）， 每个package只保留多少个制品    | cleanup type |
+  | cleanupValue     | String    | 清理策略对应的实际值 | 无     | 清理策略对应的实际值，对应值例如:   retentionDate： 2023-07-01T00:00:00.00；  retentionNums：10； retentionDays：30  | cleanup type value     |
+  | cleanTargets            | List<String>    | 否                 | 无     | 清理目标（generic仓库可以指定待清理目录，依赖源可以指定对应package，不指定则为整个仓库）  | clean target  |
+
+
+
 
 - 响应体
 
@@ -547,6 +596,49 @@
 |credentialKey|string|否|无|鉴权凭据key|proxy credentials id|
 |username|string|否|无|代理源认证用户名|channel username|
 |password|string|否|无|代理源认证密码|channel password|
+
+### generic仓库下载限制配置项
+```json
+"configuration" : {
+      "settings" : {
+        "interceptors" : [ {
+          "type" : "MOBILE",
+          "rules" : {
+            "filename" : "*.apk",
+            "metadata" : "key:value"
+          }
+        }, {
+          "type" : "WEB",
+          "rules" : {
+            "filename" : "*.txt",
+            "metadata" : "key:value"
+          }
+        }, {
+          "type" : "IP_SEGMENT",
+          "rules" : {
+            "ipSegment" : [ "10.0.0.0/24", "11.1.0.0/16" ],
+            "whitelistUser" : [ "userId" ],
+            "officeNetwork" : false
+          }
+        } ]
+      }
+    },
+```
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|type|String|是|无|下载限制类型，MOBILE移动端下载限制，WEB网页端下载限制，IP_SEGMENT IP段下载限制|download interceptor type|
+|rules|Map|是|无|下载限制规则，符合规则的可以下载|download interceptor rules|
+
+- **移动端下载限制**
+  - filename 文件名规则，支持通配符*
+  - metadata 元数据规则，格式为key:value
+- **网页端下载限制**
+  - filename 文件名规则，支持通配符*
+  - metadata 元数据规则，格式为key:value
+- **IP段下载限制**
+  - ipSegmnt Ip段规则，支持多个Ip段
+  - officeNetwork 办公网下载规则，办公网网段由后台配置的，开启后ip段添加办公网网段
+  - whitelistUser 白名单用户，不受Ip段下载限制约束
 
 ### 依赖源的差异化配置项
 

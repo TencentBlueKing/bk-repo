@@ -51,7 +51,6 @@ class BlobService(
             val userId = SecurityUtils.getUserId()
             val now = LocalDateTime.now()
             val tBlob = TDdcBlob(
-                id = null,
                 createdBy = userId,
                 createdDate = now,
                 lastModifiedBy = userId,
@@ -61,9 +60,10 @@ class BlobService(
                 blobId = blobId.toString(),
                 contentId = contentId.toString(),
                 sha256 = sha256,
-                size = size
+                size = size,
+                sha1 = sha1,
             )
-            blobRepository.replace(tBlob)
+            blobRepository.createIfNotExists(tBlob)
 
             return Blob.from(tBlob)
         }
@@ -106,5 +106,9 @@ class BlobService(
 
     fun addRefToBlobs(ref: Reference, blobIds: Set<String>) {
         blobRepository.addRefToBlob(ref.projectId, ref.repoName, ref.bucket, ref.key.toString(), blobIds)
+    }
+
+    fun removeRefFromBlobs(projectId: String, repoName: String, bucket: String, key: String) {
+        blobRepository.removeRefFromBlob(projectId, repoName, bucket, key)
     }
 }

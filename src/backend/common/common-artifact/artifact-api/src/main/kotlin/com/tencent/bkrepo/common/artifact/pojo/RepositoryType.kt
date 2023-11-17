@@ -51,6 +51,7 @@ enum class RepositoryType {
     CONAN,
     LFS,
     DDC,
+    SVN,
     ;
 
     companion object {

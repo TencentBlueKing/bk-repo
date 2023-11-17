@@ -136,7 +136,7 @@ class RpmLocalRepository(
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = ArtifactContextHolder.getNodeDetail()
+            val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
             node?.let {
                 downloadIntercept(context, it)
                 packageVersion(context, it)?.let { packageVersion -> downloadIntercept(context, packageVersion) }

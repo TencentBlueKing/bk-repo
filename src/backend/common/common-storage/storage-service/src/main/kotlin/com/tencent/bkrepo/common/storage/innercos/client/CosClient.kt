@@ -32,6 +32,7 @@
 
 package com.tencent.bkrepo.common.storage.innercos.client
 
+import com.google.common.util.concurrent.RateLimiter
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.concurrent.ComparableFutureTask
 import com.tencent.bkrepo.common.api.concurrent.PriorityCallable
@@ -96,6 +97,7 @@ import kotlin.system.measureNanoTime
 /**
  * Cos Client
  */
+@Suppress("UnstableApiUsage")
 class CosClient(val credentials: InnerCosCredentials) {
     private val config: ClientConfig = ClientConfig(credentials)
 
@@ -225,7 +227,7 @@ class CosClient(val credentials: InnerCosCredentials) {
     private fun multipartUpload(key: String, file: File): PutObjectResponse {
         // 计算分片大小
         val length = file.length()
-        val optimalPartSize = calculateOptimalPartSize(length)
+        val optimalPartSize = calculateOptimalPartSize(length, true)
         // 获取uploadId
         val uploadId = initiateMultipartUpload(key)
         // 生成分片请求
@@ -309,9 +311,14 @@ class CosClient(val credentials: InnerCosCredentials) {
         return length > config.multipartThreshold
     }
 
-    private fun calculateOptimalPartSize(length: Long): Long {
-        val optimalPartSize = length.toDouble() / config.maxUploadParts
-        return max(ceil(optimalPartSize).toLong(), config.minimumPartSize)
+    private fun calculateOptimalPartSize(length: Long, uploadFlag: Boolean): Long {
+        val (maxParts, minimumPartSize) = if (uploadFlag) {
+            Pair(config.maxUploadParts, config.minimumUploadPartSize)
+        } else {
+            Pair(config.maxDownloadParts, config.minimumDownloadPartSize)
+        }
+        val optimalPartSize = length.toDouble() / maxParts
+        return max(ceil(optimalPartSize).toLong(), minimumPartSize)
     }
 
     private fun <T> HttpResponseHandler<T>.enableSpeedSlowLog(): SlowLogHandler<T> {
@@ -341,7 +348,7 @@ class CosClient(val credentials: InnerCosCredentials) {
      * */
     private fun chunkedLoad(key: String, start: Long, end: Long, dir: Path, executor: ThreadPoolExecutor): InputStream {
         val len = end - start - 1
-        val optimalPartSize = calculateOptimalPartSize(len)
+        val optimalPartSize = calculateOptimalPartSize(len, false)
         val factory = DownloadPartRequestFactory(key, optimalPartSize, start, end)
         val futureList = mutableListOf<ChunkedFuture<File>>()
         val activeCount = AtomicInteger()
@@ -358,9 +365,10 @@ class CosClient(val credentials: InnerCosCredentials) {
             * */
             var i = 0
             var priority = System.currentTimeMillis()
+            val rateLimiter = RateLimiter.create(config.qps.toDouble())
             while (factory.hasMoreRequests()) {
                 val downloadPartRequest = factory.nextDownloadPartRequest()
-                val task = DownloadTask(i, downloadPartRequest, tempRootPath, session, priority)
+                val task = DownloadTask(i, downloadPartRequest, tempRootPath, session, priority, rateLimiter)
                 val futureTask = ComparableFutureTask(task)
                 executor.execute(futureTask)
                 val futureWrapper = EnhanceFileChunkedFutureWrapper(futureTask) {
@@ -452,13 +460,15 @@ class CosClient(val credentials: InnerCosCredentials) {
         val downloadPartRequest: GetObjectRequest,
         private val rootPath: Path,
         private val session: DownloadSession,
-        private val priority: Long
+        private val priority: Long,
+        private val rateLimiter: RateLimiter,
     ) : PriorityCallable<File, DownloadTask>() {
 
         override fun call(): File {
             // 任务可以取消，所以可能会产生中断异常，如果调用方获取结果，则可以捕获异常。
             // 但是通常是由于调用方异常而提前终止相关任务，所以这里产生的中断异常大部分情况下无影响。
             retry(RETRY_COUNT) {
+                rateLimiter.acquire()
                 session.activeCount.incrementAndGet()
                 // 为防止重试导致文件名重复
                 val fileName = "$DOWNLOADING_CHUNkED_PREFIX${seq}_${priority}_${it}$DOWNLOADING_CHUNkED_SUFFIX"

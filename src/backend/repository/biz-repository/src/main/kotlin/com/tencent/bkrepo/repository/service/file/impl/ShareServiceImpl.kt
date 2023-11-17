@@ -152,7 +152,7 @@ class ShareServiceImpl(
      * 加固签名的apk包，不允许匿名下载
      */
     private fun checkAlphaApkDownloadUser(userId: String, artifactInfo: ArtifactInfo) {
-        val nodeDetail = ArtifactContextHolder.getNodeDetail()
+        val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo)
             ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
         val appStageKey = nodeDetail.metadata.keys.find { it.equals(BK_CI_APP_STAGE_KEY, true) }
             ?: return

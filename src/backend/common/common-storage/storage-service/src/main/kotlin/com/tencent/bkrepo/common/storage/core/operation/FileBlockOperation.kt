@@ -57,7 +57,7 @@ interface FileBlockOperation {
      * 结束追加，存储并返回完整文件
      * appendId: 文件追加Id
      */
-    fun finishAppend(appendId: String, storageCredentials: StorageCredentials?): FileInfo
+    fun finishAppend(appendId: String, storageCredentials: StorageCredentials?, fileInfo: FileInfo? = null): FileInfo
 
     /**
      * 创建分块存储目录，返回分块存储Id

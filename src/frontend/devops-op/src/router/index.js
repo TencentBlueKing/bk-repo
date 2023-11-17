@@ -20,6 +20,7 @@ export const ROUTER_NAME_FILTER_RULE = 'FilterRule'
 export const ROUTER_NAME_JOB = 'Job'
 export const ROUTER_NAME_SHED_LOCK = 'Shedlock'
 export const ROUTER_NAME_PROJECT_METRICS = 'ProjectMetrics'
+export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
 
 Vue.use(Router)
 
@@ -132,6 +133,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_NODE,
         meta: { title: '文件管理', icon: 'file' },
         component: () => import('@/views/node/index')
+      },
+      {
+        path: 'fileSystem',
+        name: ROUTER_NAME_FILE_SYSTEM,
+        meta: { title: '客户端管理', icon: 'file' },
+        component: () => import('@/views/node/FileSystem')
       },
       {
         path: 'emptyFolder',

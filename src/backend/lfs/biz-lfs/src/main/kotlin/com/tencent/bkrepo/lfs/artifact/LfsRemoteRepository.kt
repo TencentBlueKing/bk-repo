@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.lfs.artifact
 
-import cn.hutool.core.codec.Base64Encoder
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -45,6 +44,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
 import com.tencent.bkrepo.lfs.constant.DOWNLOAD_OPERATION
+import com.tencent.bkrepo.lfs.constant.HEADER_BATCH_AUTHORIZATION
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
 import com.tencent.bkrepo.lfs.pojo.LfsObject
@@ -60,20 +60,6 @@ import org.springframework.stereotype.Component
 class LfsRemoteRepository : RemoteRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        return getCacheArtifactResource(context) ?: downloadFromRemoteGit(context)
-    }
-
-    fun onDownloadResponse(context: ArtifactDownloadContext, response: Response, size: Long): ArtifactResource {
-        val artifactFile = createTempFile(response.body!!)
-        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
-        val node = cacheArtifactFile(context, artifactFile)
-        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
-    }
-
-    /**
-     * 从远端Git拉取
-     */
-    private fun downloadFromRemoteGit(context: ArtifactDownloadContext): ArtifactResource? {
         val httpClient = createHttpClient(context.getRemoteConfiguration(), false).newBuilder()
             .addInterceptor {
                 val userAgent = HeaderUtils.getHeader(HttpHeaders.USER_AGENT)
@@ -83,8 +69,16 @@ class LfsRemoteRepository : RemoteRepository() {
                 it.proceed(request)
             }.build()
         val lfsObject = getLfsObject(httpClient, context)
-        return downloadLfs(httpClient, context, lfsObject)
+        return getCacheArtifactResource(context) ?: downloadLfs(httpClient, context, lfsObject)
     }
+
+    fun onDownloadResponse(context: ArtifactDownloadContext, response: Response, size: Long): ArtifactResource {
+        val artifactFile = createTempFile(response.body!!)
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+        val node = cacheArtifactFile(context, artifactFile)
+        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
+    }
+
 
     /**
      *  object batch请求，获取LfsObject
@@ -105,8 +99,7 @@ class LfsRemoteRepository : RemoteRepository() {
         val requestBody = batchRequest.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val config = context.getRemoteConfiguration()
         val url = "${config.url.removePrefix(StringPool.SLASH)}/info/lfs/objects/batch"
-        val credentials = config.credentials
-        val authHeader = "Basic ${Base64Encoder.encode("${credentials.username}:${credentials.password}")}"
+        val authHeader = HeaderUtils.getHeader(HEADER_BATCH_AUTHORIZATION).orEmpty()
         val request2 = Request.Builder().url(url)
             .header(HttpHeaders.AUTHORIZATION, authHeader).post(requestBody).build()
         httpClient.newCall(request2).execute().use {
@@ -126,10 +119,11 @@ class LfsRemoteRepository : RemoteRepository() {
         val actionDetail = lfsObject.actions!![DOWNLOAD_OPERATION]!!
         with(actionDetail) {
             val request = Request.Builder().url(href).headers(header.toHeaders()).get().build()
-            val response = httpClient.newCall(request).execute()
-            return if (checkResponse(response)) {
-                onDownloadResponse(context, response, lfsObject.size)
-            } else null
+            httpClient.newCall(request).execute().use {
+                return if (checkResponse(it)) {
+                    onDownloadResponse(context, it, lfsObject.size)
+                } else null
+            }
         }
     }
 }
