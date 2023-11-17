@@ -39,8 +39,10 @@ import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.opdata.util.EasyExcelUtils
+import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Service
 class ProjectMetricsService (
@@ -112,13 +114,21 @@ class ProjectMetricsService (
             val oneWeekBefore = createdDate.minusDays(7).toLocalDate().atStartOfDay()
             val oneMonthBefore = createdDate.minusDays(30).toLocalDate().atStartOfDay()
 
-            oneDayBeforeMetrics = projectMetricsRepository.findAllByCreatedDate(oneDayBefore)
-            oneWeekBeforeMetrics = projectMetricsRepository.findAllByCreatedDate(oneWeekBefore)
-            oneMonthBeforeMetrics = projectMetricsRepository.findAllByCreatedDate(oneMonthBefore)
+            oneDayBeforeMetrics = MetricsCacheUtil.getProjectMetrics(
+                oneDayBefore.format(DateTimeFormatter.ISO_DATE_TIME)
+            )
+            oneWeekBeforeMetrics = MetricsCacheUtil.getProjectMetrics(
+                oneWeekBefore.format(DateTimeFormatter.ISO_DATE_TIME)
+            )
+            oneMonthBeforeMetrics = MetricsCacheUtil.getProjectMetrics(
+                oneMonthBefore.format(DateTimeFormatter.ISO_DATE_TIME)
+            )
         }
 
 
-        val currentMetrics = projectMetricsRepository.findAllByCreatedDate(createdDate)
+        val currentMetrics = MetricsCacheUtil.getProjectMetrics(
+            createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
+        )
 
         return getMetricsResult(
             type = metricsRequest.type,

@@ -27,9 +27,6 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.opdata.constant.DELTA_POSITIVE
 import com.tencent.bkrepo.opdata.constant.DOCKER_TYPES
@@ -45,11 +42,10 @@ import com.tencent.bkrepo.opdata.pojo.RepoMetrics
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.FilterType
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 
 /**
  * 通过在指标 target 中的 data 字段添加参数，过滤出对应条件下的指标数据
@@ -63,22 +59,8 @@ import java.util.concurrent.TimeUnit
  *       }
  */
 open class BaseHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository,
     private val statDateModel: StatDateModel
 ) {
-
-    private val metricsCache: LoadingCache<LocalDateTime, List<TProjectMetrics>> by lazy {
-        val cacheLoader = object : CacheLoader<LocalDateTime, List<TProjectMetrics>>() {
-            override fun load(key: LocalDateTime): List<TProjectMetrics> {
-                return projectMetricsRepository.findAllByCreatedDate(key)
-            }
-        }
-        CacheBuilder.newBuilder()
-            .maximumSize(10)
-            .expireAfterWrite(15, TimeUnit.MINUTES)
-            .build(cacheLoader)
-    }
-
 
     fun calculateMetricValue(target: Target): Map<String, Long> {
         val metricFilterInfo = getMetricFilterInfo(target)
@@ -113,7 +95,9 @@ open class BaseHandler(
         filterType: FilterType?,
         filterValue: String?,
     ): HashMap<String, Long> {
-        val projectMetrics = metricsCache.get(date)
+        val projectMetrics = MetricsCacheUtil.getProjectMetrics(
+            date.format(DateTimeFormatter.ISO_DATE_TIME)
+        )
 
         return when (filterType) {
             FilterType.REPO_TYPE -> {
