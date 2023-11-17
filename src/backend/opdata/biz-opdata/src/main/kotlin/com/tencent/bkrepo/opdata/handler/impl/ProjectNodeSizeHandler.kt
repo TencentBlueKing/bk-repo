@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.opdata.handler.impl
 
 import com.tencent.bkrepo.opdata.config.OpProjectMetricsProperties
-import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Target
