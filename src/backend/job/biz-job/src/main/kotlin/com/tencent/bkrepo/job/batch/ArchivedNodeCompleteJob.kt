@@ -44,6 +44,8 @@ class ArchivedNodeCompleteJob(
         return NodeContext()
     }
 
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
+
     override fun collectionNames(): List<String> {
         return listOf("archive_file")
     }

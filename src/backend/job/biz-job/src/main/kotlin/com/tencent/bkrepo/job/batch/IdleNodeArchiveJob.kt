@@ -55,6 +55,8 @@ class IdleNodeArchiveJob(
         return collectionNames
     }
 
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
+
     override fun doStart0(jobContext: NodeContext) {
         super.doStart0(jobContext)
         lastCutoffTime = tempCutoffTime
