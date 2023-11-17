@@ -167,7 +167,7 @@ class ReactiveArchiveJob(
         listFiles().flatMap(this::prepare, prefetch)
             .parallel()
             .runOn(Schedulers.fromExecutor(httpDownloadPool), prefetch)
-            .flatMap(downloader::onArchiveFileWrapper) // 下载
+            .flatMap(downloader::onArchiveFileWrapper, false, prefetch) // 下载
             .runOn(Schedulers.fromExecutor(compressPool), prefetch)
             .flatMap(compressor::onArchiveFileWrapper) // 压缩
             .runOn(Schedulers.fromExecutor(httpUploadPool), prefetch)
