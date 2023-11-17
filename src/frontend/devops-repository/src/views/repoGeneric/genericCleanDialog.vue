@@ -27,7 +27,7 @@
         </bk-form>
         <template #footer>
             <bk-button theme="default" @click="cancel" v-if="!isComplete">{{$t('cancel')}}</bk-button>
-            <bk-button class="ml10" :loading="loading" theme="primary" @click="submit" v-if="!isComplete">{{$t('confirm')}}</bk-button>
+            <bk-button class="ml10" :loading="loading" theme="primary" @click="submit" v-if="!isComplete" :disabled="doing">{{$t('confirm')}}</bk-button>
             <bk-button class="ml10" theme="primary" @click="completeClean" v-if="isComplete">{{$t('complete')}}</bk-button>
         </template>
     </canway-dialog>
@@ -48,7 +48,8 @@
                 date: new Date(),
                 rules: {
                 },
-                isComplete: false
+                isComplete: false,
+                doing: false
             }
         },
         methods: {
@@ -58,9 +59,14 @@
             cancel () {
                 this.$emit('refresh')
                 this.show = false
+                this.doing = false
             },
             async submit () {
                 let completeNum = 0
+                if (this.doing) {
+                    return
+                }
+                this.doing = true
                 for (let i = 0; i < this.paths.length; i++) {
                     const path = this.projectId + '/' + this.repoName + this.paths[i].path
                     await this.cleanNode({
@@ -82,6 +88,7 @@
             completeClean () {
                 this.show = false
                 this.$emit('refresh')
+                this.doing = false
             }
         }
     }
