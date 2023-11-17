@@ -55,7 +55,7 @@ import java.time.format.DateTimeFormatter
  *       "startDate":"2023-11-10",
  *       "endDate":"2023-11-14",
  *       "duration":1,
- *       "deltaPositive: false"
+ *       "deltaPositive: 1"  0表示不变的；1 表示增加的；2 表示减少的
  *       }
  */
 open class BaseHandler(
@@ -84,10 +84,10 @@ open class BaseHandler(
         return if (metricFilterInfo.deltaPositive == null) {
             deltaValue
         } else {
-            if (metricFilterInfo.deltaPositive == true) {
-                deltaValue.filter { it.value >= 0 }
-            } else {
-                deltaValue.filter { it.value < 0 }
+            when (metricFilterInfo.deltaPositive) {
+                0 -> deltaValue.filter { it.value == 0L }
+                1 -> deltaValue.filter { it.value > 0L }
+                else -> deltaValue.filter { it.value < 0L }
             }
         }
     }
@@ -150,7 +150,7 @@ open class BaseHandler(
         val startDateStr =  reqData?.get(START_DATE) as? String
         val endDateStr =  reqData?.get(END_DATE) as? String
         val duration =  reqData?.get(DURATION)?.toString()?.toLongOrNull()
-        val deltaPositive =  reqData?.get(DELTA_POSITIVE)?.toString()?.toBoolean()
+        val deltaPositive =  reqData?.get(DELTA_POSITIVE)?.toString()?.toIntOrNull()
 
         val endDate = if (endDateStr.isNullOrEmpty()) {
             statDateModel.getShedLockInfo()

@@ -74,9 +74,7 @@ interface QueryHandler {
             val projectId = it.first
             val data = listOf(it.second, System.currentTimeMillis())
             val element = listOf(data)
-            if (it.second != 0L) {
-                result.add(NodeResult(projectId, element))
-            }
+            result.add(NodeResult(projectId, element))
         }
         return result
     }
