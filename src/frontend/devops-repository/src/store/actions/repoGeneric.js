@@ -317,5 +317,16 @@ export default {
         return Vue.prototype.$ajax.get(
             `${prefix}/project/metrics/${projectId}`
         )
+    },
+    // 清理创建时间早于{date}的文件节点
+    cleanNode (_, { path, date }) {
+        return Vue.prototype.$ajax.delete(
+            `${prefix}/node/clean/${path}`,
+            {
+                params: {
+                    date: date
+                }
+            }
+        )
     }
 }
