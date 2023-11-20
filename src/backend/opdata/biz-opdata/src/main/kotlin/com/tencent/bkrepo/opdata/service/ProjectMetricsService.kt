@@ -37,12 +37,15 @@ import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
+import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 
 @Service
 class ProjectMetricsService (
@@ -97,6 +100,30 @@ class ProjectMetricsService (
             )
         val fileName = "大于${metricsRequest.limitSize/TO_GIGABYTE}GB的项目信息"
         EasyExcelUtils.download(records, fileName, ProjectMetrics::class.java, includeColumns)
+    }
+
+    /**
+     * 定时将db中的数据更新到缓存中
+     */
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INIT_DELAY, timeUnit = TimeUnit.MINUTES)
+    fun loadCache() {
+        val createdDate = statDateModel.getShedLockInfo()
+        val cacheDateList = listOf(
+            createdDate,
+            createdDate.minusDays(1).toLocalDate().atStartOfDay(),
+            createdDate.minusDays(7).toLocalDate().atStartOfDay(),
+            createdDate.minusDays(30).toLocalDate().atStartOfDay()
+        )
+        cacheDateList.forEach {
+            MetricsCacheUtil.getProjectMetrics(
+                it.format(DateTimeFormatter.ISO_DATE_TIME)
+            )
+        }
+
+        ProjectType.values().forEach {
+            MetricsCacheUtil.gerProjectNodeNum(it.name)
+        }
+
     }
 
     private fun getProjectMetrics(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
@@ -255,5 +282,10 @@ class ProjectMetricsService (
             }
         }
         return Pair(sizeOfRepoType, nodeNumOfRepoType)
+    }
+
+    companion object {
+        private const val FIXED_DELAY = 30L
+        private const val INIT_DELAY = 5L
     }
 }

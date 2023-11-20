@@ -30,7 +30,9 @@ package com.tencent.bkrepo.opdata.util
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -40,14 +42,17 @@ import java.util.concurrent.TimeUnit
 @Component
 class MetricsCacheUtil(
     projectMetricsRepository: ProjectMetricsRepository,
+    projectModel: ProjectModel
 ) {
 
     init {
         Companion.projectMetricsRepository = projectMetricsRepository
+        Companion.projectModel = projectModel
     }
 
     companion object {
         private lateinit var projectMetricsRepository: ProjectMetricsRepository
+        private lateinit var projectModel: ProjectModel
         private val metricsCache: LoadingCache<String, List<TProjectMetrics>> by lazy {
             val cacheLoader = object : CacheLoader<String, List<TProjectMetrics>>() {
                 override fun load(key: String): List<TProjectMetrics> {
@@ -57,13 +62,29 @@ class MetricsCacheUtil(
             }
             CacheBuilder.newBuilder()
                 .maximumSize(5)
-                .expireAfterWrite(15, TimeUnit.MINUTES)
+                .expireAfterWrite(60, TimeUnit.MINUTES)
+                .build(cacheLoader)
+        }
+        private val projectNodeCache: LoadingCache<String, Long> by lazy {
+            val cacheLoader = object : CacheLoader<String, Long>() {
+                override fun load(key: String): Long {
+                    return projectModel.getProjectNum(ProjectType.valueOf(key))
+                }
+            }
+            CacheBuilder.newBuilder()
+                .maximumSize(10)
+                .expireAfterWrite(60, TimeUnit.MINUTES)
                 .build(cacheLoader)
         }
 
 
+
         fun getProjectMetrics(dateStr: String): List<TProjectMetrics> {
             return metricsCache.get(dateStr)
+        }
+
+        fun gerProjectNodeNum(projectType: String): Long {
+            return projectNodeCache.get(projectType)
         }
     }
 }
