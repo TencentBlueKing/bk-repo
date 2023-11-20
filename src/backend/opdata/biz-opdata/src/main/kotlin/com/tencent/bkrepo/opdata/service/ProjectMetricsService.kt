@@ -83,7 +83,6 @@ class ProjectMetricsService (
         // 导出
         val includeColumns = mutableSetOf(
             ProjectMetrics::projectId.name,
-            ProjectMetrics::nodeNum.name,
             ProjectMetrics::capSize.name,
             ProjectMetrics::capSizeOfOneDayBefore.name,
             ProjectMetrics::capSizeOfOneWeekBefore.name,
@@ -285,7 +284,7 @@ class ProjectMetricsService (
     }
 
     companion object {
-        private const val FIXED_DELAY = 30L
-        private const val INIT_DELAY = 5L
+        private const val FIXED_DELAY = 1L
+        private const val INIT_DELAY = 3L
     }
 }
