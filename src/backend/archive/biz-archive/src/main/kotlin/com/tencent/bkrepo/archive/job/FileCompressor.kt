@@ -1,9 +1,11 @@
 package com.tencent.bkrepo.archive.job
 
 import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
+import com.tencent.bkrepo.archive.event.FileCompressedEvent
 import com.tencent.bkrepo.archive.extensions.key
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import java.nio.file.Files
 import java.nio.file.Path
@@ -52,7 +54,16 @@ class FileCompressor(
         return Mono.create {
             // 如果没有设置源文件，则跳过压缩
             if (fileWrapper.srcFilePath != null) {
-                compress(fileWrapper)
+                val size = fileWrapper.archiveFile.size
+                val throughput = measureThroughput(size) { compress(fileWrapper) }
+                // 发送压缩事件
+                val event = FileCompressedEvent(
+                    sha256 = fileWrapper.archiveFile.sha256,
+                    uncompressed = size,
+                    compressed = Files.size(fileWrapper.compressedFilePath!!),
+                    throughput = throughput,
+                )
+                SpringContextUtils.publishEvent(event)
             }
             it.success(fileWrapper)
         }

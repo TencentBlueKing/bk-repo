@@ -1,8 +1,10 @@
 package com.tencent.bkrepo.archive.listener
 
 import com.tencent.bkrepo.archive.event.FileArchivedEvent
+import com.tencent.bkrepo.archive.event.FileCompressedEvent
 import com.tencent.bkrepo.archive.event.FileRestoredEvent
 import com.tencent.bkrepo.archive.metrics.ArchiveMetrics
+import java.text.DecimalFormat
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -12,6 +14,11 @@ import org.springframework.stereotype.Component
  * */
 @Component
 class ArchiveListener(val archiveMetrics: ArchiveMetrics) {
+
+    /**
+     * 压缩比格式
+     * */
+    private val df = DecimalFormat("#.#")
 
     @EventListener(FileArchivedEvent::class)
     fun archive(event: FileArchivedEvent) {
@@ -32,6 +39,19 @@ class ArchiveListener(val archiveMetrics: ArchiveMetrics) {
             archiveMetrics.getCounter(ArchiveMetrics.Action.RESTORED, key).increment()
             archiveMetrics.getSizeCounter(ArchiveMetrics.Action.RESTORED, key).increment(throughput.bytes.toDouble())
             archiveMetrics.getTimer(ArchiveMetrics.Action.RESTORED, key).record(throughput.duration)
+        }
+    }
+
+    @EventListener(FileCompressedEvent::class)
+    fun compress(event: FileCompressedEvent) {
+        with(event) {
+            val ratio = df.format((uncompressed - compressed.toDouble()) / uncompressed * 100)
+            logger.info("Compress file $sha256, compressed:$compressed,uncompressed:$uncompressed,ratio:$ratio")
+            archiveMetrics.getCompressSizeCount(ArchiveMetrics.CompressCounterType.COMPRESSED.name)
+                .increment(compressed.toDouble())
+            archiveMetrics.getCompressSizeCount(ArchiveMetrics.CompressCounterType.UNCOMPRESSED.name)
+                .increment(uncompressed.toDouble())
+            archiveMetrics.getCompressTimer().record(throughput.duration)
         }
     }
 

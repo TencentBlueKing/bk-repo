@@ -45,7 +45,7 @@ class ArchiveMetrics(
         // 归档文件状态
         ArchiveStatus.values().forEach {
             Gauge.builder(FILE_STATUS_COUNTER) { archiveFileRepository.countByStatus(it) }
-                .description(FILE_RESTORED_COUNTER_DESC)
+                .description(FILE_STATUS_COUNTER_DESC)
                 .tag(TAG_STATUS, it.name)
                 .register(registry)
         }
@@ -95,9 +95,27 @@ class ArchiveMetrics(
         return c.tag(TAG_CREDENTIALS_KEY, key).register(registry)
     }
 
+    fun getCompressSizeCount(type: String): Counter {
+        return Counter.builder(FILE_COMPRESS_SIZE_COUNTER)
+            .description(FILE_COMPRESS_SIZE_COUNTER_DESC)
+            .tag(TAG_TYPE, type)
+            .register(registry)
+    }
+
+    fun getCompressTimer(): Timer {
+        return Timer.builder(FILE_COMPRESS_TIME)
+            .description(FILE_COMPRESS_TIME_DESC)
+            .register(registry)
+    }
+
     enum class Action {
         ARCHIVED,
         RESTORED,
+    }
+
+    enum class CompressCounterType {
+        COMPRESSED,
+        UNCOMPRESSED,
     }
 
     companion object {
@@ -126,8 +144,13 @@ class ArchiveMetrics(
         private const val FILE_COMPRESS_QUEUE_SIZE = "file.compress.queue.size"
         private const val FILE_COMPRESS_QUEUE_SIZE_DESC = "文件压缩队列大小"
         private const val FILE_STATUS_COUNTER = "file.status.count"
-        private const val FILE_STATUS_COUNTER_DESC = "文件数量统计"
+        private const val FILE_STATUS_COUNTER_DESC = "文件状态统计"
+        private const val FILE_COMPRESS_SIZE_COUNTER = "file.compress.size.count"
+        private const val FILE_COMPRESS_SIZE_COUNTER_DESC = "文件压缩大小"
+        private const val FILE_COMPRESS_TIME = "file.compress.time"
+        private const val FILE_COMPRESS_TIME_DESC = "文件压缩耗时"
         private const val TAG_CREDENTIALS_KEY = "credentialsKey"
         private const val TAG_STATUS = "status"
+        private const val TAG_TYPE = "type"
     }
 }
