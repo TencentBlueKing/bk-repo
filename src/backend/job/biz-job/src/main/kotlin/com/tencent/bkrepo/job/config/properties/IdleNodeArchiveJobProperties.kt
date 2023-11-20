@@ -29,11 +29,13 @@ package com.tencent.bkrepo.job.config.properties
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
 
 @ConfigurationProperties(value = "job.idle-node-archive")
 class IdleNodeArchiveJobProperties(
     override var cron: String = "0 0 0 * * ?",
     var days: Int = 365,
+    var fileSizeThreshold: DataSize = DataSize.ofMegabytes(10),
     var projects: Set<String> = emptySet(),
     var ignoreStorageCredentialsKeys: Set<String> = emptySet(),
     var ignoreRepoType: Set<String> = setOf(RepositoryType.DOCKER.name, RepositoryType.OCI.name),
