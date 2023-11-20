@@ -18,6 +18,6 @@ interface FileReferenceClient {
     @PutMapping("/increment")
     fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Response<Boolean>
 
-    @GetMapping
+    @GetMapping("/count")
     fun count(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Response<Long>
 }

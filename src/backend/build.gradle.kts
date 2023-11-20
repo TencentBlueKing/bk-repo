@@ -77,7 +77,6 @@ allprojects {
             }
             dependency("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter:${Versions.ReactiveFeign}")
             dependency("com.tencent.bk.sdk:crypto-java-sdk:${Versions.CryptoJavaSdk}")
-            dependency("org.tukaani:xz:${Versions.XzJava}")
         }
     }
     ext["netty.version"] = Versions.Netty

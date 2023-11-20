@@ -40,6 +40,7 @@ class IdleNodeArchiveJob(
 ) : MongoDbBatchJob<IdleNodeArchiveJob.Node, NodeContext>(properties) {
     private var lastCutoffTime: LocalDateTime? = null
     private var tempCutoffTime: LocalDateTime? = null
+    private var refreshCount = INITIAL_REFRESH_COUNT
     private val nodeUseInfoCache = ConcurrentHashMap<NodeDataId, Boolean>()
 
     override fun collectionNames(): List<String> {
@@ -59,7 +60,13 @@ class IdleNodeArchiveJob(
 
     override fun doStart0(jobContext: NodeContext) {
         super.doStart0(jobContext)
-        lastCutoffTime = tempCutoffTime
+        // 由于新的文件可能会被删除，所以旧文件数据的引用会被改变，所以需要重新扫描旧文件引用。
+        if (refreshCount-- < 0) {
+            lastCutoffTime = null
+            refreshCount = INITIAL_REFRESH_COUNT
+        } else {
+            lastCutoffTime = tempCutoffTime
+        }
         nodeUseInfoCache.clear()
     }
 
@@ -225,6 +232,7 @@ class IdleNodeArchiveJob(
 
     companion object {
         private const val COLLECTION_NAME_PREFIX = "node_"
+        private const val INITIAL_REFRESH_COUNT = 3
         private val logger = LoggerFactory.getLogger(IdleNodeArchiveJob::class.java)
     }
 }

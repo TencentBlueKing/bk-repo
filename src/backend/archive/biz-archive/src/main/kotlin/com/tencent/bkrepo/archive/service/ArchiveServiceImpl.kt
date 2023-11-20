@@ -5,7 +5,6 @@ import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.ArchiveMessageCode
 import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
-import com.tencent.bkrepo.archive.metrics.ArchiveMetrics
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Service
 class ArchiveServiceImpl(
     private val archiveProperties: ArchiveProperties,
     private val archiveFileRepository: ArchiveFileRepository,
-    private val archiveMetrics: ArchiveMetrics,
 ) : ArchiveService {
 
     private val cosClient = CosClient(archiveProperties.cos)

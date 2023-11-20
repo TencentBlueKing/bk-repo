@@ -7,5 +7,4 @@ dependencies {
     api(project(":common:common-mongo"))
     api(project(":common:common-mongo-reactive"))
     implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation("org.tukaani:xz")
 }

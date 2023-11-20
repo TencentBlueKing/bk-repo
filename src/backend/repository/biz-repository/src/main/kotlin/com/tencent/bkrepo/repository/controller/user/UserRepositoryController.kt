@@ -253,13 +253,14 @@ class UserRepositoryController(
     }
 
     @ApiOperation("查询可归档文件大小")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/archive/available")
     fun getArchivableSize(
         @RequestParam projectId: String,
         @RequestParam(required = false) repoName: String?,
         @RequestParam days: Int,
+        @RequestAttribute userId: String,
     ): Response<ArchiveInfo> {
+        permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId, userId)
         val archiveInfo = ArchiveInfo(
             available = repositoryService.getArchivableSize(projectId, repoName, days),
         )
