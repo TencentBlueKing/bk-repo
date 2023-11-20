@@ -57,19 +57,33 @@ import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.net.Inet4Address
+import java.net.InetAddress
 
 @Component
 class GenericRemoteRepository(
-    private val genericProperties: GenericProperties
+    private val genericProperties: GenericProperties,
 ) : RemoteRepository() {
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
+    }
+
+    override fun customHttpClient(builder: OkHttpClient.Builder) {
+        builder.dns(object : Dns {
+            override fun lookup(hostname: String): List<InetAddress> {
+                return genericProperties.platforms.firstOrNull { it.host == hostname && it.ip.isNotEmpty() }?.let {
+                    listOf(Inet4Address.getByName(it.ip))
+                } ?: Dns.SYSTEM.lookup(hostname)
+            }
+        })
     }
 
     override fun createAuthenticateInterceptor(configuration: RemoteConfiguration): Interceptor? {
@@ -83,7 +97,7 @@ class GenericRemoteRepository(
 
         // platform认证
         val url = configuration.url.toHttpUrl()
-        genericProperties.platformAccounts.firstOrNull { it.host == url.host }?.let {
+        genericProperties.platforms.firstOrNull { it.host == url.host || it.ip == url.host }?.let {
             return PlatformAuthInterceptor(it.accessKey, it.secretKey, SecurityUtils.getUserId())
         }
 

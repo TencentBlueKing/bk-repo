@@ -233,7 +233,15 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             createAuthenticateInterceptor(configuration)?.let { builder.addInterceptor(it) }
         }
         builder.retryOnConnectionFailure(true)
+        customHttpClient(builder)
         return builder.build()
+    }
+
+    /**
+     * 自定义http client选项
+     */
+    protected open fun customHttpClient(builder: OkHttpClient.Builder) {
+        // do nothing
     }
 
     /**

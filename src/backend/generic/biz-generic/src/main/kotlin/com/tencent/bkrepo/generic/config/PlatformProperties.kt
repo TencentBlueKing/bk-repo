@@ -30,11 +30,15 @@ package com.tencent.bkrepo.generic.config
 /**
  * 用于远程Generic仓库的平台账号配置，使用平台账号到远程仓库认证时会携带当前操作的用户用于鉴权
  */
-data class PlatformAuthProperties(
+data class PlatformProperties(
     /**
      * 平台Host
      */
     var host: String = "",
+    /**
+     * 将host解析到指定ip，不指定时则使用默认dns
+     */
+    var ip: String = "",
     /**
      * 平台账号
      */
