@@ -10,7 +10,6 @@ import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
 import com.tencent.bkrepo.archive.utils.ArchiveFileQueryHelper
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
-import com.tencent.bkrepo.archive.utils.XZUtils
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.mongo.constant.ID
@@ -184,20 +183,12 @@ class RestoreJob(
     }
 
     private fun unCompressFile(src: Path, target: Path) {
-        if (useCmd) {
-            val path = src.toAbsolutePath()
-            val cmd = mutableListOf("xz", "-d", path.toString())
-            ArchiveUtils.runCmd(cmd)
-            val filePath = Paths.get(path.toString().removeSuffix(XZ_SUFFIX))
-            Files.move(filePath, target)
-            logger.info("Move $filePath to $target.")
-        } else {
-            Files.newInputStream(src).use { input ->
-                Files.newOutputStream(target).use { output ->
-                    XZUtils.decompress(input, output)
-                }
-            }
-        }
+        val path = src.toAbsolutePath()
+        val cmd = mutableListOf("xz", "-d", path.toString())
+        ArchiveUtils.runCmd(cmd)
+        val filePath = Paths.get(path.toString().removeSuffix(XZ_SUFFIX))
+        Files.move(filePath, target)
+        logger.info("Move $filePath to $target.")
     }
 
     companion object {

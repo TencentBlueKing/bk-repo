@@ -3,7 +3,6 @@ package com.tencent.bkrepo.archive.job
 import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
 import com.tencent.bkrepo.archive.extensions.key
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
-import com.tencent.bkrepo.archive.utils.XZUtils
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import java.nio.file.Files
@@ -12,7 +11,6 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.text.DecimalFormat
 import org.slf4j.LoggerFactory
-import org.tukaani.xz.LZMA2Options
 import reactor.core.publisher.Mono
 
 /**
@@ -47,6 +45,7 @@ class FileCompressor(
         if (!Files.exists(compressedPath)) {
             Files.createDirectories(compressedPath)
         }
+        require(useCmd)
     }
 
     override fun process(fileWrapper: ArchiveFileWrapper): Mono<ArchiveFileWrapper> {
@@ -99,33 +98,23 @@ class FileCompressor(
      * @param dst 目标文件
      * */
     private fun compressFile(src: Path, dst: Path) {
-        if (useCmd) {
-            val xzFilePath = src.parent.resolve("${src.fileName}$XZ_SUFFIX")
-            if (Files.exists(xzFilePath)) {
-                Files.delete(xzFilePath)
-            }
-            /*
-            * 使用多线程模式，且设置内存阈值，进行压缩
-            * xz -T0 {file} --memory={memoryLimit}
-            * */
-            val cmd = mutableListOf(
-                "xz",
-                "-T0",
-                src.toAbsolutePath().toString(),
-                "--memory=$memoryLimit",
-            )
-            ArchiveUtils.runCmd(cmd)
-            Files.move(xzFilePath, dst, StandardCopyOption.REPLACE_EXISTING)
-            logger.info("Move $xzFilePath to $dst.")
-        } else {
-            // xz压缩消耗大量堆内存，会导致oom。
-            Files.newInputStream(src).use { input ->
-                Files.newOutputStream(dst).use { output ->
-                    val opts = LZMA2Options(LZMA2Options.PRESET_MAX)
-                    XZUtils.compress(input, output, opts)
-                }
-            }
+        val xzFilePath = src.parent.resolve("${src.fileName}$XZ_SUFFIX")
+        if (Files.exists(xzFilePath)) {
+            Files.delete(xzFilePath)
         }
+        /*
+        * 使用多线程模式，且设置内存阈值，进行压缩
+        * xz -T0 {file} --memory={memoryLimit}
+        * */
+        val cmd = mutableListOf(
+            "xz",
+            "-T0",
+            src.toAbsolutePath().toString(),
+            "--memory=$memoryLimit",
+        )
+        ArchiveUtils.runCmd(cmd)
+        Files.move(xzFilePath, dst, StandardCopyOption.REPLACE_EXISTING)
+        logger.info("Move $xzFilePath to $dst.")
     }
 
     private fun Long.humanReadable(): String {
