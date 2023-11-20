@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,27 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.model
+package com.tencent.bkrepo.fs.server.api
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.api.constant.GENERIC_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import reactivefeign.spring.config.ReactiveFeignClient
+import reactor.core.publisher.Mono
 
-data class Node(
-    val createdBy: String,
-    val createdDate: String,
-    val lastModifiedBy: String,
-    val lastModifiedDate: String,
-    val lastAccessDate: String? = null,
-    val folder: Boolean,
-    val path: String,
-    val name: String,
-    val fullPath: String,
-    val size: Long,
-    val sha256: String? = null,
-    val md5: String? = null,
-    val metadata: Map<String, Any>? = null,
-    val nodeMetadata: List<MetadataModel>? = null,
-    val projectId: String,
-    val repoName: String,
-    val category: String = RepositoryCategory.LOCAL.name,
-)
+@ReactiveFeignClient(GENERIC_SERVICE_NAME)
+@RequestMapping("/service")
+interface RGenericClient {
+    @GetMapping("/detail/{projectId}/{repoName}")
+    fun getNodeDetail(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String
+    ): Mono<Response<NodeDetail?>>
+
+    @PostMapping("/{projectId}/{repoName}/search")
+    fun search(
+        @PathVariable("projectId") projectId: String,
+        @PathVariable("repoName") repoName: String,
+        @RequestBody queryModel: QueryModel
+    ): Mono<Response<List<Any>>>
+}
