@@ -48,7 +48,7 @@ class AuthHandlerFilterFunction(
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse
     ): ServerResponse {
-        if (request.path().startsWith("/login") || request.path().startsWith("/devx/login")) {
+        if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
         var user = ANONYMOUS_USER
@@ -72,5 +72,9 @@ class AuthHandlerFilterFunction(
         } catch (exception: IllegalArgumentException) {
             throw AuthenticationException("Empty token")
         }
+    }
+
+    companion object {
+        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/ioa")
     }
 }
