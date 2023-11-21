@@ -38,19 +38,25 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
+import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
@@ -69,23 +75,30 @@ class DownloadService(
     fun download(artifactInfo: GenericArtifactInfo) {
         with(artifactInfo) {
             val node = ArtifactContextHolder.getNodeDetail(this)
-                ?: throw NodeNotFoundException(getArtifactFullPath())
-            val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
             val context = ArtifactDownloadContext()
-
-            // 仓库未开启自动创建目录索引时不允许访问目录
-            val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
-            if (node.folder && autoIndexSettings?.enabled == false) {
-                throw ErrorCodeException(
-                    messageCode = GenericMessageCode.LIST_DIR_NOT_ALLOWED,
-                    params = arrayOf(context.repoName, getArtifactFullPath()),
-                    status = HttpStatus.FORBIDDEN
-                )
+            if (node == null && context.repositoryDetail.category == RepositoryCategory.LOCAL) {
+                throw NodeNotFoundException(getArtifactFullPath())
             }
 
-            if (node.folder && !download) {
-                renderListView(node, this)
+            if (node != null) {
+                // 仓库未开启自动创建目录索引时不允许访问目录
+                val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
+                if (node.folder && autoIndexSettings?.enabled == false) {
+                    throw ErrorCodeException(
+                        messageCode = GenericMessageCode.LIST_DIR_NOT_ALLOWED,
+                        params = arrayOf(context.repoName, getArtifactFullPath()),
+                        status = HttpStatus.FORBIDDEN
+                    )
+                }
+
+                val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
+                if (node.folder && !download) {
+                    renderListView(node, this)
+                } else {
+                    repository.download(context)
+                }
             } else {
+                // 如果仓库类型不是Local，可能Node在远程仓库中，尝试下载
                 repository.download(context)
             }
         }
@@ -115,6 +128,26 @@ class DownloadService(
         ).data ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
         context.getInterceptors().forEach { it.intercept(nodeDetail.projectId, nodeDetail) }
         return true
+    }
+
+    fun query(artifactInfo: GenericArtifactInfo): Any? {
+        return repository.query(ArtifactQueryContext(artifact = artifactInfo))
+    }
+
+    fun search(queryModel: QueryModel): List<Any> {
+        val nodes = LinkedHashMap<String, Any>()
+        repository.search(GenericArtifactSearchContext(queryModel)).forEach {
+            require(it is Map<*, *>)
+            if (it[RepositoryInfo::category.name] == RepositoryCategory.LOCAL.name) {
+                // composite仓库的local node优先展示
+                nodes[it[NodeInfo::fullPath.name]!!.toString()] = it
+            } else {
+                // remote node按repository.search返回结果的原有顺序排序
+                nodes.putIfAbsent(it[NodeInfo::fullPath.name]!!.toString(), it)
+            }
+        }
+
+        return nodes.values.toList()
     }
 
     private fun renderListView(node: NodeDetail, artifactInfo: GenericArtifactInfo) {

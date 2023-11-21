@@ -29,7 +29,6 @@ package com.tencent.bkrepo.lfs.security
 
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -70,11 +69,6 @@ class RemoteAuthHandler : HttpAuthHandler {
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
         require(authCredentials is BasicAuthCredentials)
-        val passwordLength = authCredentials.password.length
-        val maskPassword = authCredentials.password.replaceRange(
-            IntRange(passwordLength / 2, passwordLength - 1),
-            StringPool.POUND.repeat(5)
-        )
-        return "${authCredentials.username}:$maskPassword"
+        return authCredentials.username
     }
 }

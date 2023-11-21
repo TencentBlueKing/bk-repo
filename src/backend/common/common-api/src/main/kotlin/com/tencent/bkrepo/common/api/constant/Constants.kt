@@ -89,6 +89,7 @@ const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"
 const val FS_SERVER_SERVICE_NAME = "\${service.prefix:}fs-server\${service.suffix:}"
 const val MAVEN_SERVICE_NAME = "\${service.prefix:}maven\${service.suffix:}"
 const val ARCHIVE_SERVICE_NAME = "\${service.prefix:}archive\${service.suffix:}"
+const val OPDATA_SERVICE_NAME = "\${service.prefix:}opdata\${service.suffix:}"
 
 /**
  * 认证相关
