@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.api
 
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
@@ -84,10 +85,11 @@ class NodeClient(
             ).awaitSingle().data?.records?.map { it.toNode() }?.toList()
         } else if (repo.type == RepositoryType.GENERIC) {
             val builder = NodeQueryBuilder()
+                .page(option.pageNumber, option.pageSize)
                 .select(*select)
                 .projectId(projectId)
                 .repoName(repo.name)
-                .path(path)
+                .path(path.ensureSuffix("/"))
             if (!option.includeFolder) {
                 builder.excludeFolder()
             }

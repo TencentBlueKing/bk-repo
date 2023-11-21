@@ -30,6 +30,7 @@ package com.tencent.bkrepo.generic.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -46,6 +47,7 @@ class ServiceGenericController(
     private val downloadService: DownloadService,
 ) : GenericClient {
     override fun getNodeDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
+        prepareRepo(projectId, repoName)
         val nodeDetail = downloadService.query(GenericArtifactInfo(projectId, repoName, fullPath))
         return if (nodeDetail is NodeDetail) {
             ResponseBuilder.success(nodeDetail)
@@ -55,8 +57,14 @@ class ServiceGenericController(
     }
 
     override fun search(projectId: String, repoName: String, queryModel: QueryModel): Response<List<Any>> {
+        prepareRepo(projectId, repoName)
+        return ResponseBuilder.success(downloadService.search(queryModel))
+    }
+
+    private fun prepareRepo(projectId: String, repoName: String) {
         // 设置artifact，避免创建context失败
         HttpContextHolder.getRequest().setAttribute(ARTIFACT_INFO_KEY, ArtifactInfo(projectId, repoName, ""))
-        return ResponseBuilder.success(downloadService.search(queryModel))
+        // 填充repo缓存，避免创建context失败
+        ArtifactContextHolder.getRepoDetail()
     }
 }
