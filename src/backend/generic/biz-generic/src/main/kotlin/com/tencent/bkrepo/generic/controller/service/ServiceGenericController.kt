@@ -38,9 +38,6 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 @Primary

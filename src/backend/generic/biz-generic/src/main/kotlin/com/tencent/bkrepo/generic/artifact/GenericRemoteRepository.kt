@@ -45,12 +45,22 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
+import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.config.GenericProperties
@@ -74,6 +84,31 @@ class GenericRemoteRepository(
 ) : RemoteRepository() {
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
+    }
+
+    override fun onDownloadResponse(context: ArtifactDownloadContext, response: okhttp3.Response): ArtifactResource {
+        val artifactFile = createTempFile(response.body!!)
+        val node = cacheArtifactFile(context, artifactFile)
+
+        val request = HttpContextHolder.getRequestOrNull()
+        val range = if (node != null && request != null) {
+            HttpRangeUtils.resolveRange(request, node.size)
+        } else {
+            Range.full(artifactFile.getSize())
+        }
+
+        val artifactStream = if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
+            // 空文件
+            ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+        } else if (range.isFullContent()) {
+            // 完整文件
+            artifactFile.getInputStream().artifactStream(range)
+        } else {
+            // 部分读取
+            val file = artifactFile.flushToFile()
+            FileArtifactInputStream(file, range)
+        }
+        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
     }
 
     override fun customHttpClient(builder: OkHttpClient.Builder) {

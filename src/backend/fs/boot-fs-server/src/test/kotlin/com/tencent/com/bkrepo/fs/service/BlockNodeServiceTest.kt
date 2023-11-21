@@ -4,7 +4,6 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
-import com.tencent.bkrepo.fs.server.api.RGenericClient
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.model.TBlockNode
 import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
@@ -42,9 +41,6 @@ class BlockNodeServiceTest {
 
     @MockBean
     lateinit var rRepositoryClient: RRepositoryClient
-
-    @MockBean
-    lateinit var rGenericClient: RGenericClient
 
     @Autowired
     lateinit var blockNodeService: BlockNodeService
