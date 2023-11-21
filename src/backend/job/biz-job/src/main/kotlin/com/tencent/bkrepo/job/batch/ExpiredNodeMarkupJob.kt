@@ -34,7 +34,6 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ExpiredNodeMarkupJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -52,7 +51,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(ExpiredNodeMarkupJobProperties::class)
 class ExpiredNodeMarkupJob(
     properties: ExpiredNodeMarkupJobProperties,
-    private val mongoTemplate: MongoTemplate
 ) : DefaultContextMongoDbJob<ExpiredNodeMarkupJob.Node>(properties) {
 
     data class Node(

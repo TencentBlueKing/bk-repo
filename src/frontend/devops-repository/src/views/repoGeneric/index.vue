@@ -57,6 +57,11 @@
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
+                        <bk-button class="ml10" v-if="multiSelect.length && multiSelect.some(key => (
+                            key.folder === true
+                        ))" @click="clean">
+                            {{ $t('clean') }}
+                        </bk-button>
                         <bk-input
                             class="w250 ml10"
                             v-model.trim="inFolderSearchName"
@@ -176,6 +181,7 @@
             </div>
         </div>
 
+        <generic-clean-dialog ref="genericCleanDialog" @refresh="refreshNodeChange"></generic-clean-dialog>
         <generic-detail ref="genericDetail"></generic-detail>
         <generic-form-dialog ref="genericFormDialog" @refresh="refreshNodeChange"></generic-form-dialog>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
@@ -201,10 +207,12 @@
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate, debounce } from '@repository/utils'
+    import { beforeMonths, beforeYears } from '@repository/utils/date'
     import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
     import Loading from '@repository/components/Loading/loading'
+    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
 
     export default {
         name: 'repoGeneric',
@@ -222,7 +230,8 @@
             genericTreeDialog,
             previewBasicFileDialog,
             compressedFileTable,
-            iamDenyDialog
+            iamDenyDialog,
+            genericCleanDialog
         },
         data () {
             return {
@@ -320,13 +329,13 @@
         created () {
             this.getRepoListAll({ projectId: this.projectId })
             this.initTree()
+            this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
             this.pathChange()
             window.repositoryVue.$on('upload-refresh', debounce((path) => {
                 if (path.replace(/\/[^/]+$/, '').includes(this.selectedTreeNode.fullPath)) {
                     this.itemClickHandler(this.selectedTreeNode)
                 }
             }))
-            this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
             if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
@@ -421,17 +430,36 @@
             pathChange () {
                 const paths = (this.$route.query.path || '').split('/').filter(Boolean)
                 paths.pop() // 定位到文件/文件夹的上级目录
-                paths.reduce(async (chain, path) => {
-                    const node = await chain
-                    if (!node) return
-                    await this.updateGenericTreeNode(node)
-                    const child = node.children.find(child => child.name === path)
-                    if (!child) return
-                    this.sideTreeOpenList.push(child.roadMap)
-                    return child
-                }, Promise.resolve(this.genericTree[0])).then(node => {
-                    this.itemClickHandler(node || this.genericTree[0])
-                })
+                const tempPaths = paths
+                const num = paths.length
+                let tempTree = this.genericTree[0]
+                if (tempTree.children.length === 0 && num > 0) {
+                    paths.reduce(async (chain, path) => {
+                        const node = await chain
+                        if (!node) return
+                        await this.updateGenericTreeNode(node)
+                        const child = node.children.find(child => child.name === path)
+                        if (!child) return
+                        this.sideTreeOpenList.push(child.roadMap)
+                        return child
+                    }, Promise.resolve(this.genericTree[0])).then(node => {
+                        this.itemClickHandler(node || this.genericTree[0])
+                    })
+                } else {
+                    let destNode
+                    while (tempPaths.length !== 0) {
+                        tempTree = tempTree.children.find(node => node.name === tempPaths[0])
+                        if (tempPaths.length === 1) {
+                            destNode = tempTree
+                        }
+                        tempPaths.shift()
+                    }
+                    if (num !== 0) {
+                        this.itemClickHandler(destNode)
+                    } else {
+                        this.itemClickHandler(this.genericTree[0])
+                    }
+                }
             },
             // 获取中间列表数据
             async getArtifactories () {
@@ -560,29 +588,31 @@
                 this.debounceClickTreeNode(node)
             },
             clickTreeNodeHandler (node) {
-                this.selectedTreeNode = node
+                if (node.fullPath + '/default' === this.$route.query.path) {
+                    this.selectedTreeNode = node
 
-                this.handlerPaginationChange()
-                // 更新已展开文件夹数据
-                const reg = new RegExp(`^${node.roadMap}`)
-                const openList = this.sideTreeOpenList
-                openList.splice(0, openList.length, ...openList.filter(v => !reg.test(v)))
-                // 打开选中节点的左侧树的所有祖先节点
-                node.roadMap.split(',').forEach((v, i, arr) => {
-                    const roadMap = arr.slice(0, i + 1).join(',')
-                    !openList.includes(roadMap) && openList.push(roadMap)
-                })
-                // 更新子文件夹
-                if (node.loading) return
-                this.updateGenericTreeNode(node)
-
-                // 更新url参数
-                this.$router.replace({
-                    query: {
-                        ...this.$route.query,
-                        path: `${node.fullPath}/default`
-                    }
-                })
+                    this.handlerPaginationChange()
+                    // 更新已展开文件夹数据
+                    const reg = new RegExp(`^${node.roadMap}`)
+                    const openList = this.sideTreeOpenList
+                    openList.splice(0, openList.length, ...openList.filter(v => !reg.test(v)))
+                    // 打开选中节点的左侧树的所有祖先节点
+                    node.roadMap.split(',').forEach((v, i, arr) => {
+                        const roadMap = arr.slice(0, i + 1).join(',')
+                        !openList.includes(roadMap) && openList.push(roadMap)
+                    })
+                    // 更新子文件夹
+                    if (node.loading) return
+                    this.updateGenericTreeNode(node)
+                } else {
+                    // 更新url参数
+                    this.$router.replace({
+                        query: {
+                            ...this.$route.query,
+                            path: `${node.fullPath}/default`
+                        }
+                    })
+                }
             },
             iconClickHandler (node) {
                 // 更新已展开文件夹数据
@@ -1233,6 +1263,42 @@
             closeLoading () {
                 clearInterval(this.timer)
                 this.timer = null
+            },
+            clean () {
+                const fullPaths = []
+                const displayPaths = []
+                this.multiSelect.forEach(value => {
+                    let tempTree = this.genericTree[0]
+                    let tempDisplayName = '/'
+                    if (value.folder === true) {
+                        const pas = value.fullPath.split('/').filter(Boolean)
+                        while (pas.length !== 0) {
+                            tempTree = tempTree.children.find(node => node.name === pas[0])
+                            tempDisplayName = tempDisplayName + tempTree.displayName + '/'
+                            pas.shift()
+                        }
+                        displayPaths.push({
+                            path: tempDisplayName,
+                            isComplete: false
+                        })
+                        fullPaths.push({
+                            path: value.fullPath,
+                            isComplete: false
+                        })
+                    }
+                })
+                this.$refs.genericCleanDialog.show = true
+                this.$refs.genericCleanDialog.repoName = this.repoName
+                this.$refs.genericCleanDialog.projectId = this.projectId
+                this.$refs.genericCleanDialog.paths = fullPaths
+                this.$refs.genericCleanDialog.displayPaths = displayPaths
+                this.$refs.genericCleanDialog.loading = false
+                this.$refs.genericCleanDialog.isComplete = false
+                if (this.repoName === 'pipeline') {
+                    this.$refs.genericCleanDialog.date = beforeMonths(2)
+                } else {
+                    this.$refs.genericCleanDialog.date = beforeYears(1)
+                }
             }
         }
     }

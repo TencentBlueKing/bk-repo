@@ -184,7 +184,9 @@ export default {
       } else {
         realType = this.type
       }
-      const url = '/opdata/api/project/metrics/list/project/capSize/download/?' + (this.limitSize === '' ? '' : 'limitSize=' + this.limitSize * 1024 * 1024 * 1024 + '&') + 'type=' + realType
+      const url = '/opdata/api/project/metrics/list/project/capSize/download/?' +
+        (this.limitSize === '' ? '' : 'limitSize=' + this.limitSize * 1024 * 1024 * 1024 + '&') +
+        (realType === null ? '' : 'type=' + realType)
       window.open(
         '/web' + url,
         '_self'

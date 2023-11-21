@@ -119,10 +119,11 @@ class LfsRemoteRepository : RemoteRepository() {
         val actionDetail = lfsObject.actions!![DOWNLOAD_OPERATION]!!
         with(actionDetail) {
             val request = Request.Builder().url(href).headers(header.toHeaders()).get().build()
-            val response = httpClient.newCall(request).execute()
-            return if (checkResponse(response)) {
-                onDownloadResponse(context, response, lfsObject.size)
-            } else null
+            httpClient.newCall(request).execute().use {
+                return if (checkResponse(it)) {
+                    onDownloadResponse(context, it, lfsObject.size)
+                } else null
+            }
         }
     }
 }
