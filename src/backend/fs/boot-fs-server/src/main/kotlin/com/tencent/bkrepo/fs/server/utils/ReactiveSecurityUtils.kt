@@ -28,11 +28,23 @@
 package com.tencent.bkrepo.fs.server.utils
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import org.springframework.web.reactive.function.server.ServerRequest
 import reactor.core.publisher.Mono
 
 object ReactiveSecurityUtils {
+
+    fun ServerRequest.bearerToken(): String? {
+        val authHeader = headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+        return if (authHeader?.startsWith(BEARER_AUTH_PREFIX) == true) {
+            authHeader.removePrefix(BEARER_AUTH_PREFIX)
+        } else {
+            authHeader
+        }
+    }
 
     suspend fun getUser(): String {
         return ReactiveRequestContextHolder

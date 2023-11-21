@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
@@ -58,7 +58,7 @@ class AuthHandlerFilterFunction(
             }
             request.headers().header("X-BKREPO-SECURITY-TOKEN").firstOrNull()
         } else {
-            request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+            request.bearerToken()
         } ?: throw AuthenticationException("missing token.")
 
         try {
