@@ -43,6 +43,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -183,5 +184,15 @@ class NodeController(
         projectId: String, repoName: String, sha256: String
     ): Response<NodeDetail?> {
         return ResponseBuilder.success(nodeService.getDeletedNodeDetailBySha256(projectId, repoName, sha256))
+    }
+
+    override fun cleanNodes(nodeCleanRequest: NodeCleanRequest): Response<NodeDeleteResult> {
+        return ResponseBuilder.success(nodeService.deleteBeforeDate(
+            projectId = nodeCleanRequest.projectId,
+            repoName = nodeCleanRequest.repoName,
+            path = nodeCleanRequest.path,
+            date = nodeCleanRequest.date,
+            operator = nodeCleanRequest.operator
+        ))
     }
 }
