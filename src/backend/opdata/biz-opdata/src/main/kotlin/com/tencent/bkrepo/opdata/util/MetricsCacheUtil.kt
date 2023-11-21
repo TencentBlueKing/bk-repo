@@ -62,7 +62,7 @@ class MetricsCacheUtil(
             }
             CacheBuilder.newBuilder()
                 .maximumSize(5)
-                .expireAfterWrite(60, TimeUnit.MINUTES)
+                .expireAfterWrite(30, TimeUnit.MINUTES)
                 .build(cacheLoader)
         }
         private val projectNodeCache: LoadingCache<String, Long> by lazy {
@@ -73,7 +73,7 @@ class MetricsCacheUtil(
             }
             CacheBuilder.newBuilder()
                 .maximumSize(10)
-                .expireAfterWrite(60, TimeUnit.MINUTES)
+                .expireAfterWrite(30, TimeUnit.MINUTES)
                 .build(cacheLoader)
         }
 
