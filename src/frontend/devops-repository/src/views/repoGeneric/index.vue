@@ -57,7 +57,7 @@
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
-                        <bk-button class="ml10" v-if="multiSelect.length && multiSelect.some(key => (
+                        <bk-button class="ml10" v-if="(userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
                             key.folder === true
                         ))" @click="clean">
                             {{ $t('clean') }}
@@ -161,7 +161,7 @@
                                         ] : [])
                                     ] : []),
                                     !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
-                                    permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
+                                    permission.delete && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline') && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ]">
                             </operation-list>
                         </template>
