@@ -181,10 +181,10 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.countDeleteNodes(nodesDeleteRequest))
     }
 
-    @ApiOperation("清理创建时间早于{date}的文件节点")
+    @ApiOperation("清理最后修改时间早于{date}的文件节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping("/clean/$DEFAULT_MAPPING_URI")
-    fun deleteNodeCreatedBeforeDate(
+    fun deleteNodeLastModifiedBeforeDate(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) date: LocalDateTime

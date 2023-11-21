@@ -223,7 +223,7 @@ interface NodeClient {
     fun restoreNode(@RequestBody nodeArchiveRequest: NodeArchiveRequest): Response<Void>
 
 
-    @ApiOperation("清理创建时间早于{date}的文件节点")
+    @ApiOperation("清理最后修改时间早于{date}的文件节点")
     @DeleteMapping("/clean")
     fun cleanNodes(@RequestBody nodeCleanRequest: NodeCleanRequest): Response<NodeDeleteResult>
 }
