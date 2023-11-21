@@ -258,11 +258,12 @@ class UserRepositoryController(
         @RequestParam projectId: String,
         @RequestParam(required = false) repoName: String?,
         @RequestParam days: Int,
+        @RequestParam size: Long,
         @RequestAttribute userId: String,
     ): Response<ArchiveInfo> {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId, userId)
         val archiveInfo = ArchiveInfo(
-            available = repositoryService.getArchivableSize(projectId, repoName, days),
+            available = repositoryService.getArchivableSize(projectId, repoName, days, size),
         )
         return ResponseBuilder.success(archiveInfo)
     }

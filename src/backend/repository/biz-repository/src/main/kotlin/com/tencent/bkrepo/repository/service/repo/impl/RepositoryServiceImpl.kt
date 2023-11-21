@@ -115,7 +115,7 @@ class RepositoryServiceImpl(
     private val repositoryProperties: RepositoryProperties,
     private val messageSupplier: MessageSupplier,
     private val servicePermissionClient: ServicePermissionClient,
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
 ) : RepositoryService {
 
     init {
@@ -602,7 +602,7 @@ class RepositoryServiceImpl(
         }
     }
 
-    override fun getArchivableSize(projectId: String, repoName: String?, days: Int): Long {
+    override fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long?): Long {
         val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(days.toLong()))
         val criteria = where(TNode::folder).isEqualTo(false)
             .and(TNode::deleted).isEqualTo(null)
@@ -614,6 +614,7 @@ class RepositoryServiceImpl(
                 where(TNode::lastAccessDate).lt(cutoffTime),
             ).apply {
                 repoName?.let { and(TNode::repoName).isEqualTo(it) }
+                size?.let { and(TNode::size).gt(it) }
             }
         return nodeService.aggregateComputeSize(criteria)
     }
