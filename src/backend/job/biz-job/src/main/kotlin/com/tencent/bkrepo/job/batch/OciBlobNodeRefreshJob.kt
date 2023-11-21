@@ -35,7 +35,6 @@ import com.tencent.bkrepo.job.config.properties.OciBlobNodeRefreshJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.oci.api.OciClient
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -51,7 +50,6 @@ import java.time.Duration
 @EnableConfigurationProperties(OciBlobNodeRefreshJobProperties::class)
 class OciBlobNodeRefreshJob(
     private val properties: OciBlobNodeRefreshJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val ociClient: OciClient
 ) : DefaultContextMongoDbJob<OciBlobNodeRefreshJob.PackageData>(properties) {
     private val types: List<String>

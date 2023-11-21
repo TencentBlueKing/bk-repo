@@ -41,12 +41,14 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.node.impl.NodeArchiveSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeRenameSupport
@@ -179,5 +181,13 @@ class EdgeNodeServiceImpl(
 
     override fun restoreNode(restoreContext: NodeRestoreSupport.RestoreContext): NodeRestoreResult {
         return NodeRestoreSupport(this).restoreNode(restoreContext)
+    }
+
+    override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
+        return NodeArchiveSupport(this).archiveNode(nodeArchiveRequest)
+    }
+
+    override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
+        return NodeArchiveSupport(this).restoreNode(nodeArchiveRequest)
     }
 }

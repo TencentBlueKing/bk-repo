@@ -35,7 +35,6 @@ import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.bson.types.Binary
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -49,7 +48,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(ExpiredDdcRefCleanupJobProperties::class)
 class ExpiredDdcRefCleanupJob(
     private val properties: ExpiredDdcRefCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val nodeClient: NodeClient,
 ) : DefaultContextMongoDbJob<ExpiredDdcRefCleanupJob.Ref>(properties) {
     override fun collectionNames(): List<String> = listOf(COLLECTION_NAME, COLLECTION_NAME_LEGACY)

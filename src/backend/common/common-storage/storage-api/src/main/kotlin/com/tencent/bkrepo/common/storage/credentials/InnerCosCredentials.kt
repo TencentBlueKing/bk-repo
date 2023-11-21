@@ -50,6 +50,7 @@ data class InnerCosCredentials(
     var cmdId: Int? = null,
     var timeout: Float = 0.5F,
     var public: Boolean = false,
+    var inner: Boolean = false,
     var slowLogSpeed: Int = MB,
     var slowLogTimeInMillis: Long = 30_000,
     var download: DownloadProperties = DownloadProperties(),

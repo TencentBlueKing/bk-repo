@@ -5,7 +5,6 @@ import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.CompositeMongoDbBatchJob
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
@@ -16,7 +15,6 @@ import java.util.Date
 @EnableConfigurationProperties(NodeStatCompositeMongoDbBatchJobProperties::class)
 class NodeStatCompositeMongoDbBatchJob(
     val properties: NodeStatCompositeMongoDbBatchJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>
 ) : CompositeMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
@@ -32,7 +30,7 @@ class NodeStatCompositeMongoDbBatchJob(
 
     override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
         return listOf(
-            FolderStatChildJob(properties, mongoTemplate, redisTemplate)
+            FolderStatChildJob(properties, redisTemplate)
         )
     }
 

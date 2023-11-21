@@ -51,7 +51,6 @@ import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -66,7 +65,6 @@ import java.time.Duration
 @EnableConfigurationProperties(EmptyFolderCleanupJobProperties::class)
 class EmptyFolderCleanupJob(
     properties: EmptyFolderCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val nodeClient: NodeClient
 ): DefaultContextMongoDbJob<EmptyFolderCleanupJob.Node>(properties) {
 
