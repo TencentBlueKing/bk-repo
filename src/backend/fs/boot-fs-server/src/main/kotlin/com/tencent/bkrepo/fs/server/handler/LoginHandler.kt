@@ -103,6 +103,11 @@ class LoginHandler(
         return ReactiveResponseBuilder.success(token)
     }
 
+    suspend fun ioaTicket(request: ServerRequest): ServerResponse {
+        IoaUtils.proxyTicketRequest(request)
+        return ReactiveResponseBuilder.success()
+    }
+
     private suspend fun createUser(userName: String) {
         val request = CreateUserRequest(userId = userName, name = userName)
         rAuthClient.create(request).awaitSingle()

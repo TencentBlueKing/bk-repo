@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.hash.sha256
@@ -38,7 +40,12 @@ import com.tencent.bkrepo.fs.server.response.IoaTicketResponse
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.server.ServerRequest
+import reactor.netty.http.client.HttpClient
+import reactor.netty.resources.ConnectionProvider
+import java.time.Duration
 import kotlin.random.Random
 
 @EnableConfigurationProperties(IoaProperties::class)
@@ -53,6 +60,12 @@ class IoaUtils(
     companion object {
         private val logger = LoggerFactory.getLogger(IoaUtils::class.java)
         private lateinit var ioaProperties: IoaProperties
+        private val httpClient by lazy {
+            val provider = ConnectionProvider.builder("IOA").maxIdleTime(Duration.ofSeconds(30L)).build()
+            val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(30L))
+            val connector = ReactorClientHttpConnector(client)
+            WebClient.builder().clientConnector(connector).build()
+        }
 
         suspend fun checkTicket(ioaLoginRequest: IoaLoginRequest) {
             val timestamp = (System.currentTimeMillis() / 1000L).toString()
@@ -77,7 +90,8 @@ class IoaUtils(
             val sSignature = signOrigin.sha256()
 
             val headers = mutableMapOf(
-                "Host" to ioaProperties.host,
+                HttpHeaders.CONTENT_TYPE to MediaTypes.APPLICATION_JSON,
+                HttpHeaders.HOST to ioaProperties.host,
                 "STimestamp" to timestamp,
                 "SRandom" to random,
                 "SAppId" to appId,
@@ -88,9 +102,7 @@ class IoaUtils(
                 headers["signature"] = "$timestamp${ioaProperties.token}$timestamp".sha256()
             }
 
-            val client = WebClient.create()
-
-            val response = client.post()
+            val response = httpClient.post()
                 .uri(ioaProperties.ticketUrl)
                 .headers { httpHeaders -> headers.forEach { httpHeaders.add(it.key, it.value) } }
                 .bodyValue(jsonBodyValue)
@@ -101,6 +113,23 @@ class IoaUtils(
             val ioaTicketResponse = response.readJsonString<IoaTicketResponse>()
             if (ioaTicketResponse.ret != 0) {
                 logger.info("ioa ticket check failed with $ioaLoginRequest, $ioaTicketResponse")
+                throw AuthenticationException("Check ticket failed: $ioaTicketResponse")
+            }
+        }
+
+        suspend fun proxyTicketRequest(request: ServerRequest) {
+            val ioaTicketRequest = request.bodyToMono(IoaTicketRequest::class.java).awaitSingle()
+            val headers = request.headers().asHttpHeaders()
+            val response = httpClient.post()
+                .uri(ioaProperties.ticketUrl)
+                .headers { it.setAll(headers.toSingleValueMap())}
+                .bodyValue(ioaTicketRequest.toJsonString())
+                .retrieve()
+                .bodyToMono(String::class.java)
+                .awaitSingle()
+            val ioaTicketResponse = response.readJsonString<IoaTicketResponse>()
+            if (ioaTicketResponse.ret != 0) {
+                logger.info("ioa ticket check failed with $ioaTicketRequest, $ioaTicketResponse")
                 throw AuthenticationException("Check ticket failed: $ioaTicketResponse")
             }
         }
