@@ -85,7 +85,7 @@
                                     && row.name !== 'log'
                                     && row.name !== 'pipeline'
                                 )) && { label: $t('delete'), clickEvent: () => deleteRepo(row) },
-                            (userInfo.admin || userInfo.manage) && { label: $t('cleanRepo'), clickEvent: () => cleanRepo(row) }
+                            (userInfo.admin || userInfo.manage) && (row.repoType === 'generic') && { label: $t('cleanRepo'), clickEvent: () => cleanRepo(row) }
                         ]">
                     </operation-list>
                 </template>

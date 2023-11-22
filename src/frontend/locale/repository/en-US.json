@@ -320,7 +320,7 @@
     "equal":"Equal",
     "contain": "Contain",
     "regular":"Regular",
-    "inputFilePathTip": "Please enter the absolute path of the file directory",
+    "inputFilePathTip": "Please enter the absolute path",
     "autoCleanup": "Auto cleanup",
     "minimumVersion":"minimum version",
     "cleanTip": "The number of artifact versions exceeds the number of reserved versions, and the artifact versions that have not been used within the retention time will be cleared",
@@ -804,5 +804,15 @@
     "cleanNodeTitle": "Clean Folder",
     "complete": "Done",
     "cleanFolderTip": "Files uploaded before the deadline will be cleared",
-    "cleanRepo": "Clean"
+    "cleanRepo": "Clean",
+    "cleanConfigTip": "Please enter the correct input",
+    "cleanupStrategy": "Cleanup Strategy",
+    "retentionDays":"Retention Days",
+    "retentionDate":"Retention Date",
+    "retentionNums":"Reserve Number",
+    "chooseDateTip": "Please select date time",
+    "cleanTarget":"Clean Target",
+    "addTarget": "Add Target",
+    "cleanConfig":"Clean Config",
+    "and": "and"
 }
