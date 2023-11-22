@@ -32,9 +32,11 @@
 package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.auth.constant.PIPELINE
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -49,10 +51,10 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
-import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveContentRange
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
@@ -60,7 +62,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.config.GenericProperties
@@ -86,27 +88,71 @@ class GenericRemoteRepository(
         return redirectManager.redirect(context)
     }
 
-    override fun onDownloadResponse(context: ArtifactDownloadContext, response: okhttp3.Response): ArtifactResource {
-        val artifactFile = createTempFile(response.body!!)
-        val node = cacheArtifactFile(context, artifactFile)
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        return getCacheArtifactResource(context) ?: run {
+            val remoteConfiguration = context.getRemoteConfiguration()
+            val httpClient = createHttpClient(remoteConfiguration)
+            val downloadUrl = createRemoteDownloadUrl(context)
+            // 构造request
+            val request = Request.Builder().apply {
+                if (HttpContextHolder.getRequestOrNull()?.method == HEAD.name) {
+                    head()
+                } else {
+                    get()
+                }
+                url(downloadUrl)
+                // 支持分片下载
+                HttpContextHolder.getRequestOrNull()?.getHeader(HttpHeaders.RANGE)
+                    ?.let { header(HttpHeaders.RANGE, it) }
+            }.build()
 
-        val request = HttpContextHolder.getRequestOrNull()
-        val range = if (node != null && request != null) {
-            HttpRangeUtils.resolveRange(request, node.size)
+            // 发起请求
+            val response = httpClient.newCall(request).execute()
+            return if (checkResponse(response)) {
+                onDownloadResponse(context, response)
+            } else null
+        }
+    }
+
+    override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
+        val range = HttpContextHolder.getRequestOrNull()
+            ?.let { resolveRange(it, cacheNode.size) }
+            ?: Range.full(cacheNode.size)
+
+        val artifactInputStream = if (shouldReturnEmptyStream(range)) {
+            ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         } else {
-            Range.full(artifactFile.getSize())
+            storageService.load(cacheNode.sha256!!, range, context.storageCredentials)
         }
 
-        val artifactStream = if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
+        return artifactInputStream?.run {
+            if (logger.isDebugEnabled) {
+                logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
+            }
+            ArtifactResource(this, context.artifactInfo.getResponseName(), cacheNode, ArtifactChannel.PROXY)
+        }
+    }
+
+    override fun onDownloadResponse(context: ArtifactDownloadContext, response: okhttp3.Response): ArtifactResource {
+        if (response.header(HttpHeaders.TRANSFER_ENCODING) == "chunked") {
+            throw ErrorCodeException(PARAMETER_INVALID, "Transfer-Encoding: chunked was not supported")
+        }
+        val contentLength = response.header(HttpHeaders.CONTENT_LENGTH)!!.toLong()
+        val range = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE)) ?: Range.full(contentLength)
+        var node: NodeDetail? = null
+
+        val request = HttpContextHolder.getRequestOrNull()
+        val artifactStream = if (range.isEmpty() || request?.method == HEAD.name) {
             // 空文件
             ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         } else if (range.isFullContent()) {
             // 完整文件
+            val artifactFile = createTempFile(response.body!!)
+            node = cacheArtifactFile(context, artifactFile)
             artifactFile.getInputStream().artifactStream(range)
         } else {
             // 部分读取
-            val file = artifactFile.flushToFile()
-            FileArtifactInputStream(file, range)
+            response.body!!.byteStream().artifactStream(range)
         }
         return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
     }
@@ -247,6 +293,11 @@ class GenericRemoteRepository(
         // 执行请求
         val request = Request.Builder().url(url).post(body).build()
         return request<Response<Page<Map<String, Any?>>>>(context.getRemoteConfiguration(), request).data!!.records
+    }
+
+    private fun shouldReturnEmptyStream(range: Range? = null): Boolean {
+        val rangeToTest = range ?: HttpContextHolder.getRequestOrNull()?.let { resolveRange(it, Long.MAX_VALUE) }
+        return HttpContextHolder.getRequestOrNull()?.method == HEAD.name || rangeToTest?.isEmpty() == true
     }
 
     private inline fun <reified T> request(remoteConfiguration: RemoteConfiguration, request: Request): T {
