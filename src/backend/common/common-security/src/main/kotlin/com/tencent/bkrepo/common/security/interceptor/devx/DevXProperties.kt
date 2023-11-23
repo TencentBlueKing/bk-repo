@@ -86,7 +86,8 @@ data class DevXProperties(
      */
     var srcHeaderValues: List<String> = emptyList(),
     /**
-     * devX拦截器优先级，如果需要取用户信息优先级需要比[HttpAuthInterceptor]拦截器低
+     * devX拦截器优先级，
+     * 如果需要取用户信息优先级需要比[com.tencent.bkrepo.common.security.http.core.HttpAuthInterceptor]拦截器低
      */
     var interceptorOrder: Int = Ordered.LOWEST_PRECEDENCE - 100,
     /**
@@ -97,4 +98,8 @@ data class DevXProperties(
      * 应用devX拦截器的接口
      */
     var includePatterns: List<String> = emptyList(),
+    /**
+     * 快捷登录组账号关联用户
+     */
+    var asstUser: String = "",
 )
