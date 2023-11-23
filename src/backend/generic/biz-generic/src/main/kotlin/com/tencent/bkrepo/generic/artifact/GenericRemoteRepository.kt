@@ -51,8 +51,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.remote.RemoteArtifactCacheWriter
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.buildOkHttpClient
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
@@ -64,36 +64,32 @@ import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
-import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
+import com.tencent.bkrepo.generic.artifact.remote.AsyncRemoteArtifactCacheWriter
+import com.tencent.bkrepo.generic.artifact.remote.RemoteArtifactCacheWriter
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import okhttp3.Dns
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.net.Inet4Address
-import java.net.InetAddress
 
 @Component
 class GenericRemoteRepository(
     private val genericProperties: GenericProperties,
     private val storageProperties: StorageProperties,
     private val storageHealthMonitorHelper: StorageHealthMonitorHelper,
+    private val asyncCacheWriter: AsyncRemoteArtifactCacheWriter,
 ) : RemoteRepository() {
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
@@ -102,7 +98,7 @@ class GenericRemoteRepository(
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return getCacheArtifactResource(context) ?: run {
             val remoteConfiguration = context.getRemoteConfiguration()
-            val httpClient = createHttpClient(remoteConfiguration)
+            val httpClient = createGenericHttpClient(remoteConfiguration)
             val downloadUrl = createRemoteDownloadUrl(context)
             // 构造request
             val request = Request.Builder().apply {
@@ -133,7 +129,7 @@ class GenericRemoteRepository(
         val artifactInputStream = if (shouldReturnEmptyStream(range)) {
             ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         } else {
-            storageService.load(cacheNode.sha256!!, range, context.storageCredentials)
+            storageService.load(cacheNode.sha256!!, range, context.repositoryDetail.storageCredentials)
         }
 
         return artifactInputStream?.run {
@@ -154,6 +150,7 @@ class GenericRemoteRepository(
         val request = HttpContextHolder.getRequestOrNull()
         val artifactStream = if (range.isEmpty() || request?.method == HEAD.name) {
             // 返回空文件
+            response.close()
             ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         } else {
             // 返回文件内容
@@ -161,6 +158,9 @@ class GenericRemoteRepository(
                 if (range.isFullContent() && context.getRemoteConfiguration().cache.enabled) {
                     // 仅缓存完整文件，返回响应的同时写入缓存
                     addListener(buildCacheWriter(context, contentLength))
+                } else if (context.getRemoteConfiguration().cache.enabled) {
+                    // 分片下载时异步拉取完整文件并缓存
+                    asyncCache(context, response.request)
                 }
             }
         }
@@ -176,34 +176,6 @@ class GenericRemoteRepository(
             channel = ArtifactChannel.LOCAL,
             useDisposition = preview != true || download == true,
         )
-    }
-
-    override fun customHttpClient(builder: OkHttpClient.Builder) {
-        builder.dns(object : Dns {
-            override fun lookup(hostname: String): List<InetAddress> {
-                return genericProperties.platforms.firstOrNull { it.host == hostname && it.ip.isNotEmpty() }?.let {
-                    listOf(Inet4Address.getByName(it.ip))
-                } ?: Dns.SYSTEM.lookup(hostname)
-            }
-        })
-    }
-
-    override fun createAuthenticateInterceptor(configuration: RemoteConfiguration): Interceptor? {
-        val username = configuration.credentials.username
-        val password = configuration.credentials.password
-
-        // basic认证
-        if (!username.isNullOrEmpty() && !password.isNullOrEmpty()) {
-            return BasicAuthInterceptor(username, password)
-        }
-
-        // platform认证
-        val url = configuration.url.toHttpUrl()
-        genericProperties.platforms.firstOrNull { it.host == url.host || it.ip == url.host }?.let {
-            return PlatformAuthInterceptor(it.accessKey, it.secretKey, SecurityUtils.getUserId())
-        }
-
-        return null
     }
 
     override fun query(context: ArtifactQueryContext): Any? {
@@ -244,8 +216,29 @@ class GenericRemoteRepository(
         } ?: emptyList()
     }
 
+    private fun createGenericHttpClient(configuration: RemoteConfiguration): OkHttpClient {
+        val platforms = genericProperties.platforms
+        val builder = buildOkHttpClient(configuration, false).dns(createPlatformDns(platforms))
+        createAuthenticateInterceptor(configuration, platforms)?.let { builder.addInterceptor(it) }
+        return builder.build()
+    }
+
+    private fun asyncCache(context: ArtifactDownloadContext, request: Request) {
+        val cacheTask = AsyncRemoteArtifactCacheWriter.CacheTask(
+            projectId = context.repositoryDetail.projectId,
+            repoName = context.repositoryDetail.name,
+            storageCredentials = context.repositoryDetail.storageCredentials ?: storageProperties.defaultStorageCredentials(),
+            remoteConfiguration = context.getRemoteConfiguration(),
+            fullPath = context.artifactInfo.getArtifactFullPath(),
+            userId = context.userId,
+            request = request
+        )
+        asyncCacheWriter.cache(cacheTask)
+    }
+
     private fun buildCacheWriter(context: ArtifactContext, contentLength: Long): RemoteArtifactCacheWriter {
-        val storageCredentials = context.storageCredentials ?: storageProperties.defaultStorageCredentials()
+        val storageCredentials = context.repositoryDetail.storageCredentials
+            ?: storageProperties.defaultStorageCredentials()
         val monitor = storageHealthMonitorHelper.getMonitor(storageProperties, storageCredentials)
         return RemoteArtifactCacheWriter(context, storageManager, monitor, contentLength, storageProperties)
     }
@@ -323,7 +316,7 @@ class GenericRemoteRepository(
     }
 
     /**
-     * 远程仓库是bkrepo时，[response]的header里面包含Node相关header，可以直接写到返回给客户端的响应中
+     * 远程仓库是bkrepo时，okhttp response的header里面包含Node相关header，可以直接写到返回给客户端的响应中
      * 使用此方法可以避免远程Node尚未被缓存时，返回给客户端的响应中不包含Node相关header
      */
     private fun addHeadersOfNode(headers: Headers) {
@@ -339,7 +332,7 @@ class GenericRemoteRepository(
     }
 
     private inline fun <reified T> request(remoteConfiguration: RemoteConfiguration, request: Request): T {
-        val httpClient = createHttpClient(remoteConfiguration)
+        val httpClient = createGenericHttpClient(remoteConfiguration)
         val response = httpClient.newCall(request).execute()
         // 解析结果
         return if (response.isSuccessful) {

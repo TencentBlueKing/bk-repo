@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.repository.remote
+package com.tencent.bkrepo.generic.artifact.remote
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
@@ -53,7 +53,8 @@ class RemoteArtifactCacheWriter(
     private val useLocalPath: Boolean
 
     init {
-        val storageCredentials = context.storageCredentials ?: storageProperties.defaultStorageCredentials()
+        val storageCredentials = context.repositoryDetail.storageCredentials
+            ?: storageProperties.defaultStorageCredentials()
         // 主要路径，可以为DFS路径
         val path = storageCredentials.upload.location.toPath()
         // 本地路径
@@ -90,7 +91,7 @@ class RemoteArtifactCacheWriter(
         storageManager.storeArtifactFile(
             buildCacheNodeCreateRequest(context, artifactFile),
             artifactFile,
-            context.storageCredentials
+            context.repositoryDetail.storageCredentials
         )
         logger.info(
             "receive[${receiver.filePath}] finished, store remote artifact[${context.artifactInfo}] cache success"
