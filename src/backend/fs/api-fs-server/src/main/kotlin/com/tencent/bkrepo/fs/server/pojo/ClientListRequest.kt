@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 data class ClientListRequest(
     val projectId: String?,
     val repoName: String?,
+    val online:Boolean?,
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
     val pageSize: Int = DEFAULT_PAGE_SIZE
 )
