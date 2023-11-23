@@ -33,6 +33,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class IoaProperties(
     // 票据校验url
     var ticketUrl: String = "",
+    // 票据校验域名自定义dns结果
+    var ticketIp: String = "",
     // 签名需要的host
     var host: String = "",
     // 应用id

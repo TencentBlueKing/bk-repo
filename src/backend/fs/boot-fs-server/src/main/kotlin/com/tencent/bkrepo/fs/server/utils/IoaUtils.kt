@@ -37,6 +37,11 @@ import com.tencent.bkrepo.fs.server.config.propteries.IoaProperties
 import com.tencent.bkrepo.fs.server.request.IoaLoginRequest
 import com.tencent.bkrepo.fs.server.request.IoaTicketRequest
 import com.tencent.bkrepo.fs.server.response.IoaTicketResponse
+import io.netty.channel.nio.NioEventLoopGroup
+import io.netty.resolver.HostsFileEntriesResolver
+import io.netty.resolver.ResolvedAddressTypes
+import io.netty.resolver.dns.DnsAddressResolverGroup
+import io.netty.resolver.dns.DnsNameResolverBuilder
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -45,8 +50,10 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.server.ServerRequest
 import reactor.netty.http.client.HttpClient
 import reactor.netty.resources.ConnectionProvider
+import java.net.InetAddress
 import java.time.Duration
 import kotlin.random.Random
+
 
 @EnableConfigurationProperties(IoaProperties::class)
 class IoaUtils(
@@ -60,9 +67,24 @@ class IoaUtils(
     companion object {
         private val logger = LoggerFactory.getLogger(IoaUtils::class.java)
         private lateinit var ioaProperties: IoaProperties
+
         private val httpClient by lazy {
+            val hostsFileEntriesResolver = HostsFileEntriesResolver { inetHost, types ->
+                val ipv4 = types == ResolvedAddressTypes.IPV4_ONLY || types == ResolvedAddressTypes.IPV4_PREFERRED
+                if (ioaProperties.ticketUrl.contains(inetHost) && ipv4 && ioaProperties.ticketIp.isNotBlank()) {
+                    InetAddress.getByName(ioaProperties.ticketIp)
+                } else {
+                    null
+                }
+            }
+            val resolver = DnsAddressResolverGroup(DnsNameResolverBuilder()
+                .eventLoop(NioEventLoopGroup().next())
+                .channelFactory { io.netty.channel.socket.nio.NioDatagramChannel() }
+                .hostsFileEntriesResolver(hostsFileEntriesResolver)
+            )
+
             val provider = ConnectionProvider.builder("IOA").maxIdleTime(Duration.ofSeconds(30L)).build()
-            val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(30L))
+            val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(30L)).resolver(resolver)
             val connector = ReactorClientHttpConnector(client)
             WebClient.builder().clientConnector(connector).build()
         }
