@@ -35,6 +35,16 @@
           </template>
         </el-autocomplete>
       </el-form-item>
+      <el-form-item style="margin-left: 15px" label="是否在线" prop="online">
+        <el-select v-model="clientQuery.online" clearable placeholder="请选择">
+          <el-option
+            v-for="item in options"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button
           size="mini"
@@ -52,7 +62,7 @@
       <el-table-column prop="version" label="版本" />
       <el-table-column prop="os" label="操作系统" />
       <el-table-column prop="arch" label="架构" />
-      <el-table-column prop="online" label="是否在线">
+      <el-table-column prop="online" label="是否在线" :filters="[{ text: '是', value: true }, { text: '否', value: false }]" :filter-method="filterFunction">
         <template slot-scope="scope">
           {{ scope.row.online ? "是":"否" }}
         </template>
@@ -92,9 +102,17 @@ export default {
       clientQuery: {
         projectId: '',
         repoName: '',
-        pageNumber: 1
+        pageNumber: 1,
+        online: ''
       },
-      clients: []
+      clients: [],
+      options: [{
+        value: 'true',
+        label: '是'
+      }, {
+        value: 'false',
+        label: '否'
+      }]
     }
   },
   mounted() {
@@ -146,6 +164,7 @@ export default {
       }
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
+      query.online = this.clientQuery.online
       this.$router.push({ path: '/nodes/FileSystem', query: query })
     },
     onRouteUpdate(route) {
@@ -154,6 +173,7 @@ export default {
       clientQuery.projectId = query.projectId ? query.projectId : ''
       clientQuery.repoName = query.repoName ? query.repoName : ''
       clientQuery.pageNumber = query.page ? Number(query.page) : 1
+      clientQuery.online = query.online ? query.online : ''
       this.$nextTick(() => {
         this.queryClients(clientQuery)
       })
@@ -170,7 +190,7 @@ export default {
     doQueryClients(clientQuery) {
       this.loading = true
       let promise = null
-      promise = queryFileSystemClient(clientQuery.projectId, clientQuery.repoName, clientQuery.pageNumber)
+      promise = queryFileSystemClient(clientQuery.projectId, clientQuery.repoName, clientQuery.pageNumber, clientQuery.online)
       promise.then(res => {
         this.clients = res.data.records
         this.total = res.data.totalRecords
@@ -183,6 +203,9 @@ export default {
     },
     formatNormalDate(data) {
       return formatNormalDate(data)
+    },
+    filterFunction(value, row) {
+      return row.online === value
     }
   }
 }
