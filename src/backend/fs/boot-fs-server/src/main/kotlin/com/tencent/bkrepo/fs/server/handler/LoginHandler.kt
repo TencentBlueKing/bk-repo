@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.fs.server.api.RAuthClient
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
@@ -58,7 +58,6 @@ class LoginHandler(
     private val permissionService: PermissionService,
     private val securityManager: SecurityManager,
     private val rAuthClient: RAuthClient,
-    private val devXProperties: DevXProperties
 ) {
 
     /**
@@ -85,25 +84,28 @@ class LoginHandler(
     suspend fun devxLogin(request: ServerRequest): ServerResponse {
         val workspace = DevxWorkspaceUtils.getWorkspace().awaitSingleOrNull() ?: throw AuthenticationException()
         val repoName = request.pathVariable(REPO_NAME)
-        createUser(workspace.projectId, workspace.realOwner)
-        val token = createToken(workspace.projectId, repoName, workspace.realOwner)
+        val userId = createUser(workspace)
+        val token = createToken(workspace.projectId, repoName, userId)
         val response = DevxLoginResponse(workspace.projectId, token)
         return ReactiveResponseBuilder.success(response)
     }
 
-    private suspend fun createUser(projectId: String, userName: String) {
-        if (userName.isNotBlank()) {
-            val request = CreateUserRequest(userId = userName, name = userName)
+    private suspend fun createUser(workspace: DevXWorkSpace): String {
+        return if (workspace.realOwner.isNotBlank()) {
+            val request = CreateUserRequest(userId = workspace.realOwner, name = workspace.realOwner)
             rAuthClient.create(request).awaitSingle()
+            workspace.realOwner
         } else {
+            val userId = "g_${workspace.projectId}"
             val request = CreateUserToProjectRequest(
-                userId = "g_$projectId",
-                name = "g_$projectId",
+                userId = userId,
+                name = userId,
                 group = true,
-                asstUsers = listOf(devXProperties.asstUser),
-                projectId = projectId
+                asstUsers = listOf(workspace.creator),
+                projectId = workspace.projectId
             )
             rAuthClient.createUserToProject(request).awaitSingle()
+            userId
         }
     }
 

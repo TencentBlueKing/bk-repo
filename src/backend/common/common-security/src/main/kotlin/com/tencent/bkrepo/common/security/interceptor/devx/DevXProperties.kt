@@ -98,8 +98,4 @@ data class DevXProperties(
      * 应用devX拦截器的接口
      */
     var includePatterns: List<String> = emptyList(),
-    /**
-     * 快捷登录组账号关联用户
-     */
-    var asstUser: String = "",
 )
