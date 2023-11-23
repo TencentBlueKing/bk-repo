@@ -41,11 +41,17 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
+import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteArtifactCacheWriter
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -62,14 +68,17 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import okhttp3.Dns
+import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -83,6 +92,8 @@ import java.net.InetAddress
 @Component
 class GenericRemoteRepository(
     private val genericProperties: GenericProperties,
+    private val storageProperties: StorageProperties,
+    private val storageHealthMonitorHelper: StorageHealthMonitorHelper,
 ) : RemoteRepository() {
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
@@ -139,22 +150,32 @@ class GenericRemoteRepository(
         }
         val contentLength = response.header(HttpHeaders.CONTENT_LENGTH)!!.toLong()
         val range = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE)) ?: Range.full(contentLength)
-        var node: NodeDetail? = null
 
         val request = HttpContextHolder.getRequestOrNull()
         val artifactStream = if (range.isEmpty() || request?.method == HEAD.name) {
-            // 空文件
+            // 返回空文件
             ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-        } else if (range.isFullContent()) {
-            // 完整文件
-            val artifactFile = createTempFile(response.body!!)
-            node = cacheArtifactFile(context, artifactFile)
-            artifactFile.getInputStream().artifactStream(range)
         } else {
-            // 部分读取
-            response.body!!.byteStream().artifactStream(range)
+            // 返回文件内容
+            response.body!!.byteStream().artifactStream(range).apply {
+                if (range.isFullContent() && context.getRemoteConfiguration().cache.enabled) {
+                    // 仅缓存完整文件，返回响应的同时写入缓存
+                    addListener(buildCacheWriter(context, contentLength))
+                }
+            }
         }
-        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
+        // 由于此处node为null，需要手动设置sha256,md5等node相关header
+        addHeadersOfNode(response.headers)
+        // 设置Content-Disposition响应头
+        val preview = context.request.getParameter(PARAM_PREVIEW)?.toBoolean()
+        val download = context.request.getParameter(PARAM_DOWNLOAD)?.toBoolean()
+        return ArtifactResource(
+            inputStream = artifactStream,
+            artifactName = context.artifactInfo.getResponseName(),
+            node = null,
+            channel = ArtifactChannel.LOCAL,
+            useDisposition = preview != true || download == true,
+        )
     }
 
     override fun customHttpClient(builder: OkHttpClient.Builder) {
@@ -221,6 +242,12 @@ class GenericRemoteRepository(
                 (node as MutableMap<String, Any?>)[RepositoryInfo::category.name] = RepositoryCategory.REMOTE.name
             }
         } ?: emptyList()
+    }
+
+    private fun buildCacheWriter(context: ArtifactContext, contentLength: Long): RemoteArtifactCacheWriter {
+        val storageCredentials = context.storageCredentials ?: storageProperties.defaultStorageCredentials()
+        val monitor = storageHealthMonitorHelper.getMonitor(storageProperties, storageCredentials)
+        return RemoteArtifactCacheWriter(context, storageManager, monitor, contentLength, storageProperties)
     }
 
     /**
@@ -293,6 +320,17 @@ class GenericRemoteRepository(
         // 执行请求
         val request = Request.Builder().url(url).post(body).build()
         return request<Response<Page<Map<String, Any?>>>>(context.getRemoteConfiguration(), request).data!!.records
+    }
+
+    /**
+     * 远程仓库是bkrepo时，[response]的header里面包含Node相关header，可以直接写到返回给客户端的响应中
+     * 使用此方法可以避免远程Node尚未被缓存时，返回给客户端的响应中不包含Node相关header
+     */
+    private fun addHeadersOfNode(headers: Headers) {
+        val response = HttpContextHolder.getResponse()
+        headers[HttpHeaders.ETAG]?.let { response.setHeader(HttpHeaders.ETAG, it) }
+        headers[X_CHECKSUM_MD5]?.let { response.setHeader(X_CHECKSUM_MD5, it) }
+        headers[X_CHECKSUM_SHA256]?.let { response.setHeader(X_CHECKSUM_SHA256, it) }
     }
 
     private fun shouldReturnEmptyStream(range: Range? = null): Boolean {
