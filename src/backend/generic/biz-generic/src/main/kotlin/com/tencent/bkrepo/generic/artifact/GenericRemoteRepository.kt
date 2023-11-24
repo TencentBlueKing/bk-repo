@@ -71,6 +71,7 @@ import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.artifact.remote.AsyncRemoteArtifactCacheWriter
+import com.tencent.bkrepo.generic.artifact.remote.RemoteArtifactCacheLocks
 import com.tencent.bkrepo.generic.artifact.remote.RemoteArtifactCacheWriter
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
@@ -90,6 +91,7 @@ class GenericRemoteRepository(
     private val storageProperties: StorageProperties,
     private val storageHealthMonitorHelper: StorageHealthMonitorHelper,
     private val asyncCacheWriter: AsyncRemoteArtifactCacheWriter,
+    private val cacheLocks: RemoteArtifactCacheLocks,
 ) : RemoteRepository() {
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
@@ -224,10 +226,11 @@ class GenericRemoteRepository(
     }
 
     private fun asyncCache(context: ArtifactDownloadContext, request: Request) {
+        val repoDetail = context.repositoryDetail
         val cacheTask = AsyncRemoteArtifactCacheWriter.CacheTask(
-            projectId = context.repositoryDetail.projectId,
-            repoName = context.repositoryDetail.name,
-            storageCredentials = context.repositoryDetail.storageCredentials ?: storageProperties.defaultStorageCredentials(),
+            projectId = repoDetail.projectId,
+            repoName = repoDetail.name,
+            storageCredentials = repoDetail.storageCredentials ?: storageProperties.defaultStorageCredentials(),
             remoteConfiguration = context.getRemoteConfiguration(),
             fullPath = context.artifactInfo.getArtifactFullPath(),
             userId = context.userId,
@@ -240,7 +243,7 @@ class GenericRemoteRepository(
         val storageCredentials = context.repositoryDetail.storageCredentials
             ?: storageProperties.defaultStorageCredentials()
         val monitor = storageHealthMonitorHelper.getMonitor(storageProperties, storageCredentials)
-        return RemoteArtifactCacheWriter(context, storageManager, monitor, contentLength, storageProperties)
+        return RemoteArtifactCacheWriter(context, storageManager, cacheLocks, monitor, contentLength, storageProperties)
     }
 
     /**

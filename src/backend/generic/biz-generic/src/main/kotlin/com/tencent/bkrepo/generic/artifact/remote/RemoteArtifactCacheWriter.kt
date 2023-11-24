@@ -44,63 +44,92 @@ import org.slf4j.LoggerFactory
 class RemoteArtifactCacheWriter(
     private val context: ArtifactContext,
     private val storageManager: StorageManager,
+    private val cacheLocks: RemoteArtifactCacheLocks,
     monitor: StorageHealthMonitor,
     contentLength: Long,
     storageProperties: StorageProperties,
 ) : StreamReadListener {
 
-    private val receiver: ArtifactDataReceiver
+    private val projectId: String = context.repositoryDetail.projectId
+    private val repoName: String = context.repositoryDetail.name
+    private val fullPath: String = context.artifactInfo.getArtifactFullPath()
+    private val cacheLockCreated: Boolean = cacheLocks.create(projectId, repoName, fullPath).second
+    private val receiver: ArtifactDataReceiver?
     private val useLocalPath: Boolean
 
     init {
-        val storageCredentials = context.repositoryDetail.storageCredentials
-            ?: storageProperties.defaultStorageCredentials()
-        // 主要路径，可以为DFS路径
-        val path = storageCredentials.upload.location.toPath()
-        // 本地路径
-        val localPath = storageCredentials.upload.localPath.toPath()
-        // 本地路径阈值
-        val localThreshold = storageProperties.receive.localThreshold
+        val shouldCache = try {
+            cacheLockCreated && cacheLocks.tryLock(projectId, repoName, fullPath)
+        } catch (e: Exception) {
+            logger.error("create cache lock for artifact[${context.artifactInfo}] failed", e)
+            false
+        }
 
-        useLocalPath = contentLength > 0 && contentLength < localThreshold.toBytes()
-        receiver = ArtifactDataReceiver(
-            storageProperties.receive,
-            storageProperties.monitor,
-            if (useLocalPath) localPath else path,
-            randomPath = !useLocalPath
-        )
+        if (shouldCache) {
+            val storageCredentials = context.repositoryDetail.storageCredentials
+                ?: storageProperties.defaultStorageCredentials()
+            // 主要路径，可以为DFS路径
+            val path = storageCredentials.upload.location.toPath()
+            // 本地路径
+            val localPath = storageCredentials.upload.localPath.toPath()
+            // 本地路径阈值
+            val localThreshold = storageProperties.receive.localThreshold
 
-        // 本地磁盘不需要fallback
-        if (!useLocalPath && !monitor.healthy.get()) {
-            receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
-            logger.warn("remote artifact[${context.artifactInfo}] cache receiver was unhealthy")
+            useLocalPath = contentLength > 0 && contentLength < localThreshold.toBytes()
+            receiver = ArtifactDataReceiver(
+                storageProperties.receive,
+                storageProperties.monitor,
+                if (useLocalPath) localPath else path,
+                randomPath = !useLocalPath
+            )
+
+            // 本地磁盘不需要fallback
+            if (!useLocalPath && !monitor.healthy.get()) {
+                receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
+                logger.warn("remote artifact[${context.artifactInfo}] cache receiver was unhealthy")
+            }
+            logger.info("start cache remote artifact[${context.artifactInfo}]")
+        } else {
+            useLocalPath = false
+            receiver = null
+            if (cacheLockCreated) {
+                cacheLocks.remove(projectId, repoName, fullPath)
+                logger.info("remote artifact[${context.artifactInfo}] was caching by other instance, skip cache")
+            } else {
+                logger.info("remote artifact[${context.artifactInfo}] was caching, skip cache")
+            }
         }
     }
 
     override fun data(i: Int) {
-        receiver.receive(i)
+        receiver?.receive(i)
     }
 
     override fun data(buffer: ByteArray, off: Int, length: Int) {
-        receiver.receiveChunk(buffer, off, length)
+        receiver?.receiveChunk(buffer, off, length)
     }
 
     override fun finish() {
-        receiver.finish()
-        val artifactFile = ReceiverArtifactFile(receiver, useLocalPath)
-        storageManager.storeArtifactFile(
-            buildCacheNodeCreateRequest(context, artifactFile),
-            artifactFile,
-            context.repositoryDetail.storageCredentials
-        )
-        logger.info(
-            "receive[${receiver.filePath}] finished, store remote artifact[${context.artifactInfo}] cache success"
-        )
+        if (receiver != null) {
+            receiver.finish()
+            val artifactFile = ReceiverArtifactFile(receiver, useLocalPath)
+            storageManager.storeArtifactFile(
+                buildCacheNodeCreateRequest(context, artifactFile),
+                artifactFile,
+                context.repositoryDetail.storageCredentials
+            )
+            logger.info(
+                "receive[${receiver.filePath}] finished, store remote artifact[${context.artifactInfo}] cache success"
+            )
+        }
     }
 
     override fun close() {
-        receiver.close()
-        logger.info("close remote artifact[${context.artifactInfo}] cache receiver[${receiver.filePath}] success")
+        if (receiver != null) {
+            receiver.close()
+            cacheLocks.release(projectId, repoName, fullPath)
+            logger.info("close remote artifact[${context.artifactInfo}] cache receiver[${receiver.filePath}] success")
+        }
     }
 
     private fun buildCacheNodeCreateRequest(context: ArtifactContext, artifactFile: ArtifactFile): NodeCreateRequest {

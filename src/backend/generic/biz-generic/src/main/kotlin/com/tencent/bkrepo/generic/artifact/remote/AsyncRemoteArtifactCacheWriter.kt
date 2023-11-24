@@ -32,8 +32,6 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.redis.RedisLock
-import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -42,8 +40,6 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
-import java.util.concurrent.ConcurrentHashMap
-import javax.annotation.PreDestroy
 
 /**
  * 异步将远程制品缓存到本地
@@ -54,52 +50,45 @@ class AsyncRemoteArtifactCacheWriter(
     private val nodeClient: NodeClient,
     private val httpClientBuilderFactory: AsyncCacheHttpClientBuilderFactory,
     private val executor: ThreadPoolTaskExecutor,
-    private val redisOperation: RedisOperation,
+    private val cacheLocks: RemoteArtifactCacheLocks,
 ) {
-
-    /**
-     * 加锁避免同一文件被缓存多次
-     */
-    private val locks: ConcurrentHashMap<String, RedisLock> = ConcurrentHashMap()
-
     fun cache(cacheTask: CacheTask) {
         with(cacheTask) {
-            val key = "$projectId/$repoName$fullPath"
-
             // lock存在表示正在缓存中，直接返回
-            val existedLock = locks[key] ?: locks.putIfAbsent(key, RedisLock(redisOperation, key, EXPIRED_IN_SECONDS))
-            if (existedLock != null) {
-                logger.info("artifact[$key] is caching, skip cache")
+            val (_, createNew) = cacheLocks.create(projectId, repoName, fullPath)
+            if (!createNew) {
+                logger.info("artifact[${"$projectId/$repoName$fullPath"}] is caching, skip cache")
                 return
             }
 
             try {
-                executor.execute {
-                    val lock = locks[key]!!
-                    try {
-                        if (nodeClient.getNodeDetail(projectId, repoName, fullPath).data != null) {
-                            logger.info("artifact[$key] was cached, skip cache")
-                        } else if (lock.tryLock()) {
-                            doCache(cacheTask)
-                        } else {
-                            logger.info("artifact[$key] is caching by other instance, skip cache")
-                        }
-                    } finally {
-                        locks.remove(key)
-                        lock.unlock()
-                    }
-                }
+                executor.execute { tryCache(cacheTask) }
             } catch (e: Exception) {
-                locks.remove(key)
+                cacheLocks.remove(projectId, repoName, fullPath)
                 throw e
             }
         }
     }
 
-    @PreDestroy
-    fun preDestroy() {
-        logger.info("[${locks.size}] artifact is caching async, try to release lock before shutdown")
-        locks.values.forEach { it.unlock() }
+    private fun tryCache(cacheTask: CacheTask) {
+        val projectId = cacheTask.projectId
+        val repoName = cacheTask.repoName
+        val fullPath = cacheTask.fullPath
+        try {
+            if (nodeClient.getNodeDetail(projectId, repoName, fullPath).data != null) {
+                logger.info("artifact[$projectId/$repoName$fullPath] was cached, skip cache")
+            } else if (cacheLocks.tryLock(projectId, repoName, fullPath)) {
+                try {
+                    doCache(cacheTask)
+                } finally {
+                    cacheLocks.release(projectId, repoName, fullPath)
+                }
+            } else {
+                logger.info("artifact[$projectId/$repoName$fullPath] is caching by other instance, skip cache")
+            }
+        } finally {
+            cacheLocks.remove(projectId, repoName, fullPath)
+        }
     }
 
     private fun doCache(cacheTask: CacheTask) {
@@ -171,6 +160,5 @@ class AsyncRemoteArtifactCacheWriter(
 
     companion object {
         private val logger = LoggerFactory.getLogger(AsyncRemoteArtifactCacheWriter::class.java)
-        private const val EXPIRED_IN_SECONDS = 24L * 60L * 60L
     }
 }
