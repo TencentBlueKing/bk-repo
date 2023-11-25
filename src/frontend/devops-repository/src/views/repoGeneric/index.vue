@@ -90,7 +90,7 @@
                     <template #empty>
                         <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)"></empty-data>
                     </template>
-                    <bk-table-column type="selection" width="60"></bk-table-column>
+                    <bk-table-column :selectable="selectable" type="selection" width="60"></bk-table-column>
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
                         <template #default="{ row }">
                             <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
@@ -167,7 +167,22 @@
                         </template>
                     </bk-table-column>
                 </bk-table>
+                <bk-button v-if="!localRepo"
+                    :disabled="artifactoryList.length === 0"
+                    size="small"
+                    icon="icon-angle-right"
+                    @click="changePage(1)"
+                    class="mt10 mr10 fr">
+                </bk-button>
+                <bk-button v-if="!localRepo"
+                    :disabled="pagination.current === 1"
+                    size="small"
+                    icon="icon-angle-left"
+                    @click="changePage(-1)"
+                    class="mt10 mr5 fr">
+                </bk-button>
                 <bk-pagination
+                    v-if="localRepo"
                     class="p10"
                     size="small"
                     align="right"
@@ -603,6 +618,22 @@
                 }).finally(() => {
                     this.isLoading = false
                 })
+            },
+            changePage (inc) {
+                if (this.isLoading) {
+                    return
+                }
+                const oldPage = this.pagination.current
+
+                if (this.pagination.current + inc <= 0) {
+                    this.pagination.current = 1
+                } else if (this.artifactoryList.length !== 0 || inc < 0) {
+                    this.pagination.current += inc
+                }
+
+                if (oldPage !== this.pagination.current) {
+                    this.handlerPaginationChange({ current: this.pagination.current })
+                }
             },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
@@ -1044,6 +1075,9 @@
                 }).finally(() => {
                     this.$set(row, 'sizeLoading', false)
                 })
+            },
+            selectable (row, index) {
+                return row.category !== 'REMOTE'
             },
             selectMultiRow (selects) {
                 this.multiSelect = selects
