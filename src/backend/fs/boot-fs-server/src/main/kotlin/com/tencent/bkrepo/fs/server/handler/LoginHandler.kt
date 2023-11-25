@@ -29,12 +29,14 @@ package com.tencent.bkrepo.fs.server.handler
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.fs.server.api.RAuthClient
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
@@ -82,15 +84,29 @@ class LoginHandler(
     suspend fun devxLogin(request: ServerRequest): ServerResponse {
         val workspace = DevxWorkspaceUtils.getWorkspace().awaitSingleOrNull() ?: throw AuthenticationException()
         val repoName = request.pathVariable(REPO_NAME)
-        createUser(workspace.owner)
-        val token = createToken(workspace.projectId, repoName, workspace.owner)
+        val userId = createUser(workspace)
+        val token = createToken(workspace.projectId, repoName, userId)
         val response = DevxLoginResponse(workspace.projectId, token)
         return ReactiveResponseBuilder.success(response)
     }
 
-    private suspend fun createUser(userName: String) {
-        val request = CreateUserRequest(userId = userName, name = userName)
-        rAuthClient.create(request).awaitSingle()
+    private suspend fun createUser(workspace: DevXWorkSpace): String {
+        return if (workspace.realOwner.isNotBlank()) {
+            val request = CreateUserRequest(userId = workspace.realOwner, name = workspace.realOwner)
+            rAuthClient.create(request).awaitSingle()
+            workspace.realOwner
+        } else {
+            val userId = "g_${workspace.projectId}"
+            val request = CreateUserToProjectRequest(
+                userId = userId,
+                name = userId,
+                group = true,
+                asstUsers = listOf(workspace.creator),
+                projectId = workspace.projectId
+            )
+            rAuthClient.createUserToProject(request).awaitSingle()
+            userId
+        }
     }
 
     private suspend fun createToken(projectId: String, repoName: String, username: String): String {
@@ -101,7 +117,7 @@ class LoginHandler(
         } else {
             val repoDetail = ReactiveArtifactContextHolder.getRepoDetail()
             val readPermit = repoDetail.public ||
-                    permissionService.checkPermission(projectId, repoName, PermissionAction.READ, username)
+                permissionService.checkPermission(projectId, repoName, PermissionAction.READ, username)
             if (readPermit) {
                 claims[JWT_CLAIMS_PERMIT] = PermissionAction.READ.name
             }
