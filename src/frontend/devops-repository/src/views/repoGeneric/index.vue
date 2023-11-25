@@ -108,12 +108,12 @@
                             </scan-tag>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('size')" prop="size" width="90" sortable="custom" show-overflow-tooltip>
+                    <bk-table-column :label="$t('size')" prop="size" width="90" :sortable="sortableRepo" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ convertFileSize(row.size > 0 ? row.size : 0 ) }}
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('fileNum')" prop="nodeNum" sortable="custom" show-overflow-tooltip>
+                    <bk-table-column :label="$t('fileNum')" prop="nodeNum" :sortable="sortableRepo" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ row.nodeNum ? row.nodeNum : row.folder ? 0 : '--'}}
                         </template>
@@ -302,6 +302,25 @@
             },
             searchFileName () {
                 return this.$route.query.fileName
+            },
+            onlyLocalRepo () {
+                const configuration = this.currentRepo.configuration
+                if (this.currentRepo.category === 'LOCAL') {
+                    return true
+                } else if (this.currentRepo.category === 'COMPOSITE') {
+                    const proxy = configuration.proxy
+                    return !proxy || !proxy.channelList || proxy.channelList.length === 0
+                } else {
+                    return false
+                }
+            },
+            sortableRepo () {
+                // 仅允许LOCAL仓库排序
+                if (this.onlyLocalRepo) {
+                    return 'custom'
+                } else {
+                    return false
+                }
             }
         },
         watch: {
@@ -338,6 +357,11 @@
             }))
             if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
+            }
+            if (this.onlyLocalRepo) {
+                this.sortType = 'lastModifiedDate'
+            } else {
+                this.sortType = ''
             }
         },
         methods: {
@@ -392,30 +416,32 @@
                 }
             },
             renderHeader (h, { column }) {
+                const elements = [h('span', column.label)]
+                if (this.onlyLocalRepo) {
+                    elements.push(h('i', { class: 'ml5 devops-icon icon-down-shape' }))
+                }
                 return h('div', {
                     class: {
-                        'flex-align-center hover-btn': true,
+                        'flex-align-center': true,
+                        'hover-btn': this.onlyLocalRepo,
                         'selected-header': this.sortType === column.property
                     },
                     on: {
                         click: () => {
-                            this.sortType = column.property
-                            this.$refs.artifactoryTable.clearSort()
-                            this.sortParams = []
-                            const sortParam = {
-                                properties: column.property,
-                                direction: 'DESC'
+                            if (this.onlyLocalRepo) {
+                                this.sortType = column.property
+                                this.$refs.artifactoryTable.clearSort()
+                                this.sortParams = []
+                                const sortParam = {
+                                    properties: column.property,
+                                    direction: 'DESC'
+                                }
+                                this.sortParams.push(sortParam)
+                                this.handlerPaginationChange()
                             }
-                            this.sortParams.push(sortParam)
-                            this.handlerPaginationChange()
                         }
                     }
-                }, [
-                    h('span', column.label),
-                    h('i', {
-                        class: 'ml5 devops-icon icon-down-shape'
-                    })
-                ])
+                }, elements)
             },
             initTree () {
                 this.INIT_TREE([{
