@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.opdata.pojo.enums
 
-enum class ProjectType(val prefix: String?) {
-    ALL(""),
-    BLUEKING(""),
-    CODECC("CODE_"),
-    GIT("git_"),
+enum class ProjectType(val prefix: List<String>?) {
+    ALL(listOf()),
+    BLUEKING(listOf()),
+    CODECC(listOf("CODE_","CLOSED_SOURCE_")),
+    GIT(listOf("git_")),
 }
