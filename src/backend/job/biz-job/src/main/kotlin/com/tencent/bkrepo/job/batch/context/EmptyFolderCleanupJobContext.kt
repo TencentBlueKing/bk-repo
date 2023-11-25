@@ -39,6 +39,7 @@ data class EmptyFolderCleanupJobContext(
 ) : JobContext() {
 
     data class FolderMetricsInfo(
+        var id: String? = null,
         var nodeNum: LongAdder = LongAdder()
     )
 
