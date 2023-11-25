@@ -145,23 +145,23 @@
                             <operation-list
                                 :list="[
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
-                                    row.folder && { clickEvent: () => calculateFolderSize(row), label: $t('realSize') },
+                                    row.folder && row.category !== 'REMOTE' && { clickEvent: () => calculateFolderSize(row), label: $t('realSize') },
                                     !row.folder && getBtnDisabled(row.name) && { clickEvent: () => handlerPreviewBasicsFile(row), label: $t('preview') }, //基本类型文件 eg: txt
-                                    !row.folder && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
+                                    !row.folder && row.category !== 'REMOTE' && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
                                     ...(!row.metadata.forbidStatus ? [
-                                        { clickEvent: () => handlerDownload(row), label: $t('download') },
-                                        ...(repoName !== 'pipeline' ? [
+                                        (row.category !== 'REMOTE' || !row.folder) && { clickEvent: () => handlerDownload(row), label: $t('download') },
+                                        ...(repoName !== 'pipeline' && row.category !== 'REMOTE' ? [
                                             permission.edit && { clickEvent: () => renameRes(row), label: $t('rename') },
                                             permission.write && { clickEvent: () => moveRes(row), label: $t('move') },
                                             permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
-                                        ...(!row.folder ? [
+                                        ...(!row.folder && row.category !== 'REMOTE' ? [
                                             !community && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : [])
                                     ] : []),
-                                    !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
-                                    permission.delete && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline') && { clickEvent: () => deleteRes(row), label: $t('delete') }
+                                    !row.folder && row.category !== 'REMOTE' && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
+                                    permission.delete && row.category !== 'REMOTE' && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline') && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ]">
                             </operation-list>
                         </template>
@@ -303,7 +303,7 @@
             searchFileName () {
                 return this.$route.query.fileName
             },
-            onlyLocalRepo () {
+            localRepo () {
                 const configuration = this.currentRepo.configuration
                 if (this.currentRepo.category === 'LOCAL') {
                     return true
@@ -316,7 +316,7 @@
             },
             sortableRepo () {
                 // 仅允许LOCAL仓库排序
-                if (this.onlyLocalRepo) {
+                if (this.localRepo) {
                     return 'custom'
                 } else {
                     return false
@@ -358,7 +358,7 @@
             if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
-            if (this.onlyLocalRepo) {
+            if (this.localRepo) {
                 this.sortType = 'lastModifiedDate'
             } else {
                 this.sortType = ''
@@ -417,18 +417,18 @@
             },
             renderHeader (h, { column }) {
                 const elements = [h('span', column.label)]
-                if (this.onlyLocalRepo) {
+                if (this.localRepo) {
                     elements.push(h('i', { class: 'ml5 devops-icon icon-down-shape' }))
                 }
                 return h('div', {
                     class: {
                         'flex-align-center': true,
-                        'hover-btn': this.onlyLocalRepo,
+                        'hover-btn': this.localRepo,
                         'selected-header': this.sortType === column.property
                     },
                     on: {
                         click: () => {
-                            if (this.onlyLocalRepo) {
+                            if (this.localRepo) {
                                 this.sortType = column.property
                                 this.$refs.artifactoryTable.clearSort()
                                 this.sortParams = []
@@ -531,7 +531,8 @@
                     limit: this.pagination.limit,
                     sortType: sortTypes,
                     isPipeline: this.repoName === 'pipeline',
-                    searchFlag: this.searchFileName
+                    searchFlag: this.searchFileName,
+                    localRepo: this.localRepo
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
@@ -662,7 +663,8 @@
                     repoName: this.repoName,
                     fullPath: item.fullPath,
                     roadMap: item.roadMap,
-                    isPipeline: this.repoName === 'pipeline'
+                    isPipeline: this.repoName === 'pipeline',
+                    localRepo: this.localRepo
                 }).catch(err => {
                     if (err.status === 403) {
                         this.getPermissionUrl({
@@ -701,7 +703,7 @@
                     this.itemClickHandler(node)
                 }
             },
-            showDetail ({ folder, fullPath }) {
+            showDetail ({ folder, fullPath, category }) {
                 this.$refs.genericDetail.setData({
                     show: true,
                     loading: false,
@@ -710,7 +712,8 @@
                     folder,
                     path: fullPath,
                     data: {},
-                    metadataLabelList: this.metadataLabelList
+                    metadataLabelList: this.metadataLabelList,
+                    localNode: category !== 'REMOTE'
                 })
             },
             renameRes ({ name, fullPath }) {
@@ -1124,8 +1127,8 @@
                     isLoading: true
                 })
                 const res = await this.previewBasicFile({
-                    projectId: row.projectId,
-                    repoName: row.repoName,
+                    projectId: this.projectId,
+                    repoName: this.repoName,
                     path: row.fullPath
                 }).catch(e => {
                     if (e.status === 403) {
