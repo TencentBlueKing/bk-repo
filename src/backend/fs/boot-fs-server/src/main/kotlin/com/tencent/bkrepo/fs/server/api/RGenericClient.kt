@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.utils
+package com.tencent.bkrepo.fs.server.api
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
-import org.springframework.web.reactive.function.server.ServerRequest
+import com.tencent.bkrepo.common.api.constant.GENERIC_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import reactivefeign.spring.config.ReactiveFeignClient
 import reactor.core.publisher.Mono
 
-object ReactiveSecurityUtils {
+@ReactiveFeignClient(GENERIC_SERVICE_NAME)
+@RequestMapping("/service")
+interface RGenericClient {
+    @GetMapping("/detail/{projectId}/{repoName}")
+    fun getNodeDetail(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String
+    ): Mono<Response<NodeDetail?>>
 
-    fun ServerRequest.bearerToken(): String? {
-        val authHeader = headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
-        return if (authHeader?.startsWith(BEARER_AUTH_PREFIX) == true) {
-            authHeader.removePrefix(BEARER_AUTH_PREFIX)
-        } else {
-            authHeader
-        }
-    }
-
-    suspend fun getUser(): String {
-        return ReactiveRequestContextHolder
-            .getWebExchange()
-            .attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-    }
-
-    fun getUserMono(): Mono<String> {
-        return ReactiveRequestContextHolder
-            .getWebExchangeMono().map {
-                it.attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-            }
-    }
+    @PostMapping("/{projectId}/{repoName}/search")
+    fun search(
+        @PathVariable("projectId") projectId: String,
+        @PathVariable("repoName") repoName: String,
+        @RequestBody queryModel: QueryModel
+    ): Mono<Response<List<Any>>>
 }

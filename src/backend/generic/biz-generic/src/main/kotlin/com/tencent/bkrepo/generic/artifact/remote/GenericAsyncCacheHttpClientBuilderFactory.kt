@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.utils
+package com.tencent.bkrepo.generic.artifact.remote
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
-import org.springframework.web.reactive.function.server.ServerRequest
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.remote.buildOkHttpClient
+import com.tencent.bkrepo.generic.artifact.createPlatformDns
+import com.tencent.bkrepo.generic.config.GenericProperties
+import okhttp3.OkHttpClient
+import org.springframework.stereotype.Component
 
-object ReactiveSecurityUtils {
-
-    fun ServerRequest.bearerToken(): String? {
-        val authHeader = headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
-        return if (authHeader?.startsWith(BEARER_AUTH_PREFIX) == true) {
-            authHeader.removePrefix(BEARER_AUTH_PREFIX)
-        } else {
-            authHeader
-        }
-    }
-
-    suspend fun getUser(): String {
-        return ReactiveRequestContextHolder
-            .getWebExchange()
-            .attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-    }
-
-    fun getUserMono(): Mono<String> {
-        return ReactiveRequestContextHolder
-            .getWebExchangeMono().map {
-                it.attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-            }
+@Component
+class GenericAsyncCacheHttpClientBuilderFactory(
+    private val genericProperties: GenericProperties
+) : AsyncCacheHttpClientBuilderFactory {
+    override fun newBuilder(configuration: RemoteConfiguration): OkHttpClient.Builder {
+        val platforms = genericProperties.platforms
+        // 自定义dns，解析特定platform的域名到指定ip
+        return buildOkHttpClient(configuration, false).dns(createPlatformDns(platforms))
     }
 }

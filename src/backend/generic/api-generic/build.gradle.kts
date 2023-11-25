@@ -35,4 +35,5 @@ dependencies {
     api(project(":repository:api-repository"))
     api(project(":auth:api-auth"))
     compileOnly("org.springframework:spring-web")
+    compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
 }

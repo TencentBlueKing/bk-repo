@@ -45,6 +45,7 @@ import com.tencent.bkrepo.fs.server.pojo.DevxLoginResponse
 import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -130,7 +131,7 @@ class LoginHandler(
     }
 
     suspend fun refresh(request: ServerRequest): ServerResponse {
-        val token = request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull().orEmpty()
+        val token = request.bearerToken().orEmpty()
         val jws = securityManager.validateToken(token)
         val claims = jws.body
         val username = claims.subject

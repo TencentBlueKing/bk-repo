@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.utils
+package com.tencent.bkrepo.generic.config
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
-import org.springframework.web.reactive.function.server.ServerRequest
-import reactor.core.publisher.Mono
-
-object ReactiveSecurityUtils {
-
-    fun ServerRequest.bearerToken(): String? {
-        val authHeader = headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
-        return if (authHeader?.startsWith(BEARER_AUTH_PREFIX) == true) {
-            authHeader.removePrefix(BEARER_AUTH_PREFIX)
-        } else {
-            authHeader
-        }
-    }
-
-    suspend fun getUser(): String {
-        return ReactiveRequestContextHolder
-            .getWebExchange()
-            .attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-    }
-
-    fun getUserMono(): Mono<String> {
-        return ReactiveRequestContextHolder
-            .getWebExchangeMono().map {
-                it.attributes[USER_KEY] as? String ?: ANONYMOUS_USER
-            }
-    }
-}
+/**
+ * 用于远程Generic仓库的平台账号配置，使用平台账号到远程仓库认证时会携带当前操作的用户用于鉴权
+ */
+data class PlatformProperties(
+    /**
+     * 平台Host
+     */
+    var host: String = "",
+    /**
+     * 将host解析到指定ip，不指定时则使用默认dns
+     */
+    var ip: String = "",
+    /**
+     * 平台账号
+     */
+    var accessKey: String = "",
+    /**
+     * 平台账号密钥
+     */
+    var secretKey: String = "",
+)
