@@ -25,15 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.pojo
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.opdata.pojo.enums.FilterType
+import java.time.LocalDateTime
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpEmptyFolderStatJobProperties::class,
-    OpProjectMetricsProperties::class,
+data class MetricFilterInfo(
+    val startDate: LocalDateTime? = null,
+    val endDate: LocalDateTime? = null,
+    val filterType: FilterType? = null,
+    val filterValue: String? = null,
+    val compareFlag: Boolean = false,
+    val deltaPositive: Int? = null,
 )
-class OpConfiguration

@@ -31,12 +31,11 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
-import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
+import com.tencent.bkrepo.opdata.config.OpProjectMetricsProperties
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.stereotype.Component
 
 /**
@@ -44,21 +43,15 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ProjectNodeSizeHandler(
-    projectMetricsRepository: ProjectMetricsRepository,
-    statDateModel: StatDateModel
-) : QueryHandler, BaseHandler(projectMetricsRepository, statDateModel) {
+    statDateModel: StatDateModel,
+    private val opProjectMetricsProperties: OpProjectMetricsProperties,
+    ) : QueryHandler, BaseHandler(statDateModel) {
 
     override val metric: Metrics get() = Metrics.PROJECTNODESIZE
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
         val tmpMap = calculateMetricValue(target)
-        val gbResult = HashMap<String, Long>()
-        tmpMap.forEach {
-            val gbSize = it.value / TO_GIGABYTE
-            if (gbSize != 0L) {
-                gbResult[it.key] = gbSize
-            }
-        }
-        return convToDisplayData(gbResult, result)
+        val top = getTopValue(target, opProjectMetricsProperties.top)
+        return convToDisplayData(tmpMap, result, top)
     }
 }

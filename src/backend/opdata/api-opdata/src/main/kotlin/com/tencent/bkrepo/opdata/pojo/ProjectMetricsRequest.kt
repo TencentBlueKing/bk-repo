@@ -31,5 +31,6 @@ data class ProjectMetricsRequest(
     val limitSize: Long = 1024 * 1024 * 1024L,
     val minusDay: Long = 1,
     val default: Boolean = true,
-    val type: String? = null
+    val type: String? = null,
+    var showDelta: Boolean = false
 )

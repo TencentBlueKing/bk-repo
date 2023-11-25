@@ -25,38 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.handler.impl
+package com.tencent.bkrepo.opdata.config
 
-import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
-import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.StatDateModel
-import com.tencent.bkrepo.opdata.pojo.Target
-import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-open class RepoSizeInProject(
-    private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel
-) : QueryHandler {
-
-    override val metric: Metrics get() = Metrics.DEFAULT
-
-    open val repoType: List<String> = emptyList()
-
-    override fun handle(target: Target, result: MutableList<Any>): Any {
-        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
-        val tmpMap = HashMap<String, Long>()
-        projects.forEach { tP ->
-            val projectId = tP.projectId
-            var repoSize = 0L
-            tP.repoMetrics.filter { !it.type.isNullOrEmpty()&& it.type in repoType }.forEach {repo ->
-                repoSize += repo.size
-            }
-            val gbSize = repoSize / TO_GIGABYTE
-            if (gbSize != 0L) {
-                tmpMap[projectId] = gbSize
-            }
-        }
-        return convToDisplayData(tmpMap, result)
-    }
-}
+@ConfigurationProperties("op.project-metrics")
+data class OpProjectMetricsProperties(
+    var top: Int = 99
+)
