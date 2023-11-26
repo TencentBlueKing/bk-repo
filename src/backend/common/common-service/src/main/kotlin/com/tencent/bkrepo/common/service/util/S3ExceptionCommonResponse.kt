@@ -1,9 +1,8 @@
 package com.tencent.bkrepo.common.service.util
 
+import com.tencent.bkrepo.common.api.constant.S3ErrorTypes
 import com.tencent.bkrepo.common.api.exception.AWS4AuthenticationException
 import com.tencent.bkrepo.common.api.exception.S3NotFoundException
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.dom4j.Document
 import org.dom4j.DocumentHelper
 import org.dom4j.Element
@@ -12,8 +11,8 @@ import org.dom4j.io.XMLWriter
 import org.springframework.beans.BeansException
 import org.springframework.cloud.sleuth.Tracer
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpStatus
-import java.io.*
+import java.io.IOException
+import java.io.StringWriter
 
 /**
  * s3请求异常时，返回处理
@@ -31,8 +30,8 @@ class S3ExceptionCommonResponse {
             var xml = ""
             val doc: Document = DocumentHelper.createDocument()
             val root: Element = doc.addElement("Error")
-            root.addElement("Code").addText(exception.messageCode.getCode())
-            root.addElement("Message").addText(exception.messageCode.getMessage())
+            root.addElement("Code").addText(S3ErrorTypes.SIGN_NOT_MATCH)
+            root.addElement("Message").addText(LocaleMessageUtils.getLocalizedMessage(exception.messageCode))
             root.addElement("StringToSign").addText(request.getHeader(HttpHeaders.AUTHORIZATION))
             root.addElement("CononicalRequest").addText(request.getHeader("x-amz-content-sha256"))
             root.addElement("Resource").addText(exception.getFirstParam()?:"")
@@ -75,8 +74,8 @@ class S3ExceptionCommonResponse {
             var xml = ""
             val doc: Document = DocumentHelper.createDocument()
             val root: Element = doc.addElement("Error")
-            root.addElement("Code").addText(exception.messageCode.getCode())
-            root.addElement("Message").addText(exception.messageCode.getMessage())
+            root.addElement("Code").addText(exception.getSecondParam()?:"")
+            root.addElement("Message").addText(LocaleMessageUtils.getLocalizedMessage(exception.messageCode))
             root.addElement("Resource").addText(exception.getFirstParam()?:"")
             root.addElement("RequestId").addText(getTraceId())
             root.addElement("TraceId").addText(getTraceId())

@@ -33,11 +33,13 @@ package com.tencent.bkrepo.s3.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.S3ErrorTypes
 import com.tencent.bkrepo.common.api.exception.S3NotFoundException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.s3.artifact.S3ObjectArtifactInfo
 import com.tencent.bkrepo.s3.artifact.S3ObjectArtifactInfo.Companion.GENERIC_MAPPING_URI
+import com.tencent.bkrepo.s3.constant.S3MessageCode
 import com.tencent.bkrepo.s3.service.S3ObjectService
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
@@ -75,8 +77,8 @@ class S3ObjectController(
             logger.warn("Illegal bucket[$decodedBucketName] or key[$objectKey]")
             throw S3NotFoundException(
                 HttpStatus.NOT_FOUND,
-                com.tencent.bkrepo.common.api.constant.S3MessageCode.S3_NO_SUCH_BUCKET,
-                decodedBucketName
+                S3MessageCode.S3_NO_SUCH_BUCKET,
+                arrayOf(decodedBucketName, S3ErrorTypes.NO_SUCH_BUCKET)
             )
         }
 

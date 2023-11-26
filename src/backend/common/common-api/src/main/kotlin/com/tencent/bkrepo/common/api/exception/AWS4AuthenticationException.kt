@@ -32,20 +32,17 @@
 package com.tencent.bkrepo.common.api.exception
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.S3MessageCode
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.message.MessageCode
-import java.lang.RuntimeException
 
 /**
  * WAS4认证异常, 403错误
  */
 open class AWS4AuthenticationException(
-    val status: HttpStatus = HttpStatus.FORBIDDEN,
-    val messageCode: S3MessageCode = S3MessageCode.S3_NO_AUTHORIZED,
-    vararg var params: Any
-) : RuntimeException() {
+    status: HttpStatus = HttpStatus.FORBIDDEN,
+    code: MessageCode = CommonMessageCode.REQUEST_SIGNANOTMATC,
+    vararg params: Any
+) : ErrorCodeException(status, code, params) {
     fun getFirstParam(): String? {
         return params?.first()?.toString()
     }

@@ -29,16 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.api.constant
+package com.tencent.bkrepo.s3.constant
+
+import com.tencent.bkrepo.common.api.message.MessageCode
 
 
-enum class S3MessageCode(private val code: String, private val message: String){
+enum class S3MessageCode(private val key: String) : MessageCode {
 
-    S3_NO_SUCH_KEY("NoSuchKey", "The specified key does not exist."),
-    S3_NO_SUCH_BUCKET("NoSuchBucket", "The specified bucket does not exist."),
-    S3_NO_AUTHORIZED("SignatureDoesNotMatch", "The Signature you specified is invalid."),
+    S3_NO_SUCH_KEY("s3.no.such.key"),
+    S3_NO_SUCH_BUCKET("s3.no.such.bucket"),
     ;
 
-    fun getMessage() = message
-    fun getCode() = code
+    override fun getBusinessCode() = ordinal + 1
+    override fun getKey() = key
+    override fun getModuleCode() = 25
 }

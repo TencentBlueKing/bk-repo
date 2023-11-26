@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.s3.service
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.S3MessageCode
+import com.tencent.bkrepo.common.api.constant.S3ErrorTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.S3NotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -43,6 +43,7 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.s3.artifact.S3LocalRepository
 import com.tencent.bkrepo.s3.artifact.S3ObjectArtifactInfo
 import com.tencent.bkrepo.s3.artifact.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.s3.constant.S3MessageCode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -61,7 +62,7 @@ class S3ObjectService(
                 throw S3NotFoundException(
                     HttpStatus.NOT_FOUND,
                     S3MessageCode.S3_NO_SUCH_KEY,
-                    artifactInfo.getArtifactFullPath()
+                    arrayOf(artifactInfo.getArtifactFullPath(),S3ErrorTypes.NO_SUCH_KEY)
                 )
             val repo = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
@@ -74,7 +75,7 @@ class S3ObjectService(
                 throw S3NotFoundException(
                     HttpStatus.NOT_FOUND,
                     S3MessageCode.S3_NO_SUCH_KEY,
-                    artifactInfo.getArtifactFullPath()
+                    arrayOf(artifactInfo.getArtifactFullPath(),S3ErrorTypes.NO_SUCH_KEY)
                 )
             }
             localRepository.download(context)
