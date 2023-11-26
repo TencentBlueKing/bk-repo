@@ -17,4 +17,8 @@ class FileReferenceController(
     override fun increment(sha256: String, credentialsKey: String?): Response<Boolean> {
         return ResponseBuilder.success(fileReferenceService.increment(sha256, credentialsKey))
     }
+
+    override fun count(sha256: String, credentialsKey: String?): Response<Long> {
+        return ResponseBuilder.success(fileReferenceService.count(sha256, credentialsKey))
+    }
 }

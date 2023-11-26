@@ -183,13 +183,13 @@
         "enumeration": "枚举",
         "from": "从",
         "to": "到",
-        "1": "日",
-        "2": "一",
-        "3": "二",
-        "4": "三",
-        "5": "四",
-        "6": "五",
-        "7": "六"
+        "1": "周日",
+        "2": "周一",
+        "3": "周二",
+        "4": "周三",
+        "5": "周四",
+        "6": "周五",
+        "7": "周六"
     },
     "mobileDownload": "移动端下载限制",
     "webDownload": "Web端下载限制",
@@ -261,7 +261,6 @@
     "versionPlaceHolder": "请输入版本, 按Enter键搜索",
     "liftBan": "解除禁止",
     "forbiddenUse": "禁止使用",
-    "promotion": "晋级",
     "associatedUser": "关联用户",
     "normalUser": "普通用户",
     "totalVersionCount": "共计{0}个版本",
@@ -450,7 +449,7 @@
     "endTime":"结束时间",
     "scanArtifactNum":"扫描制品数",
     "scanCompletionTime":"扫描完成时间",
-    "overview":"总览视图",
+    "overview":"制品视图",
     "taskView":"任务视图",
     "stopScanSuccessMsg": "中止扫描成功",
     "confirmStopScanMsg":"确认中止扫描任务",
@@ -620,7 +619,7 @@
     "stopPlanSuccess": "停用计划成功",
     "asyncPlanStatusEnum": {
         "RUNNING": "进行中",
-        "SUCCESS": "已完成",
+        "SUCCESS": "同步成功",
         "FAILED": "同步异常"
     },
     "conflictStrategy":"冲突策略",
@@ -799,5 +798,12 @@
     "repoUsage": "仓库用量",
     "downloadLater": "稍后再下载",
     "backUpSubMessage": "仅首次下载需等待，准备时长和包大小有关，500MB的包大概需要1分钟",
-    "backUpMessage": "{0}为内部测试版本，正在准备下载，请稍等"
+    "backUpMessage": "{0}为内部测试版本，正在准备下载，请稍等",
+    "deadline": "截止时间",
+    "clean": "目录清理",
+    "cleanNode": "清理目录",
+    "cleanNodeTitle": "清理目录节点",
+    "complete": "完成",
+    "cleanFolderTip": "截止时间之前上传的文件将被清理",
+    "cleanRepo": "清理"
 }

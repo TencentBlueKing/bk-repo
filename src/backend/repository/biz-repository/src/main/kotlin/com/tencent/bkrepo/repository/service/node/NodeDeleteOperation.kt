@@ -67,7 +67,10 @@ interface NodeDeleteOperation {
     fun deleteByPaths(projectId: String, repoName: String, fullPaths: List<String>, operator: String): NodeDeleteResult
 
     /**
-     * 根据创建时间删除[date]之前的历史数据
+     * 根据最后修改时间删除[date]之前的历史数据
      */
-    fun deleteBeforeDate(projectId: String, repoName: String, date: LocalDateTime, operator: String): NodeDeleteResult
+    fun deleteBeforeDate(
+        projectId: String, repoName: String,
+        date: LocalDateTime, operator: String, path: String
+    ): NodeDeleteResult
 }

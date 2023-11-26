@@ -37,7 +37,6 @@ import com.tencent.bkrepo.job.config.properties.DeletedBlockNodeCleanupJobProper
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -53,7 +52,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(DeletedBlockNodeCleanupJobProperties::class)
 class DeletedBlockNodeCleanupJob(
     private val properties: DeletedBlockNodeCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val fileReferenceClient: FileReferenceClient
 ) : DefaultContextMongoDbJob<DeletedBlockNodeCleanupJob.BlockNode>(properties) {
 

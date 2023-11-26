@@ -43,6 +43,8 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -63,7 +65,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class NodeController(
     private val nodeService: NodeService,
-    private val nodeSearchService: NodeSearchService
+    private val nodeSearchService: NodeSearchService,
 ) : NodeClient {
 
     override fun getNodeDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
@@ -79,7 +81,7 @@ class NodeController(
     override fun listExistFullPath(
         projectId: String,
         repoName: String,
-        fullPathList: List<String>
+        fullPathList: List<String>,
     ): Response<List<String>> {
         return ResponseBuilder.success(nodeService.listExistFullPath(projectId, repoName, fullPathList))
     }
@@ -88,7 +90,7 @@ class NodeController(
         projectId: String,
         repoName: String,
         path: String,
-        option: NodeListOption
+        option: NodeListOption,
     ): Response<Page<NodeInfo>> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, path)
         return ResponseBuilder.success(nodeService.listNodePage(artifactInfo, option))
@@ -133,13 +135,18 @@ class NodeController(
 
     override fun restoreNode(nodeRestoreRequest: NodeRestoreRequest): Response<NodeRestoreResult> {
         return ResponseBuilder.success(
-            nodeService.restoreNode(nodeRestoreRequest.artifactInfo, nodeRestoreRequest.nodeRestoreOption)
+            nodeService.restoreNode(nodeRestoreRequest.artifactInfo, nodeRestoreRequest.nodeRestoreOption),
         )
     }
 
-    override fun computeSize(projectId: String, repoName: String, fullPath: String): Response<NodeSizeInfo> {
+    override fun computeSize(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        estimated: Boolean
+    ): Response<NodeSizeInfo> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
-        return ResponseBuilder.success(nodeService.computeSize(artifactInfo))
+        return ResponseBuilder.success(nodeService.computeSize(artifactInfo, estimated))
     }
 
     override fun countFileNode(projectId: String, repoName: String, path: String): Response<Long> {
@@ -161,27 +168,51 @@ class NodeController(
         path: String,
         includeFolder: Boolean,
         deep: Boolean,
-        includeMetadata: Boolean
+        includeMetadata: Boolean,
     ): Response<List<NodeInfo>> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, path)
         val nodeListOption = NodeListOption(
             includeFolder = includeFolder,
             includeMetadata = includeMetadata,
-            deep = deep
+            deep = deep,
         )
         return ResponseBuilder.success(nodeService.listNode(artifactInfo, nodeListOption))
     }
 
     override fun getDeletedNodeDetail(
-        projectId: String, repoName: String, fullPath: String
+        projectId: String,
+        repoName: String,
+        fullPath: String,
     ): Response<List<NodeDetail>> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
         return ResponseBuilder.success(nodeService.getDeletedNodeDetail(artifactInfo))
     }
 
     override fun getDeletedNodeDetailBySha256(
-        projectId: String, repoName: String, sha256: String
+        projectId: String,
+        repoName: String,
+        sha256: String,
     ): Response<NodeDetail?> {
         return ResponseBuilder.success(nodeService.getDeletedNodeDetailBySha256(projectId, repoName, sha256))
+    }
+
+    override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest): Response<Void> {
+        nodeService.archiveNode(nodeArchiveRequest)
+        return ResponseBuilder.success()
+    }
+
+    override fun cleanNodes(nodeCleanRequest: NodeCleanRequest): Response<NodeDeleteResult> {
+        return ResponseBuilder.success(nodeService.deleteBeforeDate(
+            projectId = nodeCleanRequest.projectId,
+            repoName = nodeCleanRequest.repoName,
+            path = nodeCleanRequest.path,
+            date = nodeCleanRequest.date,
+            operator = nodeCleanRequest.operator
+        ))
+    }
+
+    override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest): Response<Void> {
+        nodeService.restoreNode(nodeArchiveRequest)
+        return ResponseBuilder.success()
     }
 }

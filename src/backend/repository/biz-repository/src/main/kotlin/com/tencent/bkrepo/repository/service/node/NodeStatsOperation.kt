@@ -43,7 +43,7 @@ interface NodeStatsOperation {
     /**
      * 计算文件或者文件夹大小
      */
-    fun computeSize(artifact: ArtifactInfo): NodeSizeInfo
+    fun computeSize(artifact: ArtifactInfo, estimated: Boolean = false): NodeSizeInfo
 
     /**
      * 查询文件节点数量

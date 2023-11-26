@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.api.cluster.ClusterRepositoryClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -60,7 +61,8 @@ class EdgeRepositoryServiceImpl(
     repositoryProperties: RepositoryProperties,
     messageSupplier: MessageSupplier,
     servicePermissionClient: ServicePermissionClient,
-    clusterProperties: ClusterProperties
+    clusterProperties: ClusterProperties,
+    projectMetricsRepository: ProjectMetricsRepository
 ) : RepositoryServiceImpl(
     repositoryDao,
     nodeService,
@@ -69,7 +71,8 @@ class EdgeRepositoryServiceImpl(
     proxyChannelService,
     repositoryProperties,
     messageSupplier,
-    servicePermissionClient
+    servicePermissionClient,
+    projectMetricsRepository
 ) {
 
     private val centerRepoClient: ClusterRepositoryClient by lazy {

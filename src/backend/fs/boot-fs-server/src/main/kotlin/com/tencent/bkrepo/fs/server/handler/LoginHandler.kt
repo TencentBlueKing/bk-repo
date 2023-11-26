@@ -28,20 +28,27 @@
 package com.tencent.bkrepo.fs.server.handler
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.fs.server.api.RAuthClient
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
+import com.tencent.bkrepo.fs.server.pojo.DevxLoginResponse
 import com.tencent.bkrepo.fs.server.service.PermissionService
+import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 
@@ -75,6 +82,34 @@ class LoginHandler(
         return ReactiveResponseBuilder.success(token)
     }
 
+    suspend fun devxLogin(request: ServerRequest): ServerResponse {
+        val workspace = DevxWorkspaceUtils.getWorkspace().awaitSingleOrNull() ?: throw AuthenticationException()
+        val repoName = request.pathVariable(REPO_NAME)
+        val userId = createUser(workspace)
+        val token = createToken(workspace.projectId, repoName, userId)
+        val response = DevxLoginResponse(workspace.projectId, token)
+        return ReactiveResponseBuilder.success(response)
+    }
+
+    private suspend fun createUser(workspace: DevXWorkSpace): String {
+        return if (workspace.realOwner.isNotBlank()) {
+            val request = CreateUserRequest(userId = workspace.realOwner, name = workspace.realOwner)
+            rAuthClient.create(request).awaitSingle()
+            workspace.realOwner
+        } else {
+            val userId = "g_${workspace.projectId}"
+            val request = CreateUserToProjectRequest(
+                userId = userId,
+                name = userId,
+                group = true,
+                asstUsers = listOf(workspace.creator),
+                projectId = workspace.projectId
+            )
+            rAuthClient.createUserToProject(request).awaitSingle()
+            userId
+        }
+    }
+
     private suspend fun createToken(projectId: String, repoName: String, username: String): String {
         val claims = mutableMapOf(JWT_CLAIMS_REPOSITORY to "$projectId/$repoName")
         val writePermit = permissionService.checkPermission(projectId, repoName, PermissionAction.WRITE, username)
@@ -96,7 +131,7 @@ class LoginHandler(
     }
 
     suspend fun refresh(request: ServerRequest): ServerResponse {
-        val token = request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull().orEmpty()
+        val token = request.bearerToken().orEmpty()
         val jws = securityManager.validateToken(token)
         val claims = jws.body
         val username = claims.subject

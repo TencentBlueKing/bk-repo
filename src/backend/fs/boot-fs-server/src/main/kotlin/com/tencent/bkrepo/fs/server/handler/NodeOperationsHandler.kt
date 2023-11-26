@@ -29,6 +29,8 @@ package com.tencent.bkrepo.fs.server.handler
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
+import com.tencent.bkrepo.fs.server.api.NodeClient
+import com.tencent.bkrepo.fs.server.api.RGenericClient
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
@@ -50,14 +52,17 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import kotlinx.coroutines.reactor.awaitSingle
+import org.slf4j.LoggerFactory
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
+import reactivefeign.client.ReadTimeoutException
 import java.time.Duration
 
 /**
@@ -66,32 +71,36 @@ import java.time.Duration
  * 处理节点操作的请求
  * */
 class NodeOperationsHandler(
+    rGenericClient: RGenericClient,
     private val rRepositoryClient: RRepositoryClient,
     private val fileNodeService: FileNodeService
 ) {
+    private val nodeClient = NodeClient(rRepositoryClient, rGenericClient)
 
     suspend fun getNode(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val nodeDetail = rRepositoryClient.getNodeDetail(
+            val nodeDetail = nodeClient.getNodeDetail(
                 projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath
-            ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
-            return ReactiveResponseBuilder.success(nodeDetail.nodeInfo.toNode())
+                repo = ReactiveArtifactContextHolder.getRepoDetail(),
+                fullPath = fullPath,
+                category = category
+            )
+            return nodeDetail
+                ?.let { ReactiveResponseBuilder.success(it.nodeInfo.toNode()) }
+                ?: ServerResponse.notFound().buildAndAwait()
         }
     }
 
     suspend fun listNodes(request: ServerRequest): ServerResponse {
         val pageRequest = NodePageRequest(request)
         with(pageRequest) {
-            val nodes = rRepositoryClient.listNodePage(
-                path = fullPath,
+            val nodes = nodeClient.listNodes(
                 projectId = projectId,
-                repoName = repoName,
+                repo = ReactiveArtifactContextHolder.getRepoDetail(),
+                path = fullPath,
                 option = listOption
-            ).awaitSingle().data?.records?.map { it.toNode() }?.toList()
-                ?: return ServerResponse.notFound().buildAndAwait()
-            return ReactiveResponseBuilder.success(nodes)
+            )
+            return nodes?.let { ReactiveResponseBuilder.success(it) } ?: ServerResponse.notFound().buildAndAwait()
         }
     }
 
@@ -147,13 +156,19 @@ class NodeOperationsHandler(
             return ReactiveResponseBuilder.success(attributes)
         }
     }
+
     suspend fun getStat(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
             val cacheKey = "$projectId-$repoName-$fullPath"
             var res = statCache.getIfPresent(cacheKey)
             if (res == null) {
                 val cap = ReactiveArtifactContextHolder.getRepoDetail().quota
-                val nodeStat = rRepositoryClient.computeSize(projectId, repoName, fullPath).awaitSingle().data
+                val nodeStat = try {
+                    rRepositoryClient.statRepo(projectId, repoName).awaitSingle().data
+                } catch (e: ReadTimeoutException) {
+                    logger.warn("get repo[$projectId/$repoName] stat timeout")
+                    NodeSizeInfo(0, 0, UNKNOWN)
+                }
 
                 res = StatResponse(
                     subNodeCount = nodeStat?.subNodeCount ?: UNKNOWN,
@@ -202,11 +217,12 @@ class NodeOperationsHandler(
 
     suspend fun info(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val nodeDetail = rRepositoryClient.getNodeDetail(
+            val nodeDetail = nodeClient.getNodeDetail(
                 projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath
-            ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
+                repo = ReactiveArtifactContextHolder.getRepoDetail(),
+                fullPath = fullPath,
+                category = category
+            ) ?: return ServerResponse.notFound().buildAndAwait()
             val range = request.resolveRange(nodeDetail.size)
             val blocks = fileNodeService.info(nodeDetail, range)
             val newBlocks = OverlayRangeUtils.build(blocks, range)
@@ -280,5 +296,6 @@ class NodeOperationsHandler(
 
     companion object {
         private const val UNKNOWN = -1L
+        private val logger = LoggerFactory.getLogger(NodeOperationsHandler::class.java)
     }
 }

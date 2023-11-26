@@ -38,9 +38,9 @@ import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.model.TClient
 import com.tencent.bkrepo.fs.server.pojo.ClientDetail
+import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
 import com.tencent.bkrepo.fs.server.repository.ClientRepository
 import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
-import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -96,10 +96,11 @@ class ClientService(
 
     suspend fun listClients(request: ClientListRequest): Page<ClientDetail> {
         val pageRequest = Pages.ofRequest(request.pageNumber, request.pageSize)
-        val query = Query(
-            Criteria.where(TClient::projectId.name).isEqualTo(request.projectId)
-                .and(TClient::repoName.name).isEqualTo(request.repoName)
-        )
+        val criteria = Criteria()
+        request.projectId?.let { criteria.and(TClient::projectId.name).isEqualTo(request.projectId) }
+        request.repoName?.let { criteria.and(TClient::repoName.name).isEqualTo(request.repoName) }
+        request.online?.let { criteria.and(TClient::online.name).isEqualTo(request.online) }
+        val query = Query(criteria)
         val count = clientRepository.count(query)
         val data = clientRepository.find(query.with(pageRequest))
         return Pages.ofResponse(pageRequest, count, data.map { it.convert() })

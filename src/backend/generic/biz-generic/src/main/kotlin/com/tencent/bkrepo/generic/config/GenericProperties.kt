@@ -43,5 +43,9 @@ data class GenericProperties(
     @NestedConfigurationProperty
     var delta: DeltaProperties = DeltaProperties(),
     @NestedConfigurationProperty
-    var bkBase: BkBaseProperties = BkBaseProperties()
+    var bkBase: BkBaseProperties = BkBaseProperties(),
+    /**
+     * 平台账号，在Generic仓库代理远程BkRepo的Generic仓库时使用
+     */
+    var platforms: List<PlatformProperties> = emptyList(),
 )

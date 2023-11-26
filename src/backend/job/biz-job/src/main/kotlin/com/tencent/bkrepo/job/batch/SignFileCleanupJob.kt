@@ -36,7 +36,6 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -48,7 +47,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(SignFileCleanupJobProperties::class)
 class SignFileCleanupJob(
     private val nodeClient: NodeClient,
-    private val mongoTemplate: MongoTemplate,
     val properties: SignFileCleanupJobProperties
 ) : DefaultContextMongoDbJob<SignFileCleanupJob.SignFileData>(properties) {
 

@@ -33,8 +33,11 @@ import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
 import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
+import com.tencent.bkrepo.analyst.service.impl.ProjectUsageStatisticsServiceImpl
 import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
+import com.tencent.bkrepo.repository.api.ProjectUsageStatisticsClient
 import com.tencent.bkrepo.repository.api.OperateLogClient
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -64,5 +67,13 @@ class ScannerConfiguration {
     @ConditionalOnNotAssembly // 仅在非单体包部署时创建，避免循环依赖问题
     fun operateLogService(operateLogClient: OperateLogClient): OperateLogService {
         return OperateLogServiceImpl(operateLogClient)
+    }
+
+    @Bean
+    @ConditionalOnNotAssembly // 仅在非单体包部署时创建，避免循环依赖问题
+    fun projectUsageStatisticsService(
+        client: ObjectProvider<ProjectUsageStatisticsClient>
+    ): ProjectUsageStatisticsService {
+        return ProjectUsageStatisticsServiceImpl(client)
     }
 }

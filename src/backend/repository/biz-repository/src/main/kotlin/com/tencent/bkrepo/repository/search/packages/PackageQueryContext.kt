@@ -38,6 +38,7 @@ import org.springframework.data.mongodb.core.query.Query
 
 class PackageQueryContext(
     override var queryModel: QueryModel,
+    override var permissionChecked: Boolean = false,
     override val mongoQuery: Query,
     override val interpreter: MongoQueryInterpreter
-) : CommonQueryContext(queryModel, mongoQuery, interpreter)
+) : CommonQueryContext(queryModel, permissionChecked, mongoQuery, interpreter)

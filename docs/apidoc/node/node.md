@@ -636,16 +636,16 @@
   | packages  | Int    | 节点数量     | node count           |
 
 
-## 清理创建时间早于{date}的文件节点
+## 清理最后修改时间早于{date}的文件节点
 
 - API: DELETE /repository/api/node/clean/{projectId}/{repoName}?date=yyyy-MM-dd'T'HH:mm:ss.SSSXXX
 
-- API 名称: delete_node_created_before_date
+- API 名称: delete_node_last_modified_before_date
 
 - 功能说明：
 
-  - 中文：清理创建时间早于{date}的文件节点
-  - English：delete node created before date
+  - 中文：清理最后修改时间早于{date}的文件节点
+  - English：delete node last modified before date
 
 - 请求体
   此接口请求体为空

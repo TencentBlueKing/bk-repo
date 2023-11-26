@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
@@ -75,8 +76,8 @@ class NodeServiceImpl(
     messageSupplier
 ) {
 
-    override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
-        return NodeStatsSupport(this).computeSize(artifact)
+    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
+        return NodeStatsSupport(this).computeSize(artifact, estimated)
     }
 
     override fun aggregateComputeSize(criteria: Criteria): Long {
@@ -125,9 +126,10 @@ class NodeServiceImpl(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator)
+        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -166,5 +168,13 @@ class NodeServiceImpl(
 
     override fun restoreNode(restoreContext: NodeRestoreSupport.RestoreContext): NodeRestoreResult {
         return NodeRestoreSupport(this).restoreNode(restoreContext)
+    }
+
+    override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
+        return NodeArchiveSupport(this).archiveNode(nodeArchiveRequest)
+    }
+
+    override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
+        return NodeArchiveSupport(this).restoreNode(nodeArchiveRequest)
     }
 }

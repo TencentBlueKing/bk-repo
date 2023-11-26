@@ -79,6 +79,7 @@ class RouteConfiguration(
         before(RouteConfiguration::initArtifactContext)
         filter(permissionFilterFunction::filter)
         POST("/login/{projectId}/{repoName}", loginHandler::login)
+        POST("/devx/login/{repoName}", loginHandler::devxLogin)
         POST("/token/refresh/{projectId}/{repoName}", loginHandler::refresh)
 
         "/service/block".nest {
@@ -113,7 +114,7 @@ class RouteConfiguration(
         }
 
         "/service/client".nest {
-            GET("/list/{projectId}/{repoName}", clientHandler::listClients)
+            GET("/list", clientHandler::listClients)
         }
 
         accept(APPLICATION_OCTET_STREAM).nest {
@@ -142,23 +143,28 @@ class RouteConfiguration(
         private val logger = LoggerFactory.getLogger(RouteConfiguration::class.java)
         private val antPathMatcher = AntPathMatcher()
         private fun initArtifactContext(request: ServerRequest): ServerRequest {
-            val projectId = request.pathVariable(PROJECT_ID)
-            val repoName = request.pathVariable(REPO_NAME)
-            val encodeUrl = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
-                (request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE).get() as PathPattern).patternString,
-                request.path()
-            )
-            val decodeUrl = URLDecoder.decode(encodeUrl, StandardCharsets.UTF_8.name())
-            val artifactUri = PathUtils.normalizeFullPath(decodeUrl)
-            request.exchange().attributes[PROJECT_ID] = projectId
-            request.exchange().attributes[REPO_NAME] = repoName
-            val artifactInfo = ArtifactInfo(
-                projectId = projectId,
-                repoName = repoName,
-                artifactUri = artifactUri
-            )
-            request.exchange().attributes[ARTIFACT_INFO_KEY] = artifactInfo
-            return request
+            try {
+                val projectId = request.pathVariable(PROJECT_ID)
+                val repoName = request.pathVariable(REPO_NAME)
+                val encodeUrl = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
+                    (request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE)
+                        .get() as PathPattern).patternString,
+                    request.path()
+                )
+                val decodeUrl = URLDecoder.decode(encodeUrl, StandardCharsets.UTF_8.name())
+                val artifactUri = PathUtils.normalizeFullPath(decodeUrl)
+                request.exchange().attributes[PROJECT_ID] = projectId
+                request.exchange().attributes[REPO_NAME] = repoName
+                val artifactInfo = ArtifactInfo(
+                    projectId = projectId,
+                    repoName = repoName,
+                    artifactUri = artifactUri
+                )
+                request.exchange().attributes[ARTIFACT_INFO_KEY] = artifactInfo
+                return request
+            } catch (ignore: IllegalArgumentException) {
+                return request
+            }
         }
     }
 }

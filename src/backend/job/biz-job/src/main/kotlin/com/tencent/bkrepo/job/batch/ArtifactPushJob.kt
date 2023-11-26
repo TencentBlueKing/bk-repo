@@ -38,7 +38,6 @@ import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.replication.api.ArtifactPushClient
 import com.tencent.bkrepo.replication.pojo.remote.request.ArtifactPushRequest
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -53,7 +52,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(ArtifactPushJobProperties::class)
 class ArtifactPushJob(
     private val properties: ArtifactPushJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val artifactPushClient: ArtifactPushClient
 ) : DefaultContextMongoDbJob<ArtifactPushJob.PackageVersionData>(properties) {
     private val types: List<String>
