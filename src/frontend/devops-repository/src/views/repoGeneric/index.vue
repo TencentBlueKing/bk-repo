@@ -168,7 +168,7 @@
                     </bk-table-column>
                 </bk-table>
                 <bk-button v-if="!localRepo"
-                    :disabled="artifactoryList.length === 0"
+                    :disabled="artifactoryList.length === 0 || artifactoryList.length < pagination.limit"
                     size="small"
                     icon="icon-angle-right"
                     @click="changePage(1)"
