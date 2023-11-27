@@ -320,22 +320,16 @@
             },
             localRepo () {
                 const configuration = this.currentRepo.configuration
-                if (this.currentRepo.category === 'LOCAL') {
-                    return true
-                } else if (this.currentRepo.category === 'COMPOSITE') {
+                if (this.currentRepo.category === 'COMPOSITE') {
                     const proxy = configuration.proxy
                     return !proxy || !proxy.channelList || proxy.channelList.length === 0
                 } else {
-                    return false
+                    return this.currentRepo.category === 'LOCAL'
                 }
             },
             sortableRepo () {
                 // 仅允许LOCAL仓库排序
-                if (this.localRepo) {
-                    return 'custom'
-                } else {
-                    return false
-                }
+                return this.localRepo ? 'custom' : false
             }
         },
         watch: {
@@ -374,11 +368,8 @@
             if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
-            if (this.localRepo) {
-                this.sortType = 'lastModifiedDate'
-            } else {
-                this.sortType = ''
-            }
+
+            this.sortType = this.localRepo ? 'lastModifiedDate' : ''
         },
         methods: {
             convertFileSize,
