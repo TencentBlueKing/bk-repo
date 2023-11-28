@@ -21,19 +21,19 @@ class BasedRepositoryFileExpireResolver(
     taskScheduler: ThreadPoolTaskScheduler,
 ) : FileExpireResolver {
 
-    private val retainNode = mutableSetOf<String>()
+    private var retainNodes = mutableSetOf<String>()
 
     init {
         taskScheduler.scheduleWithFixedDelay(this::refreshRetainNode, expireConfig.cacheTime)
     }
 
     override fun isExpired(file: File): Boolean {
-        return !retainNode.contains(file.name)
+        return !retainNodes.contains(file.name)
     }
 
     private fun refreshRetainNode() {
         logger.info("Refresh retain nodes.")
-        retainNode.clear()
+        val newRetainNodes = mutableSetOf<String>()
         expireConfig.repos.forEach {
             // for each repo
             val projectId = it.projectId
@@ -52,10 +52,11 @@ class BasedRepositoryFileExpireResolver(
                 // 获取每个的sha256
                 val sha256 = ret[SHA256].toString()
                 val fullPath = ret[FULL_PATH].toString()
-                retainNode.add(sha256)
+                newRetainNodes.add(sha256)
                 logger.info("Retain node $projectId/$repoName$fullPath, $sha256.")
             }
         }
+        retainNodes = newRetainNodes
     }
 
     companion object {
