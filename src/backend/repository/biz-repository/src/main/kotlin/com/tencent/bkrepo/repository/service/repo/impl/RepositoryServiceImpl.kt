@@ -233,7 +233,7 @@ class RepositoryServiceImpl(
             // 解析存储凭证
             val credentialsKey = determineStorageKey(this)
             // 确保存储凭证Key一定存在
-            val storageCredential = credentialsKey?.takeIf { it.isNotBlank() }?.let {
+            credentialsKey?.takeIf { it.isNotBlank() }?.let {
                 storageCredentialService.findByKey(it) ?: throw ErrorCodeException(
                     CommonMessageCode.RESOURCE_NOT_FOUND,
                     it,
@@ -259,7 +259,7 @@ class RepositoryServiceImpl(
                     key = event.getFullResourceKey(),
                 )
                 logger.info("Create repository [$repoCreateRequest] success.")
-                convertToDetail(repository, storageCredential)!!
+                convertToDetail(repository)!!
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert repository[$projectId/$name] error: [${exception.message}]")
                 getRepoDetail(projectId, name, type.name)!!
