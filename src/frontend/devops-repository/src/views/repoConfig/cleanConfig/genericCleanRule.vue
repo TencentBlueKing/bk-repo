@@ -5,7 +5,7 @@
             :value="path"
             @input="path => change({ path })"
             :disabled="disabled"
-            :placeholder="type === 'generic' ? $t('inputFilePathTip') : $t('rulePackageNamePlaceholder')">
+            :placeholder="type === 'generic' ? $t('inputFilePathTip') : $t('cleanPackageRuleTip')">
         </bk-input>
         <Icon v-show="!disabled" class="ml10 hover-btn" size="24" name="icon-delete" @click.native="$emit('delete')" />
     </div>

@@ -12,7 +12,7 @@
                 :disabled="!cleanupStrategy.enable">
                 <bk-option id="retentionDays" :name="$t('retentionDays')"></bk-option>
                 <bk-option id="retentionDate" :name="$t('retentionDate')"></bk-option>
-                <bk-option id="retentionNums" :name="$t('retentionNums')"></bk-option>
+                <bk-option v-if="repoType !== 'generic'" id="retentionNums" :name="$t('retentionNums')"></bk-option>
             </bk-select>
         </bk-form-item>
         <bk-form-item :label="$t('retentionDays')" property="cleanupValue" required error-display-type="normal" v-if="cleanupStrategy.cleanupType === 'retentionDays'">
@@ -131,23 +131,31 @@
                 } else {
                     await this.$refs.cleanForm.validate()
                     let cleanValue = ''
-                    if (this.cleanupStrategy.cleanupType === 'retentionDate') {
+                    if (this.cleanupStrategy.cleanupType === 'retentionDate' && this.cleanupStrategy.cleanupValue instanceof Date) {
                         cleanValue = moment(this.cleanupStrategy.cleanupValue).add(8, 'hours').toISOString()
                     } else {
                         cleanValue = this.cleanupStrategy.cleanupValue
                     }
-                    const target = this.cleanupStrategy.cleanTargets.filter(function (item, index, array) {
-                        if (item !== '' && item !== null) {
-                            return array.indexOf(item) === index
-                        } else {
-                            return false
+                    if (this.cleanupStrategy.cleanTargets) {
+                        const target = this.cleanupStrategy.cleanTargets.filter(function (item, index, array) {
+                            if (item !== '' && item !== null) {
+                                return array.indexOf(item) === index
+                            } else {
+                                return false
+                            }
+                        })
+                        cleanStrategy = {
+                            enable: this.cleanupStrategy.enable,
+                            cleanupType: this.cleanupStrategy.cleanupType,
+                            cleanupValue: cleanValue,
+                            cleanTargets: target
                         }
-                    })
-                    cleanStrategy = {
-                        enable: this.cleanupStrategy.enable,
-                        cleanupType: this.cleanupStrategy.cleanupType,
-                        cleanupValue: cleanValue,
-                        cleanTargets: target
+                    } else {
+                        cleanStrategy = {
+                            enable: this.cleanupStrategy.enable,
+                            cleanupType: this.cleanupStrategy.cleanupType,
+                            cleanupValue: cleanValue
+                        }
                     }
                 }
                 this.baseData.configuration.settings.cleanStrategy = cleanStrategy
@@ -172,12 +180,15 @@
             },
             asynCheckCleanValue () {
                 if (this.cleanupStrategy.cleanupType === 'retentionDate') {
-                    return this.cleanupStrategy.cleanupValue instanceof Date
+                    return this.cleanupStrategy.cleanupValue instanceof Date || moment(this.cleanupStrategy.cleanupValue).isValid()
                 } else {
                     return (/^[0-9]+$/).test(this.cleanupStrategy.cleanupValue)
                 }
             },
             changeType () {
+                if (this.cleanupStrategy.cleanupType !== 'retentionDate' && this.cleanupStrategy.cleanupValue instanceof Date) {
+                    this.cleanupStrategy.cleanupValue = ''
+                }
                 this.clearError()
             },
             deleteTarget (index) {

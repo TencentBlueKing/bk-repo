@@ -815,5 +815,6 @@
     "cleanTarget":"清理目标",
     "addTarget": "添加目标",
     "cleanConfig":"清理设置",
-    "and": "和"
+    "and": "和",
+    "cleanPackageRuleTip": "请输入包名，例如：nginx"
 }
