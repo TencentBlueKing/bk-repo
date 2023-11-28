@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -220,4 +221,9 @@ interface NodeClient {
     @ApiOperation("恢复节点")
     @PutMapping("/archive/restore/")
     fun restoreNode(@RequestBody nodeArchiveRequest: NodeArchiveRequest): Response<Void>
+
+
+    @ApiOperation("清理最后修改时间早于{date}的文件节点")
+    @DeleteMapping("/clean")
+    fun cleanNodes(@RequestBody nodeCleanRequest: NodeCleanRequest): Response<NodeDeleteResult>
 }

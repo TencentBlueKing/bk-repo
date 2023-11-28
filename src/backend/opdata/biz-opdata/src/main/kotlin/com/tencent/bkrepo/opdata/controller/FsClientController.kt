@@ -62,7 +62,8 @@ class FsClientController(
             request.projectId,
             request.repoName,
             request.pageNumber,
-            request.pageSize
+            request.pageSize,
+            request.online
         )
     }
 }

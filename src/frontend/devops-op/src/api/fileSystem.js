@@ -3,7 +3,7 @@ import request from '@/utils/request'
 export const DEFAULT_PAGE_SIZE = 10
 const PREFIX = '/opdata/api/fs-client'
 
-export function queryFileSystemClient(projectId, repoName, pageNumber) {
+export function queryFileSystemClient(projectId, repoName, pageNumber, online) {
   return request({
     url: `${PREFIX}/list/`,
     method: 'get',
@@ -11,7 +11,8 @@ export function queryFileSystemClient(projectId, repoName, pageNumber) {
       pageNumber: pageNumber,
       pageSize: DEFAULT_PAGE_SIZE,
       projectId: projectId === '' ? null : projectId,
-      repoName: repoName === '' ? null : repoName
+      repoName: repoName === '' ? null : repoName,
+      online: online === '' ? null : online
     }
   })
 }

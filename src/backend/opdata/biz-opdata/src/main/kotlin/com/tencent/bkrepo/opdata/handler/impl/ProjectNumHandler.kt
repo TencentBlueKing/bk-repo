@@ -34,22 +34,19 @@ package com.tencent.bkrepo.opdata.handler.impl
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NUM
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
 import org.springframework.stereotype.Component
 
 /**
  * 项目数量统计
  */
 @Component
-class ProjectNumHandler @Autowired constructor(
-    private val projectModel: ProjectModel
-) : QueryHandler {
+class ProjectNumHandler : QueryHandler {
 
     override val metric: Metrics get() = Metrics.PROJECTNUM
 
@@ -61,7 +58,7 @@ class ProjectNumHandler @Autowired constructor(
             null
         }
         val projectType = ProjectType.valueOf(reqData?.get(PROJECT_TYPE) as? String ?: ProjectType.ALL.name)
-        val count = projectModel.getProjectNum(projectType)
+        val count = MetricsCacheUtil.gerProjectNodeNum(projectType.name)
         val column = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(count)
         val data = QueryResult(listOf(column), listOf(row), target.type)

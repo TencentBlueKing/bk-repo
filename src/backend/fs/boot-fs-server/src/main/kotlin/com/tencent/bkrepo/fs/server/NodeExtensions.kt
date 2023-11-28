@@ -27,8 +27,13 @@
 
 package com.tencent.bkrepo.fs.server
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.fs.server.model.Node
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 fun NodeInfo.toNode(): Node {
@@ -50,3 +55,36 @@ fun NodeInfo.toNode(): Node {
         lastAccessDate = this.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME)
     )
 }
+
+fun Map<String, Any?>.toNode(): Node? {
+    return try {
+        Node(
+            createdBy = this[Node::createdBy.name] as String,
+            createdDate = (this[Node::createdDate.name] as String).format(DateTimeFormatter.ISO_DATE_TIME),
+            lastModifiedBy = this[Node::lastModifiedBy.name] as String,
+            lastModifiedDate = (this[Node::lastModifiedDate.name] as String).format(DateTimeFormatter.ISO_DATE_TIME),
+            projectId = this[Node::projectId.name] as String,
+            repoName = this[Node::repoName.name] as String,
+            folder = this[Node::folder.name] as Boolean,
+            path = this[Node::path.name] as String,
+            name = this[Node::name.name] as String,
+            fullPath = this[Node::fullPath.name] as String,
+            size = this[Node::size.name].toString().toLong(),
+            sha256 = this[Node::sha256.name] as String?,
+            md5 = this[Node::md5.name] as String?,
+            metadata = this[Node::metadata.name] as Map<String, Any>?,
+            lastAccessDate = (this[Node::lastAccessDate.name]?.toString()?.toLong())?.let { convertDateTime(it) },
+            category = (this[Node::category.name] as String?) ?: RepositoryCategory.LOCAL.name
+        )
+    } catch (e: Exception) {
+        logger.error("convert to node failed", e)
+        null
+    }
+}
+
+fun convertDateTime(value: Long): String {
+    return LocalDateTime.ofInstant(Instant.ofEpochMilli(value), ZoneId.systemDefault())
+        .format(DateTimeFormatter.ISO_DATE_TIME)
+}
+
+private val logger = LoggerFactory.getLogger("NodeExtensions")
