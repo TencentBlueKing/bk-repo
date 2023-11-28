@@ -28,31 +28,21 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.job.DELETED_DATE
-import com.tencent.bkrepo.job.FOLDER
-import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
-import com.tencent.bkrepo.job.PATH
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
-import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.ArtifactCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.oci.api.OciClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
-import org.bson.types.ObjectId
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -61,7 +51,6 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.regex.Pattern
 
 /**
  * 根据仓库配置的清理策略清理对应仓库下的制品
@@ -158,41 +147,23 @@ class ArtifactCleanupJob(
         projectId: String, repoName: String, cleanupDate: LocalDateTime,
         cleanupFolders: List<String>? = null
     ) {
-        val pageSize = BATCH_SIZE
-        var querySize: Int
-        var lastId = ObjectId(MIN_OBJECT_ID)
-        val nodeCollectionName = COLLECTION_NODE_PREFIX +
-            MongoShardingUtils.shardingSequence(projectId, SHARDING_COUNT)
-
-        do {
-            val query = Query(
-                Criteria.where(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(repoName)
-                    .and(FOLDER).isEqualTo(false).and(DELETED_DATE).isEqualTo(null)
-                    .and(LAST_MODIFIED_DATE).lt(cleanupDate).and(ID).gt(lastId)
-                    .apply {
-                        if (!cleanupFolders.isNullOrEmpty()) {
-                            this.and(PATH).`in`(cleanupFolders.map { Pattern.compile("^${toPath(it)}") })
-                        }
-                    }
-            ).limit(BATCH_SIZE)
-                .with(Sort.by(ID).ascending())
-
-            val data = mongoTemplate.find<NodeData>(
-                query,
-                nodeCollectionName
-            )
-            if (data.isEmpty()) {
-                break
+        val folders = if (cleanupFolders.isNullOrEmpty()) {
+            listOf(PathUtils.ROOT)
+        } else {
+            cleanupFolders
+        }
+        folders.forEach {
+            try {
+                nodeClient.cleanNodes((NodeCleanRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    path = PathUtils.toPath(it),
+                    date = cleanupDate,
+                    operator = SYSTEM_USER)))
+            } catch (e: NullPointerException) {
+                logger.warn("Request of clean nodes $it in repo $projectId|$repoName is timeout!")
             }
-            nodeClient.deleteNodes(NodesDeleteRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPaths = data.map { it.fullPath },
-                operator = SYSTEM_USER
-            ))
-            querySize = data.size
-            lastId = ObjectId(data.last().id)
-        } while (querySize == pageSize)
+        }
     }
 
 
@@ -277,11 +248,6 @@ class ArtifactCleanupJob(
         val lastModifiedDate: LocalDateTime
     )
 
-    data class NodeData(
-        val id: String,
-        val fullPath: String,
-   )
-
     data class RepoData(private val map: Map<String, Any?>) {
         val name: String by map
         val projectId: String by map
@@ -318,9 +284,6 @@ class ArtifactCleanupJob(
         private const val PACKAGE_VERSION_NAME = "package_version"
         private const val PACKAGE_ID = "packageId"
         private const val CLEAN_UP_STRATEGY = "cleanupStrategy"
-        private const val COLLECTION_NODE_PREFIX = "node_"
         private const val PACKAGE_NAME = "name"
-        private const val BATCH_SIZE = 1000
-
     }
 }

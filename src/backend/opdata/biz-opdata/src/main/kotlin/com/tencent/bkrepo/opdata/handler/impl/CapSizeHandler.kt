@@ -40,22 +40,19 @@ import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.stereotype.Component
 
 /**
  * 项目容量统计
  */
 @Component
-class CapSizeHandler(
-    projectMetricsRepository: ProjectMetricsRepository,
-    statDateModel: StatDateModel
-) : QueryHandler, BaseHandler(projectMetricsRepository, statDateModel) {
+class CapSizeHandler(statDateModel: StatDateModel)
+    : QueryHandler, BaseHandler(statDateModel) {
 
     override val metric: Metrics get() = Metrics.CAPSIZE
 
     override fun handle(target: Target, result: MutableList<Any>) {
-        val size = calculateMetricValue(target).values.first()
+        val size = calculateMetricValue(target).values.firstOrNull() ?: 0
         val column = Columns(OPDATA_CAP_SIZE, OPDATA_GRAFANA_NUMBER)
         val row = listOf(size / TO_GIGABYTE)
         val data = QueryResult(listOf(column), listOf(row), target.type)

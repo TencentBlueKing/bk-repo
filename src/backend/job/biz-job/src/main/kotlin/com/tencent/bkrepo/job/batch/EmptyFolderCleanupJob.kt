@@ -34,9 +34,11 @@ import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULLPATH
+import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -46,16 +48,16 @@ import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.EmptyFolderCleanupJobProperties
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.time.LocalDateTime
 
 
 /**
@@ -64,8 +66,7 @@ import java.time.Duration
 @Component
 @EnableConfigurationProperties(EmptyFolderCleanupJobProperties::class)
 class EmptyFolderCleanupJob(
-    properties: EmptyFolderCleanupJobProperties,
-    private val nodeClient: NodeClient
+    properties: EmptyFolderCleanupJobProperties
 ): DefaultContextMongoDbJob<EmptyFolderCleanupJob.Node>(properties) {
 
     override fun collectionNames(): List<String> {
@@ -94,9 +95,10 @@ class EmptyFolderCleanupJob(
                 collectionName = collectionName, projectId = row.projectId,
                 repoName = row.repoName, fullPath = row.fullPath
             )
-            context.folders.getOrPut(folderKey) {
-                EmptyFolderCleanupJobContext.FolderMetricsInfo()
+            val folderMetric = context.folders.getOrPut(folderKey) {
+                EmptyFolderCleanupJobContext.FolderMetricsInfo(id = row.id)
             }
+            folderMetric.id = row.id
         } else {
             val ancestorFolder = PathUtils.resolveAncestor(row.fullPath)
             for (folder in ancestorFolder) {
@@ -116,7 +118,7 @@ class EmptyFolderCleanupJob(
     }
 
     override fun getLockAtMostFor(): Duration {
-        return Duration.ofDays(7)
+        return Duration.ofDays(14)
     }
 
 
@@ -152,14 +154,8 @@ class EmptyFolderCleanupJob(
                 )) {
                 logger.info("will delete empty folder ${folderInfo.fullPath}" +
                                 " in repo ${folderInfo.projectId}|${folderInfo.repoName}")
-                val deletedResult = doEmptyFolderDelete(
-                    projectId = folderInfo.projectId,
-                    repoName = folderInfo.repoName,
-                    fullPath = folderInfo.fullPath
-                )
-                if (deletedResult)  {
-                    context.totalDeletedNum.increment()
-                }
+                doEmptyFolderDelete(entry.value.id, collectionName)
+                context.totalDeletedNum.increment()
             }
         }
         clearCollectionContextCache(collectionName, context)
@@ -191,18 +187,19 @@ class EmptyFolderCleanupJob(
      * 删除空目录
      */
     private fun doEmptyFolderDelete(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-    ): Boolean {
-        return try {
-            // 删除空目录改为调用接口删除，避免监听删除事件的场景无法触发
-            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, fullPath, SYSTEM_USER))
-            true
-        } catch (e: Exception) {
-            logger.info("Failed to delete empty folder $fullPath in repo $projectId|$repoName, error is $e")
-            false
-        }
+        objectId: String?,
+        collectionName: String
+    ) {
+        if (objectId.isNullOrEmpty()) return
+        val query = Query(
+            Criteria.where(ID).isEqualTo(ObjectId(objectId))
+                .and(FOLDER).isEqualTo(true)
+        )
+        val deleteTime = LocalDateTime.now()
+        val update = Update()
+            .set(LAST_MODIFIED_DATE, deleteTime)
+            .set(DELETED_DATE, deleteTime)
+        mongoTemplate.updateFirst(query, update, collectionName)
     }
 
     /**
@@ -221,6 +218,7 @@ class EmptyFolderCleanupJob(
 
 
     data class Node(
+        val id: String,
         val projectId: String,
         val repoName: String,
         val folder: Boolean,
@@ -228,6 +226,7 @@ class EmptyFolderCleanupJob(
         val deleted: String? = null
     ) {
         constructor(map: Map<String, Any?>) : this(
+            map[Node::id.name].toString(),
             map[Node::projectId.name].toString(),
             map[Node::repoName.name].toString(),
             map[Node::folder.name] as Boolean,

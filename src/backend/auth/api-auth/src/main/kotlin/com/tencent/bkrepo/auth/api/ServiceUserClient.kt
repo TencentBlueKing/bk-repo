@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
@@ -60,6 +61,10 @@ interface ServiceUserClient {
     fun createUser(
         @RequestBody request: CreateUserRequest
     ): Response<Boolean>
+
+    @ApiOperation("创建项目用户")
+    @PostMapping("/create/project")
+    fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean>
 
     @ApiOperation("用户详情")
     @GetMapping("/detail/{uid}")

@@ -57,7 +57,7 @@
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
-                        <bk-button class="ml10" v-if="multiSelect.length && multiSelect.some(key => (
+                        <bk-button class="ml10" v-if="(userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
                             key.folder === true
                         ))" @click="clean">
                             {{ $t('clean') }}
@@ -90,7 +90,7 @@
                     <template #empty>
                         <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)"></empty-data>
                     </template>
-                    <bk-table-column type="selection" width="60"></bk-table-column>
+                    <bk-table-column :selectable="selectable" type="selection" width="60"></bk-table-column>
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
                         <template #default="{ row }">
                             <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
@@ -108,12 +108,12 @@
                             </scan-tag>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('size')" prop="size" width="90" sortable="custom" show-overflow-tooltip>
+                    <bk-table-column :label="$t('size')" prop="size" width="90" :sortable="sortableRepo" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ convertFileSize(row.size > 0 ? row.size : 0 ) }}
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('fileNum')" prop="nodeNum" sortable="custom" show-overflow-tooltip>
+                    <bk-table-column :label="$t('fileNum')" prop="nodeNum" :sortable="sortableRepo" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ row.nodeNum ? row.nodeNum : row.folder ? 0 : '--'}}
                         </template>
@@ -145,29 +145,44 @@
                             <operation-list
                                 :list="[
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
-                                    row.folder && { clickEvent: () => calculateFolderSize(row), label: $t('realSize') },
+                                    row.folder && row.category !== 'REMOTE' && { clickEvent: () => calculateFolderSize(row), label: $t('realSize') },
                                     !row.folder && getBtnDisabled(row.name) && { clickEvent: () => handlerPreviewBasicsFile(row), label: $t('preview') }, //基本类型文件 eg: txt
-                                    !row.folder && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
+                                    !row.folder && row.category !== 'REMOTE' && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
                                     ...(!row.metadata.forbidStatus ? [
-                                        { clickEvent: () => handlerDownload(row), label: $t('download') },
-                                        ...(repoName !== 'pipeline' ? [
+                                        (row.category !== 'REMOTE' || !row.folder) && { clickEvent: () => handlerDownload(row), label: $t('download') },
+                                        ...(repoName !== 'pipeline' && row.category !== 'REMOTE' ? [
                                             permission.edit && { clickEvent: () => renameRes(row), label: $t('rename') },
                                             permission.write && { clickEvent: () => moveRes(row), label: $t('move') },
                                             permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
-                                        ...(!row.folder ? [
+                                        ...(!row.folder && row.category !== 'REMOTE' ? [
                                             !community && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : [])
                                     ] : []),
-                                    !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
-                                    permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
+                                    !row.folder && row.category !== 'REMOTE' && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
+                                    permission.delete && row.category !== 'REMOTE' && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline') && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ]">
                             </operation-list>
                         </template>
                     </bk-table-column>
                 </bk-table>
+                <bk-button v-if="!localRepo"
+                    :disabled="artifactoryList.length === 0 || artifactoryList.length < pagination.limit"
+                    size="small"
+                    icon="icon-angle-right"
+                    @click="changePage(1)"
+                    class="mt10 mr10 fr">
+                </bk-button>
+                <bk-button v-if="!localRepo"
+                    :disabled="pagination.current === 1"
+                    size="small"
+                    icon="icon-angle-left"
+                    @click="changePage(-1)"
+                    class="mt10 mr5 fr">
+                </bk-button>
                 <bk-pagination
+                    v-if="localRepo"
                     class="p10"
                     size="small"
                     align="right"
@@ -302,6 +317,19 @@
             },
             searchFileName () {
                 return this.$route.query.fileName
+            },
+            localRepo () {
+                const configuration = this.currentRepo.configuration
+                if (this.currentRepo.category === 'COMPOSITE') {
+                    const proxy = configuration.proxy
+                    return !proxy || !proxy.channelList || proxy.channelList.length === 0
+                } else {
+                    return this.currentRepo.category === 'LOCAL'
+                }
+            },
+            sortableRepo () {
+                // 仅允许LOCAL仓库排序
+                return this.localRepo ? 'custom' : false
             }
         },
         watch: {
@@ -327,10 +355,11 @@
             } else next()
         },
         created () {
-            this.getRepoListAll({ projectId: this.projectId })
+            this.getRepoListAll({ projectId: this.projectId }).then(_ => {
+                this.pathChange()
+            })
             this.initTree()
             this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
-            this.pathChange()
             window.repositoryVue.$on('upload-refresh', debounce((path) => {
                 if (path.replace(/\/[^/]+$/, '').includes(this.selectedTreeNode.fullPath)) {
                     this.itemClickHandler(this.selectedTreeNode)
@@ -339,6 +368,8 @@
             if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
+
+            this.sortType = this.localRepo ? 'lastModifiedDate' : ''
         },
         methods: {
             convertFileSize,
@@ -392,30 +423,32 @@
                 }
             },
             renderHeader (h, { column }) {
+                const elements = [h('span', column.label)]
+                if (this.localRepo) {
+                    elements.push(h('i', { class: 'ml5 devops-icon icon-down-shape' }))
+                }
                 return h('div', {
                     class: {
-                        'flex-align-center hover-btn': true,
+                        'flex-align-center': true,
+                        'hover-btn': this.localRepo,
                         'selected-header': this.sortType === column.property
                     },
                     on: {
                         click: () => {
-                            this.sortType = column.property
-                            this.$refs.artifactoryTable.clearSort()
-                            this.sortParams = []
-                            const sortParam = {
-                                properties: column.property,
-                                direction: 'DESC'
+                            if (this.localRepo) {
+                                this.sortType = column.property
+                                this.$refs.artifactoryTable.clearSort()
+                                this.sortParams = []
+                                const sortParam = {
+                                    properties: column.property,
+                                    direction: 'DESC'
+                                }
+                                this.sortParams.push(sortParam)
+                                this.handlerPaginationChange()
                             }
-                            this.sortParams.push(sortParam)
-                            this.handlerPaginationChange()
                         }
                     }
-                }, [
-                    h('span', column.label),
-                    h('i', {
-                        class: 'ml5 devops-icon icon-down-shape'
-                    })
-                ])
+                }, elements)
             },
             initTree () {
                 this.INIT_TREE([{
@@ -505,7 +538,8 @@
                     limit: this.pagination.limit,
                     sortType: sortTypes,
                     isPipeline: this.repoName === 'pipeline',
-                    searchFlag: this.searchFileName
+                    searchFlag: this.searchFileName,
+                    localRepo: this.localRepo
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
@@ -577,6 +611,22 @@
                     this.isLoading = false
                 })
             },
+            changePage (inc) {
+                if (this.isLoading) {
+                    return
+                }
+                const oldPage = this.pagination.current
+
+                if (this.pagination.current + inc <= 0) {
+                    this.pagination.current = 1
+                } else if (this.artifactoryList.length !== 0 || inc < 0) {
+                    this.pagination.current += inc
+                }
+
+                if (oldPage !== this.pagination.current) {
+                    this.handlerPaginationChange({ current: this.pagination.current })
+                }
+            },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
@@ -636,7 +686,8 @@
                     repoName: this.repoName,
                     fullPath: item.fullPath,
                     roadMap: item.roadMap,
-                    isPipeline: this.repoName === 'pipeline'
+                    isPipeline: this.repoName === 'pipeline',
+                    localRepo: this.localRepo
                 }).catch(err => {
                     if (err.status === 403) {
                         this.getPermissionUrl({
@@ -675,7 +726,7 @@
                     this.itemClickHandler(node)
                 }
             },
-            showDetail ({ folder, fullPath }) {
+            showDetail ({ folder, fullPath, category }) {
                 this.$refs.genericDetail.setData({
                     show: true,
                     loading: false,
@@ -684,7 +735,8 @@
                     folder,
                     path: fullPath,
                     data: {},
-                    metadataLabelList: this.metadataLabelList
+                    metadataLabelList: this.metadataLabelList,
+                    localNode: category !== 'REMOTE'
                 })
             },
             renameRes ({ name, fullPath }) {
@@ -1016,6 +1068,9 @@
                     this.$set(row, 'sizeLoading', false)
                 })
             },
+            selectable (row, index) {
+                return row.category !== 'REMOTE'
+            },
             selectMultiRow (selects) {
                 this.multiSelect = selects
             },
@@ -1098,8 +1153,8 @@
                     isLoading: true
                 })
                 const res = await this.previewBasicFile({
-                    projectId: row.projectId,
-                    repoName: row.repoName,
+                    projectId: this.projectId,
+                    repoName: this.repoName,
                     path: row.fullPath
                 }).catch(e => {
                     if (e.status === 403) {
