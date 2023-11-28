@@ -63,7 +63,7 @@ export default {
         )
     },
     // 请求文件夹下的子文件夹
-    getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false }) {
+    getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false, localRepo = true }) {
         let request
         if (isPipeline && !fullPath) {
             request = Vue.prototype.$ajax.get(
@@ -71,7 +71,7 @@ export default {
             ).then(records => ({ records }))
         } else {
             request = Vue.prototype.$ajax.post(
-                `${prefix}/node/search`,
+                localRepo ? `${prefix}/node/search` : `generic/${projectId}/${repoName}/search`,
                 {
                     select: ['name', 'fullPath', 'metadata'],
                     page: {
@@ -121,20 +121,22 @@ export default {
         })
     },
     // 请求文件/文件夹详情
-    getNodeDetail (_, { projectId, repoName, fullPath = '' }) {
+    getNodeDetail (_, { projectId, repoName, fullPath = '', localNode = true }) {
         return Vue.prototype.$ajax.get(
-            `${prefix}/node/detail/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`
+            localNode
+                ? `${prefix}/node/detail/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`
+                : `generic/detail/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`
         )
     },
     // 仓库内自定义查询
-    getArtifactoryList (_, { projectId, repoName, name, fullPath, current, limit, isPipeline = false, sortType, searchFlag }) {
-        if (isPipeline && !fullPath && !name) {
+    getArtifactoryList (_, { projectId, repoName, name, fullPath, current, limit, isPipeline = false, sortType, searchFlag, localRepo = true }) {
+        if (isPipeline && !fullPath && !name && localRepo) {
             return Vue.prototype.$ajax.get(
                 `${prefix}/pipeline/list/${projectId}`
             ).then(records => ({ records, totalRecords: 0 }))
         } else {
             return Vue.prototype.$ajax.post(
-                `${prefix}/node/search`,
+                localRepo ? `${prefix}/node/search` : `generic/${projectId}/${repoName}/search`,
                 {
                     page: {
                         pageNumber: current,

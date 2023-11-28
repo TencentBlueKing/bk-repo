@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.handler.impl
+package com.tencent.bkrepo.generic.artifact.remote
 
-import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
-import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.StatDateModel
-import com.tencent.bkrepo.opdata.pojo.Target
-import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.remote.buildOkHttpClient
+import com.tencent.bkrepo.generic.artifact.createPlatformDns
+import com.tencent.bkrepo.generic.config.GenericProperties
+import okhttp3.OkHttpClient
+import org.springframework.stereotype.Component
 
-open class RepoSizeInProject(
-    private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel
-) : QueryHandler {
-
-    override val metric: Metrics get() = Metrics.DEFAULT
-
-    open val repoType: List<String> = emptyList()
-
-    override fun handle(target: Target, result: MutableList<Any>): Any {
-        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
-        val tmpMap = HashMap<String, Long>()
-        projects.forEach { tP ->
-            val projectId = tP.projectId
-            var repoSize = 0L
-            tP.repoMetrics.filter { !it.type.isNullOrEmpty()&& it.type in repoType }.forEach {repo ->
-                repoSize += repo.size
-            }
-            val gbSize = repoSize / TO_GIGABYTE
-            if (gbSize != 0L) {
-                tmpMap[projectId] = gbSize
-            }
-        }
-        return convToDisplayData(tmpMap, result)
+@Component
+class GenericAsyncCacheHttpClientBuilderFactory(
+    private val genericProperties: GenericProperties
+) : AsyncCacheHttpClientBuilderFactory {
+    override fun newBuilder(configuration: RemoteConfiguration): OkHttpClient.Builder {
+        val platforms = genericProperties.platforms
+        // 自定义dns，解析特定platform的域名到指定ip
+        return buildOkHttpClient(configuration, false).dns(createPlatformDns(platforms))
     }
 }

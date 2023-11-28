@@ -25,22 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.generic.artifact.remote
+
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import okhttp3.OkHttpClient
 
 /**
- * 用于远程Generic仓库的平台账号配置，使用平台账号到远程仓库认证时会携带当前操作的用户用于鉴权
+ * 用于创建异步缓存的HTTP客户端
  */
-data class PlatformAuthProperties(
-    /**
-     * 平台Host
-     */
-    var host: String = "",
-    /**
-     * 平台账号
-     */
-    var accessKey: String = "",
-    /**
-     * 平台账号密钥
-     */
-    var secretKey: String = "",
-)
+interface AsyncCacheHttpClientBuilderFactory {
+    fun newBuilder(configuration: RemoteConfiguration): OkHttpClient.Builder
+}

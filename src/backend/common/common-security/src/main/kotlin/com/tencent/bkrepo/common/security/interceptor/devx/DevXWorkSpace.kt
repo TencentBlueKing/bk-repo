@@ -42,4 +42,6 @@ data class DevXWorkSpace(
     val regionId: String,
     @JsonProperty("inner_ip")
     val innerIp: String? = null,
+    @JsonProperty("real_owner")
+    val realOwner: String,
 )

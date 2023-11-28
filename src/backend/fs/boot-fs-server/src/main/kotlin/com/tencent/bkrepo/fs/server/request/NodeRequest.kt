@@ -30,22 +30,29 @@ package com.tencent.bkrepo.fs.server.request
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.reactive.HandlerMapping
 import org.springframework.web.reactive.function.server.ServerRequest
+import org.springframework.web.reactive.function.server.queryParamOrNull
 import org.springframework.web.util.pattern.PathPattern
 
 open class NodeRequest(
     open val projectId: String,
     open val repoName: String,
-    open val fullPath: String
+    open val fullPath: String,
+    /**
+     * 节点所在位置，LOCAL 或 REMOTE
+     */
+    open val category: String = RepositoryCategory.LOCAL.name,
 ) {
     constructor(request: ServerRequest) : this(
         projectId = request.pathVariable(PROJECT_ID),
         repoName = request.pathVariable(REPO_NAME),
-        fullPath = resolveFullPath(request)
+        fullPath = resolveFullPath(request),
+        category = request.queryParamOrNull("category") ?: RepositoryCategory.LOCAL.name
     )
 
     override fun toString(): String {

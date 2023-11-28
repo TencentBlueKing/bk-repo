@@ -29,6 +29,7 @@ package com.tencent.bkrepo.fs.server.api
 
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -66,5 +67,10 @@ interface RAuthClient {
     @PostMapping("/user/create")
     fun create(
         @RequestBody request: CreateUserRequest
+    ): Mono<Response<Boolean>>
+
+    @PostMapping("/user/create/project")
+    fun createUserToProject(
+        @RequestBody request: CreateUserToProjectRequest
     ): Mono<Response<Boolean>>
 }

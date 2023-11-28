@@ -68,7 +68,8 @@ class ClientHandler(
             projectId = request.queryParamOrNull(ClientListRequest::projectId.name),
             repoName = request.queryParamOrNull(ClientListRequest::repoName.name),
             pageNumber = request.queryParamOrNull(ClientListRequest::pageNumber.name)?.toInt() ?: DEFAULT_PAGE_NUMBER,
-            pageSize = request.queryParamOrNull(ClientListRequest::pageSize.name)?.toInt() ?: DEFAULT_PAGE_SIZE
+            pageSize = request.queryParamOrNull(ClientListRequest::pageSize.name)?.toInt() ?: DEFAULT_PAGE_SIZE,
+            online = request.queryParamOrNull(ClientListRequest::online.name)?.toBoolean()
         )
         return ReactiveResponseBuilder.success(clientService.listClients(listRequest))
     }

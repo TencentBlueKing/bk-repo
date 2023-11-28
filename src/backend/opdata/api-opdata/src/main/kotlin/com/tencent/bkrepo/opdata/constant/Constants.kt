@@ -68,6 +68,12 @@ const val OPDATA_FILE_EXTENSION_METRICS = "file_extension_metrics"
 val DOCKER_TYPES = listOf("DOCKER", "OCI")
 const val FILTER_TYPE = "filterType"
 const val FILTER_VALUE = "filterValue"
+const val TOP_VALUE = "top"
+const val START_DATE = "startDate"
+const val END_DATE = "endDate"
+const val DURATION = "duration"
+const val DELTA_POSITIVE = "deltaPositive"
+
 
 const val B_0 = "0"
 const val MB_100 = (100 * FileUtils.ONE_MB).toString()

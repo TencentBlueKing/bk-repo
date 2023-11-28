@@ -80,6 +80,8 @@ class RouteConfiguration(
         filter(permissionFilterFunction::filter)
         POST("/login/{projectId}/{repoName}", loginHandler::login)
         POST("/devx/login/{repoName}", loginHandler::devxLogin)
+        POST("/ioa/login/{projectId}/{repoName}", loginHandler::ioaLogin)
+        POST("/ioa/ticket", loginHandler::ioaTicket)
         POST("/token/refresh/{projectId}/{repoName}", loginHandler::refresh)
 
         "/service/block".nest {
