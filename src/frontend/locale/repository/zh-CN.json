@@ -805,5 +805,6 @@
     "cleanNodeTitle": "清理目录节点",
     "complete": "完成",
     "cleanFolderTip": "截止时间之前上传的文件将被清理",
-    "cleanRepo": "清理"
+    "cleanRepo": "清理",
+    "cleanDetail": "共清理文件{0}个，大小{1}"
 }

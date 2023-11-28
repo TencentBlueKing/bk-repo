@@ -800,9 +800,10 @@
     "backUpMessage": "{0} is an internal testing version and is being downloaded, please wait.",
     "deadline": "Deadline",
     "clean": "Clean",
-    "cleanNode": "Clean Folder",
+    "cleanNode": "Folders",
     "cleanNodeTitle": "Clean Folder",
     "complete": "Done",
     "cleanFolderTip": "Files uploaded before the deadline will be cleared",
-    "cleanRepo": "Clean"
+    "cleanRepo": "Clean",
+    "cleanDetail": "Cleaned {0} files in total, size {1}"
 }
