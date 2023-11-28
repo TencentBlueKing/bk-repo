@@ -42,8 +42,10 @@ import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.pojo.DevxLoginResponse
+import com.tencent.bkrepo.fs.server.request.IoaLoginRequest
 import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
+import com.tencent.bkrepo.fs.server.utils.IoaUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
@@ -91,10 +93,30 @@ class LoginHandler(
         return ReactiveResponseBuilder.success(response)
     }
 
+    suspend fun ioaLogin(request: ServerRequest): ServerResponse {
+        val projectId = request.pathVariable("projectId")
+        val repoName = request.pathVariable("repoName")
+        val ioaLoginRequest = request.bodyToMono(IoaLoginRequest::class.java).awaitSingle()
+        val userId = ioaLoginRequest.userName
+        IoaUtils.checkTicket(ioaLoginRequest)
+        createUser(userId)
+        val token = createToken(projectId, repoName, userId)
+        return ReactiveResponseBuilder.success(token)
+    }
+
+    suspend fun ioaTicket(request: ServerRequest): ServerResponse {
+        IoaUtils.proxyTicketRequest(request)
+        return ReactiveResponseBuilder.success()
+    }
+
+    private suspend fun createUser(userName: String) {
+        val request = CreateUserRequest(userId = userName, name = userName)
+        rAuthClient.create(request).awaitSingle()
+    }
+
     private suspend fun createUser(workspace: DevXWorkSpace): String {
         return if (workspace.realOwner.isNotBlank()) {
-            val request = CreateUserRequest(userId = workspace.realOwner, name = workspace.realOwner)
-            rAuthClient.create(request).awaitSingle()
+            createUser(workspace.realOwner)
             workspace.realOwner
         } else {
             val userId = "g_${workspace.projectId}"
