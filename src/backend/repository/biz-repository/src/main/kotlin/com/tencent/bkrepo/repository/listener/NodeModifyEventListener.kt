@@ -126,7 +126,7 @@ class NodeModifyEventListener(
                 return true
             }
         }
-        return IGNORE_REPO_LIST.contains(repoName)
+        return false
     }
 
 
@@ -135,7 +135,7 @@ class NodeModifyEventListener(
      * 将变更的目录节点数据存放在缓存中
      */
     private fun updateCacheOfModifiedFolder(event: ArtifactEvent) {
-        logger.info("event type ${event.type}")
+        logger.info("event $event")
         val modifiedNodeList = mutableListOf<ModifiedNodeInfo>()
         when (event.type) {
             EventType.NODE_DELETED -> {
@@ -413,7 +413,6 @@ class NodeModifyEventListener(
     companion object {
         private val logger = LoggerFactory.getLogger(NodeModifyEventListener::class.java)
         private const val FIXED_DELAY = 10000L
-        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
-        private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
+        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_")
     }
 }
