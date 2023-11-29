@@ -30,10 +30,9 @@ package com.tencent.bkrepo.repository.listener
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.RemovalCause
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.constant.LOG
-import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.artifact.event.node.NodeCleanEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeDeletedEvent
@@ -90,7 +89,8 @@ class NodeModifyEventListener(
         EventType.NODE_CREATED,
         EventType.NODE_DELETED,
         EventType.NODE_MOVED,
-        EventType.NODE_RENAMED
+        EventType.NODE_RENAMED,
+        EventType.NODE_CLEAN,
     )
 
 
@@ -205,6 +205,17 @@ class NodeModifyEventListener(
                 )
                 modifiedNodeList.add(createdNode)
             }
+            EventType.NODE_CLEAN -> {
+                require(event is NodeCleanEvent)
+                val deletedNode = ModifiedNodeInfo(
+                    projectId = event.projectId,
+                    repoName = event.repoName,
+                    fullPath = event.resourceKey,
+                    deleted = true,
+                    deletedDateTime = event.deletedDate
+                )
+                modifiedNodeList.add(deletedNode)
+            }
             else -> throw UnsupportedOperationException()
         }
         modifiedNodeList.forEach {
@@ -235,7 +246,7 @@ class NodeModifyEventListener(
             if (sourceNodes != null && sourceNodes.isEmpty()) return
             findAndCacheSubFolders(
                 artifactInfo = artifactInfo,
-                deleted = node.nodeInfo.deleted,
+                deleted = modifiedNode.deletedDateTime ?: node.nodeInfo.deleted,
                 deletedFlag = modifiedNode.deleted,
                 includePrefix = modifiedNode.includePrefix,
                 sourceNodes = sourceNodes
@@ -395,7 +406,8 @@ class NodeModifyEventListener(
         var srcProjectId: String? = null,
         var srcRepoName: String? = null,
         var srcFullPath: String? = null,
-        var srcDeleted: Boolean = false
+        var srcDeleted: Boolean = false,
+        var deletedDateTime: String? = null
     )
 
     companion object {

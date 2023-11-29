@@ -41,6 +41,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildDeletedEvent
+import com.tencent.bkrepo.repository.util.NodeEventFactory.buildNodeCleanEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -163,7 +164,11 @@ open class NodeDeleteSupport(
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
             .and(TNode::lastModifiedDate).lt(date)
         val query = Query(criteria)
-        return delete(query, operator, criteria, projectId, repoName)
+        val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName)
+        publishEvent(buildNodeCleanEvent(
+            projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString())
+        )
+        return nodeDeleteResult
     }
 
     private fun delete(

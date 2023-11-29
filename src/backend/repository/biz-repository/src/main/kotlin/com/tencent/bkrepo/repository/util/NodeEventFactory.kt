@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.artifact.event.metadata.MetadataDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.metadata.MetadataSavedEvent
+import com.tencent.bkrepo.common.artifact.event.node.NodeCleanEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeDeletedEvent
@@ -172,5 +173,24 @@ object NodeEventFactory {
                 keys = keyList
             )
         }
+    }
+
+    /**
+     * 节点clean事件
+     */
+    fun buildNodeCleanEvent(
+        projectId: String,
+        repoName: String,
+        path: String,
+        userId: String,
+        deletedDate: String
+    ): NodeCleanEvent {
+        return NodeCleanEvent(
+            projectId = projectId,
+            repoName = repoName,
+            resourceKey = path,
+            userId = userId,
+            deletedDate = deletedDate
+        )
     }
 }
