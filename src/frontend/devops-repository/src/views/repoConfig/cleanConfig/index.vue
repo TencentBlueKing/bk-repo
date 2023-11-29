@@ -97,8 +97,8 @@
         watch: {
             baseData: {
                 handler (val) {
-                    if (!val.cleanStrategy) return
-                    this.cleanupStrategy = val.cleanStrategy
+                    if (!val.cleanupStrategy) return
+                    this.cleanupStrategy = val.cleanupStrategy
                 },
                 deep: true,
                 immediate: true
@@ -138,7 +138,7 @@
                     }
                     if (this.cleanupStrategy.cleanTargets) {
                         const target = this.cleanupStrategy.cleanTargets.filter(function (item, index, array) {
-                            if (item !== '' && item !== null) {
+                            if (item.trim().length !== 0 && item !== null) {
                                 return array.indexOf(item) === index
                             } else {
                                 return false
@@ -158,7 +158,7 @@
                         }
                     }
                 }
-                this.baseData.configuration.settings.cleanStrategy = cleanStrategy
+                this.baseData.configuration.settings.cleanupStrategy = cleanStrategy
                 this.loading = true
                 this.updateRepoInfo({
                     projectId: this.projectId,
