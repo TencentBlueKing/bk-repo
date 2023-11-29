@@ -54,6 +54,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.LongAdder
 
 
 /**
@@ -68,18 +69,18 @@ class NodeModifyEventListener(
     private val cache = CacheBuilder.newBuilder()
         .maximumSize(1000)
         .expireAfterWrite(1, TimeUnit.MINUTES)
-        .removalListener<Triple<String, String, String>, Pair<Long, Long>> {
+        .removalListener<Triple<String, String, String>, Pair<LongAdder, LongAdder>> {
             if (it.cause == RemovalCause.REPLACED) return@removalListener
             logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
             nodeDao.incSizeAndNodeNumOfFolder(
                 projectId = it.key!!.first,
                 repoName = it.key!!.second,
                 fullPath = it.key!!.third,
-                size = it.value.first,
-                nodeNum = it.value.second
+                size = it.value.first.sumThenReset(),
+                nodeNum = it.value.second.sumThenReset()
             )
         }
-        .build<Triple<String, String, String>, Pair<Long, Long>>()
+        .build<Triple<String, String, String>, Pair<LongAdder, LongAdder>>()
 
     /**
      * 允许接收的事件类型
@@ -284,13 +285,13 @@ class NodeModifyEventListener(
             // 当只需要更新特定目录前缀目录的缓存记录时设置folderPrefix
             if (!includePrefix.isNullOrEmpty() && !it.startsWith(includePrefix)) return@forEach
             val key = Triple(projectId, repoName, it)
-            var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
+            val (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(LongAdder(), LongAdder())
             if (deleted) {
-                cachedSize -= size
-                nodeNum -= 1
+                cachedSize.add(-1 * size)
+                nodeNum.decrement()
             } else {
-                cachedSize += size
-                nodeNum += 1
+                cachedSize.add(size)
+                nodeNum.increment()
             }
             cache.put(key, Pair(cachedSize, nodeNum))
         }
