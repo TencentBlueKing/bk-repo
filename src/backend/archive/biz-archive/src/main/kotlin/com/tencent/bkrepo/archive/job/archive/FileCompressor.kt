@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.job.archive
 
 import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
 import com.tencent.bkrepo.archive.event.FileCompressedEvent
@@ -28,10 +28,6 @@ class FileCompressor(
      * */
     private val workPath: String,
 ) : AbstractArchiveFileWrapperCallback() {
-    /**
-     * 是否使用command
-     * */
-    private val useCmd = ArchiveUtils.supportXZCmd()
 
     /**
      * 压缩文件路径
@@ -47,7 +43,6 @@ class FileCompressor(
         if (!Files.exists(compressedPath)) {
             Files.createDirectories(compressedPath)
         }
-        require(useCmd)
     }
 
     override fun process(fileWrapper: ArchiveFileWrapper): Mono<ArchiveFileWrapper> {

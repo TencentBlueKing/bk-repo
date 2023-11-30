@@ -45,7 +45,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
      * @param checksumOutput 校验和输出流
      * */
     fun checksum(file: File, checksumOutput: OutputStream) {
-        checksum(file.inputStream(), checksumOutput)
+        file.inputStream().use { checksum(it, checksumOutput) }
     }
 
     /**
@@ -91,10 +91,14 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     fun diff(file: File, checksumStream: InputStream, deltaOutput: OutputStream, reuseThreshold: Float): DiffResult {
         // 使用滑动窗口检测,找到与远端相同的部分
         val index = ChecksumIndex(checksumStream)
-        val window = BufferedSlidingWindow(blockSize, windowBufferSize, file.inputStream(), file.length())
         val raf = RandomAccessFile(file, READ)
-        raf.use {
-            return detecting(window, index, deltaOutput, it, reuseThreshold)
+        val srcInput = file.inputStream()
+        try {
+            val window = BufferedSlidingWindow(blockSize, windowBufferSize, srcInput, file.length())
+            return detecting(window, index, deltaOutput, raf, reuseThreshold)
+        } finally {
+            raf.close()
+            srcInput.close()
         }
     }
 
@@ -111,7 +115,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         index: ChecksumIndex,
         outputStream: OutputStream,
         raf: RandomAccessFile,
-        reuseThreshold: Float
+        reuseThreshold: Float,
     ): DiffResult {
         var content: ByteArray
         var deltaStart: Long
@@ -166,7 +170,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     private fun search(
         rollingHash: Int,
         index: ChecksumIndex,
-        slidingWindow: BufferedSlidingWindow
+        slidingWindow: BufferedSlidingWindow,
     ): Checksum? {
         if (!index.exist(rollingHash)) {
             return null
@@ -182,7 +186,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         deltaStart: Long,
         deltaEnd: Long,
         raf: RandomAccessFile,
-        outputStream: OutputStream
+        outputStream: OutputStream,
     ) {
         val len = deltaEnd - deltaStart
         if (len > Int.MAX_VALUE) {
@@ -207,7 +211,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         adler32RollingHash: Adler32RollingHash,
         index: ChecksumIndex,
         reuse: Int,
-        reuseThreshold: Float
+        reuseThreshold: Float,
     ): Checksum? {
         // 达到重复使用阈值需要的数据字节数
         val detectingDataCount = ceil(index.total * reuseThreshold - reuse) * slidingWindow.windowSize.toLong()
@@ -260,7 +264,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         outputStream: OutputStream,
         len: Long,
         ras: RandomAccessFile,
-        deltaStart: Long
+        deltaStart: Long,
     ) {
         // 写入数据流标志-1
         outputStream.write(BEGIN_FLAG)
@@ -300,7 +304,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     fun merge(
         blockChannel: BlockChannel,
         deltaInput: InputStream,
-        newFileChannel: WritableByteChannel
+        newFileChannel: WritableByteChannel,
     ): MergeResult {
         val deltaStream = DeltaInputStream(deltaInput)
         var reuse = 0
@@ -360,7 +364,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
             blockChannel.name(),
             blockSize,
             sha256,
-            md5
+            md5,
         )
         logger.info(mergeResult.toString())
         return mergeResult
@@ -377,7 +381,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         newFileChannel: WritableByteChannel,
         startSeq: Int,
         endSeq: Int,
-        blockChannel: BlockChannel
+        blockChannel: BlockChannel,
     ) {
         var currentStartSeq = startSeq
         while (currentStartSeq <= endSeq) {
@@ -403,7 +407,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     private fun copyDataSequence(
         newFileChannel: WritableByteChannel,
         deltaStream: DeltaInputStream,
-        len: Int
+        len: Int,
     ) {
         val bufferSize = len.coerceAtMost(DEFAULT_BUFFER_SIZE)
         var buffer = ByteArray(bufferSize)

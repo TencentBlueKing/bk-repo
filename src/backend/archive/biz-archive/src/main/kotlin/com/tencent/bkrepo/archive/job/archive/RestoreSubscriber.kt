@@ -1,58 +1,45 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.job.archive
 
 import com.tencent.bkrepo.archive.ArchiveStatus
-import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
 import com.tencent.bkrepo.archive.event.FileRestoredEvent
 import com.tencent.bkrepo.archive.extensions.key
+import com.tencent.bkrepo.archive.job.BaseJobSubscriber
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
-import com.tencent.bkrepo.archive.utils.ArchiveFileQueryHelper
+import com.tencent.bkrepo.archive.utils.ArchiveDaoUtils.optimisticLock
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
-import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.monitor.Throughput
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Duration
 import java.time.LocalDateTime
-import java.util.concurrent.TimeUnit
-import org.bson.types.ObjectId
-import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
 
 /**
- * 数据恢复任务
+ * 数据恢复订阅者
+ * 处理具体数据恢复
  * */
-@Component
-class RestoreJob(
-    private val archiveFileRepository: ArchiveFileRepository,
-    private val storageService: StorageService,
-    private val archiveProperties: ArchiveProperties,
+class RestoreSubscriber(
+    private val cosClient: CosClient,
     private val archiveFileDao: ArchiveFileDao,
-) {
-    private val cosClient = CosClient(archiveProperties.cos)
-    private val useCmd = ArchiveUtils.supportXZCmd()
-    private val workDir = archiveProperties.workDir
+    private val storageService: StorageService,
+    private val archiveFileRepository: ArchiveFileRepository,
+    workDir: String,
+) :
+    BaseJobSubscriber<TArchiveFile>() {
     private val tempPath: Path = Paths.get(workDir, "temp")
     private val compressedPath: Path = Paths.get(workDir, "compressed")
     private val filesPath: Path = Paths.get(workDir, "files")
-    val context: JobContext = JobContext()
-    private val monitorId = "restore-job"
 
     init {
         if (!Files.exists(tempPath)) {
@@ -66,58 +53,18 @@ class RestoreJob(
         }
     }
 
-    @Scheduled(fixedDelay = 12, timeUnit = TimeUnit.HOURS)
-    fun restore() {
-        logger.info("Begin restore.")
-        val startAt = System.nanoTime()
-        context.reset()
-        ArchiveUtils.monitor.addMonitor(monitorId, context)
-        var lastId = MIN_OBJECT_ID
-        var query = ArchiveFileQueryHelper
-            .buildQuery(ArchiveStatus.WAIT_TO_RESTORE, lastId, archiveProperties.queryLimit)
-        var files = archiveFileDao.find(query).toMutableList()
-        while (files.isNotEmpty()) {
-            logger.info("Find ${files.size} file to restore.")
-            lastId = files.last().id!!
-            files.shuffled()
-            restoreFiles(files)
-            query =
-                ArchiveFileQueryHelper.buildQuery(ArchiveStatus.WAIT_TO_RESTORE, lastId, archiveProperties.queryLimit)
-            files = archiveFileDao.find(query).toMutableList()
-        }
-        ArchiveUtils.monitor.removeMonitor(monitorId)
-        val stopAt = System.nanoTime()
-        val throughput = Throughput(context.totalSize.get(), stopAt - startAt)
-        logger.info("End restore,summary: $context $throughput.")
-    }
-
-    private fun restoreFiles(files: List<TArchiveFile>) {
-        files.forEach {
-            val criteria = Criteria.where(ID).isEqualTo(ObjectId(it.id))
-                .and(TArchiveFile::status.name).isEqualTo(ArchiveStatus.WAIT_TO_RESTORE.name)
-            val update = Update().set(TArchiveFile::status.name, ArchiveStatus.RESTORING.name)
-                .set(TArchiveFile::lastModifiedDate.name, LocalDateTime.now())
-            val result = archiveFileDao.updateFirst(Query.query(criteria), update)
-            if (result.modifiedCount != 1L) {
-                logger.info("${it.key()} already start restore.")
+    override fun doOnNext(value: TArchiveFile) {
+        with(value) {
+            val tryLock = archiveFileDao.optimisticLock(
+                value,
+                TArchiveFile::status.name,
+                ArchiveStatus.WAIT_TO_RESTORE.name,
+                ArchiveStatus.RESTORING.name,
+            )
+            if (!tryLock) {
+                logger.info("$sha256 already start restore.")
                 return
             }
-            context.total.incrementAndGet()
-            context.totalSize.addAndGet(it.size)
-            try {
-                logger.info("Start restore file ${it.key()}")
-                restoreFile(it)
-            } catch (e: Exception) {
-                it.status = ArchiveStatus.RESTORE_FAILED
-                updateArchiveFile(it)
-                context.failed.incrementAndGet()
-                logger.error("Restore file ${it.key()} error: ", e)
-            }
-        }
-    }
-
-    private fun restoreFile(file: TArchiveFile) {
-        with(file) {
             val key = "$sha256$XZ_SUFFIX"
             val checkObjectExistRequest = CheckObjectExistRequest(key)
             val restored = cosClient.checkObjectRestore(checkObjectExistRequest)
@@ -129,6 +76,7 @@ class RestoreJob(
             }
             val filePath = filesPath.resolve(sha256)
             try {
+                logger.info("Start restore file $sha256")
                 download(key, filePath)
                 // 存储文件
                 val artifactFile = filePath.toFile().toArtifactFile(true)
@@ -143,13 +91,21 @@ class RestoreJob(
                 SpringContextUtils.publishEvent(event)
                 status = ArchiveStatus.RESTORED
                 updateArchiveFile(this)
-                context.success.incrementAndGet()
                 logger.info("Success to restore file ${this.key()}.")
+            } catch (e: Exception) {
+                value.status = ArchiveStatus.RESTORE_FAILED
+                updateArchiveFile(value)
+                logger.error("Restore file $sha256 error: ", e)
+                throw e
             } finally {
                 Files.deleteIfExists(filePath)
                 logger.info("Success delete temp file $filePath")
             }
         }
+    }
+
+    override fun getSize(value: TArchiveFile): Long {
+        return value.size
     }
 
     private fun download(key: String, filePath: Path) {
@@ -192,6 +148,6 @@ class RestoreJob(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(RestoreJob::class.java)
+        private val logger = LoggerFactory.getLogger(RestoreSubscriber::class.java)
     }
 }

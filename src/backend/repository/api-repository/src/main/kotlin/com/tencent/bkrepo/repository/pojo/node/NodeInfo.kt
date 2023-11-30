@@ -88,4 +88,6 @@ data class NodeInfo(
     val clusterNames: Set<String>? = null,
     @ApiModelProperty("是否归档")
     val archived: Boolean? = null,
+    @ApiModelProperty("是否压缩")
+    val compressed: Boolean? = null,
 )
