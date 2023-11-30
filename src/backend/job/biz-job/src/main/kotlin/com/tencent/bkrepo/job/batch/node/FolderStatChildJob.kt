@@ -89,7 +89,8 @@ class FolderStatChildJob(
         }
         // 判断是否在不统计项目或者仓库列表中
         if (ignoreProjectOrRepoCheck(row.projectId, row.repoName)) return
-        if (!context.activeProjects.contains(row.projectId)) return
+        if (context.activeProjects.isNotEmpty() &&
+            !context.activeProjects.contains(row.projectId)) return
 
         // 更新当前节点所有上级目录（排除根目录）统计信息
         val folderFullPaths = PathUtils.resolveAncestorFolder(row.fullPath)
