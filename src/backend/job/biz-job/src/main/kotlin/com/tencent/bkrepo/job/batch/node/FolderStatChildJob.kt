@@ -57,6 +57,7 @@ import org.springframework.data.redis.core.HashOperations
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ScanOptions
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.system.measureTimeMillis
 import kotlin.text.toLongOrNull as toLongOrNull1
@@ -80,6 +81,7 @@ class FolderStatChildJob(
 
     override fun run(row: NodeStatCompositeMongoDbBatchJob.Node, collectionName: String, context: JobContext) {
         require(context is FolderChildContext)
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
         if (!context.runFlag) return
         if (!collectionRunCheck(collectionName)) return
         if (row.deleted != null) return
@@ -89,7 +91,7 @@ class FolderStatChildJob(
         }
         // 判断是否在不统计项目或者仓库列表中
         if (ignoreProjectOrRepoCheck(row.projectId, row.repoName)) return
-        if (context.activeProjects.isNotEmpty() &&
+        if (context.activeProjects.isNotEmpty() && !properties.fullyExecuted &&
             !context.activeProjects.contains(row.projectId)) return
 
         // 更新当前节点所有上级目录（排除根目录）统计信息
@@ -114,16 +116,20 @@ class FolderStatChildJob(
 
 
     override fun createChildJobContext(parentJobContext: JobContext): ChildJobContext {
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
         val cacheType = try {
             redisTemplate.execute { null }
             REDIS_CACHE_TYPE
         } catch (e: Exception) {
             MEMORY_CACHE_TYPE
         }
+        // 每周六执行一次全量数据统计
+        val fullyExecuted = properties.fullyExecuted || LocalDate.now().dayOfWeek == DayOfWeek.SATURDAY
         return FolderChildContext(
             parentContent = parentJobContext,
             cacheType = cacheType,
-            activeProjects = activeProjectService.getActiveProjects()
+            activeProjects = activeProjectService.getActiveProjects(),
+            fullyExecuted = fullyExecuted
         )
     }
 

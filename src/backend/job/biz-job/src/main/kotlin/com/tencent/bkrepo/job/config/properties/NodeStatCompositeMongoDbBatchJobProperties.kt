@@ -22,5 +22,9 @@ class NodeStatCompositeMongoDbBatchJobProperties (
      * 可用于将部分表的统计数据使用redis缓存存储临时存储
      * 避免使用内存进行缓存时导致使用内存过大
      */
-    var redisCacheCollections: List<String> = emptyList()
+    var redisCacheCollections: List<String> = emptyList(),
+    /**
+     * 是否不进行活跃项目判断，执行全部数据
+     */
+    var fullyExecuted: Boolean = false
 ): CompositeJobProperties()

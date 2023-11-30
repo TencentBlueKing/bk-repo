@@ -37,6 +37,8 @@ class FolderChildContext(
     parentContent: JobContext,
     // 是否执行任务
     var runFlag: Boolean = false,
+    // 是否全量执行，不进行活跃项目判断
+    var fullyExecuted: Boolean = false,
     // 缓存类型redis和内存：数据量级大的建议使用redis
     var cacheType: String = MEMORY_CACHE_TYPE,
     // 表对应项目记录： 主要用于redis缓存生成key使用
