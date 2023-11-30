@@ -43,17 +43,6 @@ abstract class CleanupSupport : HealthCheckSupport() {
     override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempPath = getTempPath(credentials)
-        val fileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
-        val visitor = CleanupFileVisitor(
-            tempPath,
-            tempPath,
-            null,
-            fileStorage,
-            fileLocator,
-            credentials,
-            fileExpireResolver,
-        )
-        getTempClient(credentials).walk(visitor)
         return cleanupPath(tempPath, credentials)
             .merge(cleanUploadPath(credentials))
     }
@@ -64,7 +53,16 @@ abstract class CleanupSupport : HealthCheckSupport() {
     }
 
     private fun cleanupPath(path: Path, credentials: StorageCredentials): CleanupResult {
-        val visitor = CleanupFileVisitor(path, path, null, fileStorage, fileLocator, credentials)
+        val fileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
+        val visitor = CleanupFileVisitor(
+            path,
+            path,
+            null,
+            fileStorage,
+            fileLocator,
+            credentials,
+            fileExpireResolver,
+        )
         FileSystemClient(path).walk(visitor)
         return visitor.result
     }
