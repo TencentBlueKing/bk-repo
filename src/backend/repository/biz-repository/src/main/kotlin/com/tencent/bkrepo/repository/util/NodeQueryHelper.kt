@@ -195,7 +195,9 @@ object NodeQueryHelper {
     }
 
     fun nodeDeleteUpdate(operator: String, deleteTime: LocalDateTime = LocalDateTime.now()): Update {
-        return update(operator).set(TNode::deleted.name, deleteTime)
+        return Update()
+            .set(TNode::lastModifiedBy.name, operator)
+            .set(TNode::deleted.name, deleteTime)
     }
 
     private fun update(operator: String): Update {

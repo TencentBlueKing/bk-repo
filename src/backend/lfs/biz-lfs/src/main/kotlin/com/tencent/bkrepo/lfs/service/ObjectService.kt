@@ -259,8 +259,7 @@ class ObjectService(
                     lfsObject
                 }
             } else if (lfsProperties.enabledGitProxy) {
-                val repoName =
-                    config.url.removeSuffix(StringPool.SLASH).split(StringPool.SLASH).last().removeSuffix(".git")
+                val repoName = repo.name.removePrefix("Lfs_").removeSuffix(".git")
                 batchResponse.objects.map { lfsObject ->
                     lfsObject.actions?.values?.forEach { action ->
                         action.href = action.href.replaceBefore(

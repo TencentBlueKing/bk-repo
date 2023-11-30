@@ -48,6 +48,7 @@ import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.springframework.data.mongodb.core.BulkOperations.BulkMode
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -67,8 +68,9 @@ import kotlin.text.toLongOrNull as toLongOrNull1
 class FolderStatChildJob(
     val properties: CompositeJobProperties,
     private val redisTemplate: RedisTemplate<String, String>,
+    private val mongoTemplate: MongoTemplate,
     private val activeProjectService: ActiveProjectService
-) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
+) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>() {
 
     override fun onParentJobStart(context: ChildJobContext) {
         require(context is FolderChildContext)

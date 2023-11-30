@@ -32,7 +32,7 @@ class NodeStatCompositeMongoDbBatchJob(
 
     override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
         return listOf(
-            FolderStatChildJob(properties, redisTemplate, activeProjectService)
+            FolderStatChildJob(properties, mongoTemplate, redisTemplate, activeProjectService)
         )
     }
 

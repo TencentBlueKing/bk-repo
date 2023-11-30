@@ -179,10 +179,13 @@ class SubScanTaskDao(
     /**
      * 获取项目[projectId]扫描中的任务数量
      */
-    fun scanningCount(projectId: String): Long {
+    fun scanningCount(projectId: String, includeGlobal: Boolean = false): Long {
         val criteria = Criteria
             .where(TSubScanTask::projectId.name).isEqualTo(projectId)
             .and(TSubScanTask::status.name).inValues(SubScanTaskStatus.RUNNING_STATUS)
+        if (!includeGlobal) {
+            criteria.and("${TSubScanTask::metadata.name}.key").ne(TaskMetadata.TASK_METADATA_GLOBAL)
+        }
         return count(Query(criteria))
     }
 
