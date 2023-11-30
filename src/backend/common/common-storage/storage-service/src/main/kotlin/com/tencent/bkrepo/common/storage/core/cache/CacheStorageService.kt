@@ -166,7 +166,7 @@ class CacheStorageService(
             resolver,
         )
         getCacheClient(credentials).walk(visitor)
-        return visitor.result
+        return visitor.result.merge(cleanUploadPath(credentials))
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
