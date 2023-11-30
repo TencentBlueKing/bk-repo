@@ -231,7 +231,12 @@ class NodeModifyEventListener(
             artifactUri = modifiedNode.fullPath
         )
         val node = if (modifiedNode.deleted) {
-            nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return
+            var temp = nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull()
+            // 节点清理只会清理目录下指定时间之前的节点，目录不会被清理
+            if (temp == null && !modifiedNode.deletedDateTime.isNullOrEmpty()) {
+                temp = nodeService.getNodeDetail(artifactInfo)
+            }
+            temp ?: return
         } else {
             // 查询节点信息，当节点新增，然后删除后可能会找不到节点
             nodeService.getNodeDetail(artifactInfo)
