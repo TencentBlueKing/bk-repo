@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.base
+package com.tencent.bkrepo.job.batch.node
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.job.PROJECT
@@ -80,7 +80,7 @@ class ActiveProjectService(
                 .format(DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT))
         )
         months.forEach {
-            val collectionName = COLLECTION_NAME_PREFIX+it
+            val collectionName = COLLECTION_NAME_PREFIX +it
             val query = if (inFlag) {
                 Query(Criteria.where(TYPE).`in`(types))
             } else {

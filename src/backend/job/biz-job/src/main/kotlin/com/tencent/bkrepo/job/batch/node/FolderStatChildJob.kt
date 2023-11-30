@@ -37,7 +37,7 @@ import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REDIS_CACHE_TYPE
 import com.tencent.bkrepo.job.REPO
-import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.node.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext

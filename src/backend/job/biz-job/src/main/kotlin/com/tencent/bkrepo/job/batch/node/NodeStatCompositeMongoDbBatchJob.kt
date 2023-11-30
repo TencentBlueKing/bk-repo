@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.job.batch.node
 
 import com.tencent.bkrepo.job.SHARDING_COUNT
-import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.node.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.CompositeMongoDbBatchJob
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
