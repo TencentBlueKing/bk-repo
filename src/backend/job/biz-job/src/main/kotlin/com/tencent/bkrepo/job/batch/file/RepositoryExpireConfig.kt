@@ -13,7 +13,7 @@ data class RepoConfig(
     var projectId: String = "",
     var repoName: String = "",
     // 路径前缀匹配
-    var fullPath: List<String> = emptyList(),
+    var pathPrefix: List<String> = emptyList(),
     // 保留最近多少天内访问
     var days: Int = 30,
 )

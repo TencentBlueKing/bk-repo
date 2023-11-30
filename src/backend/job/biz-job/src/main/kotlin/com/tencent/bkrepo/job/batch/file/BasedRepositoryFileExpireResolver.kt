@@ -48,8 +48,8 @@ class BasedRepositoryFileExpireResolver(
                 .rule(LAST_ACCESS_DATE, LocalDateTime.now().minusDays(it.days.toLong()), OperationType.AFTER)
                 .page(1, expireConfig.max)
                 .select(SHA256, FULL_PATH).build()
-            val fullPathRuleList = it.fullPath.map { fullPath ->
-                Rule.QueryRule(FULL_PATH, fullPath, OperationType.PREFIX)
+            val fullPathRuleList = it.pathPrefix.map { prefix ->
+                Rule.QueryRule(FULL_PATH, prefix, OperationType.PREFIX)
             }
             val rule = Rule.NestedRule(fullPathRuleList.toMutableList(), Rule.NestedRule.RelationType.OR)
             (queryModel.rule as Rule.NestedRule).rules.add(rule)
