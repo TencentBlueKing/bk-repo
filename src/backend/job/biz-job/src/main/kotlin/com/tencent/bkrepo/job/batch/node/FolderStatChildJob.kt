@@ -37,6 +37,7 @@ import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REDIS_CACHE_TYPE
 import com.tencent.bkrepo.job.REPO
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -65,7 +66,8 @@ import kotlin.text.toLongOrNull as toLongOrNull1
  */
 class FolderStatChildJob(
     val properties: CompositeJobProperties,
-    private val redisTemplate: RedisTemplate<String, String>
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val activeProjectService: ActiveProjectService
 ) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
     override fun onParentJobStart(context: ChildJobContext) {
@@ -79,12 +81,13 @@ class FolderStatChildJob(
         if (!context.runFlag) return
         if (!collectionRunCheck(collectionName)) return
         if (row.deleted != null) return
-        // 判断是否在不统计项目或者仓库列表中
-        if (ignoreProjectOrRepoCheck(row.projectId, row.repoName)) return
         //只统计非目录类节点；没有根目录这个节点，不需要统计
         if (row.folder || row.path == PathUtils.ROOT) {
             return
         }
+        // 判断是否在不统计项目或者仓库列表中
+        if (ignoreProjectOrRepoCheck(row.projectId, row.repoName)) return
+        if (!context.activeProjects.contains(row.projectId)) return
 
         // 更新当前节点所有上级目录（排除根目录）统计信息
         val folderFullPaths = PathUtils.resolveAncestorFolder(row.fullPath)
@@ -114,7 +117,11 @@ class FolderStatChildJob(
         } catch (e: Exception) {
             MEMORY_CACHE_TYPE
         }
-        return FolderChildContext(parentJobContext, cacheType = cacheType)
+        return FolderChildContext(
+            parentContent = parentJobContext,
+            cacheType = cacheType,
+            activeProjects = activeProjectService.getActiveProjects()
+        )
     }
 
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {

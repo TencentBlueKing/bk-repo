@@ -329,6 +329,7 @@ class NodeModifyEventListener(
         fullPath: String,
         deleted: String? = null
     ): List<TNode> {
+        // TODO 需要进行分页查询，避免查询结果过多
         val srcRootNodePath = PathUtils.toPath(fullPath)
         val query = buildNodeQuery(projectId, repoName, srcRootNodePath, deleted)
         return nodeDao.find(query)
