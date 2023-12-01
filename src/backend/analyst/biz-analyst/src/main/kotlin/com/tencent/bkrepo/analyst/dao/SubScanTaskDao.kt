@@ -30,6 +30,7 @@ package com.tencent.bkrepo.analyst.dao
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.analyst.model.TSubScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.CredentialsKeyFiles
@@ -183,6 +184,7 @@ class SubScanTaskDao(
         val criteria = Criteria
             .where(TSubScanTask::projectId.name).isEqualTo(projectId)
             .and(TSubScanTask::status.name).inValues(SubScanTaskStatus.RUNNING_STATUS)
+            .and(TSubScanTask::triggerType.name).ne(ScanTriggerType.ON_NEW_ARTIFACT_SYSTEM.name)
         if (!includeGlobal) {
             criteria.and("${TSubScanTask::metadata.name}.key").ne(TaskMetadata.TASK_METADATA_GLOBAL)
         }
