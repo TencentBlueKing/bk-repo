@@ -59,8 +59,8 @@ open class OpenResource(private val permissionService: PermissionService) {
     /**
      *  userId's assetUsers contain userContext or userContext be admin
      */
-    fun preCheckUserOrAssetUser(userId: String, users:List<UserInfo>) {
-        if(!users.any { userInfo -> userInfo.userId.equals(userId) }) {
+    fun preCheckUserOrAssetUser(userId: String, users: List<UserInfo>) {
+        if (!users.any { userInfo -> userInfo.userId.equals(userId) }) {
             preCheckContextUser(userId)
         }
     }
@@ -80,12 +80,18 @@ open class OpenResource(private val permissionService: PermissionService) {
      * only system scopeType account have the permission
      */
     fun preCheckPlatformPermission() {
+        val appId = SecurityUtils.getPlatformId()
+        if (appId.isNullOrEmpty()) {
+            logger.warn("appId can not be empty [$appId]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_ACCOUT_FORAUTH_NOT_PERM)
+        }
         val request = CheckPermissionRequest(
             uid = SecurityUtils.getUserId(),
-            appId = SecurityUtils.getPlatformId(),
+            appId = appId,
             resourceType = ResourceType.SYSTEM.name,
             action = PermissionAction.MANAGE.name
         )
+
         if (!permissionService.checkPlatformPermission(request)) {
             logger.warn("account do not have the permission [$request]")
             throw ErrorCodeException(AuthMessageCode.AUTH_ACCOUT_FORAUTH_NOT_PERM)
