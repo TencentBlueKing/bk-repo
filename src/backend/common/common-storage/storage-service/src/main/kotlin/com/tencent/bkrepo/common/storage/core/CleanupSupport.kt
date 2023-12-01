@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFileExpireResolver
 import com.tencent.bkrepo.common.storage.util.toPath
 import java.nio.file.Path
 
@@ -52,7 +53,16 @@ abstract class CleanupSupport : HealthCheckSupport() {
     }
 
     private fun cleanupPath(path: Path, credentials: StorageCredentials): CleanupResult {
-        val visitor = CleanupFileVisitor(path, path, null, fileStorage, fileLocator, credentials)
+        val fileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
+        val visitor = CleanupFileVisitor(
+            path,
+            path,
+            null,
+            fileStorage,
+            fileLocator,
+            credentials,
+            fileExpireResolver,
+        )
         FileSystemClient(path).walk(visitor)
         return visitor.result
     }
