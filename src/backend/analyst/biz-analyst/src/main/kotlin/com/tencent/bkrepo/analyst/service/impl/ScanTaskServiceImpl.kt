@@ -121,7 +121,11 @@ class ScanTaskServiceImpl(
     }
 
     override fun tasks(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<ScanTask> {
-        permissionCheckHandler.checkProjectPermission(scanTaskQuery.projectId, PermissionAction.MANAGE)
+        if (scanTaskQuery.projectId == null) {
+            permissionCheckHandler.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+        } else {
+            permissionCheckHandler.checkProjectPermission(scanTaskQuery.projectId!!, PermissionAction.MANAGE)
+        }
         val taskPage = scanTaskDao.find(scanTaskQuery, pageLimit)
         val records = taskPage.records.map { Converter.convert(it) }
         return Page(pageLimit.pageNumber, pageLimit.pageSize, taskPage.totalRecords, records)

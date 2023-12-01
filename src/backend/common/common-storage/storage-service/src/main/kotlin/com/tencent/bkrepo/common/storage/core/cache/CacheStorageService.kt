@@ -146,7 +146,7 @@ class CacheStorageService(
         val stagingPath = getStagingPath(credentials)
         val visitor = CleanupFileVisitor(rootPath, tempPath, stagingPath, fileStorage, fileLocator, credentials)
         getCacheClient(credentials).walk(visitor)
-        return visitor.result
+        return visitor.result.merge(cleanUploadPath(credentials))
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
