@@ -29,4 +29,4 @@ package com.tencent.bkrepo.analyst.statemachine.subtask.context
 
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 
-data class DispatchFailedContext(val subtask: SubScanTask) : SubtaskContext()
+data class RetryContext(val subtask: SubScanTask) : SubtaskContext()

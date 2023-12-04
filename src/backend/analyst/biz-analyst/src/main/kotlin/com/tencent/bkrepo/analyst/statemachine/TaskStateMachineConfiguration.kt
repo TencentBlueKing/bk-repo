@@ -36,7 +36,6 @@ import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.STOPPING
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.BLOCK
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.CREATE
-import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.DISPATCH_FAILED
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.EXECUTE
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.NOTIFY
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.PULL
@@ -59,6 +58,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.SUCCESS
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.TIMEOUT
 import com.tencent.bkrepo.statemachine.StateMachine
 import com.tencent.bkrepo.statemachine.builder.StateMachineBuilder
+import com.tencent.devops.stream.binder.pulsar.constant.RETRY
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -102,7 +102,7 @@ class TaskStateMachineConfiguration(
             transitions(arrayOf(CREATED, EXECUTING), PULLED, PULL, subtaskActions)
             transition(PULLED, PULLED, PULL, subtaskActions)
             transition(PULLED, EXECUTING, EXECUTE, subtaskActions)
-            transition(PULLED, CREATED, DISPATCH_FAILED, subtaskActions)
+            transition(PULLED, CREATED, RETRY, subtaskActions)
             // 超过最长允许执行的时间时，可能会从PULLED转移到FAILED状态
             transition(PULLED, FAILED, SubtaskEvent.FAILED, subtaskActions)
             transition(PULLED, TIMEOUT, SubtaskEvent.TIMEOUT, subtaskActions)
@@ -112,6 +112,7 @@ class TaskStateMachineConfiguration(
             transition(EXECUTING, TIMEOUT, SubtaskEvent.TIMEOUT, subtaskActions)
             transition(EXECUTING, FAILED, SubtaskEvent.FAILED, subtaskActions)
             transition(EXECUTING, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
+            transition(EXECUTING, CREATED, SubtaskEvent.RETRY, subtaskActions)
             transition(NEVER_SCANNED, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
             val from = arrayOf(BLOCKED, CREATED, PULLED, EXECUTING)
             transitions(from, SubScanTaskStatus.STOPPED, STOP, subtaskActions)

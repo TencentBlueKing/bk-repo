@@ -6,7 +6,7 @@ import com.tencent.bkrepo.analyst.pojo.execution.ExecutionCluster
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.DispatchFailedContext
+import com.tencent.bkrepo.analyst.statemachine.subtask.context.RetryContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
@@ -35,7 +35,7 @@ abstract class SubtaskPushDispatcher<T: ExecutionCluster>(
                 logger.warn("dispatch subtask failed, subtask[${subtask.taskId}]")
                 subtaskStateMachine.sendEvent(
                     SubScanTaskStatus.PULLED.name,
-                    Event(SubtaskEvent.DISPATCH_FAILED.name, DispatchFailedContext(subtask))
+                    Event(SubtaskEvent.RETRY.name, RetryContext(subtask))
                 )
             }
         }
