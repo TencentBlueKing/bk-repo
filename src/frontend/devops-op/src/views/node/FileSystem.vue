@@ -45,6 +45,26 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item style="margin-left: 15px" label="IP" prop="ip">
+        <el-select v-model="clientQuery.ip" clearable placeholder="请选择">
+          <el-option
+            v-for="item in ipOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item style="margin-left: 15px" label="版本" prop="version">
+        <el-select v-model="clientQuery.version" clearable placeholder="请选择">
+          <el-option
+            v-for="item in versionOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button
           size="mini"
@@ -103,7 +123,9 @@ export default {
         projectId: '',
         repoName: '',
         pageNumber: 1,
-        online: ''
+        online: '',
+        ip: '',
+        version: ''
       },
       clients: [],
       options: [{
@@ -112,7 +134,9 @@ export default {
       }, {
         value: 'false',
         label: '否'
-      }]
+      }],
+      ipOptions: [],
+      versionOptions: []
     }
   },
   mounted() {
@@ -165,6 +189,8 @@ export default {
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
       query.online = this.clientQuery.online
+      query.ip = this.clientQuery.ip
+      query.version = this.clientQuery.version
       this.$router.push({ path: '/nodes/FileSystem', query: query })
     },
     onRouteUpdate(route) {
@@ -174,6 +200,8 @@ export default {
       clientQuery.repoName = query.repoName ? query.repoName : ''
       clientQuery.pageNumber = query.page ? Number(query.page) : 1
       clientQuery.online = query.online ? query.online : ''
+      clientQuery.ip = query.ip ? query.ip : ''
+      clientQuery.version = query.version ? query.version : ''
       this.$nextTick(() => {
         this.queryClients(clientQuery)
       })
@@ -190,10 +218,40 @@ export default {
     doQueryClients(clientQuery) {
       this.loading = true
       let promise = null
-      promise = queryFileSystemClient(clientQuery.projectId, clientQuery.repoName, clientQuery.pageNumber, clientQuery.online)
+      promise = queryFileSystemClient(clientQuery)
       promise.then(res => {
         this.clients = res.data.records
         this.total = res.data.totalRecords
+        let checkVersion = false
+        let checkIp = false
+        this.ipOptions = []
+        this.versionOptions = []
+        for (let i = 0; i < this.clients.length; i++) {
+          for (let j = 0; j < this.versionOptions.length; j++) {
+            if (this.versionOptions[j].key === this.clients[i].ip) {
+              checkIp = true
+              break
+            }
+          }
+          if (!checkIp) {
+            this.ipOptions.push({
+              key: this.clients[i].ip,
+              value: this.clients[i].ip
+            })
+          }
+          for (let j = 0; j < this.versionOptions.length; j++) {
+            if (this.versionOptions[j].key === this.clients[i].version) {
+              checkVersion = true
+              break
+            }
+          }
+          if (!checkVersion) {
+            this.versionOptions.push({
+              key: this.clients[i].version,
+              value: this.clients[i].version
+            })
+          }
+        }
       }).catch(_ => {
         this.clients = []
         this.total = 0
