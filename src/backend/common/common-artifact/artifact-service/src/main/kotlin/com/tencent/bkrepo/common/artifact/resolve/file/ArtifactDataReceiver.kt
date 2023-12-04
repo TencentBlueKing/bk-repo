@@ -52,6 +52,7 @@ import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.attribute.BasicFileAttributes
 import java.security.SecureRandom
 import java.time.Duration
 import kotlin.math.abs
@@ -73,7 +74,7 @@ class ArtifactDataReceiver(
     private var path: Path,
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
-    private val originPath: Path = path
+    private val originPath: Path = path,
 ) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
@@ -159,6 +160,8 @@ class ArtifactDataReceiver(
      */
     val cachedByteArray: ByteArray?
         get() = contentBytes?.toByteArray()
+
+    private var flushTime = 0L
 
     init {
         initPath()
@@ -258,6 +261,7 @@ class ArtifactDataReceiver(
     @Synchronized
     fun flushToFile(closeStream: Boolean = true) {
         if (inMemory) {
+            flushTime = System.currentTimeMillis()
             val filePath = this.filePath.apply { this.createFile() }
             val fileOutputStream = Files.newOutputStream(filePath)
             val millis = measureTimeMillis { contentBytes!!.writeTo(fileOutputStream) }
@@ -323,7 +327,9 @@ class ArtifactDataReceiver(
         close()
         if (IOExceptionUtils.isClientBroken(exception)) {
             throw ArtifactReceiveException(exception.message.orEmpty())
-        } else throw exception
+        } else {
+            throw exception
+        }
     }
 
     /**
@@ -410,6 +416,12 @@ class ArtifactDataReceiver(
                 }
                 logger.info("Delete path $tempPath")
                 tempPath = tempPath.parent
+                val attrs = Files.readAttributes(tempPath, BasicFileAttributes::class.java)
+                val newCreate = attrs.creationTime().toMillis() > flushTime
+                // 父目录如果不是本次新建，则跳过
+                if (!newCreate) {
+                    break
+                }
             }
         }
     }
@@ -451,7 +463,7 @@ class ArtifactDataReceiver(
     private fun refreshTrafficHandler() {
         trafficHandler = TrafficHandler(
             ArtifactMetrics.getUploadingCounters(this),
-            ArtifactMetrics.getUploadingTimer(this)
+            ArtifactMetrics.getUploadingTimer(this),
         )
     }
 

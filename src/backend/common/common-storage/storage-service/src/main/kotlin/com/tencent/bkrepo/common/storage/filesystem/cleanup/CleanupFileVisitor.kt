@@ -94,11 +94,14 @@ class CleanupFileVisitor(
         if (dirPath == rootPath || dirPath == tempPath || dirPath == stagingPath) {
             return FileVisitResult.CONTINUE
         }
-        Files.newDirectoryStream(dirPath).use {
-            if (!it.iterator().hasNext()) {
-                Files.delete(dirPath)
-                logger.info("Clean up folder[$dirPath].")
-                result.cleanupFolder += 1
+        // 由于支持删除上传路径，所以这里即使是空目录，也需要判断过期时间。
+        if (fileExpireResolver.isExpired(dirPath.toFile())) {
+            Files.newDirectoryStream(dirPath).use {
+                if (!it.iterator().hasNext()) {
+                    Files.delete(dirPath)
+                    logger.info("Clean up folder[$dirPath].")
+                    result.cleanupFolder += 1
+                }
             }
         }
         result.totalFolder += 1
