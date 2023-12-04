@@ -96,7 +96,7 @@ class FileReferenceCleanupJob(
                     return
                 }
                 storageService.delete(sha256, storageCredentials)
-                deleteArchive(sha256, credentialsKey)
+//                deleteArchive(sha256, credentialsKey)
             } else {
                 (context as FileJobContext).fileMissing.incrementAndGet()
                 logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
