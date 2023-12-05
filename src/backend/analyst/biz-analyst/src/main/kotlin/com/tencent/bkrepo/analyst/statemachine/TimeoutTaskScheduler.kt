@@ -30,7 +30,6 @@ package com.tencent.bkrepo.analyst.statemachine
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
-import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.FinishSubtaskContext
@@ -79,7 +78,13 @@ class TimeoutTaskScheduler(
         if (blockTimeout != 0L) {
             subScanTaskDao.blockedTimeoutTasks(blockTimeout).records.forEach { subtask ->
                 logger.info("subTask[${subtask.id}] of parentTask[${subtask.parentScanTaskId}] block timeout")
-                finishSubtask(subtask, BLOCK_TIMEOUT.name)
+                val context = FinishSubtaskContext(
+                    subtask = subtask,
+                    targetState = BLOCK_TIMEOUT.name,
+                    reason = "Blocked until timeout, createDate[${subtask.createdDate}]"
+                )
+                val event = SubtaskEvent.finishEventOf(BLOCK_TIMEOUT.name)
+                subtaskStateMachine.sendEvent(subtask.status, Event(event.name, context))
             }
         }
     }
@@ -90,12 +95,6 @@ class TimeoutTaskScheduler(
         logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] timeout[${task.lastModifiedDate}]")
         val context = RetryContext(SubtaskConverter.convert(task, scannerService.get(task.scanner)))
         subtaskStateMachine.sendEvent(task.status, Event(SubtaskEvent.RETRY.name, context))
-    }
-
-    private fun finishSubtask(subtask: TSubScanTask, targetState: String) {
-        val context = FinishSubtaskContext(subtask = subtask, targetState = targetState)
-        val event = SubtaskEvent.finishEventOf(targetState)
-        subtaskStateMachine.sendEvent(subtask.status, Event(event.name, context))
     }
 
     companion object {

@@ -91,14 +91,18 @@ class RetryAction(
     }
 
     private fun finishSubtask(subtask: TSubScanTask): TransitResult {
-        val targetState = if (subtask.status == EXECUTING.name || subtask.status == PULLED.name) {
-            SubScanTaskStatus.TIMEOUT.name
-        } else {
-            SubScanTaskStatus.FAILED.name
+        with(subtask) {
+            val targetState = if (status == EXECUTING.name || status == PULLED.name) {
+                SubScanTaskStatus.TIMEOUT.name
+            } else {
+                SubScanTaskStatus.FAILED.name
+            }
+            val reason = "Exceed max times or timeout,executedTimes[$executedTimes],createdDateTime[${createdDate}]," +
+                    "heartbeatDateTime[$heartbeatDateTime],timeoutDateTime[$timeoutDateTime]"
+            val context = FinishSubtaskContext(subtask = subtask, targetState = targetState, reason = reason)
+            val event = SubtaskEvent.finishEventOf(targetState)
+            return subtaskStateMachine.sendEvent(subtask.status, Event(event.name, context))
         }
-        val context = FinishSubtaskContext(subtask = subtask, targetState = targetState)
-        val event = SubtaskEvent.finishEventOf(targetState)
-        return subtaskStateMachine.sendEvent(subtask.status, Event(event.name, context))
     }
 
     override fun support(from: String, to: String, event: String): Boolean {
