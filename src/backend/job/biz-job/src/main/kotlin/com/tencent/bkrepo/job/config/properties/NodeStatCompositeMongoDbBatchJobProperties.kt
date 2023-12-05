@@ -24,7 +24,7 @@ class NodeStatCompositeMongoDbBatchJobProperties (
      */
     var redisCacheCollections: List<String> = emptyList(),
     /**
-     * 是否不进行活跃项目判断，执行全部数据
+     * 是否遍历所有项目
      */
-    var fullyExecuted: Boolean = false
+    var runAllProjects: Boolean = true
 ): CompositeJobProperties()

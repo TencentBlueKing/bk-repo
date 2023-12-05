@@ -33,10 +33,12 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULLPATH
+import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REDIS_CACHE_TYPE
 import com.tencent.bkrepo.job.REPO
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -56,7 +58,6 @@ import org.springframework.data.redis.core.HashOperations
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ScanOptions
 import java.time.DayOfWeek
-import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.system.measureTimeMillis
 import kotlin.text.toLongOrNull as toLongOrNull1
@@ -89,8 +90,8 @@ class FolderStatChildJob(
             return
         }
         // 判断是否在不统计项目或者仓库列表中
-        if (ignoreProjectOrRepoCheck(row.projectId, row.repoName)) return
-        if (context.activeProjects.isNotEmpty() && !properties.fullyExecuted &&
+        if (ignoreProjectOrRepoCheck(row.projectId)) return
+        if (context.activeProjects.isNotEmpty() && !properties.runAllProjects &&
             !context.activeProjects.contains(row.projectId)) return
 
         // 更新当前节点所有上级目录（排除根目录）统计信息
@@ -122,13 +123,11 @@ class FolderStatChildJob(
         } catch (e: Exception) {
             MEMORY_CACHE_TYPE
         }
-        // 每周六执行一次全量数据统计
-        val fullyExecuted = properties.fullyExecuted || LocalDate.now().dayOfWeek == DayOfWeek.SATURDAY
         return FolderChildContext(
             parentContent = parentJobContext,
             cacheType = cacheType,
-            activeProjects = activeProjectService.getActiveProjects(),
-            fullyExecuted = fullyExecuted
+            activeProjects = if (properties.runAllProjects) { emptySet() }
+            else { activeProjectService.getActiveProjects() },
         )
     }
 
@@ -145,7 +144,7 @@ class FolderStatChildJob(
     /**
      * 判断项目或者仓库是否不需要进行目录统计
      */
-    private fun ignoreProjectOrRepoCheck(projectId: String, repoName: String): Boolean {
+    private fun ignoreProjectOrRepoCheck(projectId: String): Boolean {
         return IGNORE_PROJECT_PREFIX_LIST.firstOrNull { projectId.startsWith(it) } != null
     }
 
@@ -512,7 +511,6 @@ class FolderStatChildJob(
         private val logger = LoggerHolder.jobLogger
         private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
-        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_")
         private const val STORED = "stored"
         private const val BATCH_LIMIT = 500
         private const val COLLECTION_NAME_PREFIX = "node_"
