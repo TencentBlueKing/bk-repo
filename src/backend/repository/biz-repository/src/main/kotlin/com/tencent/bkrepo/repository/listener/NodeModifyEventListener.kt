@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.listener
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.RemovalCause
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
@@ -40,11 +41,14 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
+import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.node.NodeService
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -309,22 +313,26 @@ class NodeModifyEventListener(
         includePrefix: String? = null,
         sourceNodes: List<String>? = null
     ) {
+        val action: ((List<TNode>) -> Unit) = {  nodeList ->
+            nodeList.forEach {
+                if (!sourceNodes.isNullOrEmpty() && !sourceNodes.contains(it.fullPath)) return@forEach
+                updateCache(
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    fullPath = it.fullPath,
+                    size = it.size,
+                    deleted = deletedFlag,
+                    includePrefix = includePrefix
+                )
+            }
+        }
         findAllNodesUnderFolder(
             artifactInfo.projectId,
             artifactInfo.repoName,
             artifactInfo.getArtifactFullPath(),
-            deleted = deleted
-        ).forEach {
-            if (!sourceNodes.isNullOrEmpty() && !sourceNodes.contains(it.fullPath)) return@forEach
-            updateCache(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                fullPath = it.fullPath,
-                size = it.size,
-                deleted = deletedFlag,
-                includePrefix = includePrefix
-            )
-        }
+            deleted = deleted,
+            action = action
+        )
     }
 
 
@@ -332,12 +340,20 @@ class NodeModifyEventListener(
         projectId: String,
         repoName: String,
         fullPath: String,
-        deleted: String? = null
-    ): List<TNode> {
-        // TODO 需要进行分页查询，避免查询结果过多
+        deleted: String? = null,
+        action: (List<TNode>) -> Unit
+    ) {
         val srcRootNodePath = PathUtils.toPath(fullPath)
         val query = buildNodeQuery(projectId, repoName, srcRootNodePath, deleted)
-        return nodeDao.find(query)
+        var nodes: List<TNode>
+        var pageNumber = DEFAULT_PAGE_NUMBER
+        do {
+            val pageRequest = Pages.ofRequest(pageNumber, 1000)
+            query.with(pageRequest).with(Sort.by(AbstractMongoDao.ID).ascending())
+            nodes = nodeDao.find(query)
+            action(nodes)
+            pageNumber++
+        } while (nodes.isNotEmpty())
     }
 
 
@@ -362,14 +378,18 @@ class NodeModifyEventListener(
         }
         val path = PathUtils.resolveParent(modifiedNode.srcFullPath!!)
         if (node.folder) {
+            val action: ((List<TNode>) -> Unit) = {  nodeList ->
+                nodeList.forEach {
+                    sourceNodes.add(combineFullPath(modifiedNode.fullPath, it.fullPath.removePrefix(path)))
+                }
+            }
             findAllNodesUnderFolder(
                 artifactInfo.projectId,
                 artifactInfo.repoName,
                 artifactInfo.getArtifactFullPath(),
-                node.nodeInfo.deleted
-            ).map {
-                sourceNodes.add(combineFullPath(modifiedNode.fullPath, it.fullPath.removePrefix(path)))
-            }
+                node.nodeInfo.deleted,
+                action = action
+            )
         } else {
             sourceNodes.add(combineFullPath(modifiedNode.fullPath, node.fullPath.removePrefix(path)))
         }
