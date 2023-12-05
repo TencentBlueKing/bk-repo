@@ -27,7 +27,8 @@ abstract class SubtaskPushDispatcher<T: ExecutionCluster>(
             return
         }
         // 不加锁，允许少量超过执行器的资源限制
-        for (i in 0 until availableCount()) {
+        val availableCount = availableCount()
+        for (i in 0 until availableCount) {
             val subtask = scanService.pull(executionCluster.name) ?: break
             subtask.token = temporaryScanTokenService.createToken(subtask.taskId)
             if (!dispatch(subtask)) {
