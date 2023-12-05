@@ -67,12 +67,12 @@ class ActiveProjectService(
 
 
     private fun getActiveProjectsFromOpLog() {
-        downloadActiveProjects = getActiveProjects(DOWNLOAD_EVENTS)
-        uploadActiveProjects = getActiveProjects(UPLOAD_EVENTS)
-        activeProjects = getActiveProjects()
+        downloadActiveProjects = getActiveProjectsFromOplog(DOWNLOAD_EVENTS)
+        uploadActiveProjects = getActiveProjectsFromOplog(UPLOAD_EVENTS)
+        activeProjects = getActiveProjectsFromOplog()
     }
 
-    private fun getActiveProjects(types: List<String> = emptyList()): MutableSet<String> {
+    private fun getActiveProjectsFromOplog(types: List<String> = emptyList()): MutableSet<String> {
         val tempList = mutableSetOf<String>()
         val months = listOf(
             LocalDate.now().format(DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT)),
@@ -98,7 +98,7 @@ class ActiveProjectService(
     /**
      * 定时从db中读取数据更新缓存
      */
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INITIAL_DELAY, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INITIAL_DELAY, timeUnit = TimeUnit.MINUTES)
     fun refreshActiveProjects() {
         getActiveProjectsFromOpLog()
     }
