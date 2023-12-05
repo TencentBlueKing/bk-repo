@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -217,7 +218,7 @@ class SubScanTaskDao(
     }
 
     fun firstTaskByStatusIn(status: List<String>?, dispatcher: String?): TSubScanTask? {
-        val query = buildStatusAndDispatcherQuery(status, dispatcher)
+        val query = buildStatusAndDispatcherQuery(status, dispatcher).with(Sort.by(TSubScanTask::createdDate.name))
         return findOne(query)
     }
 
