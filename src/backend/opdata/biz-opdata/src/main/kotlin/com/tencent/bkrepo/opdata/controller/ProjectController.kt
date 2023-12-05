@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
@@ -53,6 +54,7 @@ class ProjectController(
     private val projectMetricsService: ProjectMetricsService,
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
     private val permissionManager: PermissionManager,
+    private val jobClient: JobClient,
 ) {
 
     /**
@@ -95,5 +97,30 @@ class ProjectController(
         metricsRequest: ProjectMetricsRequest
     ) {
         projectMetricsService.download(metricsRequest)
+    }
+
+    /**
+     * 获取活跃项目列表
+     */
+    @GetMapping("/list/activeProjects")
+    fun getActiveProjects(): Response<MutableSet<String>> {
+
+        return ResponseBuilder.success(jobClient.activeProjects().data!!)
+    }
+
+    /**
+     * 获取下载活跃项目列表
+     */
+    @GetMapping("/list/downloadActiveProjects")
+    fun getDownloadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(jobClient.downloadActiveProjects().data!!)
+    }
+
+    /**
+     * 获取上传活跃项目列表
+     */
+    @GetMapping("/list/uploadActiveProjects")
+    fun getUploadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(jobClient.uploadActiveProjects().data!!)
     }
 }

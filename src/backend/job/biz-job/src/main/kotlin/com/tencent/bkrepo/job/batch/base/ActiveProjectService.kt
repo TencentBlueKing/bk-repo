@@ -25,14 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.node
+package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.TYPE
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -45,47 +48,47 @@ class ActiveProjectService(
 ) {
     private var activeProjects = mutableSetOf<String>()
 
-    private var readActiveProjects = mutableSetOf<String>()
+    private var downloadActiveProjects = mutableSetOf<String>()
 
-    private var writeActiveProjects = mutableSetOf<String>()
+    private var uploadActiveProjects = mutableSetOf<String>()
 
 
     fun getActiveProjects(): MutableSet<String> {
         return activeProjects
     }
 
+    fun getDownloadActiveProjects(): MutableSet<String> {
+        return downloadActiveProjects
+    }
+
+    fun getUploadActiveProjects(): MutableSet<String> {
+        return uploadActiveProjects
+    }
+
 
     private fun getActiveProjectsFromOpLog() {
-        getReadActiveProjectsFromOpLog()
-        getWriteActiveProjectsFromOpLog()
-        val tempList = mutableSetOf<String>()
-        tempList.addAll(readActiveProjects)
-        tempList.addAll(writeActiveProjects)
-        activeProjects = tempList
+        downloadActiveProjects = getActiveProjects(DOWNLOAD_EVENTS)
+        uploadActiveProjects = getActiveProjects(UPLOAD_EVENTS)
+        activeProjects = getActiveProjects()
     }
 
-    private fun getReadActiveProjectsFromOpLog() {
-        readActiveProjects = getActiveProjects(READ_EVENTS)
-    }
-
-    private fun getWriteActiveProjectsFromOpLog() {
-        writeActiveProjects = getActiveProjects(READ_EVENTS, false)
-    }
-
-    private fun getActiveProjects(types: List<String>, inFlag: Boolean = true): MutableSet<String> {
+    private fun getActiveProjects(types: List<String> = emptyList()): MutableSet<String> {
         val tempList = mutableSetOf<String>()
         val months = listOf(
             LocalDate.now().format(DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT)),
             LocalDate.now().minusMonths(1)
                 .format(DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT))
         )
+
         months.forEach {
             val collectionName = COLLECTION_NAME_PREFIX +it
-            val query = if (inFlag) {
-                Query(Criteria.where(TYPE).`in`(types))
-            } else {
-                Query(Criteria.where(TYPE).nin(types))
+            val criteria = Criteria().andOperator(
+                IGNORE_PROJECT_PREFIX_LIST.map { where(ProjectInfo::name).not().regex(it) }
+            )
+            if (types.isNotEmpty()) {
+                criteria.and(TYPE).`in`(types)
             }
+            val query = Query(criteria)
             val data = mongoTemplate.findDistinct(query, PROJECT, collectionName, String::class.java)
             tempList.addAll(data)
         }
@@ -95,7 +98,7 @@ class ActiveProjectService(
     /**
      * 定时从db中读取数据更新缓存
      */
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INITIAL_DELAY, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INITIAL_DELAY, timeUnit = TimeUnit.SECONDS)
     fun refreshActiveProjects() {
         getActiveProjectsFromOpLog()
     }
@@ -105,8 +108,11 @@ class ActiveProjectService(
         private const val FIXED_DELAY = 60L
         private const val COLLECTION_NAME_PREFIX = "artifact_oplog_"
         private const val YEAR_MONTH_FORMAT = "yyyyMM"
-        private val READ_EVENTS = listOf(
+        private val DOWNLOAD_EVENTS = listOf(
             EventType.NODE_DOWNLOADED.name, EventType.VERSION_DOWNLOAD.name
+        )
+        private val UPLOAD_EVENTS = listOf(
+            EventType.NODE_CREATED.name, EventType.VERSION_CREATED.name
         )
     }
 }
