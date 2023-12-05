@@ -243,7 +243,7 @@ class SubScanTaskDao(
      *
      * @return 第一个超时任务
      */
-    fun firstTimeoutTask(dispatcher: String? = null, allDispatcher: Boolean = true): TSubScanTask? {
+    fun timeoutTasks(dispatcher: String? = null, allDispatcher: Boolean = true): Page<TSubScanTask> {
         val criteriaList = mutableListOf(
             buildTimeoutCriteria(),
             TSubScanTask::status.inValues(PULLED.name, EXECUTING.name),
@@ -253,7 +253,7 @@ class SubScanTaskDao(
         }
         val criteria = Criteria().andOperator(criteriaList)
 
-        return findOne(Query(criteria))
+        return page(Query(criteria), Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE))
     }
 
     /**

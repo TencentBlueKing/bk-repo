@@ -91,10 +91,11 @@ class TimeoutTaskScheduler(
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun retryTimeoutSubtask() {
-        val task = subScanTaskDao.firstTimeoutTask() ?: return
-        logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] timeout[${task.lastModifiedDate}]")
-        val context = RetryContext(SubtaskConverter.convert(task, scannerService.get(task.scanner)))
-        subtaskStateMachine.sendEvent(task.status, Event(SubtaskEvent.RETRY.name, context))
+        subScanTaskDao.timeoutTasks().records.forEach { task ->
+            logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] timeout[${task.lastModifiedDate}]")
+            val context = RetryContext(SubtaskConverter.convert(task, scannerService.get(task.scanner)))
+            subtaskStateMachine.sendEvent(task.status, Event(SubtaskEvent.RETRY.name, context))
+        }
     }
 
     companion object {
