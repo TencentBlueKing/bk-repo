@@ -39,5 +39,5 @@ data class EmptyFolderCleanupJobProperties(
     /**
      * 是否遍历所有项目记录
      */
-    var runAllProjects: Boolean = false
+    var runAllProjects: Boolean = true
 ) : MongodbJobProperties()
