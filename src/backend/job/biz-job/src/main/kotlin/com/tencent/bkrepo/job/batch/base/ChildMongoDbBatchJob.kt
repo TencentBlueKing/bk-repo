@@ -4,7 +4,7 @@ package com.tencent.bkrepo.job.batch.base
  * [CompositeMongoDbBatchJob]的子任务
  */
 @Suppress("TooManyFunctions")
-abstract class ChildMongoDbBatchJob<T> {
+open class ChildMongoDbBatchJob<T> {
 
     /**
      * 父任务启动回调

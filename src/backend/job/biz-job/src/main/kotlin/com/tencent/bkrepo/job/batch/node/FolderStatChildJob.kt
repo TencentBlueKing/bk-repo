@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
-import com.tencent.bkrepo.job.FULLPATH
+import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.PROJECT
@@ -462,7 +462,7 @@ class FolderStatChildJob(
         val query = Query(
             Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(REPO).isEqualTo(repoName)
-                .and(FULLPATH).isEqualTo(fullPath)
+                .and(FULL_PATH).isEqualTo(fullPath)
                 .and(DELETED_DATE).isEqualTo(null)
                 .and(FOLDER).isEqualTo(true)
         )

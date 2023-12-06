@@ -39,7 +39,6 @@ import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
-import java.time.Duration
 
 /**
  * 文件清理visitor
@@ -52,6 +51,7 @@ class CleanupFileVisitor(
     private val fileStorage: FileStorage,
     private val fileLocator: FileLocator,
     private val credentials: StorageCredentials,
+    private val fileExpireResolver: FileExpireResolver,
 ) : ArtifactFileVisitor() {
 
     val result = CleanupResult()
@@ -62,7 +62,7 @@ class CleanupFileVisitor(
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         val size = attributes.size()
         try {
-            if (isExpired(attributes, expireDuration) && !isNFSTempFile(filePath)) {
+            if (fileExpireResolver.isExpired(filePath.toFile()) && !isNFSTempFile(filePath)) {
                 if (isTempFile(filePath) || existInStorage(filePath)) {
                     rateLimiter.acquire()
                     Files.delete(filePath)
@@ -94,11 +94,14 @@ class CleanupFileVisitor(
         if (dirPath == rootPath || dirPath == tempPath || dirPath == stagingPath) {
             return FileVisitResult.CONTINUE
         }
-        Files.newDirectoryStream(dirPath).use {
-            if (!it.iterator().hasNext()) {
-                Files.delete(dirPath)
-                logger.info("Clean up folder[$dirPath].")
-                result.cleanupFolder += 1
+        // 由于支持删除上传路径，所以这里即使是空目录，也需要判断过期时间。
+        if (fileExpireResolver.isExpired(dirPath.toFile())) {
+            Files.newDirectoryStream(dirPath).use {
+                if (!it.iterator().hasNext()) {
+                    Files.delete(dirPath)
+                    logger.info("Clean up folder[$dirPath].")
+                    result.cleanupFolder += 1
+                }
             }
         }
         result.totalFolder += 1
@@ -107,17 +110,6 @@ class CleanupFileVisitor(
 
     override fun needWalk(): Boolean {
         return expireDuration.seconds > 0
-    }
-
-    /**
-     * 判断文件是否过期
-     * 根据上次访问时间和上次修改时间判断
-     */
-    private fun isExpired(attributes: BasicFileAttributes, expireDuration: Duration): Boolean {
-        val lastAccessTime = attributes.lastAccessTime().toMillis()
-        val lastModifiedTime = attributes.lastModifiedTime().toMillis()
-        val expiredTime = System.currentTimeMillis() - expireDuration.toMillis()
-        return lastAccessTime < expiredTime && lastModifiedTime < expiredTime
     }
 
     /**

@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.core.simple.SimpleStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
@@ -67,7 +68,7 @@ class StorageAutoConfiguration {
     @Bean
     fun fileStorage(
         properties: StorageProperties,
-        executor: ThreadPoolTaskExecutor
+        executor: ThreadPoolTaskExecutor,
     ): FileStorage {
         val fileStorage = when (properties.type) {
             StorageType.FILESYSTEM -> FileSystemStorage()
@@ -83,10 +84,21 @@ class StorageAutoConfiguration {
     @Bean
     fun storageService(
         properties: StorageProperties,
-        threadPoolTaskExecutor: ThreadPoolTaskExecutor
+        threadPoolTaskExecutor: ThreadPoolTaskExecutor,
+        fileExpireResolver: FileExpireResolver?,
     ): StorageService {
+        fileExpireResolver?.let {
+            logger.info("Use FileExpireResolver[${fileExpireResolver::class.simpleName}].")
+        }
         val cacheEnabled = properties.defaultStorageCredentials().cache.enabled
-        val storageService = if (cacheEnabled) CacheStorageService(threadPoolTaskExecutor) else SimpleStorageService()
+        val storageService = if (cacheEnabled) {
+            CacheStorageService(
+                threadPoolTaskExecutor,
+                fileExpireResolver,
+            )
+        } else {
+            SimpleStorageService()
+        }
         logger.info("Initializing StorageService[${storageService::class.simpleName}].")
         return storageService
     }
@@ -98,7 +110,7 @@ class StorageAutoConfiguration {
             .defaultStorageCredentials().upload.location
         map[location] = StorageHealthMonitor(
             storageProperties,
-            location
+            location,
         )
         return StorageHealthMonitorHelper(map)
     }
