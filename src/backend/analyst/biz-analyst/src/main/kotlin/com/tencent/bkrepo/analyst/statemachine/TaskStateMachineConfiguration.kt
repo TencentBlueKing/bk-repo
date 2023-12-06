@@ -40,6 +40,7 @@ import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.EXECUTE
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.NOTIFY
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.PULL
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.STOP
+import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.RETRY
 import com.tencent.bkrepo.analyst.statemachine.subtask.action.SubtaskAction
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent.FINISH_STOP
@@ -58,7 +59,6 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.SUCCESS
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.TIMEOUT
 import com.tencent.bkrepo.statemachine.StateMachine
 import com.tencent.bkrepo.statemachine.builder.StateMachineBuilder
-import com.tencent.devops.stream.binder.pulsar.constant.RETRY
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -112,7 +112,7 @@ class TaskStateMachineConfiguration(
             transition(EXECUTING, TIMEOUT, SubtaskEvent.TIMEOUT, subtaskActions)
             transition(EXECUTING, FAILED, SubtaskEvent.FAILED, subtaskActions)
             transition(EXECUTING, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
-            transition(EXECUTING, CREATED, SubtaskEvent.RETRY, subtaskActions)
+            transition(EXECUTING, CREATED, RETRY, subtaskActions)
             transition(NEVER_SCANNED, SUCCESS, SubtaskEvent.SUCCESS, subtaskActions)
             val from = arrayOf(BLOCKED, CREATED, PULLED, EXECUTING)
             transitions(from, SubScanTaskStatus.STOPPED, STOP, subtaskActions)
