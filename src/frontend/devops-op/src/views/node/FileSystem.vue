@@ -46,24 +46,10 @@
         </el-select>
       </el-form-item>
       <el-form-item style="margin-left: 15px" label="IP" prop="ip">
-        <el-select v-model="clientQuery.ip" clearable placeholder="请选择">
-          <el-option
-            v-for="item in ipOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
+        <el-input v-model="clientQuery.ip" type="text" size="small" width="50" placeholder="请输入ip" />
       </el-form-item>
       <el-form-item style="margin-left: 15px" label="版本" prop="version">
-        <el-select v-model="clientQuery.version" clearable placeholder="请选择">
-          <el-option
-            v-for="item in versionOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
+        <el-input v-model="clientQuery.version" type="text" size="small" width="50" placeholder="请输入版本号" />
       </el-form-item>
       <el-form-item>
         <el-button
@@ -134,9 +120,7 @@ export default {
       }, {
         value: 'false',
         label: '否'
-      }],
-      ipOptions: [],
-      versionOptions: []
+      }]
     }
   },
   mounted() {
@@ -222,36 +206,6 @@ export default {
       promise.then(res => {
         this.clients = res.data.records
         this.total = res.data.totalRecords
-        let checkVersion = false
-        let checkIp = false
-        this.ipOptions = []
-        this.versionOptions = []
-        for (let i = 0; i < this.clients.length; i++) {
-          for (let j = 0; j < this.versionOptions.length; j++) {
-            if (this.versionOptions[j].key === this.clients[i].ip) {
-              checkIp = true
-              break
-            }
-          }
-          if (!checkIp) {
-            this.ipOptions.push({
-              key: this.clients[i].ip,
-              value: this.clients[i].ip
-            })
-          }
-          for (let j = 0; j < this.versionOptions.length; j++) {
-            if (this.versionOptions[j].key === this.clients[i].version) {
-              checkVersion = true
-              break
-            }
-          }
-          if (!checkVersion) {
-            this.versionOptions.push({
-              key: this.clients[i].version,
-              value: this.clients[i].version
-            })
-          }
-        }
       }).catch(_ => {
         this.clients = []
         this.total = 0
