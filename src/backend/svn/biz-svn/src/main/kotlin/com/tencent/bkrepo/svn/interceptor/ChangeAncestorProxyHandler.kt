@@ -30,7 +30,7 @@ package com.tencent.bkrepo.svn.interceptor
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.service.util.proxy.DefaultProxyCallHandler
-import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil.headers
+import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil.Companion.headers
 import com.tencent.bkrepo.svn.config.SvnProperties
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
