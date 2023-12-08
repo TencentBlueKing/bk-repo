@@ -64,5 +64,5 @@ dependencies {
     }
     api("org.springframework.retry:spring-retry")
     api("com.github.ulisesbocchio:jasypt-spring-boot-starter:${Versions.Jasypt}")
-    api("org.dom4j:dom4j:${Versions.dom4j}")
+    api("org.dom4j:dom4j:${Versions.Dom4j}")
 }

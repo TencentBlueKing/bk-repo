@@ -29,16 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http.aws4
+package com.tencent.bkrepo.s3.artifact.auth
 
 import com.tencent.bkrepo.common.api.constant.AWS4_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.security.util.AWS4AuthUtil
-import com.tencent.bkrepo.common.api.exception.AWS4AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import com.tencent.bkrepo.s3.artifact.utils.AWS4AuthUtil
+import com.tencent.bkrepo.s3.constant.SIGN_NOT_MATCH
+import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import javax.servlet.http.HttpServletRequest
@@ -46,10 +47,12 @@ import javax.servlet.http.HttpServletRequest
 /**
  * AWS4 Http 认证方式
  */
-open class AWS4AuthHandler(val authenticationManager: AuthenticationManager) : HttpAuthHandler {
+class AWS4AuthHandler(
+    private val authenticationManager: AuthenticationManager
+) : HttpAuthHandler {
 
     @Value("\${spring.application.name}")
-    private var applicationName: String = "s3"
+    private val applicationName: String = "s3"
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
@@ -61,14 +64,11 @@ open class AWS4AuthHandler(val authenticationManager: AuthenticationManager) : H
                  * 如果计算的签名与传进来的签名一样，则认证通过
                  */
                 var userName = AWS4AuthUtil.getAccessKey(authorizationHeader)
-                var password: String? = authenticationManager.findUserPwd(userName)
-                    ?: throw AWS4AuthenticationException()
-                buildAWS4AuthorizationInfo(request, userName, password!!)
+                buildAWS4AuthorizationInfo(request, userName)
             } catch (exception: Exception) {
                 // 认证异常处理
-                throw AWS4AuthenticationException(params = arrayOf(
-                    request.requestURI.split("?").toTypedArray()[0]
-                        .substringAfter("/", "").substringAfter("/"))
+                throw AWS4AuthenticationException(
+                    params = arrayOf(SIGN_NOT_MATCH, getRequestResource(request))
                 )
             }
         } else AnonymousCredentials()
@@ -77,34 +77,49 @@ open class AWS4AuthHandler(val authenticationManager: AuthenticationManager) : H
     @Throws(AWS4AuthenticationException::class)
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
         require(authCredentials is AWS4AuthCredentials)
-        var flag = AWS4AuthUtil.validAuthorization(authCredentials)
-        if (flag) {
+
+        var password: String = authenticationManager.findUserPwd(authCredentials.accessKeyId)
+            ?: throw AWS4AuthenticationException(
+                params = arrayOf(SIGN_NOT_MATCH, getRequestResource(request))
+            )
+        var authPassed = AWS4AuthUtil.validAuthorization(authCredentials, password)
+        if (authPassed) {
             return authCredentials.accessKeyId
         }
         logger.warn("s3 auth fail, request data:$authCredentials")
-        return if (flag) authCredentials.accessKeyId else throw AWS4AuthenticationException(
-            params = arrayOf(request.requestURI.split("?").toTypedArray()[0]
-                .substringAfter("/", "").substringAfter("/"))
+        throw AWS4AuthenticationException(
+            params = arrayOf(SIGN_NOT_MATCH, getRequestResource(request))
         )
     }
 
     private fun buildAWS4AuthorizationInfo(
         request: HttpServletRequest,
-        accessKeyId: String,
-        secretAccessKey: String
+        accessKeyId: String
     ): AWS4AuthCredentials {
         return AWS4AuthCredentials(
             authorization = request.getHeader("Authorization"),
             accessKeyId = accessKeyId,
-            secretAccessKey = secretAccessKey,
             requestDate = request.getHeader("x-amz-date"),
             contentHash = request.getHeader("x-amz-content-sha256"),
-            //uri = request.requestURI.split("?").toTypedArray()[0],
+            /*uri = request.requestURI.split("?").toTypedArray()[0],*/
             uri = "/$applicationName"+request.requestURI.split("?").toTypedArray()[0],
             host = request.getHeader("host"),
             queryString = request.queryString ?: "",
             method = request.method
         )
+    }
+
+    /**
+     * 提取请求路径中的resource,即bucket后面的部分, /a/b/c/d -> /c/d
+     */
+    private fun getRequestResource(request: HttpServletRequest): String{
+        val path = request.requestURI.split("?").toTypedArray()[0]
+        val components = path.trim('/').split('/')
+        return when {
+            path == "/" || path.startsWith(applicationName) -> ""
+            components.size <= 2 -> ""
+            else -> "/" + components.takeLast(2).joinToString("/")
+        }
     }
 
     companion object {

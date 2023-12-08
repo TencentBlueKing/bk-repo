@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.s3.artifact.configuration
+package com.tencent.bkrepo.common.generic.configuration
 
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 

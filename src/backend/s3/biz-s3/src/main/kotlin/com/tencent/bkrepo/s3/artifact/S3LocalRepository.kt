@@ -28,23 +28,21 @@
 package com.tencent.bkrepo.s3.artifact
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.S3ErrorTypes
-import com.tencent.bkrepo.common.api.exception.S3NotFoundException
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.s3.constant.NO_SUCH_KEY
 import com.tencent.bkrepo.s3.constant.S3MessageCode
+import com.tencent.bkrepo.s3.exception.S3NotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
 class S3LocalRepository(
 ) : LocalRepository() {
-    override fun onDownloadBefore(context: ArtifactDownloadContext) {
-    }
 
     /**
      * 读取文件内容
@@ -74,7 +72,7 @@ class S3LocalRepository(
         throw S3NotFoundException(
             HttpStatus.NOT_FOUND,
             S3MessageCode.S3_NO_SUCH_KEY,
-            arrayOf(context.artifactInfo.getArtifactFullPath(), S3ErrorTypes.NO_SUCH_KEY)
+            params = arrayOf(NO_SUCH_KEY, context.artifactInfo.getArtifactFullPath())
         )
     }
 

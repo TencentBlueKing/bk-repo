@@ -29,24 +29,20 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.api.exception
+package com.tencent.bkrepo.s3.artifact.auth
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 
 /**
- * s3请求，比如key不存在异常
+ * Http AWS4认证信息
  */
-open class S3NotFoundException(
-    status: HttpStatus = HttpStatus.NOT_FOUND,
-    code: MessageCode,
-    vararg params: Any
-) : ErrorCodeException(status, code, params) {
-    fun getFirstParam(): String? {
-        return (params.getOrNull(0) as? Array<*>)?.getOrNull(0)?.toString()
-    }
-
-    fun getSecondParam(): String? {
-        return (params.getOrNull(0) as? Array<*>)?.getOrNull(1)?.toString()
-    }
-}
+data class AWS4AuthCredentials(
+    val authorization: String,
+    val accessKeyId: String,
+    val requestDate: String,
+    val contentHash: String,
+    val uri: String,
+    val host: String,
+    val queryString: String,
+    val method: String
+) : HttpAuthCredentials

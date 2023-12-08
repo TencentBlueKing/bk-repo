@@ -1,7 +1,38 @@
-package com.tencent.bkrepo.common.security.util
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-import com.tencent.bkrepo.common.api.exception.AWS4AuthenticationException
-import com.tencent.bkrepo.common.security.http.aws4.AWS4AuthCredentials
+package com.tencent.bkrepo.s3.artifact.utils
+
+import com.tencent.bkrepo.s3.artifact.auth.AWS4AuthCredentials
+import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
 import org.springframework.util.StringUtils
 import java.io.UnsupportedEncodingException
 import java.lang.Exception
@@ -9,9 +40,11 @@ import java.lang.StringBuilder
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.*
+import java.util.Collections
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 /**
  * AWS4签名验证
@@ -21,47 +54,79 @@ object AWS4AuthUtil {
      * 签名正确与否
      */
     fun validAuthorization(
-        data: AWS4AuthCredentials
+        authCredentials: AWS4AuthCredentials,
+        secretAccessKey: String
     ): Boolean {
-        val httpMethod = data.method
-        val heardMap: MutableMap<String, String> = HashMap<String, String>()
-        heardMap["x-amz-content-sha256"] = data.contentHash
-        heardMap["x-amz-date"] = data.requestDate
-        heardMap["host"] = data.host
-        val queryString = data.queryString
-        var authorization = data.authorization
-        var requestDate = data.requestDate
+        val heardMap: MutableMap<String, String> = HashMap()
+        heardMap["x-amz-content-sha256"] = authCredentials.contentHash
+        heardMap["x-amz-date"] = authCredentials.requestDate
+        heardMap["host"] = authCredentials.host
+        // 解析签名信息
+        val authInfo = parseAuthorization(authCredentials.authorization)
+        if (authCredentials.accessKeyId != authInfo.accessKey) {
+            return false
+        }
+        // 待签名字符串
+        var stringToSign: String = buildStringToSign(
+            authCredentials,
+            heardMap,
+            authInfo
+        )
+        // 计算签名的key
+        val signatureKey = calculateSignatureKey(secretAccessKey, authInfo)
+        // 重新生成签名
+        val strHexSignature = calculateHexSignature(stringToSign, signatureKey)
+        return authInfo.signature == strHexSignature
+    }
+
+    data class AuthorizationInfo(
+        val accessKey: String,
+        val date: String,
+        val region: String,
+        val service: String,
+        val aws4Request: String,
+        val signature: String,
+        val signedHeader: String,
+        val signedHeaders: Array<String>
+    )
+
+    private fun parseAuthorization(authorization: String): AuthorizationInfo {
         //示例
         // AWS4-HMAC-SHA256 Credential=admin/20231109/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=275a5ae2d72c170dc8c464f59a487818c374b2a79bfbfaa080c358f77307d484
-
         ///region authorization拆分
         val parts = authorization.trim().split(",").toTypedArray()
         //第一部分-凭证范围
         val credential = parts[0].split("=").toTypedArray()[1]
         val credentials = credential.split("/").toTypedArray()
-        val accessKey = credentials[0]
-        if (data.accessKeyId != accessKey) {
-            return false
-        }
-        val date = credentials[1]
-        val region = credentials[2]
-        val service = credentials[3]
-        val aws4Request = credentials[4]
         //第二部分-签名头中包含哪些字段
         val signedHeader = parts[1].split("=").toTypedArray()[1]
-        val signedHeaders = signedHeader.split(";").toTypedArray()
-        //第三部分-生成的签名
-        val signature = parts[2].split("=").toTypedArray()[1]
 
+        return AuthorizationInfo(
+            accessKey = credentials[0],
+            date = credentials[1],
+            region = credentials[2],
+            service = credentials[3],
+            aws4Request = credentials[4],
+            signature = parts[2].split("=").toTypedArray()[1],
+            signedHeader = signedHeader,
+            signedHeaders = signedHeader.split(";").toTypedArray()
+        )
+    }
+
+    private fun buildStringToSign(
+        authCredentials: AWS4AuthCredentials,
+        heardMap: Map<String, String>,
+        authInfo: AuthorizationInfo
+    ): String {
         ///待签名字符串
-        var stringToSign: String? = ""
+        var stringToSign: String = ""
         //签名由4部分组成
         //1-Algorithm – 用于创建规范请求的哈希的算法。对于 SHA-256，算法是 AWS4-HMAC-SHA256。
         stringToSign += "AWS4-HMAC-SHA256\n"
         //2-RequestDateTime – 在凭证范围内使用的日期和时间。
-        stringToSign += "$requestDate\n"
+        stringToSign += "${authCredentials.requestDate}\n"
         //3-CredentialScope – 凭证范围。这会将生成的签名限制在指定的区域和服务范围内。该字符串采用以下格式：YYYYMMDD/region/service/aws4_request
-        stringToSign += "$date/$region/$service/$aws4Request\n"
+        stringToSign += "${authInfo.date}/${authInfo.region}/${authInfo.service}/${authInfo.aws4Request}\n"
         //4-HashedCanonicalRequest – 规范请求的哈希。
         //<HTTPMethod>\n
         //<CanonicalURI>\n
@@ -71,12 +136,12 @@ object AWS4AuthUtil {
         //<HashedPayload>
         var hashedCanonicalRequest = ""
         //4.1-HTTP Method
-        hashedCanonicalRequest += "$httpMethod\n"
+        hashedCanonicalRequest += "${authCredentials.method}\n"
         //4.2-Canonical URI
-        hashedCanonicalRequest += "${data.uri}\n"
+        hashedCanonicalRequest += "${authCredentials.uri}\n"
         //4.3-Canonical Query String
-        hashedCanonicalRequest += if (!StringUtils.isEmpty(queryString)) {
-            val queryStringMap = parseQueryParams(queryString)
+        hashedCanonicalRequest += if (!StringUtils.isEmpty(authCredentials.queryString)) {
+            val queryStringMap = parseQueryParams(authCredentials.queryString)
             val keyList: List<String> = ArrayList(queryStringMap.keys)
             Collections.sort(keyList)
             val queryStringBuilder = StringBuilder("")
@@ -86,34 +151,41 @@ object AWS4AuthUtil {
             queryStringBuilder.deleteCharAt(queryStringBuilder.lastIndexOf("&"))
             "${queryStringBuilder.toString()}\n"
         } else {
-            "$queryString\n"
+            "${authCredentials.queryString}\n"
         }
         //4.4-Canonical Headers
-        for (name in signedHeaders) {
+        for (name in authInfo.signedHeaders) {
             hashedCanonicalRequest += "$name:${heardMap[name]}\n"
         }
         hashedCanonicalRequest += "\n"
         //4.5-Signed Headers
-        hashedCanonicalRequest += "$signedHeader\n"
+        hashedCanonicalRequest += "${authInfo.signedHeader}\n"
         //4.6-Hashed Payload
-        hashedCanonicalRequest += data.contentHash
+        hashedCanonicalRequest += authCredentials.contentHash
+
+
+        println("new: hashedCanonicalRequest: $hashedCanonicalRequest")
+
         stringToSign += doHex(hashedCanonicalRequest)
         ///endregion
 
-        ///重新生成签名
-        //计算签名的key
-        val kSecret = "AWS4${data.secretAccessKey}".toByteArray(charset("UTF8"))
-        val kDate = doHmacSHA256(kSecret, date)
-        val kRegion = doHmacSHA256(kDate, region)
-        val kService = doHmacSHA256(kRegion, service)
-        val signatureKey = doHmacSHA256(kService, aws4Request)
-        //计算签名
+        return stringToSign
+    }
+
+    private fun calculateSignatureKey(
+        secretAccessKey: String,
+        authInfo: AuthorizationInfo
+    ): ByteArray {
+        val kSecret = "AWS4$secretAccessKey".toByteArray(charset("UTF8"))
+        val kDate = doHmacSHA256(kSecret, authInfo.date)
+        val kRegion = doHmacSHA256(kDate, authInfo.region)
+        val kService = doHmacSHA256(kRegion, authInfo.service)
+        return doHmacSHA256(kService, authInfo.aws4Request)
+    }
+
+    private fun calculateHexSignature(stringToSign: String, signatureKey: ByteArray): String {
         val authSignature = doHmacSHA256(signatureKey, stringToSign)
-
-        //对签名编码处理
-        val strHexSignature = doBytesToHex(authSignature)
-
-        return signature == strHexSignature
+        return doBytesToHex(authSignature)
     }
 
     /**

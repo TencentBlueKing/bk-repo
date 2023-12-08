@@ -32,21 +32,13 @@
 package com.tencent.bkrepo.s3.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.S3ErrorTypes
-import com.tencent.bkrepo.common.api.exception.S3NotFoundException
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.s3.artifact.S3ObjectArtifactInfo
-import com.tencent.bkrepo.s3.artifact.S3ObjectArtifactInfo.Companion.GENERIC_MAPPING_URI
-import com.tencent.bkrepo.s3.constant.S3MessageCode
+import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
+import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.s3.service.S3ObjectService
-import org.apache.commons.lang3.StringUtils
-import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
-import java.net.URLDecoder
 
 @RestController
 class S3ObjectController(
@@ -54,47 +46,14 @@ class S3ObjectController(
     private val permissionManager: PermissionManager
 ) {
     @GetMapping(GENERIC_MAPPING_URI)
-    fun getObject(@PathVariable bucketName: String){
-        val decodedBucketName = URLDecoder.decode(bucketName, "UTF-8")
-        val fullPath = URLDecoder.decode(HttpContextHolder.getRequest().requestURI, "UTF-8")
-        val objectKey = extractExtraPath(fullPath, decodedBucketName)
-        logger.debug("Get Object,bucket=$decodedBucketName, objectKey=$objectKey")
-        // bucket命名规则： projectId.repoName
-        val parts = decodedBucketName.split(".")
-        if (parts.size == 2 && StringUtils.isNotEmpty(objectKey)) {
-            var projectId = parts[0]
-            var repoName = parts[1]
-            var artifactInfo = S3ObjectArtifactInfo(projectId, repoName, objectKey)
-            permissionManager.checkNodePermission(
-                action = PermissionAction.READ,
-                projectId = projectId,
-                repoName = repoName,
-                path = *arrayOf(artifactInfo.getArtifactFullPath())
-            )
-            s3ObjectService.getObject(artifactInfo)
-        } else {
-            // bucket错误或没有key，返回不存在
-            logger.warn("Illegal bucket[$decodedBucketName] or key[$objectKey]")
-            throw S3NotFoundException(
-                HttpStatus.NOT_FOUND,
-                S3MessageCode.S3_NO_SUCH_BUCKET,
-                arrayOf(decodedBucketName, S3ErrorTypes.NO_SUCH_BUCKET)
-            )
-        }
-
-    }
-
-    /**
-     * 提取路径中的objectKey
-     */
-    private fun extractExtraPath(fullPath: String, bucketName: String): String {
-        val basePath = "/$bucketName/"
-        val startIndex = fullPath.indexOf(basePath) + basePath.length
-        return fullPath.substring(startIndex)
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(S3ObjectController::class.java)
+    fun getObject(@ArtifactPathVariable artifactInfo: S3ArtifactInfo){
+        permissionManager.checkNodePermission(
+            action = PermissionAction.READ,
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            path = *arrayOf(artifactInfo.getArtifactFullPath())
+        )
+        s3ObjectService.getObject(artifactInfo)
     }
 
 }

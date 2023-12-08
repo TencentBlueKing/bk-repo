@@ -29,8 +29,31 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":generic:api-generic"))
-    api(project(":common:common-generic"))
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.s3.artifact.configuration
+
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.s3.artifact.S3LocalRepository
+import com.tencent.bkrepo.s3.artifact.S3RemoteRepository
+import com.tencent.bkrepo.s3.artifact.S3VirtualRepository
+import com.tencent.bkrepo.s3.artifact.auth.AWS4AuthHandler
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+class S3RegistryArtifactConfigurer : ArtifactConfigurerSupport() {
+
+    override fun getRepositoryType() = RepositoryType.NONE
+    override fun getLocalRepository() = SpringContextUtils.getBean<S3LocalRepository>()
+    override fun getRemoteRepository() = SpringContextUtils.getBean<S3RemoteRepository>()
+    override fun getVirtualRepository() = SpringContextUtils.getBean<S3VirtualRepository>()
+
+    override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer =
+        HttpAuthSecurityCustomizer { httpAuthSecurity ->
+            val authenticationManager = httpAuthSecurity.authenticationManager!!
+            val ociLoginAuthHandler = AWS4AuthHandler(authenticationManager)
+            httpAuthSecurity.withPrefix("/s3").addHttpAuthHandler(ociLoginAuthHandler)
+        }
+
 }

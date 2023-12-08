@@ -29,21 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.api.exception
+package com.tencent.bkrepo.s3.exception
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
- * WAS4认证异常, 403错误
+ * s3请求，比如key不存在异常
  */
-open class AWS4AuthenticationException(
-    status: HttpStatus = HttpStatus.FORBIDDEN,
-    code: MessageCode = CommonMessageCode.REQUEST_SIGNANOTMATC,
+open class S3NotFoundException(
+    status: HttpStatus = HttpStatus.NOT_FOUND,
+    code: MessageCode,
     vararg params: Any
-) : ErrorCodeException(status, code, params) {
-    fun getFirstParam(): String? {
-        return params?.first()?.toString()
-    }
-}
+) : ErrorCodeException(status, code, params)

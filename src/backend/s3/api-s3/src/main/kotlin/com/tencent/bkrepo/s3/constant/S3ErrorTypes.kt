@@ -29,16 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.s3.artifact
+package com.tencent.bkrepo.s3.constant
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+/**
+ * 访问的对象不存在
+ */
+const val NO_SUCH_KEY = "NoSuchKey"
 
-class S3ObjectArtifactInfo(
-    projectId: String,
-    repoName: String,
-    artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-    companion object {
-        const val GENERIC_MAPPING_URI = "/{bucketName}/**"
-    }
-}
+/**
+ * 存储桶不存在
+ */
+const val NO_SUCH_BUCKET = "NoSuchBucket"
+
+/**
+ * 签名不匹配
+ */
+const val SIGN_NOT_MATCH = "SignatureDoesNotMatch"

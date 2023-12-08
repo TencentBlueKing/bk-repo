@@ -29,36 +29,20 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.s3.artifact.configuration
+package com.tencent.bkrepo.s3.artifact.utils
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.s3.artifact.S3LocalRepository
-import com.tencent.bkrepo.s3.artifact.S3RemoteRepository
-import com.tencent.bkrepo.s3.artifact.S3VirtualRepository
-import com.tencent.bkrepo.s3.artifact.response.S3ArtifactResourceWriter
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Primary
+import org.springframework.beans.BeansException
+import org.springframework.cloud.sleuth.Tracer
 
-@Configuration
-class S3ObjectArtifactConfigurer : ArtifactConfigurerSupport() {
-
-    override fun getRepositoryType() = RepositoryType.GENERIC
-    override fun getLocalRepository() = SpringContextUtils.getBean<S3LocalRepository>()
-    override fun getRemoteRepository() = SpringContextUtils.getBean<S3RemoteRepository>()
-    override fun getVirtualRepository() = SpringContextUtils.getBean<S3VirtualRepository>()
-
-    override fun getAuthSecurityCustomizer() =
-        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/s3") }
-
-    @Primary
-    @Bean
-    fun artifactResourceWriter(storageProperties: StorageProperties): ArtifactResourceWriter {
-        return S3ArtifactResourceWriter(storageProperties)
+class ContextUtil {
+    companion object {
+        fun getTraceId(): String? {
+            return try {
+                SpringContextUtils.getBean<Tracer>().currentSpan()?.context()?.traceId()
+            } catch (_: BeansException) {
+                null
+            }
+        }
     }
 }

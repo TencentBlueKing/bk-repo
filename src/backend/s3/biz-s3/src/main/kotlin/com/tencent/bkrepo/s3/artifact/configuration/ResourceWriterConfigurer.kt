@@ -29,8 +29,21 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":generic:api-generic"))
-    api(project(":common:common-generic"))
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.s3.artifact.configuration
+
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.s3.artifact.response.S3ArtifactResourceWriter
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
+
+@Configuration
+class ResourceWriterConfigurer{
+
+    @Primary
+    @Bean
+    fun artifactResourceWriter(storageProperties: StorageProperties): ArtifactResourceWriter {
+        return S3ArtifactResourceWriter(storageProperties)
+    }
 }

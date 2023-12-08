@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.security.http
 
 import com.tencent.bkrepo.common.security.crypto.CryptoProperties
-import com.tencent.bkrepo.common.security.http.aws4.AWS4AuthHandler
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
 import com.tencent.bkrepo.common.security.http.core.HttpAuthInterceptor
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
@@ -118,9 +117,6 @@ class HttpAuthSecurityConfiguration(
         }
         if (httpAuthSecurity.signAuthEnabled) {
             httpAuthSecurity.addHttpAuthHandler(SignAuthHandler(authenticationManager, httpAuthSecurity))
-        }
-        if (httpAuthSecurity.AWS4AuthEnabled) {
-            httpAuthSecurity.addHttpAuthHandler(AWS4AuthHandler(authenticationManager))
         }
     }
 }

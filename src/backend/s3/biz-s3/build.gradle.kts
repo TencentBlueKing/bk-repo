@@ -31,7 +31,6 @@
 
 dependencies {
     api(project(":s3:api-s3"))
-    api(project(":common:common-redis"))
-    api(project(":analyst:api-analyst"))
+    api(project(":common:common-generic"))
     api(project(":common:common-artifact:artifact-service"))
 }

@@ -52,7 +52,6 @@ open class HttpAuthSecurity {
     var oauthEnabled: Boolean = true
     var temporaryTokenEnabled: Boolean = true
     var signAuthEnabled: Boolean = true
-    var AWS4AuthEnabled: Boolean = true
     var authenticationManager: AuthenticationManager? = null
     var jwtAuthProperties: JwtAuthProperties? = null
     val customizers: MutableList<HttpAuthSecurityCustomizer> = mutableListOf()
@@ -105,13 +104,6 @@ open class HttpAuthSecurity {
      */
     fun disableOauthAuth(): HttpAuthSecurity {
         oauthEnabled = false
-        return this
-    }
-    /**
-     * 禁用S3协议的AWS4认证，默认开启
-     */
-    fun disableAWS4Auth(): HttpAuthSecurity {
-        AWS4AuthEnabled = false
         return this
     }
 

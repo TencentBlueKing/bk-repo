@@ -29,21 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http.aws4
+package com.tencent.bkrepo.s3.exception
 
-import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.s3.constant.S3MessageCode
 
 /**
- * Http AWS4认证信息
+ * WAS4认证异常, 403错误
  */
-data class AWS4AuthCredentials(
-    var authorization: String,
-    var accessKeyId: String,
-    var secretAccessKey: String,
-    var requestDate: String,
-    var contentHash: String,
-    var uri: String,
-    var host: String,
-    var queryString: String,
-    var method: String
-) : HttpAuthCredentials
+open class AWS4AuthenticationException(
+    status: HttpStatus = HttpStatus.FORBIDDEN,
+    code: MessageCode = S3MessageCode.S3_REQUEST_SIGN_NOT_MATCH,
+    vararg params: Any
+) : ErrorCodeException(status, code, params)

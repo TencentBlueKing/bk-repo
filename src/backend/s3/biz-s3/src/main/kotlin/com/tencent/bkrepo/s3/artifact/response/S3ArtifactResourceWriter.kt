@@ -1,3 +1,34 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package com.tencent.bkrepo.s3.artifact.response
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -7,6 +38,8 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.artifact.resolve.response.BaseArtifactResourceHandler
 import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
@@ -16,6 +49,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
+import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
 import org.springframework.beans.BeansException
 import org.springframework.cloud.sleuth.Tracer
 import org.springframework.http.HttpMethod
@@ -30,135 +64,53 @@ import javax.servlet.http.HttpServletResponse
  */
 class S3ArtifactResourceWriter (
     private val storageProperties: StorageProperties
-) : DefaultArtifactResourceWriter(storageProperties) {
+) : BaseArtifactResourceHandler(storageProperties), ArtifactResourceWriter {
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
-        if (resource.artifactMap.isEmpty() || resource.node==null) {
+        return if (resource.artifactMap.isEmpty() || resource.node == null) {
             writeEmptyArtifact()
         } else {
             responseRateLimitCheck()
             writeArtifact(resource)
         }
-        return Throughput.EMPTY
     }
 
-    /**
-     * 响应空数据流，比如文件夹
-     */
     private fun writeEmptyArtifact(): Throughput {
-        val request = HttpContextHolder.getRequest()
         val response = HttpContextHolder.getResponse()
-        response.setHeader("x-amz-request-id", getTraceId())
-        response.setHeader("x-amz-trace-id", getTraceId())
-        response.setHeader("Content-Type", MediaTypes.APPLICATION_OCTET_STREAM)
-        response.setHeader("Content-Length", "0")
-        response.setHeader("ETag", "")
-        response.setCharacterEncoding("utf-8")
-        response.addHeader("Server", HttpContextHolder.getClientAddress())
-        response.status = HttpStatus.OK.value
-        val outputStream: OutputStream = response.outputStream
-        outputStream.close()
+        prepareResponseHeaders(response, 0, "", HttpStatus.OK.value)
         return Throughput.EMPTY
     }
 
-    /**
-     * 响应构件数据流
-     */
     private fun writeArtifact(resource: ArtifactResource): Throughput {
-        val request = HttpContextHolder.getRequest()
         val response = HttpContextHolder.getResponse()
+        val request = HttpContextHolder.getRequest()
         val node = resource.node
         val range = resource.getSingleStream().range
-        response.setHeader("x-amz-request-id", getTraceId())
-        response.setHeader("x-amz-trace-id", getTraceId())
-        response.setHeader("Content-Type", resource.contentType?:MediaTypes.TEXT_PLAIN)
-        response.setHeader("Content-Length", resource.getTotalSize().toString())
-        response.setHeader("ETag", node?.sha256!!)
-        response.setCharacterEncoding(resource.characterEncoding)
-        response.addHeader("Server", HttpContextHolder.getClientAddress())
-        response.status = resource.status?.value ?: HttpStatus.OK.value
-        response.bufferSize = getBufferSize(range.length.toInt())
+        val contentType = resource.contentType ?: MediaTypes.TEXT_PLAIN
+        val characterEncoding = resource.characterEncoding
+        val status = resource.status?.value ?: HttpStatus.OK.value
+        val totalSize = resource.getTotalSize().toString()
 
+        prepareResponseHeaders(response, totalSize.toLong(), node?.sha256!!, status, contentType, characterEncoding)
+        response.bufferSize = getBufferSize(range.length.toInt())
         return writeRangeStream(resource, request, response)
     }
 
-
-    /**
-     * 当仓库配置下载限速小于等于最低限速时则直接将请求断开, 避免占用过多连接
-     */
-    private fun responseRateLimitCheck() {
-        val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
-        if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1) &&
-            rateLimitOfRepo.responseRateLimit <= storageProperties.response.circuitBreakerThreshold) {
-            throw TooManyRequestsException(
-                "The circuit breaker is activated when too many download requests are made to the service!"
-            )
-        }
+    private fun prepareResponseHeaders(
+        response: HttpServletResponse,
+        contentLength: Long,
+        eTag: String,
+        status: Int,
+        contentType: String = MediaTypes.APPLICATION_OCTET_STREAM,
+        characterEncoding: String = "utf-8"
+    ) {
+        response.setHeader("x-amz-request-id", ContextUtil.getTraceId())
+        response.setHeader("x-amz-trace-id", ContextUtil.getTraceId())
+        response.setHeader("Content-Type", contentType)
+        response.setHeader("Content-Length", contentLength.toString())
+        response.setHeader("ETag", eTag)
+        response.setCharacterEncoding(characterEncoding)
+        response.status = status
     }
-
-    /**
-     * 将数据流以Range方式写入响应
-     */
-    private fun writeRangeStream(
-        resource: ArtifactResource,
-        request: HttpServletRequest,
-        response: HttpServletResponse
-    ): Throughput {
-        val inputStream = resource.getSingleStream()
-        if (request.method == HttpMethod.HEAD.name) {
-            return Throughput.EMPTY
-        }
-        val recordAbleInputStream = RecordAbleInputStream(inputStream)
-        try {
-            return measureThroughput {
-                recordAbleInputStream.rateLimit(responseRateLimitWrapper(storageProperties.response.rateLimit)).use {
-                    it.copyTo(
-                        out = response.outputStream,
-                        bufferSize = getBufferSize(inputStream.range.length.toInt())
-                    )
-                }
-            }
-        } catch (exception: IOException) {
-            val message = exception.message.orEmpty()
-            val status = if (IOExceptionUtils.isClientBroken(exception)) HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
-            throw ArtifactResponseException(message, status)
-        }
-    }
-
-    /**
-     * 将仓库级别的限速配置导入
-     * 当同时存在全局限速配置以及仓库级别限速配置时，以仓库级别配置优先
-     */
-    private fun responseRateLimitWrapper(rateLimit: DataSize): Long {
-        val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
-        if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1)) {
-            return rateLimitOfRepo.responseRateLimit.toBytes()
-        }
-        return rateLimit.toBytes()
-    }
-
-    /**
-     * 获取动态buffer size
-     * @param totalSize 数据总大小
-     */
-    private fun getBufferSize(totalSize: Int): Int {
-        val bufferSize = storageProperties.response.bufferSize.toBytes().toInt()
-        if (bufferSize < 0 || totalSize < 0) {
-            return STREAM_BUFFER_SIZE
-        }
-        return if (totalSize < bufferSize) totalSize else bufferSize
-    }
-
-    /**
-     * 请求id
-     */
-    private fun getTraceId(): String? {
-        return try {
-            SpringContextUtils.getBean<Tracer>().currentSpan()?.context()?.traceId()
-        } catch (_: BeansException) {
-            null
-        }
-    }
-
 }

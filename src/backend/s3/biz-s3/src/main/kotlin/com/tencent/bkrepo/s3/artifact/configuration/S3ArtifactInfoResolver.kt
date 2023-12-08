@@ -29,8 +29,23 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":generic:api-generic"))
-    api(project(":common:common-generic"))
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.s3.artifact.configuration
+
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
+import org.springframework.stereotype.Component
+import javax.servlet.http.HttpServletRequest
+
+@Component
+@Resolver(S3ArtifactInfo::class)
+class S3ArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): S3ArtifactInfo {
+        return S3ArtifactInfo(projectId, repoName, artifactUri)
+    }
 }

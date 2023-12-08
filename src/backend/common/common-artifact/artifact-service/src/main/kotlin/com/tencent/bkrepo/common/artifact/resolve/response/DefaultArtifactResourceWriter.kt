@@ -67,7 +67,7 @@ import javax.servlet.http.HttpServletResponse
  */
 open class DefaultArtifactResourceWriter(
     private val storageProperties: StorageProperties
-) : ArtifactResourceWriter {
+) : BaseArtifactResourceHandler(storageProperties), ArtifactResourceWriter {
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
@@ -175,39 +175,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
-     * 将数据流以Range方式写入响应
-     */
-    private fun writeRangeStream(
-        resource: ArtifactResource,
-        request: HttpServletRequest,
-        response: HttpServletResponse
-    ): Throughput {
-        val inputStream = resource.getSingleStream()
-        if (request.method == HttpMethod.HEAD.name) {
-            return Throughput.EMPTY
-        }
-        val recordAbleInputStream = RecordAbleInputStream(inputStream)
-        try {
-            return measureThroughput {
-                recordAbleInputStream.rateLimit(responseRateLimitWrapper(storageProperties.response.rateLimit)).use {
-                    it.copyTo(
-                        out = response.outputStream,
-                        bufferSize = getBufferSize(inputStream.range.length.toInt())
-                    )
-                }
-            }
-        } catch (exception: IOException) {
-            // 直接向上抛IOException经过CglibAopProxy会抛java.lang.reflect.UndeclaredThrowableException: null
-            // 由于已经设置了Content-Type为application/octet-stream, spring找不到对应的Converter，导致抛
-            // org.springframework.http.converter.HttpMessageNotWritableException异常，会重定向到/error页面
-            // 又因为/error页面不存在，最终返回404，所以要对IOException进行包装，在上一层捕捉处理
-            val message = exception.message.orEmpty()
-            val status = if (isClientBroken(exception)) HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
-            throw ArtifactResponseException(message, status)
-        }
-    }
-
-    /**
      * 将数据流以ZipOutputStream方式写入响应
      */
     private fun writeZipStream(
@@ -249,31 +216,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
-     * 将仓库级别的限速配置导入
-     * 当同时存在全局限速配置以及仓库级别限速配置时，以仓库级别配置优先
-     */
-    private fun responseRateLimitWrapper(rateLimit: DataSize): Long {
-        val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
-        if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1)) {
-            return rateLimitOfRepo.responseRateLimit.toBytes()
-        }
-        return rateLimit.toBytes()
-    }
-
-    /**
-     * 当仓库配置下载限速小于等于最低限速时则直接将请求断开, 避免占用过多连接
-     */
-    private fun responseRateLimitCheck() {
-        val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
-        if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1) &&
-            rateLimitOfRepo.responseRateLimit <= storageProperties.response.circuitBreakerThreshold) {
-            throw TooManyRequestsException(
-                "The circuit breaker is activated when too many download requests are made to the service!"
-            )
-        }
-    }
-
-    /**
      * 判断charset,一些媒体类型设置了charset会影响其表现，如application/vnd.android.package-archive
      * */
     private fun determineCharset(mediaType: String, defaultCharset: String): String? {
@@ -288,18 +230,6 @@ open class DefaultArtifactResourceWriter(
      */
     private fun resolveETag(node: NodeDetail): String {
         return node.sha256!!
-    }
-
-    /**
-     * 获取动态buffer size
-     * @param totalSize 数据总大小
-     */
-    private fun getBufferSize(totalSize: Int): Int {
-        val bufferSize = storageProperties.response.bufferSize.toBytes().toInt()
-        if (bufferSize < 0 || totalSize < 0) {
-            return STREAM_BUFFER_SIZE
-        }
-        return if (totalSize < bufferSize) totalSize else bufferSize
     }
 
     /**

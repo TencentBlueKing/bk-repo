@@ -29,8 +29,17 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":generic:api-generic"))
-    api(project(":common:common-generic"))
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.s3.artifact
+
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+
+class S3ArtifactInfo(
+    projectId: String,
+    // 即bucketName
+    repoName: String,
+    artifactUri: String
+) : ArtifactInfo(projectId, repoName, artifactUri) {
+    companion object {
+        const val GENERIC_MAPPING_URI = "/{projectId}/{repoName}/**"
+    }
 }

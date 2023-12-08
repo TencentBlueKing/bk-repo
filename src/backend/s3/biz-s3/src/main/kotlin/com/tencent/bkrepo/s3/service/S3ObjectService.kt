@@ -32,18 +32,17 @@
 package com.tencent.bkrepo.s3.service
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.S3ErrorTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.S3NotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.s3.artifact.S3LocalRepository
-import com.tencent.bkrepo.s3.artifact.S3ObjectArtifactInfo
-import com.tencent.bkrepo.s3.artifact.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
+import com.tencent.bkrepo.s3.constant.NO_SUCH_KEY
 import com.tencent.bkrepo.s3.constant.S3MessageCode
+import com.tencent.bkrepo.s3.exception.S3NotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -52,20 +51,24 @@ import org.springframework.stereotype.Service
  */
 @Service
 class S3ObjectService(
-    private val localRepository: S3LocalRepository,
     private val repositoryClient: RepositoryClient,
 ) : ArtifactService() {
 
-    fun getObject(artifactInfo: S3ObjectArtifactInfo) {
+    fun getObject(artifactInfo: S3ArtifactInfo) {
         with(artifactInfo) {
             val node = ArtifactContextHolder.getNodeDetail(artifactInfo) ?:
                 throw S3NotFoundException(
                     HttpStatus.NOT_FOUND,
                     S3MessageCode.S3_NO_SUCH_KEY,
-                    arrayOf(artifactInfo.getArtifactFullPath(),S3ErrorTypes.NO_SUCH_KEY)
+                    params = arrayOf(NO_SUCH_KEY, artifactInfo.getArtifactFullPath())
                 )
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
-                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            ArtifactContextHolder.getRepoDetail()
+            val repo = ArtifactContextHolder.getRepoDetail()
+                ?: throw S3NotFoundException(
+                    HttpStatus.NOT_FOUND,
+                    S3MessageCode.S3_NO_SUCH_KEY,
+                    params = arrayOf(NO_SUCH_KEY, artifactInfo.getArtifactFullPath())
+                )
             val context = ArtifactDownloadContext(repo = repo, artifact = artifactInfo)
             //仓库未开启自动创建目录索引时不允许访问目录
             val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
@@ -75,12 +78,13 @@ class S3ObjectService(
                 throw S3NotFoundException(
                     HttpStatus.NOT_FOUND,
                     S3MessageCode.S3_NO_SUCH_KEY,
-                    arrayOf(artifactInfo.getArtifactFullPath(),S3ErrorTypes.NO_SUCH_KEY)
+                    params = arrayOf(NO_SUCH_KEY, artifactInfo.getArtifactFullPath())
                 )
             }
-            localRepository.download(context)
+            repository.download(context)
         }
     }
+
 
     companion object {
         private val logger = LoggerFactory.getLogger(S3ObjectService::class.java)
