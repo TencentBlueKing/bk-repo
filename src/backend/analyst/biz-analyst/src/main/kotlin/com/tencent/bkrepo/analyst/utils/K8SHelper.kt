@@ -64,6 +64,8 @@ class K8SHelper(k8sProp: KubernetesExecutionClusterProperties) {
                 }
         """.trimIndent().jsonCompress()
         val pullSecret = V1Secret {
+            apiVersion = "v1"
+            kind = "Secret"
             metadata {
                 name = secretName
                 namespace = this@K8SHelper.namespace

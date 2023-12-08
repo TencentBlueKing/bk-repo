@@ -81,6 +81,7 @@ class RepoNameRuleInterceptor(
                 }
                 else -> throw IllegalArgumentException("RepoName only support EQ IN and NIN operation type.")
             }.toFixed()
+            context.permissionChecked = true
             return context.interpreter.resolveRule(queryRule, context)
         }
     }

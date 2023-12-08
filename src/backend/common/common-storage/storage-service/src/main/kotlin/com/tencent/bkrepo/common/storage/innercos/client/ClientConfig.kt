@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.storage.innercos.endpoint.EndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.endpoint.InnerCosEndpointBuilder
 import com.tencent.bkrepo.common.storage.innercos.endpoint.PolarisEndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.endpoint.PublicCosEndpointBuilder
+import com.tencent.bkrepo.common.storage.innercos.endpoint.PublicCosInnerEndpointBuilder
 import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import org.springframework.util.unit.DataSize
 import java.time.Duration
@@ -126,6 +127,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
 
     var timeout: Long = credentials.download.timeout
 
+    /**
+     * 下载分块的qps限速
+     * */
+    var qps: Int = credentials.download.qps
+
     private fun createEndpointResolver(): EndpointResolver {
         return if (credentials.modId != null && credentials.cmdId != null) {
             PolarisEndpointResolver(credentials.modId!!, credentials.cmdId!!)
@@ -135,7 +141,12 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     }
 
     private fun createEndpointBuilder(): EndpointBuilder {
-        return if (credentials.public) PublicCosEndpointBuilder() else InnerCosEndpointBuilder()
+        with(credentials) {
+            if (public && inner) {
+                return PublicCosInnerEndpointBuilder()
+            }
+            return if (credentials.public) PublicCosEndpointBuilder() else InnerCosEndpointBuilder()
+        }
     }
 
     companion object {

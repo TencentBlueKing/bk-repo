@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,23 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.context
+package com.tencent.bkrepo.generic.artifact.remote
 
-import com.tencent.bkrepo.job.batch.base.ChildJobContext
-import com.tencent.bkrepo.job.batch.base.JobContext
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.LongAdder
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import okhttp3.OkHttpClient
 
-class EmptyFolderChildContext(
-    parentContent: JobContext,
-    // 用于内存缓存下存储目录统计信息
-    var folders: ConcurrentHashMap<String, FolderMetricsInfo> = ConcurrentHashMap(),
-    // 总共删除的路径个数
-    var totalDeletedNum: LongAdder = LongAdder()
-): ChildJobContext(parentContent) {
-
-    data class FolderMetricsInfo(
-        var id: String? = null,
-        var nodeNum: LongAdder = LongAdder()
-    )
+/**
+ * 用于创建异步缓存的HTTP客户端
+ */
+interface AsyncCacheHttpClientBuilderFactory {
+    fun newBuilder(configuration: RemoteConfiguration): OkHttpClient.Builder
 }

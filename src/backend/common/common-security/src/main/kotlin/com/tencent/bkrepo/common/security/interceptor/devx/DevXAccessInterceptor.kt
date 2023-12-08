@@ -32,6 +32,7 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
@@ -90,7 +91,8 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
     }
 
     private fun checkIpBelongToProject(projectId: String, srcIp: String) {
-        if (!inWhiteList(srcIp, projectId)) {
+        val projectIps = projectIpsCache.get(projectId)
+        if (srcIp !in projectIps && !projectIps.any { it.contains('/') && IpUtils.isInRange(srcIp, it) }) {
             logger.info("Illegal src ip[$srcIp] in project[$projectId].")
             throw PermissionException()
         }
@@ -112,10 +114,6 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         return uriAttribute[PROJECT_ID]?.toString()
     }
 
-    private fun inWhiteList(ip: String, projectId: String): Boolean {
-        return projectIpsCache.get(projectId).contains(ip)
-    }
-
     private fun listIpFromProject(projectId: String): Set<String> {
         val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
         val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
@@ -129,13 +127,14 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         if (!response.isSuccessful || response.body == null) {
             val errorMsg = response.body?.bytes()?.let { String(it) }
             logger.error("${response.code} $errorMsg")
-            return emptySet()
+            return devXProperties.projectCvmWhiteList[projectId] ?: emptySet()
         }
         val ips = HashSet<String>()
         devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
-        return response.body!!.byteStream().readJsonString<QueryResponse>().data.mapTo(ips) {
-            it.innerIp.substringAfter('.')
+        response.body!!.byteStream().readJsonString<QueryResponse>().data.forEach { workspace ->
+            workspace.innerIp?.substringAfter('.')?.let { ips.add(it) }
         }
+        return ips
     }
 
 

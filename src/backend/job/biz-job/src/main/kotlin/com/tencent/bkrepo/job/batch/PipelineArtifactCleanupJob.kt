@@ -38,7 +38,6 @@ import com.tencent.bkrepo.job.config.properties.PipelineArtifactCleanupJobProper
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query
@@ -55,7 +54,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(PipelineArtifactCleanupJobProperties::class)
 class PipelineArtifactCleanupJob(
     private val properties: PipelineArtifactCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate
 ) : DefaultContextMongoDbJob<PipelineArtifactCleanupJob.Node>(properties) {
     override fun collectionNames(): List<String> {
         return (0 until SHARDING_COUNT)

@@ -54,6 +54,7 @@ import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.dao.ProxyChannelDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -88,7 +89,8 @@ import org.springframework.test.context.TestPropertySource
     RepositoryDao::class,
     ProxyChannelDao::class,
     HttpAuthProperties::class,
-    SpringContextUtils::class
+    SpringContextUtils::class,
+    NodeDao::class
 )
 @ComponentScan("com.tencent.bkrepo.repository.service")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])

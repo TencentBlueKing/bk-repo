@@ -28,8 +28,6 @@
 package com.tencent.bkrepo.job.batch.node
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.constant.LOG
-import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.DELETED_DATE
@@ -49,7 +47,6 @@ import com.tencent.bkrepo.job.config.properties.CompositeJobProperties
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.springframework.data.mongodb.core.BulkOperations.BulkMode
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -68,7 +65,6 @@ import kotlin.text.toLongOrNull as toLongOrNull1
  */
 class FolderStatChildJob(
     val properties: CompositeJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>
 ) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
@@ -136,7 +132,6 @@ class FolderStatChildJob(
      */
     private fun ignoreProjectOrRepoCheck(projectId: String, repoName: String): Boolean {
         return IGNORE_PROJECT_PREFIX_LIST.firstOrNull { projectId.startsWith(it) } != null
-            || IGNORE_REPO_LIST.contains(repoName)
     }
 
     /**
@@ -502,8 +497,7 @@ class FolderStatChildJob(
         private val logger = LoggerHolder.jobLogger
         private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
-        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
-        private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
+        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_")
         private const val STORED = "stored"
         private const val BATCH_LIMIT = 500
         private const val COLLECTION_NAME_PREFIX = "node_"

@@ -84,7 +84,8 @@
                                     && row.name !== 'report'
                                     && row.name !== 'log'
                                     && row.name !== 'pipeline'
-                                )) && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
+                                )) && { label: $t('delete'), clickEvent: () => deleteRepo(row) },
+                            (userInfo.admin || userInfo.manage) && { label: $t('cleanRepo'), clickEvent: () => cleanRepo(row) }
                         ]">
                     </operation-list>
                 </template>
@@ -104,6 +105,7 @@
         </bk-pagination>
         <create-repo-dialog ref="createRepo" @refresh="handlerPaginationChange"></create-repo-dialog>
         <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
+        <generic-clean-dialog ref="genericCleanDialog" @refresh="handlerPaginationChange"></generic-clean-dialog>
     </div>
 </template>
 <script>
@@ -114,6 +116,8 @@
     import { repoEnum } from '@repository/store/publicEnum'
     import { formatDate, convertFileSize, debounce } from '@repository/utils'
     import { cloneDeep } from 'lodash'
+    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
+    import { beforeMonths, beforeYears } from '@/utils/date'
     const paginationParams = {
         count: 0,
         current: 1,
@@ -122,7 +126,7 @@
     }
     export default {
         name: 'repoList',
-        components: { OperationList, createRepoDialog, iamDenyDialog },
+        components: { OperationList, createRepoDialog, iamDenyDialog, genericCleanDialog },
         data () {
             return {
                 MODE_CONFIG,
@@ -412,6 +416,24 @@
                     resRepo = [...existMetricsRepoOrder, ...notExistMetricsRepo]
                 }
                 this.repoList = resRepo.slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit >= this.fullRepoList.length ? this.fullRepoList.length : this.pagination.current * this.pagination.limit)
+            },
+            cleanRepo (row) {
+                const fullPaths = []
+                fullPaths.push({
+                    path: '/',
+                    isComplete: false
+                })
+                this.$refs.genericCleanDialog.show = true
+                this.$refs.genericCleanDialog.repoName = row.name
+                this.$refs.genericCleanDialog.projectId = row.projectId
+                this.$refs.genericCleanDialog.paths = fullPaths
+                this.$refs.genericCleanDialog.loading = false
+                this.$refs.genericCleanDialog.isComplete = false
+                if (row.name === 'pipeline') {
+                    this.$refs.genericCleanDialog.date = beforeMonths(2)
+                } else {
+                    this.$refs.genericCleanDialog.date = beforeYears(1)
+                }
             }
         }
     }

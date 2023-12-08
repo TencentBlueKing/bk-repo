@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.model
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 
 data class Node(
@@ -45,5 +46,6 @@ data class Node(
     val metadata: Map<String, Any>? = null,
     val nodeMetadata: List<MetadataModel>? = null,
     val projectId: String,
-    val repoName: String
+    val repoName: String,
+    val category: String = RepositoryCategory.LOCAL.name,
 )

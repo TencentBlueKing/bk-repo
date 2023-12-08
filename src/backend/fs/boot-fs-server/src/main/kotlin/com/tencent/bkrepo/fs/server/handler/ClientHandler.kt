@@ -65,10 +65,11 @@ class ClientHandler(
 
     suspend fun listClients(request: ServerRequest): ServerResponse {
         val listRequest = ClientListRequest(
-            projectId = request.pathVariable(ClientListRequest::projectId.name),
-            repoName = request.pathVariable(ClientListRequest::repoName.name),
+            projectId = request.queryParamOrNull(ClientListRequest::projectId.name),
+            repoName = request.queryParamOrNull(ClientListRequest::repoName.name),
             pageNumber = request.queryParamOrNull(ClientListRequest::pageNumber.name)?.toInt() ?: DEFAULT_PAGE_NUMBER,
-            pageSize = request.queryParamOrNull(ClientListRequest::pageSize.name)?.toInt() ?: DEFAULT_PAGE_SIZE
+            pageSize = request.queryParamOrNull(ClientListRequest::pageSize.name)?.toInt() ?: DEFAULT_PAGE_SIZE,
+            online = request.queryParamOrNull(ClientListRequest::online.name)?.toBoolean()
         )
         return ReactiveResponseBuilder.success(clientService.listClients(listRequest))
     }

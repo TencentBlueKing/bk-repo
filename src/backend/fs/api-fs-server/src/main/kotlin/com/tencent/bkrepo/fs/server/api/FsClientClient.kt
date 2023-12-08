@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.fs.server.pojo.ClientDetail
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
@@ -41,11 +40,12 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping("/service/client")
 interface FsClientClient {
 
-    @GetMapping("/list/{projectId}/{repoName}")
+    @GetMapping("/list")
     fun listClients(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-        @RequestParam pageNumber: Int,
-        @RequestParam pageSize: Int
+        @RequestParam projectId: String?,
+        @RequestParam repoName: String?,
+        @RequestParam pageNumber: Int?,
+        @RequestParam pageSize: Int?,
+        @RequestParam online: Boolean?
     ): Response<Page<ClientDetail>>
 }
