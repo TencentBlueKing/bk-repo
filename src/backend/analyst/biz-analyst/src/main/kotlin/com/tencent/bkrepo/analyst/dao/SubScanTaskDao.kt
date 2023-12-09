@@ -165,7 +165,10 @@ class SubScanTaskDao(
         val criteria = Criteria
             .where(TSubScanTask::projectId.name).isEqualTo(projectId)
             .and(TSubScanTask::status.name).isEqualTo(SubScanTaskStatus.BLOCKED.name)
-        val subtaskIds = find(Query(criteria).limit(count)).map { it.id!! }
+        val query = Query(criteria)
+            .with(Sort.by(TSubScanTask::createdDate.name))
+            .limit(count)
+        val subtaskIds = find(query).map { it.id!! }
 
         if (subtaskIds.isEmpty()) {
             return null
