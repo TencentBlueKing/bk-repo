@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.job.batch
 
 import com.mongodb.client.result.DeleteResult
+import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
@@ -55,6 +57,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.system.measureNanoTime
 
 /**
  * 清理被标记为删除的node，同时减少文件引用
@@ -130,9 +133,23 @@ class DeletedNodeCleanupJob(
                 mongoTemplate.find(query, Node::class.java, nodeCollectionName).takeIf { it.isNotEmpty() } ?: break
             logger.info("Retrieved [${deletedNodeList.size}] deleted records from ${row.projectId}/${row.name}")
             val folderNodeList = deletedNodeList.filter { it.folder }
-            cleanupFolderNode(context, folderNodeList, nodeCollectionName)
+            measureNanoTime {
+                cleanupFolderNode(context, folderNodeList, nodeCollectionName)
+            }.apply {
+                if (logger.isDebugEnabled) {
+                    val elapsedTime = HumanReadable.time(this)
+                    logger.debug("cleanupFolderNode  ${row.projectId}/${row.name} elapse $elapsedTime")
+                }
+            }
             val fileNodeList = deletedNodeList.filter { !it.folder }
-            cleanUpFileNode(context, row, fileNodeList, nodeCollectionName)
+            measureNanoTime {
+                cleanUpFileNode(context, row, fileNodeList, nodeCollectionName)
+            }.apply {
+                if (logger.isDebugEnabled) {
+                    val elapsedTime = HumanReadable.time(this)
+                    logger.debug("cleanUpFileNode  ${row.projectId}/${row.name} elapse $elapsedTime")
+                }
+            }
         }
         // 仓库被标记为已删除，且该仓库下不存在任何节点时，删除仓库
         if (row.deleted != null &&
@@ -171,7 +188,14 @@ class DeletedNodeCleanupJob(
         var result: DeleteResult? = null
         try {
             result = mongoTemplate.remove(query, nodeCollectionName)
-            decrementFileReferences(sha256List, repo.credentialsKey)
+            measureNanoTime {
+                decrementFileReferences(sha256List, repo.credentialsKey)
+            }.apply {
+                if (logger.isDebugEnabled) {
+                    val elapsedTime = HumanReadable.time(this)
+                    logger.debug("decrementFileReferences  ${repo.projectId}/${repo.name} elapse $elapsedTime")
+                }
+            }
         } catch (ignored: Exception) {
             logger.error("Clean up deleted nodes[$idList] failed in collection[$nodeCollectionName].", ignored)
         }
@@ -186,13 +210,21 @@ class DeletedNodeCleanupJob(
             criteria.and(FileReference::count.name).gt(0)
             val query = Query(criteria)
             val update = Update().apply { inc(FileReference::count.name, -1) }
-            val result = mongoTemplate.updateFirst(query, update, collectionName)
+            var result: UpdateResult? = null
+            measureNanoTime {
+                result = mongoTemplate.updateFirst(query, update, collectionName)
 
-            if (result.modifiedCount == 1L) {
+            }.apply {
+                if (logger.isDebugEnabled) {
+                    val elapsedTime = HumanReadable.time(this)
+                    logger.debug("updateFirst elapse $elapsedTime," +
+                                     " query is $query, update is $update, collectionName is $collectionName")
+                }
+            }
+            if (result?.modifiedCount == 1L) {
                 logger.info("Decrement references of file [$it] on credentialsKey [$credentialsKey].")
                 return@forEach
             }
-
             val newQuery = Query(buildCriteria(it, credentialsKey))
             mongoTemplate.findOne<FileReference>(newQuery, collectionName) ?: run {
                 logger.error("Failed to decrement reference of file [$it] on credentialsKey [$credentialsKey]")
