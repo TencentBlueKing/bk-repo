@@ -210,18 +210,8 @@ class DeletedNodeCleanupJob(
             criteria.and(FileReference::count.name).gt(0)
             val query = Query(criteria)
             val update = Update().apply { inc(FileReference::count.name, -1) }
-            var result: UpdateResult? = null
-            measureNanoTime {
-                result = mongoTemplate.updateFirst(query, update, collectionName)
-
-            }.apply {
-                if (logger.isDebugEnabled) {
-                    val elapsedTime = HumanReadable.time(this)
-                    logger.debug("updateFirst elapse $elapsedTime," +
-                                     " query is $query, update is $update, collectionName is $collectionName")
-                }
-            }
-            if (result?.modifiedCount == 1L) {
+            val result = mongoTemplate.updateFirst(query, update, collectionName)
+            if (result.modifiedCount == 1L) {
                 logger.info("Decrement references of file [$it] on credentialsKey [$credentialsKey].")
                 return@forEach
             }
