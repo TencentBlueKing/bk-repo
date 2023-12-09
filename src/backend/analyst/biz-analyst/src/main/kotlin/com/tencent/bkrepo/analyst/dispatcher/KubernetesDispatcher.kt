@@ -207,17 +207,9 @@ class KubernetesDispatcher(
     private fun resolveCreateJobFailed(e: ApiException, subtask: SubScanTask): Boolean {
         // 处理job名称冲突的情况
         if (e.code == HttpStatus.CONFLICT.value) {
-            logger.warn("subtask[${subtask.taskId}] job already exists, try to clean")
-            val jobName = jobName(subtask)
-            val namespace = executionCluster.kubernetesProperties.namespace
-            val job = batchV1Api.readNamespacedJob(jobName, namespace, null, null, null)
-            val failed = job.status?.failed ?: 0
-            // 只清理失败的job，因为成功的job说明结果也上报成功了，不需要再次分发
-            return if (failed > 0) {
-                cleanJob(jobName)
-            } else {
-                false
-            }
+            val cleaned = cleanJob(jobName(subtask))
+            logger.warn("subtask[${subtask.taskId}] job already exists, cleaned[$cleaned]")
+            return cleaned
         }
 
         logger.error("subtask[${subtask.taskId}] dispatch failed\n, ${e.string()}")

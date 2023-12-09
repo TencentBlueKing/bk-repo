@@ -36,10 +36,12 @@ abstract class SubtaskPushDispatcher<T : ExecutionCluster>(
 
         // 通过信号量限制可同时提交的任务数量
         val permit = Semaphore(DEFAULT_PERMITS)
+        var dispatchedTaskCount = 0
         for (i in 0 until availableCount) {
             permit.acquire()
             try {
                 val subtask = scanService.pull(executionCluster.name) ?: break
+                dispatchedTaskCount++
                 executor.execute {
                     try {
                         doDispatch(subtask)
@@ -52,6 +54,7 @@ abstract class SubtaskPushDispatcher<T : ExecutionCluster>(
                 throw e
             }
         }
+        logger.info("[$dispatchedTaskCount] subtask was dispatched to cluster[${executionCluster.name}]")
     }
 
     private fun doDispatch(subtask: SubScanTask) {

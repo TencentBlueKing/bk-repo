@@ -66,6 +66,7 @@ class TimeoutTaskScheduler(
     @Transactional(rollbackFor = [Throwable::class])
     fun enqueueTimeoutTask() {
         val task = scanTaskDao.timeoutTask(ScannerProperties.DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS) ?: return
+        logger.error("task[${task.id}] submit timeout, will be reset")
         taskStateMachine.sendEvent(task.status, Event(ScanTaskEvent.RESET.name, ResetTaskContext(task)))
     }
 

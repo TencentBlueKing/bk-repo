@@ -47,6 +47,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.elemMatch
+import org.springframework.data.mongodb.core.query.exists
 import org.springframework.data.mongodb.core.query.gte
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -295,13 +296,25 @@ class SubScanTaskDao(
         val maxTaskTimeoutSeconds = scannerProperties.maxTaskDuration.seconds
         val now = LocalDateTime.now()
         val timeoutCriteria = ArrayList<Criteria>()
-        timeoutCriteria.add(TSubScanTask::timeoutDateTime.gte(now))
+
+        // timeoutDateTime
+        timeoutCriteria.add(
+            Criteria().orOperator(
+                TSubScanTask::timeoutDateTime.gte(now),
+                TSubScanTask::timeoutDateTime.exists(false)
+            )
+        )
+
+        // heartbeatDateTime
         if (heartbeatTimeoutSeconds > 0) {
-            val heartbeatTimeoutCriteria = Criteria
-                .where(TSubScanTask::heartbeatDateTime.name).gte(now.minusSeconds(heartbeatTimeoutSeconds))
+            val heartbeatTimeoutCriteria = Criteria().orOperator(
+                TSubScanTask::heartbeatDateTime.gte(now.minusSeconds(heartbeatTimeoutSeconds)),
+                TSubScanTask::heartbeatDateTime.exists(false)
+            )
             timeoutCriteria.add(heartbeatTimeoutCriteria)
         }
 
+        // maxTaskTimeout
         if (maxTaskTimeoutSeconds > 0) {
             val maxTaskTimeoutCriteria =
                 Criteria.where(TSubScanTask::createdDate.name).gte(now.minusSeconds(maxTaskTimeoutSeconds))
