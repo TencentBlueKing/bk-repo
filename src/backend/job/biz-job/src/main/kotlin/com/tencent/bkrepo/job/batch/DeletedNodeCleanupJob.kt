@@ -94,7 +94,7 @@ class DeletedNodeCleanupJob(
         val count: String
     )
 
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(60)
 
     override fun createJobContext(): DeletedNodeCleanupJobContext {
         return DeletedNodeCleanupJobContext(
