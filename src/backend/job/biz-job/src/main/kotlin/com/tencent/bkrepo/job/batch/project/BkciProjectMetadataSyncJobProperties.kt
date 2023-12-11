@@ -25,28 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.project
+package com.tencent.bkrepo.job.batch.project
 
-/**
- * 项目元数据
- */
-data class ProjectMetadata(
-    /**
-     * 元数据键
-     */
-    val key: String,
-    /**
-     * 元数据值
-     */
-    var value: Any,
-) {
-    companion object {
-        const val KEY_BG_ID = "bgId"
-        const val KEY_BG_NAME = "bgName"
-        const val KEY_DEPT_ID = "deptId"
-        const val KEY_DEPT_NAME = "deptName"
-        const val KEY_CENTER_ID = "centerId"
-        const val KEY_CENTER_NAME = "centerName"
-        const val KEY_ENABLED = "enabled"
-    }
-}
+import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties(value = "job.bkci-project-metadata-sync")
+class BkciProjectMetadataSyncJobProperties(
+    override var enabled: Boolean = false,
+    override var cron: String = "0 0 0 * * ?",
+    var ciServer: String = "",
+    var ciToken: String = "",
+) : MongodbJobProperties()
