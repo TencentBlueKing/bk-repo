@@ -48,7 +48,7 @@
             </template>
             <bk-table-column type="expand" width="40">
                 <template #default="{ row }">
-                    <template v-if="row.path && row.length > 0 || row.versionsPaths && row.versionsPaths.length > 0">
+                    <template v-if="row.path && row.path.length > 0 || row.versionsPaths && row.versionsPaths.length > 0">
                         <div class="leak-title">{{ $t('vulnerabilityPathTitle') }}</div>
                         <div v-if="row.versionsPaths && row.versionsPaths.length > 0">
                             <div v-for="versionPaths in row.versionsPaths" :key="versionPaths.version">
