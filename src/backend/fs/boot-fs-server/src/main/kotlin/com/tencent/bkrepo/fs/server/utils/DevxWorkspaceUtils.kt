@@ -27,13 +27,17 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
+import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
@@ -66,13 +70,28 @@ class DevxWorkspaceUtils(
             WebClient.builder().clientConnector(connector).build()
         }
 
+        private val mutex = Mutex()
+        private val ipSet: ConcurrentHashSet<String> = ConcurrentHashSet()
         private val projectIpsCache: ConcurrentHashMap<String, Mono<Set<String>>> by lazy {
             ConcurrentHashMap(devXProperties.cacheSize.toInt())
         }
 
-        fun getIpList(projectId: String): Mono<Set<String>> {
-            return projectIpsCache[projectId] ?: synchronized(DevxWorkspaceUtils::class) {
+        suspend fun getIpList(projectId: String): Mono<Set<String>> {
+            return projectIpsCache[projectId] ?: mutex.withLock(projectId) {
                 projectIpsCache.getOrPut(projectId) { listIpFromProject(projectId) }
+            }
+        }
+
+        /**
+         * 是否为已知ip
+         */
+        fun knownIp(ip: String): Boolean {
+            return ipSet.contains(ip)
+        }
+
+        suspend fun refreshIpListCache(projectId: String) {
+            mutex.withLock(projectId) {
+                projectIpsCache[projectId] = listIpFromProject(projectId)
             }
         }
 
@@ -99,13 +118,13 @@ class DevxWorkspaceUtils(
                 )
         }
 
-        private fun listIpFromProject(projectId: String): Mono<Set<String>> {
+        private suspend fun listIpFromProject(projectId: String): Mono<Set<String>> {
             val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
             val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
             val workspaceUrl = devXProperties.workspaceUrl
 
             logger.info("Update project[$projectId] ips.")
-            return httpClient
+            val ips = httpClient
                 .get()
                 .uri("$workspaceUrl?project_id=$projectId")
                 .header("X-Bkapi-Authorization", token)
@@ -121,6 +140,8 @@ class DevxWorkspaceUtils(
                             retry
                         }
                 ).cache(devXProperties.cacheExpireTime)
+            ipSet.addAll(ips.awaitSingle())
+            return ips
         }
 
         private suspend fun parseResponse(response: ClientResponse, projectId: String): Set<String> {
