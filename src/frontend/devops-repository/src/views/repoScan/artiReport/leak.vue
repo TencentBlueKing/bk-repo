@@ -56,7 +56,10 @@
                                 <div v-if="row.versionsPaths.length > 1" class="leak-tip">
                                     {{ $t('installedVersion') }}: {{ versionPaths.version }}
                                 </div>
-                                <div class="leak-tip" v-for="path in versionPaths.paths" :key="path">{{ path }}</div>
+                                <div class="leak-tip" v-for="path in versionPaths.paths" :key="path">
+                                    {{ path }}
+                                    <bk-divider style="margin: 0" type="dashed" />
+                                </div>
                             </div>
                         </div>
                         <div v-else class="leak-tip">{{ row.path }}</div>
