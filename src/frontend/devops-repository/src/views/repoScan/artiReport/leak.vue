@@ -51,7 +51,11 @@
                     <template v-if="row.path && row.path.length > 0 || row.versionsPaths && row.versionsPaths.length > 0">
                         <div class="leak-title">{{ $t('vulnerabilityPathTitle') }}</div>
                         <div v-if="row.versionsPaths && row.versionsPaths.length > 0">
-                            <div v-for="versionPaths in row.versionsPaths" :key="versionPaths.version">
+                            <div v-for="(versionPaths,index) in row.versionsPaths" :key="versionPaths.version">
+                                <br v-if="index !== 0 && row.versionsPaths.length > 1" />
+                                <div v-if="row.versionsPaths.length > 1" class="leak-tip">
+                                    {{ $t('installedVersion') }}: {{ versionPaths.version }}
+                                </div>
                                 <div class="leak-tip" v-for="path in versionPaths.paths" :key="path">{{ path }}</div>
                             </div>
                         </div>
@@ -80,7 +84,11 @@
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('dependPackage')" prop="pkgName" show-overflow-tooltip></bk-table-column>
-            <bk-table-column :label="$t('installedVersion')" prop="installedVersion" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('installedVersion')" show-overflow-tooltip>
+                <template #default="{ row }">
+                    {{ row.installedVersion }}
+                </template>
+            </bk-table-column>
             <bk-table-column :label="$t('operation')" v-if="subtaskOverview.scannerType === 'standard'">
                 <template slot-scope="props" v-if="!filter.ignored">
                     <bk-button theme="primary" text @click="ignoreVul(props.row.cveId || props.row.vulId)">{{ $t('ignore') }}</bk-button>
