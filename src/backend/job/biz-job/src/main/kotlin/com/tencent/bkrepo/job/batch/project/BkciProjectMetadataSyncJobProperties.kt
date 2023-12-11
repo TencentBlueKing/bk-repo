@@ -34,6 +34,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class BkciProjectMetadataSyncJobProperties(
     override var enabled: Boolean = false,
     override var cron: String = "0 0 0 * * ?",
+    var ignoredProjectPrefix: Set<String> = emptySet(),
     var ciServer: String = "",
     var ciToken: String = "",
 ) : MongodbJobProperties()

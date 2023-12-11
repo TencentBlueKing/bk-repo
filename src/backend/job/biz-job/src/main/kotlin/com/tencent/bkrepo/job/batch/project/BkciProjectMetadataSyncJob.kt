@@ -54,6 +54,9 @@ class BkciProjectMetadataSyncJob(
     val client by lazy { HttpClientBuilderFactory.create().build() }
 
     override fun run(row: Project, collectionName: String, context: JobContext) {
+        if (properties.ignoredProjectPrefix.any { row.name.startsWith(it) }) {
+            return
+        }
         sync(row)
     }
 
@@ -91,15 +94,16 @@ class BkciProjectMetadataSyncJob(
 
     private fun updateProjectInfo(project: Project, bkciProject: BkciProject) {
         val query = Query(Project::name.isEqualTo(project.name))
-        val newMetadata = listOf(
-            ProjectMetadata(ProjectMetadata.KEY_BG_ID, bkciProject.bgId ?: ""),
-            ProjectMetadata(ProjectMetadata.KEY_BG_NAME, bkciProject.bgName ?: ""),
-            ProjectMetadata(ProjectMetadata.KEY_DEPT_ID, bkciProject.deptId ?: ""),
-            ProjectMetadata(ProjectMetadata.KEY_DEPT_NAME, bkciProject.deptName ?: ""),
-            ProjectMetadata(ProjectMetadata.KEY_CENTER_ID, bkciProject.centerId ?: ""),
-            ProjectMetadata(ProjectMetadata.KEY_CENTER_NAME, bkciProject.centerName ?: ""),
-            ProjectMetadata(ProjectMetadata.KEY_ENABLED, bkciProject.enabled ?: true),
-        )
+        val newMetadata = ArrayList<ProjectMetadata>(8)
+        bkciProject.bgId?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_BG_ID, it)) }
+        bkciProject.bgName?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_BG_NAME, it)) }
+        bkciProject.deptId?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_DEPT_ID, it)) }
+        bkciProject.deptName?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_DEPT_NAME, it)) }
+        bkciProject.centerId?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_CENTER_ID, it)) }
+        bkciProject.centerName?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_CENTER_NAME, it)) }
+        bkciProject.productId?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_PRODUCT_ID, it)) }
+        bkciProject.enabled?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_ENABLED, it)) }
+
         val metadataMap = project.metadata.associateByTo(HashMap()) { it.key }
         newMetadata.forEach { metadataMap[it.key] = it }
         val update = Update().set(Project::metadata.name, metadataMap.values)
@@ -203,5 +207,9 @@ class BkciProjectMetadataSyncJob(
          * 是否灰度
          */
         val gray: Boolean,
+        /**
+         * 运营产品ID
+         */
+        val productId: Int?,
     )
 }

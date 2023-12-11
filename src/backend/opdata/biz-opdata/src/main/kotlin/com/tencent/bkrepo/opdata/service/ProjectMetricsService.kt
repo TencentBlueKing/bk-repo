@@ -41,6 +41,13 @@ import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
+import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_BG_NAME
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_CENTER_NAME
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_DEPT_NAME
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_ENABLED
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_PRODUCT_ID
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -50,8 +57,16 @@ import java.util.concurrent.TimeUnit
 @Service
 class ProjectMetricsService (
     private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel
+    private val statDateModel: StatDateModel,
+    private val projectClient: ProjectClient,
     ){
+
+    var projects: Map<String, ProjectInfo> = emptyMap()
+
+    @Scheduled(cron = "0 0 2 * * ?")
+    fun updateProjects() {
+        projects = projectClient.listProject().data!!.associateBy { it.name }
+    }
 
     fun page(option: ProjectMetricsOption): Page<TProjectMetrics> {
         with(option) {
@@ -95,7 +110,12 @@ class ProjectMetricsService (
             ProjectMetrics::cCapSizeOfOneDayBefore.name,
             ProjectMetrics::cCapSizeOfOneWeekBefore.name,
             ProjectMetrics::cCapSizeOfOneMonthBefore.name,
+            ProjectMetrics::bgName.name,
+            ProjectMetrics::deptName.name,
+            ProjectMetrics::centerName.name,
             ProjectMetrics::createdDate.name,
+            ProjectMetrics::productId.name,
+            ProjectMetrics::enabled.name,
             )
         val fileName = "大于${metricsRequest.limitSize/TO_GIGABYTE}GB的项目信息"
         EasyExcelUtils.download(records, fileName, ProjectMetrics::class.java, includeColumns)
@@ -184,6 +204,7 @@ class ProjectMetricsService (
                 oneMonthBefore = oneMonthBeforeMetrics?.firstOrNull { it.projectId == current.projectId },
                 )
             if (projectInfo.capSize >= limitSize) {
+                val project = getProject(current.projectId)
                 result.add(ProjectMetrics(
                     projectId = current.projectId,
                     capSize = projectInfo.capSize / TO_GIGABYTE,
@@ -200,6 +221,11 @@ class ProjectMetricsService (
                     cCapSizeOfOneDayBefore = projectInfo.cCapSizeOfOneDayBefore / TO_GIGABYTE,
                     cCapSizeOfOneWeekBefore = projectInfo.cCapSizeOfOneWeekBefore / TO_GIGABYTE,
                     cCapSizeOfOneMonthBefore = projectInfo.cCapSizeOfOneMonthBefore / TO_GIGABYTE,
+                    bgName = project?.metadata?.firstOrNull { it.key == KEY_BG_NAME }?.value as? String?,
+                    deptName = project?.metadata?.firstOrNull { it.key == KEY_DEPT_NAME }?.value as? String,
+                    centerName = project?.metadata?.firstOrNull { it.key == KEY_CENTER_NAME }?.value as? String,
+                    productId = project?.metadata?.firstOrNull { it.key == KEY_PRODUCT_ID }?.value as? Int,
+                    enabled = project?.metadata?.firstOrNull { it.key == KEY_ENABLED }?.value as? Boolean,
                 ))
             }
         }
@@ -214,6 +240,7 @@ class ProjectMetricsService (
         oneWeekBefore: TProjectMetrics? = null,
         oneMonthBefore: TProjectMetrics? = null,
     ): ProjectMetrics {
+        val project = getProject(current.projectId)
         return if (type.isNullOrEmpty()) {
 
             val pipelineCapSize = filterByRepoName(current, PIPELINE)
@@ -243,6 +270,11 @@ class ProjectMetricsService (
                 cCapSizeOfOneDayBefore = customCapSize - cCapSizeOfOneDayBefore,
                 cCapSizeOfOneWeekBefore = customCapSize - cCapSizeOfOneWeekBefore,
                 cCapSizeOfOneMonthBefore = customCapSize - cCapSizeOfOneMonthBefore,
+                bgName = project?.metadata?.firstOrNull { it.key == KEY_BG_NAME }?.value as? String,
+                deptName = project?.metadata?.firstOrNull { it.key == KEY_DEPT_NAME }?.value as? String,
+                centerName = project?.metadata?.firstOrNull { it.key == KEY_CENTER_NAME }?.value as? String,
+                productId = project?.metadata?.firstOrNull { it.key == KEY_PRODUCT_ID }?.value as? Int,
+                enabled = project?.metadata?.firstOrNull { it.key == KEY_ENABLED }?.value as? Boolean,
             )
         } else {
 
@@ -260,12 +292,22 @@ class ProjectMetricsService (
                 capSizeOfOneMonthBefore = sizeOfRepoType - sizeOfOneMonthBefore,
                 createdDate = current.createdDate,
                 pipelineCapSize = 0,
-                customCapSize = 0
+                customCapSize = 0,
+                bgName = project?.metadata?.firstOrNull { it.key == KEY_BG_NAME }?.value as? String,
+                deptName = project?.metadata?.firstOrNull { it.key == KEY_DEPT_NAME }?.value as? String,
+                centerName = project?.metadata?.firstOrNull { it.key == KEY_CENTER_NAME }?.value as? String,
+                productId = project?.metadata?.firstOrNull { it.key == KEY_PRODUCT_ID }?.value as? Int,
+                enabled = project?.metadata?.firstOrNull { it.key == KEY_ENABLED }?.value as? Boolean,
             )
         }
     }
 
-
+    private fun getProject(projectId: String): ProjectInfo? {
+        if (this.projects.isEmpty()) {
+            this.updateProjects()
+        }
+        return projects[projectId]
+    }
 
     private fun filterByRepoName(metric: TProjectMetrics?, repoName: String): Long {
         return metric?.repoMetrics?.firstOrNull { it.repoName == repoName }?.size ?: 0
