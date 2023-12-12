@@ -304,34 +304,33 @@ open class AbstractChartService : ArtifactService() {
     }
 
     fun regenerateHelmIndexYaml(artifactInfo: HelmArtifactInfo): HelmIndexYamlMetadata {
-        with(artifactInfo) {
-            val indexYamlMetadata = HelmUtils.initIndexYamlMetadata()
-            val context = ArtifactQueryContext()
-            var pageNum = 1
-            while (true) {
-                val queryModelBuilder = NodeQueryBuilder()
-                    .select(PROJECT_ID, REPO_NAME, NODE_NAME, NODE_FULL_PATH, NODE_METADATA, NODE_SHA256, NODE_CREATE_DATE)
-                    .sortByAsc(NODE_FULL_PATH)
-                    .page(pageNum, V2_PAGE_SIZE)
-                    .projectId(projectId)
-                    .repoName(repoName)
-                    .fullPath(TGZ_SUFFIX, OperationType.SUFFIX)
-                val result = nodeClient.queryWithoutCount(queryModelBuilder.build()).data
-                if (result == null || result.records.isEmpty()) break
-                result.records.forEach {
-                    try {
-                        ChartParserUtil.addIndexEntries(indexYamlMetadata, createChartMetadata(it, context))
-                    } catch (ex: HelmFileNotFoundException) {
-                        logger.error(
-                            "generate indexFile for chart [${it[NODE_FULL_PATH]}] in " +
-                                "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
-                        )
-                    }
+        val indexYamlMetadata = HelmUtils.initIndexYamlMetadata()
+        val context = ArtifactQueryContext()
+        var pageNum = 1
+        while (true) {
+            val queryModelBuilder = NodeQueryBuilder()
+                .select(PROJECT_ID, REPO_NAME, NODE_NAME, NODE_FULL_PATH,
+                        NODE_METADATA, NODE_SHA256, NODE_CREATE_DATE)
+                .sortByAsc(NODE_FULL_PATH)
+                .page(pageNum, V2_PAGE_SIZE)
+                .projectId(artifactInfo.projectId)
+                .repoName(artifactInfo.repoName)
+                .fullPath(TGZ_SUFFIX, OperationType.SUFFIX)
+            val result = nodeClient.queryWithoutCount(queryModelBuilder.build()).data
+            if (result == null || result.records.isEmpty()) break
+            result.records.forEach {
+                try {
+                    ChartParserUtil.addIndexEntries(indexYamlMetadata, createChartMetadata(it, context))
+                } catch (ex: HelmFileNotFoundException) {
+                    logger.error(
+                        "generate indexFile for chart [${it[NODE_FULL_PATH]}] in " +
+                            "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
+                    )
                 }
-                pageNum++
             }
-            return indexYamlMetadata
+            pageNum++
         }
+        return indexYamlMetadata
     }
 
     private fun createChartMetadata(
@@ -345,7 +344,8 @@ open class AbstractChartService : ArtifactService() {
         }
         chartMetadata.urls = listOf(
             UrlFormatter.format(
-                properties.domain, "${nodeMap[PROJECT_ID]}/${nodeMap[REPO_NAME]}/charts/${chartMetadata.name}-${chartMetadata.version}.tgz"
+                properties.domain, "${nodeMap[PROJECT_ID]}/${nodeMap[REPO_NAME]}/charts" +
+                "/${chartMetadata.name}-${chartMetadata.version}.tgz"
             )
         )
         chartMetadata.created = convertDateTime(nodeMap[NODE_CREATE_DATE] as String)
