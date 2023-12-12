@@ -77,7 +77,7 @@ class DevxWorkspaceUtils(
         }
 
         suspend fun getIpList(projectId: String): Mono<Set<String>> {
-            return projectIpsCache[projectId] ?: mutex.withLock(projectId) {
+            return projectIpsCache[projectId] ?: mutex.withLock {
                 projectIpsCache.getOrPut(projectId) { listIpFromProject(projectId) }
             }
         }
@@ -90,7 +90,7 @@ class DevxWorkspaceUtils(
         }
 
         suspend fun refreshIpListCache(projectId: String) {
-            mutex.withLock(projectId) {
+            mutex.withLock {
                 projectIpsCache[projectId] = listIpFromProject(projectId)
             }
         }
