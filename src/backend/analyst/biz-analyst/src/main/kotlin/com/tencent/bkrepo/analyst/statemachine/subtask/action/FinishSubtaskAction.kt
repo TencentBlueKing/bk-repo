@@ -103,10 +103,10 @@ class FinishSubtaskAction(
         val context = event.context
         require(context is FinishSubtaskContext)
         with(context) {
-            if (targetState != SubScanTaskStatus.SUCCESS.name) {
+            if (targetState != SubScanTaskStatus.SUCCESS.name && targetState != SubScanTaskStatus.STOPPED.name) {
                 logger.warn(
                     "task[${subtask.parentScanTaskId}], subtask[${subtask.id}], " +
-                        "scan failed: $scanExecutorResult"
+                            "scan failed: status[$targetState], reason[$reason], result[$scanExecutorResult]"
                 )
             }
 
