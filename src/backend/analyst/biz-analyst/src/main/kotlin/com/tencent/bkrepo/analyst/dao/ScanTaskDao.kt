@@ -30,6 +30,7 @@ package com.tencent.bkrepo.analyst.dao
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.analyst.model.TScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
+import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -231,9 +232,12 @@ class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
         return count(Query(TScanTask::status.isEqualTo(status.name)))
     }
 
-    fun countGlobalTask(status: List<ScanTaskStatus>): Long {
+    fun countGlobalTask(status: List<ScanTaskStatus>, includeSystemTrigger: Boolean = false): Long {
         val criteria = TScanTask::metadata.elemMatch(buildGlobalTaskCriteria())
             .and(TScanTask::status.name).inValues(status)
+        if (!includeSystemTrigger) {
+            criteria.and(TScanTask::triggerType.name).ne(ScanTriggerType.ON_NEW_ARTIFACT_SYSTEM.name)
+        }
         return count(Query(criteria))
     }
 

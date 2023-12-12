@@ -46,6 +46,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
@@ -55,6 +56,7 @@ class DockerDispatcher(
     scanService: ScanService,
     subtaskStateMachine: StateMachine,
     temporaryScanTokenService: TemporaryScanTokenService,
+    executor: ThreadPoolTaskExecutor,
     private val subScanTaskDao: SubScanTaskDao,
     private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>
 ) : SubtaskPushDispatcher<DockerExecutionCluster>(
@@ -62,7 +64,8 @@ class DockerDispatcher(
     scannerProperties,
     scanService,
     subtaskStateMachine,
-    temporaryScanTokenService
+    temporaryScanTokenService,
+    executor,
 ) {
 
     private val dockerClient by lazy {
@@ -86,7 +89,6 @@ class DockerDispatcher(
 
     @Suppress("TooGenericExceptionCaught")
     override fun dispatch(subtask: SubScanTask): Boolean {
-        logger.info("dispatch subtask[${subtask.taskId}] with ${executionCluster.name}")
         val scanner = subtask.scanner
         require(scanner is StandardScanner)
         try {
