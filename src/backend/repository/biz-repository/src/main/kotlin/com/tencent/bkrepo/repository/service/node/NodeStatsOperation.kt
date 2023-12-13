@@ -44,7 +44,10 @@ interface NodeStatsOperation {
     /**
      * 计算文件或者文件夹大小
      */
-    fun computeSize(artifact: ArtifactInfo, estimated: Boolean = false, before: LocalDateTime = LocalDateTime.now()): NodeSizeInfo
+    fun computeSize(artifact: ArtifactInfo,
+                    estimated: Boolean = false,
+                    before: LocalDateTime = LocalDateTime.now()
+    ): NodeSizeInfo
 
     /**
      * 查询文件节点数量
