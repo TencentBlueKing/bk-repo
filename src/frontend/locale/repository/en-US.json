@@ -805,5 +805,7 @@
     "complete": "Done",
     "cleanFolderTip": "Files uploaded before the deadline will be cleared",
     "cleanRepo": "Clean",
-    "cleanDetail": "Cleaned {0} files in total, size {1}"
+    "cleanDetail": "Cleaned {0} files in total, size {1}",
+    "preCleanDetail": "{0} files are expected to be cleaned, size {1}",
+    "preClean": "Pre-Clean"
 }
