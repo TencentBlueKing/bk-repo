@@ -807,5 +807,5 @@
     "cleanRepo": "Clean",
     "cleanDetail": "Cleaned {0} files in total, size {1}",
     "preCleanDetail": "{0} files are expected to be cleaned, size {1}",
-    "preClean": "Pre-Clean"
+    "querySize": "Query Size"
 }

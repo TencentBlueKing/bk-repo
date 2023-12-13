@@ -31,8 +31,8 @@
         </bk-form>
         <template #footer>
             <bk-button theme="default" @click="cancel" v-if="!isComplete">{{$t('cancel')}}</bk-button>
+            <bk-button class="ml10" :loading="loading" theme="primary" @click="calculateNode" v-if="!isComplete" :disabled="doing">{{$t('querySize')}}</bk-button>
             <bk-button class="ml10" :loading="loading" theme="primary" @click="submit" v-if="!isComplete" :disabled="doing">{{$t('cleanRepo')}}</bk-button>
-            <bk-button class="ml10" :loading="loading" theme="primary" @click="calculateNode" v-if="!isComplete" :disabled="doing">{{'dry run'}}</bk-button>
             <bk-button class="ml10" theme="primary" @click="completeClean" v-if="isComplete">{{$t('complete')}}</bk-button>
         </template>
     </canway-dialog>
