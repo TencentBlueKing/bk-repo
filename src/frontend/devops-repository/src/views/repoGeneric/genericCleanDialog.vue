@@ -6,12 +6,6 @@
         :height-num="311"
         @cancel="cancel">
         <bk-form class="mr10 repo-generic-form" :label-width="90" :rules="rules" ref="genericForm">
-            <bk-form-item :label="$t('preClean')">
-                <bk-radio-group v-model="calculate">
-                    <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
-                    <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
-                </bk-radio-group>
-            </bk-form-item>
             <bk-form-item :label="$t('cleanNode')" :required="true" property="path" error-display-type="normal">
                 <div v-if="displayPaths.length">
                     <div v-for="(item,index) in displayPaths " :key="index">
@@ -36,9 +30,10 @@
             </bk-form-item>
         </bk-form>
         <template #footer>
-            <bk-button theme="default" @click="cancel" v-if="(!isComplete & !calculate) || calculate">{{$t('cancel')}}</bk-button>
-            <bk-button class="ml10" :loading="loading" theme="primary" @click="submit" v-if="(!isComplete & !calculate) || calculate" :disabled="doing">{{$t('confirm')}}</bk-button>
-            <bk-button class="ml10" theme="primary" @click="completeClean" v-if="isComplete & !calculate">{{$t('complete')}}</bk-button>
+            <bk-button theme="default" @click="cancel" v-if="!isComplete">{{$t('cancel')}}</bk-button>
+            <bk-button class="ml10" :loading="loading" theme="primary" @click="submit" v-if="!isComplete" :disabled="doing">{{$t('cleanRepo')}}</bk-button>
+            <bk-button class="ml10" :loading="loading" theme="primary" @click="calculateNode" v-if="!isComplete" :disabled="doing">{{'dry run'}}</bk-button>
+            <bk-button class="ml10" theme="primary" @click="completeClean" v-if="isComplete">{{$t('complete')}}</bk-button>
         </template>
     </canway-dialog>
 </template>
@@ -60,15 +55,7 @@
                 rules: {
                 },
                 isComplete: false,
-                doing: false,
-                calculate: true
-            }
-        },
-        watch: {
-            calculate: function (newVal) {
-                if (!newVal) {
-                    this.isComplete = false
-                }
+                doing: false
             }
         },
         methods: {
@@ -82,46 +69,54 @@
                 this.doing = false
             },
             async submit () {
+                let completeNum = 0
+                if (this.doing) {
+                    return
+                }
+                this.doing = true
+                for (let i = 0; i < this.paths.length; i++) {
+                    const path = this.projectId + '/' + this.repoName + this.paths[i].path
+                    await this.cleanNode({
+                        path: path,
+                        date: this.date instanceof Date ? this.date.toISOString() : undefined
+                    }).then((res) => {
+                        this.paths[i].isComplete = true
+                        this.paths[i].tip = this.$t('cleanDetail', { 0: res.deletedNumber, 1: convertFileSize(res.deletedSize) })
+                        if (this.displayPaths.length === this.paths.length) {
+                            this.displayPaths[i].isComplete = true
+                            this.displayPaths[i].tip = this.$t('cleanDetail', { 0: res.deletedNumber, 1: convertFileSize(res.deletedSize) })
+                        }
+                        completeNum++
+                    })
+                }
+                if (completeNum === this.paths.length) {
+                    this.isComplete = true
+                    this.doing = false
+                    this.$refs.genericForm.clearError()
+                }
+            },
+            async calculateNode () {
                 if (this.doing) {
                     return
                 }
                 this.doing = true
                 let completeNum = 0
-                if (this.calculate) {
-                    for (let i = 0; i < this.paths.length; i++) {
-                        const path = this.projectId + '/' + this.repoName + this.paths[i].path
-                        await this.getFolderSizeBefore({
-                            path: path,
-                            date: this.date instanceof Date ? this.date.toISOString() : undefined
-                        }).then((res) => {
-                            this.paths[i].isComplete = true
-                            this.paths[i].tip = this.$t('preCleanDetail', { 0: res.subNodeWithoutFolderCount, 1: convertFileSize(res.size) })
-                            if (this.displayPaths.length === this.paths.length) {
-                                this.displayPaths[i].isComplete = true
-                                this.displayPaths[i].tip = this.$t('preCleanDetail', { 0: res.subNodeWithoutFolderCount, 1: convertFileSize(res.size) })
-                            }
-                            completeNum++
-                        })
-                    }
-                } else {
-                    for (let i = 0; i < this.paths.length; i++) {
-                        const path = this.projectId + '/' + this.repoName + this.paths[i].path
-                        await this.cleanNode({
-                            path: path,
-                            date: this.date instanceof Date ? this.date.toISOString() : undefined
-                        }).then((res) => {
-                            this.paths[i].isComplete = true
-                            this.paths[i].tip = this.$t('cleanDetail', { 0: res.deletedNumber, 1: convertFileSize(res.deletedSize) })
-                            if (this.displayPaths.length === this.paths.length) {
-                                this.displayPaths[i].isComplete = true
-                                this.displayPaths[i].tip = this.$t('cleanDetail', { 0: res.deletedNumber, 1: convertFileSize(res.deletedSize) })
-                            }
-                            completeNum++
-                        })
-                    }
+                for (let i = 0; i < this.paths.length; i++) {
+                    const path = this.projectId + '/' + this.repoName + this.paths[i].path
+                    await this.getFolderSizeBefore({
+                        path: path,
+                        date: this.date instanceof Date ? this.date.toISOString() : undefined
+                    }).then((res) => {
+                        this.paths[i].isComplete = true
+                        this.paths[i].tip = this.$t('preCleanDetail', { 0: res.subNodeWithoutFolderCount, 1: convertFileSize(res.size) })
+                        if (this.displayPaths.length === this.paths.length) {
+                            this.displayPaths[i].isComplete = true
+                            this.displayPaths[i].tip = this.$t('preCleanDetail', { 0: res.subNodeWithoutFolderCount, 1: convertFileSize(res.size) })
+                        }
+                        completeNum++
+                    })
                 }
                 if (completeNum === this.paths.length) {
-                    this.isComplete = true
                     this.doing = false
                     this.$refs.genericForm.clearError()
                 }
@@ -132,8 +127,7 @@
                 this.doing = false
             },
             resetStatus () {
-                if (this.doing === true && this.isComplete === true) {
-                    this.doing = false
+                if (this.doing === false && this.isComplete === true) {
                     this.isComplete = false
                     for (let i = 0; i < this.paths.length; i++) {
                         this.paths[i].isComplete = false
