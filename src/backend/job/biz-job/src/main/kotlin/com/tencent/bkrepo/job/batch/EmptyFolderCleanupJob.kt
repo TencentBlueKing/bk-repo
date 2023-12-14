@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
-import com.tencent.bkrepo.job.FULLPATH
+import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
@@ -174,7 +174,7 @@ class EmptyFolderCleanupJob(
         val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
             .and(REPO).isEqualTo(repoName)
             .and(DELETED_DATE).isEqualTo(null)
-            .and(FULLPATH).regex("^${PathUtils.escapeRegex(nodePath)}")
+            .and(FULL_PATH).regex("^${PathUtils.escapeRegex(nodePath)}")
             .and(FOLDER).isEqualTo(false)
 
         val query = Query(criteria).withHint(FULL_PATH_IDX)

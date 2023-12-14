@@ -42,9 +42,9 @@ enum class SubtaskEvent {
     PULL,
 
     /**
-     * 分发到分析执行集群失败
+     * 执行失败重试
      */
-    DISPATCH_FAILED,
+    RETRY,
     EXECUTE,
     STOP,
     BLOCK_TIMEOUT,
