@@ -75,43 +75,35 @@ class BlobChunkedServiceImpl(
     ) {
         val range = HttpContextHolder.getRequest().getHeader("Content-Range")
         val length = HttpContextHolder.getRequest().contentLength
-        // 当range不存在或者length < 0时
-        val (patchLen, status) = if (range.isNullOrEmpty() || length < 0) {
-            Pair(length.toLong(), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-        } else {
-            logger.info("range $range, length $length, uuid $uuid")
-            val (start, end) = getRangeInfo(range)
-            // 当上传的长度和range内容不匹配时
-            if ((end - start) != (length - 1).toLong()) {
-                Pair(length.toLong(), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-            } else {
-                val lengthOfAppendFile = storageService.findLengthOfAppendFile(uuid, credentials)
-                logger.info("current length of append file is $lengthOfAppendFile")
 
-                // 当追加的文件大小和range的起始大小一致时代表写入正常
-                if (start == lengthOfAppendFile) {
-                    val patchLen = storageService.append(
-                        appendId = uuid,
-                        artifactFile = artifactFile,
-                        storageCredentials = credentials
-                    )
-                    logger.info(
-                        "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
-                            "has been uploaded, uploaded size is $patchLen uuid: $uuid,"
-                    )
-                    Pair(patchLen, HttpStatus.ACCEPTED)
-                } else if (start > lengthOfAppendFile) {
-                    // 当追加的文件大小比start文件小时，说明文件写入有误
-                    Pair(length.toLong(), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-                } else {
-                    // 当追加的文件大小==start文件小时，可能存在重试导致已经写入一次
-                    if (lengthOfAppendFile == end + 1) {
-                        Pair(lengthOfAppendFile, HttpStatus.ACCEPTED)
-                    } else {
-                        // 当追加的文件大小大于start文件，并且不等于end+1时，文件已损坏
-                        Pair(length.toLong(), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-                    }
-                }
+        val lengthOfAppendFile = storageService.findLengthOfAppendFile(uuid, credentials)
+        logger.info("current length of append file is $lengthOfAppendFile")
+        val (patchLen, status) = when (chunkedRequestCheck(
+                    uuid = uuid,
+                    lengthOfAppendFile = lengthOfAppendFile,
+                    range = range,
+                    contentLength = length
+                )) {
+            RangeStatus.ILLEGAL_RANGE -> {
+                Pair(length.toLong(), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+            }
+            RangeStatus.READY_TO_APPEND -> {
+                val patchLen = storageService.append(
+                    appendId = uuid,
+                    artifactFile = artifactFile,
+                    storageCredentials = credentials
+                )
+                logger.info(
+                    "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
+                        "has been uploaded, size pf append file is $patchLen and uuid: $uuid"
+                )
+                Pair(patchLen, HttpStatus.ACCEPTED)
+            }
+            else -> {
+                logger.info(
+                    "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
+                        "already appended, size pf append file is $lengthOfAppendFile and uuid: $uuid")
+                Pair(lengthOfAppendFile, HttpStatus.ACCEPTED)
             }
         }
         buildBlobUploadPatchResponse(
@@ -121,6 +113,7 @@ class BlobChunkedServiceImpl(
             range = patchLen,
             status = status
         )
+
     }
 
     override fun finishChunkedUpload(
@@ -163,9 +156,53 @@ class BlobChunkedServiceImpl(
         )
     }
 
+    private fun chunkedRequestCheck(
+        contentLength: Int,
+        range: String?,
+        uuid: String,
+        lengthOfAppendFile: Long
+    ): RangeStatus {
+        // 当range不存在或者length < 0时
+        if (!validateValue(contentLength, range)) {
+            return RangeStatus.ILLEGAL_RANGE
+        }
+        logger.info("range $range, length $contentLength, uuid $uuid")
+        val (start, end) = getRangeInfo(range!!)
+        // 当上传的长度和range内容不匹配时
+        return if ((end - start) != (contentLength - 1).toLong()) {
+            RangeStatus.ILLEGAL_RANGE
+        } else {
+            // 当追加的文件大小和range的起始大小一致时代表写入正常
+            if (start == lengthOfAppendFile) {
+                RangeStatus.READY_TO_APPEND
+            } else if (start > lengthOfAppendFile) {
+                // 当追加的文件大小比start文件小时，说明文件写入有误
+                RangeStatus.ILLEGAL_RANGE
+            } else {
+                // 当追加的文件大小==start文件小时，可能存在重试导致已经写入一次
+                if (lengthOfAppendFile == end + 1) {
+                    RangeStatus.ALREADY_APPENDED
+                } else {
+                    // 当追加的文件大小大于start文件，并且不等于end+1时，文件已损坏
+                    RangeStatus.ILLEGAL_RANGE
+                }
+            }
+        }
+    }
+
+    private fun validateValue(contentLength: Int, range: String?): Boolean {
+        return !(range.isNullOrEmpty() || contentLength < 0)
+    }
+
     private fun buildLocationUrl(uuid: String, projectId: String, repoName: String) : String {
         val path = BOLBS_UPLOAD_FIRST_STEP_URL_STRING.format(projectId, repoName)
         return serviceName+path+uuid
+    }
+
+    enum class RangeStatus {
+        ILLEGAL_RANGE,
+        ALREADY_APPENDED,
+        READY_TO_APPEND;
     }
 
     companion object {
