@@ -49,7 +49,7 @@ import kotlin.system.measureNanoTime
  * MongoDb抽象批处理作业Job
  * */
 abstract class MongoDbBatchJob<Entity, Context : JobContext>(
-    private val properties: MongodbJobProperties
+    private val properties: MongodbJobProperties,
 ) : CenterNodeJob<Context>(properties) {
     /**
      * 需要操作的表名列表
@@ -76,6 +76,11 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
 
     abstract fun entityClass(): Class<Entity>
 
+    /**
+     * 表执行结束回调
+     * */
+    open fun onRunCollectionFinished(collectionName: String, context: Context) {}
+
     private val batchSize: Int
         get() = properties.batchSize
 
@@ -89,7 +94,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
     @Autowired
-    private lateinit var mongoTemplate: MongoTemplate
+    protected lateinit var mongoTemplate: MongoTemplate
 
     /**
      * job批处理执行器
@@ -97,8 +102,11 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     @Autowired
     private lateinit var executor: BlockThreadPoolTaskExecutorDecorator
 
+    private var hasAsyncTask = false
+
     override fun doStart0(jobContext: Context) {
         try {
+            hasAsyncTask = false
             val collectionNames = collectionNames()
             if (concurrentLevel == JobConcurrentLevel.COLLECTION) {
                 // 使用闭锁来保证表异步生产任务的结束
@@ -114,7 +122,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
                 }
             }
         } finally {
-            if (concurrentLevel != JobConcurrentLevel.SERIALIZE) {
+            if (hasAsyncTask && concurrentLevel != JobConcurrentLevel.SERIALIZE) {
                 executor.completeAndGet(taskId, WAIT_TIMEOUT)
             }
         }
@@ -145,7 +153,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
                 }
                 val data = mongoTemplate.find<Map<String, Any?>>(
                     query,
-                    collectionName
+                    collectionName,
                 )
                 if (data.isEmpty()) {
                     break
@@ -162,6 +170,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
             } while (querySize == pageSize && isRunning())
         }.apply {
             val elapsedTime = HumanReadable.time(this)
+            onRunCollectionFinished(collectionName, context)
             logger.info("Job[${getJobName()}]: collection $collectionName run completed,sum [$sum] elapse $elapsedTime")
         }
     }
@@ -175,8 +184,9 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     private fun <T> runAsync(
         tasks: Iterable<T>,
         produce: Boolean = false,
-        block: (it: T) -> Unit
+        block: (it: T) -> Unit,
     ) {
+        hasAsyncTask = true
         tasks.forEach {
             val task = IdentityTask(taskId) { block(it) }
             executor.executeWithId(task, produce, permitsPerSecond)
@@ -192,7 +202,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     private fun runRow(
         data: Map<String, Any?>,
         collectionName: String,
-        context: Context
+        context: Context,
     ) {
         try {
             val resultMap = data.toMutableMap()

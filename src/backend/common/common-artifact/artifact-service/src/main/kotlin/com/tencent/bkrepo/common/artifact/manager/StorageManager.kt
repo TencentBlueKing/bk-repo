@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.artifact.manager
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -35,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -43,6 +46,8 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.devops.plugin.api.PluginManager
+import com.tencent.devops.plugin.api.applyExtension
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -64,6 +69,8 @@ class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
     private val nodeResourceFactoryImpl: NodeResourceFactoryImpl,
+    private val pluginManager: PluginManager,
+    private val archiveClient: ArchiveClient,
 ) {
 
     /**
@@ -73,7 +80,7 @@ class StorageManager(
     fun storeArtifactFile(
         request: NodeCreateRequest,
         artifactFile: ArtifactFile,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
     ): NodeDetail {
         val cancel = AtomicBoolean(false)
         val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials, cancel)
@@ -102,7 +109,7 @@ class StorageManager(
     @Deprecated("NodeInfo移除后此方法也会移除")
     fun loadArtifactInputStream(
         node: NodeInfo?,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
     ): ArtifactInputStream? {
         if (node == null || node.folder) {
             return null
@@ -114,11 +121,24 @@ class StorageManager(
             logger.warn("Failed to resolve http range: ${exception.message}")
             throw ErrorCodeException(
                 status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
+                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID,
             )
         }
         if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+        }
+        if (node.archived == true) {
+            try {
+                val restoreCreateArchiveFileRequest = ArchiveFileRequest(
+                    sha256 = node.sha256!!,
+                    storageCredentialsKey = storageCredentials?.key,
+                    operator = SecurityUtils.getUserId(),
+                )
+                archiveClient.restore(restoreCreateArchiveFileRequest)
+            } catch (e: Exception) {
+                logger.error("restore error", e)
+            }
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_ARCHIVED, node.fullPath)
         }
         val nodeResource = nodeResourceFactoryImpl.getNodeResource(node, range, storageCredentials)
         return nodeResource.getArtifactInputStream()
@@ -131,10 +151,22 @@ class StorageManager(
      */
     fun loadArtifactInputStream(
         node: NodeDetail?,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
     ): ArtifactInputStream? {
-        return loadArtifactInputStream(node?.nodeInfo, storageCredentials)
+        if (node == null) {
+            return null
+        }
+        var forwardNode: NodeDetail? = null
+        pluginManager.applyExtension<NodeForwardExtension> {
+            forwardNode = forward(node, SecurityUtils.getUserId())
+            forwardNode?.let {
+                logger.info("Load[${node.identity()}] forward to [${it.identity()}].")
+            }
+        }
+        val load = forwardNode ?: node
+        return loadArtifactInputStream(load.nodeInfo, storageCredentials)
     }
+
     companion object {
         private val logger = LoggerFactory.getLogger(StorageManager::class.java)
     }

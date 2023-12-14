@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.lfs.security.RemoteAuthHandler
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 
@@ -50,5 +51,6 @@ class LfsArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer {
         it.withPrefix("/lfs")
+        it.addHttpAuthHandler(RemoteAuthHandler())
     }
 }

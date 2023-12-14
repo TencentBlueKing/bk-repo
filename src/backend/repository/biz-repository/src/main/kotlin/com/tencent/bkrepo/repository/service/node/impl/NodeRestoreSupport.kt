@@ -50,6 +50,7 @@ import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeletedFolderQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeletedPointListQuery
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeletedPointListQueryBySha256
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeletedPointQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeQuery
@@ -74,6 +75,12 @@ open class NodeRestoreSupport(
             val query = nodeDeletedPointListQuery(projectId, repoName, getArtifactFullPath())
             return nodeDao.find(query).map { convertToDetail(it)!! }
         }
+    }
+
+    override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {
+        val query = nodeDeletedPointListQueryBySha256(projectId, repoName, sha256)
+        val node = nodeDao.findOne(query)
+        return convertToDetail(node)
     }
 
     override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {

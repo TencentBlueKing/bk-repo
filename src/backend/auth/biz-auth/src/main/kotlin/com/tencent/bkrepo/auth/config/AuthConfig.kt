@@ -33,11 +33,13 @@ package com.tencent.bkrepo.auth.config
 
 import com.tencent.bkrepo.auth.interceptor.AuthInterceptor
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
+@EnableConfigurationProperties(OauthProperties::class)
 class AuthConfig : WebMvcConfigurer {
 
     var prefixEnabled = true
@@ -52,7 +54,8 @@ class AuthConfig : WebMvcConfigurer {
             .excludePattern("/api/user/info")
             .excludePattern("/api/user/verify")
             .excludePattern("/api/user/rsa")
-            .excludePattern("/api/oauth/token")
+            .excludePattern("/api/oauth/*/token")
+            .excludePattern("/api/oauth/*/.well-known/**")
         if (prefixEnabled) {
             httpAuthSecurity.enablePrefix()
         }

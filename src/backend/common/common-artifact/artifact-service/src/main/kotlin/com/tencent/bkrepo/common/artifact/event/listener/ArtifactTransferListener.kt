@@ -44,8 +44,11 @@ import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
+import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
@@ -64,7 +67,8 @@ import java.util.concurrent.LinkedBlockingQueue
 class ArtifactTransferListener(
     private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>,
     private val artifactMetricsProperties: ArtifactMetricsProperties,
-    private val commonTagProvider: ObjectProvider<CommonTagProvider>
+    private val commonTagProvider: ObjectProvider<CommonTagProvider>,
+    private val projectUsageStatisticsService: ProjectUsageStatisticsService,
 ) {
 
     private var queue = LinkedBlockingQueue<ArtifactTransferRecord>(QUEUE_LIMIT)
@@ -76,6 +80,7 @@ class ArtifactTransferListener(
 
             val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
+            val projectId = repositoryDetail?.projectId ?: UNKNOWN
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RECEIVE,
@@ -84,10 +89,13 @@ class ArtifactTransferListener(
                 average = throughput.average(),
                 storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
                 sha256 = artifactFile.getFileSha256(),
-                project = repositoryDetail?.projectId ?: UNKNOWN,
+                project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp
             )
+            if (SecurityUtils.getUserId() != SYSTEM_USER) {
+                projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
+            }
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(
                     toJson(
@@ -110,6 +118,7 @@ class ArtifactTransferListener(
 
             val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
+            val projectId = repositoryDetail?.projectId ?: UNKNOWN
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RESPONSE,
@@ -118,10 +127,13 @@ class ArtifactTransferListener(
                 average = throughput.average(),
                 storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
                 sha256 = artifactResource.node?.sha256.orEmpty(),
-                project = repositoryDetail?.projectId ?: UNKNOWN,
+                project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp
             )
+            if (SecurityUtils.getUserId() != SYSTEM_USER) {
+                projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
+            }
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
             recordAccessTimeDistribution(artifactResource)
             if (artifactMetricsProperties.collectByLog) {

@@ -27,8 +27,8 @@
 
 dependencies {
     api("com.tencent.bk.repo:bkrepo-udt-netty:1.0.1")
-    api("com.tencent.bk.repo:bkrepo-udt-core:1.0.1:windows-amd64")
-    api("com.tencent.bk.repo:bkrepo-udt-core:1.0.1:linux-amd64")
+    api("com.tencent.bk.repo:bkrepo-udt-core:1.0.2:windows-amd64")
+    api("com.tencent.bk.repo:bkrepo-udt-core:1.0.2:linux-amd64")
     api("io.netty:netty-handler")
     api("io.netty:netty-codec")
     api("ch.qos.logback:logback-classic")

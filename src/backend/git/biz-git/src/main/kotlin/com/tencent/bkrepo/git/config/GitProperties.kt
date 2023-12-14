@@ -9,7 +9,7 @@ data class GitProperties(
     var storageCredentialsKey: String? = null,
     var locationDir: String? = null,
     @NestedConfigurationProperty
-    var hub: Hub = Hub()
+    var hub: Hub = Hub(),
 ) {
 
     data class Hub(var github: String? = null)

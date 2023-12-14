@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.UserProjectCreateRequest
@@ -74,7 +75,8 @@ class UserProjectController(
                 displayName = displayName,
                 description = description,
                 operator = userId,
-                createPermission = createPermission
+                createPermission = createPermission,
+                metadata = metadata
             )
         }
         projectService.createProject(createRequest)
@@ -112,6 +114,7 @@ class UserProjectController(
             @PathVariable name: String,
             @RequestBody projectUpdateRequest: ProjectUpdateRequest
     ): Response<Boolean> {
+        permissionManager.checkProjectPermission(PermissionAction.UPDATE, name)
         return ResponseBuilder.success(projectService.updateProject(name, projectUpdateRequest))
     }
 
@@ -140,5 +143,15 @@ class UserProjectController(
         @RequestBody userProjectRequest: UserProjectCreateRequest
     ): Response<Void> {
         return this.createProject(userId, userProjectRequest)
+    }
+
+    @ApiOperation("项目仓库统计信息列表")
+    @GetMapping("/metrics/{projectId}")
+    fun projectMetricsList(
+        @ApiParam(value = "项目ID", required = true)
+        @PathVariable projectId: String
+    ): Response<ProjectMetricsInfo?> {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
+        return ResponseBuilder.success(projectService.getProjectMetricsInfo(projectId))
     }
 }

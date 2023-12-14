@@ -176,7 +176,11 @@ abstract class NodeBaseService(
                 size = if (folder) 0 else size ?: 0,
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
-                metadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata),
+                nodeNum = null,
+                metadata = MetadataUtils.compatibleConvertAndCheck(
+                    metadata,
+                    MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+                ),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
@@ -195,10 +199,6 @@ abstract class NodeBaseService(
         deletedTime: LocalDateTime?
     ) {
         with(node) {
-            if (isGenericRepo(repo)) {
-                publishEvent(buildCreatedEvent(node))
-            }
-            reportNode2Bkbase(node)
             val createEnd = System.currentTimeMillis()
             val timeout = createEnd - createStart > repositoryProperties.nodeCreateTimeout
             if (timeout) {
@@ -206,6 +206,10 @@ abstract class NodeBaseService(
                 rollbackCreate(parents, node, deletedTime)
                 throw ErrorCodeException(ArtifactMessageCode.NODE_CREATE_TIMEOUT, fullPath)
             }
+            if (isGenericRepo(repo)) {
+                publishEvent(buildCreatedEvent(node))
+            }
+            reportNode2Bkbase(node)
         }
     }
 
@@ -411,6 +415,7 @@ abstract class NodeBaseService(
             return tNode?.let {
                 val metadata = MetadataUtils.toMap(it.metadata)
                 NodeInfo(
+                    id = it.id,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
@@ -421,7 +426,10 @@ abstract class NodeBaseService(
                     path = it.path,
                     name = it.name,
                     fullPath = it.fullPath,
-                    size = it.size,
+                    size = if (it.size < 0L) 0L else it.size,
+                    nodeNum = it.nodeNum?.let { nodeNum ->
+                        if (nodeNum < 0L) 0L else nodeNum
+                    },
                     sha256 = it.sha256,
                     md5 = it.md5,
                     metadata = metadata,
@@ -430,7 +438,8 @@ abstract class NodeBaseService(
                     copyIntoCredentialsKey = it.copyIntoCredentialsKey,
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
-                    clusterNames = it.clusterNames
+                    clusterNames = it.clusterNames,
+                    archived = it.archived
                 )
             }
         }

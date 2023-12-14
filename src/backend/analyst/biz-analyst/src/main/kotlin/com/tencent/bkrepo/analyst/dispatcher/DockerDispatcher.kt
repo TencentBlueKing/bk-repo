@@ -58,7 +58,11 @@ class DockerDispatcher(
     private val subScanTaskDao: SubScanTaskDao,
     private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>
 ) : SubtaskPushDispatcher<DockerExecutionCluster>(
-    executionCluster, scannerProperties, scanService, subtaskStateMachine, temporaryScanTokenService
+    executionCluster,
+    scannerProperties,
+    scanService,
+    subtaskStateMachine,
+    temporaryScanTokenService
 ) {
 
     private val dockerClient by lazy {
@@ -86,9 +90,19 @@ class DockerDispatcher(
         val scanner = subtask.scanner
         require(scanner is StandardScanner)
         try {
-            val command = buildCommand(scanner.cmd, scannerProperties.baseUrl, subtask.taskId, subtask.token!!)
+            val command = buildCommand(
+                cmd = scanner.cmd,
+                baseUrl = scannerProperties.baseUrl,
+                subtaskId = subtask.taskId,
+                token = subtask.token!!,
+                heartbeatTimeout = scannerProperties.heartbeatTimeout
+            )
             val containerId = dockerClient.createContainer(
-                image = scanner.image, hostConfig = hostConfig(), cmd = command
+                image = scanner.image,
+                userName = scanner.dockerRegistryUsername,
+                password = scanner.dockerRegistryPassword,
+                hostConfig = hostConfig(),
+                cmd = command
             )
             dockerClient.startContainerCmd(containerId).exec()
             redisTemplate.ifAvailable

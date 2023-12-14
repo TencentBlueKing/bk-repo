@@ -70,8 +70,8 @@ open class PermissionServiceImpl constructor(
     private val account: AccountRepository,
     private val permissionDao: PermissionDao,
     userDao: UserDao,
-    private val repoClient: RepositoryClient,
-    private val projectClient: ProjectClient
+    val repoClient: RepositoryClient,
+    val projectClient: ProjectClient
 ) : PermissionService, AbstractServiceImpl(userDao, roleRepository) {
 
     override fun deletePermission(id: String): Boolean {

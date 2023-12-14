@@ -39,12 +39,10 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import java.util.concurrent.TimeUnit
 
 @SpringBootTest(classes = [RedisTestConfig::class])
 @DisplayName("Oauth授权服务相关接口")
@@ -80,16 +78,6 @@ class OauthAuthorizationServiceTest {
     @AfterEach
     fun tearDown() {
         accountService.deleteAccount(appId)
-    }
-
-    fun createTokenTest() {
-        val clientId = account.id
-        val clientSecret = account.credentials.first().secretKey
-        val mockCode = "123"
-        val userIdKey = "$clientId:$mockCode:userId"
-        redisOperation.set(userIdKey, userId, TimeUnit.SECONDS.toSeconds(10L))
-        oauthAuthorizationService.createToken(clientId, clientSecret, mockCode)
-        Assertions.assertTrue(accountService.listAuthorizedAccount().find { it.id == clientId } != null)
     }
 
     private fun buildCreateAccountRequest(

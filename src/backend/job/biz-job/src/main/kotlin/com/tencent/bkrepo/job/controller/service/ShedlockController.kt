@@ -34,7 +34,9 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.pojo.ShedlockInfo
 import com.tencent.bkrepo.job.service.ShedlockService
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -47,5 +49,11 @@ class ShedlockController(val shelockService: ShedlockService) {
     @LogOperate(type = "SHED_LOCK_LIST")
     fun listShelock(): Response<List<ShedlockInfo>> {
         return ResponseBuilder.success(shelockService.listShelock())
+    }
+
+    @DeleteMapping("/delete/{id}")
+    fun deleteShelock(@PathVariable id: String): Response<Void>{
+        shelockService.deleteShelock(id)
+        return ResponseBuilder.success()
     }
 }

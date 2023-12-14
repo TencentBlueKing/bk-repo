@@ -34,12 +34,17 @@
             <bk-button theme="default" @click="cancel">{{$t('cancel')}}</bk-button>
             <bk-button class="ml10" :loading="genericForm.loading" theme="primary" @click="submit">{{$t('confirm')}}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
-    import { mapActions } from 'vuex'
+    import { mapActions, mapState } from 'vuex'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     export default {
         name: 'genericForm',
+        components: {
+            iamDenyDialog
+        },
         data () {
             return {
                 genericForm: {
@@ -85,10 +90,14 @@
                         }
                     ]
                 },
-                scanList: []
+                scanList: [],
+                showIamDenyDialog: false,
+                showData: {},
+                webError: false
             }
         },
         computed: {
+            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -101,7 +110,8 @@
                 'createFolder',
                 'renameNode',
                 'startScanSingle',
-                'getScanAll'
+                'getScanAll',
+                'getPermissionUrl'
             ]),
             setData (data) {
                 this.genericForm = {
@@ -133,21 +143,91 @@
                 })
             },
             submitAddFolder () {
+                this.webError = false
                 return this.createFolder({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     fullPath: this.genericForm.path.replace(/\/+/g, '/')
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.webError = true
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'WRITE',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'WRITE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: err.message
+                        })
+                    }
                 })
             },
             submitRenameNode () {
+                this.webError = false
                 return this.renameNode({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     fullPath: this.genericForm.path,
                     newFullPath: this.genericForm.path.replace(/[^/]*$/, this.genericForm.name)
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.webError = true
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'UPDATE',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: this.genericForm.path
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'UPDATE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: err.message
+                        })
+                    }
                 })
             },
             submitScanFile () {
+                this.webError = false
                 const { id, path } = this.genericForm
                 return this.startScanSingle({
                     id,
@@ -155,6 +235,40 @@
                     repoType: 'GENERIC',
                     repoName: this.repoName,
                     fullPath: path
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.webError = true
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'UPDATE',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: this.genericForm.path
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'UPDATE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: err.message
+                        })
+                    }
                 })
             },
             submitGenericForm () {
@@ -177,10 +291,12 @@
                 }
                 fn.then(() => {
                     this.$emit('refresh')
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: message + this.$t('space') + this.$t('success')
-                    })
+                    if (!this.webError) {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: message + this.$t('space') + this.$t('success')
+                        })
+                    }
                     this.genericForm.show = false
                 }).finally(() => {
                     this.genericForm.loading = false

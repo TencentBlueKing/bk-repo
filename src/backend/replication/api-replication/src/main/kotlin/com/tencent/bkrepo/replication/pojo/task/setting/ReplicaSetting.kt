@@ -58,5 +58,9 @@ data class ReplicaSetting(
     /**
      * 是否校验文件存储一致性
      */
-    val storageConsistencyCheck: Boolean = false
+    val storageConsistencyCheck: Boolean = false,
+    /**
+     * 当远程项目或者仓库不存在时是否自动创建
+     */
+    val automaticCreateRemoteRepo: Boolean = true
 )

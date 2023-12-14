@@ -2,6 +2,7 @@
 export const repoEnum = MODE_CONFIG === 'ci'
     ? [
         { label: 'Generic', value: 'generic' },
+        { label: 'DDC', value: 'ddc' },
         { label: 'Helm', value: 'helm' },
         { label: 'Docker', value: 'docker' },
         // { label: 'Rds', value: 'rds' },
@@ -9,6 +10,7 @@ export const repoEnum = MODE_CONFIG === 'ci'
     ]
     : [
         { label: 'Generic', value: 'generic' },
+        { label: 'DDC', value: 'ddc' },
         { label: 'Docker', value: 'docker' },
         { label: 'Maven', value: 'maven' },
         { label: 'Pypi', value: 'pypi' },
@@ -143,3 +145,11 @@ export const FILTER_METHOD_SEVERITY = 1
 export const FILTER_METHOD_RISKY_COMPONENT = 2
 // 通过风险组件版本过滤
 export const FILTER_METHOD_RISKY_COMPONENT_VERSION = 3
+
+// 特殊的4个repo仓名称
+export const specialRepoEnum = [
+    'log',
+    'pipeline',
+    'report',
+    'custom'
+]

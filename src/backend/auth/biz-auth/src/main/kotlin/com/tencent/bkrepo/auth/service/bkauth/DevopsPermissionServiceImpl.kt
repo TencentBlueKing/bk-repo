@@ -39,7 +39,12 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.dao.repository.AccountRepository
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
-import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
+import com.tencent.bkrepo.auth.constant.CUSTOM
+import com.tencent.bkrepo.auth.constant.LOG
+import com.tencent.bkrepo.auth.constant.PIPELINE
+import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -56,15 +61,17 @@ class DevopsPermissionServiceImpl constructor(
     private val devopsAuthConfig: DevopsAuthConfig,
     private val devopsPipelineService: DevopsPipelineService,
     private val devopsProjectService: DevopsProjectService,
-    repositoryClient: RepositoryClient,
-    projectClient: ProjectClient
-) : PermissionServiceImpl(
+    repoClient: RepositoryClient,
+    projectClient: ProjectClient,
+    bkIamV3Service: BkIamV3Service
+) : BkIamV3PermissionServiceImpl(
+    bkIamV3Service,
+    userDao,
     roleRepository,
     accountRepository,
     permissionDao,
-    userDao,
-    repositoryClient,
-    projectClient
+    repoClient,
+    projectClient,
 ) {
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         // 用户为系统管理员，或者当前项目管理员
@@ -83,6 +90,12 @@ class DevopsPermissionServiceImpl constructor(
 
         // 校验平台账号操作范围
         if (!super.checkPlatformPermission(request)) return false
+
+        // bkiamv3权限校验
+        if (super.matchBkiamv3Cond(request)) {
+            // 当有v3权限时，返回成功；如没有v3权限则按devops账号体系继续进行判断
+            if (super.checkBkIamV3Permission(request)) return true
+        }
 
         return checkDevopsPermission(request)
     }
@@ -117,6 +130,7 @@ class DevopsPermissionServiceImpl constructor(
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
                 return checkDevopsProjectPermission(uid, projectId!!, action)
+                        || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
 
             // repo或者node权限
@@ -201,9 +215,5 @@ class DevopsPermissionServiceImpl constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevopsPermissionServiceImpl::class.java)
-        private const val CUSTOM = "custom"
-        private const val PIPELINE = "pipeline"
-        private const val REPORT = "report"
-        private const val LOG = "log"
     }
 }

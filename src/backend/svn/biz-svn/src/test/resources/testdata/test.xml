@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<S:update-report xmlns:S="svn:" xmlns:V="http://subversion.tigris.org/xmlns/dav/" xmlns:D="DAV:" send-all="true"
+                 inline-props="true">
+    <S:target-revision rev="2"/>
+    <S:open-directory rev="2">
+        <D:checked-in>
+            <D:href>/groupA/demo/!svn/rvr/2/</D:href>
+        </D:checked-in>
+        <S:set-prop name="svn:entry:committed-rev">2</S:set-prop>
+        <S:set-prop name="svn:entry:committed-date">2023-09-26T10:09:49.428828Z</S:set-prop>
+        <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+        <S:set-prop name="svn:entry:uuid">462e1428-5321-4371-931f-eff31cb99533</S:set-prop>
+        <S:add-directory name="branches" bc-url="/groupA/demo/!svn/bc/1/branches">
+            <D:checked-in>
+                <D:href>/groupA/demo/!svn/rvr/1/branches</D:href>
+            </D:checked-in>
+            <S:set-prop name="svn:entry:committed-rev">1</S:set-prop>
+            <S:set-prop name="svn:entry:committed-date">2023-09-26T08:45:05.362356Z</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:uuid">462e1428-5321-4371-931f-eff31cb99533</S:set-prop>
+        </S:add-directory>
+        <S:add-directory name="document" bc-url="/groupA/demo/!svn/bc/1/document">
+            <D:checked-in>
+                <D:href>/groupA/demo/!svn/rvr/1/document</D:href>
+            </D:checked-in>
+            <S:set-prop name="svn:entry:committed-rev">1</S:set-prop>
+            <S:set-prop name="svn:entry:committed-date">2023-09-26T08:45:05.362356Z</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:uuid">462e1428-5321-4371-931f-eff31cb99533</S:set-prop>
+        </S:add-directory>
+        <S:add-directory name="release" bc-url="/groupA/demo/!svn/bc/1/release">
+            <D:checked-in>
+                <D:href>/groupA/demo/!svn/rvr/1/release</D:href>
+            </D:checked-in>
+            <S:set-prop name="svn:entry:committed-rev">1</S:set-prop>
+            <S:set-prop name="svn:entry:committed-date">2023-09-26T08:45:05.362356Z</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:uuid">462e1428-5321-4371-931f-eff31cb99533</S:set-prop>
+        </S:add-directory>
+        <S:add-directory name="tags" bc-url="/groupA/demo/!svn/bc/1/tags">
+            <D:checked-in>
+                <D:href>/groupA/demo/!svn/rvr/1/tags</D:href>
+            </D:checked-in>
+            <S:set-prop name="svn:entry:committed-rev">1</S:set-prop>
+            <S:set-prop name="svn:entry:committed-date">2023-09-26T08:45:05.362356Z</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:uuid">462e1428-5321-4371-931f-eff31cb99533</S:set-prop>
+        </S:add-directory>
+        <S:add-directory name="trunk" bc-url="/groupA/demo/!svn/bc/2/trunk">
+            <D:checked-in>
+                <D:href>/groupA/demo/!svn/rvr/2/trunk</D:href>
+            </D:checked-in>
+            <S:set-prop name="svn:entry:committed-rev">2</S:set-prop>
+            <S:set-prop name="svn:entry:committed-date">2023-09-26T10:09:49.428828Z</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhangs</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhan</S:set-prop>
+            <S:set-prop name="svn:entry:last-author">zhan</S:set-prop>
+            <S:set-prop name="svn:entry:uuid">462e1428-5321-4371-931f-eff31cb99533</S:set-prop>
+            <S:add-file name="service-svn.jar" sha1-checksum="3092e7d348a561e8665059ae163c3d4fbb1cf9f6">
+                <D:checked-in>
+                    <D:href>/groupA/demo/!svn/rvr/2/trunk/service-svn.jar</D:href>
+                </D:checked-in>
+                <S:set-prop name="svn:entry:committed-rev">2</S:set-prop>
+                <S:set-prop name="svn:entry:committed-date">2023-09-26T10:09:49.428828Z</S:set-prop>
+                <S:set-prop name="svn:entry:last-author">zhangsan</S:set-prop>
+                <S:set-prop name="svn:entry:uuid">462e1428-5321-4371-931f-eff31cb99533</S:set-prop>
+                <S:set-prop name="svn:mime-type">application/octet-stream</S:set-prop>
+                <S:prop>
+                    <V:md5-checksum>d91295fd33fc570f4ff6c60b3fd0dd89</V:md5-checksum>
+                </S:prop>
+            </S:add-file>
+        </S:add-directory>
+    </S:open-directory>
+</S:update-report>

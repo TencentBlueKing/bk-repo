@@ -10,6 +10,7 @@
 - **节点**
   - [节点操作接口](node/node.md)
   - [分享链接接口](node/share.md)
+  - [收藏文件夹接口](node/favorites.md)
 - **制品包/版本**
   - [制品包版本接口](package/package.md)
   - [制品stage接口](package/stage.md)

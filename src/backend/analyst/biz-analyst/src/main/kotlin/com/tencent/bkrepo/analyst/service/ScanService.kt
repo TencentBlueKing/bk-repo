@@ -30,6 +30,7 @@ package com.tencent.bkrepo.analyst.service
 import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.pojo.request.GlobalScanRequest
 import com.tencent.bkrepo.analyst.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
@@ -38,6 +39,15 @@ import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
  * 扫描服务
  */
 interface ScanService {
+    /**
+     * 触发全局扫描
+     *
+     * @param request 全局扫描请求
+     *
+     * @return 创建的扫描任务
+     */
+    fun globalScan(request: GlobalScanRequest): ScanTask
+
     /**
      * 创建扫描任务，启动扫描
      *
@@ -90,7 +100,7 @@ interface ScanService {
      *
      * @return true 停止成功，false 停止失败
      */
-    fun stopTask(projectId: String, taskId: String): Boolean
+    fun stopTask(projectId: String?, taskId: String): Boolean
 
     /**
      * 扫描结果上报
@@ -108,6 +118,11 @@ interface ScanService {
      * @return 是否更新成功
      */
     fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean
+
+    /**
+     * 记录任务心跳
+     */
+    fun heartbeat(subScanTaskId: String)
 
     /**
      * 拉取子任务

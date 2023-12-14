@@ -39,4 +39,8 @@ class ShedlockServiceImp constructor(
     override fun listShelock(): List<ShedlockInfo> {
         return shelockRepository.findAllBy()
     }
+
+    override fun deleteShelock(id: String) {
+        shelockRepository.deleteById(id)
+    }
 }

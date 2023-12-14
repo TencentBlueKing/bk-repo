@@ -48,6 +48,25 @@ import org.springframework.stereotype.Repository
 @Repository
 class PackageDao : SimpleMongoDao<TPackage>() {
 
+    /**
+     * 当历史版本过多的情况下会导致拉取数据量过大，针对不需要历史版本字段的业务可选用该接口查询包信息
+     */
+    fun findByKeyExcludeHistoryVersion(projectId: String, repoName: String, key: String): TPackage? {
+        if (key.isBlank()) {
+            return null
+        }
+        val query = PackageQueryHelper.packageQuery(projectId, repoName, key)
+        query.fields().exclude(HISTORY_VERSION)
+        return this.findOne(query)
+    }
+
+    fun checkExist(projectId: String, repoName: String, key: String): Boolean {
+        if (key.isBlank()) {
+            return false
+        }
+        return this.exists(PackageQueryHelper.packageQuery(projectId, repoName, key))
+    }
+
     fun findByKey(projectId: String, repoName: String, key: String): TPackage? {
         if (key.isBlank()) {
             return null
@@ -101,5 +120,9 @@ class PackageDao : SimpleMongoDao<TPackage>() {
         val query = Query(Criteria.where(ID).isEqualTo(packageId))
         val update = Update().set(TPackage::latest.name, latestVersion)
         this.updateFirst(query, update)
+    }
+
+    companion object {
+        private const val HISTORY_VERSION = "historyVersion"
     }
 }

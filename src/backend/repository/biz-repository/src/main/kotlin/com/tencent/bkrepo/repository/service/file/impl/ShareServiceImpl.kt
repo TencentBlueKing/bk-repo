@@ -126,6 +126,7 @@ class ShareServiceImpl(
     override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
         logger.info("artifact[$artifactInfo] download user: $userId")
         val shareRecord = checkToken(userId, token, artifactInfo)
+        checkAlphaApkDownloadUser(userId, artifactInfo)
         with(artifactInfo) {
             val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             val repo = repositoryService.getRepoDetail(projectId, repoName)
@@ -147,8 +148,24 @@ class ShareServiceImpl(
         return mongoTemplate.find(query, TShareRecord::class.java).map { convert(it) }
     }
 
+    /**
+     * 加固签名的apk包，不允许匿名下载
+     */
+    private fun checkAlphaApkDownloadUser(userId: String, artifactInfo: ArtifactInfo) {
+        val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo)
+            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val appStageKey = nodeDetail.metadata.keys.find { it.equals(BK_CI_APP_STAGE_KEY, true) }
+            ?: return
+        val alphaApk = nodeDetail.metadata[appStageKey]?.toString().equals(ALPHA, true)
+        if (alphaApk && userId == ANONYMOUS_USER) {
+            throw PermissionException("anonymous user can not download the alpha apk.")
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ShareServiceImpl::class.java)
+        private const val BK_CI_APP_STAGE_KEY = "BK-CI-APP-STAGE"
+        private const val ALPHA = "Alpha"
 
         private fun generateToken(): String {
             return UUID.randomUUID().toString().replace(StringPool.DASH, StringPool.EMPTY).toLowerCase()

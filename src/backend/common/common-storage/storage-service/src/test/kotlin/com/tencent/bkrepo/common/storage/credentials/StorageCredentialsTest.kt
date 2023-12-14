@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import java.time.Duration
 
 @ExtendWith(SpringExtension::class)
 @EnableConfigurationProperties(value = [StorageProperties::class])
@@ -65,7 +66,7 @@ internal class StorageCredentialsTest {
         Assertions.assertEquals(1.0F, storageProperties.innercos.timeout)
         Assertions.assertTrue(storageProperties.innercos.cache.enabled)
         Assertions.assertEquals("/data/cached", storageProperties.innercos.cache.path)
-        Assertions.assertEquals(10, storageProperties.innercos.cache.expireDays)
+        Assertions.assertEquals(Duration.ofDays(1), storageProperties.innercos.cache.expireDuration)
         Assertions.assertEquals("/data/temp", storageProperties.innercos.upload.location)
     }
 
@@ -75,7 +76,7 @@ internal class StorageCredentialsTest {
         originalCredentials.path = "test"
         originalCredentials.cache.enabled = true
         originalCredentials.cache.path = "cache-test"
-        originalCredentials.cache.expireDays = 10
+        originalCredentials.cache.expireDuration = Duration.ofDays(1)
         val jsonString = originalCredentials.toJsonString()
 
         val serializedCredentials = jsonString.readJsonString<StorageCredentials>()
@@ -84,7 +85,7 @@ internal class StorageCredentialsTest {
         Assertions.assertEquals(originalCredentials.path, serializedCredentials.path)
         Assertions.assertEquals(originalCredentials.cache.enabled, serializedCredentials.cache.enabled)
         Assertions.assertEquals(originalCredentials.cache.path, serializedCredentials.cache.path)
-        Assertions.assertEquals(originalCredentials.cache.expireDays, serializedCredentials.cache.expireDays)
+        Assertions.assertEquals(originalCredentials.cache.expireDuration, serializedCredentials.cache.expireDuration)
         Assertions.assertEquals(originalCredentials.upload.location, serializedCredentials.upload.location)
         Assertions.assertEquals(jsonString, serializedCredentials.toJsonString())
     }

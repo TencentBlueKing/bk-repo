@@ -46,18 +46,18 @@
                     <span class="hover-btn" @click="showPlanDetailHandler(row)">{{row.name}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('syncType')" width="100" show-overflow-tooltip>
+            <bk-table-column :label="$t('targetNode')" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.remoteClusters.map(v => v.name).join('、') }}</template>
+            </bk-table-column>
+            <bk-table-column :label="$t('syncType')" width="120" show-overflow-tooltip>
                 <template #default="{ row }">
                     {{ { 'REPOSITORY': $t('synchronizeRepository'), 'PACKAGE': $t('synchronizePackage'), 'PATH': $t('synchronizePath') }[row.replicaObjectType] }}
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('targetNode')" show-overflow-tooltip>
-                <template #default="{ row }">{{ row.remoteClusters.map(v => v.name).join('、') }}</template>
-            </bk-table-column>
-            <bk-table-column :label="$t('synchronizationPolicy')" width="110" show-overflow-tooltip>
+            <bk-table-column :label="$t('synchronizationPolicy')" width="120" show-overflow-tooltip>
                 <template #default="{ row }">{{ getExecutionStrategy(row) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('lastExecutionTime')" prop="LAST_EXECUTION_TIME" width="150" sortable="custom">
+            <bk-table-column :label="$t('lastExecutionTime')" prop="LAST_EXECUTION_TIME" width="170" sortable="custom">
                 <template #default="{ row }">{{formatDate(row.lastExecutionTime)}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('lastExecutionStatus')" width="100">
@@ -65,12 +65,12 @@
                     <span class="repo-tag" :class="row.lastExecutionStatus">{{row.lastExecutionStatus ? $t(`asyncPlanStatusEnum.${row.lastExecutionStatus}`) : $t('notExecuted')}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('enablePlan')" width="70">
+            <bk-table-column :label="$t('enablePlan')" width="100">
                 <template #default="{ row }">
                     <bk-switcher class="m5" v-model="row.enabled" size="small" theme="primary" @change="changeEnabledHandler(row)"></bk-switcher>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('execute')" width="60">
+            <bk-table-column :label="$t('execute')" width="80">
                 <template #default="{ row }">
                     <i class="devops-icon icon-play3 hover-btn inline-block"
                         :class="{ 'disabled': row.lastExecutionStatus === 'RUNNING' || row.replicaType === 'REAL_TIME' }"
@@ -78,7 +78,7 @@
                     </i>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="70">
+            <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
                     <operation-list
                         :list="[

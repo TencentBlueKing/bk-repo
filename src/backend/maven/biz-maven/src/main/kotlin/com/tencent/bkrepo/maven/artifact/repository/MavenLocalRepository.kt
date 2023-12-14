@@ -774,7 +774,8 @@ class MavenLocalRepository(
         checksumType: HashType? = null
     ): NodeDetail? {
         with(context) {
-            var node = ArtifactContextHolder.getNodeDetail(fullPath = fullPath)
+            artifactInfo.setArtifactMappingUri(fullPath)
+            var node = ArtifactContextHolder.getNodeDetail(artifactInfo)
             if (node != null || checksumType == null) {
                 return node
             }
@@ -784,11 +785,13 @@ class MavenLocalRepository(
                     "in ${artifactInfo.getRepoIdentify()}"
             )
             val temPath = fullPath.removeSuffix(".${checksumType.ext}")
-            node = ArtifactContextHolder.getNodeDetail(fullPath = temPath)
+            artifactInfo.setArtifactMappingUri(temPath)
+            node = ArtifactContextHolder.getNodeDetail(artifactInfo)
             // 源文件存在，但是对应checksum文件不存在，需要生成
             if (node != null) {
                 verifyPath(context, temPath, checksumType)
-                node = ArtifactContextHolder.getNodeDetail(fullPath = fullPath)
+                artifactInfo.setArtifactMappingUri(fullPath)
+                node = ArtifactContextHolder.getNodeDetail(artifactInfo)
             }
             return node
         }
@@ -1216,9 +1219,9 @@ class MavenLocalRepository(
             }
             updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME", artifactFile)
             artifactFile.delete()
-            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME.${HashType.MD5}", metadataArtifactMd5)
+            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME.${HashType.MD5.ext}", metadataArtifactMd5)
             metadataArtifactMd5.delete()
-            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME.${HashType.SHA1}", metadataArtifactSha1)
+            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME.${HashType.SHA1.ext}", metadataArtifactSha1)
             metadataArtifactSha1.delete()
         }
     }

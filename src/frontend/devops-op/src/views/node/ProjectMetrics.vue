@@ -18,6 +18,27 @@
       <el-form-item>
         <el-button size="mini" type="primary" @click="queryPage(1)">查询</el-button>
       </el-form-item>
+      <el-form-item label="大小(单位GB)" style="margin-left: 15px">
+        <el-input v-model="limitSize" type="text" onkeyup="value=value.replace(/[^\d]/g,'')" size="small" width="50" placeholder="请输入数字" />
+      </el-form-item>
+      <el-form-item label="REPO类型" style="margin-left: 15px">
+        <el-select v-model="type" placeholder="请选择REPO类型" clearable>
+          <el-option label="GENERIC" value="GENERIC" />
+          <el-option label="DOCKER" value="DOCKER" />
+          <el-option label="DDC" value="DDC" />
+          <el-option label="MAVEN" value="MAVEN" />
+          <el-option label="PYPI" value="PYPI" />
+          <el-option label="NPM" value="NPM" />
+          <el-option label="HELM" value="HELM" />
+          <el-option label="COMPOSER" value="COMPOSER" />
+          <el-option label="RPM" value="RPM" />
+          <el-option label="GIT" value="GIT" />
+          <el-option label="NUGET" value="NUGET" />
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button size="mini" type="primary" @click="download()">下载</el-button>
+      </el-form-item>
     </el-form>
     <el-table
       :data="projectData"
@@ -92,6 +113,8 @@ export default {
       loading: true,
       projectData: [],
       projectId: this.$route.query.projectId ? this.$route.query.projectId : '',
+      limitSize: '',
+      type: null,
       total: 0,
       query: {
         pageNumber: 1,
@@ -153,6 +176,21 @@ export default {
     },
     formatNormalDate(data) {
       return formatNormalDate(data)
+    },
+    download() {
+      let realType
+      if (this.type === '') {
+        realType = null
+      } else {
+        realType = this.type
+      }
+      const url = '/opdata/api/project/metrics/list/project/capSize/download/?' +
+        (this.limitSize === '' ? '' : 'limitSize=' + this.limitSize * 1024 * 1024 * 1024 + '&') +
+        (realType === null ? '' : 'type=' + realType)
+      window.open(
+        '/web' + url,
+        '_self'
+      )
     }
   }
 }

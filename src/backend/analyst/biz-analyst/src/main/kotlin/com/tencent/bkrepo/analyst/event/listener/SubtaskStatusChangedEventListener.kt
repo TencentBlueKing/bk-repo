@@ -42,7 +42,8 @@ import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveR
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
-import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
+import com.tencent.bkrepo.analyst.pojo.request.ArtifactPlanRelationRequest
+import com.tencent.bkrepo.analyst.service.ScanPlanService
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
@@ -51,7 +52,8 @@ import org.springframework.stereotype.Component
 @Component
 class SubtaskStatusChangedEventListener(
     private val metadataClient: MetadataClient,
-    private val packageMetadataClient: PackageMetadataClient
+    private val packageMetadataClient: PackageMetadataClient,
+    private val scanPlanService: ScanPlanService
 ) {
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
@@ -65,13 +67,7 @@ class SubtaskStatusChangedEventListener(
 
             // 更新扫描状态元数据
             val metadata = ArrayList<MetadataModel>(4)
-            metadata.add(
-                MetadataModel(
-                    key = SCAN_STATUS,
-                    value = ScanPlanConverter.convertToScanStatus(status).name,
-                    system = true
-                )
-            )
+            addScanStatus(this, metadata)
             // 更新质量规则元数据
             qualityRedLine?.let {
                 // 未通过质量规则，判断是否触发禁用
@@ -80,24 +76,7 @@ class SubtaskStatusChangedEventListener(
                 }
                 metadata.add(MetadataModel(key = SubScanTaskDefinition::qualityRedLine.name, value = it, system = true))
             }
-            if (repoType == RepositoryType.GENERIC.name) {
-                val request = MetadataSaveRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = fullPath,
-                    nodeMetadata = metadata
-                )
-                metadataClient.saveMetadata(request)
-            } else {
-                val request = PackageMetadataSaveRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    packageKey = packageKey!!,
-                    version = version!!,
-                    versionMetadata = metadata
-                )
-                packageMetadataClient.saveMetadata(request)
-            }
+            saveMetadata(this, metadata)
             logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] metadata[$metadata] success")
         }
     }
@@ -134,6 +113,52 @@ class SubtaskStatusChangedEventListener(
                         system = true
                     )
                 )
+            }
+        }
+    }
+
+    fun addScanStatus(subtask: TPlanArtifactLatestSubScanTask, metadata: ArrayList<MetadataModel>) {
+        with(subtask) {
+            //状态转换, 存到元数据中
+            val artifactPlanStatus = scanPlanService.artifactPlanStatus(
+                ArtifactPlanRelationRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    repoType = repoType,
+                    packageKey = packageKey,
+                    version = version,
+                    fullPath = fullPath
+                )
+            ) ?: return
+            metadata.add(
+                MetadataModel(
+                    key = SCAN_STATUS,
+                    value = artifactPlanStatus,
+                    system = true
+                )
+            )
+        }
+    }
+
+    fun saveMetadata(subtask: TPlanArtifactLatestSubScanTask, metadata: ArrayList<MetadataModel>) {
+        with(subtask) {
+            if (repoType == RepositoryType.GENERIC.name) {
+                val request = MetadataSaveRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    nodeMetadata = metadata
+                )
+                metadataClient.saveMetadata(request)
+            } else {
+                val request = PackageMetadataSaveRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageKey = packageKey!!,
+                    version = version!!,
+                    versionMetadata = metadata
+                )
+                packageMetadataClient.saveMetadata(request)
             }
         }
     }

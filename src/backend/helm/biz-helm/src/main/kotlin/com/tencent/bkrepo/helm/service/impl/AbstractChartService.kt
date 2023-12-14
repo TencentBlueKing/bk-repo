@@ -291,7 +291,7 @@ open class AbstractChartService : ArtifactService() {
             if (exist) {
                 lastModifyTime?.let { queryModelBuilder.rule(true, NODE_CREATE_DATE, it, OperationType.AFTER) }
             }
-            val result = nodeClient.search(queryModelBuilder.build()).data ?: run {
+            val result = nodeClient.queryWithoutCount(queryModelBuilder.build()).data ?: run {
                 logger.warn("don't find node list in repository: [$projectId/$repoName].")
                 return emptyList()
             }

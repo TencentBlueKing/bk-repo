@@ -73,9 +73,13 @@ data class TScanTask(
      */
     val planId: String? = null,
     /**
-     * 扫描的项目
+     * 扫描的项目，扫描单个项目时有值
      */
     val projectId: String? = null,
+    /**
+     * 扫描的项目列表
+     */
+    val projectIds: Set<String> = emptySet(),
     /**
      * 任务状态
      */

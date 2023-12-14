@@ -30,8 +30,8 @@ package com.tencent.bkrepo.lfs.pojo
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class ActionDetail(
-    val href: String,
-    val header: Map<String, String>,
+    var href: String,
+    val header: MutableMap<String, String>,
     @JsonProperty("expires_in")
     val expiresIn: Long
 )

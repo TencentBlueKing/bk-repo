@@ -44,7 +44,6 @@ import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -64,7 +63,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(DeletedNodeCleanupJobProperties::class)
 class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val fileReferenceClient: FileReferenceClient,
     private val clusterProperties: ClusterProperties
 ) : MongoDbBatchJob<DeletedNodeCleanupJob.Repository, DeletedNodeCleanupJobContext>(properties) {
@@ -89,7 +87,7 @@ class DeletedNodeCleanupJob(
 
     data class FileReference(
         val sha256: String,
-        val credentialsKey: String,
+        val credentialsKey: String?,
         val count: String
     )
 

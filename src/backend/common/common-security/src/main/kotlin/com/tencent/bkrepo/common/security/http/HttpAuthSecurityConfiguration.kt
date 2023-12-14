@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.security.http
 
+import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
 import com.tencent.bkrepo.common.security.http.core.HttpAuthInterceptor
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
@@ -58,7 +59,8 @@ class HttpAuthSecurityConfiguration(
     private val unifiedCustomizer: ObjectProvider<HttpAuthSecurityCustomizer>,
     @Lazy
     private val authenticationManager: AuthenticationManager,
-    private val jwtAuthProperties: JwtAuthProperties
+    private val jwtAuthProperties: JwtAuthProperties,
+    private val cryptoProperties: CryptoProperties
 ) {
 
     @Bean
@@ -99,7 +101,13 @@ class HttpAuthSecurityConfiguration(
             httpAuthSecurity.addHttpAuthHandler(PlatformAuthHandler(authenticationManager))
         }
         if (httpAuthSecurity.jwtAuthEnabled) {
-            httpAuthSecurity.addHttpAuthHandler(JwtAuthHandler(jwtAuthProperties))
+            httpAuthSecurity.addHttpAuthHandler(
+                JwtAuthHandler(
+                    jwtAuthProperties = jwtAuthProperties,
+                    cryptoProperties = cryptoProperties,
+                    authenticationManager = authenticationManager
+                )
+            )
         }
         if (httpAuthSecurity.oauthEnabled) {
             httpAuthSecurity.addHttpAuthHandler(OauthAuthHandler(authenticationManager))

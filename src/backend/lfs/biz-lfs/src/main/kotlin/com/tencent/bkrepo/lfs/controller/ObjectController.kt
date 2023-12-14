@@ -27,11 +27,8 @@
 
 package com.tencent.bkrepo.lfs.controller
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.lfs.artifact.LfsArtifactInfo
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
@@ -47,7 +44,7 @@ import org.springframework.web.bind.annotation.RestController
 class ObjectController(
     private val objectService: ObjectService
 ) {
-    @PostMapping("/{projectId}/{repoName}/objects/batch")
+    @PostMapping("/{projectId}/{repoName}/objects/batch", "/{projectId}/**/{repoName}/info/lfs/objects/batch")
     fun batch(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
@@ -56,13 +53,11 @@ class ObjectController(
         return objectService.batch(projectId, repoName, request)
     }
 
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @PutMapping("/{projectId}/{repoName}/**")
     fun upload(@ArtifactPathVariable lfsArtifactInfo: LfsArtifactInfo, file: ArtifactFile) {
         objectService.upload(lfsArtifactInfo, file)
     }
 
-    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/{projectId}/{repoName}/**")
     fun download(@ArtifactPathVariable lfsArtifactInfo: LfsArtifactInfo) {
         objectService.download(lfsArtifactInfo)

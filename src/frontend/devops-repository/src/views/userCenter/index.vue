@@ -21,7 +21,7 @@
                     </bk-form-item>
                     <bk-form-item :label="$t('password') + '：'">
                         <div class="flex-align-center">
-                            <span>********</span>
+                            <span>******</span>
                             <bk-button class="ml20 flex-align-center"
                                 v-if="!editItem.key"
                                 text

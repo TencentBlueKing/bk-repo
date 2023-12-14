@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.analyst.controller.user
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.GetMapping
@@ -59,7 +59,7 @@ class UserTemporaryScanController(
         @RequestParam token: String
     ): Response<ToolInput> {
         temporaryScanTokenService.checkToken(subtaskId, token)
-        return ResponseBuilder.success(temporaryScanTokenService.getToolInput(subtaskId))
+        return ResponseBuilder.success(temporaryScanTokenService.getToolInput(subtaskId, token))
     }
 
     @ApiOperation("拉取扫描子任务")
@@ -69,7 +69,7 @@ class UserTemporaryScanController(
         @RequestParam token: String
     ): Response<ToolInput?> {
         temporaryScanTokenService.checkToken(executionCluster, token)
-        val toolInput = temporaryScanTokenService.pullToolInput(executionCluster)
+        val toolInput = temporaryScanTokenService.pullToolInput(executionCluster, token)
         toolInput?.let { temporaryScanTokenService.setToken(it.taskId, token) }
         return ResponseBuilder.success(toolInput)
     }
@@ -84,7 +84,6 @@ class UserTemporaryScanController(
         return ResponseBuilder.success()
     }
 
-
     @ApiOperation("扫描任务状态更新")
     @PutMapping("/scan/subtask/{subtaskId}/status")
     fun updateSubScanTaskStatus(
@@ -94,5 +93,16 @@ class UserTemporaryScanController(
     ): Response<Boolean> {
         temporaryScanTokenService.checkToken(subtaskId, token)
         return ResponseBuilder.success(scanService.updateSubScanTaskStatus(subtaskId, status))
+    }
+
+    @ApiOperation("维持任务心跳")
+    @PostMapping("/scan/subtask/{subtaskId}/heartbeat")
+    fun heartbeat(
+        @PathVariable subtaskId: String,
+        @RequestParam token: String
+    ): Response<Void> {
+        temporaryScanTokenService.checkToken(subtaskId, token)
+        scanService.heartbeat(subtaskId)
+        return ResponseBuilder.success()
     }
 }

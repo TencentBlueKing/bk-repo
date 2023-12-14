@@ -36,6 +36,6 @@ interface TemporaryScanTokenService {
     fun createExecutionClusterToken(executionClusterName: String): String
     fun checkToken(subtaskId: String, token: String?)
     fun deleteToken(subtaskId: String)
-    fun getToolInput(subtaskId: String): ToolInput
-    fun pullToolInput(executionCluster: String): ToolInput?
+    fun getToolInput(subtaskId: String, token: String): ToolInput
+    fun pullToolInput(executionCluster: String, token: String): ToolInput?
 }

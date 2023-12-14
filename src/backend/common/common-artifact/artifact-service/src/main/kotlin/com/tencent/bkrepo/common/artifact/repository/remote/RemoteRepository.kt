@@ -31,11 +31,8 @@
 
 package com.tencent.bkrepo.common.artifact.repository.remote
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.NetworkProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -47,24 +44,16 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import okhttp3.Authenticator
-import okhttp3.Credentials
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import org.slf4j.LoggerFactory
-import java.net.InetSocketAddress
-import java.net.Proxy
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 
 /**
  * 远程仓库抽象逻辑
@@ -225,49 +214,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 创建http client
      */
     protected fun createHttpClient(configuration: RemoteConfiguration, addInterceptor: Boolean = true): OkHttpClient {
-        val builder = HttpClientBuilderFactory.create()
-        builder.readTimeout(configuration.network.readTimeout, TimeUnit.MILLISECONDS)
-        builder.connectTimeout(configuration.network.connectTimeout, TimeUnit.MILLISECONDS)
-        builder.proxy(createProxy(configuration.network.proxy))
-        builder.proxyAuthenticator(createProxyAuthenticator(configuration.network.proxy))
-        if (addInterceptor) {
-            createAuthenticateInterceptor(configuration.credentials)?.let { builder.addInterceptor(it) }
-        }
-        return builder.build()
-    }
-
-    /**
-     * 创建代理
-     */
-    private fun createProxy(configuration: NetworkProxyConfiguration?): Proxy {
-        return configuration?.let { Proxy(Proxy.Type.HTTP, InetSocketAddress(it.host, it.port)) } ?: Proxy.NO_PROXY
-    }
-
-    /**
-     * 创建代理身份认证
-     */
-    private fun createProxyAuthenticator(configuration: NetworkProxyConfiguration?): Authenticator {
-        val username = configuration?.username
-        val password = configuration?.password
-        return if (username != null && password != null) {
-            Authenticator { _, response ->
-                response.request
-                    .newBuilder()
-                    .header(HttpHeaders.PROXY_AUTHORIZATION, Credentials.basic(username, password))
-                    .build()
-            }
-        } else Authenticator.NONE
-    }
-
-    /**
-     * 创建身份认证拦截器
-     */
-    private fun createAuthenticateInterceptor(configuration: RemoteCredentialsConfiguration): Interceptor? {
-        val username = configuration.username
-        val password = configuration.password
-        return if (username != null && password != null) {
-            BasicAuthInterceptor(username, password)
-        } else null
+        return buildOkHttpClient(configuration, addInterceptor).build()
     }
 
     /**

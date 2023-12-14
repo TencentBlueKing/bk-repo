@@ -30,6 +30,7 @@ package com.tencent.bkrepo.analyst.dao
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.analyst.model.TSubScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.CredentialsKeyFiles
@@ -117,11 +118,15 @@ class SubScanTaskDao(
             .set(TSubScanTask::lastModifiedDate.name, now)
             .set(TSubScanTask::status.name, status.name)
         if (status == EXECUTING) {
-            update.set(TSubScanTask::timeoutDateTime.name, timeoutDateTime)
             update.set(TSubScanTask::startDateTime.name, now)
+        } else if (status == PULLED) {
+            update.set(TSubScanTask::heartbeatDateTime.name, now)
+            update.set(TSubScanTask::timeoutDateTime.name, timeoutDateTime)
             update.inc(TSubScanTask::executedTimes.name, 1)
-        } else {
+        }
+        if (status != PULLED && status != EXECUTING) {
             update.unset(TSubScanTask::timeoutDateTime.name)
+            update.unset(TSubScanTask::heartbeatDateTime.name)
         }
 
         val updateResult = updateFirst(query, update)
@@ -136,11 +141,9 @@ class SubScanTaskDao(
         return updateResult
     }
 
-    fun incExecutedTimes(subTaskId: String): UpdateResult {
-        val criteria = Criteria.where(ID).isEqualTo(subTaskId)
-        val update = Update()
-            .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
-            .inc(TSubScanTask::executedTimes.name, 1)
+    fun heartbeat(subtaskId: String): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(subtaskId).and(TSubScanTask::status.name).`in`(PULLED, EXECUTING)
+        val update = Update.update(TSubScanTask::heartbeatDateTime.name, LocalDateTime.now())
         return updateFirst(Query(criteria), update)
     }
 
@@ -177,10 +180,14 @@ class SubScanTaskDao(
     /**
      * 获取项目[projectId]扫描中的任务数量
      */
-    fun scanningCount(projectId: String): Long {
+    fun scanningCount(projectId: String, includeGlobal: Boolean = false): Long {
         val criteria = Criteria
             .where(TSubScanTask::projectId.name).isEqualTo(projectId)
             .and(TSubScanTask::status.name).inValues(SubScanTaskStatus.RUNNING_STATUS)
+            .and(TSubScanTask::triggerType.name).ne(ScanTriggerType.ON_NEW_ARTIFACT_SYSTEM.name)
+        if (!includeGlobal) {
+            criteria.and("${TSubScanTask::metadata.name}.key").ne(TaskMetadata.TASK_METADATA_GLOBAL)
+        }
         return count(Query(criteria))
     }
 
@@ -229,22 +236,21 @@ class SubScanTaskDao(
     /**
      * 获取一个执行超时的任务
      *
-     * @param timeoutSeconds 允许执行的最长时间
+     * @param heartbeatTimeoutSeconds 心跳超时时间
      */
-    fun firstTimeoutTask(timeoutSeconds: Long, dispatcher: String?): TSubScanTask? {
+    fun firstTimeoutTask(heartbeatTimeoutSeconds: Long, dispatcher: String?): TSubScanTask? {
         val now = LocalDateTime.now()
 
-        val lastModifiedCriteria = Criteria
-            .where(TSubScanTask::lastModifiedDate.name).lt(now.minusSeconds(timeoutSeconds))
-            .and(TSubScanTask::timeoutDateTime.name).exists(false)
-
-        val timeoutCriteria = Criteria().orOperator(
-            TSubScanTask::timeoutDateTime.lt(now),
-            lastModifiedCriteria
-        )
+        val timeoutCriteria = ArrayList<Criteria>()
+        timeoutCriteria.add(TSubScanTask::timeoutDateTime.lt(now))
+        if(heartbeatTimeoutSeconds > 0) {
+            val heartbeatTimeoutCriteria = Criteria
+                .where(TSubScanTask::heartbeatDateTime.name).lt(now.minusSeconds(heartbeatTimeoutSeconds))
+            timeoutCriteria.add(heartbeatTimeoutCriteria)
+        }
 
         val criteria = Criteria().andOperator(
-            timeoutCriteria,
+            Criteria().orOperator(timeoutCriteria),
             TSubScanTask::status.inValues(PULLED.name, EXECUTING.name),
             dispatcherCriteria(dispatcher)
         )

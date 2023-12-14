@@ -41,18 +41,22 @@ import com.tencent.bkrepo.common.artifact.constant.NODE_DETAIL_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
+import com.tencent.bkrepo.common.artifact.constant.REPO_RATE_LIMIT_KEY
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
+import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.core.config.RateLimitProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
@@ -61,6 +65,7 @@ import javax.servlet.http.HttpServletRequest
 class ArtifactContextHolder(
     artifactConfigurers: List<ArtifactConfigurer>,
     compositeRepository: CompositeRepository,
+    proxyRepository: ProxyRepository,
     repositoryClient: RepositoryClient,
     nodeClient: NodeClient,
     private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
@@ -69,6 +74,7 @@ class ArtifactContextHolder(
     init {
         Companion.artifactConfigurers = artifactConfigurers
         Companion.compositeRepository = compositeRepository
+        Companion.proxyRepository = proxyRepository
         Companion.repositoryClient = repositoryClient
         Companion.nodeClient = nodeClient
         Companion.httpAuthSecurity = httpAuthSecurity
@@ -81,9 +87,14 @@ class ArtifactContextHolder(
     companion object {
         private lateinit var artifactConfigurers: List<ArtifactConfigurer>
         private lateinit var compositeRepository: CompositeRepository
+        private lateinit var proxyRepository: ProxyRepository
         private lateinit var repositoryClient: RepositoryClient
         private lateinit var nodeClient: NodeClient
         private lateinit var httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
+
+
+        private const val RECEIVE_RATE_LIMIT_OF_REPO = "receiveRateLimit"
+        private const val RESPONSE_RATE_LIMIT_OF_REPO = "responseRateLimit"
 
         private val artifactConfigurerMap = mutableMapOf<RepositoryType, ArtifactConfigurer>()
         private val repositoryDetailCache = CacheBuilder.newBuilder()
@@ -124,6 +135,7 @@ class ArtifactContextHolder(
                 RepositoryCategory.REMOTE -> currentArtifactConfigurer.getRemoteRepository()
                 RepositoryCategory.VIRTUAL -> currentArtifactConfigurer.getVirtualRepository()
                 RepositoryCategory.COMPOSITE -> compositeRepository
+                RepositoryCategory.PROXY -> proxyRepository
             }
         }
 
@@ -255,12 +267,11 @@ class ArtifactContextHolder(
             return otherRepo ?: throw RepoNotFoundException(repoName)
         }
 
-        fun getNodeDetail(projectId: String? = null, repoName: String? = null, fullPath: String? = null): NodeDetail? {
+        fun getNodeDetail(artifactInfo: ArtifactInfo): NodeDetail? {
             val request = HttpContextHolder.getRequestOrNull() ?: return null
-            val artifactInfo = getArtifactInfo(request) ?: return null
-            val finalProjectId = projectId ?: artifactInfo.projectId
-            val finalRepoName = repoName ?: artifactInfo.repoName
-            val finalFullPath = fullPath ?: artifactInfo.getArtifactFullPath()
+            val finalProjectId = artifactInfo.projectId
+            val finalRepoName = artifactInfo.repoName
+            val finalFullPath = artifactInfo.getArtifactFullPath()
 
             val attrKey = "$NODE_DETAIL_KEY:$finalProjectId:$finalRepoName$finalFullPath"
             val nodeDetailAttribute = request.getAttribute(attrKey)
@@ -276,6 +287,36 @@ class ArtifactContextHolder(
             ).data
             nodeDetail?.let { request.setAttribute(attrKey, nodeDetail) }
             return nodeDetail
+        }
+
+        /**
+         * 获取仓库级别的限速配置
+         */
+        fun getRateLimitOfRepo(): RateLimitProperties {
+            val request = HttpContextHolder.getRequestOrNull() ?: return RateLimitProperties()
+            val repoRateLimitAttribute = request.getAttribute(REPO_RATE_LIMIT_KEY)
+            if (repoRateLimitAttribute != null) {
+                require(repoRateLimitAttribute is RateLimitProperties)
+                return repoRateLimitAttribute
+            }
+            // 临时下载链接可能会使用 generic 下载其他业务类型的制品，此处先避免仓库找不到异常
+            // 此处修改潜在风险：当其他类型仓库使用 generic 服务的临时下载链接下载时无法控制住
+            val repo = getRepoDetailOrNull() ?: return RateLimitProperties()
+            val receiveRateLimit = convertToDataSize(repo.configuration.getStringSetting(RECEIVE_RATE_LIMIT_OF_REPO))
+            val responseRateLimit = convertToDataSize(repo.configuration.getStringSetting(RESPONSE_RATE_LIMIT_OF_REPO))
+            val rateLimitProperties = RateLimitProperties(receiveRateLimit, responseRateLimit)
+            request.setAttribute(REPO_RATE_LIMIT_KEY, rateLimitProperties)
+            return rateLimitProperties
+
+        }
+
+        private fun convertToDataSize(dataSize: String?): DataSize {
+            if (dataSize.isNullOrEmpty()) return DataSize.ofBytes(-1)
+            return try {
+                DataSize.parse(dataSize)
+            } catch (e: Exception) {
+                DataSize.ofBytes(-1)
+            }
         }
     }
 

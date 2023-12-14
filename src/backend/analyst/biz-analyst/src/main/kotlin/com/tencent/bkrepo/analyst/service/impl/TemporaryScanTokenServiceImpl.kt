@@ -29,17 +29,19 @@ package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.EXPIRED_SECONDS
+import com.tencent.bkrepo.analyst.exception.ArtifactDeletedException
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.constant.USER_KEY
@@ -64,6 +66,7 @@ import org.springframework.data.redis.connection.RedisStringCommands.SetOption.U
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.types.Expiration
 import org.springframework.stereotype.Service
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -124,15 +127,28 @@ class TemporaryScanTokenServiceImpl(
         redisTemplate.delete(tokenKey(subtaskId))
     }
 
-    override fun getToolInput(subtaskId: String): ToolInput {
-        return getToolInput(scanService.get(subtaskId))
+    override fun getToolInput(subtaskId: String, token: String): ToolInput {
+        try {
+            return getToolInput(scanService.get(subtaskId).apply { this.token = token })
+        } catch (e: ArtifactDeletedException) {
+            logger.warn("artifact [${e.sha256}] was deleted, set subtask[$subtaskId] to failed")
+            scanService.reportResult(ReportResultRequest(subtaskId, SubScanTaskStatus.FAILED.name))
+            throw e
+        }
     }
 
-    override fun pullToolInput(executionCluster: String): ToolInput? {
+    override fun pullToolInput(executionCluster: String, token: String): ToolInput? {
         val subtask = scanService.pull(executionCluster)
         return subtask?.let {
             logger.info("executionCluster[$executionCluster] pull subtask[${it.taskId}]")
-            getToolInput(it)
+            subtask.token = token
+            try {
+                getToolInput(it)
+            } catch (e: ArtifactDeletedException) {
+                logger.warn("artifact [${e.sha256}] was deleted, set subtask[${it.taskId}] to failed")
+                scanService.reportResult(ReportResultRequest(it.taskId, SubScanTaskStatus.FAILED.name))
+                null
+            }
         }
     }
 
@@ -156,17 +172,17 @@ class TemporaryScanTokenServiceImpl(
             if (tokens.isNotOk()) {
                 throw SystemErrorException(SYSTEM_ERROR, "create token failed, subtask[$subtask], res[$tokens]")
             }
-
+            val ssid = Base64.getEncoder().encodeToString("$taskId:$token".toByteArray())
             val tokenMap = tokens.data!!.associateBy { it.fullPath }
             val fileUrls = fullPaths.map { (key, value) ->
                 val url = tokenMap[key]!!.let {
                     "$baseUrl/api/generic/temporary/download" +
-                        "/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}"
+                            "/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}&ssid=$ssid"
                 }
                 value.copy(url = url)
             }
 
-            val args = ToolInput.generateArgs(scanner, repoType, packageSize, packageKey, version)
+            val args = ToolInput.generateArgs(scanner, repoType, packageSize, packageKey, version, extra)
             return ToolInput.create(taskId, fileUrls, args)
         }
     }
@@ -209,33 +225,28 @@ class TemporaryScanTokenServiceImpl(
     private fun tokenKey(subtaskId: String) = "scanner:token:$subtaskId"
 
     private fun getNodes(projectId: String, repoName: String, sha256: List<String>): List<Map<String, Any?>> {
-        val distinctNodes = HashMap<String, Map<String, Any?>>()
-
-        var pageNumber = DEFAULT_PAGE_NUMBER
-        val pageSize = DEFAULT_PAGE_SIZE
-        while (true) {
-            val res = nodeClient.search(
+        return sha256.toSet().map {
+            val res = nodeClient.queryWithoutCount(
                 NodeQueryBuilder()
                     .projectId(projectId)
                     .repoName(repoName)
-                    .rule(NodeDetail::sha256.name, sha256, OperationType.IN)
+                    .rule(NodeDetail::sha256.name, it, OperationType.EQ)
                     .select(NodeDetail::fullPath.name, NodeDetail::size.name, NodeDetail::sha256.name)
-                    .page(pageNumber++, pageSize)
+                    .page(DEFAULT_PAGE_NUMBER, 1)
                     .build()
             )
 
             if (res.isNotOk()) {
-                logger.error("get image nodes failed, msg[${res.message}], sha256[$sha256]")
-                throw ErrorCodeException(SYSTEM_ERROR)
+                logger.error("get node of layer[$it] failed, msg[${res.message}]")
+                throw SystemErrorException()
             }
 
-            // 同一个sha256可能会查询到多个node，需要去重
-            res.data!!.records.forEach { distinctNodes[it[NodeDetail::sha256.name]!!.toString()] = it }
-            if (res.data!!.records.size < pageSize || res.data!!.totalRecords.toInt() == res.data!!.records.size) {
-                break
+            if (res.data!!.records.isEmpty()) {
+                throw ArtifactDeletedException(it)
             }
+
+            res.data!!.records.first()
         }
-        return distinctNodes.values.toList()
     }
 
     companion object {

@@ -47,5 +47,8 @@ data class RepositoryProperties(
     @NestedConfigurationProperty
     var job: RepoJobProperties = RepoJobProperties(),
     @NestedConfigurationProperty
-    var repoStorageMapping: RepoStorageMapping = RepoStorageMapping()
+    var repoStorageMapping: RepoStorageMapping = RepoStorageMapping(),
+    var allowUserAddSystemMetadata: List<String> = emptyList(),
+    var gitUrl: String = "",
+    var svnUrl: String = "",
 )

@@ -177,7 +177,7 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao findAndModify: [$query], [$update]")
         }
-        return determineMongoTemplate().findAndModify(query, update, options, clazz)
+        return determineMongoTemplate().findAndModify(query, update, options, clazz, determineCollectionName(query))
     }
 
     protected open fun determineCollectionName(): String {

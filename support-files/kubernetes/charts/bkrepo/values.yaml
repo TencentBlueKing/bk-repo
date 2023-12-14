@@ -154,6 +154,14 @@ init:
   entrance:
     enabled: false
     bkCiProjectInnerUrl:
+  iam:
+    enabled: true
+    image:
+      registry: registry.hub.docker.com
+      repository: bkrepo/bkrepo-init-rbac
+      tag: 1.1.0
+      pullPolicy: IfNotPresent
+      pullSecrets: [ ]
   ## bcs repo配置
   bcs:
     enabled: false
@@ -212,6 +220,7 @@ common:
       # 是否启用nfs挂载
       nfs:
         enabled: false
+        capacity: 100Ti
         path: /
         server:
 
@@ -375,6 +384,15 @@ auth:
     allowDefaultPwd: true
     ## 指定realm类型，支持local/devops
     realm: local
+    ## realm 指定为devops或者bkiamv3配置
+    ## 权限v3-rbac相关配置
+    iam: 
+      callbackUser: bk_iam
+      systemId: 
+      apigwBaseUrl:  
+      appCode:  
+      appSecret: 
+      applyJoinUserGroupUrl: 
     ## realm 指定为devops配置
     devops:
       # bkci accountId in bkrepo

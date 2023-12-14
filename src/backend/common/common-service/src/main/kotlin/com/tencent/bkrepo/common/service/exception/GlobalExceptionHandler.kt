@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.service.exception
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.core.Ordered
@@ -135,6 +136,11 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
         val deferredResult = DeferredResult<Response<Void>>()
         deferredResult.setResult(response(errorCodeException))
         return deferredResult
+    }
+
+    @ExceptionHandler(TooManyRequestsException::class)
+    fun handleException(exception: TooManyRequestsException): Response<Void> {
+        return response(exception)
     }
 
     @ExceptionHandler(Exception::class)

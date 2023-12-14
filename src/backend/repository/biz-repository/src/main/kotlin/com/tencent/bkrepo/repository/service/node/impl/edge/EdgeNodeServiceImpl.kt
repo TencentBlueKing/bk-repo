@@ -41,12 +41,14 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.node.impl.NodeArchiveSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeRenameSupport
@@ -83,8 +85,8 @@ class EdgeNodeServiceImpl(
     messageSupplier,
     clusterProperties
 ) {
-    override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
-        return NodeStatsSupport(this).computeSize(artifact)
+    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
+        return NodeStatsSupport(this).computeSize(artifact, estimated)
     }
 
     override fun aggregateComputeSize(criteria: Criteria): Long {
@@ -135,9 +137,10 @@ class EdgeNodeServiceImpl(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator)
+        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -162,6 +165,10 @@ class EdgeNodeServiceImpl(
         return NodeRestoreSupport(this).getDeletedNodeDetail(artifact)
     }
 
+    override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {
+        return NodeRestoreSupport(this).getDeletedNodeDetailBySha256(projectId, repoName, sha256)
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
         centerNodeClient.restoreNode(NodeRestoreRequest(artifact, nodeRestoreOption))
@@ -174,5 +181,13 @@ class EdgeNodeServiceImpl(
 
     override fun restoreNode(restoreContext: NodeRestoreSupport.RestoreContext): NodeRestoreResult {
         return NodeRestoreSupport(this).restoreNode(restoreContext)
+    }
+
+    override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
+        return NodeArchiveSupport(this).archiveNode(nodeArchiveRequest)
+    }
+
+    override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
+        return NodeArchiveSupport(this).restoreNode(nodeArchiveRequest)
     }
 }

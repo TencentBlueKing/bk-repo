@@ -42,10 +42,13 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
@@ -56,6 +59,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
@@ -81,6 +85,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
@@ -213,11 +218,7 @@ class GenericLocalRepository(
     private fun downloadSingleNode(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val node = getNodeDetailsFromReq(true)?.firstOrNull()
-                ?: ArtifactContextHolder.getNodeDetail(
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = artifactInfo.getArtifactFullPath()
-                )
+                ?: ArtifactContextHolder.getNodeDetail(artifactInfo)
                 ?: return null
             if (node.folder) {
                 return downloadFolder(this, node)
@@ -416,6 +417,26 @@ class GenericLocalRepository(
 
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
+    }
+
+    override fun query(context: ArtifactQueryContext): Any? {
+        val artifactInfo = context.artifactInfo
+        return nodeClient.getNodeDetail(
+            artifactInfo.projectId,
+            artifactInfo.repoName,
+            artifactInfo.getArtifactFullPath()
+        ).data
+    }
+
+    override fun search(context: ArtifactSearchContext): List<Any> {
+        require(context is GenericArtifactSearchContext)
+        return context.queryModel?.let {
+            // 强制替换为请求的projectId与repoName避免越权
+            val newRule = replaceProjectIdAndRepo(it.rule, context.projectId, context.repoName)
+            nodeClient.queryWithoutCount(it.copy(rule = newRule)).data!!.records.onEach { node ->
+                (node as MutableMap<String, Any?>)[RepositoryInfo::category.name] = RepositoryCategory.LOCAL.name
+            }
+        } ?: emptyList()
     }
 
     /**

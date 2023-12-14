@@ -136,6 +136,7 @@ body {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    vertical-align: middle;
     &:before {
         content: attr(data-name);
     }

@@ -3,10 +3,14 @@ import createLocale from '@locale'
  *  转换文件大小
  */
 export function convertFileSize (size, unit = 'B') {
-    const arr = ['B', 'KB', 'MB', 'GB', 'TB']
+    const arr = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
     const index = arr.findIndex(v => v === unit)
     if (size > 1024) {
-        return convertFileSize(size / 1024, arr[index + 1])
+        if (arr[index + 1]) {
+            return convertFileSize(size / 1024, arr[index + 1])
+        } else {
+            return `${index ? size.toFixed(2) : size}${unit}`
+        }
     } else {
         return `${index ? size.toFixed(2) : size}${unit}`
     }

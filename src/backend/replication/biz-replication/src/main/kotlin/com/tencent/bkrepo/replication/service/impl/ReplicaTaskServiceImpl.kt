@@ -56,11 +56,11 @@ import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionStrategy
-import com.tencent.bkrepo.replication.replica.edge.EdgePullReplicaExecutor
-import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler
-import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
-import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
-import com.tencent.bkrepo.replication.replica.schedule.ScheduledReplicaJob
+import com.tencent.bkrepo.replication.replica.type.edge.EdgePullReplicaExecutor
+import com.tencent.bkrepo.replication.replica.type.schedule.ReplicaTaskScheduler
+import com.tencent.bkrepo.replication.replica.type.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
+import com.tencent.bkrepo.replication.replica.type.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
+import com.tencent.bkrepo.replication.replica.type.schedule.ScheduledReplicaJob
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
@@ -264,6 +264,7 @@ class ReplicaTaskServiceImpl(
         return when (replicaObjectType) {
             ReplicaObjectType.PACKAGE -> computePackageSize(localProjectId, replicaTaskObjects)
             ReplicaObjectType.PATH -> computeNodeSize(localProjectId, replicaTaskObjects)
+            ReplicaObjectType.REPOSITORY -> computeRepositorySize(localProjectId, replicaTaskObjects)
             else -> -1
         }
     }
@@ -286,7 +287,7 @@ class ReplicaTaskServiceImpl(
         val taskObject = replicaTaskObjects.first()
         return taskObject.pathConstraints!!.sumOf {
             val node = localDataManager.findNodeDetail(localProjectId, taskObject.localRepoName, it.path!!)
-            if (node.folder) {
+            if (node.folder && node.size == 0L) {
                 try {
                     localDataManager.listNode(localProjectId, taskObject.localRepoName, it.path!!).sumOf { n -> n.size }
                 } catch (e: Exception) {
@@ -297,6 +298,11 @@ class ReplicaTaskServiceImpl(
                 node.size
             }
         }
+    }
+
+    private fun computeRepositorySize(localProjectId: String, replicaTaskObjects: List<ReplicaObjectInfo>): Long {
+        val taskObject = replicaTaskObjects.first()
+        return localDataManager.getRepoMetricInfo(localProjectId, taskObject.localRepoName)
     }
 
     private fun validateRequest(request: ReplicaTaskCreateRequest) {

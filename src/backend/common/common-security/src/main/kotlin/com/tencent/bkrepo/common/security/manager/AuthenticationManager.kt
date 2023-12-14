@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.security.manager
 import com.tencent.bkrepo.auth.api.ServiceAccountClient
 import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
@@ -60,7 +61,11 @@ class AuthenticationManager(
      * @throws AuthenticationException 校验失败
      */
     fun checkPlatformAccount(accessKey: String, secretKey: String): String {
-        val response = serviceAccountClient.checkAccountCredential(accessKey, secretKey)
+        val response = serviceAccountClient.checkAccountCredential(
+            accesskey = accessKey,
+            secretkey = secretKey,
+            authorizationGrantType = AuthorizationGrantType.PLATFORM
+        )
         return response.data ?: throw AuthenticationException("AccessKey/SecretKey check failed.")
     }
 

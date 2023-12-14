@@ -41,6 +41,8 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -58,6 +60,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -133,7 +136,7 @@ interface NodeClient {
 
     @ApiOperation("删除节点")
     @DeleteMapping("/batch/delete")
-    fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
+    fun deleteNodes(@RequestBody nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
 
     @ApiOperation("恢复节点")
     @PostMapping("/restore")
@@ -147,7 +150,9 @@ interface NodeClient {
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
         @ApiParam(value = "节点完整路径", required = true)
-        @RequestParam fullPath: String
+        @RequestParam fullPath: String,
+        @ApiParam(value = "估计值", required = false)
+        @RequestParam estimated: Boolean = false
     ): Response<NodeSizeInfo>
 
     @ApiOperation("查询文件节点数量")
@@ -161,11 +166,11 @@ interface NodeClient {
         @RequestParam path: String
     ): Response<Long>
 
-    @ApiOperation("自定义查询节点")
+    @ApiOperation("自定义查询节点，如不关注总记录数请使用queryWithoutCount")
     @PostMapping("/search")
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 
-    @ApiOperation("自定义查询节点")
+    @ApiOperation("自定义查询节点，不计算总记录数")
     @PostMapping("/queryWithoutCount")
     fun queryWithoutCount(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 
@@ -194,4 +199,31 @@ interface NodeClient {
         @PathVariable repoName: String,
         @RequestParam fullPath: String
     ): Response<List<NodeDetail>>
+
+    @ApiOperation("通过sha256查询已删除节点")
+    @GetMapping("/deletedBySha256/detail/{projectId}/{repoName}")
+    fun getDeletedNodeDetailBySha256(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam sha256: String
+    ): Response<NodeDetail?>
+
+    /**
+     * 归档文件成功通知
+     * */
+    @ApiOperation("归档节点")
+    @PutMapping("/archive/")
+    fun archiveNode(@RequestBody nodeArchiveRequest: NodeArchiveRequest): Response<Void>
+
+    /**
+     * 恢复文件成功通知
+     * */
+    @ApiOperation("恢复节点")
+    @PutMapping("/archive/restore/")
+    fun restoreNode(@RequestBody nodeArchiveRequest: NodeArchiveRequest): Response<Void>
+
+
+    @ApiOperation("清理最后修改时间早于{date}的文件节点")
+    @DeleteMapping("/clean")
+    fun cleanNodes(@RequestBody nodeCleanRequest: NodeCleanRequest): Response<NodeDeleteResult>
 }

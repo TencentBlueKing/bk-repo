@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.artifact.repository.core
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
@@ -53,6 +55,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -141,9 +144,10 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val code = exception.messageCode.getCode()
             val clientAddress = HttpContextHolder.getClientAddress()
             val xForwardedFor = HttpContextHolder.getXForwardedFor()
+            val range = HeaderUtils.getHeader(HttpHeaders.RANGE) ?: StringPool.DASH
             logger.warn(
                 "User[$principal],ip[$clientAddress] download artifact[$artifactInfo] failed[$code]$message" +
-                    " X_FORWARDED_FOR: $xForwardedFor"
+                    " X_FORWARDED_FOR: $xForwardedFor, range: $range"
             )
             ArtifactMetrics.getDownloadFailedCounter().increment()
         } catch (exception: Exception) {
@@ -233,7 +237,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         if (throughput != Throughput.EMPTY) {
             publisher.publishEvent(ArtifactResponseEvent(artifactResource, throughput, context.storageCredentials))
             publishNodeDownloadEvent(context)
-            logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
+            val range = HeaderUtils.getHeader(HttpHeaders.RANGE) ?: StringPool.DASH
+            logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success," +
+                " range: $range")
         }
     }
 

@@ -38,7 +38,11 @@ import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -72,6 +76,43 @@ class ProjectServiceTest @Autowired constructor(
     fun `test create project`() {
         val request = ProjectCreateRequest(UT_PROJECT_ID, UT_PROJECT_DISPLAY, UT_PROJECT_DESC, true, UT_USER)
         projectService.createProject(request)
+    }
+
+    @Test
+    @DisplayName("测试更新项目")
+    fun `test update project`() {
+        // create project
+        val metadata = ProjectMetadata(key = "k", value = "v")
+        val request = ProjectCreateRequest(
+            UT_PROJECT_ID,
+            UT_PROJECT_DISPLAY,
+            UT_PROJECT_DESC,
+            true,
+            UT_USER,
+            listOf(metadata)
+        )
+        val projectInfo = projectService.createProject(request)
+        Assertions.assertEquals(UT_PROJECT_ID, projectInfo.name)
+        Assertions.assertEquals(1, projectInfo.metadata.size)
+
+        // update project
+        val newDisplayName = "$UT_PROJECT_DISPLAY new"
+        val newDes = "$UT_PROJECT_DESC new"
+        val newMetadata = listOf(ProjectMetadata(key = "newKey", value = "newVal"))
+        val updateRequest = ProjectUpdateRequest(
+            displayName = newDisplayName,
+            description = newDes,
+            metadata = newMetadata,
+        )
+        projectService.updateProject(UT_PROJECT_ID, updateRequest)
+        val newProject = projectService.getProjectInfo(UT_PROJECT_ID)
+        Assertions.assertNotNull(newProject)
+        Assertions.assertEquals(newDisplayName, newProject!!.displayName)
+        Assertions.assertEquals(newDes, newProject.description)
+        Assertions.assertEquals(newMetadata.size, newProject.metadata.size)
+        for (i in newMetadata.indices) {
+            Assertions.assertEquals(newMetadata[i], newProject.metadata[i])
+        }
     }
 
     @Test
@@ -128,6 +169,72 @@ class ProjectServiceTest @Autowired constructor(
         removeAllProject()
         request = ProjectCreateRequest(UT_PROJECT_ID, "123-abc", UT_PROJECT_DESC, true, UT_USER)
         projectService.createProject(request)
+    }
+
+    @Test
+    @DisplayName("测试查询项目")
+    fun `test range query projects`() {
+        var request = ProjectCreateRequest(
+            "p1", "p1", "p1", true, UT_USER,
+            listOf(ProjectMetadata("bg", "bg1"), ProjectMetadata("department", "dp1"))
+        )
+        projectService.createProject(request)
+
+        request = ProjectCreateRequest(
+            "p2", "p2", "p2", true, UT_USER,
+            listOf(ProjectMetadata("bg", "bg2"), ProjectMetadata("department", "dp2"))
+        )
+        projectService.createProject(request)
+
+        // 获取所有项目
+        var records = projectService.rangeQuery(ProjectRangeQueryRequest(emptyList())).records
+        Assertions.assertEquals(2, records.size)
+
+        // 通过projectId查询
+        records = projectService.rangeQuery(ProjectRangeQueryRequest(listOf("p2"))).records
+        Assertions.assertEquals(1, records.size)
+        Assertions.assertEquals("p2", records.first()!!.name)
+
+        // 通过metadata查询
+        var query = ProjectRangeQueryRequest(
+            projectIds = emptyList(),
+            projectMetadata = listOf(ProjectMetadata("bg", "bg2"))
+        )
+        records = projectService.rangeQuery(query).records
+        Assertions.assertEquals(1, records.size)
+        Assertions.assertEquals("p2", records.first()!!.name)
+
+        query = ProjectRangeQueryRequest(
+            projectIds = emptyList(),
+            projectMetadata = listOf(ProjectMetadata("bg", "bg1"), ProjectMetadata("department", "dp1"))
+        )
+        records = projectService.rangeQuery(query).records
+        Assertions.assertEquals(1, records.size)
+        Assertions.assertEquals("p1", records.first()!!.name)
+
+        query = ProjectRangeQueryRequest(
+            projectIds = emptyList(),
+            projectMetadata = listOf(ProjectMetadata("bg", "bg2"), ProjectMetadata("department", "dp1"))
+        )
+        records = projectService.rangeQuery(query).records
+        Assertions.assertEquals(0, records.size)
+
+
+        // projectId + metadata查询
+        query = ProjectRangeQueryRequest(
+            projectIds = listOf("p2"),
+            projectMetadata = listOf(ProjectMetadata("bg", "bg2"))
+        )
+        records = projectService.rangeQuery(query).records
+        Assertions.assertEquals(1, records.size)
+        Assertions.assertEquals("p2", records.first()!!.name)
+
+        query = ProjectRangeQueryRequest(
+            projectIds = listOf("p1"),
+            projectMetadata = listOf(ProjectMetadata("bg", "bg2"))
+        )
+        records = projectService.rangeQuery(query).records
+        Assertions.assertEquals(0, records.size)
     }
 
     private fun removeAllProject() {

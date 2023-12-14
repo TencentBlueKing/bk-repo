@@ -59,6 +59,7 @@ object Converter {
             name = scanTaskName(triggerType, scanTask.name),
             taskId = id!!,
             projectId = projectId,
+            projectIds = projectIds,
             createdBy = createdBy,
             lastModifiedDateTime = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
             triggerDateTime = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),

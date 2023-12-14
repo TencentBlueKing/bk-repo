@@ -67,7 +67,6 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -159,7 +158,6 @@ class UserNodeController(
             fullPaths = fullPaths,
             operator = userId
         )
-        PipelineRepoUtils.forbidPipeline(repoName)
         return ResponseBuilder.success(nodeService.deleteNodes(nodesDeleteRequest))
     }
 
@@ -183,16 +181,19 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.countDeleteNodes(nodesDeleteRequest))
     }
 
-    @ApiOperation("清理创建时间早于{date}的文件节点")
+    @ApiOperation("清理最后修改时间早于{date}的文件节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping("/clean/$DEFAULT_MAPPING_URI")
-    fun deleteNodeCreatedBeforeDate(
+    fun deleteNodeLastModifiedBeforeDate(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) date: LocalDateTime
     ): Response<NodeDeleteResult> {
         return ResponseBuilder.success(
-            nodeService.deleteBeforeDate(artifactInfo.projectId, artifactInfo.repoName, date, userId)
+            nodeService.deleteBeforeDate(
+                artifactInfo.projectId, artifactInfo.repoName,
+                date, userId, artifactInfo.getArtifactFullPath()
+            )
         )
     }
 
@@ -355,7 +356,7 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.restoreNode(artifactInfo, nodeRestoreOption))
     }
 
-    @ApiOperation("自定义查询节点")
+    @ApiOperation("自定义查询节点，如不关注总记录数请使用queryWithoutCount")
     @PostMapping("/search")
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
@@ -368,7 +369,7 @@ class UserNodeController(
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
-    @ApiOperation("自定义查询节点")
+    @ApiOperation("自定义查询节点，不计算总记录数")
     @PostMapping("/queryWithoutCount")
     fun queryWithoutCount(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.searchWithoutCount(queryModel))

@@ -50,12 +50,26 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
     token = bk_token
 elseif config.auth_mode == "ticket" then
     local bk_ticket = cookieUtil:get_cookie("bk_ticket")
-    if not bk_ticket then
-        ngx.exit(401)
-        return
+    if bk_ticket == nil then
+        bk_ticket = ngx.var.http_x_devops_bk_ticket
+        if bk_ticket == nil then
+            ngx.exit(401)
+            return
+        end
     end
     username = oauthUtil:verify_ticket(bk_ticket, "ticket")
     token = bk_ticket
+elseif config.auth_mode == "odc" then
+    local bk_token = cookieUtil:get_cookie("bk_token")
+    if bk_token == nil then
+        bk_token = ngx.var.http_x_devops_bk_token
+        if bk_token == nil then
+            ngx.exit(401)
+            return
+        end
+    end
+    username = oauthUtil:verify_tai_token(bk_token)
+    token = bk_token
 elseif config.auth_mode == "ci" then
     local ci_login_token = cookieUtil:get_cookie("X-DEVOPS-CI-LOGIN-TOKEN")
     if not ci_login_token then

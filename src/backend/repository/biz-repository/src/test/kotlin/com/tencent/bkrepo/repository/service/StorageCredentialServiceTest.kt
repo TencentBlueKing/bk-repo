@@ -57,6 +57,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
+import java.time.Duration
 
 @Import(NodeDao::class, FileReferenceDao::class)
 @DisplayName("存储身份凭证服务测试")
@@ -83,7 +84,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         assertEquals(credential.path, dbCredentials.path)
         assertEquals(credential.cache.enabled, dbCredentials.cache.enabled)
         assertEquals(credential.cache.path, dbCredentials.cache.path)
-        assertEquals(credential.cache.expireDays, dbCredentials.cache.expireDays)
+        assertEquals(credential.cache.expireDuration, dbCredentials.cache.expireDuration)
 
         assertThrows<ErrorCodeException> {
             createCredential()
@@ -108,29 +109,29 @@ internal class StorageCredentialServiceTest @Autowired constructor(
     fun testUpdateCredential() {
         val storageCredentials = createCredential()
         assertEquals(true, storageCredentials.cache.loadCacheFirst)
-        assertEquals(10, storageCredentials.cache.expireDays)
+        assertEquals(Duration.ofHours(10), storageCredentials.cache.expireDuration)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, storageCredentials.key)
 
         var updateCredentialsPayload = storageCredentials.apply {
-            cache = cache.copy(loadCacheFirst = false, expireDays = -1)
+            cache = cache.copy(loadCacheFirst = false, expireDuration = Duration.ZERO)
         }
         var updateReq = StorageCredentialsUpdateRequest(updateCredentialsPayload, UT_STORAGE_CREDENTIALS_KEY)
         var updatedStorageCredentials = storageCredentialService.update(UT_USER, updateReq)
         assertEquals(false, updatedStorageCredentials.cache.loadCacheFirst)
-        assertEquals(-1, updatedStorageCredentials.cache.expireDays)
+        assertEquals(Duration.ZERO, updatedStorageCredentials.cache.expireDuration)
         assertEquals(storageCredentials.upload.localPath, updatedStorageCredentials.upload.localPath)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, updatedStorageCredentials.key)
 
         val localPath = "/test"
         updateCredentialsPayload = storageCredentials.apply {
-            cache = cache.copy(loadCacheFirst = true, expireDays = 10)
+            cache = cache.copy(loadCacheFirst = true, expireDuration = Duration.ofHours(10))
             upload = upload.copy(localPath = localPath)
         }
         updateReq = StorageCredentialsUpdateRequest(updateCredentialsPayload, UT_STORAGE_CREDENTIALS_KEY)
         updatedStorageCredentials = storageCredentialService.update(UT_USER, updateReq)
         assertEquals(localPath, updatedStorageCredentials.upload.localPath)
         assertEquals(true, updatedStorageCredentials.cache.loadCacheFirst)
-        assertEquals(10, updatedStorageCredentials.cache.expireDays)
+        assertEquals(Duration.ofHours(10), updatedStorageCredentials.cache.expireDuration)
         assertEquals(localPath, updatedStorageCredentials.upload.localPath)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, updatedStorageCredentials.key)
     }
@@ -216,7 +217,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         credential.apply {
             cache.enabled = true
             cache.path = "cache-test"
-            cache.expireDays = 10
+            cache.expireDuration = Duration.ofHours(10)
             cache.loadCacheFirst = true
         }
     }

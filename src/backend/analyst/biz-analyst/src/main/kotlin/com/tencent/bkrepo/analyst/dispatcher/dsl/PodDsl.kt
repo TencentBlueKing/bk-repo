@@ -1,7 +1,11 @@
 package com.tencent.bkrepo.analyst.dispatcher.dsl
 
+import com.tencent.bkrepo.analyst.pojo.execution.KubernetesExecutionClusterProperties
+import com.tencent.bkrepo.analyst.utils.ScannerUtil
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1Container
+import io.kubernetes.client.openapi.models.V1LocalObjectReference
 import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1PodSpec
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec
@@ -68,4 +72,15 @@ fun V1ResourceRequirements.limits(cpu: Double, memory: Long, ephemeralStorage: L
             "ephemeral-storage" to Quantity("$ephemeralStorage")
         )
     )
+}
+
+fun V1PodSpec.addImagePullSecretsItemIfNeed(
+    scanner: StandardScanner,
+    k8sClusterProp: KubernetesExecutionClusterProperties
+) {
+    if (ScannerUtil.isPrivateImage(scanner)) {
+        val secret = ScannerUtil.getOrCreateSecret(scanner, k8sClusterProp)
+        val secretName = secret.metadata!!.name
+        addImagePullSecretsItem(V1LocalObjectReference().name(secretName))
+    }
 }

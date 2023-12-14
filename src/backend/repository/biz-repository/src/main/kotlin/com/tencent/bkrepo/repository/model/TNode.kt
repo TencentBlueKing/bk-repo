@@ -63,7 +63,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = SHA256_IDX, def = SHA256_IDX_DEF, background = true),
     CompoundIndex(name = COPY_FROM_IDX, def = COPY_FROM_IDX_DEF, background = true),
     CompoundIndex(name = FOLDER_IDX, def = FOLDER_IDX_DEF, background = true),
-    CompoundIndex(name = CLUSTER_NAMES_IDX, def = CLUSTER_NAMES_IDX_DEF, background = true)
+    CompoundIndex(name = CLUSTER_NAMES_IDX, def = CLUSTER_NAMES_IDX_DEF, background = true),
 )
 data class TNode(
     var id: String? = null,
@@ -86,6 +86,8 @@ data class TNode(
     var copyIntoCredentialsKey: String? = null,
     var metadata: MutableList<TMetadata>? = null,
     var clusterNames: Set<String>? = null,
+    var nodeNum: Long? = null,
+    var archived: Boolean? = null,
 
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,

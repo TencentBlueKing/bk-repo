@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.opdata.handler
 
 import com.tencent.bkrepo.opdata.constant.OPDATA_STAT_LIMIT
+import com.tencent.bkrepo.opdata.constant.TOP_VALUE
 import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
@@ -42,14 +43,38 @@ interface QueryHandler {
 
     fun handle(target: Target, result: MutableList<Any>): Any
 
-    fun convToDisplayData(mapData: HashMap<String, Long>, result: MutableList<Any>): List<Any> {
-        mapData.toList().sortedByDescending { it.second }.subList(0, OPDATA_STAT_LIMIT).forEach {
+
+    fun getTopValue(target: Target, defaultTop: Int = OPDATA_STAT_LIMIT): Int {
+        val reqData = if (target.data is Map<*, *>) {
+            target.data as Map<String, Any>
+        } else {
+            null
+        }
+        return reqData?.get(TOP_VALUE)?.toString()?.toIntOrNull() ?: defaultTop
+    }
+
+    fun convToDisplayData(
+        mapData: Map<String, Long>,
+        result: MutableList<Any>,
+        top: Int
+    ): List<Any> {
+        if (mapData.isEmpty()) return result
+        val max = if (mapData.size > top) {
+            top
+        } else {
+            mapData.size
+        }
+        val allNegative = mapData.all { it.value < 0 }
+        val list = if (allNegative) {
+            mapData.toList().sortedBy { it.second }
+        } else {
+            mapData.toList().sortedByDescending { it.second }
+        }
+        list.subList(0, max).forEach {
             val projectId = it.first
             val data = listOf(it.second, System.currentTimeMillis())
             val element = listOf(data)
-            if (it.second != 0L) {
-                result.add(NodeResult(projectId, element))
-            }
+            result.add(NodeResult(projectId, element))
         }
         return result
     }

@@ -80,10 +80,10 @@ object JsonUtils {
  */
 fun Any.toJsonString() = JsonUtils.objectMapper.writeValueAsString(this).orEmpty()
 
-
 fun toJson(any: Any): String {
     return any.toJsonString().replace(System.lineSeparator(), "")
 }
+
 /**
  * 将json字符串反序列化为对象
  */
@@ -93,3 +93,5 @@ inline fun <reified T> String.readJsonString(): T = JsonUtils.objectMapper.readV
  * 将json字符串流反序列化为对象
  */
 inline fun <reified T> InputStream.readJsonString(): T = JsonUtils.objectMapper.readValue(this, jacksonTypeRef<T>())
+
+fun String.jsonCompress() = this.replace("\\s|\\t|\\r|\\n".toRegex(), "")

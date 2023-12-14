@@ -41,15 +41,15 @@ enum class ScannerMessageCode(
     SCAN_TASK_COUNT_EXCEED_LIMIT("scanner.task.count.exceed-limit", 5),
     SCAN_TASK_NAME_BATCH_SCAN("scanner.task.name.manual", 6),
     SCAN_TASK_NAME_SINGLE_SCAN("scanner.task.name.manual.single", 7),
-    SCAN_REPORT_NOTIFY_MESSAGE_SCANNED("scanner.report.notify.message.scanned",8),
-    SCAN_REPORT_NOTIFY_MESSAGE_CVE("scanner.report.notify.message.cve",10),
-    SCAN_REPORT_NOTIFY_MESSAGE_DETAIL("scanner.report.notify.message.detail",14),
+    SCAN_REPORT_NOTIFY_MESSAGE_SCANNED("scanner.report.notify.message.scanned", 8),
+    SCAN_REPORT_NOTIFY_MESSAGE_CVE("scanner.report.notify.message.cve", 10),
+    SCAN_REPORT_NOTIFY_MESSAGE_DETAIL("scanner.report.notify.message.detail", 14),
     SCAN_REPORT_NOTIFY_MESSAGE_TITLE("scanner.report.notify.message.title", 15),
     SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_TIME("scanner.report.notify.message.trigger.time", 16),
     SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_USER("scanner.report.notify.message.trigger.user", 17),
-    LICENSE_NOT_FOUND("license.not-found",18),
-    SCAN_REPORT_NOTIFY_MESSAGE_LICENSE("scanner.report.notify.message.license",19),
-    SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE("scanner.report.notify.message.sensitive",20),
+    LICENSE_NOT_FOUND("license.not-found", 18),
+    SCAN_REPORT_NOTIFY_MESSAGE_LICENSE("scanner.report.notify.message.license", 19),
+    SCAN_REPORT_NOTIFY_MESSAGE_SENSITIVE("scanner.report.notify.message.sensitive", 20),
     EXPORT_REPORT_FAIL("export.report.fail", 21),
     EXPORT_REPORT_STATUS_INIT("export.report.status.init", 22),
     EXPORT_REPORT_STATUS_RUNNING("export.report.status.running", 23),
@@ -58,7 +58,9 @@ enum class ScannerMessageCode(
     EXPORT_REPORT_STATUS_UN_QUALITY("export.report.status.un.quality", 26),
     EXPORT_REPORT_STATUS_QUALITY_PASS("export.report.status.quality.pass", 27),
     EXPORT_REPORT_STATUS_QUALITY_UN_PASS("export.report.status.quality.un.pass", 28),
-    EXPORT_REPORT_STATUS_FAILED("export.report.status.failed", 29);
+    EXPORT_REPORT_STATUS_FAILED("export.report.status.failed", 29),
+    ANALYST_ARTIFACT_DELETED("analyst.artifact.deleted", 30),
+    ANALYST_TASK_EXCEED_MAX_GLOBAL_TASK_COUNT("analyst.task.global.count.exceed", 31);
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

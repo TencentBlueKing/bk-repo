@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.artifact.util.http
 
 import com.tencent.bkrepo.common.artifact.stream.Range
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import java.util.regex.Pattern
 import javax.servlet.http.HttpServletRequest
@@ -42,6 +43,8 @@ import javax.servlet.http.HttpServletRequest
 object HttpRangeUtils {
 
     private val RANGE_HEADER_PATTERN = Pattern.compile("bytes=(\\d+)?-(\\d+)?")
+    private val CONTENT_RANGE_HEADER_PATTERN = Pattern.compile("bytes (\\d+)-(\\d+)/(\\d+)")
+    private val logger = LoggerFactory.getLogger(HttpRangeUtils::class.java)
 
     /**
      * 从[request]中解析Range，[total]代表总长度
@@ -61,6 +64,25 @@ object HttpRangeUtils {
             val start = matcher.group(1).toLong()
             val end = if (matcher.group(2).isNullOrEmpty()) total - 1 else matcher.group(2).toLong()
             Range(start, end, total)
+        }
+    }
+
+    /**
+     * 从[contentRange]中解析Range
+     */
+    fun resolveContentRange(contentRange: String?): Range? {
+        if (contentRange.isNullOrEmpty()) {
+            return null
+        }
+        val matcher = CONTENT_RANGE_HEADER_PATTERN.matcher(contentRange)
+        return if (matcher.matches() && matcher.groupCount() == 3) {
+            val start = matcher.group(1).toLong()
+            val end = matcher.group(2).toLong()
+            val total = matcher.group(3).toLong()
+            Range(start, end, total)
+        } else {
+            logger.error("unknown range[$contentRange]")
+            null
         }
     }
 }

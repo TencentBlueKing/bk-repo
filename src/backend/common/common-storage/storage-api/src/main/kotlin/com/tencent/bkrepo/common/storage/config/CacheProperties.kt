@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.common.storage.config
 
+import java.time.Duration
+
 /**
  * 本地文件缓存属性
  */
@@ -50,5 +52,10 @@ data class CacheProperties(
     /**
      * 缓存文件时间，单位天。小于或等于0则永久存储
      */
-    var expireDays: Int = -1
+    @Deprecated(message = "replace with expireDuration")
+    var expireDays: Int = -1,
+    /**
+     * 缓存文件时间，小于或等于0则永久存储
+     */
+    var expireDuration: Duration = Duration.ofHours(12)
 )

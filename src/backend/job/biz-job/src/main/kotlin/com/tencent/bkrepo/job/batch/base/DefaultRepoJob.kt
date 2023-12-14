@@ -66,6 +66,7 @@ abstract class DefaultRepoJob(
     data class ProxyRepoData(private val map: Map<String, Any?>) {
         val name: String by map
         val projectId: String by map
+        val type: String by map
         val configuration: String by map
     }
 

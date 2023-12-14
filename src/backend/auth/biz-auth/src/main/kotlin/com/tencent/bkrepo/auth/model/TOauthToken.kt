@@ -28,16 +28,20 @@
 package com.tencent.bkrepo.auth.model
 
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.oauth.IdToken
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
 
 @Document("oauth_token")
 data class TOauthToken(
     val id: String? = null,
-    val accessToken: String,
+    var accessToken: String,
+    var refreshToken: String?,
+    val expireSeconds: Long?,
     val type: String,
     val accountId: String,
-    val userId: String,
+    var userId: String,
     var scope: Set<ResourceType>?,
-    val issuedAt: Instant
+    var issuedAt: Instant,
+    var idToken: IdToken?
 )

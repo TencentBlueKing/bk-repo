@@ -33,8 +33,11 @@ import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.util.ClientBuilder
 import io.kubernetes.client.util.Config
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication
+import java.time.Duration
 
-fun buildCommand(cmd: String, baseUrl: String, subtaskId: String, token: String, ): List<String> {
+fun buildCommand(
+    cmd: String, baseUrl: String, subtaskId: String, token: String, heartbeatTimeout: Duration
+): List<String> {
     val command = ArrayList<String>()
     command.addAll(cmd.split(" "))
     command.add("--url")
@@ -43,6 +46,8 @@ fun buildCommand(cmd: String, baseUrl: String, subtaskId: String, token: String,
     command.add(token)
     command.add("--task-id")
     command.add(subtaskId)
+    command.add("--heartbeat")
+    command.add((heartbeatTimeout.seconds / 2L).toString())
     return command
 }
 

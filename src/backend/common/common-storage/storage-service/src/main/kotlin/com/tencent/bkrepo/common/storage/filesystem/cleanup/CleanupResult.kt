@@ -36,8 +36,22 @@ data class CleanupResult(
     var cleanupFile: Long = 0,
     var cleanupFolder: Long = 0,
     var cleanupSize: Long = 0,
-    var errorCount: Long = 0
+    var errorCount: Long = 0,
 ) {
+
+    fun merge(vararg others: CleanupResult): CleanupResult {
+        others.forEach {
+            totalFile += it.totalFile
+            totalFolder += it.totalFolder
+            totalSize += it.totalSize
+            cleanupFile += it.cleanupFile
+            cleanupFolder += it.cleanupFolder
+            cleanupSize += it.cleanupSize
+            errorCount += it.errorCount
+        }
+        return this
+    }
+
     override fun toString(): String {
         return "$cleanupFile/$totalFile[${HumanReadable.size(cleanupSize)}/${HumanReadable.size(totalSize)}] " +
             "files deleted,errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted."

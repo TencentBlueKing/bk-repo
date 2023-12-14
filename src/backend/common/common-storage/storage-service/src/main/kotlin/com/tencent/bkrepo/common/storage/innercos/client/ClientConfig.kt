@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.storage.innercos.endpoint.EndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.endpoint.InnerCosEndpointBuilder
 import com.tencent.bkrepo.common.storage.innercos.endpoint.PolarisEndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.endpoint.PublicCosEndpointBuilder
+import com.tencent.bkrepo.common.storage.innercos.endpoint.PublicCosInnerEndpointBuilder
 import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import org.springframework.util.unit.DataSize
 import java.time.Duration
@@ -50,6 +51,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
      * 分片上传最大分片数量
      */
     val maxUploadParts: Int = MAX_PARTS
+
+    /**
+     * 分片上传最小数量
+     */
+    val minimumUploadPartSize: Long = DataSize.ofMegabytes(MIN_PART_SIZE).toBytes()
 
     /**
      * 签名过期时间
@@ -67,9 +73,14 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     val multipartThreshold: Long = DataSize.ofMegabytes(MULTIPART_THRESHOLD_SIZE).toBytes()
 
     /**
-     * 分片最小数量
+     * 分片下载最大分片数量
      */
-    val minimumPartSize: Long = DataSize.ofMegabytes(MIN_PART_SIZE).toBytes()
+    val maxDownloadParts: Int = credentials.download.maxDownloadParts
+
+    /**
+     * 分片下载最小数量
+     */
+    val minimumDownloadPartSize: Long = DataSize.ofMegabytes(credentials.download.minimumPartSize).toBytes()
 
     /**
      * cos访问域名构造器
@@ -116,6 +127,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
 
     var timeout: Long = credentials.download.timeout
 
+    /**
+     * 下载分块的qps限速
+     * */
+    var qps: Int = credentials.download.qps
+
     private fun createEndpointResolver(): EndpointResolver {
         return if (credentials.modId != null && credentials.cmdId != null) {
             PolarisEndpointResolver(credentials.modId!!, credentials.cmdId!!)
@@ -125,7 +141,12 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     }
 
     private fun createEndpointBuilder(): EndpointBuilder {
-        return if (credentials.public) PublicCosEndpointBuilder() else InnerCosEndpointBuilder()
+        with(credentials) {
+            if (public && inner) {
+                return PublicCosInnerEndpointBuilder()
+            }
+            return if (credentials.public) PublicCosEndpointBuilder() else InnerCosEndpointBuilder()
+        }
     }
 
     companion object {

@@ -43,6 +43,7 @@ enum class CommonMessageCode(private val key: String) : MessageCode {
     RESOURCE_EXISTED("system.resource.existed"),
     RESOURCE_NOT_FOUND("system.resource.not-found"),
     RESOURCE_EXPIRED("system.resource.expired"),
+    RESOURCE_ARCHIVED("system.resource.archived"),
     METHOD_NOT_ALLOWED("system.method.not-allowed"),
     REQUEST_DENIED("system.request.denied"),
     REQUEST_UNAUTHENTICATED("system.request.unauthenticated"),
@@ -55,6 +56,7 @@ enum class CommonMessageCode(private val key: String) : MessageCode {
     MODIFY_PASSWORD_FAILED("modify.password.failed"),
     OPERATION_CROSS_CLUSTER_NOT_ALLOWED("operation.cross-cluster.not-allowed"),
     MEDIA_TYPE_UNACCEPTABLE("system.media-type.unacceptable"),
+    TOO_MANY_REQUESTS("too.many.requests")
     ;
 
     override fun getBusinessCode() = ordinal + 1

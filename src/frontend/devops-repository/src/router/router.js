@@ -31,6 +31,8 @@ const repoSearch = () => import('@repository/views/repoSearch')
 
 const WebError440 = () => import('@repository/components/Exception/440')
 
+const oauth = () => import('@repository/views/oauth')
+
 const routes = [
     {
         path: '/ui/:projectId/preview',
@@ -41,6 +43,10 @@ const routes = [
                 component: scanTask
             }
         ]
+    },
+    {
+        path: '/ui/:projectId/oauth/authorize',
+        component: oauth
     },
     {
         path: '/ui/:projectId',

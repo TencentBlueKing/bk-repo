@@ -248,9 +248,13 @@ class AccountServiceImpl constructor(
         return false
     }
 
-    override fun checkCredential(accessKey: String, secretKey: String): String? {
+    override fun checkCredential(
+        accessKey: String,
+        secretKey: String,
+        authorizationGrantType: AuthorizationGrantType?
+    ): String? {
         logger.debug("check  credential  accessKey : [$accessKey] , secretKey: []")
-        val query = AccountQueryHelper.checkCredential(accessKey, secretKey)
+        val query = AccountQueryHelper.checkCredential(accessKey, secretKey, authorizationGrantType)
         val result = mongoTemplate.findOne(query, TAccount::class.java) ?: return null
         return result.appId
     }
@@ -293,8 +297,7 @@ class AccountServiceImpl constructor(
     private fun findAccountAndCheckOwner(appId: String, userId: String): TAccount {
         val account = accountRepository.findOneByAppId(appId)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-        val admin = userService.getUserInfoById(userId)?.admin ?: false
-        if (!account.owner.isNullOrBlank() && userId != account.owner && !admin) {
+        if (!account.owner.isNullOrBlank() && userId != account.owner) {
             throw ErrorCodeException(AuthMessageCode.AUTH_OWNER_CHECK_FAILED)
         }
         return account

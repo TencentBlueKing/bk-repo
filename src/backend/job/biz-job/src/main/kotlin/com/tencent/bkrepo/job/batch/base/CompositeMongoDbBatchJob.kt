@@ -44,6 +44,12 @@ abstract class CompositeMongoDbBatchJob<T>(
         return CompositeJobContext(enabledChildJobs)
     }
 
+    override fun onRunCollectionFinished(collectionName: String, context: CompositeJobContext<T>) {
+        context.childJobs.forEach {
+            logException { it.onRunCollectionFinished(collectionName, context.childContext(it.getJobName())) }
+        }
+    }
+
     protected abstract fun createChildJobs(): List<ChildMongoDbBatchJob<T>>
 
     @Suppress("TooGenericExceptionCaught")

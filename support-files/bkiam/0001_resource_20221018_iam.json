@@ -1,0 +1,74 @@
+{
+    "system_id": "bk-repo",
+    "operations": [
+        {
+            "operation": "upsert_system",
+            "data": {
+                "id": "bk-repo",
+                "name": "制品库",
+                "name_en": "bkrepo",
+                "clients": "bk-repo",
+                "provider_config": {
+                    "host": "https://bkrepo.example.com",
+                    "auth": "basic",
+                    "healthz": "/external/bkiam/callback/health"
+                }
+            }
+        },
+        {
+            "operation": "upsert_resource_type",
+            "data": {
+                "id": "project",
+                "name": "项目",
+                "name_en": "project",
+                "description": "项目",
+                "description_en": "project",
+                "parent": [],
+                "provider_config": {
+                    "path": "/external/bkiam/callback/project"
+                },
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_resource_type",
+            "data": {
+                "id": "repo",
+                "name": "仓库",
+                "name_en": "repo",
+                "description": "仓库",
+                "description_en": "repo",
+                "parent": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "project"
+                    }
+                ],
+                "provider_config": {
+                    "path": "/external/bkiam/callback/repo"
+                },
+                "version": 1
+            }
+        },
+        {
+            "operation": "upsert_resource_type",
+            "data": {
+                "id": "node",
+                "name": "节点",
+                "name_en": "node",
+                "description": "节点",
+                "description_en": "node",
+                "parent": [
+                    {
+                        "system_id": "bk-repo",
+                        "id": "repo"
+                    }
+                ],
+                "provider_config": {
+                    "path": "/external/bkiam/callback/node"
+                },
+                "version": 1
+            }
+        }
+    ]
+}

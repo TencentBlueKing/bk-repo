@@ -8,6 +8,7 @@ import permission from './permission'
 import nodeManage from './nodeManage'
 import project from './project'
 import scan from './scan'
+import oauth from './oauth'
 
 const prefix = 'repository/api'
 
@@ -19,6 +20,7 @@ export default {
     ...nodeManage,
     ...project,
     ...scan,
+    ...oauth,
     /*
         创建仓库
         body: {
@@ -32,20 +34,20 @@ export default {
             "storageCredentialsKey": null
         }
     */
-    createRepo ({ dispatch }, { body }) {
+    createRepo({dispatch}, {body}) {
         return Vue.prototype.$ajax.post(
             `${prefix}/repo/create`,
             body
         )
     },
     // 校验仓库名称
-    checkRepoName (_, { projectId, name }) {
+    checkRepoName(_, {projectId, name}) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/exist/${projectId}/${name}`
         )
     },
     // 分页查询仓库列表
-    getRepoList (_, { projectId, current, limit, name, type }) {
+    getRepoList(_, {projectId, current, limit, name, type}) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/page/${projectId}/${current}/${limit}`,
             {
@@ -62,7 +64,7 @@ export default {
         })) // 前端隐藏report仓库/log仓库
     },
     // 查询所有仓库
-    getRepoListWithoutPage (_, { projectId, name, type }) {
+    getRepoListWithoutPage(_, {projectId, name, type}) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/list/${projectId}`,
             {
@@ -79,7 +81,7 @@ export default {
         }))
     },
     // 查询仓库列表
-    getRepoListAll ({ commit }, { projectId }) {
+    getRepoListAll({commit}, {projectId}) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/list/${projectId}`
         ).then(res => {
@@ -88,38 +90,43 @@ export default {
         })
     },
     // 查询仓库信息
-    getRepoInfo (_, { projectId, repoName, repoType }) {
+    getRepoInfo(_, {projectId, repoName, repoType}) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/info/${projectId}/${repoName}/${repoType.toUpperCase()}`
         )
     },
     // 更新仓库信息
-    updateRepoInfo (_, { projectId, name, body }) {
+    updateRepoInfo(_, {projectId, name, body}) {
         return Vue.prototype.$ajax.post(
             `${prefix}/repo/update/${projectId}/${name}`,
             body
         )
     },
     // 删除仓库
-    deleteRepoList ({ dispatch }, { projectId, name, forced = false }) {
+    deleteRepoList({dispatch}, {projectId, name, forced = false}) {
         return Vue.prototype.$ajax.delete(
             `${prefix}/repo/delete/${projectId}/${name}?forced=${forced}`
         )
     },
     // 查询项目列表
-    getProjectList ({ commit }) {
+    getProjectList({commit}) {
         return Vue.prototype.$ajax.get(
             `${prefix}/project/list`
         ).then(res => {
             commit('SET_PROJECT_LIST', res)
         })
     },
-    logout ({ commit }) {
+    logout({commit}) {
         if (MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') {
             window.postMessage({
                 action: 'toggleLoginDialog'
             }, '*')
-            location.href = window.getLoginUrl()
+            // eslint-disable-next-line no-undef
+            if (window.ADD_FROM_LOGOUT === 'not') {
+                location.href = window.getLoginUrl()
+            } else {
+                location.href = window.getLoginUrl() + '&is_from_logout=1'
+            }
         } else {
             cookie.remove('bkrepo_ticket')
             commit('SHOW_LOGIN_DIALOG', true)

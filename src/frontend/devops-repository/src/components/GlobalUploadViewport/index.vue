@@ -72,16 +72,18 @@
             :root-data="rootData"
             @confirm="addFilesToFileList">
         </selected-files-dialog>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
     import Vue from 'vue'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import selectedFilesDialog from './selectedFilesDialog'
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize } from '@repository/utils'
     export default {
         name: 'globalUploadViewport',
-        components: { selectedFilesDialog },
+        components: { selectedFilesDialog, iamDenyDialog },
         data () {
             return {
                 show: false,
@@ -93,11 +95,13 @@
                     fullPath: ''
                 },
                 fileList: [],
-                upLoadTaskQueue: []
+                upLoadTaskQueue: [],
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['projectList']),
+            ...mapState(['projectList', 'userInfo']),
             uploadStatus () {
                 return {
                     UPLOADING: { label: this.$t('uploading'), power: 1 },
@@ -113,7 +117,8 @@
         },
         methods: {
             ...mapActions([
-                'uploadArtifactory'
+                'uploadArtifactory',
+                'getPermissionUrl'
             ]),
             selectFiles (data = {}) {
                 this.rootData = {
@@ -191,6 +196,27 @@
                     window.repositoryVue.$emit('upload-refresh', fullPath)
                 }).catch(e => {
                     if (wait.status === 'CANCEL') return
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: projectId,
+                                action: 'WRITE',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: projectId,
+                                    repoName: repoName,
+                                    action: 'WRITE',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                     e && this.$set(wait, 'errMsg', e.message || e)
                     this.$set(wait, 'status', 'FAILED')
                 }).finally(() => {

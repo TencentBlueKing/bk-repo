@@ -236,7 +236,7 @@
                 return [
                     ...(!metadataMap.forbidStatus
                         ? [
-                            this.permission.edit && { clickEvent: () => this.$emit('tag'), label: this.$t('promotion'), disabled: (basic.stageTag || '').includes('@release') },
+                            this.permission.edit && { clickEvent: () => this.$emit('tag'), label: this.$t('upgrade'), disabled: (basic.stageTag || '').includes('@release') },
                             this.showRepoScan && { clickEvent: () => this.$emit('scan'), label: this.$t('scanArtifact') }
                         ]
                         : []),

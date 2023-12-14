@@ -56,9 +56,9 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import com.tencent.bkrepo.replication.replica.base.OkHttpClientPool
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext.Companion.READ_TIMEOUT
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext.Companion.WRITE_TIMEOUT
+import com.tencent.bkrepo.replication.util.OkHttpClientPool
+import com.tencent.bkrepo.replication.replica.context.ReplicaContext.Companion.READ_TIMEOUT
+import com.tencent.bkrepo.replication.replica.context.ReplicaContext.Companion.WRITE_TIMEOUT
 import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaExtService
 import com.tencent.bkrepo.repository.api.NodeClient

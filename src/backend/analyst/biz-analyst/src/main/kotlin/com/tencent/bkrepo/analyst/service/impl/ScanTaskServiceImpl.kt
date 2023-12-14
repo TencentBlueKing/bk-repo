@@ -107,8 +107,11 @@ class ScanTaskServiceImpl(
 
     override fun task(taskId: String): ScanTask {
         return scanTaskDao.findById(taskId)?.let { task ->
+            val repos = RuleUtil.getRepoNames(task.rule?.readJsonString())
             if (task.projectId == null) {
                 permissionCheckHandler.permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+            } else if (repos.isNotEmpty()) {
+                permissionCheckHandler.checkReposPermission(task.projectId, repos, PermissionAction.READ)
             } else {
                 permissionCheckHandler.checkProjectPermission(task.projectId, PermissionAction.MANAGE)
             }
@@ -118,7 +121,11 @@ class ScanTaskServiceImpl(
     }
 
     override fun tasks(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<ScanTask> {
-        permissionCheckHandler.checkProjectPermission(scanTaskQuery.projectId, PermissionAction.MANAGE)
+        if (scanTaskQuery.projectId == null) {
+            permissionCheckHandler.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+        } else {
+            permissionCheckHandler.checkProjectPermission(scanTaskQuery.projectId!!, PermissionAction.MANAGE)
+        }
         val taskPage = scanTaskDao.find(scanTaskQuery, pageLimit)
         val records = taskPage.records.map { Converter.convert(it) }
         return Page(pageLimit.pageNumber, pageLimit.pageSize, taskPage.totalRecords, records)

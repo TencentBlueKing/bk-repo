@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
@@ -53,6 +54,7 @@ import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.dao.ProxyChannelDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -87,7 +89,8 @@ import org.springframework.test.context.TestPropertySource
     RepositoryDao::class,
     ProxyChannelDao::class,
     HttpAuthProperties::class,
-    SpringContextUtils::class
+    SpringContextUtils::class,
+    NodeDao::class
 )
 @ComponentScan("com.tencent.bkrepo.repository.service")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
@@ -104,6 +107,9 @@ open class ServiceBaseTest {
 
     @MockBean
     lateinit var servicePermissionClient: ServicePermissionClient
+
+    @MockBean
+    lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
     @MockBean
     lateinit var permissionManager: PermissionManager

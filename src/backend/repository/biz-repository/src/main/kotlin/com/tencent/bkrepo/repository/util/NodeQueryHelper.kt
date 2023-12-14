@@ -63,6 +63,15 @@ object NodeQueryHelper {
         return Query(criteria)
     }
 
+    fun nodeFolderQuery(projectId: String, repoName: String, fullPath: String? = null): Query {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::deleted).isEqualTo(null)
+            .apply { fullPath?.run { and(TNode::fullPath).isEqualTo(fullPath) } }
+            .and(TNode::folder).isEqualTo(true)
+        return Query(criteria)
+    }
+
     fun nodeListCriteria(projectId: String, repoName: String, path: String, option: NodeListOption): Criteria {
         val nodePath = toPath(path)
         val criteria = where(TNode::projectId).isEqualTo(projectId)
@@ -115,6 +124,17 @@ object NodeQueryHelper {
         val criteria = where(TNode::projectId).isEqualTo(projectId)
             .and(TNode::repoName).isEqualTo(repoName)
             .and(TNode::fullPath).isEqualTo(toFullPath(fullPath))
+            .and(TNode::deleted).ne(null)
+        return Query(criteria).with(Sort.by(Sort.Direction.DESC, TNode::deleted.name))
+    }
+
+    /**
+     * 通过sha256查询被删除节点详情
+     */
+    fun nodeDeletedPointListQueryBySha256(projectId: String, repoName: String, sha256: String): Query {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::sha256).isEqualTo(sha256)
             .and(TNode::deleted).ne(null)
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, TNode::deleted.name))
     }
@@ -175,7 +195,9 @@ object NodeQueryHelper {
     }
 
     fun nodeDeleteUpdate(operator: String, deleteTime: LocalDateTime = LocalDateTime.now()): Update {
-        return update(operator).set(TNode::deleted.name, deleteTime)
+        return Update()
+            .set(TNode::lastModifiedBy.name, operator)
+            .set(TNode::deleted.name, deleteTime)
     }
 
     private fun update(operator: String): Update {
