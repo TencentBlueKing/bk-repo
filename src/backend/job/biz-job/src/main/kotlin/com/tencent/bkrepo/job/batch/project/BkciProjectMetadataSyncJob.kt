@@ -64,14 +64,17 @@ class BkciProjectMetadataSyncJob(
         val projectName = project.name
         logger.info("start sync $projectName from bkci")
         val url = "${properties.ciServer}/ms/project/api/open/project/$projectName"
-        val req = Request.Builder()
+        val reqBuilder = Request.Builder()
             .get()
             .url(url)
             .header(DEVOPS_BK_TOKEN, properties.ciToken)
             .header(DEVOPS_PROJECT_ID, projectName)
             .get()
-            .build()
-        val res = client.newCall(req).execute()
+        if (properties.routeToGray) {
+            reqBuilder.header(DEVOPS_GATEWAY_TAG, "rbac-gray")
+        }
+
+        val res = client.newCall(reqBuilder.build()).execute()
         var err: String? = null
         if (res.isSuccessful) {
             val data = res.body!!.byteStream().readJsonString<BkciResponse>()
@@ -131,6 +134,7 @@ class BkciProjectMetadataSyncJob(
         private const val COLLECTION_NAME = "project"
         private const val DEVOPS_BK_TOKEN = "X-DEVOPS-BK-TOKEN"
         private const val DEVOPS_PROJECT_ID = "X-DEVOPS-PROJECT-ID"
+        private const val DEVOPS_GATEWAY_TAG = "X-GATEWAY-TAG"
     }
 
     data class Project(val name: String, val metadata: List<ProjectMetadata> = emptyList())

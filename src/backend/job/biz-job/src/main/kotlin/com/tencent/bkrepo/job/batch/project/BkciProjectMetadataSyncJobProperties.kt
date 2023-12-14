@@ -37,4 +37,8 @@ class BkciProjectMetadataSyncJobProperties(
     var ignoredProjectPrefix: Set<String> = emptySet(),
     var ciServer: String = "",
     var ciToken: String = "",
+    /**
+     * 是否路由到bkci灰度集群
+     */
+    var routeToGray: Boolean = false,
 ) : MongodbJobProperties()
