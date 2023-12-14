@@ -27,30 +27,40 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.ConflictStrategy
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
@@ -61,6 +71,8 @@ import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -85,6 +97,10 @@ abstract class NodeBaseService(
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
 ) : NodeService {
+
+    @Autowired
+    @Lazy
+    protected lateinit var permissionManager: PermissionManager
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
@@ -162,7 +178,46 @@ abstract class NodeBaseService(
         }
     }
 
-    open fun buildTNode(request: NodeCreateRequest):TNode {
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun link(request: NodeLinkRequest): NodeDetail {
+        with(request) {
+            // 校验源仓库与目标节点权限
+            permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName, userId = operator)
+            permissionManager.checkNodePermission(
+                PermissionAction.READ, targetProjectId, targetRepoName, targetFullPath, userId = operator
+            )
+
+            val targetArtifact = "/$targetProjectId/$targetRepoName/$targetFullPath"
+            val targetNode = nodeDao.findNode(targetProjectId, targetRepoName, targetFullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, targetArtifact)
+
+            // 不支持链接到目录
+            if (targetNode.folder) {
+                throw BadRequestException(ArtifactMessageCode.NODE_LINK_FOLDER_UNSUPPORTED, targetArtifact)
+            }
+
+            val metadata = listOf(
+                MetadataModel(key = METADATA_KEY_LINK_PROJECT, targetProjectId, system = true),
+                MetadataModel(key = METADATA_KEY_LINK_REPO, targetRepoName, system = true),
+                MetadataModel(key = METADATA_KEY_LINK_FULL_PATH, targetFullPath, system = true),
+            )
+            val createRequest = NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                folder = false,
+                overwrite = overwrite,
+                sha256 = FAKE_SHA256,
+                md5 = FAKE_MD5,
+                nodeMetadata = nodeMetadata?.let { it + metadata } ?: metadata,
+                operator = operator,
+            )
+            // 创建链接节点
+            return createNode(createRequest)
+        }
+    }
+
+    open fun buildTNode(request: NodeCreateRequest): TNode {
         with(request) {
             val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
             return TNode(
