@@ -37,9 +37,11 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * helm代理仓库刷新接口
@@ -62,5 +64,15 @@ interface HelmClient {
     fun initIndexAndPackage(
         @PathVariable projectId: String,
         @PathVariable repoName: String
+    ): Response<Void>
+
+
+    @ApiOperation("删除仓库下的包版本")
+    @DeleteMapping("version/delete/{projectId}/{repoName}")
+    fun deleteVersion(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageName: String,
+        @RequestParam version: String
     ): Response<Void>
 }

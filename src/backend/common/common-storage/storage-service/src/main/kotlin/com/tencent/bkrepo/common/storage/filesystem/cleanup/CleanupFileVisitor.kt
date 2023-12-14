@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
 
@@ -94,11 +95,14 @@ class CleanupFileVisitor(
         if (dirPath == rootPath || dirPath == tempPath || dirPath == stagingPath) {
             return FileVisitResult.CONTINUE
         }
-        Files.newDirectoryStream(dirPath).use {
-            if (!it.iterator().hasNext()) {
-                Files.delete(dirPath)
-                logger.info("Clean up folder[$dirPath].")
-                result.cleanupFolder += 1
+        // 由于支持删除上传路径，所以这里即使是空目录，也需要判断过期时间。
+        if (fileExpireResolver.isExpired(dirPath.toFile())) {
+            Files.newDirectoryStream(dirPath).use {
+                if (!it.iterator().hasNext()) {
+                    Files.delete(dirPath)
+                    logger.info("Clean up folder[$dirPath].")
+                    result.cleanupFolder += 1
+                }
             }
         }
         result.totalFolder += 1
@@ -107,6 +111,22 @@ class CleanupFileVisitor(
 
     override fun needWalk(): Boolean {
         return expireDuration.seconds > 0
+    }
+
+    override fun visitFileFailed(file: Path, exc: IOException?): FileVisitResult {
+        if (exc is NoSuchFileException) {
+            // 目录或者文件已经由其他进程删除。
+            logger.info("File [$file] already delete.")
+        } else {
+            logger.error("Clean up file [$file] error.", exc)
+            result.errorCount++
+            if (Files.isRegularFile(file)) {
+                result.totalFile++
+            } else {
+                result.totalFolder++
+            }
+        }
+        return FileVisitResult.CONTINUE
     }
 
     /**
