@@ -27,10 +27,14 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
+import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
@@ -38,16 +42,22 @@ import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ArtifactCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
-import com.tencent.bkrepo.oci.api.OciClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import org.springframework.web.client.RestTemplate
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -59,10 +69,15 @@ import java.time.format.DateTimeFormatter
 @EnableConfigurationProperties(ArtifactCleanupJobProperties::class)
 class ArtifactCleanupJob(
     private val properties: ArtifactCleanupJobProperties,
-    private val ociClient: OciClient,
-    private val nodeClient: NodeClient
-) : DefaultContextMongoDbJob<ArtifactCleanupJob.RepoData>(properties) {
+    private val nodeClient: NodeClient,
+    private val discoveryClient: DiscoveryClient,
+    private val serviceAuthManager: ServiceAuthManager
+    ) : DefaultContextMongoDbJob<ArtifactCleanupJob.RepoData>(properties) {
 
+    private val restTemplate = RestTemplate()
+
+    @Value("\${service.prefix:}")
+    private val servicePrefix: String = ""
 
     override fun entityClass(): Class<RepoData> {
         return RepoData::class.java
@@ -91,12 +106,16 @@ class ArtifactCleanupJob(
                     // 清理generic制品
                     deleteNodes(row.projectId, row.name, cleanupStrategy)
                 }
-                RepositoryType.DOCKER.name, RepositoryType.OCI.name -> {
+                RepositoryType.DOCKER.name,
+                RepositoryType.OCI.name,
+                RepositoryType.HELM.name
+                -> {
                     // 清理镜像制品
                     deletePackages(
                         projectId = row.projectId,
                         repoName = row.name,
-                        cleanupStrategy = cleanupStrategy
+                        cleanupStrategy = cleanupStrategy,
+                        repoType = row.type
                     )
                 }
                 else -> return
@@ -167,7 +186,11 @@ class ArtifactCleanupJob(
     }
 
 
-    private fun deletePackages(projectId: String, repoName: String, cleanupStrategy: CleanupStrategy) {
+    private fun deletePackages(
+        projectId: String, repoName: String,
+        cleanupStrategy: CleanupStrategy,
+        repoType: String
+    ) {
         val packageQuery = Query(
             Criteria(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(repoName).apply {
                 if (!cleanupStrategy.cleanTargets.isNullOrEmpty()) {
@@ -190,7 +213,8 @@ class ArtifactCleanupJob(
                 repoName = repoName,
                 cleanupStrategy = cleanupStrategy,
                 packageName = pData.name,
-                versionList = versionList
+                versionList = versionList,
+                repoType = repoType
             )
         }
     }
@@ -199,14 +223,15 @@ class ArtifactCleanupJob(
     private fun doPackageVersionCleanup(
         projectId: String, repoName: String,
         cleanupStrategy: CleanupStrategy, packageName: String,
-        versionList: List<PackageVersionData>) {
+        versionList: List<PackageVersionData>, repoType: String
+    ) {
         when (cleanupStrategy.cleanupType) {
             // 只保留距离当前时间天数以内的制品
             CleanupStrategyEnum.RETENTION_DAYS.value -> {
                 val cleanupDate = LocalDateTime.now().minusDays(cleanupStrategy.cleanupValue!!.toLong())
                 versionList.forEach {
                     if (cleanupDate.isAfter(it.lastModifiedDate)) {
-                        ociClient.deleteVersion(projectId, repoName, packageName, it.name)
+                        deleteVersion(projectId, repoName, packageName, it.name, repoType)
                     }
                 }
             }
@@ -215,7 +240,7 @@ class ArtifactCleanupJob(
                 val cleanupDate = LocalDateTime.parse(cleanupStrategy.cleanupValue, DateTimeFormatter.ISO_DATE_TIME)
                 versionList.forEach {
                     if (cleanupDate.isAfter(it.lastModifiedDate)) {
-                        ociClient.deleteVersion(projectId, repoName, packageName, it.name)
+                        deleteVersion(projectId, repoName, packageName, it.name, repoType)
                     }
                 }
             }
@@ -224,7 +249,7 @@ class ArtifactCleanupJob(
                 if (versionList.size > cleanupStrategy.cleanupValue!!.toInt()) {
                     versionList.sortedByDescending { it.lastModifiedDate }
                         .subList(cleanupStrategy.cleanupValue.toInt(), versionList.size).forEach {
-                        ociClient.deleteVersion(projectId, repoName, packageName, it.name)
+                        deleteVersion(projectId, repoName, packageName, it.name, repoType)
                     }
                 }
             }
@@ -232,6 +257,57 @@ class ArtifactCleanupJob(
         }
     }
 
+
+    private fun deleteVersion(
+        projectId: String,
+        repoName: String,
+        packageName: String,
+        version: String,
+        repoType: String,
+        ) {
+        val (urlPath, serviceInstance) = when (repoType) {
+            RepositoryType.DOCKER.name, RepositoryType.OCI.name -> {
+                val dockerServiceId = buildServiceName(RepositoryType.DOCKER.name.toLowerCase())
+                val instance = discoveryClient.getInstances(dockerServiceId).firstOrNull()
+                Pair(
+                    "/service/third/version/delete/$projectId/$repoName",
+                    instance
+                )
+            }
+            RepositoryType.HELM.name -> {
+                val dockerServiceId = buildServiceName(RepositoryType.HELM.name.toLowerCase())
+                val instance = discoveryClient.getInstances(dockerServiceId).firstOrNull()
+                Pair(
+                    "/service/index/version/delete/$projectId/$repoName",
+                    instance
+                )
+            }
+            else -> {
+                logger.warn("Unsupported repository type for artifactCleanupJob!")
+                return
+            }
+        }
+        if (serviceInstance == null) {
+            logger.warn("Cloud not find serviceInstance for package $packageName in repo $projectId|$repoName")
+            return
+        }
+        val target = serviceInstance.uri
+        val url = "$target$urlPath?packageName=$packageName&version=$version"
+        try {
+            val headers = HttpHeaders()
+            headers.add(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
+            headers.add(MS_AUTH_HEADER_UID, SYSTEM_USER)
+            val httpEntity = HttpEntity<Any>(headers)
+            val response = restTemplate.exchange(url, HttpMethod.DELETE, httpEntity, Response::class.java)
+            if (response.statusCode != HttpStatus.OK) throw RuntimeException("response code is ${response.statusCode}")
+        } catch (e: Exception) {
+            logger.warn("Request of clean package $packageName in repo $projectId|$repoName error: ${e.message}")
+        }
+    }
+
+    private fun buildServiceName(name: String): String {
+        return "$servicePrefix$name"
+    }
 
 
     data class PackageData(
