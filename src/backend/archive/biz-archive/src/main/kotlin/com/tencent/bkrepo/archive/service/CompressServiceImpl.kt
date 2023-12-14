@@ -117,8 +117,8 @@ class CompressServiceImpl(
                 val storageCredentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
                 if (storageService.isCompressed(sha256, storageCredentials)) {
                     storageService.deleteCompressed(sha256, storageCredentials)
-                    fileReferenceClient.decrement(file.baseSha256, storageCredentialsKey)
                 }
+                fileReferenceClient.decrement(file.baseSha256, storageCredentialsKey)
                 /*
                 * 解压是小概率事件，所以这里链长度我们就不减少，这样带来的问题是，
                 * 压缩链更容易达到最大长度。但是这个影响并不重要。

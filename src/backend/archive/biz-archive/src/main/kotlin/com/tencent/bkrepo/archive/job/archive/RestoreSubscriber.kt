@@ -35,8 +35,7 @@ class RestoreSubscriber(
     private val storageService: StorageService,
     private val archiveFileRepository: ArchiveFileRepository,
     workDir: String,
-) :
-    BaseJobSubscriber<TArchiveFile>() {
+) : BaseJobSubscriber<TArchiveFile>() {
     private val tempPath: Path = Paths.get(workDir, "temp")
     private val compressedPath: Path = Paths.get(workDir, "compressed")
     private val filesPath: Path = Paths.get(workDir, "files")
@@ -77,6 +76,7 @@ class RestoreSubscriber(
             val filePath = filesPath.resolve(sha256)
             try {
                 logger.info("Start restore file $sha256")
+                val beginAt = LocalDateTime.now()
                 download(key, filePath)
                 // 存储文件
                 val artifactFile = filePath.toFile().toArtifactFile(true)
@@ -86,7 +86,7 @@ class RestoreSubscriber(
                 }
                 val storageCredentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
                 storageService.store(sha256, artifactFile, storageCredentials)
-                val tp = Throughput(size, Duration.between(lastModifiedDate, LocalDateTime.now()).toNanos())
+                val tp = Throughput(size, Duration.between(beginAt, LocalDateTime.now()).toNanos())
                 val event = FileRestoredEvent(sha256, storageCredentialsKey, tp)
                 SpringContextUtils.publishEvent(event)
                 status = ArchiveStatus.RESTORED

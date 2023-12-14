@@ -8,6 +8,7 @@ import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.archive.utils.ArchiveDaoUtils.optimisticLock
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
+import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
@@ -57,6 +58,11 @@ class CompressSubscriber(
                     throughput = throughput,
                 )
                 SpringContextUtils.publishEvent(event)
+            } catch (e: TooLowerReuseRateException) {
+                logger.info("Reuse rate is too lower.")
+                value.status = CompressStatus.COMPRESS_FAILED
+                value.lastModifiedDate = LocalDateTime.now()
+                compressFileRepository.save(value)
             } catch (e: Exception) {
                 value.status = CompressStatus.COMPRESS_FAILED
                 value.lastModifiedDate = LocalDateTime.now()

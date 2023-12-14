@@ -35,6 +35,7 @@ open class BaseJobSubscriber<T> : BaseSubscriber<T>() {
 
     override fun hookOnSubscribe(subscription: Subscription) {
         LoggerHolder.jobLogger.info("Start execute job[${getJobName()}].")
+        startAt = System.currentTimeMillis()
         ArchiveUtils.monitor.addMonitor(getJobName(), jobContext)
         super.hookOnSubscribe(subscription)
     }

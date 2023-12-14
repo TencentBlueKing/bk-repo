@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.file.BkSyncDeltaSource
 import com.tencent.bkrepo.common.bksync.file.BDUtils
+import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
@@ -92,6 +93,8 @@ abstract class CompressSupport : OverlaySupport() {
             }
             logger.info("Success to compress file [$digest] on ${credentials.key}.")
             return bdFile.length()
+        } catch (e: TooLowerReuseRateException) {
+            throw e
         } catch (e: Exception) {
             logger.error("Failed to compress file [$digest] on ${credentials.key}.", e)
             throw StorageErrorException(StorageMessageCode.COMPRESS_ERROR)

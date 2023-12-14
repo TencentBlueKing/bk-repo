@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 /**
  * 抽象实体类
  * */
-abstract class AbstractEntity(
+open class AbstractEntity(
     id: String? = null,
     val createdBy: String,
     val createdDate: LocalDateTime,

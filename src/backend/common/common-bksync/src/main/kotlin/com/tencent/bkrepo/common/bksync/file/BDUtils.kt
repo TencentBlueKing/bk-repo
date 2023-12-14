@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.api.util.StreamUtils.drain
 import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.file.BkSyncDeltaSource.Companion.toBkSyncDeltaSource
 import com.tencent.bkrepo.common.bksync.transfer.exception.InterruptedRollingException
+import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
 import java.io.File
 import java.nio.channels.FileChannel
 import java.nio.file.Files
@@ -94,7 +95,7 @@ object BDUtils {
                 val result = bkSync.diff(src, input, output, threshold)
                 if (result.hitRate < threshold) {
                     logger.info("Repeat rate[${result.hitRate}] is below threshold[$threshold],stop detection.")
-                    throw InterruptedRollingException()
+                    throw TooLowerReuseRateException()
                 }
             }
             val messageDigest = MessageDigest.getInstance("MD5")

@@ -3,6 +3,6 @@ package com.tencent.bkrepo.archive.model
 /**
  * id entity
  * */
-abstract class IdEntity(
+open class IdEntity(
     var id: String? = null,
 )

@@ -128,6 +128,11 @@ class SystemGcJob(
                 }
             }
             .sortedBy { it.createdDate }
+        // 没有新的节点，表示节点已经gc过一轮了
+        if (lastEndTime != null && sortedNodes.last().createdDate < lastBeginTime) {
+            logger.info("There are no new nodes, gc is skipped.")
+            return
+        }
         val gcNodes = sortedNodes.subList(0, sortedNodes.size - properties.retain)
         if (logger.isDebugEnabled) {
             logger.debug("Group node: [${gcNodes.joinToString(",") { it.name }}]")
