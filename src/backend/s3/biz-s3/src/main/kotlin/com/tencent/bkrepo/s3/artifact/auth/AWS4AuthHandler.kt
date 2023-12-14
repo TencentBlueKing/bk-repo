@@ -97,13 +97,13 @@ class AWS4AuthHandler(
         accessKeyId: String
     ): AWS4AuthCredentials {
         return AWS4AuthCredentials(
-            authorization = request.getHeader("Authorization"),
+            authorization = request.getHeader(HttpHeaders.AUTHORIZATION) ?: "",
             accessKeyId = accessKeyId,
-            requestDate = request.getHeader("x-amz-date"),
-            contentHash = request.getHeader("x-amz-content-sha256"),
+            requestDate = request.getHeader(HttpHeaders.X_AMZ_DATE) ?: "",
+            contentHash = request.getHeader(HttpHeaders.X_AMZ_CONTENT_SHA256) ?: "",
             /*uri = request.requestURI.split("?").toTypedArray()[0],*/
             uri = "/$applicationName"+request.requestURI.split("?").toTypedArray()[0],
-            host = request.getHeader("host"),
+            host = request.getHeader(HttpHeaders.HOST) ?: "",
             queryString = request.queryString ?: "",
             method = request.method
         )

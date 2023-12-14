@@ -87,4 +87,8 @@ object HttpHeaders {
     const val X_FORWARDED_FOR = "X-Forwarded-For"
     const val X_REAL_IP = "X-REAL-IP"
     const val PROXY_CLIENT_IP = "Proxy-Client-IP"
+    const val X_AMZ_TRACE_ID = "X-Amz-Trace-Id"
+    const val X_AMZ_REQUEST_ID = "X-Amz-Request-Id"
+    const val X_AMZ_DATE = "X-Amz-Date"
+    const val X_AMZ_CONTENT_SHA256 = "X-Amz-Content-Sha256"
 }

@@ -44,7 +44,10 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class S3RegistryArtifactConfigurer : ArtifactConfigurerSupport() {
 
-    override fun getRepositoryType() = RepositoryType.NONE
+    override fun getRepositoryType() = RepositoryType.S3
+    override fun getRepositoryTypes(): List<RepositoryType> {
+        return mutableListOf(RepositoryType.GENERIC)
+    }
     override fun getLocalRepository() = SpringContextUtils.getBean<S3LocalRepository>()
     override fun getRemoteRepository() = SpringContextUtils.getBean<S3RemoteRepository>()
     override fun getVirtualRepository() = SpringContextUtils.getBean<S3VirtualRepository>()

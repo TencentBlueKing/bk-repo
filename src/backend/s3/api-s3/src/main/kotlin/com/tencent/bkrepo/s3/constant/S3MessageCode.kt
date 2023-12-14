@@ -35,10 +35,11 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 
 
 enum class S3MessageCode(private val key: String) : MessageCode {
-    S3_REQUEST_SIGN_NOT_MATCH("system.request.sign.not-match"),
+    S3_REQUEST_SIGN_NOT_MATCH("s3.request.sign.not-match"),
 
-    S3_NO_SUCH_KEY("s3.no.such.key"),
-    S3_NO_SUCH_BUCKET("s3.no.such.bucket"),
+    S3_NO_SUCH_KEY("s3.object.key.not-such"),
+    S3_NO_SUCH_BUCKET("s3.object.bucket.no-such"),
+    S3_NO_SUCH_ACCESS("s3.object.access.no-such"),
     ;
 
     override fun getBusinessCode() = ordinal + 1

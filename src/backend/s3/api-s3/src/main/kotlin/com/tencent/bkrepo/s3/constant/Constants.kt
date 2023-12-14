@@ -31,22 +31,5 @@
 
 package com.tencent.bkrepo.s3.constant
 
-/**
- * 访问的对象不存在
- */
-const val NO_SUCH_KEY = "NoSuchKey"
-
-/**
- * 存储桶不存在
- */
-const val NO_SUCH_BUCKET = "NoSuchBucket"
-
-/**
- * 签名不匹配
- */
-const val SIGN_NOT_MATCH = "SignatureDoesNotMatch"
-
-/**
- * 没权限访问
- */
-const val NO_SUCH_ACCESS = "AccessDenied"
+// 默认编码
+const val DEFAULT_ENCODING = "utf-8"

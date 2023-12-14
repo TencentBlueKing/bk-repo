@@ -32,16 +32,15 @@
 package com.tencent.bkrepo.s3.service
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
+import com.tencent.bkrepo.s3.constant.NO_SUCH_ACCESS
 import com.tencent.bkrepo.s3.constant.NO_SUCH_KEY
 import com.tencent.bkrepo.s3.constant.S3MessageCode
+import com.tencent.bkrepo.s3.exception.S3AccessDeniedException
 import com.tencent.bkrepo.s3.exception.S3NotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -50,9 +49,7 @@ import org.springframework.stereotype.Service
  * S3对象服务类
  */
 @Service
-class S3ObjectService(
-    private val repositoryClient: RepositoryClient,
-) : ArtifactService() {
+class S3ObjectService: ArtifactService() {
 
     fun getObject(artifactInfo: S3ArtifactInfo) {
         with(artifactInfo) {
@@ -63,22 +60,16 @@ class S3ObjectService(
                     params = arrayOf(NO_SUCH_KEY, artifactInfo.getArtifactFullPath())
                 )
             ArtifactContextHolder.getRepoDetail()
-            val repo = ArtifactContextHolder.getRepoDetail()
-                ?: throw S3NotFoundException(
-                    HttpStatus.NOT_FOUND,
-                    S3MessageCode.S3_NO_SUCH_KEY,
-                    params = arrayOf(NO_SUCH_KEY, artifactInfo.getArtifactFullPath())
-                )
-            val context = ArtifactDownloadContext(repo = repo, artifact = artifactInfo)
+            val context = ArtifactDownloadContext()
             //仓库未开启自动创建目录索引时不允许访问目录
             val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
             if (node.folder && autoIndexSettings?.enabled == false) {
                 logger.warn("${artifactInfo.getArtifactFullPath()} is folder " +
                         "or repository is not enabled for automatic directory index creation")
-                throw S3NotFoundException(
-                    HttpStatus.NOT_FOUND,
-                    S3MessageCode.S3_NO_SUCH_KEY,
-                    params = arrayOf(NO_SUCH_KEY, artifactInfo.getArtifactFullPath())
+                throw S3AccessDeniedException(
+                    HttpStatus.FORBIDDEN,
+                    S3MessageCode.S3_NO_SUCH_ACCESS,
+                    params = arrayOf(NO_SUCH_ACCESS, artifactInfo.getArtifactFullPath())
                 )
             }
             repository.download(context)

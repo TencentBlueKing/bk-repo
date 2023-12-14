@@ -31,17 +31,18 @@
 
 package com.tencent.bkrepo.s3.artifact.response
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
+import com.tencent.bkrepo.s3.constant.DEFAULT_ENCODING
 import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
 import org.dom4j.Document
 import org.dom4j.DocumentHelper
 import org.dom4j.Element
 import org.dom4j.io.OutputFormat
 import org.dom4j.io.XMLWriter
-import org.springframework.http.HttpHeaders
 import java.io.StringWriter
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -69,14 +70,14 @@ class S3ExceptionCommonResponse {
             root.addElement("Message").addText(LocaleMessageUtils.getLocalizedMessage(exception.messageCode))
             if (exception is AWS4AuthenticationException) {
                 root.addElement("StringToSign").addText(request.getHeader(HttpHeaders.AUTHORIZATION))
-                root.addElement("CanonicalRequest").addText(request.getHeader("x-amz-content-sha256"))
+                root.addElement("CanonicalRequest").addText(request.getHeader(HttpHeaders.X_AMZ_CONTENT_SHA256))
             }
             root.addElement("Resource").addText(exception.params.getOrNull(1)?.toString() ?: "")
             root.addElement("RequestId").addText(ContextUtil.getTraceId())
             root.addElement("TraceId").addText(ContextUtil.getTraceId())
 
             val format = OutputFormat.createPrettyPrint()
-            format.setEncoding("utf-8")
+            format.setEncoding(DEFAULT_ENCODING)
             val out = StringWriter()
             val writer = XMLWriter(out, format)
             writer.write(doc)
@@ -86,10 +87,10 @@ class S3ExceptionCommonResponse {
         }
 
         private fun setResponseHeaders(response: HttpServletResponse) {
-            response.setHeader("x-amz-request-id", ContextUtil.getTraceId())
-            response.setHeader("x-amz-trace-id", ContextUtil.getTraceId())
+            response.setHeader(HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
+            response.setHeader(HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
             response.setHeader(HttpHeaders.CONTENT_TYPE, "application/xml")
-            response.setCharacterEncoding("utf-8")
+            response.setCharacterEncoding(DEFAULT_ENCODING)
         }
 
         private fun writeResponse(response: HttpServletResponse, xml: String) {

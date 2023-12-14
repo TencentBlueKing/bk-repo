@@ -29,24 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.s3.constant
+package com.tencent.bkrepo.s3.exception
+
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
- * 访问的对象不存在
+ * 无权限访问
  */
-const val NO_SUCH_KEY = "NoSuchKey"
-
-/**
- * 存储桶不存在
- */
-const val NO_SUCH_BUCKET = "NoSuchBucket"
-
-/**
- * 签名不匹配
- */
-const val SIGN_NOT_MATCH = "SignatureDoesNotMatch"
-
-/**
- * 没权限访问
- */
-const val NO_SUCH_ACCESS = "AccessDenied"
+open class S3AccessDeniedException(
+    status: HttpStatus = HttpStatus.FORBIDDEN,
+    code: MessageCode,
+    vararg params: Any
+) : ErrorCodeException(status, code, params)

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.s3.artifact.utils
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.s3.artifact.auth.AWS4AuthCredentials
 import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
 import org.springframework.util.StringUtils
@@ -58,9 +59,9 @@ object AWS4AuthUtil {
         secretAccessKey: String
     ): Boolean {
         val heardMap: MutableMap<String, String> = HashMap()
-        heardMap["x-amz-content-sha256"] = authCredentials.contentHash
-        heardMap["x-amz-date"] = authCredentials.requestDate
-        heardMap["host"] = authCredentials.host
+        heardMap[HttpHeaders.X_AMZ_CONTENT_SHA256.toLowerCase()] = authCredentials.contentHash
+        heardMap[HttpHeaders.X_AMZ_DATE.toLowerCase()] = authCredentials.requestDate
+        heardMap[HttpHeaders.HOST.toLowerCase()] = authCredentials.host
         // 解析签名信息
         val authInfo = parseAuthorization(authCredentials.authorization)
         if (authCredentials.accessKeyId != authInfo.accessKey) {
@@ -162,9 +163,6 @@ object AWS4AuthUtil {
         hashedCanonicalRequest += "${authInfo.signedHeader}\n"
         //4.6-Hashed Payload
         hashedCanonicalRequest += authCredentials.contentHash
-
-
-        println("new: hashedCanonicalRequest: $hashedCanonicalRequest")
 
         stringToSign += doHex(hashedCanonicalRequest)
         ///endregion

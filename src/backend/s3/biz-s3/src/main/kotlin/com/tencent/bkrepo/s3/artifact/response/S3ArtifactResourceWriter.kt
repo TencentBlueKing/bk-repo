@@ -31,32 +31,18 @@
 
 package com.tencent.bkrepo.s3.artifact.response
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
-import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.resolve.response.BaseArtifactResourceHandler
-import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
-import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
-import com.tencent.bkrepo.common.artifact.stream.rateLimit
-import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
-import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
-import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.Tracer
-import org.springframework.http.HttpMethod
-import org.springframework.util.unit.DataSize
-import java.io.IOException
-import java.io.OutputStream
-import javax.servlet.http.HttpServletRequest
+import com.tencent.bkrepo.s3.constant.DEFAULT_ENCODING
 import javax.servlet.http.HttpServletResponse
 
 /**
@@ -103,13 +89,13 @@ class S3ArtifactResourceWriter (
         eTag: String,
         status: Int,
         contentType: String = MediaTypes.APPLICATION_OCTET_STREAM,
-        characterEncoding: String = "utf-8"
+        characterEncoding: String = DEFAULT_ENCODING
     ) {
-        response.setHeader("x-amz-request-id", ContextUtil.getTraceId())
-        response.setHeader("x-amz-trace-id", ContextUtil.getTraceId())
-        response.setHeader("Content-Type", contentType)
-        response.setHeader("Content-Length", contentLength.toString())
-        response.setHeader("ETag", eTag)
+        response.setHeader(HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
+        response.setHeader(HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
+        response.setHeader(HttpHeaders.CONTENT_TYPE, contentType)
+        response.setHeader(HttpHeaders.CONTENT_LENGTH, contentLength.toString())
+        response.setHeader(HttpHeaders.ETAG, eTag)
         response.setCharacterEncoding(characterEncoding)
         response.status = status
     }

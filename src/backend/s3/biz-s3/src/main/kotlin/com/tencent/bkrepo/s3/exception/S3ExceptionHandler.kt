@@ -55,7 +55,7 @@ import javax.servlet.http.HttpServletResponse
 @RestControllerAdvice("com.tencent.bkrepo.s3")
 class S3ExceptionHandler {
     /**
-     * 签名认证失败响应
+     * 签名认证失败
      */
     @ExceptionHandler(AWS4AuthenticationException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
@@ -63,9 +63,21 @@ class S3ExceptionHandler {
         S3ExceptionCommonResponse.buildErrorResponse(exception)
     }
 
+    /**
+     * 资源不存在
+     */
     @ExceptionHandler(S3NotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleException(exception: S3NotFoundException) {
+        S3ExceptionCommonResponse.buildErrorResponse(exception)
+    }
+
+    /**
+     * 没权限访问
+     */
+    @ExceptionHandler(S3AccessDeniedException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleException(exception: S3AccessDeniedException) {
         S3ExceptionCommonResponse.buildErrorResponse(exception)
     }
 }
