@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.opdata.service
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
@@ -52,6 +55,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -61,12 +65,10 @@ class ProjectMetricsService (
     private val projectClient: ProjectClient,
     ){
 
-    var projects: Map<String, ProjectInfo> = emptyMap()
-
-    @Scheduled(cron = "0 0 2 * * ?")
-    fun updateProjects() {
-        projects = projectClient.listProject().data!!.associateBy { it.name }
-    }
+    private val projectInfoCache: LoadingCache<String, Optional<ProjectInfo>> = CacheBuilder.newBuilder()
+        .maximumSize(DEFAULT_PROJECT_CACHE_SIZE)
+        .expireAfterWrite(1, TimeUnit.DAYS)
+        .build(CacheLoader.from { key -> Optional.ofNullable(projectClient.getProjectInfo(key).data) })
 
     fun page(option: ProjectMetricsOption): Page<TProjectMetrics> {
         with(option) {
@@ -303,10 +305,7 @@ class ProjectMetricsService (
     }
 
     private fun getProject(projectId: String): ProjectInfo? {
-        if (this.projects.isEmpty()) {
-            this.updateProjects()
-        }
-        return projects[projectId]
+        return projectInfoCache.get(projectId).orElse(null)
     }
 
     private fun filterByRepoName(metric: TProjectMetrics?, repoName: String): Long {
@@ -326,6 +325,7 @@ class ProjectMetricsService (
     }
 
     companion object {
+        private const val DEFAULT_PROJECT_CACHE_SIZE = 100_000L
         private const val FIXED_DELAY = 1L
         private const val INIT_DELAY = 3L
     }
