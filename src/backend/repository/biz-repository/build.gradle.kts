@@ -33,7 +33,6 @@ dependencies {
     api(project(":repository:api-repository"))
     api(project(":common:common-job"))
     api(project(":common:common-mongo"))
-    api(project(":common:common-lock"))
     api(project(":analyst:api-analyst"))
     api(project(":common:common-query:query-mongo"))
     api(project(":common:common-artifact:artifact-service"))
