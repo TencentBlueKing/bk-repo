@@ -34,6 +34,8 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
@@ -63,12 +65,38 @@ class ProjectMetricsService (
     private val projectMetricsRepository: ProjectMetricsRepository,
     private val statDateModel: StatDateModel,
     private val projectClient: ProjectClient,
+    private val jobClient: JobClient,
     ){
 
     private val projectInfoCache: LoadingCache<String, Optional<ProjectInfo>> = CacheBuilder.newBuilder()
         .maximumSize(DEFAULT_PROJECT_CACHE_SIZE)
         .expireAfterWrite(1, TimeUnit.DAYS)
         .build(CacheLoader.from { key -> Optional.ofNullable(projectClient.getProjectInfo(key).data) })
+
+    private val activeProjectsCache:  LoadingCache<String, MutableSet<String>> by lazy {
+        val cacheLoader = object : CacheLoader<String, MutableSet<String>>() {
+            override fun load(key: String): MutableSet<String> {
+                return when (key) {
+                    DOWNLOAD_ACTIVE_PROJECTS -> {
+                        jobClient.downloadActiveProjects().data ?: mutableSetOf<String>()
+                    }
+                    ACTIVE_PROJECTS -> {
+                        jobClient.activeProjects().data ?: mutableSetOf<String>()
+                    }
+                    UPLOAD_ACTIVE_PROJECTS -> {
+                        jobClient.uploadActiveProjects().data ?: mutableSetOf<String>()
+                    }
+                    else -> {
+                        mutableSetOf<String>()
+                    }
+                }
+            }
+        }
+        CacheBuilder.newBuilder()
+            .maximumSize(10)
+            .expireAfterWrite(1, TimeUnit.HOURS)
+            .build(cacheLoader)
+    }
 
     fun page(option: ProjectMetricsOption): Page<TProjectMetrics> {
         with(option) {
@@ -123,6 +151,20 @@ class ProjectMetricsService (
         EasyExcelUtils.download(records, fileName, ProjectMetrics::class.java, includeColumns)
     }
 
+
+    fun getActiveProjects(): MutableSet<String> {
+        return activeProjectsCache.get(ACTIVE_PROJECTS)
+    }
+
+    fun getDownloadActiveProjects(): MutableSet<String> {
+        return activeProjectsCache.get(DOWNLOAD_ACTIVE_PROJECTS)
+    }
+
+    fun getUploadActiveProjects(): MutableSet<String> {
+        return activeProjectsCache.get(UPLOAD_ACTIVE_PROJECTS)
+    }
+
+
     /**
      * 定时将db中的数据更新到缓存中
      */
@@ -145,6 +187,16 @@ class ProjectMetricsService (
             MetricsCacheUtil.gerProjectNodeNum(it.name)
         }
 
+        listOf(ACTIVE_PROJECTS, DOWNLOAD_ACTIVE_PROJECTS, UPLOAD_ACTIVE_PROJECTS).forEach {
+            activeProjectsCache.get(it)
+        }
+
+        activeProjectsCache.get(ACTIVE_PROJECTS).forEach {
+            try {
+                getProject(it)
+            } catch (ignore: RemoteErrorCodeException) {
+            }
+        }
     }
 
     private fun getProjectMetrics(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
@@ -174,9 +226,19 @@ class ProjectMetricsService (
         }
 
 
-        val currentMetrics = MetricsCacheUtil.getProjectMetrics(
+        var currentMetrics = MetricsCacheUtil.getProjectMetrics(
             createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
         )
+
+        if (metricsRequest.activeRecords) {
+            val activeProjects =  getActiveProjects()
+            if (activeProjects.isNotEmpty()) {
+                oneDayBeforeMetrics = oneDayBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
+                oneWeekBeforeMetrics = oneWeekBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
+                oneMonthBeforeMetrics = oneMonthBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
+                currentMetrics = currentMetrics.filter { activeProjects.contains(it.projectId) }
+            }
+        }
 
         return getMetricsResult(
             type = metricsRequest.type,
@@ -326,7 +388,11 @@ class ProjectMetricsService (
 
     companion object {
         private const val DEFAULT_PROJECT_CACHE_SIZE = 100_000L
-        private const val FIXED_DELAY = 1L
+        private const val FIXED_DELAY = 30L
         private const val INIT_DELAY = 3L
+        private const val DOWNLOAD_ACTIVE_PROJECTS = "downloadActiveProjects"
+        private const val ACTIVE_PROJECTS = "activeProjects"
+        private const val UPLOAD_ACTIVE_PROJECTS = "uploadActiveProjects"
+
     }
 }

@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 
 /**
- * 节点创建事件
+ * 节点删除事件
  */
 class NodeDeletedEvent(
     override val projectId: String,

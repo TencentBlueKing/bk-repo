@@ -25,19 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.artifact.event.node
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 
 /**
- * 项目仓库指标统计任务配置项
+ * 节点clean事件
  */
-@ConfigurationProperties("job.project-repo-metrics-stat")
-data class ProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 18 * * ?",
-    /**
-     * 是否遍历所有项目记录
-     */
-    var runAllProjects: Boolean = true
-) : MongodbJobProperties()
+class NodeCleanEvent(
+    override val projectId: String,
+    override val repoName: String,
+    override val resourceKey: String,
+    override val userId: String,
+    val deletedDate: String,
+) : ArtifactEvent(
+    type = EventType.NODE_CLEAN,
+    projectId = projectId,
+    repoName = repoName,
+    resourceKey = resourceKey,
+    userId = userId
+)

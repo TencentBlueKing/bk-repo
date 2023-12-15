@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.controller.service
+package com.tencent.bkrepo.job.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
