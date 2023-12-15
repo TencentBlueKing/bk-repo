@@ -135,14 +135,14 @@ class DeletedNodeCopyCleanupJob(
         while (true) {
             val deletedNodeList =
                 mongoTemplate.find(query, Node::class.java, nodeCollectionName).takeIf { it.isNotEmpty() } ?: break
-            logger.info("Retrieved [${deletedNodeList.size}] deleted records from ${row.projectId}/${row.name}")
+            logger.info("Copy job Retrieved [${deletedNodeList.size}] deleted records from ${row.projectId}/${row.name}")
             val folderNodeList = deletedNodeList.filter { it.folder }
             measureNanoTime {
                 cleanupFolderNode(context, folderNodeList, nodeCollectionName)
             }.apply {
                 if (logger.isDebugEnabled) {
                     val elapsedTime = HumanReadable.time(this)
-                    logger.debug("cleanupFolderNode  ${row.projectId}/${row.name} elapse $elapsedTime")
+                    logger.debug("Copy job cleanupFolderNode  ${row.projectId}/${row.name} elapse $elapsedTime")
                 }
             }
             val fileNodeList = deletedNodeList.filter { !it.folder }
@@ -151,7 +151,7 @@ class DeletedNodeCopyCleanupJob(
             }.apply {
                 if (logger.isDebugEnabled) {
                     val elapsedTime = HumanReadable.time(this)
-                    logger.debug("cleanUpFileNode  ${row.projectId}/${row.name} elapse $elapsedTime")
+                    logger.debug("Copy job cleanUpFileNode  ${row.projectId}/${row.name} elapse $elapsedTime")
                 }
             }
         }
@@ -162,7 +162,7 @@ class DeletedNodeCopyCleanupJob(
             val repoQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
             mongoTemplate.remove(repoQuery, collectionName)
             context.repoDeleteCount.incrementAndGet()
-            logger.info("Clean up deleted repository[${row.projectId}/${row.name}] for no nodes remaining")
+            logger.info("Copy job Clean up deleted repository[${row.projectId}/${row.name}] for no nodes remaining")
         }
     }
 
@@ -197,11 +197,11 @@ class DeletedNodeCopyCleanupJob(
             }.apply {
                 if (logger.isDebugEnabled) {
                     val elapsedTime = HumanReadable.time(this)
-                    logger.debug("decrementFileReferences  ${repo.projectId}/${repo.name} elapse $elapsedTime")
+                    logger.debug("Copy job decrementFileReferences  ${repo.projectId}/${repo.name} elapse $elapsedTime")
                 }
             }
         } catch (ignored: Exception) {
-            logger.error("Clean up deleted nodes[$idList] failed in collection[$nodeCollectionName].", ignored)
+            logger.error("Copy job Clean up deleted nodes[$idList] failed in collection[$nodeCollectionName].", ignored)
         }
 
         context.fileCount.addAndGet(result?.deletedCount ?: 0)
@@ -216,17 +216,17 @@ class DeletedNodeCopyCleanupJob(
             val update = Update().apply { inc(FileReference::count.name, -1) }
             val result = mongoTemplate.updateFirst(query, update, collectionName)
             if (result.modifiedCount == 1L) {
-                logger.info("Decrement references of file [$it] on credentialsKey [$credentialsKey].")
+                logger.info("Copy job Decrement references of file [$it] on credentialsKey [$credentialsKey].")
                 return@forEach
             }
             val newQuery = Query(buildCriteria(it, credentialsKey))
             mongoTemplate.findOne<FileReference>(newQuery, collectionName) ?: run {
-                logger.error("Failed to decrement reference of file [$it] on credentialsKey [$credentialsKey]")
+                logger.error("Copy job Failed to decrement reference of file [$it] on credentialsKey [$credentialsKey]")
                 return@forEach
             }
 
             logger.error(
-                "Failed to decrement reference of file [$it] on credentialsKey [$credentialsKey]: " +
+                "Copy job Failed to decrement reference of file [$it] on credentialsKey [$credentialsKey]: " +
                     "reference count is 0."
             )
         }
