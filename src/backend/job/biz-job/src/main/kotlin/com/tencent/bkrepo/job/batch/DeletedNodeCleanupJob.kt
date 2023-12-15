@@ -126,7 +126,7 @@ class DeletedNodeCleanupJob(
     override fun run(row: Repository, collectionName: String, context: DeletedNodeCleanupJobContext) {
         val shardingId = MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
         if (properties.nodeIdList.isNotEmpty() && properties.nodeIdList.contains("$shardingId")) return
-        if (properties.projectList.isNotEmpty() && properties.projectList.contains(row.name)) return
+        if (properties.projectList.isNotEmpty() && properties.projectList.contains(row.projectId)) return
 
         val query = buildNodeQuery(row.projectId, row.name, context.expireDate)
         val nodeCollectionName = COLLECTION_NODE_PREFIX + shardingId

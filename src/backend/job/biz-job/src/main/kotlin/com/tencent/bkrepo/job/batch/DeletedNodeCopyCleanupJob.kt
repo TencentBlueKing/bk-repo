@@ -126,8 +126,8 @@ class DeletedNodeCopyCleanupJob(
     override fun run(row: Repository, collectionName: String, context: DeletedNodeCleanupJobContext) {
         val shardingId = MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
         if (properties.nodeIdList.isEmpty() && properties.projectList.isEmpty()) return
-        if (!properties.nodeIdList.contains("$shardingId")) return
-        if (!properties.projectList.contains(row.name)) return
+        if (!properties.nodeIdList.contains("$shardingId") && !properties.projectList.contains(row.projectId)) return
+
 
         val query = buildNodeQuery(row.projectId, row.name, context.expireDate)
         val nodeCollectionName = COLLECTION_NODE_PREFIX + shardingId
@@ -135,7 +135,8 @@ class DeletedNodeCopyCleanupJob(
         while (true) {
             val deletedNodeList =
                 mongoTemplate.find(query, Node::class.java, nodeCollectionName).takeIf { it.isNotEmpty() } ?: break
-            logger.info("Copy job Retrieved [${deletedNodeList.size}] deleted records from ${row.projectId}/${row.name}")
+            logger.info("Copy job Retrieved [${deletedNodeList.size}] " +
+                            "deleted records from ${row.projectId}/${row.name}")
             val folderNodeList = deletedNodeList.filter { it.folder }
             measureNanoTime {
                 cleanupFolderNode(context, folderNodeList, nodeCollectionName)
