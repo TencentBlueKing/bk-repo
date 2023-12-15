@@ -25,19 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.analyst.statemachine.subtask.context
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.analyst.pojo.SubScanTask
 
-/**
- * 项目仓库指标统计任务配置项
- */
-@ConfigurationProperties("job.project-repo-metrics-stat")
-data class ProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 18 * * ?",
-    /**
-     * 是否遍历所有项目记录
-     */
-    var runAllProjects: Boolean = true
-) : MongodbJobProperties()
+data class RetryContext(val subtask: SubScanTask) : SubtaskContext()

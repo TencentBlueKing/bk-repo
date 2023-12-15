@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.batch.node
 
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.CompositeMongoDbBatchJob
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
@@ -16,6 +17,7 @@ import java.util.Date
 class NodeStatCompositeMongoDbBatchJob(
     val properties: NodeStatCompositeMongoDbBatchJobProperties,
     private val redisTemplate: RedisTemplate<String, String>,
+    private val activeProjectService: ActiveProjectService
 ) : CompositeMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
     override fun collectionNames(): List<String> {
@@ -30,7 +32,7 @@ class NodeStatCompositeMongoDbBatchJob(
 
     override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
         return listOf(
-            FolderStatChildJob(properties, mongoTemplate, redisTemplate)
+            FolderStatChildJob(properties, redisTemplate, mongoTemplate, activeProjectService)
         )
     }
 

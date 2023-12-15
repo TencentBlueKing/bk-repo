@@ -35,7 +35,8 @@ import java.util.concurrent.atomic.LongAdder
 
 data class ProjectRepoMetricsStatJobContext(
     var metrics: ConcurrentHashMap<String, ProjectMetrics> = ConcurrentHashMap(),
-    var statDate: LocalDateTime
+    var statDate: LocalDateTime,
+    var activeProjects: Set<String> = emptySet()
 ) : JobContext() {
 
     data class ProjectMetrics(
