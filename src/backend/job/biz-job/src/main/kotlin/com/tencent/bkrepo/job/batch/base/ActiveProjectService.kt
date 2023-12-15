@@ -80,8 +80,8 @@ class ActiveProjectService(
                 .format(DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT))
         )
 
-        months.forEach {
-            val collectionName = COLLECTION_NAME_PREFIX +it
+        months.forEach { month ->
+            val collectionName = COLLECTION_NAME_PREFIX +month
             val criteria = Criteria().andOperator(
                 IGNORE_PROJECT_PREFIX_LIST.map { where(ProjectInfo::name).not().regex(it) }
             )
@@ -90,7 +90,7 @@ class ActiveProjectService(
             }
             val query = Query(criteria)
             val data = mongoTemplate.findDistinct(query, PROJECT, collectionName, String::class.java)
-            tempList.addAll(data)
+            tempList.addAll(data.filter { it.isNotBlank() })
         }
         return tempList
     }
