@@ -96,4 +96,29 @@ class ProjectController(
     ) {
         projectMetricsService.download(metricsRequest)
     }
+
+    /**
+     * 获取活跃项目列表
+     */
+    @GetMapping("/list/activeProjects")
+    fun getActiveProjects(): Response<MutableSet<String>> {
+
+        return ResponseBuilder.success(projectMetricsService.getActiveProjects())
+    }
+
+    /**
+     * 获取下载活跃项目列表
+     */
+    @GetMapping("/list/downloadActiveProjects")
+    fun getDownloadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(projectMetricsService.getDownloadActiveProjects())
+    }
+
+    /**
+     * 获取上传活跃项目列表
+     */
+    @GetMapping("/list/uploadActiveProjects")
+    fun getUploadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(projectMetricsService.getUploadActiveProjects())
+    }
 }

@@ -33,10 +33,12 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
+import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REDIS_CACHE_TYPE
 import com.tencent.bkrepo.job.REPO
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.ChildJobContext
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -66,9 +68,10 @@ import kotlin.text.toLongOrNull as toLongOrNull1
  */
 class FolderStatChildJob(
     val properties: CompositeJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
-    ) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>() {
+    private val mongoTemplate: MongoTemplate,
+    private val activeProjectService: ActiveProjectService
+) : ChildMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>() {
 
     override fun onParentJobStart(context: ChildJobContext) {
         require(context is FolderChildContext)
@@ -78,15 +81,18 @@ class FolderStatChildJob(
 
     override fun run(row: NodeStatCompositeMongoDbBatchJob.Node, collectionName: String, context: JobContext) {
         require(context is FolderChildContext)
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
         if (!context.runFlag) return
         if (!collectionRunCheck(collectionName)) return
         if (row.deleted != null) return
-        // 判断是否在不统计项目或者仓库列表中
-        if (ignoreProjectOrRepoCheck(row.projectId, row.repoName)) return
         //只统计非目录类节点；没有根目录这个节点，不需要统计
         if (row.folder || row.path == PathUtils.ROOT) {
             return
         }
+        // 判断是否在不统计项目或者仓库列表中
+        if (ignoreProjectOrRepoCheck(row.projectId)) return
+        if (context.activeProjects.isNotEmpty() && !properties.runAllProjects &&
+            !context.activeProjects.contains(row.projectId)) return
 
         // 更新当前节点所有上级目录（排除根目录）统计信息
         val folderFullPaths = PathUtils.resolveAncestorFolder(row.fullPath)
@@ -110,13 +116,19 @@ class FolderStatChildJob(
 
 
     override fun createChildJobContext(parentJobContext: JobContext): ChildJobContext {
+        require(properties is NodeStatCompositeMongoDbBatchJobProperties)
         val cacheType = try {
             redisTemplate.execute { null }
             REDIS_CACHE_TYPE
         } catch (e: Exception) {
             MEMORY_CACHE_TYPE
         }
-        return FolderChildContext(parentJobContext, cacheType = cacheType)
+        return FolderChildContext(
+            parentContent = parentJobContext,
+            cacheType = cacheType,
+            activeProjects = if (properties.runAllProjects) { emptySet() }
+            else { activeProjectService.getActiveProjects() },
+        )
     }
 
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
@@ -132,7 +144,7 @@ class FolderStatChildJob(
     /**
      * 判断项目或者仓库是否不需要进行目录统计
      */
-    private fun ignoreProjectOrRepoCheck(projectId: String, repoName: String): Boolean {
+    private fun ignoreProjectOrRepoCheck(projectId: String): Boolean {
         return IGNORE_PROJECT_PREFIX_LIST.firstOrNull { projectId.startsWith(it) } != null
     }
 
@@ -499,7 +511,6 @@ class FolderStatChildJob(
         private val logger = LoggerHolder.jobLogger
         private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
-        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_")
         private const val STORED = "stored"
         private const val BATCH_LIMIT = 500
         private const val COLLECTION_NAME_PREFIX = "node_"
