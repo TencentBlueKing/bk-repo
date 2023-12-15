@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.model.StatDateModel
@@ -191,7 +192,10 @@ class ProjectMetricsService (
         }
 
         activeProjectsCache.get(ACTIVE_PROJECTS).forEach {
-            getProject(it)
+            try {
+                getProject(it)
+            } catch (ignore: RemoteErrorCodeException) {
+            }
         }
     }
 
