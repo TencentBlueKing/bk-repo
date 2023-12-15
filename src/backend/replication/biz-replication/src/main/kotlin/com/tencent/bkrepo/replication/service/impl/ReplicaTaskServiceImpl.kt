@@ -467,6 +467,7 @@ class ReplicaTaskServiceImpl(
                 clusterNodeName
             }.toSet()
             val task = tReplicaTask.copy(
+                id = null,
                 name = name,
                 replicaObjectType = replicaObjectType,
                 setting = setting,
@@ -503,7 +504,9 @@ class ReplicaTaskServiceImpl(
                 // 移除所有object对象，重新插入
                 replicaObjectDao.remove(key)
                 replicaObjectDao.insert(replicaObjectList)
-                replicaTaskDao.save(task)
+                // 任务更新后删除旧的数据，插入新的task，保持key不变
+                replicaTaskDao.deleteByKey(tReplicaTask.key)
+                replicaTaskDao.insert(task)
                 convert(task)
             } catch (exception: DuplicateKeyException) {
                 logger.warn("update task[$name] error: [${exception.message}]")
