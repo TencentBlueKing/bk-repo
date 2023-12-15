@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.job.batch
 
 import com.mongodb.client.result.DeleteResult
-import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
