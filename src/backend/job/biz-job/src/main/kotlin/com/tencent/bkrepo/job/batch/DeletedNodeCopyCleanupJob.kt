@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.job.batch
 
 import com.mongodb.client.result.DeleteResult
-import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
@@ -62,13 +61,13 @@ import kotlin.system.measureNanoTime
 /**
  * 清理被标记为删除的node，同时减少文件引用
  */
-@Component("JobServiceDeletedNodeCleanupJob")
+@Component("JobServiceDeletedNodeCopyCleanupJob")
 @EnableConfigurationProperties(DeletedNodeCleanupJobProperties::class)
-class DeletedNodeCleanupJob(
+class DeletedNodeCopyCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val fileReferenceClient: FileReferenceClient,
     private val clusterProperties: ClusterProperties
-) : MongoDbBatchJob<DeletedNodeCleanupJob.Repository, DeletedNodeCleanupJobContext>(properties) {
+) : MongoDbBatchJob<DeletedNodeCopyCleanupJob.Repository, DeletedNodeCleanupJobContext>(properties) {
 
     data class Node(
         val id: String,
@@ -126,11 +125,13 @@ class DeletedNodeCleanupJob(
 
     override fun run(row: Repository, collectionName: String, context: DeletedNodeCleanupJobContext) {
         val shardingId = MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
-        if (properties.nodeIdList.isNotEmpty() && properties.nodeIdList.contains("$shardingId")) return
-        if (properties.projectList.isNotEmpty() && properties.projectList.contains(row.name)) return
+        if (properties.nodeIdList.isEmpty() && properties.projectList.isEmpty()) return
+        if (!properties.nodeIdList.contains("$shardingId")) return
+        if (!properties.projectList.contains(row.name)) return
 
         val query = buildNodeQuery(row.projectId, row.name, context.expireDate)
         val nodeCollectionName = COLLECTION_NODE_PREFIX + shardingId
+
         while (true) {
             val deletedNodeList =
                 mongoTemplate.find(query, Node::class.java, nodeCollectionName).takeIf { it.isNotEmpty() } ?: break
@@ -262,7 +263,7 @@ class DeletedNodeCleanupJob(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DeletedNodeCleanupJob::class.java)
+        private val logger = LoggerFactory.getLogger(DeletedNodeCopyCleanupJob::class.java)
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val COLLECTION_FILE_REFERENCE = "file_reference_"
         private const val COLLECTION_REPOSITORY = "repository"
