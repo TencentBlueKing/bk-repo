@@ -25,60 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.project
+package com.tencent.bkrepo.job.batch.project
 
-/**
- * 项目元数据
- */
-data class ProjectMetadata(
+import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties(value = "job.bkci-project-metadata-sync")
+class BkciProjectMetadataSyncJobProperties(
+    override var enabled: Boolean = false,
+    override var cron: String = "0 0 0 * * ?",
+    var ignoredProjectPrefix: Set<String> = emptySet(),
+    var ciServer: String = "",
+    var ciToken: String = "",
     /**
-     * 元数据键
+     * 是否路由到bkci灰度集群
      */
-    val key: String,
-    /**
-     * 元数据值
-     */
-    var value: Any,
-) {
-    companion object {
-        /**
-         * 所属事业群ID
-         */
-        const val KEY_BG_ID = "bgId"
-
-        /**
-         * 所属事业群
-         */
-        const val KEY_BG_NAME = "bgName"
-
-        /**
-         * 所属部门ID
-         */
-        const val KEY_DEPT_ID = "deptId"
-
-        /**
-         * 所属部门
-         */
-        const val KEY_DEPT_NAME = "deptName"
-
-        /**
-         * 所属中心ID
-         */
-        const val KEY_CENTER_ID = "centerId"
-
-        /**
-         * 所属中心名
-         */
-        const val KEY_CENTER_NAME = "centerName"
-
-        /**
-         * 运营产品ID
-         */
-        const val KEY_PRODUCT_ID = "productId"
-
-        /**
-         * 是否启用
-         */
-        const val KEY_ENABLED = "enabled"
-    }
-}
+    var routeToGray: Boolean = false,
+) : MongodbJobProperties()
