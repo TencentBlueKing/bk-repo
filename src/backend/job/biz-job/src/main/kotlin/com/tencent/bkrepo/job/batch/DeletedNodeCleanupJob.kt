@@ -50,14 +50,11 @@ import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
@@ -198,13 +195,6 @@ class DeletedNodeCleanupJob(
         val criteria = Criteria.where(FileReference::sha256.name).`is`(it)
         criteria.and(FileReference::credentialsKey.name).`is`(credentialsKey)
         return criteria
-    }
-
-    private fun buildNodeQuery(projectId: String, repoName: String, deletedBefore: LocalDateTime? = null): Query {
-        val criteria = where(Node::projectId).isEqualTo(projectId)
-            .and(Node::repoName).isEqualTo(repoName)
-        deletedBefore?.let { criteria.and(Node::deleted).lt(it) }
-        return Query.query(criteria).with(PageRequest.of(0, PAGE_SIZE))
     }
 
     private fun getCredentialsKey(projectId: String, repoName: String): String? {

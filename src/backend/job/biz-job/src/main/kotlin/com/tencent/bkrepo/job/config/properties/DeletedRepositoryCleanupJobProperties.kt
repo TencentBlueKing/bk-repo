@@ -25,11 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties;
+package com.tencent.bkrepo.job.config.properties
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(value = "job.deleted-repository-cleanup")
-public class DeletedRepositoryCleanupJobProperties(
-    override var cron: String = "0 0 18 * * ?"
-) : MongodbJobProperties()
+class DeletedRepositoryCleanupJobProperties(
+    override var cron: String = "0 0 2 * * ?",
+): MongodbJobProperties()
