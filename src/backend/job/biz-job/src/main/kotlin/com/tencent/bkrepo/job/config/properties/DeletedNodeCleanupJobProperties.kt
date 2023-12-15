@@ -35,5 +35,4 @@ class DeletedNodeCleanupJobProperties(
     override var cron: String = "0 0 2/6 * * ?",
     var deletedNodeReserveDays: Long = 15L,
     var nodeIdList: List<String> = emptyList(),
-    var projectList: List<String> = emptyList(),
 ) : MongodbJobProperties()
