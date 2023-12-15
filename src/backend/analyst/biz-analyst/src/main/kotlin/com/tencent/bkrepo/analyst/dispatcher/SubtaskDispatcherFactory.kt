@@ -15,6 +15,7 @@ import com.tencent.bkrepo.statemachine.StateMachine
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 
 @Component
@@ -29,6 +30,7 @@ class SubtaskDispatcherFactory(
     private val temporaryScanTokenService: TemporaryScanTokenService,
     private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>,
     private val lockOperation: LockOperation,
+    private val executor: ThreadPoolTaskExecutor,
 ) {
     fun create(executionClusterName: String): SubtaskDispatcher {
         val executionCluster = executionClusterService.get(executionClusterName)
@@ -39,7 +41,8 @@ class SubtaskDispatcherFactory(
                     scannerProperties,
                     scanService,
                     subtaskStateMachine,
-                    temporaryScanTokenService
+                    temporaryScanTokenService,
+                    executor,
                 )
             }
 
@@ -61,8 +64,9 @@ class SubtaskDispatcherFactory(
                     scanService,
                     subtaskStateMachine,
                     temporaryScanTokenService,
+                    executor,
                     subScanTaskDao,
-                    redisTemplate
+                    redisTemplate,
                 )
             }
 

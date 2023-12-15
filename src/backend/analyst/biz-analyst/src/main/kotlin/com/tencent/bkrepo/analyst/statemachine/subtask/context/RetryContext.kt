@@ -25,41 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.subtask
+package com.tencent.bkrepo.analyst.statemachine.subtask.context
 
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.analyst.pojo.SubScanTask
 
-enum class SubtaskEvent {
-    CREATE,
-    BLOCK,
-
-    /**
-     * 项目任务结束后释放配额资源唤醒BLOCKED任务
-     */
-    NOTIFY,
-    PULL,
-
-    /**
-     * 执行失败重试
-     */
-    RETRY,
-    EXECUTE,
-    STOP,
-    BLOCK_TIMEOUT,
-    TIMEOUT,
-    FAILED,
-    SUCCESS;
-
-    companion object {
-        fun finishEventOf(state: String): SubtaskEvent = when (state) {
-            SubScanTaskStatus.TIMEOUT.name -> TIMEOUT
-            SubScanTaskStatus.BLOCK_TIMEOUT.name -> BLOCK_TIMEOUT
-            SubScanTaskStatus.STOPPED.name -> STOP
-            SubScanTaskStatus.SUCCESS.name -> SUCCESS
-            SubScanTaskStatus.FAILED.name -> FAILED
-            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, state)
-        }
-    }
-}
+data class RetryContext(val subtask: SubScanTask) : SubtaskContext()

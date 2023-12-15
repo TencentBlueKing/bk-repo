@@ -36,45 +36,60 @@ data class ProjectMetrics(
     @ExcelProperty(value = ["项目ID"], order = 0)
     var projectId: String,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["节点个数"], order = 1)
+    @ExcelProperty(value = ["事业群"], order = 1)
+    var bgName: String?,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["部门"], order = 2)
+    var deptName: String?,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["中心"], order = 3)
+    var centerName: String?,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["运营产品ID"], order = 4)
+    var productId: Int?,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["是否启用"], order = 5)
+    var enabled: Boolean?,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["节点个数"], order = 6)
     var nodeNum: Long,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["项目用量(GB)"], order = 2)
+    @ExcelProperty(value = ["项目用量(GB)"], order = 7)
     var capSize: Long,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["项目用量变化量-1天](GB)"], order = 3)
+    @ExcelProperty(value = ["项目用量变化量-1天](GB)"], order = 8)
     var capSizeOfOneDayBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["项目用量变化量-1周(GB)"], order = 4)
+    @ExcelProperty(value = ["项目用量变化量-1周(GB)"], order = 9)
     var capSizeOfOneWeekBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["项目用量变化量-1月(GB)"], order = 5)
+    @ExcelProperty(value = ["项目用量变化量-1月(GB)"], order = 10)
     var capSizeOfOneMonthBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["流水线仓库用量(GB)"], order = 6)
+    @ExcelProperty(value = ["流水线仓库用量(GB)"], order = 11)
     var pipelineCapSize: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["流水线仓库用量变化量-1天(GB)"], order = 7)
+    @ExcelProperty(value = ["流水线仓库用量变化量-1天(GB)"], order = 12)
     var pCapSizeOfOneDayBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["流水线仓库用量变化量-1周(GB)"], order = 8)
+    @ExcelProperty(value = ["流水线仓库用量变化量-1周(GB)"], order = 13)
     var pCapSizeOfOneWeekBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["流水线仓库用量变化量-1月(GB)"], order = 9)
+    @ExcelProperty(value = ["流水线仓库用量变化量-1月(GB)"], order = 14)
     var pCapSizeOfOneMonthBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["自定义仓库用量(GB)"], order = 10)
+    @ExcelProperty(value = ["自定义仓库用量(GB)"], order = 15)
     var customCapSize: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["自定义仓库用量变化量-1天(GB)"], order = 11)
+    @ExcelProperty(value = ["自定义仓库用量变化量-1天(GB)"], order = 16)
     var cCapSizeOfOneDayBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["自定义仓库用量变化量-1周(GB)"], order = 12)
+    @ExcelProperty(value = ["自定义仓库用量变化量-1周(GB)"], order = 17)
     var cCapSizeOfOneWeekBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["自定义仓库用量变化量-1月(GB)"], order = 13)
+    @ExcelProperty(value = ["自定义仓库用量变化量-1月(GB)"], order = 18)
     var cCapSizeOfOneMonthBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["统计时间"], order = 14)
+    @ExcelProperty(value = ["统计时间"], order = 19)
     val createdDate: LocalDateTime? = LocalDateTime.now(),
 )
