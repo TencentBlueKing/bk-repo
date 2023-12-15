@@ -28,8 +28,11 @@
 package com.tencent.bkrepo.repository.listener
 
 import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.google.common.cache.RemovalCause
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
@@ -41,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -67,24 +71,27 @@ import java.util.concurrent.atomic.LongAdder
 @Component
 class NodeModifyEventListener(
     private val nodeService: NodeService,
-    private val nodeDao: NodeDao
+    private val nodeDao: NodeDao,
+    private val lockOperation: LockOperation
     )  {
 
-    private val cache = CacheBuilder.newBuilder()
+    private val cache: LoadingCache<Triple<String, String, String>, Pair<LongAdder, LongAdder>> = CacheBuilder.newBuilder()
         .maximumSize(1000)
         .expireAfterWrite(1, TimeUnit.MINUTES)
         .removalListener<Triple<String, String, String>, Pair<LongAdder, LongAdder>> {
             if (it.cause == RemovalCause.REPLACED) return@removalListener
-            logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
-            nodeDao.incSizeAndNodeNumOfFolder(
-                projectId = it.key!!.first,
-                repoName = it.key!!.second,
-                fullPath = it.key!!.third,
-                size = it.value.first.sumThenReset(),
-                nodeNum = it.value.second.sumThenReset()
-            )
+            lockAction(buildCacheKey(it.key!!.first, it.key!!.second, it.key!!.third)) {
+                logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
+                nodeDao.incSizeAndNodeNumOfFolder(
+                    projectId = it.key!!.first,
+                    repoName = it.key!!.second,
+                    fullPath = it.key!!.third,
+                    size = it.value.first.sumThenReset(),
+                    nodeNum = it.value.second.sumThenReset()
+                )
+            }
         }
-        .build<Triple<String, String, String>, Pair<LongAdder, LongAdder>>()
+        .build(CacheLoader.from { _ -> Pair(LongAdder(), LongAdder()) })
 
     /**
      * 允许接收的事件类型
@@ -294,15 +301,17 @@ class NodeModifyEventListener(
             // 当只需要更新特定目录前缀目录的缓存记录时设置folderPrefix
             if (!includePrefix.isNullOrEmpty() && !it.startsWith(includePrefix)) return@forEach
             val key = Triple(projectId, repoName, it)
-            val (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(LongAdder(), LongAdder())
-            if (deleted) {
-                cachedSize.add(-1 * size)
-                nodeNum.decrement()
-            } else {
-                cachedSize.add(size)
-                nodeNum.increment()
+            lockAction(buildCacheKey(projectId, repoName, it)) {
+                val (cachedSize, nodeNum) = cache.get(key)
+                if (deleted) {
+                    cachedSize.add(-1 * size)
+                    nodeNum.decrement()
+                } else {
+                    cachedSize.add(size)
+                    nodeNum.increment()
+                }
+                cache.put(key, Pair(cachedSize, nodeNum))
             }
-            cache.put(key, Pair(cachedSize, nodeNum))
         }
     }
 
@@ -420,6 +429,32 @@ class NodeModifyEventListener(
         .and(TNode::folder).isEqualTo(false)
         .and(TNode::path).ne(PathUtils.ROOT)
         return Query(criteria).withHint(TNode.FULL_PATH_IDX)
+    }
+
+    /**
+     * 生成缓存key
+     */
+    fun buildCacheKey(
+        projectId: String,
+        repoName: String,
+        path: String
+    ): String {
+        return StringBuilder().append(projectId).append(StringPool.COLON)
+            .append(repoName).append(StringPool.COLON).append(path)
+            .toString()
+    }
+
+    private fun <T> lockAction(lockKey: String, action: () -> T): T {
+        val lock = lockOperation.getLock(lockKey)
+        return if (lockOperation.getSpinLock(lockKey, lock, sleepTime = 5)) {
+            try {
+                action()
+            } finally {
+                lockOperation.close(lockKey, lock)
+            }
+        } else {
+            action()
+        }
     }
 
     private data class ModifiedNodeInfo(
