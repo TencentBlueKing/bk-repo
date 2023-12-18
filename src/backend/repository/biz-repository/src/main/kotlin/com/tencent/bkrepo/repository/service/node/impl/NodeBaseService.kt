@@ -286,7 +286,10 @@ abstract class NodeBaseService(
                         .and(TNode::projectId).isEqualTo(projectId)
                 )
             )
-            fileReferenceService.decrement(newNode)
+            // 软链接node或fs-server创建的node的sha256为FAKE_SHA256，不会增加引用数，回滚时无需减少
+            if (newNode.sha256 != FAKE_SHA256) {
+                fileReferenceService.decrement(newNode)
+            }
             quotaService.decreaseUsedVolume(projectId, repoName, newNode.size)
             logger.info("Rollback node [$projectId/$repoName${newNode.fullPath}]")
         }
@@ -384,7 +387,10 @@ abstract class NodeBaseService(
         try {
             nodeDao.insert(node)
             if (!node.folder) {
-                fileReferenceService.increment(node, repository)
+                // 软链接node或fs-server创建的node的sha256为FAKE_SHA256不会关联实际文件，无需增加引用数
+                if (node.sha256 != FAKE_SHA256) {
+                    fileReferenceService.increment(node, repository)
+                }
                 quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
             }
         } catch (exception: DuplicateKeyException) {
