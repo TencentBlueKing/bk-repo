@@ -78,13 +78,16 @@ class ProjectMetricsService (
             override fun load(key: String): MutableSet<String> {
                 return when (key) {
                     DOWNLOAD_ACTIVE_PROJECTS -> {
-                        jobClient.downloadActiveProjects().data?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
+                        jobClient.downloadActiveProjects().data
+                            ?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
                     }
                     ACTIVE_PROJECTS -> {
-                        jobClient.activeProjects().data?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
+                        jobClient.activeProjects().data
+                            ?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
                     }
                     UPLOAD_ACTIVE_PROJECTS -> {
-                        jobClient.uploadActiveProjects().data?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
+                        jobClient.uploadActiveProjects().data
+                            ?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
                     }
                     else -> {
                         mutableSetOf<String>()
