@@ -78,13 +78,13 @@ class ProjectMetricsService (
             override fun load(key: String): MutableSet<String> {
                 return when (key) {
                     DOWNLOAD_ACTIVE_PROJECTS -> {
-                        jobClient.downloadActiveProjects().data ?: mutableSetOf<String>()
+                        jobClient.downloadActiveProjects().data?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
                     }
                     ACTIVE_PROJECTS -> {
-                        jobClient.activeProjects().data ?: mutableSetOf<String>()
+                        jobClient.activeProjects().data?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
                     }
                     UPLOAD_ACTIVE_PROJECTS -> {
-                        jobClient.uploadActiveProjects().data ?: mutableSetOf<String>()
+                        jobClient.uploadActiveProjects().data?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
                     }
                     else -> {
                         mutableSetOf<String>()
@@ -229,15 +229,22 @@ class ProjectMetricsService (
         var currentMetrics = MetricsCacheUtil.getProjectMetrics(
             createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
         )
+        val activeProjects =  getActiveProjects()
 
-        if (metricsRequest.activeRecords) {
-            val activeProjects =  getActiveProjects()
-            if (activeProjects.isNotEmpty()) {
+        when (metricsRequest.projectFlag) {
+            1 -> {
                 oneDayBeforeMetrics = oneDayBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
                 oneWeekBeforeMetrics = oneWeekBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
                 oneMonthBeforeMetrics = oneMonthBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
                 currentMetrics = currentMetrics.filter { activeProjects.contains(it.projectId) }
             }
+            2-> {
+                oneDayBeforeMetrics = oneDayBeforeMetrics?.filter { !activeProjects.contains(it.projectId) }
+                oneWeekBeforeMetrics = oneWeekBeforeMetrics?.filter { !activeProjects.contains(it.projectId) }
+                oneMonthBeforeMetrics = oneMonthBeforeMetrics?.filter { !activeProjects.contains(it.projectId) }
+                currentMetrics = currentMetrics.filter { !activeProjects.contains(it.projectId) }
+            }
+            else -> {}
         }
 
         return getMetricsResult(
