@@ -121,12 +121,12 @@ class DevxWorkspaceUtils(
         private suspend fun listIpFromProject(projectId: String): Mono<Set<String>> {
             val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
             val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
-            val workspaceUrl = devXProperties.workspaceUrl
+            val workspaceUrl = devXProperties.projectWorkspaceUrlFormat.format(projectId)
 
             logger.info("Update project[$projectId] ips.")
             val ips = httpClient
                 .get()
-                .uri("$workspaceUrl?project_id=$projectId")
+                .uri(workspaceUrl)
                 .header("X-Bkapi-Authorization", token)
                 .exchangeToMono {
                     mono { parseResponse(it, projectId) }

@@ -117,9 +117,9 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
     private fun listIpFromProject(projectId: String): Set<String> {
         val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
         val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
-        val workspaceUrl = devXProperties.workspaceUrl
+        val workspaceUrl = devXProperties.projectWorkspaceUrlFormat.format(projectId)
         val request = Request.Builder()
-            .url("$workspaceUrl?project_id=$projectId")
+            .url(workspaceUrl)
             .header("X-Bkapi-Authorization", token)
             .build()
         logger.info("Update project[$projectId] ips.")

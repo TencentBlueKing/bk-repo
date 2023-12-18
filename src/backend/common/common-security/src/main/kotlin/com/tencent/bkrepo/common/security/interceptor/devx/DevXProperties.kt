@@ -49,9 +49,13 @@ data class DevXProperties(
      * */
     var appSecret: String = "",
     /**
-     * 查询云研发工作空间的URL
+     * 根据ip查询云研发工作空间的URL
      * */
     var workspaceUrl: String = "",
+    /**
+     * 根据项目查询workspace的URL
+     */
+    var projectWorkspaceUrlFormat: String = "",
     /**
      * 缓存的项目ip过期时间
      */
