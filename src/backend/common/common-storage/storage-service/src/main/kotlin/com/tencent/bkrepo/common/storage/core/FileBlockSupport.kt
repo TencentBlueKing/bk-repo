@@ -42,8 +42,6 @@ import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.Paths
 
 /**
  * 分块操作实现类
@@ -67,11 +65,13 @@ abstract class FileBlockSupport : CleanupSupport() {
 
     override fun findLengthOfAppendFile(appendId: String, storageCredentials: StorageCredentials?): Long {
         val credentials = getCredentialsOrDefault(storageCredentials)
-        val filePath = Paths.get(getTempPath(credentials).toString(), CURRENT_PATH, appendId)
-        if (!Files.isRegularFile(filePath)) {
-            throw IllegalArgumentException("[$filePath] is not a regular file.")
+        val tempClient = getTempClient(credentials)
+        try {
+            return tempClient.length(CURRENT_PATH, appendId)
+        } catch (exception: Exception) {
+            logger.error("Failed to read length of id [$appendId] on [${credentials.key}]", exception)
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
-        return Files.size(filePath)
     }
 
     override fun append(appendId: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Long {
