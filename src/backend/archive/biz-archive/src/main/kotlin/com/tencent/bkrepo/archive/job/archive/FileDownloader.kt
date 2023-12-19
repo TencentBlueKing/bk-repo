@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.job.archive
 
 import com.google.common.hash.HashCode
 import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
