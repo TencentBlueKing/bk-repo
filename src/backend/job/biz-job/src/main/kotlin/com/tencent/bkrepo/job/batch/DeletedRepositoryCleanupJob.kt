@@ -29,7 +29,6 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.LAST_MODIFIED_BY
@@ -66,7 +65,6 @@ class DeletedRepositoryCleanupJob(
         val id: String,
         val projectId: String,
         val name: String,
-        val credentialsKey: String?,
         val deleted: LocalDateTime?
     )
 
@@ -84,12 +82,13 @@ class DeletedRepositoryCleanupJob(
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {
         // 仓库被标记为已删除，且该仓库下不存在任何节点时，删除仓库
-        val nodeCollectionName = COLLECTION_NODE_PREFIX + MongoShardingUtils.shardingSequence(row.name, SHARDING_COUNT)
+        val nodeCollectionName = COLLECTION_NODE_PREFIX
+        + MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
         deleteNode(row.projectId, row.name, nodeCollectionName)
         if (mongoTemplate.count(buildNodeQuery(row.projectId, row.name), nodeCollectionName) == 0L) {
             val repoQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
             mongoTemplate.remove(repoQuery, collectionName)
-            logger.info("Clean up deleted repository[${row.projectId}/${row.name}] for no nodes remaining")
+            logger.info("Clean up deleted repository[${row.projectId}/${row.name}] for no nodes remaining!")
         }
     }
 
@@ -103,7 +102,6 @@ class DeletedRepositoryCleanupJob(
             id = row[ID].toString(),
             projectId = row[PROJECT].toString(),
             name = row[Repository::name.name].toString(),
-            credentialsKey = row[CREDENTIALS]?.toString(),
             deleted = TimeUtils.parseMongoDateTimeStr(row[DELETED_DATE].toString()),
         )
     }

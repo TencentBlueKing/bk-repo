@@ -46,7 +46,6 @@ import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -67,7 +66,6 @@ import java.util.concurrent.TimeUnit
 @EnableConfigurationProperties(DeletedNodeCleanupJobProperties::class)
 class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
-    private val fileReferenceClient: FileReferenceClient,
     private val clusterProperties: ClusterProperties,
     private val repositoryClient: RepositoryClient
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
@@ -127,10 +125,6 @@ class DeletedNodeCleanupJob(
         } else {
             cleanUpFileNode(context, row, collectionName)
         }
-    }
-
-    override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
-        super.onRunCollectionFinished(collectionName, context)
     }
 
     private fun cleanupFolderNode(
@@ -223,6 +217,5 @@ class DeletedNodeCleanupJob(
         private val logger = LoggerFactory.getLogger(DeletedNodeCleanupJob::class.java)
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val COLLECTION_FILE_REFERENCE = "file_reference_"
-        private const val PAGE_SIZE = 1000
     }
 }
