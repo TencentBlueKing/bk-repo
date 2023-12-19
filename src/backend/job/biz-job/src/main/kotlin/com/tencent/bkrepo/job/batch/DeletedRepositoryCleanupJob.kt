@@ -82,8 +82,8 @@ class DeletedRepositoryCleanupJob(
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {
         // 仓库被标记为已删除，且该仓库下不存在任何节点时，删除仓库
-        val nodeCollectionName = COLLECTION_NODE_PREFIX
-        + MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
+        val nodeCollectionName = COLLECTION_NODE_PREFIX+
+            MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
         deleteNode(row.projectId, row.name, nodeCollectionName)
         if (mongoTemplate.count(buildNodeQuery(row.projectId, row.name), nodeCollectionName) == 0L) {
             val repoQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))

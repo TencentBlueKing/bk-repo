@@ -57,6 +57,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 /**
@@ -192,13 +193,13 @@ class DeletedNodeCleanupJob(
     }
 
     private fun getCredentialsKey(projectId: String, repoName: String): String? {
-        return credentialsKeyCache.get(RepositoryId(projectId, repoName))
+        return credentialsKeyCache.get(RepositoryId(projectId, repoName)).orElse(null)
     }
 
-    private val credentialsKeyCache: LoadingCache<RepositoryId, String?> = CacheBuilder.newBuilder()
+    private val credentialsKeyCache: LoadingCache<RepositoryId, Optional<String>> = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterWrite(30, TimeUnit.MINUTES)
-        .build(CacheLoader.from { key -> loadcredentialsKey(key!!) })
+        .build(CacheLoader.from { key ->  Optional.ofNullable(loadcredentialsKey(key!!)) })
 
 
     private fun loadcredentialsKey(repositoryId: RepositoryId): String? {
