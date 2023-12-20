@@ -136,6 +136,8 @@ class NodeOperationsHandler(
                 gid = attrMap[NodeAttribute::gid.name] as? String ?: NOBODY,
                 mode = attrMap[NodeAttribute::mode.name] as? Int ?: DEFAULT_MODE,
                 flags = attrMap[NodeAttribute::flags.name] as? Int,
+                rdev = attrMap[NodeAttribute::rdev.name] as? Int,
+                type = attrMap[NodeAttribute::type.name] as? Int
             )
 
             val attributes = NodeAttribute(
@@ -143,6 +145,8 @@ class NodeOperationsHandler(
                 gid = gid ?: preFsAttribute.gid,
                 mode = mode ?: preFsAttribute.mode,
                 flags = flags ?: preFsAttribute.flags,
+                rdev = rdev ?: preFsAttribute.rdev,
+                type = type ?: preFsAttribute.type
             )
             val fsAttr = MetadataModel(
                 key = FS_ATTR_KEY,
@@ -243,6 +247,11 @@ class NodeOperationsHandler(
         return ReactiveResponseBuilder.success(node.nodeInfo.toNode())
     }
 
+    suspend fun mknod(request: ServerRequest): ServerResponse {
+        val node = createNode(request, false)
+        return ReactiveResponseBuilder.success(node.nodeInfo.toNode())
+    }
+
     private suspend fun createNode(request: ServerRequest, folder: Boolean): NodeDetail {
         with(NodeRequest(request)) {
             val user = ReactiveSecurityUtils.getUser()
@@ -251,7 +260,9 @@ class NodeOperationsHandler(
                 uid = NOBODY,
                 gid = NOBODY,
                 mode = mode ?: DEFAULT_MODE,
-                flags = flags
+                flags = flags,
+                rdev = rdev,
+                type = type
             )
             val fsAttr = MetadataModel(
                 key = FS_ATTR_KEY,
