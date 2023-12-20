@@ -47,13 +47,13 @@ import kotlin.system.measureNanoTime
  * 存储服务抽象实现
  */
 @Suppress("TooGenericExceptionCaught")
-abstract class AbstractStorageService : OverlaySupport() {
+abstract class AbstractStorageService : CompressSupport() {
 
     override fun store(
         digest: String,
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
-        cancel: AtomicBoolean?
+        cancel: AtomicBoolean?,
     ): Int {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)

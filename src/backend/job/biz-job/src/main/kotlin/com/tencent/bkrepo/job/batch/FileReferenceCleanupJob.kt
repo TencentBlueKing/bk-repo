@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
+import com.tencent.bkrepo.archive.request.DeleteCompressRequest
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -96,11 +97,11 @@ class FileReferenceCleanupJob(
                     return
                 }
                 storageService.delete(sha256, storageCredentials)
-                deleteArchive(sha256, credentialsKey)
             } else {
-                (context as FileJobContext).fileMissing.incrementAndGet()
+                context.fileMissing.incrementAndGet()
                 logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
             }
+            cleanupRelatedResources(sha256, credentialsKey)
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
             throw JobExecuteException("Failed to delete file[$sha256] on [$storageCredentials].", e)
@@ -130,13 +131,11 @@ class FileReferenceCleanupJob(
         }
     }
 
-    private fun deleteArchive(sha256: String, credentialsKey: String?) {
-        val deleteArchiveFileRequest = ArchiveFileRequest(
-            sha256 = sha256,
-            storageCredentialsKey = credentialsKey,
-            operator = SYSTEM_USER,
-        )
+    private fun cleanupRelatedResources(sha256: String, credentialsKey: String?) {
+        val deleteArchiveFileRequest = ArchiveFileRequest(sha256, credentialsKey, SYSTEM_USER)
         archiveClient.delete(deleteArchiveFileRequest)
+        val deleteCompressRequest = DeleteCompressRequest(sha256, credentialsKey, SYSTEM_USER)
+        archiveClient.deleteCompress(deleteCompressRequest)
     }
 
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()

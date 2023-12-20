@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.job.archive
 
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import java.nio.file.Path

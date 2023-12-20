@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.job.archive
 
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono

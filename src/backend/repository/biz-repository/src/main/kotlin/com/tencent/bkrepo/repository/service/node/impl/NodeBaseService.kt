@@ -141,7 +141,7 @@ abstract class NodeBaseService(
         return Pages.ofResponse(
             Pages.ofRequest(option.pageNumber, option.pageSize),
             nodes.totalElements,
-            nodes.content.map { convert(it)!! }
+            nodes.content.map { convert(it)!! },
         )
     }
 
@@ -234,16 +234,15 @@ abstract class NodeBaseService(
                 nodeNum = null,
                 metadata = MetadataUtils.compatibleConvertAndCheck(
                     metadata,
-                    MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+                    MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata),
                 ),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
-                lastAccessDate = LocalDateTime.now()
+                lastAccessDate = LocalDateTime.now(),
             )
         }
-
     }
 
     private fun afterCreate(
@@ -251,7 +250,7 @@ abstract class NodeBaseService(
         node: TNode,
         createStart: Long,
         parents: List<TNode>,
-        deletedTime: LocalDateTime?
+        deletedTime: LocalDateTime?,
     ) {
         with(node) {
             val createEnd = System.currentTimeMillis()
@@ -283,8 +282,8 @@ abstract class NodeBaseService(
             nodeDao.remove(
                 Query(
                     Criteria(ID).isEqualTo(newNode.id)
-                        .and(TNode::projectId).isEqualTo(projectId)
-                )
+                        .and(TNode::projectId).isEqualTo(projectId),
+                ),
             )
             // 软链接node或fs-server创建的node的sha256为FAKE_SHA256，不会增加引用数，回滚时无需减少
             if (newNode.sha256 != FAKE_SHA256) {
@@ -305,8 +304,8 @@ abstract class NodeBaseService(
             nodeDao.remove(
                 Query(
                     Criteria(ID).isEqualTo(dir.id)
-                        .and(TNode::projectId).isEqualTo(dir.projectId)
-                )
+                        .and(TNode::projectId).isEqualTo(dir.projectId),
+                ),
             )
             logger.info("Rollback node [$projectId/$repoName${dir.fullPath}]")
         }
@@ -320,7 +319,7 @@ abstract class NodeBaseService(
                     rootFullPath = fullPath,
                     deletedTime = it,
                     conflictStrategy = ConflictStrategy.FAILED,
-                    operator = createdBy
+                    operator = createdBy,
                 )
                 restoreNode(restoreContext)
                 logger.info("Restore node [$projectId/$repoName$fullPath]")
@@ -428,7 +427,7 @@ abstract class NodeBaseService(
                 createdBy = createdBy,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = createdBy,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
             )
             doCreate(node)
             nodes.addAll(creates)
@@ -460,11 +459,11 @@ abstract class NodeBaseService(
     private fun checkNodeListOption(option: NodeListOption) {
         Preconditions.checkArgument(
             option.sortProperty.none { !TNode::class.java.declaredFields.map { f -> f.name }.contains(it) },
-            "sortProperty"
+            "sortProperty",
         )
         Preconditions.checkArgument(
             option.direction.none { it != Sort.Direction.DESC.name && it != Sort.Direction.ASC.name },
-            "direction"
+            "direction",
         )
     }
 
@@ -500,7 +499,8 @@ abstract class NodeBaseService(
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                     clusterNames = it.clusterNames,
-                    archived = it.archived
+                    archived = it.archived,
+                    compressed = it.compressed,
                 )
             }
         }

@@ -100,7 +100,7 @@ class FileOperationsHandler(
                     artifactInputStream.range.length
                 ).awaitSingleOrNull()
             } else {
-                val source = RegionInputStreamResource(artifactInputStream, range.total)
+                val source = RegionInputStreamResource(artifactInputStream, range.total!!)
                 val body = DataBufferUtils.read(source, DefaultDataBufferFactory.sharedInstance, DEFAULT_BUFFER_SIZE)
                 response.writeWith(body).awaitSingleOrNull()
             }
