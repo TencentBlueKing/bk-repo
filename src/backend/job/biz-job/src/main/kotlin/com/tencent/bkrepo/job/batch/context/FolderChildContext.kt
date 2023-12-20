@@ -42,7 +42,8 @@ class FolderChildContext(
     // 表对应项目记录： 主要用于redis缓存生成key使用
     var projectMap: ConcurrentHashMap<String, MutableSet<String>> = ConcurrentHashMap(),
     // 用于内存缓存下存储目录统计信息
-    var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap()
+    var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap(),
+    var activeProjects: Set<String> = emptySet()
 ) : ChildJobContext(parentContent) {
 
     data class FolderMetrics(

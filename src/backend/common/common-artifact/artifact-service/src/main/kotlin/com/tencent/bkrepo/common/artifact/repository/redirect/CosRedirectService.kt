@@ -79,7 +79,12 @@ class CosRedirectService(
         // 从request uri中获取artifact信息，artifact为null时表示非单制品下载请求，此时不支持重定向
         val artifact = ArtifactContextHolder.getArtifactInfo()
         // node为null时表示制品不存在，或者是Remote仓库的制品尚未被缓存，此时不支持重定向
-        if (node == null || node.folder || artifact == null) {
+        if (node == null ||
+            node.folder ||
+            artifact == null ||
+            node.compressed == true || // 压缩文件不支持重定向
+            node.archived == true // 归档文件不支持重定向
+        ) {
             return false
         }
 
@@ -102,8 +107,8 @@ class CosRedirectService(
 
         val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
         val needToRedirect = repoSupportRedirectTo ||
-                redirectTo == RedirectTo.INNERCOS.name ||
-                storageProperties.redirect.redirectAllDownload
+            redirectTo == RedirectTo.INNERCOS.name ||
+            storageProperties.redirect.redirectAllDownload
 
         // 文件存在于COS上时才会被重定向
         return needToRedirect && isSystemOrAdmin() && guessFileExists(node, storageCredentials)
@@ -148,7 +153,7 @@ class CosRedirectService(
             logger.warn("Failed to resolve http range: ${exception.message}")
             throw ErrorCodeException(
                 status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
+                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID,
             )
         }
     }

@@ -32,5 +32,6 @@ data class ProjectMetricsRequest(
     val minusDay: Long = 1,
     val default: Boolean = true,
     val type: String? = null,
-    var showDelta: Boolean = false
+    var showDelta: Boolean = false,
+    var activeRecords: Boolean = true,
 )

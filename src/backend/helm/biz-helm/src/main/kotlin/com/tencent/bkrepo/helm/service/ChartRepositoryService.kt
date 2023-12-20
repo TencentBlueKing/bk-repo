@@ -56,7 +56,7 @@ interface ChartRepositoryService {
     /**
      * regenerate index.yaml
      */
-    fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo)
+    fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, v1Flag: Boolean)
 
     /**
      * updatePackageForRemote

@@ -6,11 +6,9 @@ import org.springframework.web.reactive.function.server.queryParamOrNull
 class ChangeAttributeRequest(request: ServerRequest) : NodeRequest(request) {
     val uid: String?
     val gid: String?
-    val mode: Int?
 
     init {
         uid = request.queryParamOrNull("uid")
         gid = request.queryParamOrNull("gid")
-        mode = request.queryParamOrNull("mode")?.toIntOrNull()
     }
 }

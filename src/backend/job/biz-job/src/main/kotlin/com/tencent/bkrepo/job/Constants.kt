@@ -50,8 +50,9 @@ const val TYPE = "type"
 const val CATEGORY = "category"
 const val CREATED_DATE = "createdDate"
 const val LAST_MODIFIED_DATE = "lastModifiedDate"
+const val LAST_ACCESS_DATE = "lastAccessDate"
 const val DELETED_DATE = "deleted"
-const val FULLPATH = "fullPath"
+const val FULL_PATH = "fullPath"
 const val PATH = "path"
 
 /**
@@ -78,3 +79,5 @@ const val JOB_TASK_COUNT = "job.task.count"
 const val JOB_TASK_COUNT_DESC = "任务执行统计"
 const val JOB_TIME_CONSUME = "job.task.time"
 const val JOB_TIME_CONSUME_DESC = "任务执行时长统计"
+
+val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_")

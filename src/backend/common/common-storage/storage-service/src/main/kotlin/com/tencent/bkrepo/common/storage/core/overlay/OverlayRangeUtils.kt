@@ -40,12 +40,14 @@ import kotlin.math.max
 object OverlayRangeUtils {
 
     fun build(blocks: List<RegionResource>, range: Range): List<RegionResource> {
-        val initialBlock = RegionResource(RegionResource.ZERO_RESOURCE, 0, range.total, 0, range.total)
+        val total = range.total
+        require(total != null)
+        val initialBlock = RegionResource(RegionResource.ZERO_RESOURCE, 0, total, 0, total)
         val list = LinkedList<RegionResource>()
         list.add(initialBlock)
         // 完整文件分布
         blocks.forEach {
-            insert(it, list, range.total)
+            insert(it, list, total)
         }
         // 范围内的文件分布
         val newList = LinkedList<RegionResource>()
@@ -61,7 +63,7 @@ object OverlayRangeUtils {
                     it.pos,
                     it.size,
                     max(range.start - it.pos + it.off, it.off),
-                    min(len1, len2)
+                    min(len1, len2),
                 )
                 newList.add(part)
             }
@@ -83,7 +85,7 @@ object OverlayRangeUtils {
                     block.endPos + 1,
                     res.size,
                     res.off + block.endPos - res.pos + 1,
-                    res.endPos - block.endPos
+                    res.endPos - block.endPos,
                 )
                 list.removeAt(index)
                 val needAdd = listOf(part1, part2, part3)
@@ -116,7 +118,7 @@ object OverlayRangeUtils {
                         block.endPos + 1,
                         nextRes.size,
                         nextRes.off + block.endPos - nextRes.pos + 1,
-                        nextRes.endPos - block.endPos
+                        nextRes.endPos - block.endPos,
                     )
                     list.removeAt(index)
                     list.removeAt(index)

@@ -125,7 +125,7 @@ abstract class NodeBaseService(
         return Pages.ofResponse(
             Pages.ofRequest(option.pageNumber, option.pageSize),
             nodes.totalElements,
-            nodes.content.map { convert(it)!! }
+            nodes.content.map { convert(it)!! },
         )
     }
 
@@ -162,7 +162,7 @@ abstract class NodeBaseService(
         }
     }
 
-    open fun buildTNode(request: NodeCreateRequest):TNode {
+    open fun buildTNode(request: NodeCreateRequest): TNode {
         with(request) {
             val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
             return TNode(
@@ -179,16 +179,15 @@ abstract class NodeBaseService(
                 nodeNum = null,
                 metadata = MetadataUtils.compatibleConvertAndCheck(
                     metadata,
-                    MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+                    MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata),
                 ),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
-                lastAccessDate = LocalDateTime.now()
+                lastAccessDate = LocalDateTime.now(),
             )
         }
-
     }
 
     private fun afterCreate(
@@ -196,7 +195,7 @@ abstract class NodeBaseService(
         node: TNode,
         createStart: Long,
         parents: List<TNode>,
-        deletedTime: LocalDateTime?
+        deletedTime: LocalDateTime?,
     ) {
         with(node) {
             val createEnd = System.currentTimeMillis()
@@ -228,8 +227,8 @@ abstract class NodeBaseService(
             nodeDao.remove(
                 Query(
                     Criteria(ID).isEqualTo(newNode.id)
-                        .and(TNode::projectId).isEqualTo(projectId)
-                )
+                        .and(TNode::projectId).isEqualTo(projectId),
+                ),
             )
             fileReferenceService.decrement(newNode)
             quotaService.decreaseUsedVolume(projectId, repoName, newNode.size)
@@ -247,8 +246,8 @@ abstract class NodeBaseService(
             nodeDao.remove(
                 Query(
                     Criteria(ID).isEqualTo(dir.id)
-                        .and(TNode::projectId).isEqualTo(dir.projectId)
-                )
+                        .and(TNode::projectId).isEqualTo(dir.projectId),
+                ),
             )
             logger.info("Rollback node [$projectId/$repoName${dir.fullPath}]")
         }
@@ -262,7 +261,7 @@ abstract class NodeBaseService(
                     rootFullPath = fullPath,
                     deletedTime = it,
                     conflictStrategy = ConflictStrategy.FAILED,
-                    operator = createdBy
+                    operator = createdBy,
                 )
                 restoreNode(restoreContext)
                 logger.info("Restore node [$projectId/$repoName$fullPath]")
@@ -367,7 +366,7 @@ abstract class NodeBaseService(
                 createdBy = createdBy,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = createdBy,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
             )
             doCreate(node)
             nodes.addAll(creates)
@@ -399,11 +398,11 @@ abstract class NodeBaseService(
     private fun checkNodeListOption(option: NodeListOption) {
         Preconditions.checkArgument(
             option.sortProperty.none { !TNode::class.java.declaredFields.map { f -> f.name }.contains(it) },
-            "sortProperty"
+            "sortProperty",
         )
         Preconditions.checkArgument(
             option.direction.none { it != Sort.Direction.DESC.name && it != Sort.Direction.ASC.name },
-            "direction"
+            "direction",
         )
     }
 
@@ -439,7 +438,8 @@ abstract class NodeBaseService(
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                     clusterNames = it.clusterNames,
-                    archived = it.archived
+                    archived = it.archived,
+                    compressed = it.compressed,
                 )
             }
         }

@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.common.artifact.manager
 
-import com.tencent.bkrepo.archive.api.ArchiveClient
-import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -70,7 +68,6 @@ class StorageManager(
     private val nodeClient: NodeClient,
     private val nodeResourceFactoryImpl: NodeResourceFactoryImpl,
     private val pluginManager: PluginManager,
-    private val archiveClient: ArchiveClient,
 ) {
 
     /**
@@ -126,19 +123,6 @@ class StorageManager(
         }
         if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-        }
-        if (node.archived == true) {
-            try {
-                val restoreCreateArchiveFileRequest = ArchiveFileRequest(
-                    sha256 = node.sha256!!,
-                    storageCredentialsKey = storageCredentials?.key,
-                    operator = SecurityUtils.getUserId(),
-                )
-                archiveClient.restore(restoreCreateArchiveFileRequest)
-            } catch (e: Exception) {
-                logger.error("restore error", e)
-            }
-            throw ErrorCodeException(CommonMessageCode.RESOURCE_ARCHIVED, node.fullPath)
         }
         val nodeResource = nodeResourceFactoryImpl.getNodeResource(node, range, storageCredentials)
         return nodeResource.getArtifactInputStream()
