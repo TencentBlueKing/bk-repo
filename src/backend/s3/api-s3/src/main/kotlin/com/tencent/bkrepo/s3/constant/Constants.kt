@@ -33,3 +33,5 @@ package com.tencent.bkrepo.s3.constant
 
 // 默认编码
 const val DEFAULT_ENCODING = "utf-8"
+// S3认证的Authorization前缀
+const val AWS4_AUTH_PREFIX = "AWS4-HMAC-SHA256 "

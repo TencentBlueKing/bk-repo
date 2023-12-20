@@ -28,56 +28,50 @@
 package com.tencent.bkrepo.s3.artifact
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.s3.constant.INTERNAL_ERROR
 import com.tencent.bkrepo.s3.constant.NO_SUCH_KEY
 import com.tencent.bkrepo.s3.constant.S3MessageCode
+import com.tencent.bkrepo.s3.exception.S3InternalException
 import com.tencent.bkrepo.s3.exception.S3NotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
-class S3LocalRepository(
-) : LocalRepository() {
+class S3LocalRepository: LocalRepository() {
 
     /**
      * 读取文件内容
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        try {
-            val node =  ArtifactContextHolder.getNodeDetail(context.artifactInfo) ?: return null
-            if (node.folder) {
-                // 如果是文件夹返回空的resource
-                return ArtifactResource(emptyMap(), null, ArtifactChannel.LOCAL, false)
-            }
-            downloadIntercept(context, node)
-            val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials) ?: return null
-            val responseName = context.artifactInfo.getResponseName()
-            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, context.useDisposition)
-        } catch (exception: Exception) {
-            logger.error("download fail ${context.artifacts}", exception)
-            this.onDownloadFailed(context, exception)
-        } finally {
-            this.onDownloadFinished(context)
+        val resource = super.onDownload(context)
+        if (resource == null) {
+            throw S3NotFoundException(
+                HttpStatus.NOT_FOUND,
+                S3MessageCode.S3_NO_SUCH_KEY,
+                params = arrayOf(NO_SUCH_KEY, context.artifactInfo.getArtifactFullPath())
+            )
         }
-        return null
+        return resource
     }
 
     override fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
         ArtifactMetrics.getDownloadFailedCounter().increment()
-        throw S3NotFoundException(
-            HttpStatus.NOT_FOUND,
-            S3MessageCode.S3_NO_SUCH_KEY,
-            params = arrayOf(NO_SUCH_KEY, context.artifactInfo.getArtifactFullPath())
-        )
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(S3LocalRepository::class.java)
+        if (exception is S3NotFoundException) {
+            throw exception
+        } else {
+            throw S3InternalException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                CommonMessageCode.SYSTEM_ERROR,
+                params = arrayOf(INTERNAL_ERROR, context.artifactInfo.getArtifactFullPath())
+            )
+        }
     }
 
 }

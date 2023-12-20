@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
 import com.tencent.bkrepo.s3.constant.DEFAULT_ENCODING
+import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
 import org.dom4j.Document
 import org.dom4j.DocumentHelper
@@ -70,7 +71,7 @@ class S3ExceptionCommonResponse {
             root.addElement("Message").addText(LocaleMessageUtils.getLocalizedMessage(exception.messageCode))
             if (exception is AWS4AuthenticationException) {
                 root.addElement("StringToSign").addText(request.getHeader(HttpHeaders.AUTHORIZATION))
-                root.addElement("CanonicalRequest").addText(request.getHeader(HttpHeaders.X_AMZ_CONTENT_SHA256))
+                root.addElement("CanonicalRequest").addText(request.getHeader(S3HttpHeaders.X_AMZ_CONTENT_SHA256))
             }
             root.addElement("Resource").addText(exception.params.getOrNull(1)?.toString() ?: "")
             root.addElement("RequestId").addText(ContextUtil.getTraceId())
@@ -87,8 +88,8 @@ class S3ExceptionCommonResponse {
         }
 
         private fun setResponseHeaders(response: HttpServletResponse) {
-            response.setHeader(HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
-            response.setHeader(HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
+            response.setHeader(S3HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
+            response.setHeader(S3HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
             response.setHeader(HttpHeaders.CONTENT_TYPE, "application/xml")
             response.setCharacterEncoding(DEFAULT_ENCODING)
         }

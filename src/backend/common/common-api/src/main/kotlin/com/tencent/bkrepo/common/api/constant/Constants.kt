@@ -102,7 +102,6 @@ const val BEARER_AUTH_PREFIX = "Bearer "
 const val AUTH_HEADER_UID = "X-BKREPO-UID"
 const val OAUTH_AUTH_PREFIX = "Oauth "
 const val TEMPORARY_TOKEN_AUTH_PREFIX = "Temporary "
-const val AWS4_AUTH_PREFIX = "AWS4-HMAC-SHA256 "
 
 /**
  * micro service header user id key

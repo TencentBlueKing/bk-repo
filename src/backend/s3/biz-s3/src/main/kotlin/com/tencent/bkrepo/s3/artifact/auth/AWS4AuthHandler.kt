@@ -31,13 +31,14 @@
 
 package com.tencent.bkrepo.s3.artifact.auth
 
-import com.tencent.bkrepo.common.api.constant.AWS4_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.s3.artifact.utils.AWS4AuthUtil
+import com.tencent.bkrepo.s3.constant.AWS4_AUTH_PREFIX
+import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import com.tencent.bkrepo.s3.constant.SIGN_NOT_MATCH
 import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
 import org.slf4j.LoggerFactory
@@ -99,8 +100,8 @@ class AWS4AuthHandler(
         return AWS4AuthCredentials(
             authorization = request.getHeader(HttpHeaders.AUTHORIZATION) ?: "",
             accessKeyId = accessKeyId,
-            requestDate = request.getHeader(HttpHeaders.X_AMZ_DATE) ?: "",
-            contentHash = request.getHeader(HttpHeaders.X_AMZ_CONTENT_SHA256) ?: "",
+            requestDate = request.getHeader(S3HttpHeaders.X_AMZ_DATE) ?: "",
+            contentHash = request.getHeader(S3HttpHeaders.X_AMZ_CONTENT_SHA256) ?: "",
             /*uri = request.requestURI.split("?").toTypedArray()[0],*/
             uri = "/$applicationName"+request.requestURI.split("?").toTypedArray()[0],
             host = request.getHeader(HttpHeaders.HOST) ?: "",

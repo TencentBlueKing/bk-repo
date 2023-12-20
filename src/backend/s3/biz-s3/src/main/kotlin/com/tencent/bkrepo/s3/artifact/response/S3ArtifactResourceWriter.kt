@@ -35,14 +35,14 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
+import com.tencent.bkrepo.common.artifact.resolve.response.AbstractArtifactResourceHandler
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
-import com.tencent.bkrepo.common.artifact.resolve.response.BaseArtifactResourceHandler
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
 import com.tencent.bkrepo.s3.constant.DEFAULT_ENCODING
+import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import javax.servlet.http.HttpServletResponse
 
 /**
@@ -50,22 +50,12 @@ import javax.servlet.http.HttpServletResponse
  */
 class S3ArtifactResourceWriter (
     private val storageProperties: StorageProperties
-) : BaseArtifactResourceHandler(storageProperties), ArtifactResourceWriter {
+) : AbstractArtifactResourceHandler(storageProperties) {
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
-        return if (resource.artifactMap.isEmpty() || resource.node == null) {
-            writeEmptyArtifact()
-        } else {
-            responseRateLimitCheck()
-            writeArtifact(resource)
-        }
-    }
-
-    private fun writeEmptyArtifact(): Throughput {
-        val response = HttpContextHolder.getResponse()
-        prepareResponseHeaders(response, 0, "", HttpStatus.OK.value)
-        return Throughput.EMPTY
+        responseRateLimitCheck()
+        return writeArtifact(resource)
     }
 
     private fun writeArtifact(resource: ArtifactResource): Throughput {
@@ -91,8 +81,8 @@ class S3ArtifactResourceWriter (
         contentType: String = MediaTypes.APPLICATION_OCTET_STREAM,
         characterEncoding: String = DEFAULT_ENCODING
     ) {
-        response.setHeader(HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
-        response.setHeader(HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
+        response.setHeader(S3HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
+        response.setHeader(S3HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
         response.setHeader(HttpHeaders.CONTENT_TYPE, contentType)
         response.setHeader(HttpHeaders.CONTENT_LENGTH, contentLength.toString())
         response.setHeader(HttpHeaders.ETAG, eTag)

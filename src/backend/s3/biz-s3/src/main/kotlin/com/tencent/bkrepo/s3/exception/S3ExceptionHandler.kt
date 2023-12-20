@@ -31,22 +31,13 @@
 
 package com.tencent.bkrepo.s3.exception
 
-import com.tencent.bkrepo.common.api.constant.*
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.s3.artifact.response.S3ExceptionCommonResponse
-import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
-import javax.servlet.http.HttpServletResponse
 
 /**
  * S3统一异常处理
@@ -78,6 +69,15 @@ class S3ExceptionHandler {
     @ExceptionHandler(S3AccessDeniedException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handleException(exception: S3AccessDeniedException) {
+        S3ExceptionCommonResponse.buildErrorResponse(exception)
+    }
+
+    /**
+     * 系统内部错误
+     */
+    @ExceptionHandler(S3InternalException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handleException(exception: S3InternalException) {
         S3ExceptionCommonResponse.buildErrorResponse(exception)
     }
 }

@@ -45,9 +45,9 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 
-open class BaseArtifactResourceHandler(
+abstract class AbstractArtifactResourceHandler(
     private val storageProperties: StorageProperties
-) {
+) : ArtifactResourceWriter {
     /**
      * 获取动态buffer size
      * @param totalSize 数据总大小
@@ -114,7 +114,10 @@ open class BaseArtifactResourceHandler(
             // org.springframework.http.converter.HttpMessageNotWritableException异常，会重定向到/error页面
             // 又因为/error页面不存在，最终返回404，所以要对IOException进行包装，在上一层捕捉处理
             val message = exception.message.orEmpty()
-            val status = if (IOExceptionUtils.isClientBroken(exception)) HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
+            val status = if (IOExceptionUtils.isClientBroken(exception))
+                HttpStatus.BAD_REQUEST
+            else
+                HttpStatus.INTERNAL_SERVER_ERROR
             throw ArtifactResponseException(message, status)
         }
     }

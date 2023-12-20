@@ -33,11 +33,10 @@ package com.tencent.bkrepo.s3.artifact.utils
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.s3.artifact.auth.AWS4AuthCredentials
+import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
 import org.springframework.util.StringUtils
 import java.io.UnsupportedEncodingException
-import java.lang.Exception
-import java.lang.StringBuilder
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -59,8 +58,8 @@ object AWS4AuthUtil {
         secretAccessKey: String
     ): Boolean {
         val heardMap: MutableMap<String, String> = HashMap()
-        heardMap[HttpHeaders.X_AMZ_CONTENT_SHA256.toLowerCase()] = authCredentials.contentHash
-        heardMap[HttpHeaders.X_AMZ_DATE.toLowerCase()] = authCredentials.requestDate
+        heardMap[S3HttpHeaders.X_AMZ_CONTENT_SHA256.toLowerCase()] = authCredentials.contentHash
+        heardMap[S3HttpHeaders.X_AMZ_DATE.toLowerCase()] = authCredentials.requestDate
         heardMap[HttpHeaders.HOST.toLowerCase()] = authCredentials.host
         // 解析签名信息
         val authInfo = parseAuthorization(authCredentials.authorization)
@@ -92,9 +91,13 @@ object AWS4AuthUtil {
     )
 
     private fun parseAuthorization(authorization: String): AuthorizationInfo {
-        //示例
-        // AWS4-HMAC-SHA256 Credential=admin/20231109/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=275a5ae2d72c170dc8c464f59a487818c374b2a79bfbfaa080c358f77307d484
-        ///region authorization拆分
+        /**
+         * authorization示例
+         * AWS4-HMAC-SHA256 Credential=admin/20231109/us-east-1/s3/aws4_request, SignedHeaders=host;
+         * x-amz-content-sha256;x-amz-date,
+         * Signature=275a5ae2d72c170dc8c464f59a487818c374b2a79bfbfaa080c358f77307d484
+         */
+        //region authorization拆分
         val parts = authorization.trim().split(",").toTypedArray()
         //第一部分-凭证范围
         val credential = parts[0].split("=").toTypedArray()[1]
@@ -126,7 +129,8 @@ object AWS4AuthUtil {
         stringToSign += "AWS4-HMAC-SHA256\n"
         //2-RequestDateTime – 在凭证范围内使用的日期和时间。
         stringToSign += "${authCredentials.requestDate}\n"
-        //3-CredentialScope – 凭证范围。这会将生成的签名限制在指定的区域和服务范围内。该字符串采用以下格式：YYYYMMDD/region/service/aws4_request
+        //3-CredentialScope – 凭证范围。
+        //这会将生成的签名限制在指定的区域和服务范围内。该字符串采用以下格式：YYYYMMDD/region/service/aws4_request
         stringToSign += "${authInfo.date}/${authInfo.region}/${authInfo.service}/${authInfo.aws4Request}\n"
         //4-HashedCanonicalRequest – 规范请求的哈希。
         //<HTTPMethod>\n
@@ -165,7 +169,6 @@ object AWS4AuthUtil {
         hashedCanonicalRequest += authCredentials.contentHash
 
         stringToSign += doHex(hashedCanonicalRequest)
-        ///endregion
 
         return stringToSign
     }

@@ -55,8 +55,8 @@ class S3RegistryArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer =
         HttpAuthSecurityCustomizer { httpAuthSecurity ->
             val authenticationManager = httpAuthSecurity.authenticationManager!!
-            val ociLoginAuthHandler = AWS4AuthHandler(authenticationManager)
-            httpAuthSecurity.withPrefix("/s3").addHttpAuthHandler(ociLoginAuthHandler)
+            val s3LoginAuthHandler = AWS4AuthHandler(authenticationManager)
+            httpAuthSecurity.withPrefix("/s3").addHttpAuthHandler(s3LoginAuthHandler)
         }
 
 }

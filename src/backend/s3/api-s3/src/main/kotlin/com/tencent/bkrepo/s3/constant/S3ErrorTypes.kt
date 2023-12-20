@@ -50,3 +50,8 @@ const val SIGN_NOT_MATCH = "SignatureDoesNotMatch"
  * 没权限访问
  */
 const val NO_SUCH_ACCESS = "AccessDenied"
+
+/**
+ * 系统内部错误
+ */
+const val INTERNAL_ERROR = "InternalError"
