@@ -51,6 +51,7 @@ import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
+import com.tencent.bkrepo.fs.server.utils.IoaUtils
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import com.tencent.bkrepo.fs.server.utils.SpringContextUtils
 import com.tencent.devops.service.config.ServiceProperties
@@ -91,6 +92,7 @@ val beans = beans {
     bean<PermissionFilterFunction>()
     bean<ErrorCodeDecoder>()
     bean<DevxWorkspaceUtils>()
+    bean<IoaUtils>()
     bean {
         RouteConfiguration(ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref()).router()
     }

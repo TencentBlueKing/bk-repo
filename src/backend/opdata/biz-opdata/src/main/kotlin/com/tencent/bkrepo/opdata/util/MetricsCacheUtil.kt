@@ -65,7 +65,7 @@ class MetricsCacheUtil(
                 .expireAfterWrite(30, TimeUnit.MINUTES)
                 .build(cacheLoader)
         }
-        private val projectNodeCache: LoadingCache<String, Long> by lazy {
+        private val projectNumCache: LoadingCache<String, Long> by lazy {
             val cacheLoader = object : CacheLoader<String, Long>() {
                 override fun load(key: String): Long {
                     return projectModel.getProjectNum(ProjectType.valueOf(key))
@@ -84,7 +84,7 @@ class MetricsCacheUtil(
         }
 
         fun gerProjectNodeNum(projectType: String): Long {
-            return projectNodeCache.get(projectType)
+            return projectNumCache.get(projectType)
         }
     }
 }

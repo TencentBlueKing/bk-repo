@@ -27,9 +27,15 @@
 
 package com.tencent.bkrepo.common.artifact.manager.resource
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.archive.request.ArchiveFileRequest
+import com.tencent.bkrepo.archive.request.UncompressFileRequest
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
@@ -45,7 +51,8 @@ class LocalNodeResource(
     private val range: Range,
     private val storageCredentials: StorageCredentials?,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient
+    private val storageCredentialsClient: StorageCredentialsClient,
+    private val archiveClient: ArchiveClient,
 ) : AbstractNodeResource() {
 
     private val digest = node.sha256.orEmpty()
@@ -63,6 +70,21 @@ class LocalNodeResource(
         return storageService.load(digest, range, storageCredentials)
             ?: loadFromCopyIfNecessary(node, range)
             ?: loadFromRepoOldIfNecessary(node, range, storageCredentials)
+            ?: let {
+                /*
+                * 为了避免在存储时，处理新上传的文件与已归档或者已压缩的文件相同时的情况（存多，归档/压缩少），
+                * 我们选择在load的时候进行归档或者压缩文件的处理，因为读取不到文件的情况较少，所以这样产生的额外消耗更少
+                * */
+                if (node.archived == true) {
+                    restore(node, storageCredentials)
+                    throw ErrorCodeException(CommonMessageCode.RESOURCE_ARCHIVED, node.fullPath)
+                }
+                if (node.compressed == true) {
+                    uncompress(node, storageCredentials)
+                    throw ErrorCodeException(CommonMessageCode.RESOURCE_COMPRESSED, node.fullPath)
+                }
+                null
+            }
     }
 
     /**
@@ -71,7 +93,7 @@ class LocalNodeResource(
      * */
     private fun loadFromCopyIfNecessary(
         node: NodeInfo,
-        range: Range
+        range: Range,
     ): ArtifactInputStream? {
         node.copyFromCredentialsKey?.let {
             val digest = node.sha256!!
@@ -89,14 +111,14 @@ class LocalNodeResource(
     private fun loadFromRepoOldIfNecessary(
         node: NodeInfo,
         range: Range,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
     ): ArtifactInputStream? {
         val repositoryDetail = getRepoDetail(node)
         val oldCredentials = findStorageCredentialsByKey(repositoryDetail.oldCredentialsKey)
         if (storageCredentials != oldCredentials) {
             logger.info(
                 "load data [${node.sha256!!}] from" +
-                    " repo old credentialsKey [${repositoryDetail.oldCredentialsKey}]"
+                    " repo old credentialsKey [${repositoryDetail.oldCredentialsKey}]",
             )
             return storageService.load(node.sha256!!, range, oldCredentials)
         }
@@ -117,7 +139,7 @@ class LocalNodeResource(
             // 如果是异步或者请求上下文找不到，则通过查询，并进行缓存
             val repositoryId = ArtifactContextHolder.RepositoryId(
                 projectId = projectId,
-                repoName = repoName
+                repoName = repoName,
             )
             return ArtifactContextHolder.getRepoDetail(repositoryId)
         }
@@ -129,6 +151,32 @@ class LocalNodeResource(
     private fun findStorageCredentialsByKey(credentialsKey: String?): StorageCredentials? {
         credentialsKey ?: return null
         return storageCredentialsClient.findByKey(credentialsKey).data
+    }
+
+    private fun restore(node: NodeInfo, storageCredentials: StorageCredentials?) {
+        try {
+            val restoreCreateArchiveFileRequest = ArchiveFileRequest(
+                sha256 = node.sha256!!,
+                storageCredentialsKey = storageCredentials?.key,
+                operator = SecurityUtils.getUserId(),
+            )
+            archiveClient.restore(restoreCreateArchiveFileRequest)
+        } catch (e: Exception) {
+            logger.error("Restore error", e)
+        }
+    }
+
+    private fun uncompress(node: NodeInfo, storageCredentials: StorageCredentials?) {
+        try {
+            val uncompressFileRequest = UncompressFileRequest(
+                node.sha256!!,
+                storageCredentialsKey = storageCredentials?.key,
+                operator = SecurityUtils.getUserId(),
+            )
+            archiveClient.uncompress(uncompressFileRequest)
+        } catch (e: Exception) {
+            logger.error("Uncompress error", e)
+        }
     }
 
     companion object {

@@ -46,6 +46,8 @@ interface FsClientClient {
         @RequestParam repoName: String?,
         @RequestParam pageNumber: Int?,
         @RequestParam pageSize: Int?,
-        @RequestParam online: Boolean?
+        @RequestParam online: Boolean?,
+        @RequestParam ip: String?,
+        @RequestParam version: String?,
     ): Response<Page<ClientDetail>>
 }

@@ -55,5 +55,9 @@ internal class RangeTest {
 
         range = Range(0, 2505730872, 2505730873)
         Assertions.assertFalse(range.isPartialContent())
+
+        range = Range.FULL_RANGE
+        Assertions.assertTrue(range.isFullContent())
+        Assertions.assertFalse(range.isPartialContent())
     }
 }
