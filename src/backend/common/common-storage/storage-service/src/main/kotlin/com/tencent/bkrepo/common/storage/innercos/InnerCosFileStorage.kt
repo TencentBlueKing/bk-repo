@@ -57,7 +57,11 @@ open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredential
     }
 
     override fun load(path: String, name: String, range: Range, client: CosClient): InputStream? {
-        val request = GetObjectRequest(name, range.start, range.end)
+        val request = if (range.isPartialContent()) {
+            GetObjectRequest(name, range.start, range.end)
+        } else {
+            GetObjectRequest(name)
+        }
         return client.getObjectByChunked(request).inputStream
     }
 

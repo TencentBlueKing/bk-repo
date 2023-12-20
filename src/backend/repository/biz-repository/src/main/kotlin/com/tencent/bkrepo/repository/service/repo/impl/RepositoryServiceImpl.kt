@@ -227,6 +227,7 @@ class RepositoryServiceImpl(
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
+            Preconditions.checkArgument(checkCategory(category, configuration), this::configuration.name)
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             // 确保项目一定存在
             if (!projectService.checkExist(projectId)) {
@@ -623,7 +624,6 @@ class RepositoryServiceImpl(
      * 检查下载拦截器配置
      *
      */
-    @Suppress("UNCHECKED_CAST")
     private fun checkInterceptorConfig(configuration: RepositoryConfiguration?): Boolean {
         val settings = configuration?.settings
         settings?.let {
@@ -640,6 +640,24 @@ class RepositoryServiceImpl(
         }
 
         return true
+    }
+
+    /**
+     * 检查仓库类型是否一致
+     */
+    private fun checkCategory(category: RepositoryCategory, configuration: RepositoryConfiguration?): Boolean {
+        if (configuration == null) {
+            return true
+        }
+        return when(configuration) {
+            is com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration ->
+                category == RepositoryCategory.PROXY
+            is CompositeConfiguration -> category == RepositoryCategory.COMPOSITE
+            is LocalConfiguration -> category == RepositoryCategory.LOCAL
+            is RemoteConfiguration -> category == RepositoryCategory.REMOTE
+            is VirtualConfiguration -> category == RepositoryCategory.VIRTUAL
+            else -> false
+        }
     }
 
     /**

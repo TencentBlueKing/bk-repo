@@ -45,11 +45,13 @@ import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
@@ -143,7 +145,7 @@ class NodeController(
         projectId: String,
         repoName: String,
         fullPath: String,
-        estimated: Boolean
+        estimated: Boolean,
     ): Response<NodeSizeInfo> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
         return ResponseBuilder.success(nodeService.computeSize(artifactInfo, estimated))
@@ -202,17 +204,29 @@ class NodeController(
     }
 
     override fun cleanNodes(nodeCleanRequest: NodeCleanRequest): Response<NodeDeleteResult> {
-        return ResponseBuilder.success(nodeService.deleteBeforeDate(
-            projectId = nodeCleanRequest.projectId,
-            repoName = nodeCleanRequest.repoName,
-            path = nodeCleanRequest.path,
-            date = nodeCleanRequest.date,
-            operator = nodeCleanRequest.operator
-        ))
+        return ResponseBuilder.success(
+            nodeService.deleteBeforeDate(
+                projectId = nodeCleanRequest.projectId,
+                repoName = nodeCleanRequest.repoName,
+                path = nodeCleanRequest.path,
+                date = nodeCleanRequest.date,
+                operator = nodeCleanRequest.operator,
+            ),
+        )
     }
 
     override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest): Response<Void> {
         nodeService.restoreNode(nodeArchiveRequest)
+        return ResponseBuilder.success()
+    }
+
+    override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest): Response<Void> {
+        nodeService.compressedNode(nodeCompressedRequest)
+        return ResponseBuilder.success()
+    }
+
+    override fun uncompressedNode(nodeUnCompressedRequest: NodeUnCompressedRequest): Response<Void> {
+        nodeService.uncompressedNode(nodeUnCompressedRequest)
         return ResponseBuilder.success()
     }
 }
