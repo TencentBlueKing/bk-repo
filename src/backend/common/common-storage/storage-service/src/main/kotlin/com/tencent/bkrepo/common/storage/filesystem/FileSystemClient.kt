@@ -298,7 +298,7 @@ class FileSystemClient(private val root: String) {
     }
 
     /**
-     * 读取追加文件大小
+     * 获取文件大小
      */
     fun length(dir: String, filename: String): Long {
         val filePath = Paths.get(this.root, dir, filename)
