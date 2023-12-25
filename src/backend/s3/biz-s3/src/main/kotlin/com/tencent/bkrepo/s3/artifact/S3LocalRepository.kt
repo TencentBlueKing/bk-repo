@@ -30,17 +30,14 @@ package com.tencent.bkrepo.s3.artifact
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.s3.constant.INTERNAL_ERROR
 import com.tencent.bkrepo.s3.constant.NO_SUCH_KEY
 import com.tencent.bkrepo.s3.constant.S3MessageCode
 import com.tencent.bkrepo.s3.exception.S3InternalException
 import com.tencent.bkrepo.s3.exception.S3NotFoundException
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component

@@ -237,24 +237,14 @@ object AWS4AuthUtil {
 
     private fun parseQueryParams(queryString: String?): Map<String, String> {
         val queryParams: MutableMap<String, String> = HashMap()
-        try {
-            if (queryString != null && !queryString.isEmpty()) {
-                val queryParamsArray = queryString.split("\\&".toRegex()).toTypedArray()
-                for (param in queryParamsArray) {
-                    val keyValue = param.split("\\=".toRegex()).toTypedArray()
-                    if (keyValue.size == 1) {
-                        val key = keyValue[0]
-                        val value = ""
-                        queryParams[key] = value
-                    } else if (keyValue.size == 2) {
-                        val key = keyValue[0]
-                        val value = keyValue[1]
-                        queryParams[key] = value
-                    }
-                }
+        if (!queryString.isNullOrEmpty()) {
+            val queryParamsArray = queryString!!.split("&")
+            for (param in queryParamsArray) {
+                val keyValue = param.split("=")
+                val key = keyValue[0]
+                val value = if (keyValue.size == 2) keyValue[1] else ""
+                queryParams[key] = value
             }
-        } catch (e: Exception) {
-            throw AWS4AuthenticationException()
         }
         return queryParams
     }
