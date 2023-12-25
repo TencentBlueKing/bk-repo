@@ -25,51 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.repository.internal
+package com.tencent.bkrepo.replication.replica.repository.internal.type
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.replica.repository.internal.type.DockerPackageNodeMapper
-import com.tencent.bkrepo.replication.replica.repository.internal.type.HelmPackageNodeMapper
-import com.tencent.bkrepo.replication.replica.repository.internal.type.MavenPackageNodeMapper
-import com.tencent.bkrepo.replication.replica.repository.internal.type.NpmPackageNodeMapper
-import com.tencent.bkrepo.replication.replica.repository.internal.type.PackageNodeMapper
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
-/**
- * 包和节点的映射关系
- */
-object PackageNodeMappings {
+class HelmPackageNodeMapper: PackageNodeMapper {
 
-    private val mappers = mutableMapOf<RepositoryType, PackageNodeMapper>()
-
-    init {
-        addMapper(SpringContextUtils.getBean(MavenPackageNodeMapper::class.java))
-        addMapper(NpmPackageNodeMapper())
-        addMapper(HelmPackageNodeMapper())
-        addMapper(SpringContextUtils.getBean(DockerPackageNodeMapper::class.java))
+    override fun type() = RepositoryType.HELM
+    override fun extraType(): RepositoryType? {
+        return null
     }
 
-    private fun addMapper(mapper: PackageNodeMapper) {
-        mappers[mapper.type()] = mapper
-        mapper.extraType()?.let { mappers[mapper.extraType()!!] = mapper }
-    }
-
-    /**
-     * @param packageSummary 包信息总览
-     * @param packageVersion 版本信息
-     * @param type 仓库类型
-     *
-     * @return 返回
-     */
-    fun map(
+    override fun map(
         packageSummary: PackageSummary,
         packageVersion: PackageVersion,
         type: RepositoryType
     ): List<String> {
-        val mapper = mappers[type]
-        check(mapper != null) { "mapper[$type] not found" }
-        return mapper.map(packageSummary, packageVersion, type)
+        val name = PackageKeys.resolveNpm(packageSummary.key)
+        val version = packageVersion.name
+        return listOf(
+            CHART_PACKAGE_FILE_PATH.format(name, version),
+            PROVENANCE_FILE_PATH.format(name, version)
+        )
+    }
+
+    companion object {
+        const val CHART_PACKAGE_FILE_PATH = "/%s-%s.tgz"
+        const val PROVENANCE_FILE_PATH = "/%s-%s.tgz.prov"
     }
 }

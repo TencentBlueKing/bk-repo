@@ -27,6 +27,11 @@
 
 package com.tencent.bkrepo.helm.listener
 
+import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
+import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
+import com.tencent.bkrepo.common.artifact.event.packages.VersionUpdatedEvent
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
@@ -34,10 +39,13 @@ import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
 import com.tencent.bkrepo.helm.listener.operation.ChartDeleteOperation
 import com.tencent.bkrepo.helm.listener.operation.ChartPackageDeleteOperation
 import com.tencent.bkrepo.helm.listener.operation.ChartUploadOperation
+import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -45,7 +53,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class ChartEventListener(
-    private val helmProperties: HelmProperties
+    private val helmProperties: HelmProperties,
 ) : AbstractChartService() {
 
     /**
@@ -91,6 +99,59 @@ class ChartEventListener(
     fun handle(event: ChartUploadEvent) {
         handleChartUploadEvent(event.uploadRequest)
     }
+
+
+
+    /**
+     * 监听package version创建事件，主要用于单体环境下支持支持分发的package进行index更新
+     */
+    @EventListener(VersionCreatedEvent::class)
+    fun handleReplicationVersionCreatedEvent(event: VersionCreatedEvent) {
+        if (event.packageType != PackageType.HELM.name) return
+        handleReplicationVersionEvent(
+            projectId = event.projectId,
+            repoName = event.repoName,
+            packageName = event.packageName,
+            version = event.packageVersion
+        )
+    }
+
+    /**
+     * 监听package version 更新事件，主要用于单体环境下支持支持分发的package进行index更新
+     */
+    @EventListener(VersionUpdatedEvent::class)
+    fun handleReplicationVersionUpdatedEvent(event: VersionUpdatedEvent) {
+        if (event.packageType != PackageType.HELM.name) return
+        handleReplicationVersionEvent(
+            projectId = event.projectId,
+            repoName = event.repoName,
+            packageName = event.packageName,
+            version = event.packageVersion
+        )
+    }
+
+    private fun handleReplicationVersionEvent (
+        projectId: String, repoName: String, packageName: String, version: String
+    ) {
+        logger.info("Handling package replication event for $packageName|$version in repo $projectId|$repoName")
+        val packageVersion = packageClient.findVersionByName(
+            projectId, repoName, PackageKeys.ofHelm(packageName), version
+        ).data ?: return
+        if (packageVersion.metadata[SOURCE_TYPE] != ArtifactChannel.REPLICATION) return
+        val fullPath = HelmUtils.getChartFileFullPath(packageName, version)
+        val replicationRequest = ChartUploadRequest(
+            projectId = projectId,
+            repoName = repoName,
+            name = packageName,
+            version = version,
+            operator = SYSTEM_USER,
+            fullPath = fullPath,
+            metadataMap = packageVersion.metadata,
+            artifactInfo = HelmArtifactInfo(projectId, repoName, fullPath)
+        )
+        handleChartUploadEvent(replicationRequest)
+    }
+
 
     /**
      * 当chart新上传成功后，更新index.yaml
