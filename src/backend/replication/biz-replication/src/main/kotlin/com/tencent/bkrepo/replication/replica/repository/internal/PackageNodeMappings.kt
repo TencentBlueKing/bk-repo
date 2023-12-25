@@ -47,7 +47,7 @@ object PackageNodeMappings {
     init {
         addMapper(SpringContextUtils.getBean(MavenPackageNodeMapper::class.java))
         addMapper(NpmPackageNodeMapper())
-        addMapper(HelmPackageNodeMapper())
+        addMapper(SpringContextUtils.getBean(HelmPackageNodeMapper::class.java))
         addMapper(SpringContextUtils.getBean(DockerPackageNodeMapper::class.java))
     }
 
