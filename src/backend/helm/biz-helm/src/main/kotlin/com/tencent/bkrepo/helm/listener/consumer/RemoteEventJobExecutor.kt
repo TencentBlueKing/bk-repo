@@ -59,20 +59,7 @@ class RemoteEventJobExecutor(
                     }
                     EventType.VERSION_CREATED, EventType.VERSION_UPDATED -> {
                         {
-                            val packageType = event.data["packageType"].toString()
-                            if (packageType == PackageType.HELM.name) {
-                                val replicationEvent = VersionCreatedEvent(
-                                    projectId = projectId,
-                                    repoName = repoName,
-                                    packageKey = event.data["packageKey"].toString(),
-                                    packageVersion = event.data["packageVersion"].toString(),
-                                    userId = SYSTEM_USER,
-                                    packageType = packageType,
-                                    packageName = event.data["packageName"].toString(),
-                                    realIpAddress = null
-                                )
-                                SpringContextUtils.publishEvent(replicationEvent)
-                            }
+                            handlePackageVersionEvent(event)
                         }
                     }
                     else -> { {} }
@@ -82,6 +69,24 @@ class RemoteEventJobExecutor(
             }
         } catch (exception: Exception) {
             logger.warn("Helm Remote event ${event.getFullResourceKey()}} failed: $exception")
+        }
+    }
+
+    private fun handlePackageVersionEvent(event: ArtifactEvent) {
+        with(event) {
+            val packageType = event.data["packageType"].toString()
+            if (packageType != PackageType.HELM.name) return
+            val replicationEvent = VersionCreatedEvent(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = event.data["packageKey"].toString(),
+                packageVersion = event.data["packageVersion"].toString(),
+                userId = SYSTEM_USER,
+                packageType = packageType,
+                packageName = event.data["packageName"].toString(),
+                realIpAddress = null
+            )
+            SpringContextUtils.publishEvent(replicationEvent)
         }
     }
 
