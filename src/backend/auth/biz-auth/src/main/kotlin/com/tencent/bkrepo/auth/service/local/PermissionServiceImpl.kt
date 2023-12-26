@@ -50,11 +50,7 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
@@ -129,22 +125,6 @@ open class PermissionServiceImpl constructor(
         return false
     }
 
-    override fun updateIncludePath(request: UpdatePermissionPathRequest): Boolean {
-        logger.info("update include path request :[$request]")
-        with(request) {
-            checkPermissionExist(permissionId)
-            return updatePermissionById(permissionId, TPermission::includePattern.name, path)
-        }
-    }
-
-    override fun updateExcludePath(request: UpdatePermissionPathRequest): Boolean {
-        logger.info("update exclude path request :[$request]")
-        with(request) {
-            checkPermissionExist(permissionId)
-            return updatePermissionById(permissionId, TPermission::excludePattern.name, path)
-        }
-    }
-
     override fun updateRepoPermission(request: UpdatePermissionRepoRequest): Boolean {
         logger.info("update repo permission request :  [$request]")
         with(request) {
@@ -189,30 +169,6 @@ open class PermissionServiceImpl constructor(
                 return updatePermissionById(permissionId, TPermission::users.name, userId)
             }
 
-        }
-    }
-
-    override fun updatePermissionRole(request: UpdatePermissionRoleRequest): Boolean {
-        logger.info("update permission role request:[$request]")
-        with(request) {
-            checkPermissionExist(permissionId)
-            return updatePermissionById(permissionId, TPermission::roles.name, rId)
-        }
-    }
-
-    override fun updatePermissionDepartment(request: UpdatePermissionDepartmentRequest): Boolean {
-        logger.info("update  permission department request:[$request]")
-        with(request) {
-            checkPermissionExist(permissionId)
-            return updatePermissionById(permissionId, TPermission::departments.name, departmentId)
-        }
-    }
-
-    override fun updatePermissionAction(request: UpdatePermissionActionRequest): Boolean {
-        logger.info("update permission action request:[$request]")
-        with(request) {
-            checkPermissionExist(permissionId)
-            return updatePermissionById(permissionId, TPermission::actions.name, actions)
         }
     }
 
@@ -369,6 +325,13 @@ open class PermissionServiceImpl constructor(
         projectList.addAll(getNoAdminRoleProject(noAdminRole))
 
         return projectList.distinct()
+    }
+
+    override fun getPermission(permissionId: String): Permission? {
+        val result = permissionRepository.findFirstById(permissionId) ?: run {
+            return null
+        }
+        return PermRequestUtil.convToPermission(result)
     }
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
