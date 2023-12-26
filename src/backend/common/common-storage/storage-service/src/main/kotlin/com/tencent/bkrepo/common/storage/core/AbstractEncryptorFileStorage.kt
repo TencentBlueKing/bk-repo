@@ -66,7 +66,7 @@ abstract class AbstractEncryptorFileStorage<Credentials : StorageCredentials, Cl
         name: String,
         inputStream: InputStream,
         size: Long,
-        storageCredentials: StorageCredentials
+        storageCredentials: StorageCredentials,
     ) {
         if (!storageCredentials.encrypt.enabled) {
             return super.store(path, name, inputStream, size, storageCredentials)
@@ -117,7 +117,7 @@ abstract class AbstractEncryptorFileStorage<Credentials : StorageCredentials, Cl
         path: String,
         name: String,
         fromCredentials: StorageCredentials,
-        toCredentials: StorageCredentials
+        toCredentials: StorageCredentials,
     ) {
         if (!fromCredentials.encrypt.enabled) {
             return super.copy(path, name, fromCredentials, toCredentials)
@@ -135,7 +135,7 @@ abstract class AbstractEncryptorFileStorage<Credentials : StorageCredentials, Cl
     private fun encryptFile(
         storageCredentials: StorageCredentials,
         file: File,
-        newFile: File
+        newFile: File,
     ): Long {
         val key = storageCredentials.encrypt.key
         val cipherFactory = CipherFactoryProducer.getFactory(storageCredentials.encrypt.algorithm)

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.job.archive
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.ArchiveStatus
@@ -6,21 +6,17 @@ import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.extensions.key
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
+import com.tencent.bkrepo.archive.utils.ArchiveUtils.Companion.newFixedAndCachedThreadPool
+import com.tencent.bkrepo.archive.utils.ReactiveDaoUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import java.nio.file.Paths
 import java.time.Duration
 import java.time.LocalDateTime
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.bson.types.ObjectId
-import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -30,7 +26,6 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
-import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
@@ -38,7 +33,7 @@ import reactor.core.scheduler.Schedulers
  * 数据归档任务
  * */
 @Component
-class ReactiveArchiveJob(
+class ArchiveJob(
     private val reactiveMongoTemplate: ReactiveMongoTemplate,
     private val archiveProperties: ArchiveProperties,
     private val storageService: StorageService,
@@ -73,7 +68,7 @@ class ReactiveArchiveJob(
     /**
      * 下载任务线程池
      * */
-    val httpDownloadPool = buildThreadPool(
+    val httpDownloadPool = newFixedAndCachedThreadPool(
         archiveProperties.ioThreads,
         ThreadFactoryBuilder().setNameFormat("archive-download-%d").build(),
     )
@@ -81,7 +76,7 @@ class ReactiveArchiveJob(
     /**
      * 压缩任务线程池
      * */
-    val compressPool = buildThreadPool(
+    val compressPool = newFixedAndCachedThreadPool(
         archiveProperties.compressThreads,
         ThreadFactoryBuilder().setNameFormat("archive-compress-%d").build(),
     )
@@ -89,7 +84,7 @@ class ReactiveArchiveJob(
     /**
      * 上传任务线程池
      * */
-    val httpUploadPool = buildThreadPool(
+    val httpUploadPool = newFixedAndCachedThreadPool(
         archiveProperties.ioThreads,
         ThreadFactoryBuilder().setNameFormat("archive-upload-%d").build(),
     )
@@ -119,20 +114,7 @@ class ReactiveArchiveJob(
         val criteria = where(TArchiveFile::status).isEqualTo(ArchiveStatus.CREATED)
         val query = Query.query(criteria)
             .limit(archiveProperties.queryLimit)
-        val idQueryCursor = IdQueryCursor(query, reactiveMongoTemplate)
-        return Flux.create { recurseCursor(idQueryCursor, it) }
-    }
-
-    private fun recurseCursor(idQueryCursor: IdQueryCursor, sink: FluxSink<TArchiveFile>) {
-        Mono.from(idQueryCursor.next())
-            .doOnSuccess { results ->
-                results.forEach { sink.next(it) }
-                if (idQueryCursor.hasNext) {
-                    recurseCursor(idQueryCursor, sink)
-                } else {
-                    sink.complete()
-                }
-            }.subscribe()
+        return ReactiveDaoUtils.query(query, TArchiveFile::class.java)
     }
 
     /**
@@ -173,46 +155,11 @@ class ReactiveArchiveJob(
             .runOn(Schedulers.fromExecutor(httpUploadPool), prefetch)
             .flatMap(uploader::onArchiveFileWrapper) // 上传
             .subscribe(subscriber)
-        subscriber.block()
-    }
-
-    /**
-     * id查询游标，将查询使用id在进行分页查找，避免大表skip，导致性能下降
-     * */
-    private class IdQueryCursor(
-        val query: Query,
-        val reactiveMongoTemplate: ReactiveMongoTemplate,
-    ) {
-        private var lastId = MIN_OBJECT_ID
-        var hasNext: Boolean = true
-
-        fun next(): Publisher<List<TArchiveFile>> {
-            val idQuery = Query.of(query).addCriteria(Criteria.where(ID).gt(ObjectId(lastId)))
-                .with(Sort.by(ID).ascending())
-            return reactiveMongoTemplate.find(idQuery, TArchiveFile::class.java).collectList()
-                .doOnSuccess {
-                    if (it.isNotEmpty()) {
-                        lastId = it.last().id!!
-                    }
-                    hasNext = it.size == query.limit
-                }
-        }
-    }
-
-    private fun buildThreadPool(threads: Int, threadFactory: ThreadFactory): ThreadPoolExecutor {
-        return ThreadPoolExecutor(
-            threads,
-            threads,
-            60,
-            TimeUnit.SECONDS,
-            ArrayBlockingQueue(8096),
-            threadFactory,
-            ThreadPoolExecutor.CallerRunsPolicy(),
-        )
+        subscriber.blockLast()
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ReactiveArchiveJob::class.java)
+        private val logger = LoggerFactory.getLogger(ArchiveJob::class.java)
         private const val DISK_CHECK_PERIOD = 3000L
     }
 }

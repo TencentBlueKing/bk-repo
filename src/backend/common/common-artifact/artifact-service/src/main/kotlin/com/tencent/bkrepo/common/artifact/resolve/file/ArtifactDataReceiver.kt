@@ -168,7 +168,7 @@ class ArtifactDataReceiver(
     }
 
     override fun unhealthy(fallbackPath: Path?, reason: String?) {
-        if (!finished && !fallback) {
+        if (!finished && !fallback && !hasTransferred) {
             fallBackPath = fallbackPath
             fallback = true
             logger.warn("Path[$path] is unhealthy, fallback to use [$fallBackPath], reason: $reason")
@@ -365,6 +365,7 @@ class ArtifactDataReceiver(
             } else {
                 // 禁用Transfer功能时，忽略操作，继续使用NFS
                 path = originalPath
+                fallback = false
             }
         }
         hasTransferred = true

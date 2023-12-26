@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.archive.request.ArchiveFileRequest
+import com.tencent.bkrepo.archive.request.DeleteCompressRequest
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -39,6 +42,7 @@ import com.tencent.bkrepo.job.batch.context.FileJobContext
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -57,6 +61,7 @@ class FileReferenceCleanupJob(
     private val storageService: StorageService,
     private val storageCredentialsClient: StorageCredentialsClient,
     properties: FileReferenceCleanupJobProperties,
+    private val archiveClient: ArchiveClient,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
     override fun start(): Boolean {
@@ -93,9 +98,10 @@ class FileReferenceCleanupJob(
                 }
                 storageService.delete(sha256, storageCredentials)
             } else {
-                (context as FileJobContext).fileMissing.incrementAndGet()
+                context.fileMissing.incrementAndGet()
                 logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
             }
+            cleanupRelatedResources(sha256, credentialsKey)
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
             throw JobExecuteException("Failed to delete file[$sha256] on [$storageCredentials].", e)
@@ -123,6 +129,13 @@ class FileReferenceCleanupJob(
         return cacheMap.getOrPut(key) {
             storageCredentialsClient.findByKey(key).data ?: return null
         }
+    }
+
+    private fun cleanupRelatedResources(sha256: String, credentialsKey: String?) {
+        val deleteArchiveFileRequest = ArchiveFileRequest(sha256, credentialsKey, SYSTEM_USER)
+        archiveClient.delete(deleteArchiveFileRequest)
+        val deleteCompressRequest = DeleteCompressRequest(sha256, credentialsKey, SYSTEM_USER)
+        archiveClient.deleteCompress(deleteCompressRequest)
     }
 
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()
