@@ -190,7 +190,6 @@ class GenericRemoteRepository(
         val url = UrlFormatter.format(
             baseUrl,
             "repository/api/node/detail/$remoteProjectId/$remoteRepoName/${artifactInfo.getArtifactFullPath()}",
-            context.request.queryString
         )
 
         // 执行请求
@@ -218,6 +217,15 @@ class GenericRemoteRepository(
         } ?: emptyList()
     }
 
+    private fun safeQuery(context: ArtifactQueryContext): Any? {
+        return try {
+            query(context)
+        } catch (ignored: Exception) {
+            logger.warn("Failed to query remote artifact[${context.artifactInfo}]", ignored)
+            null
+        }
+    }
+
     private fun createGenericHttpClient(configuration: RemoteConfiguration): OkHttpClient {
         val platforms = genericProperties.platforms
         val builder = buildOkHttpClient(configuration, false).dns(createPlatformDns(platforms))
@@ -227,6 +235,7 @@ class GenericRemoteRepository(
 
     private fun asyncCache(context: ArtifactDownloadContext, request: Request) {
         val repoDetail = context.repositoryDetail
+        val remoteNode = safeQuery(ArtifactQueryContext(context.repositoryDetail, context.artifactInfo)) as? NodeDetail
         val cacheTask = AsyncRemoteArtifactCacheWriter.CacheTask(
             projectId = repoDetail.projectId,
             repoName = repoDetail.name,
@@ -234,7 +243,8 @@ class GenericRemoteRepository(
             remoteConfiguration = context.getRemoteConfiguration(),
             fullPath = context.artifactInfo.getArtifactFullPath(),
             userId = context.userId,
-            request = request
+            request = request,
+            remoteNode = remoteNode
         )
         asyncCacheWriter.cache(cacheTask)
     }
@@ -243,7 +253,16 @@ class GenericRemoteRepository(
         val storageCredentials = context.repositoryDetail.storageCredentials
             ?: storageProperties.defaultStorageCredentials()
         val monitor = storageHealthMonitorHelper.getMonitor(storageProperties, storageCredentials)
-        return RemoteArtifactCacheWriter(context, storageManager, cacheLocks, monitor, contentLength, storageProperties)
+        val remoteNode = safeQuery(ArtifactQueryContext(context.repositoryDetail, context.artifactInfo)) as? NodeDetail
+        return RemoteArtifactCacheWriter(
+            context = context,
+            storageManager = storageManager,
+            cacheLocks = cacheLocks,
+            remoteNode = remoteNode,
+            monitor = monitor,
+            contentLength = contentLength,
+            storageProperties = storageProperties
+        )
     }
 
     /**
@@ -289,7 +308,6 @@ class GenericRemoteRepository(
         val url = UrlFormatter.format(
             baseUrl,
             "repository/api/pipeline/list/$remoteProjectId",
-            context.request.queryString
         )
         val request = Request.Builder().get().url(url).build()
         return request<Response<List<Map<String, Any?>>>>(context.getRemoteConfiguration(), request).data!!
@@ -305,7 +323,6 @@ class GenericRemoteRepository(
         val url = UrlFormatter.format(
             baseUrl,
             "repository/api/node/queryWithoutCount",
-            context.request.queryString
         )
 
         // 构造body
