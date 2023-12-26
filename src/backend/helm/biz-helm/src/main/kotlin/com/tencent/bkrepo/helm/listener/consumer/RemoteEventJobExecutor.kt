@@ -29,8 +29,12 @@ package com.tencent.bkrepo.helm.listener.consumer
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.helm.listener.base.AbstractEventJobExecutor
 import com.tencent.bkrepo.helm.service.impl.HelmOperationService
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -46,20 +50,32 @@ class RemoteEventJobExecutor(
             logger.info("Will start to handle event $event")
             with(event) {
                 val action: () -> Unit = when (type) {
-                    EventType.REPO_CREATED -> {
+                    EventType.REPO_CREATED, EventType.REPO_UPDATED, EventType.REPO_REFRESHED -> {
                         {
                             helmOperationService.lockAction(projectId, repoName) {
                                 helmOperationService.updatePackageForRemote(projectId, repoName, userId)
                             }
                         }
                     }
-                    else -> {
+                    EventType.VERSION_CREATED, EventType.VERSION_UPDATED -> {
                         {
-                            helmOperationService.lockAction(projectId, repoName) {
-                                helmOperationService.updatePackageForRemote(projectId, repoName, userId)
+                            val packageType = event.data["packageType"].toString()
+                            if (packageType == PackageType.HELM.name) {
+                                val replicationEvent = VersionCreatedEvent(
+                                    projectId = projectId,
+                                    repoName = repoName,
+                                    packageKey = event.data["packageKey"].toString(),
+                                    packageVersion = event.data["packageVersion"].toString(),
+                                    userId = SYSTEM_USER,
+                                    packageType = packageType,
+                                    packageName = event.data["packageName"].toString(),
+                                    realIpAddress = null
+                                )
+                                SpringContextUtils.publishEvent(replicationEvent)
                             }
                         }
                     }
+                    else -> { {} }
                 }
                 submit(action)
                 logger.info("Helm Remote event ${getFullResourceKey()} completed.")
