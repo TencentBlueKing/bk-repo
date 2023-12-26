@@ -176,14 +176,14 @@ class BlobChunkedServiceImpl(
             if (start == lengthOfAppendFile) {
                 RangeStatus.READY_TO_APPEND
             } else if (start > lengthOfAppendFile) {
-                // 当追加的文件大小比start文件小时，说明文件写入有误
+                // 当追加的文件大小比start小时，说明文件写入有误
                 RangeStatus.ILLEGAL_RANGE
             } else {
-                // 当追加的文件大小==start文件小时，可能存在重试导致已经写入一次
+                // 当追加的文件大小==end+1时，可能存在重试导致已经写入一次
                 if (lengthOfAppendFile == end + 1) {
                     RangeStatus.ALREADY_APPENDED
                 } else {
-                    // 当追加的文件大小大于start文件，并且不等于end+1时，文件已损坏
+                    // 当追加的文件大小大于start时，并且不等于end+1时，文件已损坏
                     RangeStatus.ILLEGAL_RANGE
                 }
             }
