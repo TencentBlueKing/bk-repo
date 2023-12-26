@@ -25,44 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.config
+package com.tencent.bkrepo.repository.pojo.node.service
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.node.NodeRequest
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 重定向请求配置
- */
-data class RedirectProperties(
-    /**
-     * 是否启用重定向
-     */
-    var enabled: Boolean = true,
-
-    /**
-     * 最小允许直接从后端存储下载文件的限制，只有文件大小超过该值才允许被重定向从实际存储中下载文件
-     */
-    var minDirectDownloadSize: DataSize = DataSize.ofMegabytes(1L),
-
-    /**
-     * 每秒上传到后端实际存储的速度
-     */
-    var uploadSizePerSecond: DataSize = DataSize.ofMegabytes(10L),
-
-    /**
-     * 是否重定向所有下载请求
-     */
-    var redirectAllDownload: Boolean = false,
-
-    /**
-     * 重定向URL的过期时间
-     */
-    var redirectUrlExpireTime: Duration = Duration.ofMinutes(3L),
-
-    /**
-     * 指定存储在重定向时使用的域名
-     * key为存储Key
-     * value为域名，例如http://bkrepo.example.com
-     */
-    var storageHosts: Map<String, String> = emptyMap()
-)
+@ApiModel("创建链接节点请求")
+data class NodeLinkRequest(
+    @ApiModelProperty("所属项目", required = true)
+    override val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    override val repoName: String,
+    @ApiModelProperty("完整路径", required = true)
+    override val fullPath: String,
+    @ApiModelProperty("目标节点所属项目", required = false)
+    val targetProjectId: String,
+    @ApiModelProperty("目标节点仓库名称", required = false)
+    val targetRepoName: String,
+    @ApiModelProperty("目标节点完整路径", required = false)
+    val targetFullPath: String,
+    @ApiModelProperty("是否覆盖")
+    val overwrite: Boolean = false,
+    @ApiModelProperty("元数据信息")
+    val nodeMetadata: List<MetadataModel>? = null,
+    @ApiModelProperty("操作用户")
+    override val operator: String = SYSTEM_USER,
+) : NodeRequest, ServiceRequest
