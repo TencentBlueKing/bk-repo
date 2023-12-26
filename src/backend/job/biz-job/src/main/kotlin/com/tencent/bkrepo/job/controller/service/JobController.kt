@@ -55,4 +55,8 @@ class JobController(
     override fun activeProjects(): Response<MutableSet<String>> {
         return ResponseBuilder.success(activeProjectService.getActiveProjects())
     }
+
+    override fun activeUsers(): Response<Set<String>> {
+        return ResponseBuilder.success(activeProjectService.getActiveUsers())
+    }
 }
