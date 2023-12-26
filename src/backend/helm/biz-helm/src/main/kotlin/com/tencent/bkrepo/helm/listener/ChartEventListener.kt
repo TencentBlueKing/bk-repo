@@ -137,7 +137,7 @@ class ChartEventListener(
         val packageVersion = packageClient.findVersionByName(
             projectId, repoName, PackageKeys.ofHelm(packageName), version
         ).data ?: return
-        if (packageVersion.metadata[SOURCE_TYPE] != ArtifactChannel.REPLICATION) return
+        if (packageVersion.metadata[SOURCE_TYPE] != ArtifactChannel.REPLICATION.name) return
         val fullPath = HelmUtils.getChartFileFullPath(packageName, version)
         val replicationRequest = ChartUploadRequest(
             projectId = projectId,
