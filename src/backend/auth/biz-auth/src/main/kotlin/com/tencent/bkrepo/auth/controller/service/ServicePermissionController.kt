@@ -34,16 +34,28 @@ package com.tencent.bkrepo.auth.controller.service
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import io.swagger.annotations.ApiParam
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServicePermissionController @Autowired constructor(
     private val permissionService: PermissionService
 ) : ServicePermissionClient, OpenResource(permissionService) {
+
+    override fun listPermissionPath(userId: String, projectId: String, repoName: String): Response<ListPathResult> {
+        val permissionPath = permissionService.listPermissionPath(userId, projectId, repoName)
+        val status = permissionPath.isNotEmpty()
+        val result = ListPathResult(status = status, path = mapOf(OperationType.NIN to permissionPath))
+        return ResponseBuilder.success(result)
+    }
+
 
     override fun checkPermission(request: CheckPermissionRequest): Response<Boolean> {
         checkRequest(request)

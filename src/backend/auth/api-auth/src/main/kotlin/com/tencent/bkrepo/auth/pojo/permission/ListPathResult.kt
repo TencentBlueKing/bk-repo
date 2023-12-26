@@ -28,10 +28,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-dependencies {
-    implementation(project(":common:common-api"))
-    api(project(":common:common-query:query-api"))
-    api(project(":common:common-operate:operate-annotation"))
-    compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
-    api("com.tencent.devops:devops-boot-starter-plugin")
-}
+
+package com.tencent.bkrepo.auth.pojo.permission
+
+import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.common.query.enums.OperationType
+
+@ApiModel("校验权限请求")
+data class ListPathResult(
+    // when true, need to compare
+    val status: Boolean,
+    val path: Map<OperationType, List<String>>,
+)
