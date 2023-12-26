@@ -49,6 +49,8 @@ open class NodeRequest(
     open val category: String = RepositoryCategory.LOCAL.name,
     open val mode: Int? = null,
     open val flags: Int? = null,
+    open val rdev: Int? = null,
+    open val type: Int? = null,
 ) {
     constructor(request: ServerRequest) : this(
         projectId = request.pathVariable(PROJECT_ID),
@@ -57,6 +59,8 @@ open class NodeRequest(
         category = request.queryParamOrNull("category") ?: RepositoryCategory.LOCAL.name,
         mode = request.queryParamOrNull("mode")?.toIntOrNull(),
         flags = request.queryParamOrNull("flags")?.toIntOrNull(),
+        rdev = request.queryParamOrNull("rdev")?.toIntOrNull(),
+        type = request.queryParamOrNull("type")?.toIntOrNull()
     )
 
     override fun toString(): String {

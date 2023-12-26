@@ -38,6 +38,7 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.aggregation.AggregationResults
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.util.CloseableIterator
 
 /**
  * mongo db 数据访问层接口
@@ -113,4 +114,9 @@ interface MongoDao<E> {
      * 查询并更新操作
      */
     fun <T> findAndModify(query: Query, update: Update, options: FindAndModifyOptions, clazz: Class<T>): T?
+
+    /**
+     * 流式查询
+     */
+    fun <T> stream(query: Query, clazz: Class<T>): CloseableIterator<T>
 }

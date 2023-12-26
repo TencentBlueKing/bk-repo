@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 
@@ -79,6 +80,11 @@ interface NodeBaseOperation {
      * 创建节点，返回节点详情
      */
     fun createNode(createRequest: NodeCreateRequest): NodeDetail
+
+    /**
+     * 创建链接节点，返回节点详情
+     */
+    fun link(request: NodeLinkRequest): NodeDetail
 
     /**
      * 更新节点
