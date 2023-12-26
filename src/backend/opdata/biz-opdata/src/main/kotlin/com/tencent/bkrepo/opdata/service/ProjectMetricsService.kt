@@ -235,13 +235,13 @@ class ProjectMetricsService (
         val activeProjects =  getActiveProjects()
 
         when (metricsRequest.projectFlag) {
-            1 -> {
+            SHOW_ACTIVE_PROJECTS -> {
                 oneDayBeforeMetrics = oneDayBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
                 oneWeekBeforeMetrics = oneWeekBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
                 oneMonthBeforeMetrics = oneMonthBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
                 currentMetrics = currentMetrics.filter { activeProjects.contains(it.projectId) }
             }
-            2-> {
+            SHOW_INACTIVE_PROJECTS-> {
                 oneDayBeforeMetrics = oneDayBeforeMetrics?.filter { !activeProjects.contains(it.projectId) }
                 oneWeekBeforeMetrics = oneWeekBeforeMetrics?.filter { !activeProjects.contains(it.projectId) }
                 oneMonthBeforeMetrics = oneMonthBeforeMetrics?.filter { !activeProjects.contains(it.projectId) }
@@ -403,6 +403,8 @@ class ProjectMetricsService (
         private const val DOWNLOAD_ACTIVE_PROJECTS = "downloadActiveProjects"
         private const val ACTIVE_PROJECTS = "activeProjects"
         private const val UPLOAD_ACTIVE_PROJECTS = "uploadActiveProjects"
+        private const val SHOW_ACTIVE_PROJECTS = 1
+        private const val SHOW_INACTIVE_PROJECTS = 2
 
     }
 }
