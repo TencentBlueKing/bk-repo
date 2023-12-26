@@ -50,6 +50,7 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
@@ -89,8 +90,18 @@ open class PermissionServiceImpl constructor(
         return true
     }
 
-    override fun listPermission(projectId: String, repoName: String?): List<Permission> {
+    override fun listPermission(projectId: String, repoName: String?, resourceType: String?): List<Permission> {
         logger.debug("list  permission  projectId: [$projectId], repoName: [$repoName]")
+        resourceType?.let {
+            repoName?.let {
+                return permissionRepository.findByResourceTypeAndProjectIdAndRepos(
+                    ResourceType.lookup(resourceType), projectId, repoName)
+                    .map { PermRequestUtil.convToPermission(it) }
+            }
+            return permissionRepository.findByResourceTypeAndProjectId(
+                ResourceType.lookup(resourceType), projectId)
+                .map { PermRequestUtil.convToPermission(it) }
+        }
         repoName?.let {
             return permissionRepository.findByResourceTypeAndProjectIdAndRepos(ResourceType.REPO, projectId, repoName)
                 .map { PermRequestUtil.convToPermission(it) }
@@ -561,6 +572,13 @@ open class PermissionServiceImpl constructor(
             updateAt = LocalDateTime.now()
             )
         return listOf(projectManager, projectViewer)
+    }
+
+    override fun updatePermissionDeployInRepo(request: UpdatePermissionDeployInRepoRequest): Boolean {
+        checkPermissionExist(request.permissionId)
+        return updatePermissionById(request.permissionId, TPermission::includePattern.name, request.path)
+            && updatePermissionById(request.permissionId, TPermission::users.name, request.users)
+            && updatePermissionById(request.permissionId, TPermission::permName.name, request.name)
     }
 
     companion object {

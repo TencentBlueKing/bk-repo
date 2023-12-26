@@ -110,9 +110,9 @@
             <!-- <bk-tab-panel v-if="showCleanConfigTab" name="cleanConfig" label="清理设置">
                 <clean-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></clean-config>
             </bk-tab-panel> -->
-            <!-- <bk-tab-panel render-directive="if" name="permissionConfig" :label="$t('permissionConfig')">
-                <permission-config></permission-config>
-            </bk-tab-panel> -->
+            <bk-tab-panel render-directive="if" v-if="showPermissionConfigTab" name="permissionConfig" :label="$t('permissionConfig')">
+                <permission-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></permission-config>
+            </bk-tab-panel>
         </bk-tab>
         <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
@@ -122,7 +122,7 @@
     import proxyConfig from '@repository/views/repoConfig/proxyConfig'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     // import cleanConfig from '@repository/views/repoConfig/cleanConfig'
-    // import permissionConfig from './permissionConfig'
+    import permissionConfig from './permissionConfig/permissionConfig'
     import { mapState, mapActions } from 'vuex'
     import { specialRepoEnum } from '@repository/store/publicEnum'
     export default {
@@ -130,7 +130,8 @@
         components: {
             CardRadioGroup,
             proxyConfig,
-            iamDenyDialog
+            iamDenyDialog,
+            permissionConfig
             // cleanConfig
         },
         data () {
@@ -232,6 +233,9 @@
             },
             showCleanConfigTab () {
                 return ['maven', 'docker', 'npm', 'helm', 'generic'].includes(this.repoType)
+            },
+            showPermissionConfigTab () {
+                return ['generic'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo

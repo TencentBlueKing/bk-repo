@@ -735,6 +735,61 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
+### 更新仓库下配置的权限
+
+- API:PUT /auth/api/permission/update/config
+- API 名称: 更新仓库下配置的权限
+- 功能说明：
+	- 中文：更新仓库下配置的权限
+	- English：update permission 
+
+- input body:
+
+``` json
+{
+    "permissionId":"5ea4f6608c165f702f5bd41e",
+    "path":[
+        "/ops",
+        "/dev"
+    ],
+    "users": [
+    	"test"
+    ],
+    "name": "perm1",
+    "projectId": "blueking"
+}
+```
+
+- input 字段说明
+
+| 字段           |类型|是否必须| 默认值 | 说明       | Description                |
+|--------------|---|---|-----|----------|----------------------------|
+| permissionId |string|是| 无   | 角色主键id   | the permission primary key |
+| path         |string array|是| 无   | 更新权限包含路径 | the department id array    |
+| users        |string array|是| 无   | 绑定用户     | the userName               |
+| name         |string|是| 无   | 权限名称     | the permission name        |
+| projectId    |string|是| 无   | 项目名称     | the project Id             |
+
+- output:
+
+```
+{
+    "code":0,
+    "data":true,
+    "message":"",
+    "traceId":""
+}
+
+```
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | bool | the request result |the request result|
+|traceId|string|请求跟踪id|the trace id|
+
 
 
 

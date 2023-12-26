@@ -805,5 +805,11 @@
     "cleanNodeTitle": "清理目录节点",
     "complete": "完成",
     "cleanFolderTip": "截止时间之前上传的文件将被清理",
-    "cleanRepo": "清理"
+    "cleanRepo": "清理",
+    "createPermission": "创建权限",
+    "updatePermission": "更新权限",
+    "addPath":"添加路径",
+    "folderList":"文件夹列表",
+    "selectedFolder": "已选文件夹",
+    "deletePermissionMsg": "确认删除此权限？"
 }
