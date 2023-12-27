@@ -40,6 +40,7 @@ import com.tencent.bkrepo.fs.server.model.NodeAttribute
 import com.tencent.bkrepo.fs.server.model.NodeAttribute.Companion.DEFAULT_MODE
 import com.tencent.bkrepo.fs.server.model.NodeAttribute.Companion.NOBODY
 import com.tencent.bkrepo.fs.server.request.ChangeAttributeRequest
+import com.tencent.bkrepo.fs.server.request.LinkRequest
 import com.tencent.bkrepo.fs.server.request.MoveRequest
 import com.tencent.bkrepo.fs.server.request.NodePageRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
@@ -56,6 +57,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import kotlinx.coroutines.reactor.awaitSingle
@@ -249,6 +251,22 @@ class NodeOperationsHandler(
 
     suspend fun mknod(request: ServerRequest): ServerResponse {
         val node = createNode(request, false)
+        return ReactiveResponseBuilder.success(node.nodeInfo.toNode())
+    }
+
+    suspend fun symlink(request: ServerRequest): ServerResponse {
+        val nodeLinkRequest = with(LinkRequest(request)) {
+            NodeLinkRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                targetProjectId = projectId,
+                targetRepoName = repoName,
+                targetFullPath = targetFullPath,
+                operator = ReactiveSecurityUtils.getUser()
+            )
+        }
+        val node = rRepositoryClient.link(nodeLinkRequest).awaitSingle().data!!
         return ReactiveResponseBuilder.success(node.nodeInfo.toNode())
     }
 
