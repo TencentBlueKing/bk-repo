@@ -77,9 +77,6 @@
                     }
                 },
                 immediate: true
-            },
-            pathObjects: {
-
             }
         },
         methods: {
@@ -108,14 +105,14 @@
 .repository-table-container {
     .repo-list {
         display: grid;
-        grid-template: auto / repeat(4, 1fr);
+        grid-template: auto / repeat(3, 1fr);
         gap: 10px;
         .repo-item {
             height: 32px;
             border: 1px solid var(--borderWeightColor);
             background-color: var(--bgLighterColor);
             .repo-name {
-                max-width: 160px;
+                max-width: 100px;
                 margin-left: 5px;
             }
         }

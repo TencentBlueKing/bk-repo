@@ -12,7 +12,7 @@
         <draggable v-if="permissionListPages.length" v-model="permissionListPages" :options="{ animation: 200 }">
             <div class="proxy-item" v-for="(row,index) in permissionListPages" :key="index">
                 <div class="permission-name">{{row.permName}}</div>
-                <div class="permission-path"><bk-tag v-for="(name,pathIndex) in row.includePattern" :key="pathIndex">{{ changeName(name) }}</bk-tag></div>
+                <div class="permission-path"><bk-tag v-for="(name,pathIndex) in row.includePattern" :key="pathIndex">{{ changePath(name) }}</bk-tag></div>
                 <div class="permission-users"><bk-tag v-for="(name,userIndex) in row.users" :key="userIndex">{{ name }}</bk-tag></div>
                 <div class="flex-align-center permission-operation">
                     <Icon class="mr10 hover-btn" size="24" name="icon-edit" @click.native.stop="updatePermission(row)" />
@@ -118,8 +118,12 @@
                     this.permissionListPages = res
                 })
             },
-            changeName (name) {
-                return name.substr(1)
+            changePath (path) {
+                if (path.length > 18) {
+                    return path.substr(0, 15) + '...'
+                } else {
+                    return path
+                }
             }
         }
     }

@@ -91,18 +91,19 @@ open class PermissionServiceImpl constructor(
         resourceType?.let {
             repoName?.let {
                 return permissionRepository.findByResourceTypeAndProjectIdAndRepos(
-                    ResourceType.lookup(resourceType), projectId, repoName)
+                    resourceType, projectId, repoName)
                     .map { PermRequestUtil.convToPermission(it) }
             }
             return permissionRepository.findByResourceTypeAndProjectId(
-                ResourceType.lookup(resourceType), projectId)
+                resourceType, projectId)
                 .map { PermRequestUtil.convToPermission(it) }
         }
         repoName?.let {
-            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(ResourceType.REPO, projectId, repoName)
+            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(
+                ResourceType.REPO.name, projectId, repoName)
                 .map { PermRequestUtil.convToPermission(it) }
         }
-        return permissionRepository.findByResourceTypeAndProjectId(ResourceType.PROJECT, projectId)
+        return permissionRepository.findByResourceTypeAndProjectId(ResourceType.PROJECT.name, projectId)
             .map { PermRequestUtil.convToPermission(it) }
     }
 

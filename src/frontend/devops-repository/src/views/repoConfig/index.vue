@@ -235,7 +235,7 @@
                 return ['maven', 'docker', 'npm', 'helm', 'generic'].includes(this.repoType)
             },
             showPermissionConfigTab () {
-                return ['generic'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
+                return ['generic'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage) && !(['pipeline', 'custom'].includes(this.repoName))
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo

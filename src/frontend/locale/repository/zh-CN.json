@@ -136,7 +136,7 @@
     "enabledFileLists": "启用FileLists",
     "repodataDepth": "索引目录深度",
     "groupXmlSet": "分组文件名",
-    "permissionConfig": "权限管理",
+    "permissionConfig": "目录权限",
     "noPermission": "未获得授权",
     "logout": "退出",
     "repoList": "制品仓库",
