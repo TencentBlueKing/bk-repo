@@ -263,6 +263,7 @@ class NodeOperationsHandler(
                 targetProjectId = projectId,
                 targetRepoName = repoName,
                 targetFullPath = targetFullPath,
+                checkTargetExist = false,
                 operator = ReactiveSecurityUtils.getUser()
             )
         }
