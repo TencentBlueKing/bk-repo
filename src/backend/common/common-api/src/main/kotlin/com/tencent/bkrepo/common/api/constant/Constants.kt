@@ -115,3 +115,18 @@ const val MS_REQUEST_SRC_CLUSTER = "X-BKREPO-MS-CLUSTER"
  */
 const val CLIENT_ADDRESS = "clientAddress"
 const val DOWNLOAD_SOURCE = "downloadSource"
+
+/**
+ * 用于标记访问来源，web或api
+ */
+const val HEADER_ACCESS_FROM = "X-BKREPO-ACCESS-FROM"
+
+/**
+ * 来源于API调用
+ */
+const val ACCESS_FROM_API = "api"
+
+/**
+ * 来源于浏览器访问
+ */
+const val ACCESS_FROM_WEB = "web"

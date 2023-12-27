@@ -65,5 +65,7 @@ data class FileInfo(
     @ApiModelProperty("项目ID")
     val projectId: String,
     @ApiModelProperty("仓库名称")
-    val repoName: String
+    val repoName: String,
+    @ApiModelProperty("元数据")
+    val metadata: Map<String, Any>? = null,
 )
