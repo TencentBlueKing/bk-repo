@@ -10,7 +10,6 @@ object PermissionQueryHelper {
         projectId: String?,
         repoName: String?,
         uid: String,
-        action: String,
         resourceType: String,
         roles: List<String>
     ): Query {
@@ -18,7 +17,7 @@ object PermissionQueryHelper {
         var celeriac = criteria.orOperator(
             Criteria.where(TPermission::users.name).`is`(uid),
             Criteria.where(TPermission::roles.name).`in`(roles)
-        ).and(TPermission::resourceType.name).`is`(resourceType).and(TPermission::actions.name).`is`(action)
+        ).and(TPermission::resourceType.name).`is`(resourceType)
         projectId?.let {
             celeriac = celeriac.and(TPermission::projectId.name).`is`(projectId)
         }
