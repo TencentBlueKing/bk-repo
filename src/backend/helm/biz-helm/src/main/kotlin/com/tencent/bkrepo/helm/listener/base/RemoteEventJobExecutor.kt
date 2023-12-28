@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,22 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.listener.consumer
+package com.tencent.bkrepo.helm.listener.base
 
+import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.helm.listener.base.AbstractEventJobExecutor
+import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
+import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 import com.tencent.bkrepo.helm.service.impl.HelmOperationService
+import com.tencent.bkrepo.helm.utils.HelmUtils
+import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
 class RemoteEventJobExecutor(
-    private val helmOperationService: HelmOperationService
+    private val helmOperationService: HelmOperationService,
+    private val packageClient: PackageClient
 ) : AbstractEventJobExecutor() {
     /**
      * 执行同步
@@ -73,21 +80,41 @@ class RemoteEventJobExecutor(
     }
 
     private fun handlePackageVersionEvent(event: ArtifactEvent) {
-        with(event) {
-            val packageType = event.data["packageType"].toString()
-            if (packageType != PackageType.HELM.name) return
-            val replicationEvent = VersionCreatedEvent(
+        val packageType = event.data["packageType"].toString()
+        if (packageType != PackageType.HELM.name) return
+        val packageKey = event.data["packageKey"].toString()
+        val version = event.data["packageVersion"].toString()
+        val packageName = event.data["packageName"].toString()
+        val packageVersion = packageClient.findVersionByName(
+            event.projectId, event.repoName, packageKey, version
+        ).data ?: return
+        if (packageVersion.metadata[SOURCE_TYPE] != ArtifactChannel.REPLICATION.name) return
+        val fullPath = HelmUtils.getChartFileFullPath(packageName, version)
+        SpringContextUtils.publishEvent(buildChartUploadEvent(
+            projectId = event.projectId,
+            repoName = event.repoName,
+            fullPath = fullPath,
+            packageName = packageName,
+            packageVersion = packageVersion
+        ))
+    }
+
+    private fun buildChartUploadEvent(
+        projectId: String, repoName: String, fullPath: String,
+        packageName: String, packageVersion: PackageVersion
+    ): ChartUploadEvent {
+        return ChartUploadEvent(
+            ChartUploadRequest(
                 projectId = projectId,
                 repoName = repoName,
-                packageKey = event.data["packageKey"].toString(),
-                packageVersion = event.data["packageVersion"].toString(),
-                userId = SYSTEM_USER,
-                packageType = packageType,
-                packageName = event.data["packageName"].toString(),
-                realIpAddress = null
+                name = packageName,
+                version = packageVersion.name,
+                operator = SYSTEM_USER,
+                fullPath = fullPath,
+                metadataMap = packageVersion.metadata,
+                artifactInfo = HelmArtifactInfo(projectId, repoName, fullPath)
             )
-            SpringContextUtils.publishEvent(replicationEvent)
-        }
+        )
     }
 
     companion object {

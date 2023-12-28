@@ -100,59 +100,6 @@ class ChartEventListener(
         handleChartUploadEvent(event.uploadRequest)
     }
 
-
-
-    /**
-     * 监听package version创建事件，主要用于单体环境下支持支持分发的package进行index更新
-     */
-    @EventListener(VersionCreatedEvent::class)
-    fun handleReplicationVersionCreatedEvent(event: VersionCreatedEvent) {
-        if (event.packageType != PackageType.HELM.name) return
-        handleReplicationVersionEvent(
-            projectId = event.projectId,
-            repoName = event.repoName,
-            packageName = event.packageName,
-            version = event.packageVersion
-        )
-    }
-
-    /**
-     * 监听package version 更新事件，主要用于单体环境下支持支持分发的package进行index更新
-     */
-    @EventListener(VersionUpdatedEvent::class)
-    fun handleReplicationVersionUpdatedEvent(event: VersionUpdatedEvent) {
-        if (event.packageType != PackageType.HELM.name) return
-        handleReplicationVersionEvent(
-            projectId = event.projectId,
-            repoName = event.repoName,
-            packageName = event.packageName,
-            version = event.packageVersion
-        )
-    }
-
-    private fun handleReplicationVersionEvent (
-        projectId: String, repoName: String, packageName: String, version: String
-    ) {
-        logger.info("Handling package replication event for $packageName|$version in repo $projectId|$repoName")
-        val packageVersion = packageClient.findVersionByName(
-            projectId, repoName, PackageKeys.ofHelm(packageName), version
-        ).data ?: return
-        if (packageVersion.metadata[SOURCE_TYPE] != ArtifactChannel.REPLICATION.name) return
-        val fullPath = HelmUtils.getChartFileFullPath(packageName, version)
-        val replicationRequest = ChartUploadRequest(
-            projectId = projectId,
-            repoName = repoName,
-            name = packageName,
-            version = version,
-            operator = SYSTEM_USER,
-            fullPath = fullPath,
-            metadataMap = packageVersion.metadata,
-            artifactInfo = HelmArtifactInfo(projectId, repoName, fullPath)
-        )
-        handleChartUploadEvent(replicationRequest)
-    }
-
-
     /**
      * 当chart新上传成功后，更新index.yaml
      */

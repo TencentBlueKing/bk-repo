@@ -27,40 +27,38 @@
 
 package com.tencent.bkrepo.helm.listener.consumer
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
+import com.tencent.bkrepo.common.artifact.event.packages.VersionUpdatedEvent
 import com.tencent.bkrepo.helm.listener.base.RemoteEventJobExecutor
-import org.slf4j.LoggerFactory
-import org.springframework.messaging.Message
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.util.function.Consumer
 
 /**
- * 消费基于MQ传递的事件
- * 消费分发同步的Package， 用于更新index文件
+ * 消费基于Spring进程内传递的事件
  */
-@Component("packageReplication")
-class PackageReplicationEventConsumer(
-    private val remoteEventJobExecutor: RemoteEventJobExecutor
-) : Consumer<Message<ArtifactEvent>> {
+@Component
+class ReplicationEventListener(
+    private val remoteEventJobExecutor: RemoteEventJobExecutor,
+){
 
     /**
-     * 允许接收的事件类型
+     * 监听package version创建事件，主要用于单体环境下支持支持分发的package进行index更新
      */
-    private val acceptTypes = setOf(
-        EventType.VERSION_CREATED,
-        EventType.VERSION_UPDATED,
-    )
-
-    override fun accept(message: Message<ArtifactEvent>) {
-        if (!acceptTypes.contains(message.payload.type)) {
-            return
-        }
-        logger.info("current package replication message header is ${message.headers}")
-        remoteEventJobExecutor.execute(message.payload)
+    @EventListener(VersionCreatedEvent::class)
+    fun handleReplicationVersionCreatedEvent(event: VersionCreatedEvent) {
+        if (event.packageType != PackageType.HELM.name) return
+        remoteEventJobExecutor.execute(event)
     }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(PackageReplicationEventConsumer::class.java)
+    /**
+     * 监听package version 更新事件，主要用于单体环境下支持支持分发的package进行index更新
+     */
+    @EventListener(VersionUpdatedEvent::class)
+    fun handleReplicationVersionUpdatedEvent(event: VersionUpdatedEvent) {
+        if (event.packageType != PackageType.HELM.name) return
+        remoteEventJobExecutor.execute(event)
     }
+
+
 }
