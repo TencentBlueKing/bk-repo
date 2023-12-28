@@ -150,15 +150,15 @@ class EdgeNodeServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
+    override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         centerNodeClient.moveNode(moveRequest)
-        NodeMoveCopySupport(this).moveNode(moveRequest)
+        return NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
+    override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
         centerNodeClient.copyNode(copyRequest)
-        NodeMoveCopySupport(this).copyNode(copyRequest)
+        return NodeMoveCopySupport(this).copyNode(copyRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

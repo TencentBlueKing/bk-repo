@@ -127,11 +127,11 @@ interface NodeClient {
 
     @ApiOperation("移动节点")
     @PostMapping("/move")
-    fun moveNode(@RequestBody nodeMoveRequest: NodeMoveCopyRequest): Response<Void>
+    fun moveNode(@RequestBody nodeMoveRequest: NodeMoveCopyRequest): Response<NodeDetail>
 
     @ApiOperation("复制节点")
     @PostMapping("/copy")
-    fun copyNode(@RequestBody nodeCopyRequest: NodeMoveCopyRequest): Response<Void>
+    fun copyNode(@RequestBody nodeCopyRequest: NodeMoveCopyRequest): Response<NodeDetail>
 
     @ApiOperation("删除节点")
     @DeleteMapping("/delete")

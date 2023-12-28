@@ -71,6 +71,8 @@ interface UserService {
 
     fun listUserToken(userId: String): List<TokenResult>
 
+    fun listValidToken(userId: String): List<Token>
+
     fun removeToken(userId: String, name: String): Boolean
 
     fun findUserByUserToken(userId: String, pwd: String): User?

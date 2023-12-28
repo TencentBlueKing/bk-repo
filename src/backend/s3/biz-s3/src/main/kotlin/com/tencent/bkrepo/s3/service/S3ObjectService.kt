@@ -32,50 +32,146 @@
 package com.tencent.bkrepo.s3.service
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
+import com.tencent.bkrepo.common.api.constant.ensurePrefix
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
 import com.tencent.bkrepo.s3.constant.NO_SUCH_ACCESS
 import com.tencent.bkrepo.s3.constant.NO_SUCH_KEY
+import com.tencent.bkrepo.s3.constant.S3HttpHeaders.X_AMZ_COPY_SOURCE
+import com.tencent.bkrepo.s3.constant.S3HttpHeaders.X_AMZ_METADATA_DIRECTIVE
+import com.tencent.bkrepo.s3.constant.S3HttpHeaders.X_AMZ_META_PREFIX
 import com.tencent.bkrepo.s3.constant.S3MessageCode
 import com.tencent.bkrepo.s3.exception.S3AccessDeniedException
 import com.tencent.bkrepo.s3.exception.S3NotFoundException
+import com.tencent.bkrepo.s3.pojo.CopyObjectResult
+import com.tencent.bkrepo.s3.pojo.ListBucketResult
+import com.tencent.bkrepo.s3.utils.TimeUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.net.URLDecoder
 
 /**
  * S3对象服务类
  */
 @Service
-class S3ObjectService: ArtifactService() {
+class S3ObjectService(
+    private val nodeClient: NodeClient,
+    private val metadataClient: MetadataClient
+) : ArtifactService() {
 
     fun getObject(artifactInfo: S3ArtifactInfo) {
-        with(artifactInfo) {
-            val node = ArtifactContextHolder.getNodeDetail(artifactInfo) ?:
-                throw S3NotFoundException(
-                    HttpStatus.NOT_FOUND,
-                    S3MessageCode.S3_NO_SUCH_KEY,
-                    params = arrayOf(NO_SUCH_KEY, artifactInfo.getArtifactFullPath())
-                )
-            ArtifactContextHolder.getRepoDetail()
-            val context = ArtifactDownloadContext()
-            //仓库未开启自动创建目录索引时不允许访问目录
-            val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
-            if (node.folder && autoIndexSettings?.enabled == false) {
-                logger.warn("${artifactInfo.getArtifactFullPath()} is folder " +
-                        "or repository is not enabled for automatic directory index creation")
-                throw S3AccessDeniedException(
-                    HttpStatus.FORBIDDEN,
-                    S3MessageCode.S3_NO_SUCH_ACCESS,
-                    params = arrayOf(NO_SUCH_ACCESS, artifactInfo.getArtifactFullPath())
-                )
-            }
-            repository.download(context)
+        val node = ArtifactContextHolder.getNodeDetail(artifactInfo) ?:
+            throw S3NotFoundException(
+                HttpStatus.NOT_FOUND,
+                S3MessageCode.S3_NO_SUCH_KEY,
+                params = arrayOf(NO_SUCH_KEY, artifactInfo.getArtifactFullPath())
+            )
+        ArtifactContextHolder.getRepoDetail()
+        val context = ArtifactDownloadContext()
+        //仓库未开启自动创建目录索引时不允许访问目录
+        val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
+        if (node.folder && autoIndexSettings?.enabled == false) {
+            logger.warn("${artifactInfo.getArtifactFullPath()} is folder " +
+                    "or repository is not enabled for automatic directory index creation")
+            throw S3AccessDeniedException(
+                HttpStatus.FORBIDDEN,
+                S3MessageCode.S3_NO_SUCH_ACCESS,
+                params = arrayOf(NO_SUCH_ACCESS, artifactInfo.getArtifactFullPath())
+            )
         }
+        repository.download(context)
     }
 
+    fun putObject(artifactInfo: S3ArtifactInfo, file: ArtifactFile) {
+        val context = ArtifactUploadContext(file)
+        repository.upload(context)
+    }
+
+    fun listObjects(artifactInfo: S3ArtifactInfo, maxKeys: Int, delimiter: String, prefix: String): ListBucketResult {
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
+        val nodeQueryBuilder = NodeQueryBuilder()
+            .projectId(projectId).repoName(repoName)
+            .apply {
+                if (prefix.isEmpty()) {
+                    path(StringPool.ROOT)
+                } else {
+                    path(PathUtils.normalizePath(prefix.ensurePrefix(SLASH)))
+                }
+            }
+        val folderQueryBuilder = nodeQueryBuilder.newBuilder().excludeFile().select(NodeDetail::fullPath.name)
+        val folders = nodeClient.search(folderQueryBuilder.build()).data!!.records
+            .map {
+                it[NodeDetail::fullPath.name].toString().removePrefix(SLASH).ensureSuffix(SLASH)
+            }
+        val fileQueryBuilder = nodeQueryBuilder.newBuilder().excludeFolder()
+        val files = nodeClient.search(fileQueryBuilder.build()).data!!.records
+        return ListBucketResult(repoName, files, maxKeys, prefix, folders)
+    }
+
+    fun copyObject(artifactInfo: S3ArtifactInfo): CopyObjectResult {
+        val source = HeaderUtils.getHeader(X_AMZ_COPY_SOURCE) ?: throw IllegalArgumentException(X_AMZ_COPY_SOURCE)
+        val delimiterIndex = source.indexOf(SLASH)
+        val srcRepoName = source.substring(0, delimiterIndex)
+        val srcFullPath = URLDecoder.decode(source.substring(delimiterIndex), Charsets.UTF_8.name())
+        val copyRequest = NodeMoveCopyRequest(
+            srcProjectId = artifactInfo.projectId,
+            srcRepoName = srcRepoName,
+            srcFullPath = srcFullPath,
+            destProjectId = artifactInfo.projectId,
+            destRepoName = artifactInfo.repoName,
+            destFullPath = artifactInfo.getArtifactFullPath(),
+            overwrite = true,
+            operator = SecurityUtils.getUserId()
+        )
+        var dstNode = nodeClient.copyNode(copyRequest).data!!
+        dstNode = replaceMetadata(dstNode)
+        return CopyObjectResult(
+            eTag = "\"${dstNode.md5}\"",
+            lastModified = TimeUtil.getLastModified(dstNode),
+            checksumCRC32 = "",
+            checksumCRC32C = "",
+            checksumSHA1 = "",
+            checksumSHA256 = "\"${dstNode.sha256}\""
+        )
+    }
+
+    fun replaceMetadata(nodeDetail: NodeDetail): NodeDetail {
+        val directive = HeaderUtils.getHeader(X_AMZ_METADATA_DIRECTIVE)
+        if (directive.equals("REPLACE", true)) {
+            val metadataHeader = HeaderUtils.getHeaderNames()?.filter {
+                it.startsWith(X_AMZ_META_PREFIX, true)
+            }.orEmpty()
+            val saveRequest = MetadataSaveRequest(
+                projectId = nodeDetail.projectId,
+                repoName = nodeDetail.repoName,
+                fullPath = nodeDetail.fullPath,
+                nodeMetadata = metadataHeader.map { MetadataModel(it, HeaderUtils.getHeader(it).toString()) },
+                replace = true
+            )
+            metadataClient.saveMetadata(saveRequest)
+            return nodeDetail.copy(nodeMetadata = saveRequest.nodeMetadata!!)
+        }
+        return nodeDetail
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(S3ObjectService::class.java)

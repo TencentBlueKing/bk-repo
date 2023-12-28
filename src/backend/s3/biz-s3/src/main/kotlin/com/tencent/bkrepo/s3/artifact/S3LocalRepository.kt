@@ -31,10 +31,14 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
 import com.tencent.bkrepo.s3.constant.INTERNAL_ERROR
 import com.tencent.bkrepo.s3.constant.NO_SUCH_KEY
+import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import com.tencent.bkrepo.s3.constant.S3MessageCode
 import com.tencent.bkrepo.s3.exception.S3InternalException
 import com.tencent.bkrepo.s3.exception.S3NotFoundException
@@ -69,6 +73,20 @@ class S3LocalRepository: LocalRepository() {
                 params = arrayOf(INTERNAL_ERROR, context.artifactInfo.getArtifactFullPath())
             )
         }
+    }
+
+    override fun onUpload(context: ArtifactUploadContext) {
+        with(context) {
+            val nodeCreateRequest = buildNodeCreateRequest(this).copy(overwrite = true)
+            storageManager.storeArtifactFile(nodeCreateRequest, getArtifactFile(), storageCredentials)
+        }
+    }
+
+    override fun onUploadFinished(context: ArtifactUploadContext) {
+        super.onUploadFinished(context)
+        val response = HttpContextHolder.getResponse()
+        response.setHeader(S3HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
+        response.setHeader(S3HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
     }
 
 }
