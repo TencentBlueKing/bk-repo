@@ -371,6 +371,11 @@ class UserServiceImpl constructor(
         return UserRequestUtil.convToUserInfo(tUser)
     }
 
+    override fun getUserPwdById(userId: String): String? {
+        val tUser = userRepository.findFirstByUserId(userId) ?: return null
+        return tUser.pwd
+    }
+
     override fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean {
         val query = UserQueryHelper.getUserByIdAndPwd(userId, oldPwd)
         val user = mongoTemplate.find(query, TUser::class.java)
