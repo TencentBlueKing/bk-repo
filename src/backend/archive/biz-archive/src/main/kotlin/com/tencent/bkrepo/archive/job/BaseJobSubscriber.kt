@@ -56,7 +56,7 @@ open class BaseJobSubscriber<T> : BaseSubscriber<T>() {
     /**
      * 处理[value]
      * */
-    protected open fun doOnNext(value: T) {
+    open fun doOnNext(value: T) {
     }
 
     /**
