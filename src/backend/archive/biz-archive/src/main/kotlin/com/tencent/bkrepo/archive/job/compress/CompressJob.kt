@@ -16,7 +16,6 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
-import reactor.core.scheduler.Schedulers
 
 @Component
 class CompressJob(
@@ -40,10 +39,13 @@ class CompressJob(
 
     @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
     fun compress() {
-        val subscriber = CompressSubscriber(compressFileDao, compressFileRepository, storageService)
-        listFiles().parallel()
-            .runOn(Schedulers.fromExecutor(compressThreadPool))
-            .subscribe(subscriber)
+        val subscriber = CompressSubscriber(
+            compressFileDao,
+            compressFileRepository,
+            storageService,
+            compressThreadPool,
+        )
+        listFiles().subscribe(subscriber)
         subscriber.blockLast()
     }
 }

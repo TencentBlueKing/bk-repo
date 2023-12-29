@@ -2,7 +2,7 @@ package com.tencent.bkrepo.archive.job.compress
 
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.event.StorageFileUncompressedEvent
-import com.tencent.bkrepo.archive.job.BaseJobSubscriber
+import com.tencent.bkrepo.archive.job.AsyncBaseJobSubscriber
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
@@ -13,12 +13,14 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ThreadPoolExecutor
 
 class UncompressSubscriber(
     private val compressFileDao: CompressFileDao,
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
-) : BaseJobSubscriber<TCompressFile>() {
+    executor: ThreadPoolExecutor,
+) : AsyncBaseJobSubscriber<TCompressFile>(executor) {
 
     override fun doOnNext(value: TCompressFile) {
         with(value) {

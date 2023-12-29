@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.archive.service
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.job.compress.CompressSubscriber
@@ -28,8 +29,12 @@ class CompressServiceImpl(
     private val fileReferenceClient: FileReferenceClient,
     private val compressFileDao: CompressFileDao,
 ) : CompressService {
-    private val compressor = CompressSubscriber(compressFileDao, compressFileRepository, storageService)
-    private val uncompressor = UncompressSubscriber(compressFileDao, compressFileRepository, storageService)
+    private val executor = ArchiveUtils.newFixedAndCachedThreadPool(
+        1,
+        ThreadFactoryBuilder().setNameFormat("compress-worker").build(),
+    )
+    private val compressor = CompressSubscriber(compressFileDao, compressFileRepository, storageService, executor)
+    private val uncompressor = UncompressSubscriber(compressFileDao, compressFileRepository, storageService, executor)
     override fun compress(request: CompressFileRequest) {
         with(request) {
             // 队头元素
