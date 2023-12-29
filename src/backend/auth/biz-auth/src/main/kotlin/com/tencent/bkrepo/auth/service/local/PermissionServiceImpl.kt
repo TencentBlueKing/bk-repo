@@ -246,15 +246,15 @@ open class PermissionServiceImpl constructor(
             if (result.isEmpty() || path == null) return false
 
             result.forEach {
-                if (checkIncludePattern(it.includePattern, path!!, it.actions, action)) return true
+                if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
 
-                if (!checkExcludePattern(it.excludePattern, path!!, it.actions, action)) return false
+                if (checkExcludePatternAction(it.excludePattern, path!!, it.actions, action)) return false
             }
         }
         return false
     }
 
-    private fun checkIncludePattern(
+    private fun checkIncludePatternAction(
         patternList: List<String>,
         path: String,
         actions: List<String>,
@@ -266,16 +266,16 @@ open class PermissionServiceImpl constructor(
         return false
     }
 
-    private fun checkExcludePattern(
+    private fun checkExcludePatternAction(
         patternList: List<String>,
         path: String,
         actions: List<String>,
         checkAction: String
     ): Boolean {
         patternList.forEach {
-            if (path.startsWith(it) && actions.contains(checkAction)) return false
+            if (path.startsWith(it) && actions.contains(checkAction)) return true
         }
-        return true
+        return false
     }
 
     override fun listPermissionProject(userId: String): List<String> {
@@ -382,11 +382,15 @@ open class PermissionServiceImpl constructor(
         if (isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
         }
-        var excludePath = mutableListOf<String>()
+        val excludePath = mutableListOf<String>()
+        val includePath = mutableListOf<String>()
         projectPermission.forEach {
             if (it.users.contains(userId)) {
                 if (it.excludePattern.isNotEmpty()) {
                     excludePath.addAll(it.excludePattern)
+                }
+                if (it.includePattern.isNotEmpty()) {
+                    includePath.addAll(it.includePattern)
                 }
             } else {
                 if (it.includePattern.isNotEmpty()) {
@@ -394,7 +398,8 @@ open class PermissionServiceImpl constructor(
                 }
             }
         }
-        return excludePath.distinct()
+        val filterPath = includePath.distinct()
+        return excludePath.distinct().filter { !filterPath.contains(it) }
     }
 
     private fun isUserLocalProjectUser(roleIds: List<String>, projectId: String): Boolean {
