@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,32 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.artifact.configuration
+package com.tencent.bkrepo.repository.pojo.node.service
 
-import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.node.NodeRequest
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 自动创建索引配置
- */
-data class AutoIndexRepositorySettings(
-    /**
-     * 是否启用自动创建目录索引功能
-     */
-    val enabled: Boolean = true
-) {
-
-
-    companion object {
-        /**
-         * [RepositoryConfiguration.settings]中的配置键
-         */
-        const val SETTINGS_KEY_AUTO_INDEX = "autoIndex"
-
-        fun from(configuration: RepositoryConfiguration): AutoIndexRepositorySettings? {
-            val autoIndexSettingsMap = configuration.getSetting<Map<String, Any>>(SETTINGS_KEY_AUTO_INDEX)
-                ?: return null
-            val enabled = autoIndexSettingsMap[AutoIndexRepositorySettings::enabled.name] as Boolean? ?: true
-            return AutoIndexRepositorySettings(enabled = enabled)
-        }
-    }
-}
+@ApiModel("创建链接节点请求")
+data class NodeLinkRequest(
+    @ApiModelProperty("所属项目", required = true)
+    override val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    override val repoName: String,
+    @ApiModelProperty("完整路径", required = true)
+    override val fullPath: String,
+    @ApiModelProperty("目标节点所属项目", required = false)
+    val targetProjectId: String,
+    @ApiModelProperty("目标节点仓库名称", required = false)
+    val targetRepoName: String,
+    @ApiModelProperty("目标节点完整路径", required = false)
+    val targetFullPath: String,
+    @ApiModelProperty("是否覆盖")
+    val overwrite: Boolean = false,
+    @ApiModelProperty("元数据信息")
+    val nodeMetadata: List<MetadataModel>? = null,
+    @ApiModelProperty("操作用户")
+    override val operator: String = SYSTEM_USER,
+) : NodeRequest, ServiceRequest

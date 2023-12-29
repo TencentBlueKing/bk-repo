@@ -62,6 +62,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.random.Random
 import org.springframework.util.StreamUtils
+import java.util.concurrent.CountDownLatch
 
 @ExtendWith(SpringExtension::class)
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
@@ -332,6 +333,29 @@ internal class CacheStorageServiceTest {
             artifactFile2.delete()
             artifactFile3.delete()
         }
+    }
+
+    @Test
+    fun concurrentCompressTest() {
+        val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
+        val artifactFile1 = createTempArtifactFile(data1)
+        val digest = artifactFile1.getFileSha256()
+        storageService.store(digest, artifactFile1, null)
+        val fileList = mutableListOf<ArtifactFile>()
+        repeat(10) {
+            val data = data1.copyOfRange(it + 1, data1.size)
+            val artifactFile = createTempArtifactFile(data)
+            storageService.store(artifactFile.getFileSha256(), artifactFile, null)
+            fileList.add(artifactFile)
+        }
+        val countDownLatch = CountDownLatch(10)
+        fileList.forEach {
+            thread {
+                storageService.compress(it.getFileSha256(), digest, null)
+                countDownLatch.countDown()
+            }
+        }
+        countDownLatch.await()
     }
 
     private fun createTempArtifactFile(size: Long): ArtifactFile {

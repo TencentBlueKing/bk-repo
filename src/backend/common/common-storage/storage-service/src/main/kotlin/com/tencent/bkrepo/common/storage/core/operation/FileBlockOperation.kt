@@ -48,6 +48,11 @@ interface FileBlockOperation {
     fun createAppendId(storageCredentials: StorageCredentials?): String
 
     /**
+     * 查询追加文件长度
+     */
+    fun findLengthOfAppendFile(appendId: String, storageCredentials: StorageCredentials?): Long
+
+    /**
      * 追加文件，返回当前文件长度
      * appendId: 文件追加Id
      */

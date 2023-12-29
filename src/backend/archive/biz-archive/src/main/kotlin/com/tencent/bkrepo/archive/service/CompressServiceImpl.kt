@@ -2,7 +2,10 @@ package com.tencent.bkrepo.archive.service
 
 import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.CompressStatus
+import com.tencent.bkrepo.archive.job.compress.CompressSubscriber
+import com.tencent.bkrepo.archive.job.compress.UncompressSubscriber
 import com.tencent.bkrepo.archive.model.TCompressFile
+import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
@@ -23,8 +26,10 @@ class CompressServiceImpl(
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
     private val fileReferenceClient: FileReferenceClient,
+    private val compressFileDao: CompressFileDao,
 ) : CompressService {
-
+    private val compressor = CompressSubscriber(compressFileDao, compressFileRepository, storageService)
+    private val uncompressor = UncompressSubscriber(compressFileDao, compressFileRepository, storageService)
     override fun compress(request: CompressFileRequest) {
         with(request) {
             // 队头元素
@@ -40,6 +45,7 @@ class CompressServiceImpl(
                 } else {
                     CompressStatus.CREATED
                 }
+                compressFileRepository.save(head)
                 return
             }
             var currentChainLength = 0
@@ -92,6 +98,9 @@ class CompressServiceImpl(
             compressFileRepository.save(newChain)
             fileReferenceClient.increment(baseSha256, storageCredentialsKey)
             logger.info("Compress file [$sha256] on $storageCredentialsKey.")
+            if (sync) {
+                compressor.doOnNext(compressFile)
+            }
         }
     }
 
@@ -105,6 +114,9 @@ class CompressServiceImpl(
                 file.lastModifiedDate = LocalDateTime.now()
                 compressFileRepository.save(file)
                 logger.info("Uncompress file [$sha256] on $storageCredentialsKey.")
+                if (sync) {
+                    uncompressor.doOnNext(file)
+                }
             }
         }
     }

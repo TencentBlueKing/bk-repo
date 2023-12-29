@@ -97,4 +97,10 @@ interface ServiceUserClient {
     fun userInfoById(
         @PathVariable uid: String
     ): Response<UserInfo?>
+
+    @ApiOperation("获取用户pwd ")
+    @GetMapping("/userpwd/{uid}")
+    fun userPwdById(
+        @PathVariable uid: String
+    ): Response<String?>
 }
