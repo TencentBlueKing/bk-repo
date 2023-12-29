@@ -719,6 +719,7 @@
                 if (!row.folder) return
                 if (this.searchFileName) {
                     // 搜索中打开文件夹
+                    this.inFolderSearchName = ''
                     this.searchFullPath = row.fullPath
                     this.handlerPaginationChange()
                 } else {

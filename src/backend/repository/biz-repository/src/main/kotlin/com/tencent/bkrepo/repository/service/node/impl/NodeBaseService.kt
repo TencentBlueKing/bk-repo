@@ -27,30 +27,40 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.ConflictStrategy
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
@@ -61,6 +71,8 @@ import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -85,6 +97,10 @@ abstract class NodeBaseService(
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
 ) : NodeService {
+
+    @Autowired
+    @Lazy
+    protected lateinit var permissionManager: PermissionManager
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
@@ -125,7 +141,7 @@ abstract class NodeBaseService(
         return Pages.ofResponse(
             Pages.ofRequest(option.pageNumber, option.pageSize),
             nodes.totalElements,
-            nodes.content.map { convert(it)!! }
+            nodes.content.map { convert(it)!! },
         )
     }
 
@@ -162,7 +178,46 @@ abstract class NodeBaseService(
         }
     }
 
-    open fun buildTNode(request: NodeCreateRequest):TNode {
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun link(request: NodeLinkRequest): NodeDetail {
+        with(request) {
+            // 校验源仓库与目标节点权限
+            permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName, userId = operator)
+            permissionManager.checkNodePermission(
+                PermissionAction.READ, targetProjectId, targetRepoName, targetFullPath, userId = operator
+            )
+
+            val targetArtifact = "/$targetProjectId/$targetRepoName/$targetFullPath"
+            val targetNode = nodeDao.findNode(targetProjectId, targetRepoName, targetFullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, targetArtifact)
+
+            // 不支持链接到目录
+            if (targetNode.folder) {
+                throw BadRequestException(ArtifactMessageCode.NODE_LINK_FOLDER_UNSUPPORTED, targetArtifact)
+            }
+
+            val metadata = listOf(
+                MetadataModel(key = METADATA_KEY_LINK_PROJECT, targetProjectId, system = true),
+                MetadataModel(key = METADATA_KEY_LINK_REPO, targetRepoName, system = true),
+                MetadataModel(key = METADATA_KEY_LINK_FULL_PATH, targetFullPath, system = true),
+            )
+            val createRequest = NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                folder = false,
+                overwrite = overwrite,
+                sha256 = FAKE_SHA256,
+                md5 = FAKE_MD5,
+                nodeMetadata = nodeMetadata?.let { it + metadata } ?: metadata,
+                operator = operator,
+            )
+            // 创建链接节点
+            return createNode(createRequest)
+        }
+    }
+
+    open fun buildTNode(request: NodeCreateRequest): TNode {
         with(request) {
             val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
             return TNode(
@@ -179,16 +234,15 @@ abstract class NodeBaseService(
                 nodeNum = null,
                 metadata = MetadataUtils.compatibleConvertAndCheck(
                     metadata,
-                    MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+                    MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata),
                 ),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
-                lastAccessDate = LocalDateTime.now()
+                lastAccessDate = LocalDateTime.now(),
             )
         }
-
     }
 
     private fun afterCreate(
@@ -196,7 +250,7 @@ abstract class NodeBaseService(
         node: TNode,
         createStart: Long,
         parents: List<TNode>,
-        deletedTime: LocalDateTime?
+        deletedTime: LocalDateTime?,
     ) {
         with(node) {
             val createEnd = System.currentTimeMillis()
@@ -228,10 +282,13 @@ abstract class NodeBaseService(
             nodeDao.remove(
                 Query(
                     Criteria(ID).isEqualTo(newNode.id)
-                        .and(TNode::projectId).isEqualTo(projectId)
-                )
+                        .and(TNode::projectId).isEqualTo(projectId),
+                ),
             )
-            fileReferenceService.decrement(newNode)
+            // 软链接node或fs-server创建的node的sha256为FAKE_SHA256，不会增加引用数，回滚时无需减少
+            if (newNode.sha256 != FAKE_SHA256) {
+                fileReferenceService.decrement(newNode)
+            }
             quotaService.decreaseUsedVolume(projectId, repoName, newNode.size)
             logger.info("Rollback node [$projectId/$repoName${newNode.fullPath}]")
         }
@@ -247,8 +304,8 @@ abstract class NodeBaseService(
             nodeDao.remove(
                 Query(
                     Criteria(ID).isEqualTo(dir.id)
-                        .and(TNode::projectId).isEqualTo(dir.projectId)
-                )
+                        .and(TNode::projectId).isEqualTo(dir.projectId),
+                ),
             )
             logger.info("Rollback node [$projectId/$repoName${dir.fullPath}]")
         }
@@ -262,7 +319,7 @@ abstract class NodeBaseService(
                     rootFullPath = fullPath,
                     deletedTime = it,
                     conflictStrategy = ConflictStrategy.FAILED,
-                    operator = createdBy
+                    operator = createdBy,
                 )
                 restoreNode(restoreContext)
                 logger.info("Restore node [$projectId/$repoName$fullPath]")
@@ -329,7 +386,10 @@ abstract class NodeBaseService(
         try {
             nodeDao.insert(node)
             if (!node.folder) {
-                fileReferenceService.increment(node, repository)
+                // 软链接node或fs-server创建的node的sha256为FAKE_SHA256不会关联实际文件，无需增加引用数
+                if (node.sha256 != FAKE_SHA256) {
+                    fileReferenceService.increment(node, repository)
+                }
                 quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
             }
         } catch (exception: DuplicateKeyException) {
@@ -367,7 +427,7 @@ abstract class NodeBaseService(
                 createdBy = createdBy,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = createdBy,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
             )
             doCreate(node)
             nodes.addAll(creates)
@@ -399,11 +459,11 @@ abstract class NodeBaseService(
     private fun checkNodeListOption(option: NodeListOption) {
         Preconditions.checkArgument(
             option.sortProperty.none { !TNode::class.java.declaredFields.map { f -> f.name }.contains(it) },
-            "sortProperty"
+            "sortProperty",
         )
         Preconditions.checkArgument(
             option.direction.none { it != Sort.Direction.DESC.name && it != Sort.Direction.ASC.name },
-            "direction"
+            "direction",
         )
     }
 
@@ -439,7 +499,8 @@ abstract class NodeBaseService(
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                     clusterNames = it.clusterNames,
-                    archived = it.archived
+                    archived = it.archived,
+                    compressed = it.compressed,
                 )
             }
         }

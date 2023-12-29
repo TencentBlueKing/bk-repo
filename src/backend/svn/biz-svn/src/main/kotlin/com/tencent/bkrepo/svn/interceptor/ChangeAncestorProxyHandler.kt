@@ -141,9 +141,9 @@ class ChangeAncestorProxyHandler(
                     oldBody,
                     buildSearchList(oldPrefix),
                     buildReplacementList(newPrefix)
-                )
-                proxyResponse.setHeader(HttpHeaders.CONTENT_LENGTH, newBody.length.toString())
-                proxyResponse.writer.write(newBody)
+                ).toByteArray()
+                proxyResponse.setContentLength(newBody.size)
+                proxyResponse.outputStream.write(newBody)
             }
         } else {
             response.body?.byteStream()?.use {

@@ -5,6 +5,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 import org.springframework.util.unit.DataSize
 
+/**
+ * 归档服务配置
+ * */
 @ConfigurationProperties("archive")
 data class ArchiveProperties(
     @NestedConfigurationProperty

@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.aggregation.AggregationResults
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.util.CloseableIterator
 import java.lang.reflect.ParameterizedType
 
 /**
@@ -72,6 +73,10 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
 
     fun findAll(): List<E> {
         return findAll(classType)
+    }
+
+    fun stream(query: Query): CloseableIterator<E> {
+        return stream(query, classType)
     }
 
     override fun <T> findOne(query: Query, clazz: Class<T>): T? {
@@ -178,6 +183,13 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
             logger.debug("Mongo Dao findAndModify: [$query], [$update]")
         }
         return determineMongoTemplate().findAndModify(query, update, options, clazz, determineCollectionName(query))
+    }
+
+    override fun <T> stream(query: Query, clazz: Class<T>): CloseableIterator<T> {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao stream query: [$query]")
+        }
+        return determineMongoTemplate().stream(query, clazz, determineCollectionName(query))
     }
 
     protected open fun determineCollectionName(): String {
