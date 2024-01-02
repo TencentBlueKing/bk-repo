@@ -231,7 +231,7 @@
                 return ['maven', 'pypi', 'npm', 'composer', 'nuget'].includes(this.repoType)
             },
             showCleanConfigTab () {
-                return ['docker', 'generic'].includes(this.repoType)
+                return ['docker', 'generic', 'helm'].includes(this.repoType)
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo
