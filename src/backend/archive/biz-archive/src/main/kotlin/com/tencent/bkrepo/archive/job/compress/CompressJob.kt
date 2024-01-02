@@ -10,6 +10,7 @@ import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.archive.utils.ArchiveUtils.Companion.newFixedAndCachedThreadPool
 import com.tencent.bkrepo.archive.utils.ReactiveDaoUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import java.util.concurrent.TimeUnit
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -24,6 +25,7 @@ class CompressJob(
     private val compressFileDao: CompressFileDao,
     private val storageService: StorageService,
     private val compressFileRepository: CompressFileRepository,
+    private val fileReferenceClient: FileReferenceClient,
 ) : Cancellable {
 
     private val compressThreadPool = newFixedAndCachedThreadPool(
@@ -45,6 +47,7 @@ class CompressJob(
             compressFileDao,
             compressFileRepository,
             storageService,
+            fileReferenceClient,
             compressThreadPool,
         )
         listFiles().subscribe(subscriber)

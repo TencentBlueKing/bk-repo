@@ -13,6 +13,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.util.concurrent.ThreadPoolExecutor
@@ -21,6 +22,7 @@ class CompressSubscriber(
     private val compressFileDao: CompressFileDao,
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
+    private val fileReferenceClient: FileReferenceClient,
     executor: ThreadPoolExecutor,
 ) : AsyncBaseJobSubscriber<TCompressFile>(executor) {
 
@@ -73,10 +75,13 @@ class CompressSubscriber(
                 value.status = CompressStatus.COMPRESS_FAILED
                 value.lastModifiedDate = LocalDateTime.now()
                 compressFileRepository.save(value)
+                fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
             } catch (e: Exception) {
                 value.status = CompressStatus.COMPRESS_FAILED
                 value.lastModifiedDate = LocalDateTime.now()
                 compressFileRepository.save(value)
+                // 压缩失败，提前解除对base sha256的引用。
+                fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
                 throw e
             }
         }
