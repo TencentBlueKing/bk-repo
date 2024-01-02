@@ -28,7 +28,8 @@ class StorageHealthMonitorHelperTest {
         val otherStorageCredentials = StorageCredentials(
             upload = UploadProperties(location = storageCredentials.upload.location.plus("/temp")),
             cache = storageCredentials.cache,
-            encrypt = storageCredentials.encrypt
+            encrypt = storageCredentials.encrypt,
+            compress = storageCredentials.compress,
         )
         val m1 = monitorHelper.getMonitor(storageProperties, otherStorageCredentials)
         val m2 = monitorHelper.getMonitor(storageProperties, otherStorageCredentials)

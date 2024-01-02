@@ -237,10 +237,10 @@ internal class ArtifactDataReceiverTest {
     private fun assertFallbackResult(receiver: ArtifactDataReceiver, transferred: Boolean) {
         // 文件数据应该落入文件中，inMemory=false
         Assertions.assertFalse(receiver.inMemory)
-        // 是否发生fallback，fallback=true
-        Assertions.assertTrue(receiver.fallback)
         // 数据发生转移
         if (transferred) {
+            // 是否发生fallback，fallback=true
+            Assertions.assertTrue(receiver.fallback)
             // primaryPath 文件不存在
             Assertions.assertFalse(Files.exists(primaryPath.resolve(filename)))
             // primaryPath 文件存在
@@ -248,6 +248,8 @@ internal class ArtifactDataReceiverTest {
             // 文件数据一直
             Assertions.assertEquals(longContent, readText(fallbackPath.resolve(filename)))
         } else {
+            // 是否发生fallback，fallback=true
+            Assertions.assertFalse(receiver.fallback)
             // primaryPath 文件不存在
             Assertions.assertTrue(Files.exists(primaryPath.resolve(filename)))
             // primaryPath 文件存在

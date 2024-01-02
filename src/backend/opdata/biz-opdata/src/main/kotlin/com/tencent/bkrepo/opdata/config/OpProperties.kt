@@ -32,5 +32,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("op.security")
 data class OpProperties(
     var adminUsername: String = "",
-    var adminPassword: String = ""
+    var adminPassword: String = "",
+    /**
+     * bkbase调用制品库接口拉取数据时使用的token
+     */
+    var bkBaseToken: String = ""
 )

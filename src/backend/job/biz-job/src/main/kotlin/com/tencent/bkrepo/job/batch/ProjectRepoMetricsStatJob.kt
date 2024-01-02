@@ -34,6 +34,7 @@ import com.tencent.bkrepo.job.PATH
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
@@ -59,6 +60,7 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(ProjectRepoMetricsStatJobProperties::class)
 class ProjectRepoMetricsStatJob(
     private val properties: ProjectRepoMetricsStatJobProperties,
+    private val activeProjectService: ActiveProjectService,
 ) : DefaultContextMongoDbJob<ProjectRepoMetricsStatJob.Repository>(properties) {
     override fun collectionNames(): List<String> {
         return listOf(COLLECTION_REPOSITORY_NAME)
@@ -78,6 +80,8 @@ class ProjectRepoMetricsStatJob(
         require(context is ProjectRepoMetricsStatJobContext)
         with(row) {
             if (deleted != null) return
+            if (context.activeProjects.isNotEmpty() && !properties.runAllProjects &&
+                !context.activeProjects.contains(row.projectId)) return
             val query = Query(
                 Criteria.where(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(name)
                     .and(PATH).isEqualTo(PathUtils.ROOT).and(DELETED_DATE).isEqualTo(null)
@@ -122,7 +126,14 @@ class ProjectRepoMetricsStatJob(
     }
 
     override fun createJobContext(): ProjectRepoMetricsStatJobContext{
-        return ProjectRepoMetricsStatJobContext(statDate = LocalDate.now().atStartOfDay())
+        return ProjectRepoMetricsStatJobContext(
+            statDate = LocalDate.now().atStartOfDay(),
+            activeProjects = if (properties.runAllProjects) {
+                emptySet()
+            } else {
+                activeProjectService.getActiveProjects()
+            },
+        )
     }
 
 

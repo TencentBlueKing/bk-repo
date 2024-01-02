@@ -37,11 +37,12 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
-import com.tencent.bkrepo.job.FULLPATH
+import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
@@ -66,7 +67,8 @@ import java.time.LocalDateTime
 @Component
 @EnableConfigurationProperties(EmptyFolderCleanupJobProperties::class)
 class EmptyFolderCleanupJob(
-    properties: EmptyFolderCleanupJobProperties
+    private val properties: EmptyFolderCleanupJobProperties,
+    private val activeProjectService: ActiveProjectService
 ): DefaultContextMongoDbJob<EmptyFolderCleanupJob.Node>(properties) {
 
     override fun collectionNames(): List<String> {
@@ -86,6 +88,8 @@ class EmptyFolderCleanupJob(
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         if (row.deleted != null) return
+        if (context.activeProjects.isNotEmpty() && !properties.runAllProjects &&
+            !context.activeProjects.contains(row.projectId)) return
         // 暂时只清理generic类型仓库下的空目录
         if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
                 row.projectId, row.repoName
@@ -124,7 +128,13 @@ class EmptyFolderCleanupJob(
 
 
     override fun createJobContext(): EmptyFolderCleanupJobContext {
-        return EmptyFolderCleanupJobContext()
+        return EmptyFolderCleanupJobContext(
+            activeProjects = if (properties.runAllProjects) {
+                emptySet()
+            } else {
+                activeProjectService.getActiveProjects()
+            },
+        )
     }
 
 
@@ -174,7 +184,7 @@ class EmptyFolderCleanupJob(
         val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
             .and(REPO).isEqualTo(repoName)
             .and(DELETED_DATE).isEqualTo(null)
-            .and(FULLPATH).regex("^${PathUtils.escapeRegex(nodePath)}")
+            .and(FULL_PATH).regex("^${PathUtils.escapeRegex(nodePath)}")
             .and(FOLDER).isEqualTo(false)
 
         val query = Query(criteria).withHint(FULL_PATH_IDX)

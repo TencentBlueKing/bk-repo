@@ -9,15 +9,17 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfigur
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.service.util.proxy.DefaultProxyCallHandler
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil
+import okhttp3.Response
+import org.slf4j.LoggerFactory
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import okhttp3.Response
-import org.slf4j.LoggerFactory
 
 class ProxyInterceptor : HandlerInterceptor {
     private val lfsProxyHandler = LfsProxyHandler()
+    private val httpProxyUtil = HttpProxyUtil()
+
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) ?: return false
         val repo = ArtifactContextHolder.getRepoDetail()!!
@@ -31,9 +33,9 @@ class ProxyInterceptor : HandlerInterceptor {
         val configuration = repo.configuration as ProxyConfiguration
         val proxyUrl = configuration.proxy.url
         if (request.requestURI.endsWith(LFS_BATCH_URI)) {
-            HttpProxyUtil.proxy(request, response, proxyUrl, gitRepoKey, lfsProxyHandler)
+            httpProxyUtil.proxy(request, response, proxyUrl, gitRepoKey, lfsProxyHandler)
         } else {
-            HttpProxyUtil.proxy(request, response, proxyUrl, gitRepoKey)
+            httpProxyUtil.proxy(request, response, proxyUrl, gitRepoKey)
         }
 
         return false

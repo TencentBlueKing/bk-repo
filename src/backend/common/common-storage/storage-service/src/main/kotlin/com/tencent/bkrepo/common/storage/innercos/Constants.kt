@@ -76,12 +76,20 @@ fun String.urlEncode(toLower: Boolean): String {
  * 重试函数，times表示重试次数，加上第一次执行，总共会执行times+1次，
  */
 @Suppress("TooGenericExceptionCaught") // 无法预知block具体异常类型
-inline fun <R> retry(times: Int, delayInSeconds: Long = 5, block: (Int) -> R): R {
+inline fun <R> retry(
+    times: Int,
+    delayInSeconds: Long = 5,
+    ignoreExceptions: List<Class<out RuntimeException>> = emptyList(),
+    block: (Int) -> R,
+): R {
     var retries = 0
     while (true) {
         try {
             return block(retries)
         } catch (e: Exception) {
+            if (ignoreExceptions.contains(e::class.java)) {
+                throw e
+            }
             if (retries < times) {
                 TimeUnit.SECONDS.sleep(delayInSeconds)
                 retries += 1
