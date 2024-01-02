@@ -3,6 +3,7 @@ package com.tencent.bkrepo.archive.job.compress
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
+import com.tencent.bkrepo.archive.job.Cancellable
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
@@ -23,12 +24,13 @@ class CompressJob(
     private val compressFileDao: CompressFileDao,
     private val storageService: StorageService,
     private val compressFileRepository: CompressFileRepository,
-) {
+) : Cancellable {
 
     private val compressThreadPool = newFixedAndCachedThreadPool(
         archiveProperties.ioThreads,
         ThreadFactoryBuilder().setNameFormat("storage-compress-%d").build(),
     )
+    private var subscriber: CompressSubscriber? = null
 
     fun listFiles(): Flux<TCompressFile> {
         val criteria = where(TCompressFile::status).isEqualTo(CompressStatus.CREATED)
@@ -46,6 +48,12 @@ class CompressJob(
             compressThreadPool,
         )
         listFiles().subscribe(subscriber)
+        this.subscriber = subscriber
         subscriber.blockLast()
+        this.subscriber = null
+    }
+
+    override fun cancel() {
+        subscriber?.dispose()
     }
 }
