@@ -387,7 +387,7 @@ open class PermissionServiceImpl constructor(
 
     override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         val projectPermission = permissionRepository.findByResourceTypeAndProjectIdAndRepos(
-            NODE,
+            NODE.name,
             projectId,
             repoName,
         )
