@@ -32,10 +32,13 @@ abstract class CompressSupport : OverlaySupport() {
      * */
     private val checksumFileCache: LoadingCache<FileKey, File> by lazy {
         CacheBuilder.newBuilder()
-            .expireAfterAccess(Duration.ofHours(1))
+            .expireAfterAccess(Duration.ofHours(12))
             .maximumSize(1000)
             .removalListener(
-                RemovalListener<FileKey, File> { it.value?.delete() },
+                RemovalListener<FileKey, File> {
+                    it.value?.delete()
+                    logger.info("Delete checksum file ${it.value?.absolutePath}")
+                },
             )
             .build(CacheLoader.from(this::signFile))
     }
@@ -162,8 +165,8 @@ abstract class CompressSupport : OverlaySupport() {
     /**
      * 获取压缩工作路径
      * */
-    private fun getWorkDir(digest: String, storageCredentials: StorageCredentials?): Path {
-        return Paths.get(getTempPath(storageCredentials).toString(), COMPRESS_WORK_DIR, digest)
+    private fun getWorkDir(digest: String, storageCredentials: StorageCredentials): Path {
+        return Paths.get(storageCredentials.compress.path, COMPRESS_WORK_DIR, digest)
     }
 
     /**
@@ -187,14 +190,19 @@ abstract class CompressSupport : OverlaySupport() {
      * 签名指定的文件
      * */
     private fun signFile(key: FileKey): File {
-        val file = download(key.digest, key.storageCredentials, getTempPath(key.storageCredentials))
-        try {
-            val checksumFile = getTempPath(key.storageCredentials)
-                .resolve(key.digest.plus(SIGN_FILE_SUFFIX)).createFile()
-            checksumFile.outputStream().use { BkSync().checksum(file, it) }
-            return checksumFile
-        } finally {
-            file.delete()
+        with(key) {
+            logger.info("Start sign file [$digest].")
+            val signDir = Paths.get(storageCredentials.compress.path, SIGN_WORK_DIR)
+            val file = download(digest, storageCredentials, signDir)
+            try {
+                val checksumFile = signDir.resolve(digest.plus(SIGN_FILE_SUFFIX)).createFile()
+                checksumFile.outputStream().use { BkSync().checksum(file, it) }
+                logger.info("Success to generate sign file [${checksumFile.absolutePath}].")
+                return checksumFile
+            } finally {
+                file.delete()
+                logger.info("Delete temp file ${file.absolutePath}.")
+            }
         }
     }
 
@@ -206,6 +214,7 @@ abstract class CompressSupport : OverlaySupport() {
     companion object {
         private val logger = LoggerFactory.getLogger(CompressSupport::class.java)
         private const val COMPRESS_WORK_DIR = "compress"
+        private const val SIGN_WORK_DIR = "sign"
         private const val BD_FILE_SUFFIX = ".bd"
         private const val SIGN_FILE_SUFFIX = ".checksum"
     }

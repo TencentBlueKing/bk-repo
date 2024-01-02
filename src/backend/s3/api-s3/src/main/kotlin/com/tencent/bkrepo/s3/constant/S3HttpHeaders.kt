@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,32 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.artifact.configuration
+package com.tencent.bkrepo.s3.constant
 
-import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-
-/**
- * 自动创建索引配置
- */
-data class AutoIndexRepositorySettings(
-    /**
-     * 是否启用自动创建目录索引功能
-     */
-    val enabled: Boolean = true
-) {
-
-
-    companion object {
-        /**
-         * [RepositoryConfiguration.settings]中的配置键
-         */
-        const val SETTINGS_KEY_AUTO_INDEX = "autoIndex"
-
-        fun from(configuration: RepositoryConfiguration): AutoIndexRepositorySettings? {
-            val autoIndexSettingsMap = configuration.getSetting<Map<String, Any>>(SETTINGS_KEY_AUTO_INDEX)
-                ?: return null
-            val enabled = autoIndexSettingsMap[AutoIndexRepositorySettings::enabled.name] as Boolean? ?: true
-            return AutoIndexRepositorySettings(enabled = enabled)
-        }
-    }
+object S3HttpHeaders {
+    const val X_AMZ_TRACE_ID = "X-Amz-Trace-Id"
+    const val X_AMZ_REQUEST_ID = "X-Amz-Request-Id"
+    const val X_AMZ_DATE = "X-Amz-Date"
+    const val X_AMZ_CONTENT_SHA256 = "X-Amz-Content-Sha256"
 }

@@ -49,4 +49,7 @@ interface JobClient {
 
     @GetMapping("/activeProjects")
     fun activeProjects(): Response<MutableSet<String>>
+
+    @GetMapping("/activeUsers")
+    fun activeUsers(): Response<Set<String>>
 }

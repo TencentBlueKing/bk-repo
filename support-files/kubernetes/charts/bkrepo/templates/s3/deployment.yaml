@@ -1,0 +1,137 @@
+{{- if .Values.s3.enabled -}}
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ include "common.names.fullname" . }}-s3
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: s3
+    {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
+    {{- if .Values.commonLabels }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: s3
+  replicas: {{ default 1 .Values.s3.replicaCount }}
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: s3
+        {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
+        {{- if .Values.s3.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.s3.podLabels "context" $) | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ template "bkrepo.serviceAccountName" . }}
+      {{- include "bkrepo.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.s3.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.s3.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.s3.affinity }}
+      affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.s3.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        {{- if eq .Values.persistence.accessMode "ReadWriteOnce" }}
+        podAffinity: {{- include "common.affinities.pods" (dict "type" "soft" "component" "repository" "context" $) | nindent 10 }}
+        {{- else }}
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.repository.podAffinityPreset "component" "s3" "context" $) | nindent 10 }}
+        {{- end }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.s3.podAntiAffinityPreset "component" "s3" "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.s3.nodeAffinityPreset.type "key" .Values.s3.nodeAffinityPreset.key "values" .Values.s3.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.s3.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" ( dict "value" .Values.s3.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.s3.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.s3.tolerations "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.s3.priorityClassName }}
+      priorityClassName: {{ .Values.s3.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.s3.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.s3.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      containers:
+        {{- if .Values.bkstore.enabled }}
+        - name: plugin-bkstore
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.bkstore.image "global" .Values.global "bkrepo" .Values.common) }}
+          args:
+            - /bin/sh
+            - -c
+            - cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep infinity
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data/workspace/plugin/
+        {{- end }}
+        {{- if .Values.gitci.enabled }}
+        - name: plugin-gitci
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.gitci.image "global" .Values.global "bkrepo" .Values.common) }}
+          args:
+            - /bin/sh
+            - -c
+            - cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep infinity
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data/workspace/plugin/
+        {{- end }}
+        - name: s3
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.s3.image "global" .Values.global "bkrepo" .Values.common) }}
+          imagePullPolicy: {{ .Values.s3.image.pullPolicy }}
+          {{- if .Values.s3.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.s3.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.s3.resources }}
+          resources: {{- toYaml .Values.s3.resources | nindent 12 }}
+          {{- end }}
+          env:
+            - name: BK_REPO_JVM_OPTION
+              value: {{ .Values.common.jvmOption }}
+            - name: BK_REPO_PROFILE
+              value: {{ .Values.common.springProfile }}
+            - name: BK_REPO_SERVICE_PREFIX
+              value: {{ include "common.names.fullname" . }}-
+          ports:
+            - name: http
+              containerPort: 25819
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/livenessState
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readinessState
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
+            successThreshold: 1
+          volumeMounts:
+            - name: storage
+              mountPath: {{ .Values.common.mountPath }}
+            - name: shared-data
+              mountPath: /data/workspace/plugin/
+      volumes:
+        - name: storage
+          {{- if .Values.common.config.storage.nfs.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "common.names.fullname" . }}-nfs-pvc
+          {{- else if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{- else }}{{ template "common.names.fullname" . }}-storage{{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: shared-data
+          emptyDir: {}
+{{- end }}

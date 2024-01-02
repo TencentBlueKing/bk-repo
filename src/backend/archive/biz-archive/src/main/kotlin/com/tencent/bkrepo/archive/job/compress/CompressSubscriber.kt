@@ -11,6 +11,7 @@ import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
@@ -23,6 +24,7 @@ class CompressSubscriber(
 
     override fun doOnNext(value: TCompressFile) {
         with(value) {
+            logger.info("Start compress file [$sha256].")
             // 乐观锁
             val tryLock = compressFileDao.optimisticLock(
                 value,
@@ -39,7 +41,13 @@ class CompressSubscriber(
             var compressedSize = -1L
             try {
                 val throughput = measureThroughput(uncompressedSize) {
-                    compressedSize = storageService.compress(sha256, baseSha256, credentials, true)
+                    compressedSize = retry(
+                        times = RETRY_TIMES,
+                        delayInSeconds = 1,
+                        ignoreExceptions = listOf(TooLowerReuseRateException::class.java),
+                    ) {
+                        storageService.compress(sha256, baseSha256, credentials, true)
+                    }
                 }
                 if (compressedSize == -1L) {
                     return
@@ -78,5 +86,6 @@ class CompressSubscriber(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CompressSubscriber::class.java)
+        private const val RETRY_TIMES = 3
     }
 }
