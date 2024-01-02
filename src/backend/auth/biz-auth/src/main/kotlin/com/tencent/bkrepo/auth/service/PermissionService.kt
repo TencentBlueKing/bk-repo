@@ -64,6 +64,11 @@ interface PermissionService {
      */
     fun listPermissionProject(userId: String): List<String>
 
+    /**
+     * 获取有权限路径列表
+     */
+    fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>
+
     fun createPermission(request: CreatePermissionRequest): Boolean
 
     fun listPermission(projectId: String, repoName: String?): List<Permission>

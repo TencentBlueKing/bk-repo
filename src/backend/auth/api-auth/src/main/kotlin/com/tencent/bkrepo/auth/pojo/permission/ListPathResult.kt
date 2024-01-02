@@ -29,46 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.repository
+package com.tencent.bkrepo.auth.pojo.permission
 
-import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
+import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.common.query.enums.OperationType
 
-@Repository
-interface PermissionRepository : MongoRepository<TPermission, String> {
-
-    fun findFirstById(id: String): TPermission?
-
-    fun findByResourceTypeAndProjectId(resourceType: ResourceType, projectId: String): List<TPermission>
-
-    fun findByResourceTypeAndProjectIdAndRepos(
-        resourceType: ResourceType,
-        projectId: String,
-        repo: String
-    ): List<TPermission>
-
-    fun findOneByPermNameAndProjectIdAndResourceType(
-        permName: String,
-        projectId: String?,
-        resourceType: ResourceType
-    ): TPermission?
-
-    fun findOneByProjectIdAndReposAndPermNameAndResourceType(
-        projectId: String?,
-        repoName: String,
-        permName: String,
-        resourceType: ResourceType
-    ): TPermission?
-
-
-
-    fun findByUsers(userId: String): List<TPermission>
-
-    fun findByProjectIdAndUsers(projectId: String, userId: String): List<TPermission>
-
-    fun findByRolesIn(roleId: List<String>): List<TPermission>
-
-    fun findByProjectIdAndRolesIn(projectId: String, roleId: List<String>): List<TPermission>
-}
+@ApiModel("校验权限请求")
+data class ListPathResult(
+    // when true, need to compare
+    val status: Boolean,
+    val path: Map<OperationType, List<String>>,
+)
