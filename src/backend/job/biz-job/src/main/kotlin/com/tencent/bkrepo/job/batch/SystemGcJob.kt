@@ -41,7 +41,10 @@ class SystemGcJob(
 ) : DefaultContextJob(properties) {
 
     private var lastId = MIN_OBJECT_ID
+    private var lastCutoffTime = LocalDateTime.MIN
+    private var curCutoffTime = LocalDateTime.MIN
     override fun doStart0(jobContext: JobContext) {
+        curCutoffTime = LocalDateTime.now().minus(Duration.ofDays(properties.idleDays.toLong()))
         properties.repos.forEach {
             val splits = it.split("/")
             var count: Long
@@ -50,6 +53,7 @@ class SystemGcJob(
             val nanos = measureNanoTime { count = repoGc(projectId, repoName) }
             logger.info("Finish gc repository [$projectId/$repoName]($count nodes), took ${HumanReadable.time(nanos)}.")
         }
+        lastCutoffTime = curCutoffTime
     }
 
     private fun repoGc(projectId: String, repoName: String): Long {
@@ -99,7 +103,6 @@ class SystemGcJob(
     }
 
     private fun buildQuery(projectId: String, repoName: String): Query {
-        val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(properties.idleDays.toLong()))
         return Query.query(
             Criteria.where(ID).gt(ObjectId(lastId))
                 .and("folder").isEqualTo(false)
@@ -112,7 +115,7 @@ class SystemGcJob(
                 .and("size").gt(properties.fileSizeThreshold.toBytes())
                 .orOperator(
                     Criteria.where("lastAccessDate").isEqualTo(null),
-                    Criteria.where("lastAccessDate").lt(cutoffTime),
+                    Criteria.where("lastAccessDate").lt(curCutoffTime),
                 ),
         ).limit(properties.maxBatchSize).with(Sort.by(ID).ascending()) // 长时间未访问
     }
@@ -129,7 +132,7 @@ class SystemGcJob(
             }
             .sortedBy { it.createdDate }
         // 没有新的节点，表示节点已经gc过一轮了
-        if (lastEndTime != null && sortedNodes.last().createdDate < lastBeginTime) {
+        if (lastEndTime != null && sortedNodes.last().createdDate < lastCutoffTime) {
             logger.info("There are no new nodes, gc is skipped.")
             return
         }

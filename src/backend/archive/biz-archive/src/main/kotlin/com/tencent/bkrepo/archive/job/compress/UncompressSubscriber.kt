@@ -22,6 +22,7 @@ class UncompressSubscriber(
 
     override fun doOnNext(value: TCompressFile) {
         with(value) {
+            logger.info("Start uncompress file [$sha256].")
             // 乐观锁
             val tryLock = compressFileDao.optimisticLock(
                 value,

@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
@@ -113,11 +114,11 @@ class DevopsPermissionServiceImpl constructor(
         return allProjectList.distinct()
     }
 
-    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
+    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         if (checkDevopsProjectPermission(userId, projectId, PermissionAction.MANAGE.name)) {
             return emptyList()
         }
-        return super.listPermissionPath(userId, projectId, repoName)
+        return super.listNoPermissionPath(userId, projectId, repoName)
     }
 
     private fun parsePipelineId(path: String): String? {
@@ -140,7 +141,7 @@ class DevopsPermissionServiceImpl constructor(
             // project权限
             if (resourceType == ResourceType.PROJECT.name) {
                 return checkDevopsProjectPermission(uid, projectId!!, action)
-                    || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
+                        || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
 
             // repo或者node权限
@@ -155,7 +156,11 @@ class DevopsPermissionServiceImpl constructor(
                     checkDevopsReportPermission(action)
                 }
                 else -> {
-                    super.checkPermission(request) || checkDevopsProjectPermission(uid, projectId!!, action)
+                    if (resourceType == NODE.name && super.isNodeNeedLocalCheck(projectId!!, repoName!!)) {
+                        checkDevopsProjectPermission(uid, projectId!!, action) && super.checkPermission(request)
+                    } else {
+                        super.checkPermission(request) || checkDevopsProjectPermission(uid, projectId!!, action)
+                    }
                 }
             }
 
