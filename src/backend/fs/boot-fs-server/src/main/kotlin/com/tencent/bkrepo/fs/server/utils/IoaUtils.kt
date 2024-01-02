@@ -139,21 +139,22 @@ class IoaUtils(
             }
         }
 
-        suspend fun proxyTicketRequest(request: ServerRequest) {
-            val ioaTicketRequest = request.bodyToMono(IoaTicketRequest::class.java).awaitSingle()
-            val headers = request.headers().asHttpHeaders()
+        suspend fun proxyTicketRequest(request: ServerRequest): IoaTicketResponse {
+            val ioaTicketRequest = request.bodyToMono(String::class.java).awaitSingle()
+            val headers = request.headers().asHttpHeaders().toSingleValueMap().toMutableMap()
+            headers[HttpHeaders.HOST] = ioaProperties.host
             val response = httpClient.post()
                 .uri(ioaProperties.ticketUrl)
-                .headers { it.setAll(headers.toSingleValueMap())}
-                .bodyValue(ioaTicketRequest.toJsonString())
+                .headers { it.setAll(headers) }
+                .bodyValue(ioaTicketRequest)
                 .retrieve()
                 .bodyToMono(String::class.java)
                 .awaitSingle()
             val ioaTicketResponse = response.readJsonString<IoaTicketResponse>()
             if (ioaTicketResponse.ret != 0) {
-                logger.info("ioa ticket check failed with $ioaTicketRequest, $ioaTicketResponse")
-                throw AuthenticationException("Check ticket failed: $ioaTicketResponse")
+                logger.info("ioa ticket check failed with $ioaTicketRequest, $headers, $ioaTicketResponse")
             }
+            return ioaTicketResponse
         }
     }
 }

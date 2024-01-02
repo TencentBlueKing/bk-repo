@@ -37,8 +37,10 @@ data class ScanTask(
     val name: String? = null,
     @ApiModelProperty("任务id")
     val taskId: String,
-    @ApiModelProperty("项目id")
+    @ApiModelProperty("项目id，只扫描单个项目时有值")
     val projectId: String?,
+    @ApiModelProperty("项目id")
+    val projectIds: Set<String>,
     @ApiModelProperty("触发者")
     val createdBy: String,
     @ApiModelProperty("最后修改时间")
@@ -79,4 +81,6 @@ data class ScanTask(
     val force: Boolean = false,
     @ApiModelProperty("扫描任务元数据")
     val metadata: List<TaskMetadata>
-)
+) {
+    fun isGlobal() = metadata.any { it.key == TaskMetadata.TASK_METADATA_GLOBAL && it.value == "true" }
+}

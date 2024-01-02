@@ -162,3 +162,16 @@ const val SCAN_STATUS = "scanStatus"
 
 const val METADATA_KEY_PACKAGE_NAME = "packageName"
 const val METADATA_KEY_PACKAGE_VERSION = "packageVersion"
+
+/**
+ * 节点链接的目标项目
+ */
+const val METADATA_KEY_LINK_PROJECT = "targetProjectId"
+/**
+ * 节点链接的目标仓库
+ */
+const val METADATA_KEY_LINK_REPO = "targetRepoName"
+/**
+ * 节点链接的目标路径
+ */
+const val METADATA_KEY_LINK_FULL_PATH = "targetFullPath"

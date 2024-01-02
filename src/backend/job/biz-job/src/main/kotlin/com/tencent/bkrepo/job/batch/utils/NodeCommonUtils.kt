@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.job.batch.utils
 
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -38,6 +39,19 @@ class NodeCommonUtils(
                 nodes.addAll(find)
             }
             return nodes
+        }
+
+        fun collectionNames(projectIds: List<String>): List<String> {
+            val collectionNames = mutableListOf<String>()
+            if (projectIds.isNotEmpty()) {
+                projectIds.forEach {
+                    val index = HashShardingUtils.shardingSequenceFor(it, SHARDING_COUNT)
+                    collectionNames.add("${COLLECTION_NAME_PREFIX}$index")
+                }
+            } else {
+                (0 until SHARDING_COUNT).forEach { collectionNames.add("${COLLECTION_NAME_PREFIX}$it") }
+            }
+            return collectionNames
         }
     }
 }

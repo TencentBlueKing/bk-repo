@@ -83,6 +83,10 @@ data class ScannerProperties(
      * 生成的制品临时下载链接超时时间允许下载的次数
      */
     var tempDownloadUrlPermits: Int? = null,
+    /**
+     * 最大全局扫描任务数量
+     */
+    var maxGlobalTaskCount: Int = 1,
 ) {
     companion object {
         /**

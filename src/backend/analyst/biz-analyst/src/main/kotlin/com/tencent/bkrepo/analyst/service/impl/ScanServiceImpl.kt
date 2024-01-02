@@ -30,21 +30,24 @@ package com.tencent.bkrepo.analyst.service.impl
 import com.tencent.bkrepo.analyst.component.AnalystLoadBalancer
 import com.tencent.bkrepo.analyst.component.ReportExporter
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
-import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
+import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus.Companion.unFinishedStatus
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_BUILD_NUMBER
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_GLOBAL
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_KEY_BID
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_KEY_PID
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_PIPELINE_NAME
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_PLUGIN_NAME
+import com.tencent.bkrepo.analyst.pojo.request.GlobalScanRequest
 import com.tencent.bkrepo.analyst.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
@@ -59,27 +62,29 @@ import com.tencent.bkrepo.analyst.statemachine.subtask.context.FinishSubtaskCont
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.PullSubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.CreateTaskContext
-import com.tencent.bkrepo.analyst.statemachine.task.context.ResetTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.StopTaskContext
+import com.tencent.bkrepo.analyst.utils.RuleConverter
+import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.sql.Timestamp
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -97,7 +102,38 @@ class ScanServiceImpl @Autowired constructor(
     private val redisTemplate: RedisTemplate<String, String>,
     private val reportExporter: ReportExporter,
     private val scannerProperties: ScannerProperties,
+    private val projectClient: ProjectClient,
+    private val lockOperation: LockOperation,
 ) : ScanService {
+
+    override fun globalScan(request: GlobalScanRequest): ScanTask {
+        return with(request) {
+            lockOperation.doWithLock(GLOBAL_SCAN_LOCK) {
+                if (scanTaskDao.countGlobalTask(unFinishedStatus) >= scannerProperties.maxGlobalTaskCount) {
+                    throw ErrorCodeException(ScannerMessageCode.ANALYST_TASK_EXCEED_MAX_GLOBAL_TASK_COUNT)
+                }
+
+                // projectId需要在第一层
+                var projectIds = RuleUtil.getProjectIds(rule)
+                if (projectMetadata.isNotEmpty()) {
+                    val metadataProjectIds = projectClient.rangeQuery(
+                        ProjectRangeQueryRequest(emptyList(), projectMetadata = projectMetadata)
+                    ).data?.records?.map { it?.name!! } ?: emptyList()
+                    projectIds = projectIds + metadataProjectIds
+                }
+                val scanRequest = ScanRequest(
+                    scanner = scanner,
+                    rule = RuleConverter.convert(rule, null, projectIds),
+                    force = force,
+                    metadata = metadata + listOf(TaskMetadata(TASK_METADATA_GLOBAL, "true"))
+                )
+                val userId = SecurityUtils.getUserId()
+                val task = scan(scanRequest, ScanTriggerType.MANUAL, userId)
+                logger.info("User[$userId] triggered global scan task[${task.taskId}]")
+                task
+            }
+        }
+    }
 
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String): ScanTask {
         val context = CreateTaskContext(scanRequest = scanRequest, triggerType = triggerType, userId = userId)
@@ -156,7 +192,7 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun stopTask(projectId: String, taskId: String): Boolean {
+    override fun stopTask(projectId: String?, taskId: String): Boolean {
         val task = scanTaskDao.findByProjectIdAndId(projectId, taskId)
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
 
@@ -202,7 +238,6 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun peek(dispatcher: String?): SubScanTask? {
         val subtask = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name), dispatcher)
-            ?: subScanTaskDao.firstTimeoutTask(scannerProperties.heartbeatTimeout.seconds, dispatcher)
         return subtask?.let { SubtaskConverter.convert(it, scannerService.get(it.scanner)) }
     }
 
@@ -229,52 +264,13 @@ class ScanServiceImpl @Autowired constructor(
         } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, subtaskId)
     }
 
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
-    @Transactional(rollbackFor = [Throwable::class])
-    fun enqueueTimeoutTask() {
-        val task = scanTaskDao.timeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS) ?: return
-        taskStateMachine.sendEvent(task.status, Event(ScanTaskEvent.RESET.name, ResetTaskContext(task)))
-    }
-
-    /**
-     * 结束处于blocked状态超时的子任务
-     */
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
-    fun finishBlockTimeoutSubScanTask() {
-        val blockTimeout = scannerProperties.blockTimeout.seconds
-        if (blockTimeout != 0L) {
-            subScanTaskDao.blockedTimeoutTasks(blockTimeout).records.forEach { subtask ->
-                logger.info("subTask[${subtask.id}] of parentTask[${subtask.parentScanTaskId}] block timeout")
-                finishSubtask(subtask, SubScanTaskStatus.BLOCK_TIMEOUT.name)
-            }
-        }
-    }
-
     @Suppress("ReturnCount")
     fun pullSubScanTask(dispatcher: String?): TSubScanTask? {
         var count = 0
         while (true) {
             // 优先返回待执行任务，再返回超时任务
             val task = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name), dispatcher)
-                ?: subScanTaskDao.firstTimeoutTask(scannerProperties.heartbeatTimeout.seconds, dispatcher)
                 ?: return null
-
-            // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败
-            val expiredTimestamp =
-                Timestamp.valueOf(task.lastModifiedDate).time + scannerProperties.maxTaskDuration.toMillis()
-            if (task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES || System.currentTimeMillis() >= expiredTimestamp) {
-                logger.info(
-                    "subTask[${task.id}] of parentTask[${task.parentScanTaskId}] " +
-                        "exceed max execute times or timeout[${task.lastModifiedDate}]"
-                )
-                val targetState = if (task.status == EXECUTING.name || task.status == PULLED.name) {
-                    SubScanTaskStatus.TIMEOUT.name
-                } else {
-                    SubScanTaskStatus.FAILED.name
-                }
-                finishSubtask(task, targetState)
-                continue
-            }
 
             val context = PullSubtaskContext(task)
             val transitResult = subtaskStateMachine.sendEvent(task.status, Event(SubtaskEvent.PULL.name, context))
@@ -308,19 +304,11 @@ class ScanServiceImpl @Autowired constructor(
     companion object {
         private val logger = LoggerFactory.getLogger(ScanServiceImpl::class.java)
 
-        /**
-         * 最大允许重复执行次数
-         */
-        private const val DEFAULT_MAX_EXECUTE_TIMES = 3
+        private const val GLOBAL_SCAN_LOCK = "lock:global:scan"
 
         /**
          * 最大允许的拉取任务重试次数
          */
         private const val MAX_RETRY_PULL_TASK_TIMES = 3
-
-        /**
-         * 定时扫描超时任务入队
-         */
-        private const val FIXED_DELAY = 3000L
     }
 }

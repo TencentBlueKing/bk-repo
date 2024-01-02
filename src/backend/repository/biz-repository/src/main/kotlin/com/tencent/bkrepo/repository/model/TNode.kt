@@ -88,10 +88,11 @@ data class TNode(
     var clusterNames: Set<String>? = null,
     var nodeNum: Long? = null,
     var archived: Boolean? = null,
+    var compressed: Boolean? = null,
 
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,
-    var repoName: String
+    var repoName: String,
 ) {
 
     companion object {

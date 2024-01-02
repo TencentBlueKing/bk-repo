@@ -53,6 +53,7 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.bodyValueAndAwait
 
 /**
  * 登录处理器
@@ -105,8 +106,7 @@ class LoginHandler(
     }
 
     suspend fun ioaTicket(request: ServerRequest): ServerResponse {
-        IoaUtils.proxyTicketRequest(request)
-        return ReactiveResponseBuilder.success()
+        return ServerResponse.ok().bodyValueAndAwait(IoaUtils.proxyTicketRequest(request))
     }
 
     private suspend fun createUser(userName: String) {

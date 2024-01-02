@@ -94,6 +94,7 @@ class RouteConfiguration(
             POST("/create$DEFAULT_MAPPING_URI", nodeOperationsHandler::createNode)
             DELETE("/delete$DEFAULT_MAPPING_URI", nodeOperationsHandler::deleteNode)
             POST("/mkdir$DEFAULT_MAPPING_URI", nodeOperationsHandler::mkdir)
+            POST("/mknod$DEFAULT_MAPPING_URI", nodeOperationsHandler::mknod)
             PUT("/set-length$DEFAULT_MAPPING_URI", nodeOperationsHandler::setLength)
             GET("/stat$DEFAULT_MAPPING_URI", nodeOperationsHandler::getStat)
             GET("/info$DEFAULT_MAPPING_URI", nodeOperationsHandler::info)

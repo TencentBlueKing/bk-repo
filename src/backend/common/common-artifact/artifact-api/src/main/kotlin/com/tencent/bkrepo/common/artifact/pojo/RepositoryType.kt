@@ -52,6 +52,7 @@ enum class RepositoryType {
     LFS,
     DDC,
     SVN,
+    S3
     ;
 
     companion object {

@@ -103,7 +103,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         name: String,
         inputStream: InputStream,
         size: Long,
-        storageCredentials: StorageCredentials
+        storageCredentials: StorageCredentials,
     ) {
         val client = getClient(storageCredentials)
         retryTemplate.execute<Unit, RuntimeException> {
@@ -124,7 +124,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         path: String,
         name: String,
         range: Range,
-        storageCredentials: StorageCredentials
+        storageCredentials: StorageCredentials,
     ): InputStream? {
         val client = getClient(storageCredentials)
         return try {
@@ -152,7 +152,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         path: String,
         name: String,
         fromCredentials: StorageCredentials,
-        toCredentials: StorageCredentials
+        toCredentials: StorageCredentials,
     ) {
         val fromClient = getClient(fromCredentials)
         val toClient = getClient(toCredentials)

@@ -48,9 +48,21 @@
             </template>
             <bk-table-column type="expand" width="40">
                 <template #default="{ row }">
-                    <template v-if="row.path">
+                    <template v-if="row.path && row.path.length > 0 || row.versionsPaths && row.versionsPaths.length > 0">
                         <div class="leak-title">{{ $t('vulnerabilityPathTitle') }}</div>
-                        <div class="leak-tip">{{ row.path }}</div>
+                        <div v-if="row.versionsPaths && row.versionsPaths.length > 0">
+                            <div v-for="(versionPaths,index) in row.versionsPaths" :key="versionPaths.version">
+                                <br v-if="index !== 0 && row.versionsPaths.length > 1" />
+                                <div v-if="row.versionsPaths.length > 1" class="leak-tip">
+                                    {{ $t('installedVersion') }}: {{ versionPaths.version }}
+                                </div>
+                                <div class="leak-tip" v-for="(path, pathIndex) in versionPaths.paths" :key="path">
+                                    {{ path }}
+                                    <bk-divider v-if="pathIndex !== versionPaths.paths.length - 1" style="margin: 0 0 3px;" type="dashed" />
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="leak-tip">{{ row.path }}</div>
                     </template>
                     <div class="leak-title">{{ row.title }}</div>
                     <div class="leak-tip">{{ row.description || '/' }}</div>
@@ -75,7 +87,11 @@
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('dependPackage')" prop="pkgName" show-overflow-tooltip></bk-table-column>
-            <bk-table-column :label="$t('installedVersion')" prop="installedVersion" show-overflow-tooltip></bk-table-column>
+            <bk-table-column :label="$t('installedVersion')" show-overflow-tooltip>
+                <template #default="{ row }">
+                    {{ row.installedVersion }}
+                </template>
+            </bk-table-column>
             <bk-table-column :label="$t('operation')" v-if="subtaskOverview.scannerType === 'standard'">
                 <template slot-scope="props" v-if="!filter.ignored">
                     <bk-button theme="primary" text @click="ignoreVul(props.row.cveId || props.row.vulId)">{{ $t('ignore') }}</bk-button>

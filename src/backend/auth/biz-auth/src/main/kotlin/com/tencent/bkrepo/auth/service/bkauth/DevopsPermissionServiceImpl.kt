@@ -83,7 +83,7 @@ class DevopsPermissionServiceImpl constructor(
         }
 
         // devops 体系
-        if (checkDevopsProjectPermission(userId, projectId, PermissionAction.READ.toString())) {
+        if (checkDevopsProjectPermission(userId, projectId, PermissionAction.READ.name)) {
             return getAllRepoByProjectId(projectId)
         }
         return super.listPermissionRepo(projectId, userId, appId)
@@ -113,6 +113,13 @@ class DevopsPermissionServiceImpl constructor(
         return allProjectList.distinct()
     }
 
+    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
+        if (checkDevopsProjectPermission(userId, projectId, PermissionAction.MANAGE.name)) {
+            return emptyList()
+        }
+        return super.listPermissionPath(userId, projectId, repoName)
+    }
+
     private fun parsePipelineId(path: String): String? {
         val roads = PathUtils.normalizeFullPath(path).split("/")
         return if (roads.size < 2 || roads[1].isBlank()) {
@@ -131,7 +138,7 @@ class DevopsPermissionServiceImpl constructor(
                 return true
             }
             // project权限
-            if (resourceType == ResourceType.PROJECT.toString()) {
+            if (resourceType == ResourceType.PROJECT.name) {
                 return checkDevopsProjectPermission(uid, projectId!!, action)
                     || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
@@ -175,9 +182,9 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     private fun checkDevopsReportPermission(action: String): Boolean {
-        return action == PermissionAction.READ.toString() ||
-                action == PermissionAction.WRITE.toString() ||
-                action == PermissionAction.VIEW.toString()
+        return action == PermissionAction.READ.name ||
+                action == PermissionAction.WRITE.name ||
+                action == PermissionAction.VIEW.name
     }
 
     private fun checkDevopsPipelinePermission(
@@ -188,8 +195,8 @@ class DevopsPermissionServiceImpl constructor(
         action: String
     ): Boolean {
         return when (resourceType) {
-            ResourceType.REPO.toString() -> checkDevopsProjectPermission(uid, projectId, action)
-            ResourceType.NODE.toString() -> {
+            ResourceType.REPO.name -> checkDevopsProjectPermission(uid, projectId, action)
+            ResourceType.NODE.name -> {
                 val pipelineId = parsePipelineId(path ?: return false) ?: return false
                 pipelinePermission(uid, projectId, pipelineId, action)
             }
@@ -200,7 +207,7 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkDevopsProjectPermission(userId: String, projectId: String, action: String): Boolean {
         logger.debug("checkDevopsProjectPermission: [$userId,$projectId,$action]")
         return when (action) {
-            PermissionAction.MANAGE.toString() -> devopsProjectService.isProjectManager(userId, projectId)
+            PermissionAction.MANAGE.name -> devopsProjectService.isProjectManager(userId, projectId)
             else -> devopsProjectService.isProjectMember(userId, projectId, action)
         }
     }
