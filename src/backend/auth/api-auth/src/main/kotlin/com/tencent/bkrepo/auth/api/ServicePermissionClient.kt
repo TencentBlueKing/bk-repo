@@ -71,7 +71,7 @@ interface ServicePermissionClient {
         @RequestParam userId: String
     ): Response<List<String>>
 
-    @ApiOperation("list有权限路径")
+    @ApiOperation("list无权限路径")
     @GetMapping("/path/list")
     fun listPermissionPath(
         @ApiParam(value = "用户ID")
