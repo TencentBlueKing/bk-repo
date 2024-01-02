@@ -32,17 +32,11 @@
 package com.tencent.bkrepo.auth.pojo.permission
 
 import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.common.query.enums.OperationType
 
 @ApiModel("校验权限请求")
 data class ListPathResult(
     // when true, need to compare
     val status: Boolean,
-    val path: Map<ListPathOperationType, List<String>>,
+    val path: Map<OperationType, List<String>>,
 )
-
-enum class ListPathOperationType {
-    /**
-     * 获取用户没有权限的路径
-     */
-    NIN
-}
