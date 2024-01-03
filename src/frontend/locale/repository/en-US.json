@@ -810,5 +810,8 @@
     "addPath":"Add Path",
     "folderList":"Folder List",
     "selectedFolder": "Selected Folder",
-    "deletePermissionMsg": "Confirm to delete this permission？"
+    "deletePermissionMsg": "Confirm to delete this permission？",
+    "createPermNameTip": "Please enter a name",
+    "createPathsTip": "Please add path",
+    "createUsersTip": "Please add user"
 }

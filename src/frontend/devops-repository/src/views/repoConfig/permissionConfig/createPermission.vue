@@ -61,7 +61,29 @@
                 show: false,
                 isLoading: false,
                 title: '',
-                rules: []
+                rules: {
+                    name: [
+                        {
+                            required: true,
+                            message: this.$t('planNameTip'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    includePattern: [
+                        {
+                            required: true,
+                            message: this.$t('createPathsTip'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    users: [
+                        {
+                            required: true,
+                            message: this.$t('createUsersTip'),
+                            trigger: 'blur'
+                        }
+                    ]
+                }
             }
         },
         computed: {
@@ -86,7 +108,8 @@
                 this.reset()
                 this.show = false
             },
-            confirm () {
+            async confirm () {
+                await this.$refs.permissionForm.validate()
                 if (this.type === 'create') {
                     const body = {
                         resourceType: 'NODE',
@@ -101,8 +124,7 @@
                     }
                     this.createPermissionDeployInRepo({
                         body: body
-                    }).then(res => {
-                        console.log(res)
+                    }).then(() => {
                         this.reset()
                         this.$emit('refresh')
                     })
@@ -116,8 +138,7 @@
                     }
                     this.UpdatePermissionConfigInRepo({
                         body: body
-                    }).then(res => {
-                        console.log(res)
+                    }).then(() => {
                         this.reset()
                         this.$emit('refresh')
                     })
