@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.pojo.node
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -53,5 +54,9 @@ data class NodeListOption(
     @ApiModelProperty("排序字段")
     val sortProperty: List<String> = emptyList(),
     @ApiModelProperty("排序方向")
-    val direction: List<String> = emptyList()
+    val direction: List<String> = emptyList(),
+    @ApiModelProperty("无权限路径")
+    var noPermissionPath: List<String> = emptyList(),
+    @ApiModelProperty("操作用户")
+    var operator: String = SYSTEM_USER,
 )

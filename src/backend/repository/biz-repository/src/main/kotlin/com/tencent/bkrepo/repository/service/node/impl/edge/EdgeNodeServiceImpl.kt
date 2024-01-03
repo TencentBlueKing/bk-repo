@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.edge
 
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
@@ -76,7 +77,8 @@ class EdgeNodeServiceImpl(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
-    override val clusterProperties: ClusterProperties
+    override val servicePermissionClient: ServicePermissionClient,
+    override val clusterProperties: ClusterProperties,
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -86,7 +88,8 @@ class EdgeNodeServiceImpl(
     quotaService,
     repositoryProperties,
     messageSupplier,
-    clusterProperties
+    servicePermissionClient,
+    clusterProperties,
 ) {
     override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact, estimated)

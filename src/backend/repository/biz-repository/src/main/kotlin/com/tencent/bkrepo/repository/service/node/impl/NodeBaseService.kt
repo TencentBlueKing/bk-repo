@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -41,8 +42,10 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.constant.BinderType
@@ -50,6 +53,7 @@ import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
@@ -96,6 +100,7 @@ abstract class NodeBaseService(
     open val quotaService: QuotaService,
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
+    open val servicePermissionClient: ServicePermissionClient,
 ) : NodeService {
 
     @Autowired
@@ -112,6 +117,7 @@ abstract class NodeBaseService(
     override fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo> {
         checkNodeListOption(option)
         with(artifact) {
+            getNoPermissionPaths(SecurityUtils.getUserId(), projectId, repoName)?.let { option.noPermissionPath = it }
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
             if (nodeDao.count(query) > repositoryProperties.listCountLimit) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
@@ -123,6 +129,7 @@ abstract class NodeBaseService(
     override fun listNodePage(artifact: ArtifactInfo, option: NodeListOption): Page<NodeInfo> {
         checkNodeListOption(option)
         with(artifact) {
+            getNoPermissionPaths(SecurityUtils.getUserId(), projectId, repoName)?.let { option.noPermissionPath = it }
             val pageNumber = option.pageNumber
             val pageSize = option.pageSize
             Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
@@ -465,6 +472,27 @@ abstract class NodeBaseService(
             option.direction.none { it != Sort.Direction.DESC.name && it != Sort.Direction.ASC.name },
             "direction",
         )
+    }
+
+    /**
+     * 获取用户无权限路径列表
+     */
+    private fun getNoPermissionPaths(userId: String, projectId: String, repoName: String): List<String>? {
+        if (userId == SYSTEM_USER) {
+            return null
+        }
+        val result = servicePermissionClient.listPermissionPath(userId, projectId, repoName).data!!
+        if (result.status) {
+            val paths = result.path.flatMap {
+                require(it.key == OperationType.NIN)
+                it.value
+            }.ifEmpty { null }
+            logger.info(
+                "user[$userId] does not have permission of paths[$paths] in [$projectId/$repoName], will be filterd"
+            )
+            return paths
+        }
+        return null
     }
 
     companion object {
