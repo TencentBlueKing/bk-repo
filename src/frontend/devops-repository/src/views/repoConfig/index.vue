@@ -109,10 +109,10 @@
             </bk-tab-panel>
             <bk-tab-panel v-if="showCleanConfigTab" name="cleanConfig" :label="$t('cleanConfig')">
                 <clean-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></clean-config>
-            </bk-tab-panel>
-            <!-- <bk-tab-panel render-directive="if" name="permissionConfig" :label="$t('permissionConfig')">
-                <permission-config></permission-config>
             </bk-tab-panel> -->
+            <bk-tab-panel render-directive="if" v-if="showPermissionConfigTab" name="permissionConfig" :label="$t('permissionConfig')">
+                <permission-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></permission-config>
+            </bk-tab-panel>
         </bk-tab>
         <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
@@ -121,8 +121,8 @@
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import proxyConfig from '@repository/views/repoConfig/proxyConfig'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import permissionConfig from './permissionConfig/permissionConfig'
     import cleanConfig from '@repository/views/repoConfig/cleanConfig'
-    // import permissionConfig from './permissionConfig'
     import { mapState, mapActions } from 'vuex'
     import { specialRepoEnum } from '@repository/store/publicEnum'
     export default {
@@ -130,6 +130,9 @@
         components: {
             CardRadioGroup,
             proxyConfig,
+            iamDenyDialog,
+            permissionConfig
+            // cleanConfig
             iamDenyDialog,
             cleanConfig
         },
@@ -232,6 +235,9 @@
             },
             showCleanConfigTab () {
                 return ['docker', 'generic', 'helm'].includes(this.repoType)
+            },
+            showPermissionConfigTab () {
+                return ['generic'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage) && !(['pipeline', 'custom'].includes(this.repoName))
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo

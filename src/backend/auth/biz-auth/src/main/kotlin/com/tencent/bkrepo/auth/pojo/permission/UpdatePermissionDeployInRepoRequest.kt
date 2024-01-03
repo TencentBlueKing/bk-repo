@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,30 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.auth.pojo.permission
 
-import com.tencent.bkrepo.repository.job.base.RepoJobProperties
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
-import org.springframework.context.annotation.Configuration
-
-@Configuration
-@ConfigurationProperties("repository")
-data class RepositoryProperties(
-    var deletedNodeReserveDays: Long = 14,
-    var defaultStorageCredentialsKey: String? = null,
-    var listCountLimit: Long = 100000L,
-    var nodeCreateTimeout: Long = 10_000,
-    var slowLogTimeThreshold: Long = 1_000,
-    @NestedConfigurationProperty
-    var job: RepoJobProperties = RepoJobProperties(),
-    @NestedConfigurationProperty
-    var repoStorageMapping: RepoStorageMapping = RepoStorageMapping(),
-    var allowUserAddSystemMetadata: List<String> = emptyList(),
-    var gitUrl: String = "",
-    var svnUrl: String = "",
-    /**
-     * 用于验证bkci webhook签名
-     */
-    var bkciWebhookSecret: String = ""
+data class UpdatePermissionDeployInRepoRequest(
+    val permissionId: String,
+    val path: List<String>,
+    val users: List<String>,
+    val name: String,
+    val projectId: String
 )
+
