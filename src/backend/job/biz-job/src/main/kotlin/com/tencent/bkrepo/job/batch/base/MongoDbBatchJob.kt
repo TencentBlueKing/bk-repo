@@ -28,12 +28,15 @@
 package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.executor.IdentityTask
+import com.tencent.bkrepo.job.pojo.TJobFailover
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.bson.types.ObjectId
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,6 +45,9 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import java.net.InetAddress
+import java.time.LocalDateTime
+import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import kotlin.system.measureNanoTime
 
@@ -50,7 +56,7 @@ import kotlin.system.measureNanoTime
  * */
 abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     private val properties: MongodbJobProperties,
-) : CenterNodeJob<Context>(properties) {
+) : MongodbFailoverJob<Context>(properties) {
     /**
      * 需要操作的表名列表
      * */
@@ -102,12 +108,31 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     @Autowired
     private lateinit var executor: BlockThreadPoolTaskExecutorDecorator
 
+    /**
+     * 是否存在异步任务
+     * */
     private var hasAsyncTask = false
+
+    /**
+     * 未执行列表
+     * */
+    private var undoList = Collections.synchronizedList(mutableListOf<String>())
+
+    /**
+     * 恢复任务上下文
+     * */
+    private var recoverableJobContext = RecoverableMongodbJobContext(mutableListOf())
+
+    /**
+     * 是否是从故障中恢复
+     * */
+    private var recover = false
 
     override fun doStart0(jobContext: Context) {
         try {
             hasAsyncTask = false
-            val collectionNames = collectionNames()
+            prepareContext(jobContext)
+            val collectionNames = undoList.toList()
             if (concurrentLevel == JobConcurrentLevel.COLLECTION) {
                 // 使用闭锁来保证表异步生产任务的结束
                 val countDownLatch = CountDownLatch(collectionNames.size)
@@ -129,11 +154,28 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     }
 
     /**
+     * 准备执行上下文
+     * */
+    private fun prepareContext(jobContext: Context) {
+        undoList.clear()
+        if (recover) {
+            jobContext.success = recoverableJobContext.success
+            jobContext.failed = recoverableJobContext.failed
+            jobContext.total = recoverableJobContext.total
+            undoList.addAll(recoverableJobContext.undoCollectionNames)
+            recover = false
+        } else {
+            recoverableJobContext.init(jobContext)
+            undoList.addAll(collectionNames())
+        }
+    }
+
+    /**
      * 处理单个表数据
      * */
     private fun runCollection(collectionName: String, context: Context) {
-        if (!isRunning()) {
-            logger.info("Job[${getJobName()}] already stop.")
+        if (!shouldRun()) {
+            logger.info("Job[${getJobName()}] already stopped.")
             return
         }
         logger.info("Job[${getJobName()}]: Start collection $collectionName.")
@@ -167,10 +209,11 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
                 querySize = data.size
                 lastId = data.last()[ID] as ObjectId
                 report(context)
-            } while (querySize == pageSize && isRunning())
+            } while (querySize == pageSize && shouldRun())
         }.apply {
             val elapsedTime = HumanReadable.time(this)
             onRunCollectionFinished(collectionName, context)
+            undoList.remove(collectionName)
             logger.info("Job[${getJobName()}]: collection $collectionName run completed,sum [$sum] elapse $elapsedTime")
         }
     }
@@ -215,6 +258,35 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
         } finally {
             context.total.incrementAndGet()
         }
+    }
+
+    override fun capture(): TJobFailover {
+        return with(recoverableJobContext) {
+            TJobFailover(
+                name = getJobName(),
+                createdBy = hostName(),
+                createdDate = LocalDateTime.now(),
+                success = success.get(),
+                failed = failed.get(),
+                total = total.get(),
+                data = undoList.toJsonString(),
+            )
+        }
+    }
+
+    override fun reply(snapshot: TJobFailover) {
+        with(snapshot) {
+            recoverableJobContext.reset()
+            recoverableJobContext.success.addAndGet(success)
+            recoverableJobContext.failed.addAndGet(failed)
+            recoverableJobContext.total.addAndGet(total)
+            data?.let { data -> recoverableJobContext.undoCollectionNames.addAll(data.readJsonString()) }
+        }
+        recover = true
+    }
+
+    private fun hostName(): String {
+        return InetAddress.getLocalHost().hostName
     }
 
     companion object {
