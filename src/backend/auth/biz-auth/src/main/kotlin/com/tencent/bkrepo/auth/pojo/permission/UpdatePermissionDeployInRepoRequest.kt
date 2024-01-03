@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,46 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.repository
+package com.tencent.bkrepo.auth.pojo.permission
 
-import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
+data class UpdatePermissionDeployInRepoRequest(
+    val permissionId: String,
+    val path: List<String>,
+    val users: List<String>,
+    val name: String,
+    val projectId: String
+)
 
-@Repository
-interface PermissionRepository : MongoRepository<TPermission, String> {
-
-    fun findFirstById(id: String): TPermission?
-
-    fun findByResourceTypeAndProjectId(resourceType: String, projectId: String): List<TPermission>
-
-    fun findByResourceTypeAndProjectIdAndRepos(
-        resourceType: String,
-        projectId: String,
-        repo: String
-    ): List<TPermission>
-
-    fun findOneByPermNameAndProjectIdAndResourceType(
-        permName: String,
-        projectId: String?,
-        resourceType: ResourceType
-    ): TPermission?
-
-    fun findOneByProjectIdAndReposAndPermNameAndResourceType(
-        projectId: String?,
-        repoName: String,
-        permName: String,
-        resourceType: ResourceType
-    ): TPermission?
-
-
-
-    fun findByUsers(userId: String): List<TPermission>
-
-    fun findByProjectIdAndUsers(projectId: String, userId: String): List<TPermission>
-
-    fun findByRolesIn(roleId: List<String>): List<TPermission>
-
-    fun findByProjectIdAndRolesIn(projectId: String, roleId: List<String>): List<TPermission>
-}
