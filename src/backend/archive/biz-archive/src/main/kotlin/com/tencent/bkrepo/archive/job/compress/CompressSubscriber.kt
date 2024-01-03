@@ -72,18 +72,20 @@ class CompressSubscriber(
                 SpringContextUtils.publishEvent(event)
             } catch (e: TooLowerReuseRateException) {
                 logger.info("Reuse rate is too lower.")
-                value.status = CompressStatus.COMPRESS_FAILED
-                value.lastModifiedDate = LocalDateTime.now()
-                compressFileRepository.save(value)
-                fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
+                compressFailed(value)
             } catch (e: Exception) {
-                value.status = CompressStatus.COMPRESS_FAILED
-                value.lastModifiedDate = LocalDateTime.now()
-                compressFileRepository.save(value)
-                // 压缩失败，提前解除对base sha256的引用。
-                fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
+                compressFailed(value)
                 throw e
             }
+        }
+    }
+
+    private fun compressFailed(file: TCompressFile) {
+        with(file) {
+            status = CompressStatus.COMPRESS_FAILED
+            lastModifiedDate = LocalDateTime.now()
+            compressFileRepository.save(file)
+            fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
         }
     }
 
