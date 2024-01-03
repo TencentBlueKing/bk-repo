@@ -47,7 +47,6 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.RequestUtil
-import com.tencent.bkrepo.auth.util.query.PermissionQueryHelper
 import com.tencent.bkrepo.auth.util.query.UserQueryHelper
 import com.tencent.bkrepo.auth.util.query.UserUpdateHelper
 import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
