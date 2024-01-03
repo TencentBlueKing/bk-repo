@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component
 /**
  * 消费基于Spring进程内传递的事件
  */
-@Component
+@Component("HelmReplicationEventListener")
 class ReplicationEventListener(
     private val remoteEventJobExecutor: RemoteEventJobExecutor,
 ){
