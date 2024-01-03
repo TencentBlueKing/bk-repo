@@ -47,11 +47,12 @@ class ServicePermissionController @Autowired constructor(
     private val permissionService: PermissionService
 ) : ServicePermissionClient, OpenResource(permissionService) {
 
+
     /**
      * 本接口不做权限校验，返回空列表时可能表示所有路径均有权限，也可能为无项目仓库权限，因此需要单独做仓库权限校验
      */
     override fun listPermissionPath(userId: String, projectId: String, repoName: String): Response<ListPathResult> {
-        val permissionPath = permissionService.listPermissionPath(userId, projectId, repoName)
+        val permissionPath = permissionService.listNoPermissionPath(userId, projectId, repoName)
         val status = permissionPath.isNotEmpty()
         val result = ListPathResult(status = status, path = mapOf(ListPathOperationType.NIN to permissionPath))
         return ResponseBuilder.success(result)

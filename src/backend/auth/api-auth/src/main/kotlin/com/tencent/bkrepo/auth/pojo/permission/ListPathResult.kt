@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.auth.pojo.permission
 
 import io.swagger.annotations.ApiModel
-
 @ApiModel("校验权限请求")
 data class ListPathResult(
     // when true, need to compare

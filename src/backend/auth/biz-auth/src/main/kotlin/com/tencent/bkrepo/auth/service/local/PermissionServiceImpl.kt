@@ -95,19 +95,20 @@ open class PermissionServiceImpl constructor(
         resourceType?.let {
             repoName?.let {
                 return permissionRepository.findByResourceTypeAndProjectIdAndRepos(
-                    resourceType, projectId, repoName)
+                    resourceType, projectId, repoName
+                )
                     .map { PermRequestUtil.convToPermission(it) }
             }
             return permissionRepository.findByResourceTypeAndProjectId(
-                resourceType, projectId)
+                resourceType, projectId
+            )
                 .map { PermRequestUtil.convToPermission(it) }
         }
         repoName?.let {
-            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(
-                ResourceType.REPO.name, projectId, repoName)
+            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(REPO.name, projectId, repoName)
                 .map { PermRequestUtil.convToPermission(it) }
         }
-        return permissionRepository.findByResourceTypeAndProjectId(ResourceType.PROJECT.name, projectId)
+        return permissionRepository.findByResourceTypeAndProjectId(PROJECT.name, projectId)
             .map { PermRequestUtil.convToPermission(it) }
     }
 
@@ -255,15 +256,31 @@ open class PermissionServiceImpl constructor(
                 projectId, repoName, uid, resourceType, roles
             )
             val result = mongoTemplate.find(query, TPermission::class.java)
-            if (result.isEmpty() || path == null) return false
 
             result.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
 
                 if (checkExcludePatternAction(it.excludePattern, path!!, it.actions, action)) return false
             }
+
+            val noPermissionQuery = PermissionQueryHelper.buildNoPermissionCheck(
+                projectId, repoName, uid, resourceType, roles
+            )
+            val noPermissionResult = mongoTemplate.find(noPermissionQuery, TPermission::class.java)
+            noPermissionResult.forEach {
+                if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
+            }
         }
-        return false
+        return true
+    }
+
+    fun isNodeNeedLocalCheck(projectId: String, repoName: String): Boolean {
+        val projectPermission = permissionRepository.findByResourceTypeAndProjectIdAndRepos(
+            NODE.name,
+            projectId,
+            repoName,
+        )
+        return projectPermission.isNotEmpty()
     }
 
     private fun checkIncludePatternAction(
@@ -385,7 +402,7 @@ open class PermissionServiceImpl constructor(
         return repoList.distinct()
     }
 
-    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
+    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         val projectPermission = permissionRepository.findByResourceTypeAndProjectIdAndRepos(
             NODE.name,
             projectId,
@@ -562,8 +579,8 @@ open class PermissionServiceImpl constructor(
     override fun updatePermissionDeployInRepo(request: UpdatePermissionDeployInRepoRequest): Boolean {
         checkPermissionExist(request.permissionId)
         return updatePermissionById(request.permissionId, TPermission::includePattern.name, request.path)
-            && updatePermissionById(request.permissionId, TPermission::users.name, request.users)
-            && updatePermissionById(request.permissionId, TPermission::permName.name, request.name)
+                && updatePermissionById(request.permissionId, TPermission::users.name, request.users)
+                && updatePermissionById(request.permissionId, TPermission::permName.name, request.name)
     }
 
     companion object {
