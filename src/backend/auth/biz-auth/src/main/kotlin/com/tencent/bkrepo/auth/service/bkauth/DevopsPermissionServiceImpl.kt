@@ -36,7 +36,6 @@ import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
@@ -89,7 +88,7 @@ class DevopsPermissionServiceImpl constructor(
         }
 
         // devops 体系
-        if (checkDevopsProjectPermission(userId, projectId, PermissionAction.READ.name)) {
+        if (checkDevopsProjectPermission(userId, projectId, READ.name)) {
             return getAllRepoByProjectId(projectId)
         }
         return super.listPermissionRepo(projectId, userId, appId)
@@ -120,7 +119,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
-        if (checkDevopsProjectPermission(userId, projectId, PermissionAction.MANAGE.name)) {
+        if (checkDevopsProjectPermission(userId, projectId, MANAGE.name)) {
             return emptyList()
         }
         return super.listNoPermissionPath(userId, projectId, repoName)
