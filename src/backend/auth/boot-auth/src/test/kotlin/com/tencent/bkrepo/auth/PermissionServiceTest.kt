@@ -138,11 +138,11 @@ class PermissionServiceTest {
             )
         )
 
-        val permissionList2 = permissionService.listPermission("bk_test", null)
+        val permissionList2 = permissionService.listPermission("bk_test", null, null)
         Assertions.assertTrue(permissionList2.size == 1)
-        val permissionList3 = permissionService.listPermission("bk_test", "test-local")
+        val permissionList3 = permissionService.listPermission("bk_test", "test-local", null)
         Assertions.assertTrue(permissionList3.size == 1)
-        val permissionList5 = permissionService.listPermission("bkrepo_test", null)
+        val permissionList5 = permissionService.listPermission("bkrepo_test", null, null)
         Assertions.assertTrue(permissionList5.isEmpty())
     }
 
@@ -250,7 +250,7 @@ class PermissionServiceTest {
     @DisplayName("删除权限测试用例")
     fun deletePermissionTest() {
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null).forEach {
+        permissionService.listPermission("test", null, null).forEach {
             permissionService.deletePermission(it.id!!)
         }
     }
@@ -266,7 +266,7 @@ class PermissionServiceTest {
             )
         }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null).forEach {
+        permissionService.listPermission("test", null, null).forEach {
             val request = UpdatePermissionRepoRequest(it.id!!, listOf("test-local", "test-remote"))
             val updateStatus = permissionService.updateRepoPermission(request)
             Assertions.assertTrue(updateStatus)
@@ -280,7 +280,7 @@ class PermissionServiceTest {
             permissionService.updatePermissionUser(UpdatePermissionUserRequest("test_test", "dev", listOf(userId)))
         }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null).forEach {
+        permissionService.listPermission("test", null, null).forEach {
             val request = UpdatePermissionUserRequest(it.id!!, "dev", listOf(userId))
             val updateStatus = permissionService.updatePermissionUser(request)
             Assertions.assertTrue(updateStatus)

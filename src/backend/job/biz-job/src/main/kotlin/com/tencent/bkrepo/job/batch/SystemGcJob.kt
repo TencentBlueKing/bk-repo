@@ -103,6 +103,7 @@ class SystemGcJob(
     }
 
     private fun buildQuery(projectId: String, repoName: String): Query {
+        val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(properties.idleDays.toLong()))
         return Query.query(
             Criteria.where(ID).gt(ObjectId(lastId))
                 .and("folder").isEqualTo(false)
@@ -115,7 +116,7 @@ class SystemGcJob(
                 .and("size").gt(properties.fileSizeThreshold.toBytes())
                 .orOperator(
                     Criteria.where("lastAccessDate").isEqualTo(null),
-                    Criteria.where("lastAccessDate").lt(curCutoffTime),
+                    Criteria.where("lastAccessDate").lt(cutoffTime),
                 ),
         ).limit(properties.maxBatchSize).with(Sort.by(ID).ascending()) // 长时间未访问
     }

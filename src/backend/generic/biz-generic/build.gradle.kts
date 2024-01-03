@@ -33,5 +33,6 @@ dependencies {
     api(project(":generic:api-generic"))
     api(project(":common:common-redis"))
     api(project(":analyst:api-analyst"))
+    api(project(":common:common-generic"))
     api(project(":common:common-artifact:artifact-service"))
 }

@@ -269,5 +269,38 @@ export default {
             `${authPrefix}/user/create/project`,
             body
         )
+    },
+    // 创建repo内权限
+    createPermissionDeployInRepo (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/permission/create`,
+            body
+        )
+    },
+    // 删除repo内权限
+    deletePermission (_, { id }) {
+        return Vue.prototype.$ajax.delete(
+            `${authPrefix}/permission/delete/${id}`
+        )
+    },
+    // 更新repo内权限
+    UpdatePermissionConfigInRepo (_, { body }) {
+        return Vue.prototype.$ajax.put(
+            `${authPrefix}/permission/update/config`,
+            body
+        )
+    },
+    // 获取repo内配置的权限
+    listPermissionDeployInRepo (_, { projectId, repoName }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/permission/list`,
+            {
+                params: {
+                    projectId: projectId,
+                    repoName: repoName,
+                    resourceType: 'NODE'
+                }
+            }
+        )
     }
 }

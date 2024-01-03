@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.config
 
+import com.tencent.bkrepo.common.service.shutdown.ServiceShutdownHook
 import com.tencent.bkrepo.job.batch.base.BatchJob
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import org.slf4j.LoggerFactory
@@ -43,7 +44,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar
 @Configuration
 class ScheduledTaskConfigurer(
     val jobs: List<BatchJob<*>>,
-    val builder: TaskSchedulerBuilder
+    val builder: TaskSchedulerBuilder,
 ) : SchedulingConfigurer {
     init {
         scheduledTaskConfigurer = this
@@ -57,6 +58,7 @@ class ScheduledTaskConfigurer(
             val taskScheduler = builder.build()
             taskScheduler.initialize()
             Companion.taskRegistrar.setTaskScheduler(taskScheduler)
+            ServiceShutdownHook.add { jobs.forEach { it.stop(it.batchJobProperties.stopTimeout, true) } }
         }
         jobs.filter { it.batchJobProperties.enabled }.forEach {
             val properties = it.batchJobProperties
