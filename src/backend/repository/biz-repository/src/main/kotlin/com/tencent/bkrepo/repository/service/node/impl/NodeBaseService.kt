@@ -188,12 +188,14 @@ abstract class NodeBaseService(
             )
 
             val targetArtifact = "/$targetProjectId/$targetRepoName/$targetFullPath"
-            val targetNode = nodeDao.findNode(targetProjectId, targetRepoName, targetFullPath)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, targetArtifact)
+            if (checkTargetExist) {
+                val targetNode = nodeDao.findNode(targetProjectId, targetRepoName, targetFullPath)
+                    ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, targetArtifact)
 
-            // 不支持链接到目录
-            if (targetNode.folder) {
-                throw BadRequestException(ArtifactMessageCode.NODE_LINK_FOLDER_UNSUPPORTED, targetArtifact)
+                // 不支持链接到目录
+                if (targetNode.folder) {
+                    throw BadRequestException(ArtifactMessageCode.NODE_LINK_FOLDER_UNSUPPORTED, targetArtifact)
+                }
             }
 
             val metadata = listOf(
