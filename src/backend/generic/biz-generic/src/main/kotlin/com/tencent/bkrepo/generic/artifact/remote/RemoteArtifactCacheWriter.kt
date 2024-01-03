@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.stream.StreamReadListener
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 
@@ -45,6 +46,7 @@ class RemoteArtifactCacheWriter(
     private val context: ArtifactContext,
     private val storageManager: StorageManager,
     private val cacheLocks: RemoteArtifactCacheLocks,
+    private val remoteNode: NodeDetail?,
     monitor: StorageHealthMonitor,
     contentLength: Long,
     storageProperties: StorageProperties,
@@ -141,6 +143,7 @@ class RemoteArtifactCacheWriter(
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
+            nodeMetadata = remoteNode?.nodeMetadata,
             overwrite = true,
             operator = context.userId
         )

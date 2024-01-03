@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.repository.JobSnapshotRepository
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import io.mockk.every
 import io.mockk.mockk
@@ -67,6 +68,8 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @MockBean
     lateinit var archiveClient: ArchiveClient
+    @MockBean
+    lateinit var jobSnapshotRepository: JobSnapshotRepository
 
     @Autowired
     lateinit var mongoTemplate: MongoTemplate

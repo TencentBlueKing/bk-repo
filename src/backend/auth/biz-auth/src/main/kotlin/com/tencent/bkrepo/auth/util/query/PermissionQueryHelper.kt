@@ -26,4 +26,26 @@ object PermissionQueryHelper {
         }
         return Query(celeriac)
     }
+
+    fun buildNoPermissionCheck(
+        projectId: String?,
+        repoName: String?,
+        uid: String,
+        resourceType: String,
+        roles: List<String>
+    ): Query {
+        val criteria = Criteria()
+        var celeriac = criteria.andOperator(
+            Criteria.where(TPermission::users.name).`ne`(uid),
+            Criteria.where(TPermission::roles.name).`nin`(roles)
+        ).and(TPermission::resourceType.name).`is`(resourceType)
+        projectId?.let {
+            celeriac = celeriac.and(TPermission::projectId.name).`is`(projectId)
+        }
+        repoName?.let {
+            celeriac = celeriac.and(TPermission::repos.name).`is`(repoName)
+        }
+        return Query(celeriac)
+    }
+
 }
