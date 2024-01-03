@@ -36,8 +36,13 @@ import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
@@ -83,7 +88,7 @@ class DevopsPermissionServiceImpl constructor(
         }
 
         // devops 体系
-        if (checkDevopsProjectPermission(userId, projectId, PermissionAction.READ.name)) {
+        if (checkDevopsProjectPermission(userId, projectId, READ.name)) {
             return getAllRepoByProjectId(projectId)
         }
         return super.listPermissionRepo(projectId, userId, appId)
@@ -113,11 +118,11 @@ class DevopsPermissionServiceImpl constructor(
         return allProjectList.distinct()
     }
 
-    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
-        if (checkDevopsProjectPermission(userId, projectId, PermissionAction.MANAGE.name)) {
+    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
+        if (checkDevopsProjectPermission(userId, projectId, MANAGE.name)) {
             return emptyList()
         }
-        return super.listPermissionPath(userId, projectId, repoName)
+        return super.listNoPermissionPath(userId, projectId, repoName)
     }
 
     private fun parsePipelineId(path: String): String? {
@@ -138,9 +143,9 @@ class DevopsPermissionServiceImpl constructor(
                 return true
             }
             // project权限
-            if (resourceType == ResourceType.PROJECT.name) {
+            if (resourceType == PROJECT.name) {
                 return checkDevopsProjectPermission(uid, projectId!!, action)
-                    || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
+                        || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
 
             // repo或者node权限
@@ -155,7 +160,7 @@ class DevopsPermissionServiceImpl constructor(
                     checkDevopsReportPermission(action)
                 }
                 else -> {
-                    super.checkPermission(request) || checkDevopsProjectPermission(uid, projectId!!, action)
+                    checkRepoNotInDevops(request)
                 }
             }
 
@@ -165,6 +170,16 @@ class DevopsPermissionServiceImpl constructor(
                 logger.debug("devops pass [$request]")
             }
             return pass
+        }
+    }
+
+    private fun checkRepoNotInDevops(request: CheckPermissionRequest): Boolean {
+        with(request) {
+            if (resourceType == NODE.name && super.isNodeNeedLocalCheck(projectId!!, repoName!!)) {
+                return checkDevopsProjectPermission(uid, projectId!!, action) && super.checkPermission(request)
+            } else {
+                return super.checkPermission(request) || checkDevopsProjectPermission(uid, projectId!!, action)
+            }
         }
     }
 
@@ -182,9 +197,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     private fun checkDevopsReportPermission(action: String): Boolean {
-        return action == PermissionAction.READ.name ||
-                action == PermissionAction.WRITE.name ||
-                action == PermissionAction.VIEW.name
+        return action == READ.name || action == WRITE.name || action == VIEW.name
     }
 
     private fun checkDevopsPipelinePermission(
@@ -195,8 +208,8 @@ class DevopsPermissionServiceImpl constructor(
         action: String
     ): Boolean {
         return when (resourceType) {
-            ResourceType.REPO.name -> checkDevopsProjectPermission(uid, projectId, action)
-            ResourceType.NODE.name -> {
+            REPO.name -> checkDevopsProjectPermission(uid, projectId, action)
+            NODE.name -> {
                 val pipelineId = parsePipelineId(path ?: return false) ?: return false
                 pipelinePermission(uid, projectId, pipelineId, action)
             }
@@ -207,7 +220,7 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkDevopsProjectPermission(userId: String, projectId: String, action: String): Boolean {
         logger.debug("checkDevopsProjectPermission: [$userId,$projectId,$action]")
         return when (action) {
-            PermissionAction.MANAGE.name -> devopsProjectService.isProjectManager(userId, projectId)
+            MANAGE.name -> devopsProjectService.isProjectManager(userId, projectId)
             else -> devopsProjectService.isProjectMember(userId, projectId, action)
         }
     }
