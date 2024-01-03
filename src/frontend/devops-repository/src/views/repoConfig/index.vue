@@ -109,7 +109,7 @@
             </bk-tab-panel>
             <bk-tab-panel v-if="showCleanConfigTab" name="cleanConfig" :label="$t('cleanConfig')">
                 <clean-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></clean-config>
-            </bk-tab-panel> -->
+            </bk-tab-panel>
             <bk-tab-panel render-directive="if" v-if="showPermissionConfigTab" name="permissionConfig" :label="$t('permissionConfig')">
                 <permission-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></permission-config>
             </bk-tab-panel>
@@ -131,9 +131,7 @@
             CardRadioGroup,
             proxyConfig,
             iamDenyDialog,
-            permissionConfig
-            // cleanConfig
-            iamDenyDialog,
+            permissionConfig,
             cleanConfig
         },
         data () {
