@@ -41,7 +41,7 @@ class SystemGcJob(
 ) : DefaultContextJob(properties) {
 
     private var lastId = MIN_OBJECT_ID
-    private var lastCutoffTime = LocalDateTime.MIN
+    private var lastCutoffTimeMap = mutableMapOf<String, LocalDateTime>()
     private var curCutoffTime = LocalDateTime.MIN
     override fun doStart0(jobContext: JobContext) {
         curCutoffTime = LocalDateTime.now().minus(Duration.ofDays(properties.idleDays.toLong()))
@@ -52,8 +52,8 @@ class SystemGcJob(
             val repoName = splits[1]
             val nanos = measureNanoTime { count = repoGc(projectId, repoName) }
             logger.info("Finish gc repository [$projectId/$repoName]($count nodes), took ${HumanReadable.time(nanos)}.")
+            lastCutoffTimeMap[it] = curCutoffTime
         }
-        lastCutoffTime = curCutoffTime
     }
 
     private fun repoGc(projectId: String, repoName: String): Long {
@@ -132,7 +132,9 @@ class SystemGcJob(
             }
             .sortedBy { it.createdDate }
         // 没有新的节点，表示节点已经gc过一轮了
-        if (lastEndTime != null && sortedNodes.last().createdDate < lastCutoffTime) {
+        val repoKey = nodes.first().let { "${it.projectId}/${it.repoName}" }
+        val lastCutoffTime = lastCutoffTimeMap[repoKey]
+        if (lastCutoffTime != null && sortedNodes.last().createdDate < lastCutoffTime) {
             logger.info("There are no new nodes, gc is skipped.")
             return
         }

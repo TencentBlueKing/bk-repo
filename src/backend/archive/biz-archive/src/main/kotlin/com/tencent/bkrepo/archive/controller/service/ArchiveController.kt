@@ -65,4 +65,15 @@ class ArchiveController(
         compressService.complete(request)
         return ResponseBuilder.success()
     }
+
+    override fun deleteAll(request: ArchiveFileRequest): Response<Void> {
+        archiveService.delete(request)
+        val deleteCompressRequest = DeleteCompressRequest(
+            sha256 = request.sha256,
+            storageCredentialsKey = request.storageCredentialsKey,
+            operator = request.operator,
+        )
+        compressService.delete(deleteCompressRequest)
+        return ResponseBuilder.success()
+    }
 }

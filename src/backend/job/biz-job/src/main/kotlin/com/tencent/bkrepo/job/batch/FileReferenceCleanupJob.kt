@@ -133,9 +133,7 @@ class FileReferenceCleanupJob(
 
     private fun cleanupRelatedResources(sha256: String, credentialsKey: String?) {
         val deleteArchiveFileRequest = ArchiveFileRequest(sha256, credentialsKey, SYSTEM_USER)
-        archiveClient.delete(deleteArchiveFileRequest)
-        val deleteCompressRequest = DeleteCompressRequest(sha256, credentialsKey, SYSTEM_USER)
-        archiveClient.deleteCompress(deleteCompressRequest)
+        archiveClient.deleteAll(deleteArchiveFileRequest)
     }
 
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()
