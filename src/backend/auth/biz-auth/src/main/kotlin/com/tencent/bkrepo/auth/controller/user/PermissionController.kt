@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.controller.OpenResource
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -96,9 +97,12 @@ class PermissionController @Autowired constructor(
 
     @ApiOperation("权限列表")
     @GetMapping("/list")
-    fun listPermission(@RequestParam projectId: String, @RequestParam repoName: String?): Response<List<Permission>> {
+    fun listPermission(@RequestParam projectId: String,
+                       @RequestParam repoName: String?,
+                       @RequestParam resourceType: String?
+    ): Response<List<Permission>> {
         preCheckProjectAdmin(projectId)
-        return ResponseBuilder.success(permissionService.listPermission(projectId, repoName))
+        return ResponseBuilder.success(permissionService.listPermission(projectId, repoName, resourceType))
     }
 
     @ApiOperation("获取仓库内置权限列表")
@@ -146,5 +150,14 @@ class PermissionController @Autowired constructor(
     ): Response<List<Permission>> {
         preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(permissionService.listProjectBuiltinPermission(projectId))
+    }
+
+    @ApiOperation("更新配置权限")
+    @PutMapping("/update/config")
+    fun updatePermissionDeployInRepo(
+        @RequestBody request: UpdatePermissionDeployInRepoRequest
+    ): Response<Boolean> {
+        preCheckProjectAdmin(request.projectId)
+        return ResponseBuilder.success(permissionService.updatePermissionDeployInRepo(request))
     }
 }

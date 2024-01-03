@@ -54,6 +54,7 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.repository.AccountRepository
@@ -89,13 +90,24 @@ open class PermissionServiceImpl constructor(
         return true
     }
 
-    override fun listPermission(projectId: String, repoName: String?): List<Permission> {
+    override fun listPermission(projectId: String, repoName: String?, resourceType: String?): List<Permission> {
         logger.debug("list  permission  projectId: [$projectId], repoName: [$repoName]")
-        repoName?.let {
-            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(REPO, projectId, repoName)
+        resourceType?.let {
+            repoName?.let {
+                return permissionRepository.findByResourceTypeAndProjectIdAndRepos(
+                    resourceType, projectId, repoName)
+                    .map { PermRequestUtil.convToPermission(it) }
+            }
+            return permissionRepository.findByResourceTypeAndProjectId(
+                resourceType, projectId)
                 .map { PermRequestUtil.convToPermission(it) }
         }
-        return permissionRepository.findByResourceTypeAndProjectId(PROJECT, projectId)
+        repoName?.let {
+            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(
+                ResourceType.REPO.name, projectId, repoName)
+                .map { PermRequestUtil.convToPermission(it) }
+        }
+        return permissionRepository.findByResourceTypeAndProjectId(ResourceType.PROJECT.name, projectId)
             .map { PermRequestUtil.convToPermission(it) }
     }
 
@@ -391,7 +403,7 @@ open class PermissionServiceImpl constructor(
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         val projectPermission = permissionRepository.findByResourceTypeAndProjectIdAndRepos(
-            NODE,
+            NODE.name,
             projectId,
             repoName,
         )
@@ -561,6 +573,13 @@ open class PermissionServiceImpl constructor(
             updateAt = LocalDateTime.now()
         )
         return listOf(projectManager, projectViewer)
+    }
+
+    override fun updatePermissionDeployInRepo(request: UpdatePermissionDeployInRepoRequest): Boolean {
+        checkPermissionExist(request.permissionId)
+        return updatePermissionById(request.permissionId, TPermission::includePattern.name, request.path)
+            && updatePermissionById(request.permissionId, TPermission::users.name, request.users)
+            && updatePermissionById(request.permissionId, TPermission::permName.name, request.name)
     }
 
     companion object {
