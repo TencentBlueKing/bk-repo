@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 标记已过期的节点为已删除
@@ -90,8 +91,8 @@ class ExpiredNodeMarkupJob(
         )
     }
 
-    override fun entityClass(): Class<Node> {
-        return Node::class.java
+    override fun entityClass(): KClass<Node> {
+        return Node::class
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {

@@ -50,6 +50,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 /**
  * 清理引用=0的文件
@@ -71,8 +72,8 @@ class FileReferenceCleanupJob(
         return FileJobContext()
     }
 
-    override fun entityClass(): Class<FileReferenceData> {
-        return FileReferenceData::class.java
+    override fun entityClass(): KClass<FileReferenceData> {
+        return FileReferenceData::class
     }
 
     override fun collectionNames(): List<String> {

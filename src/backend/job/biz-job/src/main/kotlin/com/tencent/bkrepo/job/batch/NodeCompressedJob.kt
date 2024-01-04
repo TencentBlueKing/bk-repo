@@ -17,6 +17,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import kotlin.reflect.KClass
 
 /**
  * 节点压缩任务
@@ -80,8 +81,8 @@ class NodeCompressedJob(
         )
     }
 
-    override fun entityClass(): Class<CompressFile> {
-        return CompressFile::class.java
+    override fun entityClass(): KClass<CompressFile> {
+        return CompressFile::class
     }
 
     data class CompressFile(

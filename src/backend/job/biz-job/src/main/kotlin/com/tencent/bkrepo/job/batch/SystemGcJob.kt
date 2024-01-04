@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.reflect.full.declaredMemberProperties
 import kotlin.system.measureNanoTime
 
 /**
@@ -131,7 +132,14 @@ class SystemGcJob(
                     Criteria.where("lastAccessDate").isEqualTo(null),
                     Criteria.where("lastAccessDate").lt(curCutoffTime),
                 ),
-        ).limit(properties.maxBatchSize).with(Sort.by(ID).ascending()) // 长时间未访问
+        ).limit(properties.maxBatchSize)
+            .with(Sort.by(ID).ascending())
+            .apply {
+                val fields = fields()
+                Node::class.declaredMemberProperties.forEach {
+                    fields.include(it.name)
+                }
+            }
     }
 
     /**
