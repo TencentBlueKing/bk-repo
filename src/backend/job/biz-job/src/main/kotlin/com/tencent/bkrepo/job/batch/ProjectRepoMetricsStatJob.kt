@@ -42,6 +42,7 @@ import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobProperties
+import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.BulkOperations
@@ -185,22 +186,6 @@ class ProjectRepoMetricsStatJob(
         )
     }
 
-
-    data class TProjectMetrics(
-        var projectId: String,
-        var nodeNum: Long,
-        var capSize: Long,
-        val repoMetrics: List<TRepoMetrics>,
-        val createdDate: LocalDateTime? = LocalDateTime.now()
-    )
-
-    data class TRepoMetrics(
-        val repoName: String,
-        val credentialsKey: String? = "default",
-        val size: Long,
-        val num: Long,
-        val type: String,
-    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectRepoMetricsStatJob::class.java)
