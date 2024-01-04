@@ -19,6 +19,7 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
+import kotlin.reflect.KClass
 
 @Component
 @EnableConfigurationProperties(NodeCopyJobProperties::class)
@@ -46,7 +47,7 @@ class NodeCopyJob(
         return NodeCopyData(row)
     }
 
-    override fun entityClass(): Class<NodeCopyData> = NodeCopyData::class.java
+    override fun entityClass(): KClass<NodeCopyData> = NodeCopyData::class
 
     override fun createJobContext(): NodeCopyJobContext = NodeCopyJobContext()
 

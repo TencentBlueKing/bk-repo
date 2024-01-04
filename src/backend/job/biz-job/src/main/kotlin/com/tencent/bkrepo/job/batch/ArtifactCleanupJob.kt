@@ -61,6 +61,7 @@ import org.springframework.web.client.RestTemplate
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.reflect.KClass
 
 /**
  * 根据仓库配置的清理策略清理对应仓库下的制品
@@ -79,8 +80,8 @@ class ArtifactCleanupJob(
     @Value("\${service.prefix:}")
     private val servicePrefix: String = ""
 
-    override fun entityClass(): Class<RepoData> {
-        return RepoData::class.java
+    override fun entityClass(): KClass<RepoData> {
+        return RepoData::class
     }
 
     override fun collectionNames(): List<String> {

@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfig
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.config.properties.RepoJobProperties
 import java.time.Duration
+import kotlin.reflect.KClass
 
 abstract class DefaultRepoJob(
     properties: RepoJobProperties
@@ -42,8 +43,8 @@ abstract class DefaultRepoJob(
         return listOf(COLLECTION_NAME)
     }
 
-    override fun entityClass(): Class<ProxyRepoData> {
-        return ProxyRepoData::class.java
+    override fun entityClass(): KClass<ProxyRepoData> {
+        return ProxyRepoData::class
     }
 
     override fun mapToEntity(row: Map<String, Any?>): ProxyRepoData {

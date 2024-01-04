@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.archive.service
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.job.compress.CompressSubscriber
@@ -28,8 +29,24 @@ class CompressServiceImpl(
     private val fileReferenceClient: FileReferenceClient,
     private val compressFileDao: CompressFileDao,
 ) : CompressService {
-    private val compressor = CompressSubscriber(compressFileDao, compressFileRepository, storageService)
-    private val uncompressor = UncompressSubscriber(compressFileDao, compressFileRepository, storageService)
+    private val executor = ArchiveUtils.newFixedAndCachedThreadPool(
+        1,
+        ThreadFactoryBuilder().setNameFormat("compress-worker").build(),
+    )
+    private val compressor = CompressSubscriber(
+        compressFileDao,
+        compressFileRepository,
+        storageService,
+        fileReferenceClient,
+        executor,
+    )
+    private val uncompressor = UncompressSubscriber(
+        compressFileDao,
+        compressFileRepository,
+        storageService,
+        executor,
+    )
+
     override fun compress(request: CompressFileRequest) {
         with(request) {
             // 队头元素
@@ -37,15 +54,13 @@ class CompressServiceImpl(
             if (head != null && head.status != CompressStatus.NONE) {
                 // 压缩任务已存在
                 logger.info("Compress file [$sha256] already exists，status: ${head.status}.")
-                head.lastModifiedBy = operator
-                head.lastModifiedDate = LocalDateTime.now()
                 // 重新触发压缩后逻辑，删除原存储文件和更新node状态
-                head.status = if (head.status == CompressStatus.COMPLETED) {
-                    CompressStatus.COMPRESSED
-                } else {
-                    CompressStatus.CREATED
+                if (head.status == CompressStatus.COMPLETED) {
+                    head.lastModifiedBy = operator
+                    head.lastModifiedDate = LocalDateTime.now()
+                    head.status = CompressStatus.COMPRESSED
+                    compressFileRepository.save(head)
                 }
-                compressFileRepository.save(head)
                 return
             }
             var currentChainLength = 0
@@ -125,19 +140,23 @@ class CompressServiceImpl(
         with(request) {
             val file = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
                 ?: return
-            if (file.status != CompressStatus.NONE) {
+            if (file.status == CompressStatus.NONE) {
+                return
+            }
+            if (file.status != CompressStatus.COMPRESS_FAILED) {
                 val storageCredentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
                 if (storageService.isCompressed(sha256, storageCredentials)) {
                     storageService.deleteCompressed(sha256, storageCredentials)
                 }
+                // 压缩失败的已经解除了base sha256的引用
                 fileReferenceClient.decrement(file.baseSha256, storageCredentialsKey)
-                /*
-                * 解压是小概率事件，所以这里链长度我们就不减少，这样带来的问题是，
-                * 压缩链更容易达到最大长度。但是这个影响并不重要。
-                * */
-                compressFileRepository.delete(file)
-                logger.info("Delete compress file [$sha256].")
             }
+            /*
+            * 解压是小概率事件，所以这里链长度我们就不减少，这样带来的问题是，
+            * 压缩链更容易达到最大长度。但是这个影响并不重要。
+            * */
+            compressFileRepository.delete(file)
+            logger.info("Delete compress file [$sha256].")
         }
     }
 

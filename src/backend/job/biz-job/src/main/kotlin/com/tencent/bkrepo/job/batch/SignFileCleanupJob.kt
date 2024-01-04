@@ -42,6 +42,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 @Component
 @EnableConfigurationProperties(SignFileCleanupJobProperties::class)
@@ -83,8 +84,8 @@ class SignFileCleanupJob(
         return SignFileData(row)
     }
 
-    override fun entityClass(): Class<SignFileData> {
-        return SignFileData::class.java
+    override fun entityClass(): KClass<SignFileData> {
+        return SignFileData::class
     }
 
     override fun getLockAtMostFor(): Duration {

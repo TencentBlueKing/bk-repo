@@ -22,6 +22,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import kotlin.reflect.KClass
 
 /**
  * 归档节点完成任务
@@ -108,8 +109,8 @@ class ArchivedNodeCompleteJob(
         )
     }
 
-    override fun entityClass(): Class<ArchivedNodeRestoreJob.ArchiveFile> {
-        return ArchivedNodeRestoreJob.ArchiveFile::class.java
+    override fun entityClass(): KClass<ArchivedNodeRestoreJob.ArchiveFile> {
+        return ArchivedNodeRestoreJob.ArchiveFile::class
     }
 
     private fun archiveNode(

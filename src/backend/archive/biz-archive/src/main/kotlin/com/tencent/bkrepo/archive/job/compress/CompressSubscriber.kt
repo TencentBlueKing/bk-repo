@@ -2,7 +2,7 @@ package com.tencent.bkrepo.archive.job.compress
 
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.event.StorageFileCompressedEvent
-import com.tencent.bkrepo.archive.job.BaseJobSubscriber
+import com.tencent.bkrepo.archive.job.AsyncBaseJobSubscriber
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
@@ -13,14 +13,18 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
+import java.util.concurrent.ThreadPoolExecutor
 
 class CompressSubscriber(
     private val compressFileDao: CompressFileDao,
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
-) : BaseJobSubscriber<TCompressFile>() {
+    private val fileReferenceClient: FileReferenceClient,
+    executor: ThreadPoolExecutor,
+) : AsyncBaseJobSubscriber<TCompressFile>(executor) {
 
     override fun doOnNext(value: TCompressFile) {
         with(value) {
@@ -68,15 +72,20 @@ class CompressSubscriber(
                 SpringContextUtils.publishEvent(event)
             } catch (e: TooLowerReuseRateException) {
                 logger.info("Reuse rate is too lower.")
-                value.status = CompressStatus.COMPRESS_FAILED
-                value.lastModifiedDate = LocalDateTime.now()
-                compressFileRepository.save(value)
+                compressFailed(value)
             } catch (e: Exception) {
-                value.status = CompressStatus.COMPRESS_FAILED
-                value.lastModifiedDate = LocalDateTime.now()
-                compressFileRepository.save(value)
+                compressFailed(value)
                 throw e
             }
+        }
+    }
+
+    private fun compressFailed(file: TCompressFile) {
+        with(file) {
+            status = CompressStatus.COMPRESS_FAILED
+            lastModifiedDate = LocalDateTime.now()
+            compressFileRepository.save(file)
+            fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
         }
     }
 

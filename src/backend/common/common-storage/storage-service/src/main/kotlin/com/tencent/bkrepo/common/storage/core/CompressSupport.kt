@@ -4,16 +4,15 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.google.common.cache.RemovalListener
-import com.tencent.bkrepo.common.api.util.StreamUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.file.BkSyncDeltaSource
 import com.tencent.bkrepo.common.bksync.file.BDUtils
 import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
+import com.tencent.bkrepo.common.storage.util.StorageUtils
 import com.tencent.bkrepo.common.storage.util.createFile
 import java.io.File
 import java.nio.file.Files
@@ -173,17 +172,13 @@ abstract class CompressSupport : OverlaySupport() {
      * 下载[digest]到指定目录[dir]
      * */
     protected fun download(digest: String, credentials: StorageCredentials, dir: Path): File {
-        val tempFile = FileSystemClient(dir).touch("", "$digest.temp")
-        try {
-            val path = fileLocator.locate(digest)
-            val inputStream = fileStorage.load(path, digest, Range.FULL_RANGE, credentials)
-                ?: error("Miss data $digest on ${credentials.key}")
-            StreamUtils.useCopy(inputStream, tempFile.outputStream())
-            return tempFile
-        } catch (e: Exception) {
-            tempFile.delete()
-            throw e
+        val filePath = dir.resolve("$digest.temp")
+        if (!Files.isDirectory(filePath.parent)) {
+            Files.createDirectories(filePath.parent)
         }
+        val path = fileLocator.locate(digest)
+        StorageUtils.download(path, digest, credentials, filePath)
+        return filePath.toFile()
     }
 
     /**

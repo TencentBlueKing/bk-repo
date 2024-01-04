@@ -49,12 +49,14 @@ import java.net.InetAddress
 import java.time.LocalDateTime
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
+import kotlin.reflect.KClass
+import kotlin.reflect.full.declaredMemberProperties
 import kotlin.system.measureNanoTime
 
 /**
  * MongoDb抽象批处理作业Job
  * */
-abstract class MongoDbBatchJob<Entity, Context : JobContext>(
+abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     private val properties: MongodbJobProperties,
 ) : MongodbFailoverJob<Context>(properties) {
     /**
@@ -80,7 +82,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
      * */
     abstract fun mapToEntity(row: Map<String, Any?>): Entity
 
-    abstract fun entityClass(): Class<Entity>
+    abstract fun entityClass(): KClass<Entity>
 
     /**
      * 表执行结束回调
@@ -189,9 +191,9 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
                     .addCriteria(Criteria.where(ID).gt(lastId))
                     .limit(batchSize)
                     .with(Sort.by(ID).ascending())
-                entityClass().fields.forEach {
-                    val filedName = if (it.name.equals(JAVA_ID)) ID else it.name
-                    query.fields().include(filedName)
+                val fields = query.fields()
+                entityClass().declaredMemberProperties.forEach {
+                    fields.include(it.name)
                 }
                 val data = mongoTemplate.find<Map<String, Any?>>(
                     query,

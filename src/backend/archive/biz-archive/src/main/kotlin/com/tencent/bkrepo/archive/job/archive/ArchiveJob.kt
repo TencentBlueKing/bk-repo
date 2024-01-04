@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.extensions.key
+import com.tencent.bkrepo.archive.job.Cancellable
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
 import com.tencent.bkrepo.archive.utils.ArchiveUtils.Companion.newFixedAndCachedThreadPool
@@ -38,7 +39,7 @@ class ArchiveJob(
     private val archiveProperties: ArchiveProperties,
     private val storageService: StorageService,
     private val archiveFileRepository: ArchiveFileRepository,
-) {
+) : Cancellable {
 
     /**
      * 归档cos实例
@@ -88,6 +89,8 @@ class ArchiveJob(
         archiveProperties.ioThreads,
         ThreadFactoryBuilder().setNameFormat("archive-upload-%d").build(),
     )
+
+    private var subscriber: ArchiveSubscriber? = null
 
     init {
         /*
@@ -155,7 +158,13 @@ class ArchiveJob(
             .runOn(Schedulers.fromExecutor(httpUploadPool), prefetch)
             .flatMap(uploader::onArchiveFileWrapper) // 上传
             .subscribe(subscriber)
+        this.subscriber = subscriber
         subscriber.blockLast()
+        this.subscriber = null
+    }
+
+    override fun cancel() {
+        subscriber?.dispose()
     }
 
     companion object {

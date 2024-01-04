@@ -48,6 +48,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 流水线构件清理任务
@@ -85,8 +86,8 @@ class PipelineArtifactCleanupJob(
         return Node(row)
     }
 
-    override fun entityClass(): Class<Node> {
-        return Node::class.java
+    override fun entityClass(): KClass<Node> {
+        return Node::class
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
