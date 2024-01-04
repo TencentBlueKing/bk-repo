@@ -34,11 +34,18 @@ class UncompressSubscriber(
             )
             if (!tryLock) {
                 logger.info("File[$sha256] already start uncompress.")
+                return
             }
             // 解压
             val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
             try {
-                val throughput = measureThroughput(uncompressedSize) { storageService.uncompress(sha256, credentials) }
+                var ret = 0
+                val throughput = measureThroughput(uncompressedSize) {
+                    ret = storageService.uncompress(sha256, credentials)
+                }
+                if (ret == 0) {
+                    return
+                }
                 // 更新状态
                 value.status = CompressStatus.UNCOMPRESSED
                 value.lastModifiedDate = LocalDateTime.now()
