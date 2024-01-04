@@ -63,7 +63,6 @@ import com.tencent.bkrepo.s3.exception.S3AccessDeniedException
 import com.tencent.bkrepo.s3.exception.S3NotFoundException
 import com.tencent.bkrepo.s3.pojo.CopyObjectResult
 import com.tencent.bkrepo.s3.pojo.ListBucketResult
-import com.tencent.bkrepo.s3.utils.TimeUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.net.URLDecoder
@@ -118,12 +117,12 @@ class S3ObjectService(
                 }
             }
         val folderQueryBuilder = nodeQueryBuilder.newBuilder().excludeFile().select(NodeDetail::fullPath.name)
-        val folders = nodeClient.search(folderQueryBuilder.build()).data!!.records
+        val folders = nodeClient.queryWithoutCount(folderQueryBuilder.build()).data!!.records
             .map {
                 it[NodeDetail::fullPath.name].toString().removePrefix(SLASH).ensureSuffix(SLASH)
             }
         val fileQueryBuilder = nodeQueryBuilder.newBuilder().excludeFolder()
-        val files = nodeClient.search(fileQueryBuilder.build()).data!!.records
+        val files = nodeClient.queryWithoutCount(fileQueryBuilder.build()).data!!.records
         return ListBucketResult(repoName, files, maxKeys, prefix, folders)
     }
 
@@ -146,7 +145,7 @@ class S3ObjectService(
         dstNode = replaceMetadata(dstNode)
         return CopyObjectResult(
             eTag = "\"${dstNode.md5}\"",
-            lastModified = TimeUtil.getLastModified(dstNode),
+            lastModified = dstNode.lastModifiedDate,
             checksumCRC32 = "",
             checksumCRC32C = "",
             checksumSHA1 = "",
