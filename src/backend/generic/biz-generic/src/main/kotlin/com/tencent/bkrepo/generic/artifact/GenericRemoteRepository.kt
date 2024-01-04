@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.generic.artifact
 
-import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
@@ -62,8 +61,6 @@ import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveContentRange
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
@@ -189,7 +186,7 @@ class GenericRemoteRepository(
         val artifactInfo = context.artifactInfo
         val url = UrlFormatter.format(
             baseUrl,
-            "repository/api/node/detail/$remoteProjectId/$remoteRepoName/${artifactInfo.getArtifactFullPath()}",
+            "/generic/detail/$remoteProjectId/$remoteRepoName/${artifactInfo.getArtifactFullPath()}",
         )
 
         // 执行请求
@@ -206,11 +203,7 @@ class GenericRemoteRepository(
             val (baseUrl, remoteProjectId, remoteRepoName) = splitBkRepoRemoteUrl(remoteConfiguration.url)
             logger.info("search remoteProject[$remoteProjectId], remoteRepo[$remoteRepoName], user[${context.userId}]")
 
-            val result = if (firstSearch(context) && remoteRepoName == PIPELINE) {
-                searchPipelineNodes(context, baseUrl, remoteProjectId)
-            } else {
-                searchNodes(context, baseUrl, remoteProjectId, remoteRepoName)
-            }
+            val result = searchNodes(context, baseUrl, remoteProjectId, remoteRepoName)
             result.onEach { node ->
                 (node as MutableMap<String, Any?>)[RepositoryInfo::category.name] = RepositoryCategory.REMOTE.name
             }
@@ -265,54 +258,6 @@ class GenericRemoteRepository(
         )
     }
 
-    /**
-     * 请求类似下方例子时，将作为前端首次进入仓库的请求
-     *
-     * {
-     *   ”projectId“: "xxx",
-     *   "repoName": "xxx",
-     *   "path": "/",
-     *   "folder": true // 可选
-     * }
-     */
-    private fun firstSearch(context: GenericArtifactSearchContext): Boolean {
-        var result = false
-        val rule = context.queryModel?.rule
-        if (rule is Rule.NestedRule) {
-            for (queryRule in rule.rules) {
-                result = false
-                if (queryRule !is Rule.QueryRule) {
-                    break
-                }
-
-                if (queryRule.field !in FIRST_SEARCH_FIELDS || queryRule.operation != OperationType.EQ) {
-                    break
-                }
-
-                if (queryRule.field == NodeDetail::path.name && queryRule.value != "/") {
-                    break
-                }
-                result = true
-            }
-
-        }
-        return result
-    }
-
-    private fun searchPipelineNodes(
-        context: GenericArtifactSearchContext,
-        baseUrl: String,
-        remoteProjectId: String
-    ): List<Any> {
-        // 构造url
-        val url = UrlFormatter.format(
-            baseUrl,
-            "repository/api/pipeline/list/$remoteProjectId",
-        )
-        val request = Request.Builder().get().url(url).build()
-        return request<Response<List<Map<String, Any?>>>>(context.getRemoteConfiguration(), request).data!!
-    }
-
     private fun searchNodes(
         context: GenericArtifactSearchContext,
         baseUrl: String,
@@ -322,7 +267,7 @@ class GenericRemoteRepository(
         // 构造url
         val url = UrlFormatter.format(
             baseUrl,
-            "repository/api/node/queryWithoutCount",
+            "generic/$remoteProjectId/$remoteRepoName/search",
         )
 
         // 构造body
@@ -393,12 +338,6 @@ class GenericRemoteRepository(
     }
 
     companion object {
-        private val FIRST_SEARCH_FIELDS = listOf(
-            NodeDetail::projectId.name,
-            NodeDetail::repoName.name,
-            NodeDetail::path.name,
-            NodeDetail::folder.name
-        )
         private val logger = LoggerFactory.getLogger(GenericRemoteRepository::class.java)
     }
 }

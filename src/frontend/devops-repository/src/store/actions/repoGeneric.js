@@ -65,7 +65,7 @@ export default {
     // 请求文件夹下的子文件夹
     getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false, localRepo = true }) {
         let request
-        if (isPipeline && !fullPath) {
+        if (isPipeline && !fullPath && localRepo) {
             request = Vue.prototype.$ajax.get(
                 `${prefix}/pipeline/list/${projectId}`
             ).then(records => ({ records }))
@@ -334,7 +334,7 @@ export default {
     // 查询repo下一级目录
     getFirstLevelFolder (_, { projectId, repoName, fullPath = '', isPipeline = false, localRepo = true }) {
         let request
-        if (isPipeline && !fullPath) {
+        if (isPipeline && !fullPath && localRepo) {
             request = Vue.prototype.$ajax.get(
                 `${prefix}/pipeline/list/${projectId}`
             ).then(records => ({ records }))
