@@ -78,7 +78,7 @@ class ProjectMetricsReport2BkbaseJob(
         val projectInfo = mongoTemplate.find(query, ProjectInfo::class.java, COLLECTION_NAME_PROJECT)
             .firstOrNull() ?: return
         val storageMetrics = calculateRepoStorage(row, projectInfo, context.statTime)
-        messageSupplier.delegateToSupplier(storageMetrics, topic = properties.topic, binderType = BinderType.KAFKA)
+        messageSupplier.delegateToSupplier(storageMetrics, topic = TOPIC, binderType = BinderType.KAFKA)
     }
 
     override fun mapToEntity(row: Map<String, Any?>): TProjectMetrics {
@@ -167,5 +167,6 @@ class ProjectMetricsReport2BkbaseJob(
         private val logger = LoggerFactory.getLogger(ProjectMetricsReport2BkbaseJob::class.java)
         private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
         private const val COLLECTION_NAME_PROJECT = "project"
+        private const val TOPIC = "bkbase-bkrepo-project-storage-usage"
     }
 }

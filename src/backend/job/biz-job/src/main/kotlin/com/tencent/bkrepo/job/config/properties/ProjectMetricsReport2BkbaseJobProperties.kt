@@ -34,5 +34,4 @@ import org.springframework.scheduling.annotation.Scheduled
 class ProjectMetricsReport2BkbaseJobProperties(
     override var enabled: Boolean = false,
     override var cron: String = Scheduled.CRON_DISABLED,
-    var topic: String = "",
 ) : MongodbJobProperties(enabled)
