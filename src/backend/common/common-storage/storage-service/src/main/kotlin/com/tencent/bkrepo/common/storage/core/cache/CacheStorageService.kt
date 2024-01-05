@@ -145,7 +145,7 @@ class CacheStorageService(
     /**
      * 覆盖父类cleanUp逻辑，还包括清理缓存的文件内容
      */
-    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
+    override fun cleanUp(storageCredentials: StorageCredentials?): Map<Path, CleanupResult> {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val rootPath = Paths.get(credentials.cache.path)
         val tempPath = getTempPath(credentials)
@@ -166,7 +166,10 @@ class CacheStorageService(
             resolver,
         )
         getCacheClient(credentials).walk(visitor)
-        return visitor.result.merge(cleanUploadPath(credentials))
+        val result = mutableMapOf<Path, CleanupResult>()
+        result[rootPath] = visitor.result
+        result.putAll(cleanUploadPath(credentials))
+        return result
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {

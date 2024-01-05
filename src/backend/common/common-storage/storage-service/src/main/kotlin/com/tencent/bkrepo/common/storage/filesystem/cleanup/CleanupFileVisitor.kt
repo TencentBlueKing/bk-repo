@@ -63,8 +63,14 @@ class CleanupFileVisitor(
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         val size = attributes.size()
         try {
+            val isTempFile = isTempFile(filePath)
+            if(!isTempFile) {
+                // 仅统计根目录文件
+                result.visitedRootDirFile += 1
+                result.visitedRootDirSize += size
+            }
             if (fileExpireResolver.isExpired(filePath.toFile()) && !isNFSTempFile(filePath)) {
-                if (isTempFile(filePath) || existInStorage(filePath)) {
+                if (isTempFile || existInStorage(filePath)) {
                     rateLimiter.acquire()
                     Files.delete(filePath)
                     result.cleanupFile += 1

@@ -30,11 +30,14 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ExpiredCacheFileCleanupJobProperties
+import com.tencent.bkrepo.job.metrics.StorageCacheMetrics
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -52,7 +55,9 @@ class ExpiredCacheFileCleanupJob(
     properties: ExpiredCacheFileCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,
     private val storageService: StorageService,
-    private val clusterProperties: ClusterProperties
+    private val clusterProperties: ClusterProperties,
+    private val storageProperties: StorageProperties,
+    private val storageCacheMetrics: StorageCacheMetrics,
 ) : DefaultContextJob(properties) {
 
     data class TStorageCredentials(
@@ -69,7 +74,7 @@ class ExpiredCacheFileCleanupJob(
 
     override fun doStart0(jobContext: JobContext) {
         // cleanup default storage
-        cleanupStorage()
+        cleanupStorage(storageProperties.defaultStorageCredentials())
         // cleanup extended storage
         mongoTemplate.find(Query(), TStorageCredentials::class.java, COLLECTION_NAME)
             .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }
@@ -77,12 +82,16 @@ class ExpiredCacheFileCleanupJob(
             .forEach { cleanupStorage(it) }
     }
 
-    private fun cleanupStorage(storage: StorageCredentials? = null) {
-        val key = storage?.key ?: "default"
+    private fun cleanupStorage(storage: StorageCredentials) {
+        val key = storage.key ?: "default"
         logger.info("Starting to clean up on storage [$key].")
         executeAndMeasureTime {
             storageService.cleanUp(storage)
         }.apply {
+            first[storage.cache.path.toPath()]?.let {
+                storageCacheMetrics.setCacheCount(key, it.visitedRootDirFile)
+                storageCacheMetrics.setCacheSize(key, it.visitedRootDirSize)
+            }
             logger.info("Clean up on storage[$key] completed, summary: $first, elapse [${second.seconds}] s.")
         }
     }

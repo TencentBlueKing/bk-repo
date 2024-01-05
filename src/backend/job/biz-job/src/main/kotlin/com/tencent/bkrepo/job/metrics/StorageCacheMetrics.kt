@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,43 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup
+package com.tencent.bkrepo.job.metrics
 
-import com.tencent.bkrepo.common.api.util.HumanReadable
+import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.MeterRegistry
+import org.springframework.stereotype.Component
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
-data class CleanupResult(
-    var totalFile: Long = 0,
-    var totalFolder: Long = 0,
-    var totalSize: Long = 0,
-    var cleanupFile: Long = 0,
-    var cleanupFolder: Long = 0,
-    var cleanupSize: Long = 0,
-    var errorCount: Long = 0,
-    /**
-     * 根目录下除了tempPath与stagingPath子目录外被访问的文件数量
-     */
-    var visitedRootDirFile: Long = 0,
-    /**
-     * 根目录下除了tempPath与stagingPath子目录外被访问的文件大小
-     */
-    var visitedRootDirSize: Long = 0,
-) {
+@Component
+class StorageCacheMetrics(private val registry: MeterRegistry) {
 
-    fun merge(vararg others: CleanupResult): CleanupResult {
-        others.forEach {
-            totalFile += it.totalFile
-            totalFolder += it.totalFolder
-            totalSize += it.totalSize
-            cleanupFile += it.cleanupFile
-            cleanupFolder += it.cleanupFolder
-            cleanupSize += it.cleanupSize
-            errorCount += it.errorCount
-        }
-        return this
+    private val cacheSizeMap = ConcurrentHashMap<String, AtomicLong>()
+    private val cacheCountMap = ConcurrentHashMap<String, AtomicLong>()
+
+    fun setCacheSize(storageKey: String, size: Long) {
+        val s = cacheSizeMap.getOrPut(storageKey) { AtomicLong(size) }
+        s.set(size)
+        Gauge.builder(CACHE_SIZE, s) { it.toDouble() }
+            .tag("storageKey", storageKey)
+            .description("storage cache total size")
+            .register(registry)
     }
 
-    override fun toString(): String {
-        return "$cleanupFile/$totalFile[${HumanReadable.size(cleanupSize)}/${HumanReadable.size(totalSize)}] " +
-            "files deleted,errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted."
+    fun setCacheCount(storageKey: String, count: Long) {
+        val c = cacheCountMap.getOrPut(storageKey) { AtomicLong(count) }
+        c.set(count)
+        Gauge.builder(CACHE_COUNT, c) { it.toDouble() }
+            .tag("storageKey", storageKey)
+            .description("storage cache total count")
+            .register(registry)
+    }
+
+    companion object {
+        private const val CACHE_SIZE = "storage.cache.size"
+        private const val CACHE_COUNT = "storage.cache.count"
     }
 }
