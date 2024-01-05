@@ -103,4 +103,10 @@ interface ServiceUserClient {
     fun userPwdById(
         @PathVariable uid: String
     ): Response<String?>
+
+    @ApiOperation("获取用户token")
+    @GetMapping("/usertoken/{uid}")
+    fun userTokenById(
+        @PathVariable uid: String
+    ): Response<List<String>>
 }

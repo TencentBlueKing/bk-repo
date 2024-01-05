@@ -227,11 +227,11 @@ class CommitEdgeCenterNodeServiceImpl(
         return CommitEdgeCenterNodeRestoreSupport(this).restoreNode(restoreContext)
     }
 
-    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
+    override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
         return CommitEdgeCenterNodeMoveCopySupport(this, clusterProperties).copyNode(copyRequest)
     }
 
-    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
+    override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         return CommitEdgeCenterNodeMoveCopySupport(this, clusterProperties).moveNode(moveRequest)
     }
 

@@ -303,6 +303,13 @@ class UserServiceImpl constructor(
         return UserRequestUtil.convTokenResult(userRepository.findFirstByUserId(userId)!!.tokens)
     }
 
+    override fun listValidToken(userId: String): List<Token> {
+        checkUserExist(userId)
+        return userRepository.findFirstByUserId(userId)!!.tokens.filter {
+            it.expiredAt == null || it.expiredAt!!.isAfter(LocalDateTime.now())
+        }
+    }
+
     override fun removeToken(userId: String, name: String): Boolean {
         logger.info("remove token userId : [$userId] ,name : [$name]")
         checkUserExist(userId)

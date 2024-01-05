@@ -31,20 +31,15 @@
 
 package com.tencent.bkrepo.s3.artifact.utils
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.s3.artifact.auth.AWS4AuthCredentials
-import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
-import org.springframework.util.StringUtils
 import java.io.UnsupportedEncodingException
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.Collections
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 
 /**
  * AWS4签名验证
@@ -57,19 +52,14 @@ object AWS4AuthUtil {
         authCredentials: AWS4AuthCredentials,
         secretAccessKey: String
     ): Boolean {
-        val heardMap: MutableMap<String, String> = HashMap()
-        heardMap[S3HttpHeaders.X_AMZ_CONTENT_SHA256.toLowerCase()] = authCredentials.contentHash
-        heardMap[S3HttpHeaders.X_AMZ_DATE.toLowerCase()] = authCredentials.requestDate
-        heardMap[HttpHeaders.HOST.toLowerCase()] = authCredentials.host
         // 解析签名信息
         val authInfo = parseAuthorization(authCredentials.authorization)
         if (authCredentials.accessKeyId != authInfo.accessKey) {
             return false
         }
         // 待签名字符串
-        var stringToSign: String = buildStringToSign(
+        val stringToSign: String = buildStringToSign(
             authCredentials,
-            heardMap,
             authInfo
         )
         // 计算签名的key
@@ -119,11 +109,10 @@ object AWS4AuthUtil {
 
     private fun buildStringToSign(
         authCredentials: AWS4AuthCredentials,
-        heardMap: Map<String, String>,
         authInfo: AuthorizationInfo
     ): String {
         ///待签名字符串
-        var stringToSign: String = ""
+        var stringToSign = ""
         //签名由4部分组成
         //1-Algorithm – 用于创建规范请求的哈希的算法。对于 SHA-256，算法是 AWS4-HMAC-SHA256。
         stringToSign += "AWS4-HMAC-SHA256\n"
@@ -145,22 +134,21 @@ object AWS4AuthUtil {
         //4.2-Canonical URI
         hashedCanonicalRequest += "${authCredentials.uri}\n"
         //4.3-Canonical Query String
-        hashedCanonicalRequest += if (!StringUtils.isEmpty(authCredentials.queryString)) {
+        hashedCanonicalRequest += if (authCredentials.queryString.isNotEmpty()) {
             val queryStringMap = parseQueryParams(authCredentials.queryString)
-            val keyList: List<String> = ArrayList(queryStringMap.keys)
-            Collections.sort(keyList)
+            val keyList = queryStringMap.keys.sorted()
             val queryStringBuilder = StringBuilder("")
             for (key in keyList) {
                 queryStringBuilder.append(key).append("=").append(queryStringMap[key]).append("&")
             }
             queryStringBuilder.deleteCharAt(queryStringBuilder.lastIndexOf("&"))
-            "${queryStringBuilder.toString()}\n"
+            "$queryStringBuilder\n"
         } else {
             "${authCredentials.queryString}\n"
         }
         //4.4-Canonical Headers
         for (name in authInfo.signedHeaders) {
-            hashedCanonicalRequest += "$name:${heardMap[name]}\n"
+            hashedCanonicalRequest += "$name:${HeaderUtils.getHeader(name)}\n"
         }
         hashedCanonicalRequest += "\n"
         //4.5-Signed Headers
@@ -209,7 +197,7 @@ object AWS4AuthUtil {
         return mac.doFinal(data!!.toByteArray(charset("UTF8")))
     }
 
-    internal val hexArray = "0123456789ABCDEF".toCharArray()
+    private val hexArray = "0123456789ABCDEF".toCharArray()
     private fun doBytesToHex(bytes: ByteArray): String {
         val hexChars = CharArray(bytes.size * 2)
         for (j in bytes.indices) {
@@ -238,7 +226,7 @@ object AWS4AuthUtil {
     private fun parseQueryParams(queryString: String?): Map<String, String> {
         val queryParams: MutableMap<String, String> = HashMap()
         if (!queryString.isNullOrEmpty()) {
-            val queryParamsArray = queryString!!.split("&")
+            val queryParamsArray = queryString.split("&")
             for (param in queryParamsArray) {
                 val keyValue = param.split("=")
                 val key = keyValue[0]

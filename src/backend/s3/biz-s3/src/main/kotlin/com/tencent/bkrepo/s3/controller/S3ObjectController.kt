@@ -32,28 +32,62 @@
 package com.tencent.bkrepo.s3.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
 import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo.Companion.GENERIC_MAPPING_URI
+import com.tencent.bkrepo.s3.constant.S3HttpHeaders.X_AMZ_COPY_SOURCE
+import com.tencent.bkrepo.s3.pojo.CopyObjectResult
+import com.tencent.bkrepo.s3.pojo.ListBucketResult
 import com.tencent.bkrepo.s3.service.S3ObjectService
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class S3ObjectController(
     private val s3ObjectService: S3ObjectService,
-    private val permissionManager: PermissionManager
 ) {
     @GetMapping(GENERIC_MAPPING_URI)
-    fun getObject(@ArtifactPathVariable artifactInfo: S3ArtifactInfo){
-        permissionManager.checkNodePermission(
-            action = PermissionAction.READ,
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
-            path = *arrayOf(artifactInfo.getArtifactFullPath())
-        )
-        s3ObjectService.getObject(artifactInfo)
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
+    fun getOrListObject(
+        @ArtifactPathVariable artifactInfo: S3ArtifactInfo,
+        @RequestParam delimiter: String?,
+        @RequestParam("max-keys") maxKeys: Int?,
+        @RequestParam prefix: String?,
+    ): ListBucketResult? {
+        val queryParamsNotNull = delimiter != null || maxKeys != null || prefix != null
+        if (queryParamsNotNull || artifactInfo.getArtifactFullPath() == StringPool.ROOT) {
+            return s3ObjectService.listObjects(
+                artifactInfo = artifactInfo,
+                maxKeys = maxKeys ?: 1000,
+                delimiter = delimiter ?: StringPool.SLASH,
+                prefix = prefix ?: ""
+            )
+        } else {
+            s3ObjectService.getObject(artifactInfo)
+            return null
+        }
     }
 
+    @PutMapping(GENERIC_MAPPING_URI)
+    @Permission(type = ResourceType.NODE, action = PermissionAction.WRITE)
+    fun putOrCopyObject(@ArtifactPathVariable artifactInfo: S3ArtifactInfo, file: ArtifactFile): CopyObjectResult? {
+        // 根目录不需要创建
+        if (artifactInfo.getArtifactFullPath() == StringPool.ROOT) {
+            return null
+        }
+        return if (HeaderUtils.getHeader(X_AMZ_COPY_SOURCE).isNullOrEmpty()) {
+            s3ObjectService.putObject(artifactInfo, file)
+            null
+        } else {
+            s3ObjectService.copyObject(artifactInfo)
+        }
+
+    }
 }

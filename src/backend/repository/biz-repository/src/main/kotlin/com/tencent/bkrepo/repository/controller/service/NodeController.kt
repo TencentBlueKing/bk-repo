@@ -118,14 +118,12 @@ class NodeController(
         return ResponseBuilder.success()
     }
 
-    override fun moveNode(nodeMoveRequest: NodeMoveCopyRequest): Response<Void> {
-        nodeService.moveNode(nodeMoveRequest)
-        return ResponseBuilder.success()
+    override fun moveNode(nodeMoveRequest: NodeMoveCopyRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(nodeService.moveNode(nodeMoveRequest))
     }
 
-    override fun copyNode(nodeCopyRequest: NodeMoveCopyRequest): Response<Void> {
-        nodeService.copyNode(nodeCopyRequest)
-        return ResponseBuilder.success()
+    override fun copyNode(nodeCopyRequest: NodeMoveCopyRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(nodeService.copyNode(nodeCopyRequest))
     }
 
     override fun deleteNode(nodeDeleteRequest: NodeDeleteRequest): Response<NodeDeleteResult> {

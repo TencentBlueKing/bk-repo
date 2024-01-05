@@ -53,6 +53,8 @@ data class MetadataSaveRequest(
     val metadata: Map<String, Any>? = null,
     @ApiModelProperty("需要创建或更新的元数据", required = true)
     val nodeMetadata: List<MetadataModel>? = null,
+    @ApiModelProperty("是否替换元数据，删除原有元数据再新增元数据", required = false)
+    val replace: Boolean = false,
     @ApiModelProperty("操作用户")
     override val operator: String = SYSTEM_USER
 ) : NodeRequest, ServiceRequest
