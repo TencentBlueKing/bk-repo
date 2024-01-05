@@ -38,7 +38,6 @@ dependencies {
     implementation(project(":maven:biz-maven"))
     implementation(project(":npm:biz-npm"))
     implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
     implementation(project(":rpm:biz-rpm"))
     implementation(project(":oci:biz-oci"))
     implementation(project(":job:biz-job"))
