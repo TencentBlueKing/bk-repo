@@ -49,11 +49,13 @@ import javax.servlet.http.HttpServletRequest
  * AWS4 Http 认证方式
  */
 class AWS4AuthHandler(
-    private val authenticationManager: AuthenticationManager
+    authenticationManager: AuthenticationManager
 ) : HttpAuthHandler {
 
     @Value("\${spring.application.name}")
     private val applicationName: String = "s3"
+
+    private val authValidator = AbstractAuthValidator.getAuthValidator(authenticationManager)
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
@@ -64,7 +66,7 @@ class AWS4AuthHandler(
                  * 用用户名去db中查出密码来，用客户端同样的算法计算签名，
                  * 如果计算的签名与传进来的签名一样，则认证通过
                  */
-                var userName = AWS4AuthUtil.getAccessKey(authorizationHeader)
+                val userName = AWS4AuthUtil.getAccessKey(authorizationHeader)
                 buildAWS4AuthorizationInfo(request, userName)
             } catch (exception: Exception) {
                 // 认证异常处理
@@ -78,13 +80,8 @@ class AWS4AuthHandler(
     @Throws(AWS4AuthenticationException::class)
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
         require(authCredentials is AWS4AuthCredentials)
-
-        var password: String = authenticationManager.findUserPwd(authCredentials.accessKeyId)
-            ?: throw AWS4AuthenticationException(
-                params = arrayOf(SIGN_NOT_MATCH, getRequestResource(request))
-            )
-        var authPassed = AWS4AuthUtil.validAuthorization(authCredentials, password)
-        if (authPassed) {
+        val pass = authValidator.validate(authCredentials)
+        if (pass) {
             return authCredentials.accessKeyId
         }
         logger.warn("s3 auth fail, request data:$authCredentials")
@@ -102,7 +99,7 @@ class AWS4AuthHandler(
             accessKeyId = accessKeyId,
             requestDate = request.getHeader(S3HttpHeaders.X_AMZ_DATE) ?: "",
             contentHash = request.getHeader(S3HttpHeaders.X_AMZ_CONTENT_SHA256) ?: "",
-            /*uri = request.requestURI.split("?").toTypedArray()[0],*/
+//            uri = request.requestURI.split("?").toTypedArray()[0],
             uri = "/$applicationName"+request.requestURI.split("?").toTypedArray()[0],
             host = request.getHeader(HttpHeaders.HOST) ?: "",
             queryString = request.queryString ?: "",

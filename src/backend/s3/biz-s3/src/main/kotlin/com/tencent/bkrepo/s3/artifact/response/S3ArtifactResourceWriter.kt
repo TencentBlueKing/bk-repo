@@ -40,16 +40,18 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
 import com.tencent.bkrepo.s3.constant.DEFAULT_ENCODING
 import com.tencent.bkrepo.s3.constant.S3HttpHeaders
+import com.tencent.bkrepo.s3.utils.TimeUtil
 import javax.servlet.http.HttpServletResponse
 
 /**
  * S3协议的响应输出
  */
 class S3ArtifactResourceWriter (
-    private val storageProperties: StorageProperties
+    storageProperties: StorageProperties
 ) : AbstractArtifactResourceHandler(storageProperties) {
 
     @Throws(ArtifactResponseException::class)
@@ -68,7 +70,7 @@ class S3ArtifactResourceWriter (
         val status = resource.status?.value ?: HttpStatus.OK.value
         val totalSize = resource.getTotalSize().toString()
 
-        prepareResponseHeaders(response, totalSize.toLong(), node?.sha256!!, status, contentType, characterEncoding)
+        prepareResponseHeaders(response, totalSize.toLong(), node, status, contentType, characterEncoding)
         response.bufferSize = getBufferSize(range.length.toInt())
         return writeRangeStream(resource, request, response)
     }
@@ -76,7 +78,7 @@ class S3ArtifactResourceWriter (
     private fun prepareResponseHeaders(
         response: HttpServletResponse,
         contentLength: Long,
-        eTag: String,
+        node: NodeDetail?,
         status: Int,
         contentType: String = MediaTypes.APPLICATION_OCTET_STREAM,
         characterEncoding: String = DEFAULT_ENCODING
@@ -85,8 +87,12 @@ class S3ArtifactResourceWriter (
         response.setHeader(S3HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
         response.setHeader(HttpHeaders.CONTENT_TYPE, contentType)
         response.setHeader(HttpHeaders.CONTENT_LENGTH, contentLength.toString())
-        response.setHeader(HttpHeaders.ETAG, eTag)
-        response.setCharacterEncoding(characterEncoding)
+        node?.let {
+            response.setHeader(HttpHeaders.ETAG, "\"${it.md5}\"")
+            // 本地时间转换为GMT时间
+            response.setHeader(HttpHeaders.LAST_MODIFIED, TimeUtil.getLastModified(it))
+        }
+        response.characterEncoding = characterEncoding
         response.status = status
     }
 }

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -67,6 +68,7 @@ class NodeServiceImpl(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
+    override val servicePermissionClient: ServicePermissionClient,
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -76,6 +78,7 @@ class NodeServiceImpl(
     quotaService,
     repositoryProperties,
     messageSupplier,
+    servicePermissionClient,
 ) {
 
     override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
@@ -135,13 +138,13 @@ class NodeServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
-        NodeMoveCopySupport(this).moveNode(moveRequest)
+    override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
+        return NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
-        NodeMoveCopySupport(this).copyNode(copyRequest)
+    override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
+        return NodeMoveCopySupport(this).copyNode(copyRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

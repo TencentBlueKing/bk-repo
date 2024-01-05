@@ -46,6 +46,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
@@ -126,11 +127,11 @@ interface NodeClient {
 
     @ApiOperation("移动节点")
     @PostMapping("/move")
-    fun moveNode(@RequestBody nodeMoveRequest: NodeMoveCopyRequest): Response<Void>
+    fun moveNode(@RequestBody nodeMoveRequest: NodeMoveCopyRequest): Response<NodeDetail>
 
     @ApiOperation("复制节点")
     @PostMapping("/copy")
-    fun copyNode(@RequestBody nodeCopyRequest: NodeMoveCopyRequest): Response<Void>
+    fun copyNode(@RequestBody nodeCopyRequest: NodeMoveCopyRequest): Response<NodeDetail>
 
     @ApiOperation("删除节点")
     @DeleteMapping("/delete")
@@ -254,4 +255,8 @@ interface NodeClient {
     @ApiOperation("清理最后修改时间早于{date}的文件节点")
     @DeleteMapping("/clean")
     fun cleanNodes(@RequestBody nodeCleanRequest: NodeCleanRequest): Response<NodeDeleteResult>
+
+    @ApiOperation("创建软链接")
+    @PostMapping("/link")
+    fun link(@RequestBody nodeLinkRequest: NodeLinkRequest): Response<NodeDetail>
 }

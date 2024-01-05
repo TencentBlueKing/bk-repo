@@ -53,4 +53,7 @@ interface ArchiveClient {
 
     @PutMapping("/compress/complete")
     fun completeCompress(@RequestBody request: CompleteCompressRequest): Response<Void>
+
+    @DeleteMapping("/deleteAll")
+    fun deleteAll(@RequestBody request: ArchiveFileRequest): Response<Void>
 }

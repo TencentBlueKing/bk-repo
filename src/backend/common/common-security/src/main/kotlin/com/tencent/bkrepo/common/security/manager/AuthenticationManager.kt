@@ -100,6 +100,13 @@ class AuthenticationManager(
         return serviceUserClient.userPwdById(userId).data
     }
 
+    /**
+     * 根据用户id[userId]查询用户token
+     */
+    fun findUserToken(userId: String): List<String>? {
+        return serviceUserClient.userTokenById(userId).data
+    }
+
     fun findOauthToken(accessToken: String): OauthToken? {
         return serviceOauthAuthorizationClient.getToken(accessToken).data
     }

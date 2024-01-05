@@ -81,6 +81,10 @@ open class BaseJobSubscriber<T> : BaseSubscriber<T>() {
         countDownLatch.countDown()
     }
 
+    override fun hookOnCancel() {
+        LoggerHolder.jobLogger.info("Job[${getJobName()}] cancelled.")
+    }
+
     override fun currentContext(): Context {
         return Context.of(JOB_NAME, getJobName(), JOB_CTX, jobContext)
     }

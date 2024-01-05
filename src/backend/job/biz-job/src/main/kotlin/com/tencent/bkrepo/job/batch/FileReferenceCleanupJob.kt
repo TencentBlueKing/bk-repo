@@ -29,7 +29,6 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
-import com.tencent.bkrepo.archive.request.DeleteCompressRequest
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -51,6 +50,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 /**
  * 清理引用=0的文件
@@ -72,8 +72,8 @@ class FileReferenceCleanupJob(
         return FileJobContext()
     }
 
-    override fun entityClass(): Class<FileReferenceData> {
-        return FileReferenceData::class.java
+    override fun entityClass(): KClass<FileReferenceData> {
+        return FileReferenceData::class
     }
 
     override fun collectionNames(): List<String> {
@@ -133,9 +133,7 @@ class FileReferenceCleanupJob(
 
     private fun cleanupRelatedResources(sha256: String, credentialsKey: String?) {
         val deleteArchiveFileRequest = ArchiveFileRequest(sha256, credentialsKey, SYSTEM_USER)
-        archiveClient.delete(deleteArchiveFileRequest)
-        val deleteCompressRequest = DeleteCompressRequest(sha256, credentialsKey, SYSTEM_USER)
-        archiveClient.deleteCompress(deleteCompressRequest)
+        archiveClient.deleteAll(deleteArchiveFileRequest)
     }
 
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()

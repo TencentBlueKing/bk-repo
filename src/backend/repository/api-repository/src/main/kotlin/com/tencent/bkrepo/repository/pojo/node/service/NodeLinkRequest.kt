@@ -48,6 +48,8 @@ data class NodeLinkRequest(
     val targetRepoName: String,
     @ApiModelProperty("目标节点完整路径", required = false)
     val targetFullPath: String,
+    @ApiModelProperty("是否检查目标节点存在")
+    val checkTargetExist: Boolean = true,
     @ApiModelProperty("是否覆盖")
     val overwrite: Boolean = false,
     @ApiModelProperty("元数据信息")

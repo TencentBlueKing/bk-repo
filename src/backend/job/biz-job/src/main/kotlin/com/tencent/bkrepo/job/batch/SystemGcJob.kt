@@ -3,10 +3,18 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.CompressFileRequest
 import com.tencent.bkrepo.common.api.collection.groupBySimilar
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.StreamUtils
+import com.tencent.bkrepo.common.bksync.BkSync
+import com.tencent.bkrepo.common.bksync.DiffResult
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.locator.FileLocator
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.util.StorageUtils
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
@@ -26,6 +34,10 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import kotlin.reflect.full.declaredMemberProperties
 import kotlin.system.measureNanoTime
 
 /**
@@ -38,11 +50,14 @@ class SystemGcJob(
     val properties: SystemGcJobProperties,
     private val mongoTemplate: MongoTemplate,
     private val archiveClient: ArchiveClient,
+    private val storageProperties: StorageProperties,
+    private val fileLocator: FileLocator,
 ) : DefaultContextJob(properties) {
 
     private var lastId = MIN_OBJECT_ID
-    private var lastCutoffTime = LocalDateTime.MIN
+    private var lastCutoffTimeMap = mutableMapOf<String, LocalDateTime>()
     private var curCutoffTime = LocalDateTime.MIN
+    private var bksync = BkSync()
     override fun doStart0(jobContext: JobContext) {
         curCutoffTime = LocalDateTime.now().minus(Duration.ofDays(properties.idleDays.toLong()))
         properties.repos.forEach {
@@ -52,8 +67,8 @@ class SystemGcJob(
             val repoName = splits[1]
             val nanos = measureNanoTime { count = repoGc(projectId, repoName) }
             logger.info("Finish gc repository [$projectId/$repoName]($count nodes), took ${HumanReadable.time(nanos)}.")
+            lastCutoffTimeMap[it] = curCutoffTime
         }
-        lastCutoffTime = curCutoffTime
     }
 
     private fun repoGc(projectId: String, repoName: String): Long {
@@ -117,7 +132,14 @@ class SystemGcJob(
                     Criteria.where("lastAccessDate").isEqualTo(null),
                     Criteria.where("lastAccessDate").lt(curCutoffTime),
                 ),
-        ).limit(properties.maxBatchSize).with(Sort.by(ID).ascending()) // 长时间未访问
+        ).limit(properties.maxBatchSize)
+            .with(Sort.by(ID).ascending())
+            .apply {
+                val fields = fields()
+                Node::class.declaredMemberProperties.forEach {
+                    fields.include(it.name)
+                }
+            }
     }
 
     /**
@@ -131,24 +153,70 @@ class SystemGcJob(
                 }
             }
             .sortedBy { it.createdDate }
+        if (logger.isDebugEnabled) {
+            logger.debug("Group node: [${sortedNodes.joinToString(",") { it.name }}]")
+        }
         // 没有新的节点，表示节点已经gc过一轮了
-        if (lastEndTime != null && sortedNodes.last().createdDate < lastCutoffTime) {
+        val repoKey = nodes.first().let { "${it.projectId}/${it.repoName}" }
+        val lastCutoffTime = lastCutoffTimeMap[repoKey]
+        if (lastCutoffTime != null && sortedNodes.last().createdDate < lastCutoffTime) {
             logger.info("There are no new nodes, gc is skipped.")
             return
         }
         val gcNodes = sortedNodes.subList(0, sortedNodes.size - properties.retain)
-        if (logger.isDebugEnabled) {
-            logger.debug("Group node: [${gcNodes.joinToString(",") { it.name }}]")
-        }
         // 保留最新的
         val newest = sortedNodes.last()
-        val repo = RepositoryCommonUtils.getRepositoryDetail(newest.projectId, newest.repoName)
-        val credentials = repo.storageCredentials
-        gcNodes.forEach {
-            val compressedRequest = CompressFileRequest(it.sha256, it.size, newest.sha256, credentials?.key)
-            archiveClient.compress(compressedRequest)
-            logger.info("Compress node ${it.name} by node ${newest.name}.")
+        if (samplingSurvey(gcNodes, newest)) {
+            val repo = RepositoryCommonUtils.getRepositoryDetail(newest.projectId, newest.repoName)
+            val credentials = repo.storageCredentials
+            gcNodes.forEach {
+                val compressedRequest = CompressFileRequest(it.sha256, it.size, newest.sha256, credentials?.key)
+                archiveClient.compress(compressedRequest)
+                logger.info("Compress node ${it.name} by node ${newest.name}.")
+            }
         }
+    }
+
+    /**
+     * 抽样调查，快速判断一组节点的实际数据是否相似
+     * */
+    private fun samplingSurvey(nodes: List<Node>, base: Node): Boolean {
+        val src = nodes.first()
+        val repo = RepositoryCommonUtils.getRepositoryDetail(src.projectId, src.repoName)
+        val storageCredentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
+        val dir = Paths.get(storageCredentials.upload.localPath, GC_DIR, StringPool.randomStringByLongValue())
+        val baseFilePath = createTempFile(dir)
+        val srcFilePath = createTempFile(dir)
+        val signFilePath = createTempFile(dir)
+        val deltaFilePath = createTempFile(dir)
+        try {
+            downloadFile(base.sha256, storageCredentials, baseFilePath)
+            downloadFile(src.sha256, storageCredentials, srcFilePath)
+            Files.newOutputStream(signFilePath).use {
+                bksync.checksum(baseFilePath.toFile(), it)
+            }
+            var actual = DiffResult(0, 1)
+            StreamUtils.use(Files.newInputStream(signFilePath), Files.newOutputStream(deltaFilePath)) { input, output ->
+                actual = bksync.diff(srcFilePath.toFile(), input, output, storageCredentials.compress.ratio)
+            }
+            logger.info("Sampling (${src.name},${base.name}),reuse: ${actual.hitRate}.")
+            return actual.hitRate >= storageCredentials.compress.ratio
+        } finally {
+            dir.toFile().deleteRecursively()
+        }
+    }
+
+    private fun createTempFile(dir: Path): Path {
+        val fileName = StringPool.randomStringByLongValue(prefix = "gc", suffix = ".temp")
+        return dir.resolve(fileName)
+    }
+
+    private fun downloadFile(sha256: String, storageCredentials: StorageCredentials, filePath: Path) {
+        val path = fileLocator.locate(sha256)
+        if (!Files.isDirectory(filePath.parent)) {
+            Files.createDirectories(filePath.parent)
+        }
+        StorageUtils.download(path, sha256, storageCredentials, filePath)
     }
 
     data class Node(
@@ -169,5 +237,6 @@ class SystemGcJob(
     companion object {
         private val logger = LoggerFactory.getLogger(SystemGcJob::class.java)
         private val HAMMING_DISTANCE_INSTANCE = HammingDistance()
+        private const val GC_DIR = "gc"
     }
 }

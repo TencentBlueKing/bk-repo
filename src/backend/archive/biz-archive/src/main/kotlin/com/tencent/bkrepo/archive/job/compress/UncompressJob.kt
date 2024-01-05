@@ -3,6 +3,7 @@ package com.tencent.bkrepo.archive.job.compress
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
+import com.tencent.bkrepo.archive.job.Cancellable
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
@@ -16,7 +17,6 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
-import reactor.core.scheduler.Schedulers
 
 @Component
 class UncompressJob(
@@ -24,12 +24,13 @@ class UncompressJob(
     private val compressFileDao: CompressFileDao,
     private val storageService: StorageService,
     private val compressFileRepository: CompressFileRepository,
-) {
+) : Cancellable {
 
     private val uncompressThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
         archiveProperties.ioThreads,
         ThreadFactoryBuilder().setNameFormat("storage-uncompress-%d").build(),
     )
+    private var subscriber: UncompressSubscriber? = null
 
     fun listFiles(): Flux<TCompressFile> {
         val criteria = where(TCompressFile::status).isEqualTo(CompressStatus.WAIT_TO_UNCOMPRESS)
@@ -40,10 +41,19 @@ class UncompressJob(
 
     @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
     fun uncompress() {
-        val subscriber = UncompressSubscriber(compressFileDao, compressFileRepository, storageService)
-        listFiles().parallel()
-            .runOn(Schedulers.fromExecutor(uncompressThreadPool))
-            .subscribe(subscriber)
+        val subscriber = UncompressSubscriber(
+            compressFileDao,
+            compressFileRepository,
+            storageService,
+            uncompressThreadPool,
+        )
+        listFiles().subscribe(subscriber)
+        this.subscriber = subscriber
         subscriber.blockLast()
+        this.subscriber = null
+    }
+
+    override fun cancel() {
+        subscriber?.dispose()
     }
 }

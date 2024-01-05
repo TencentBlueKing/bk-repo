@@ -32,4 +32,8 @@ object S3HttpHeaders {
     const val X_AMZ_REQUEST_ID = "X-Amz-Request-Id"
     const val X_AMZ_DATE = "X-Amz-Date"
     const val X_AMZ_CONTENT_SHA256 = "X-Amz-Content-Sha256"
+    const val X_AMZ_COPY_SOURCE = "X-Amz-Copy-Source"
+    const val X_AMZ_METADATA_DIRECTIVE = "X-Amz-Metadata-Directive"
+    const val X_AMZ_META_PREFIX = "X-Amz-Meta-"
+    const val X_AMZ_META_MTIME = "X-Amz-Meta-Mtime"
 }
