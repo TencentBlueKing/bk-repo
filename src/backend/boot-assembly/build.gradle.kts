@@ -47,6 +47,7 @@ dependencies {
     implementation(project(":lfs:biz-lfs"))
     implementation(project(":ddc:biz-ddc"))
     implementation(project(":archive:biz-archive"))
+    implementation("com.tencent.devops:devops-pulsar")
 }
 
 configurations.all {
