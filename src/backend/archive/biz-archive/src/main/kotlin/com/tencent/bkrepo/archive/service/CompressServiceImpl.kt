@@ -6,6 +6,7 @@ import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.job.compress.CompressSubscriber
 import com.tencent.bkrepo.archive.job.compress.UncompressSubscriber
 import com.tencent.bkrepo.archive.model.TCompressFile
+import com.tencent.bkrepo.archive.pojo.CompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
@@ -47,7 +48,7 @@ class CompressServiceImpl(
         executor,
     )
 
-    override fun compress(request: CompressFileRequest) {
+    override fun compress(request: CompressFileRequest): Int {
         with(request) {
             // 队头元素
             val head = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
@@ -61,7 +62,7 @@ class CompressServiceImpl(
                     head.status = CompressStatus.COMPRESSED
                     compressFileRepository.save(head)
                 }
-                return
+                return 1
             }
             var currentChainLength = 0
             // 这是队头
@@ -71,7 +72,7 @@ class CompressServiceImpl(
                 if (currentChainLength > MAX_CHAIN_LENGTH) {
                     // 超出队列长度
                     logger.info("Exceed max chain length,ignore it.")
-                    return
+                    return 0
                 }
                 // 删除旧头
                 compressFileRepository.delete(head)
@@ -116,6 +117,7 @@ class CompressServiceImpl(
             if (sync) {
                 compressor.doOnNext(compressFile)
             }
+            return 1
         }
     }
 
@@ -171,6 +173,27 @@ class CompressServiceImpl(
                 compressFileRepository.save(file)
                 logger.info("Complete compress file [$sha256].")
             }
+        }
+    }
+
+    override fun getCompressInfo(sha256: String, storageCredentialsKey: String?): CompressFile? {
+        val file = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
+        if (file == null || file.status == CompressStatus.NONE) {
+            return null
+        }
+        with(file) {
+            return CompressFile(
+                createdBy = createdBy,
+                createdDate = createdDate,
+                lastModifiedBy = lastModifiedBy,
+                lastModifiedDate = lastModifiedDate,
+                sha256 = sha256,
+                baseSha256 = baseSha256,
+                status = status,
+                compressedSize = compressedSize,
+                uncompressedSize = uncompressedSize,
+                storageCredentialsKey = storageCredentialsKey,
+            )
         }
     }
 

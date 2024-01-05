@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.archive.api
 
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
+import com.tencent.bkrepo.archive.pojo.CompressFile
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
@@ -43,7 +44,7 @@ interface ArchiveClient {
     ): Response<ArchiveFile?>
 
     @PutMapping("/compress")
-    fun compress(@RequestBody request: CompressFileRequest): Response<Void>
+    fun compress(@RequestBody request: CompressFileRequest): Response<Int>
 
     @PutMapping("/uncompress")
     fun uncompress(@RequestBody request: UncompressFileRequest): Response<Void>
@@ -53,6 +54,12 @@ interface ArchiveClient {
 
     @PutMapping("/compress/complete")
     fun completeCompress(@RequestBody request: CompleteCompressRequest): Response<Void>
+
+    @GetMapping("/compress")
+    fun getCompressInfo(
+        @RequestParam sha256: String,
+        @RequestParam(required = false) storageCredentialsKey: String?,
+    ): Response<CompressFile?>
 
     @DeleteMapping("/deleteAll")
     fun deleteAll(@RequestBody request: ArchiveFileRequest): Response<Void>

@@ -59,10 +59,14 @@ data class SystemGcJobProperties(
     /**
      * 最大批处理数量
      * */
-    var maxBatchSize: Int = 100000,
+    var maxBatchSize: Int = 10000,
 
     /**
      * 只有超过该节点数量，才会进行gc
      * */
     var nodeLimit: Int = 1000,
+    /**
+     * 最大的采样数量
+     * */
+    var maxSampleNum: Int = 10000,
 ) : MongodbJobProperties()

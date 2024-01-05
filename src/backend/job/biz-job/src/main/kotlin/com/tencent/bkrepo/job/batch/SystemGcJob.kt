@@ -1,20 +1,14 @@
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.CompressFileRequest
 import com.tencent.bkrepo.common.api.collection.groupBySimilar
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.HumanReadable
-import com.tencent.bkrepo.common.api.util.StreamUtils
-import com.tencent.bkrepo.common.bksync.BkSync
-import com.tencent.bkrepo.common.bksync.DiffResult
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
-import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.util.StorageUtils
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
@@ -34,9 +28,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.system.measureNanoTime
 
@@ -50,14 +41,12 @@ class SystemGcJob(
     val properties: SystemGcJobProperties,
     private val mongoTemplate: MongoTemplate,
     private val archiveClient: ArchiveClient,
-    private val storageProperties: StorageProperties,
-    private val fileLocator: FileLocator,
 ) : DefaultContextJob(properties) {
 
     private var lastId = MIN_OBJECT_ID
     private var lastCutoffTimeMap = mutableMapOf<String, LocalDateTime>()
     private var curCutoffTime = LocalDateTime.MIN
-    private var bksync = BkSync()
+    private val sampleNodesMap = mutableMapOf<String, MutableList<Node>>()
     override fun doStart0(jobContext: JobContext) {
         curCutoffTime = LocalDateTime.now().minus(Duration.ofDays(properties.idleDays.toLong()))
         properties.repos.forEach {
@@ -103,12 +92,16 @@ class SystemGcJob(
     }
 
     fun isSimilar(node1: Node, node2: Node): Boolean {
-        // 大小差异过大
-        if (abs(node1.size - node2.size) * 2 / (node1.size + node2.size) > 0.5) {
-            return false
-        }
         val name1 = node1.name
         val name2 = node2.name
+        // 大小差异过大
+        if (name1.length != name2.length || abs(node1.size - node2.size).toDouble() / maxOf(
+                node1.size,
+                node2.size,
+            ) > 0.5
+        ) {
+            return false
+        }
         val editDistance = HAMMING_DISTANCE_INSTANCE.apply(name1, name2)
         val ratio = editDistance.toDouble() * 2 / (name1.length + name2.length)
         if (logger.isDebugEnabled) {
@@ -159,64 +152,106 @@ class SystemGcJob(
         // 没有新的节点，表示节点已经gc过一轮了
         val repoKey = nodes.first().let { "${it.projectId}/${it.repoName}" }
         val lastCutoffTime = lastCutoffTimeMap[repoKey]
-        if (lastCutoffTime != null && sortedNodes.last().createdDate < lastCutoffTime) {
+        val sampleNodes = sampleNodesMap.getOrPut(repoKey) { mutableListOf() }
+        // 有采样节点存在，表示上次gc并没有完成
+        if (lastCutoffTime != null && sortedNodes.last().createdDate < lastCutoffTime && sampleNodes.isEmpty()) {
             logger.info("There are no new nodes, gc is skipped.")
             return
         }
         val gcNodes = sortedNodes.subList(0, sortedNodes.size - properties.retain)
         // 保留最新的
         val newest = sortedNodes.last()
-        if (samplingSurvey(gcNodes, newest)) {
-            val repo = RepositoryCommonUtils.getRepositoryDetail(newest.projectId, newest.repoName)
-            val credentials = repo.storageCredentials
-            gcNodes.forEach {
-                val compressedRequest = CompressFileRequest(it.sha256, it.size, newest.sha256, credentials?.key)
-                archiveClient.compress(compressedRequest)
-                logger.info("Compress node ${it.name} by node ${newest.name}.")
+        val repo = RepositoryCommonUtils.getRepositoryDetail(newest.projectId, newest.repoName)
+        val credentials = repo.storageCredentials
+        logger.info("Start gc ${gcNodes.size} nodes.")
+        if (gcNodes.size < MIN_SAMPLING_GROUP_SIZE) {
+            // 直接压缩
+            gcNodes.forEach { compressNode(it, newest, credentials) }
+        } else {
+            // 从采样节点中找到相同的组
+            val fileType = nodes.first().name.substringAfterLast(".")
+            val samplingNode = sampleNodes
+                .firstOrNull {
+                    it.name.substringAfterLast(".") == fileType &&
+                        isSimilar(it, nodes.first()) && isSimilar(it, nodes.last())
+                }
+            if (samplingNode != null) {
+                gcBySample(samplingNode, credentials, newest, gcNodes, sampleNodes)
+            } else {
+                createNewSample(gcNodes, newest, credentials, sampleNodes)
             }
         }
     }
 
     /**
-     * 抽样调查，快速判断一组节点的实际数据是否相似
+     * 创建采样节点
      * */
-    private fun samplingSurvey(nodes: List<Node>, base: Node): Boolean {
-        val src = nodes.first()
-        val repo = RepositoryCommonUtils.getRepositoryDetail(src.projectId, src.repoName)
-        val storageCredentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
-        val dir = Paths.get(storageCredentials.upload.localPath, GC_DIR, StringPool.randomStringByLongValue())
-        val baseFilePath = createTempFile(dir)
-        val srcFilePath = createTempFile(dir)
-        val signFilePath = createTempFile(dir)
-        val deltaFilePath = createTempFile(dir)
-        try {
-            downloadFile(base.sha256, storageCredentials, baseFilePath)
-            downloadFile(src.sha256, storageCredentials, srcFilePath)
-            Files.newOutputStream(signFilePath).use {
-                bksync.checksum(baseFilePath.toFile(), it)
+    private fun createNewSample(
+        gcNodes: List<Node>,
+        newest: Node,
+        credentials: StorageCredentials?,
+        sampleNodes: MutableList<Node>,
+    ) {
+        if (sampleNodes.size > properties.maxSampleNum) {
+            val remove = sampleNodes.removeFirst()
+            logger.info("Sample list is full,remove first node [$remove].")
+        }
+        for (node in gcNodes) {
+            val resp = compressNode(node, newest, credentials)
+            if (resp == 1) {
+                sampleNodes.add(node)
+                logger.info("Create a new sample [$node].")
+                return
+            } else {
+                logger.info("Node [$node] is root and reach maximum chain length.")
             }
-            var actual = DiffResult(0, 1)
-            StreamUtils.use(Files.newInputStream(signFilePath), Files.newOutputStream(deltaFilePath)) { input, output ->
-                actual = bksync.diff(srcFilePath.toFile(), input, output, storageCredentials.compress.ratio)
-            }
-            logger.info("Sampling (${src.name},${base.name}),reuse: ${actual.hitRate}.")
-            return actual.hitRate >= storageCredentials.compress.ratio
-        } finally {
-            dir.toFile().deleteRecursively()
         }
     }
 
-    private fun createTempFile(dir: Path): Path {
-        val fileName = StringPool.randomStringByLongValue(prefix = "gc", suffix = ".temp")
-        return dir.resolve(fileName)
+    /**
+     * 通过已有的采样节点进行gc
+     * */
+    private fun gcBySample(
+        sampleNode: Node,
+        credentials: StorageCredentials?,
+        newest: Node,
+        gcNodes: List<Node>,
+        sampleNodes: MutableList<Node>,
+    ) {
+        val compressFile = archiveClient.getCompressInfo(sampleNode.sha256, credentials?.key).data
+        val status = compressFile?.status
+        when (status) {
+            // 压缩信息丢失
+            null -> {
+                logger.info("Lost sample information.")
+                compressNode(sampleNode, newest, credentials)
+            }
+            // 压缩中
+            CompressStatus.CREATED,
+            CompressStatus.COMPRESSING,
+            -> {
+                logger.info("Sample [$sampleNode] in process")
+            }
+            // 压缩失败，放弃此次gc nodes,移除采样节点后，如果有gc node有新的group形成，则会进行新一轮的gc。
+            CompressStatus.COMPRESS_FAILED -> {
+                sampleNodes.remove(sampleNode)
+                logger.info("Sample survey [$sampleNode] fails, gc is skipped.")
+            }
+            // 压缩成功，压缩gc nodes
+            else -> {
+                logger.info("Sample survey [$sampleNode] success, start gc.")
+                gcNodes.forEach { compressNode(it, newest, credentials) }
+                sampleNodes.remove(sampleNode)
+            }
+        }
     }
 
-    private fun downloadFile(sha256: String, storageCredentials: StorageCredentials, filePath: Path) {
-        val path = fileLocator.locate(sha256)
-        if (!Files.isDirectory(filePath.parent)) {
-            Files.createDirectories(filePath.parent)
+    private fun compressNode(node: Node, baseNode: Node, storageCredentials: StorageCredentials?): Int {
+        with(node) {
+            logger.info("Compress node $name by node ${baseNode.name}.")
+            val compressedRequest = CompressFileRequest(sha256, size, baseNode.sha256, storageCredentials?.key)
+            return archiveClient.compress(compressedRequest).data ?: 0
         }
-        StorageUtils.download(path, sha256, storageCredentials, filePath)
     }
 
     data class Node(
@@ -237,6 +272,6 @@ class SystemGcJob(
     companion object {
         private val logger = LoggerFactory.getLogger(SystemGcJob::class.java)
         private val HAMMING_DISTANCE_INSTANCE = HammingDistance()
-        private const val GC_DIR = "gc"
+        private const val MIN_SAMPLING_GROUP_SIZE = 5
     }
 }
