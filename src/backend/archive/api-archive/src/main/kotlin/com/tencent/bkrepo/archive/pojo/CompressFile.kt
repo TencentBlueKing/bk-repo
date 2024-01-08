@@ -1,15 +1,17 @@
 package com.tencent.bkrepo.archive.pojo
 
-import com.tencent.bkrepo.archive.ArchiveStatus
+import com.tencent.bkrepo.archive.CompressStatus
 import java.time.LocalDateTime
 
-data class ArchiveFile(
+data class CompressFile(
     var createdBy: String,
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
     val sha256: String,
-    val size: Long,
+    val baseSha256: String,
+    val uncompressedSize: Long,
+    var compressedSize: Long = -1,
     val storageCredentialsKey: String?,
-    var status: ArchiveStatus,
+    var status: CompressStatus,
 )

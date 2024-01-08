@@ -26,9 +26,10 @@ fun <E> Collection<E>.groupBySimilar(key: (x1: E) -> String, similar: (x1: E, x2
         * 2. 中间存在干扰数据，加入之前的组
         * 3. 新建一个组
         * */
-        if (similar(group.last(), str2)) {
+        // 判断新加入的元素与一头一尾是否相似，控制单个分类不要过于离散
+        if (similar(group.first(), str2) && similar(group.last(), str2)) {
             group.add(str2)
-        } else if (previousGroup != null && similar(previousGroup.last(), str2)) {
+        } else if (previousGroup != null && similar(group.first(), str2) && similar(previousGroup.last(), str2)) {
             previousGroup.add(str2)
         } else {
             if (group.size > 1) {
