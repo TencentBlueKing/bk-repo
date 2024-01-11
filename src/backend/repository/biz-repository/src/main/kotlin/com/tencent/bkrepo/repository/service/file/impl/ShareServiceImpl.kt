@@ -112,7 +112,7 @@ class ShareServiceImpl(
                     .and(TShareRecord::token).isEqualTo(token),
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
-                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, token)
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw PermissionException("unauthorized")
             }
