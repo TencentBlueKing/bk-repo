@@ -29,12 +29,14 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
+import com.tencent.bkrepo.archive.request.DeleteCompressRequest
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.COUNT
 import com.tencent.bkrepo.job.CREDENTIALS
+import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.FileJobContext
@@ -132,8 +134,17 @@ class FileReferenceCleanupJob(
     }
 
     private fun cleanupRelatedResources(sha256: String, credentialsKey: String?) {
-        val deleteArchiveFileRequest = ArchiveFileRequest(sha256, credentialsKey, SYSTEM_USER)
-        archiveClient.deleteAll(deleteArchiveFileRequest)
+        val criteria = Criteria.where(SHA256).isEqualTo(sha256)
+            .and(STORAGE_CREDENTIALS).isEqualTo(credentialsKey)
+        val query = Query(criteria)
+        mongoTemplate.findOne(query, Node::class.java, COMPRESS_FILE_COLLECTION)?.let {
+            val deleteCompressFileRequest = DeleteCompressRequest(sha256, credentialsKey, SYSTEM_USER)
+            archiveClient.deleteCompress(deleteCompressFileRequest)
+        }
+        mongoTemplate.findOne(query, Node::class.java, ARCHIVE_FILE_COLLECTION)?.let {
+            val deleteArchiveFileRequest = ArchiveFileRequest(sha256, credentialsKey, SYSTEM_USER)
+            archiveClient.delete(deleteArchiveFileRequest)
+        }
     }
 
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()
@@ -142,6 +153,9 @@ class FileReferenceCleanupJob(
         private val logger = LoggerHolder.jobLogger
         private const val COLLECTION_NAME_PREFIX = "file_reference_"
         private const val COLLECTION_NODE_PREFIX = "node_"
+        private const val COMPRESS_FILE_COLLECTION = "compress_file"
+        private const val ARCHIVE_FILE_COLLECTION = "archive_file"
+        private const val STORAGE_CREDENTIALS = "storageCredentialsKey"
     }
 
     data class FileReferenceData(private val map: Map<String, Any?>) {
