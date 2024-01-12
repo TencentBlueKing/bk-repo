@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.repository.remote.type.oci
 
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -35,11 +36,11 @@ import com.tencent.bkrepo.common.api.util.AuthenticationUtil.buildAuthentication
 import com.tencent.bkrepo.common.api.util.AuthenticationUtil.parseWWWAuthenticateHeader
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.pojo.docker.OciResponse
 import com.tencent.bkrepo.replication.pojo.remote.BearerToken
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.repository.remote.base.AuthorizationService
-import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.util.HttpUtils
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -86,9 +87,9 @@ class OciAuthorizationService : AuthorizationService {
         httpClient: OkHttpClient
     ): String {
         val wwwAuthenticate = response.header(HttpHeaders.WWW_AUTHENTICATE)
-        if (wwwAuthenticate.isNullOrBlank() || !wwwAuthenticate.startsWith(BEARER_AUTH_PREFIX)) {
+        if (wwwAuthenticate.isNullOrBlank() ||
+            (!wwwAuthenticate.startsWith(BEARER_AUTH_PREFIX) && !wwwAuthenticate.startsWith(BASIC_AUTH_PREFIX)))
             throw ArtifactPushException("Auth url can not be parsed from header.")
-        }
         val authProperty = parseWWWAuthenticateHeader(wwwAuthenticate, scope)
             ?: throw ArtifactPushException("Auth url can not be parsed from header.")
         val urlStr = buildAuthenticationUrl(authProperty, userName)

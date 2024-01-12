@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.api.util
 
+import com.tencent.bkrepo.common.api.constant.AuthenticationKeys.BASIC_REALM
 import com.tencent.bkrepo.common.api.constant.AuthenticationKeys.BEARER_REALM
 import com.tencent.bkrepo.common.api.constant.AuthenticationKeys.SCOPE
 import com.tencent.bkrepo.common.api.constant.AuthenticationKeys.SERVICE
@@ -49,7 +50,7 @@ object AuthenticationUtil {
                 map[name] = value
             }
             AuthenticationProperty(
-                authUrl = map[BEARER_REALM]!!,
+                authUrl = map[BEARER_REALM] ?: map[BASIC_REALM]!!,
                 service = map[SERVICE]!!,
                 scope = scope
             )
