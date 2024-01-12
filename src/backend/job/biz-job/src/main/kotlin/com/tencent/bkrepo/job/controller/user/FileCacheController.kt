@@ -29,6 +29,8 @@ package com.tencent.bkrepo.job.controller.user
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.pojo.FileCacheRequest
 import com.tencent.bkrepo.job.pojo.TFileCache
@@ -43,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/cache")
+@Principal(PrincipalType.ADMIN)
 class FileCacheController(val fileCacheService: FileCacheService) {
 
     @GetMapping("/list")

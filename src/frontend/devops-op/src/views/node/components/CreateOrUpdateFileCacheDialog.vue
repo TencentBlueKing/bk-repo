@@ -216,6 +216,9 @@ export default {
       return fileCache
     },
     checkExist() {
+      if (this.repoConfig === undefined) {
+        return false
+      }
       for (let i = 0; i < this.repoConfig.repoConfig.repos.length; i++) {
         const repo = this.repoConfig.repoConfig.repos[i]
         if (repo.projectId === this.fileCache.projectId &&
