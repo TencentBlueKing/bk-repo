@@ -3,7 +3,7 @@ package com.tencent.bkrepo.archive.event
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 
 /**
- * 文件归档事件
+ * 归档压缩事件
  * */
 data class FileCompressedEvent(
     val sha256: String,

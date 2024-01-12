@@ -143,6 +143,7 @@ class AsyncRemoteArtifactCacheWriter(
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
+            nodeMetadata = cacheTask.remoteNode?.nodeMetadata,
             overwrite = true,
             operator = cacheTask.userId
         )
@@ -156,6 +157,7 @@ class AsyncRemoteArtifactCacheWriter(
         val fullPath: String,
         val userId: String,
         val request: Request,
+        val remoteNode: NodeDetail?
     )
 
     companion object {

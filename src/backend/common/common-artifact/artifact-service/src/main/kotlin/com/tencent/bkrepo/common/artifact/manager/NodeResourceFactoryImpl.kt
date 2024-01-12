@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.manager
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.manager.resource.FsNodeResource
@@ -51,6 +52,7 @@ class NodeResourceFactoryImpl(
     private val storageCredentialsClient: StorageCredentialsClient,
     private val fsNodeClient: FsNodeClient,
     private val clusterNodeClient: ClusterNodeClient,
+    private val archiveClient: ArchiveClient,
 ) : NodeResourceFactory {
 
     private val centerClusterInfo = ClusterInfo(
@@ -79,7 +81,14 @@ class NodeResourceFactoryImpl(
                 ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterName)
             return RemoteNodeResource(digest, range, storageCredentials, clusterInfo, storageService, false)
         }
-        return LocalNodeResource(nodeInfo, range, storageCredentials, storageService, storageCredentialsClient)
+        return LocalNodeResource(
+            nodeInfo,
+            range,
+            storageCredentials,
+            storageService,
+            storageCredentialsClient,
+            archiveClient,
+        )
     }
 
     private fun isFsFile(node: NodeInfo): Boolean {

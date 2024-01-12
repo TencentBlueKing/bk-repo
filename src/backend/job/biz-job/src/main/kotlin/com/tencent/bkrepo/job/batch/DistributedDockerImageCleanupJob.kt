@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 清理镜像仓库下存储的已经分发的镜像
@@ -56,8 +57,8 @@ class DistributedDockerImageCleanupJob(
 ) : DefaultContextMongoDbJob<DistributedDockerImageCleanupJob.PackageData>(properties) {
 
 
-    override fun entityClass(): Class<PackageData> {
-        return PackageData::class.java
+    override fun entityClass(): KClass<PackageData> {
+        return PackageData::class
     }
 
     override fun collectionNames(): List<String> {

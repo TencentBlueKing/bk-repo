@@ -95,6 +95,27 @@ data class DevXProperties(
      */
     var excludePatterns: List<String> = emptyList(),
     /**
+     * 远程制品库集群url
+     */
+    var remoteBkRepoUrl: String = "",
+    /**
+     * 将host解析到指定ip，不指定时则使用默认dns
+     */
+    var remoteBkRepoIp: String = "",
+    /**
+     * 远程制品库集群平台账号
+     */
+    var remoteBkRepoAccessKey: String = "",
+    /**
+     * 远程制品库集群平台账号密钥
+     */
+    var remoteBkRepoSecretKey: String = "",
+    /**
+     * 使用的远程制品库集群用户身份
+     */
+    var remoteBkRepoUser: String = "",
+
+    /**
      * 应用devX拦截器的接口
      */
     var includePatterns: List<String> = emptyList(),

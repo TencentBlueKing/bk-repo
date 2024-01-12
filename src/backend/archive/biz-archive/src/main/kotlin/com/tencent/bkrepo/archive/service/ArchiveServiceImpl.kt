@@ -18,6 +18,9 @@ import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
+/**
+ * 归档服务实现类
+ * */
 @Service
 class ArchiveServiceImpl(
     private val archiveProperties: ArchiveProperties,
@@ -29,12 +32,15 @@ class ArchiveServiceImpl(
         // created
         with(request) {
             val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
-            // 允许再次归档
             if (af != null) {
-                // update status to created
+                // 文件已归档
+                if (af.status == ArchiveStatus.ARCHIVED) {
+                    return
+                }
                 af.lastModifiedBy = operator
                 af.lastModifiedDate = LocalDateTime.now()
-                af.status = ArchiveStatus.CREATED
+                // 重新触发归档后逻辑，删除原存储文件和更新node状态
+                af.status = if (af.status == ArchiveStatus.COMPLETED) ArchiveStatus.ARCHIVED else ArchiveStatus.CREATED
                 archiveFileRepository.save(af)
             } else {
                 val archiveFile = TArchiveFile(
@@ -103,7 +109,6 @@ class ArchiveServiceImpl(
         val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
             ?: return null
         return ArchiveFile(
-            id = af.id,
             createdBy = af.createdBy,
             createdDate = af.createdDate,
             lastModifiedBy = af.lastModifiedBy,

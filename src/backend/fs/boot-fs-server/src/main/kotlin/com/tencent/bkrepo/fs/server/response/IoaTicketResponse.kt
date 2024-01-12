@@ -33,7 +33,7 @@ data class IoaTicketResponse(
     @JsonProperty("Ret")
     val ret: Int,
     @JsonProperty("ExpirationTimeOffset")
-    val expirationTimeOffset: Int,
+    val expirationTimeOffset: Long,
     @JsonProperty("ErrMsg")
     val errMsg: String,
 )

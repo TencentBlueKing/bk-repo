@@ -40,6 +40,7 @@ import com.tencent.bkrepo.fs.server.model.NodeAttribute
 import com.tencent.bkrepo.fs.server.model.NodeAttribute.Companion.DEFAULT_MODE
 import com.tencent.bkrepo.fs.server.model.NodeAttribute.Companion.NOBODY
 import com.tencent.bkrepo.fs.server.request.ChangeAttributeRequest
+import com.tencent.bkrepo.fs.server.request.LinkRequest
 import com.tencent.bkrepo.fs.server.request.MoveRequest
 import com.tencent.bkrepo.fs.server.request.NodePageRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
@@ -52,9 +53,11 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import kotlinx.coroutines.reactor.awaitSingle
@@ -127,19 +130,25 @@ class NodeOperationsHandler(
     @Suppress("UNCHECKED_CAST")
     suspend fun changeAttribute(request: ServerRequest): ServerResponse {
         with(ChangeAttributeRequest(request)) {
-            val preFsAttributeStr = rRepositoryClient.listMetadata(projectId, repoName, fullPath).awaitSingle()?.data
+            val preFsAttributeStr = rRepositoryClient.listMetadata(projectId, repoName, fullPath).awaitSingle().data
                 ?.get(FS_ATTR_KEY)
             val attrMap = preFsAttributeStr as? Map<String, Any> ?: mapOf()
             val preFsAttribute = NodeAttribute(
                 uid = attrMap[NodeAttribute::uid.name] as? String ?: NOBODY,
                 gid = attrMap[NodeAttribute::gid.name] as? String ?: NOBODY,
-                mode = attrMap[NodeAttribute::mode.name] as? Int ?: DEFAULT_MODE
+                mode = attrMap[NodeAttribute::mode.name] as? Int ?: DEFAULT_MODE,
+                flags = attrMap[NodeAttribute::flags.name] as? Int,
+                rdev = attrMap[NodeAttribute::rdev.name] as? Int,
+                type = attrMap[NodeAttribute::type.name] as? Int
             )
 
             val attributes = NodeAttribute(
                 uid = uid ?: preFsAttribute.uid,
                 gid = gid ?: preFsAttribute.gid,
-                mode = mode ?: preFsAttribute.mode
+                mode = mode ?: preFsAttribute.mode,
+                flags = flags ?: preFsAttribute.flags,
+                rdev = rdev ?: preFsAttribute.rdev,
+                type = type ?: preFsAttribute.type
             )
             val fsAttr = MetadataModel(
                 key = FS_ATTR_KEY,
@@ -231,13 +240,48 @@ class NodeOperationsHandler(
     }
 
     suspend fun createNode(request: ServerRequest): ServerResponse {
+        val node = createNode(request, false)
+        return ReactiveResponseBuilder.success(node.nodeInfo.toNode())
+    }
+
+    suspend fun mkdir(request: ServerRequest): ServerResponse {
+        val node = createNode(request, true)
+        return ReactiveResponseBuilder.success(node.nodeInfo.toNode())
+    }
+
+    suspend fun mknod(request: ServerRequest): ServerResponse {
+        val node = createNode(request, false)
+        return ReactiveResponseBuilder.success(node.nodeInfo.toNode())
+    }
+
+    suspend fun symlink(request: ServerRequest): ServerResponse {
+        val nodeLinkRequest = with(LinkRequest(request)) {
+            NodeLinkRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                targetProjectId = projectId,
+                targetRepoName = repoName,
+                targetFullPath = targetFullPath,
+                checkTargetExist = false,
+                operator = ReactiveSecurityUtils.getUser()
+            )
+        }
+        val node = rRepositoryClient.link(nodeLinkRequest).awaitSingle().data!!
+        return ReactiveResponseBuilder.success(node.nodeInfo.toNode())
+    }
+
+    private suspend fun createNode(request: ServerRequest, folder: Boolean): NodeDetail {
         with(NodeRequest(request)) {
             val user = ReactiveSecurityUtils.getUser()
             // 创建节点
             val attributes = NodeAttribute(
                 uid = NOBODY,
                 gid = NOBODY,
-                mode = DEFAULT_MODE
+                mode = mode ?: DEFAULT_MODE,
+                flags = flags,
+                rdev = rdev,
+                type = type
             )
             val fsAttr = MetadataModel(
                 key = FS_ATTR_KEY,
@@ -247,32 +291,14 @@ class NodeOperationsHandler(
             val nodeCreateRequest = NodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
-                folder = false,
+                folder = folder,
                 fullPath = fullPath,
                 sha256 = FAKE_SHA256,
                 md5 = FAKE_MD5,
                 nodeMetadata = listOf(fsAttr),
                 operator = user
             )
-            val node = rRepositoryClient.createNode(nodeCreateRequest).awaitSingle().data
-            return ReactiveResponseBuilder.success(node!!.nodeInfo.toNode())
-        }
-    }
-
-    suspend fun mkdir(request: ServerRequest): ServerResponse {
-        with(NodeRequest(request)) {
-            val user = ReactiveSecurityUtils.getUser()
-            val nodeCreateRequest = NodeCreateRequest(
-                projectId = projectId,
-                repoName = repoName,
-                folder = true,
-                fullPath = fullPath,
-                sha256 = FAKE_SHA256,
-                md5 = FAKE_MD5,
-                operator = user
-            )
-            val node = rRepositoryClient.createNode(nodeCreateRequest).awaitSingle().data
-            return ReactiveResponseBuilder.success(node!!.nodeInfo.toNode())
+            return rRepositoryClient.createNode(nodeCreateRequest).awaitSingle().data!!
         }
     }
 

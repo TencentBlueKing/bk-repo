@@ -30,6 +30,8 @@ package com.tencent.bkrepo.analyst.dao
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.analyst.model.TScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
+import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.ofTimestamp
@@ -41,6 +43,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.elemMatch
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
@@ -180,12 +183,10 @@ class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
         return find(Query(Criteria.where(ID).inValues(ids)))
     }
 
-    fun findByProjectIdAndId(projectId: String, id: String): TScanTask? {
-        return findOne(
-            Query(
-                TScanTask::projectId.isEqualTo(projectId).and(ID).isEqualTo(id)
-            )
-        )
+    fun findByProjectIdAndId(projectId: String?, id: String): TScanTask? {
+        val criteria = projectId?.let { TScanTask::projectId.isEqualTo(it).and(ID).isEqualTo(id) }
+            ?: Criteria().and(ID).isEqualTo(id).and(TScanTask::metadata.name).elemMatch(buildGlobalTaskCriteria())
+        return findOne(Query(criteria))
     }
 
     fun findUnFinished(projectId: String, planId: String): List<TScanTask> {
@@ -200,7 +201,8 @@ class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
     fun find(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<TScanTask> {
         val criteria = Criteria()
         with(scanTaskQuery) {
-            criteria.and(TScanTask::projectId.name).isEqualTo(projectId)
+            projectId?.let { criteria.and(TScanTask::projectId.name).isEqualTo(projectId) }
+                ?: criteria.and(TScanTask::metadata.name).elemMatch(buildGlobalTaskCriteria())
             namePrefix?.let { criteria.and(TScanTask::name.name).regex("^$it") }
             planId?.let { criteria.and(TScanTask::planId.name).isEqualTo(it) }
             triggerType?.let { criteria.and(TScanTask::triggerType.name).isEqualTo(it) }
@@ -229,6 +231,18 @@ class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
     fun countStatus(status: ScanTaskStatus): Long {
         return count(Query(TScanTask::status.isEqualTo(status.name)))
     }
+
+    fun countGlobalTask(status: List<ScanTaskStatus>, includeSystemTrigger: Boolean = false): Long {
+        val criteria = TScanTask::metadata.elemMatch(buildGlobalTaskCriteria())
+            .and(TScanTask::status.name).inValues(status)
+        if (!includeSystemTrigger) {
+            criteria.and(TScanTask::triggerType.name).ne(ScanTriggerType.ON_NEW_ARTIFACT_SYSTEM.name)
+        }
+        return count(Query(criteria))
+    }
+
+    private fun buildGlobalTaskCriteria() =
+        TaskMetadata::key.isEqualTo(TaskMetadata.TASK_METADATA_GLOBAL).and(TaskMetadata::value.name).isEqualTo("true")
 
     private fun buildQuery(taskId: String) = Query(Criteria.where(ID).isEqualTo(taskId))
 

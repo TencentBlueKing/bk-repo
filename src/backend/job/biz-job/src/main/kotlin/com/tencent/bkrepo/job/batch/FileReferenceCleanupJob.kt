@@ -50,6 +50,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 /**
  * 清理引用=0的文件
@@ -71,8 +72,8 @@ class FileReferenceCleanupJob(
         return FileJobContext()
     }
 
-    override fun entityClass(): Class<FileReferenceData> {
-        return FileReferenceData::class.java
+    override fun entityClass(): KClass<FileReferenceData> {
+        return FileReferenceData::class
     }
 
     override fun collectionNames(): List<String> {
@@ -96,11 +97,11 @@ class FileReferenceCleanupJob(
                     return
                 }
                 storageService.delete(sha256, storageCredentials)
-                deleteArchive(sha256, credentialsKey)
             } else {
-                (context as FileJobContext).fileMissing.incrementAndGet()
+                context.fileMissing.incrementAndGet()
                 logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
             }
+            cleanupRelatedResources(sha256, credentialsKey)
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
             throw JobExecuteException("Failed to delete file[$sha256] on [$storageCredentials].", e)
@@ -130,13 +131,9 @@ class FileReferenceCleanupJob(
         }
     }
 
-    private fun deleteArchive(sha256: String, credentialsKey: String?) {
-        val deleteArchiveFileRequest = ArchiveFileRequest(
-            sha256 = sha256,
-            storageCredentialsKey = credentialsKey,
-            operator = SYSTEM_USER,
-        )
-        archiveClient.delete(deleteArchiveFileRequest)
+    private fun cleanupRelatedResources(sha256: String, credentialsKey: String?) {
+        val deleteArchiveFileRequest = ArchiveFileRequest(sha256, credentialsKey, SYSTEM_USER)
+        archiveClient.deleteAll(deleteArchiveFileRequest)
     }
 
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()

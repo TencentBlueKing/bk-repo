@@ -85,4 +85,12 @@ class ServiceUserController @Autowired constructor(
     override fun userInfoById(uid: String): Response<UserInfo?> {
         return ResponseBuilder.success(userService.getUserInfoById(uid))
     }
+
+    override fun userPwdById(uid: String): Response<String?> {
+        return ResponseBuilder.success(userService.getUserPwdById(uid))
+    }
+
+    override fun userTokenById(uid: String): Response<List<String>> {
+        return ResponseBuilder.success(userService.listValidToken(uid).map { it.id })
+    }
 }

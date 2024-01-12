@@ -17,6 +17,11 @@ enum class ArchiveStatus {
     ARCHIVED,
 
     /**
+     * 已完成
+     * */
+    COMPLETED,
+
+    /**
      * 待恢复
      * */
     WAIT_TO_RESTORE,
@@ -40,9 +45,4 @@ enum class ArchiveStatus {
      * 恢复失败
      * */
     RESTORE_FAILED,
-
-    /**
-     * 已完成
-     * */
-    COMPLETED,
 }

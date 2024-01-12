@@ -34,8 +34,10 @@ package com.tencent.bkrepo.auth.controller.service
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -44,6 +46,18 @@ import org.springframework.web.bind.annotation.RestController
 class ServicePermissionController @Autowired constructor(
     private val permissionService: PermissionService
 ) : ServicePermissionClient, OpenResource(permissionService) {
+
+
+    /**
+     * 本接口不做权限校验，返回空列表时可能表示所有路径均有权限，也可能为无项目仓库权限，因此需要单独做仓库权限校验
+     */
+    override fun listPermissionPath(userId: String, projectId: String, repoName: String): Response<ListPathResult> {
+        val permissionPath = permissionService.listNoPermissionPath(userId, projectId, repoName)
+        val status = permissionPath.isNotEmpty()
+        val result = ListPathResult(status = status, path = mapOf(OperationType.NIN to permissionPath))
+        return ResponseBuilder.success(result)
+    }
+
 
     override fun checkPermission(request: CheckPermissionRequest): Response<Boolean> {
         checkRequest(request)

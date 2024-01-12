@@ -50,9 +50,14 @@ class OperateService(
         repoName: String,
         path: String,
         includeFolder: Boolean,
-        deep: Boolean
+        deep: Boolean,
+        includeMetadata: Boolean,
     ): List<FileInfo> {
-        return nodeClient.listNode(projectId, repoName, path, includeFolder, deep).data.orEmpty().map { toFileInfo(it) }
+        return nodeClient
+            .listNode(projectId, repoName, path, includeFolder, deep, includeMetadata)
+            .data
+            .orEmpty()
+            .map { toFileInfo(it) }
     }
 
     companion object {
@@ -71,7 +76,8 @@ class OperateService(
                     sha256 = it.sha256,
                     md5 = it.md5,
                     projectId = it.projectId,
-                    repoName = it.repoName
+                    repoName = it.repoName,
+                    metadata = it.metadata,
                 )
             }
         }
