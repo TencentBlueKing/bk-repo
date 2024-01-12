@@ -4,6 +4,7 @@ import com.google.common.primitives.Ints
 import com.google.common.primitives.Longs
 import com.tencent.bkrepo.common.api.stream.readInt
 import com.tencent.bkrepo.common.api.stream.readLong
+import com.tencent.bkrepo.common.bksync.file.BkSyncDeltaSource.Companion.toBkSyncDeltaSource
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
@@ -135,7 +136,7 @@ abstract class BkSyncDeltaSource(
             val header = readHeader(this)
             var remaining = header.dataSize
             val crc32 = CRC32()
-            var buffer = ByteArray(remaining.toInt().coerceAtMost(DEFAULT_BUFFER_SIZE))
+            var buffer = ByteArray(remaining.coerceAtMost(DEFAULT_BUFFER_SIZE.toLong()).toInt())
             var bytes = this.read(buffer)
             contentFile.outputStream().use {
                 while (bytes >= 0 && remaining > 0) {
