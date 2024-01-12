@@ -61,7 +61,7 @@ import { createFileCache, updateFileCache } from '@/api/fileCache'
 import _ from 'lodash'
 import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
-import { getConfig } from '@/api/config'
+import { updateConfig } from '@/api/config'
 import { formatFileSize } from '@/utils/file'
 export default {
   name: 'CreateOrUpdateFileCacheDialog',
@@ -167,10 +167,10 @@ export default {
               reqPromise = updateFileCache(fileCache)
             } else {
               const target = []
-              for (let i = 0; i < this.fileCacheConf.repoConfig.repos.length; i++) {
-                if (!(fileCache.projectId === this.fileCacheConf.repoConfig.repos[i].projectId &&
-                  fileCache.repoName === this.fileCacheConf.repoConfig.repos[i].repoName)) {
-                  target.push(this.fileCacheConf.repoConfig.repos[i])
+              for (let i = 0; i < this.repoConfig.repoConfig.repos.length; i++) {
+                if (!(fileCache.projectId === this.repoConfig.repoConfig.repos[i].projectId &&
+                  fileCache.repoName === this.repoConfig.repoConfig.repos[i].repoName)) {
+                  target.push(this.repoConfig.repoConfig.repos[i])
                 }
               }
               target.push(this.fileCache)
@@ -178,7 +178,7 @@ export default {
                 'key': 'job.expired-cache-file-cleanup.repoConfig.repos',
                 'value': target
               }]
-              reqPromise = getConfig(values, 'job')
+              reqPromise = updateConfig(values, 'job')
             }
           }
           // 发起请求
