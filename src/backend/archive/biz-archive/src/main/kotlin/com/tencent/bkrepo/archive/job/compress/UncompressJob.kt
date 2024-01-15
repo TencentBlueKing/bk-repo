@@ -1,15 +1,11 @@
 package com.tencent.bkrepo.archive.job.compress
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.job.Cancellable
 import com.tencent.bkrepo.archive.model.TCompressFile
-import com.tencent.bkrepo.archive.repository.CompressFileDao
-import com.tencent.bkrepo.archive.repository.CompressFileRepository
-import com.tencent.bkrepo.archive.utils.ArchiveUtils
+import com.tencent.bkrepo.archive.service.CompressService
 import com.tencent.bkrepo.archive.utils.ReactiveDaoUtils
-import com.tencent.bkrepo.common.storage.core.StorageService
 import java.util.concurrent.TimeUnit
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -21,15 +17,8 @@ import reactor.core.publisher.Flux
 @Component
 class UncompressJob(
     private val archiveProperties: ArchiveProperties,
-    private val compressFileDao: CompressFileDao,
-    private val storageService: StorageService,
-    private val compressFileRepository: CompressFileRepository,
+    private val compressService: CompressService,
 ) : Cancellable {
-
-    private val uncompressThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
-        archiveProperties.ioThreads,
-        ThreadFactoryBuilder().setNameFormat("storage-uncompress-%d").build(),
-    )
     private var subscriber: UncompressSubscriber? = null
 
     fun listFiles(): Flux<TCompressFile> {
@@ -39,14 +28,9 @@ class UncompressJob(
         return ReactiveDaoUtils.query(query, TCompressFile::class.java)
     }
 
-    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.DAYS)
     fun uncompress() {
-        val subscriber = UncompressSubscriber(
-            compressFileDao,
-            compressFileRepository,
-            storageService,
-            uncompressThreadPool,
-        )
+        val subscriber = UncompressSubscriber(compressService)
         listFiles().subscribe(subscriber)
         this.subscriber = subscriber
         subscriber.blockLast()

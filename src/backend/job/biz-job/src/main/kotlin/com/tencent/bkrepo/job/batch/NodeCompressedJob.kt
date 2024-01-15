@@ -7,10 +7,10 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
-import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeCompressedJobProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -62,10 +62,6 @@ class NodeCompressedJob(
                 )
                 nodeClient.compressedNode(compressedRequest)
             }
-            val storageCredentials = storageCredentialsKey?.let {
-                RepositoryCommonUtils.getStorageCredentials(storageCredentialsKey)
-            }
-            storageService.delete(sha256, storageCredentials)
             val request = CompleteCompressRequest(sha256, storageCredentialsKey, lastModifiedBy)
             archiveClient.completeCompress(request)
         }
@@ -100,5 +96,9 @@ class NodeCompressedJob(
                 .and("deleted").isEqualTo(null),
         )
         return NodeCommonUtils.findNodes(query, storageCredentialsKey)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(NodeCompressedJob::class.java)
     }
 }

@@ -46,7 +46,9 @@ interface CompressOperation {
      * */
     fun compress(
         digest: String,
+        digestSize: Long? = null,
         base: String,
+        baseSize: Long? = null,
         storageCredentials: StorageCredentials?,
         keep: Boolean = false,
     ): Long
@@ -56,7 +58,13 @@ interface CompressOperation {
      *
      * @return 返回1表示成功解压，否则返回0
      * */
-    fun uncompress(digest: String, storageCredentials: StorageCredentials?): Int
+    fun uncompress(
+        digest: String,
+        digestSize: Long? = null,
+        base: String,
+        baseSize: Long? = null,
+        storageCredentials: StorageCredentials?,
+    ): Int
 
     /**
      * [digest]是否被压缩

@@ -12,6 +12,7 @@ import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateExce
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.StorageUtils
 import com.tencent.bkrepo.common.storage.util.createFile
 import java.io.File
@@ -20,6 +21,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Duration
 import org.slf4j.LoggerFactory
+import kotlin.system.measureNanoTime
 
 /**
  * 压缩操作实现类
@@ -44,7 +46,9 @@ abstract class CompressSupport : OverlaySupport() {
 
     override fun compress(
         digest: String,
+        digestSize: Long?,
         base: String,
+        baseSize: Long?,
         storageCredentials: StorageCredentials?,
         keep: Boolean,
     ): Long {
@@ -77,8 +81,8 @@ abstract class CompressSupport : OverlaySupport() {
             * 4. 存储bd压缩文件
             * 5. 删除原文件（可选，根据keep参数决定）
             * */
-            val originFile = download(digest, credentials, workDir)
-            val baseFileKey = FileKey(base, credentials)
+            val originFile = download(digest, sizeToRange(digestSize), credentials, workDir)
+            val baseFileKey = FileKey(base, baseSize, credentials)
             // base file可能会被多个其他版本文件使用，所以这里对基文件的签名进行了缓存
             var checksumFile = checksumFileCache.get(baseFileKey)
             if (!checksumFile.exists()) {
@@ -105,7 +109,13 @@ abstract class CompressSupport : OverlaySupport() {
         }
     }
 
-    override fun uncompress(digest: String, storageCredentials: StorageCredentials?): Int {
+    override fun uncompress(
+        digest: String,
+        digestSize: Long?,
+        base: String,
+        baseSize: Long?,
+        storageCredentials: StorageCredentials?,
+    ): Int {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val path = fileLocator.locate(digest)
         val workDir = getWorkDir(digest, credentials)
@@ -131,13 +141,13 @@ abstract class CompressSupport : OverlaySupport() {
             * 6. 删除压缩文件
             * */
             val bdFileName = digest.plus(BD_FILE_SUFFIX)
-            val bdFile = download(bdFileName, credentials, workDir)
-            val base = bdFile.inputStream().use { BkSyncDeltaSource.readHeader(it).dest }
+            val bdFile = download(bdFileName, sizeToRange(digestSize), credentials, workDir)
+            val baseRead = bdFile.inputStream().use { BkSyncDeltaSource.readHeader(it).dest }
+            check(base == baseRead)
             if (isCompressed(base, credentials)) {
-                logger.info("Base file [$base] is a delta file too,restore it first.")
-                uncompress(base, credentials)
+                error("Base file [$base] is a compressed file too,please restore it first.")
             }
-            val baseFile = download(base, credentials, workDir)
+            val baseFile = download(base, sizeToRange(baseSize), credentials, workDir)
             val originFile = BDUtils.patch(bdFile, baseFile, workDir)
             fileStorage.store(path, digest, originFile, credentials)
             delete(bdFileName, storageCredentials)
@@ -171,13 +181,17 @@ abstract class CompressSupport : OverlaySupport() {
     /**
      * 下载[digest]到指定目录[dir]
      * */
-    protected fun download(digest: String, credentials: StorageCredentials, dir: Path): File {
+    protected fun download(digest: String, range: Range, credentials: StorageCredentials, dir: Path): File {
         val filePath = dir.resolve("$digest.temp")
         if (!Files.isDirectory(filePath.parent)) {
             Files.createDirectories(filePath.parent)
         }
-        val path = fileLocator.locate(digest)
-        StorageUtils.download(path, digest, credentials, filePath)
+        val nanos = measureNanoTime { StorageUtils.downloadUseLocalPath(digest, range, credentials, filePath) }
+        if (range != Range.FULL_RANGE) {
+            check(Files.size(filePath) == range.length)
+        }
+        val throughput = Throughput(Files.size(filePath), nanos)
+        logger.info("Success to download file [$digest] on ${credentials.key}, $throughput.")
         return filePath.toFile()
     }
 
@@ -188,7 +202,7 @@ abstract class CompressSupport : OverlaySupport() {
         with(key) {
             logger.info("Start sign file [$digest].")
             val signDir = Paths.get(storageCredentials.compress.path, SIGN_WORK_DIR)
-            val file = download(digest, storageCredentials, signDir)
+            val file = download(digest, sizeToRange(size), storageCredentials, signDir)
             try {
                 val checksumFile = signDir.resolve(digest.plus(SIGN_FILE_SUFFIX)).createFile()
                 checksumFile.outputStream().use { BkSync().checksum(file, it) }
@@ -201,8 +215,13 @@ abstract class CompressSupport : OverlaySupport() {
         }
     }
 
+    private fun sizeToRange(size: Long?): Range {
+        return if (size == null) Range.FULL_RANGE else Range.full(size)
+    }
+
     private data class FileKey(
         val digest: String,
+        val size: Long?,
         val storageCredentials: StorageCredentials,
     )
 

@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.archive.service
 
+import com.tencent.bkrepo.archive.job.Cancellable
+import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.pojo.CompressFile
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
@@ -9,12 +11,12 @@ import com.tencent.bkrepo.archive.request.UncompressFileRequest
 /**
  * 压缩服务
  * */
-interface CompressService {
+interface CompressService : Cancellable {
     /**
      * 压缩文件
      * @return 1表示压缩成功，0表示未压缩
      * */
-    fun compress(request: CompressFileRequest): Int
+    fun compress(request: CompressFileRequest)
 
     /**
      * 解压文件
@@ -40,4 +42,14 @@ interface CompressService {
         sha256: String,
         storageCredentialsKey: String?,
     ): CompressFile?
+
+    /**
+     * 压缩文件
+     * */
+    fun compress(file: TCompressFile)
+
+    /**
+     * 解压文件
+     * */
+    fun uncompress(file: TCompressFile)
 }
