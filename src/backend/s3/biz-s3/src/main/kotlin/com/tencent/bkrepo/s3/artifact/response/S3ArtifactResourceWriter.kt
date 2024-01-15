@@ -32,11 +32,12 @@
 package com.tencent.bkrepo.s3.artifact.response
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.resolve.response.AbstractArtifactResourceHandler
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -65,12 +66,12 @@ class S3ArtifactResourceWriter (
         val request = HttpContextHolder.getRequest()
         val node = resource.node
         val range = resource.getSingleStream().range
-        val contentType = resource.contentType ?: MediaTypes.TEXT_PLAIN
+        val contentType = resource.contentType ?: MediaTypes.APPLICATION_OCTET_STREAM
         val characterEncoding = resource.characterEncoding
-        val status = resource.status?.value ?: HttpStatus.OK.value
+        val status = resource.status?.value ?: resolveStatus(request)
         val totalSize = resource.getTotalSize().toString()
 
-        prepareResponseHeaders(response, totalSize.toLong(), node, status, contentType, characterEncoding)
+        prepareResponseHeaders(response, totalSize.toLong(), node, status, contentType, characterEncoding, range)
         response.bufferSize = getBufferSize(range.length.toInt())
         return writeRangeStream(resource, request, response)
     }
@@ -81,8 +82,11 @@ class S3ArtifactResourceWriter (
         node: NodeDetail?,
         status: Int,
         contentType: String = MediaTypes.APPLICATION_OCTET_STREAM,
-        characterEncoding: String = DEFAULT_ENCODING
+        characterEncoding: String = DEFAULT_ENCODING,
+        range: Range
     ) {
+        response.setHeader(HttpHeaders.ACCEPT_RANGES, StringPool.BYTES)
+        response.setHeader(HttpHeaders.CONTENT_RANGE, "${StringPool.BYTES} $range")
         response.setHeader(S3HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
         response.setHeader(S3HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
         response.setHeader(HttpHeaders.CONTENT_TYPE, contentType)
