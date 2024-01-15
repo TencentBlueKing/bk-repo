@@ -148,14 +148,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
-     * 解析响应状态
-     */
-    private fun resolveStatus(request: HttpServletRequest): Int {
-        val isRangeRequest = request.getHeader(HttpHeaders.RANGE)?.isNotBlank() ?: false
-        return if (isRangeRequest) HttpStatus.PARTIAL_CONTENT.value else HttpStatus.OK.value
-    }
-
-    /**
      * 解析content range
      */
     private fun resolveContentRange(range: Range): String {
