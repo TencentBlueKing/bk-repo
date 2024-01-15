@@ -80,6 +80,7 @@ class IdleNodeArchiveJob(
                 .and("deleted").isEqualTo(null)
                 .and("sha256").ne(FAKE_SHA256)
                 .and("archived").ne(true)
+                .and("compressed").ne(true)
                 .and("size").gt(properties.fileSizeThreshold.toBytes())
                 .apply {
                     if (properties.projects.isNotEmpty()) {
