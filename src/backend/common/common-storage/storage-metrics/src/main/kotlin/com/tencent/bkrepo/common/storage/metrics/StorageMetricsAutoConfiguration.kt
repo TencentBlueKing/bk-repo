@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -24,25 +24,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-dependencies {
-    implementation(project(":job:api-job"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-job"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation(project(":common:common-storage:storage-metrics"))
-    implementation(project(":common:common-stream"))
-    implementation(project(":common:common-redis"))
-    implementation(project(":repository:api-repository"))
-    implementation(project(":helm:api-helm"))
-    implementation(project(":oci:api-oci"))
-    implementation(project(":replication:api-replication"))
-    implementation(project(":archive:api-archive"))
-    implementation(project(":common:common-operate:operate-service"))
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-    implementation("io.micrometer:micrometer-registry-prometheus")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
-}
+
+package com.tencent.bkrepo.common.storage.metrics
+
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
+
+@Configuration(proxyBeanMethods = false)
+@Import(StorageCacheMetrics::class)
+class StorageMetricsAutoConfiguration

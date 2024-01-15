@@ -25,40 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.metrics
-
-import io.micrometer.core.instrument.Gauge
-import io.micrometer.core.instrument.MeterRegistry
-import org.springframework.stereotype.Component
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicLong
-
-@Component
-class StorageCacheMetrics(private val registry: MeterRegistry) {
-
-    private val cacheSizeMap = ConcurrentHashMap<String, AtomicLong>()
-    private val cacheCountMap = ConcurrentHashMap<String, AtomicLong>()
-
-    fun setCacheSize(storageKey: String, size: Long) {
-        val s = cacheSizeMap.getOrPut(storageKey) { AtomicLong(size) }
-        s.set(size)
-        Gauge.builder(CACHE_SIZE, s) { it.toDouble() }
-            .tag("storageKey", storageKey)
-            .description("storage cache total size")
-            .register(registry)
-    }
-
-    fun setCacheCount(storageKey: String, count: Long) {
-        val c = cacheCountMap.getOrPut(storageKey) { AtomicLong(count) }
-        c.set(count)
-        Gauge.builder(CACHE_COUNT, c) { it.toDouble() }
-            .tag("storageKey", storageKey)
-            .description("storage cache total count")
-            .register(registry)
-    }
-
-    companion object {
-        private const val CACHE_SIZE = "storage.cache.size"
-        private const val CACHE_COUNT = "storage.cache.count"
-    }
+dependencies {
+    implementation(project(":common:common-storage:storage-api"))
+    implementation(project(":common:common-api"))
+    implementation("org.springframework.boot:spring-boot-starter-aop")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 }
