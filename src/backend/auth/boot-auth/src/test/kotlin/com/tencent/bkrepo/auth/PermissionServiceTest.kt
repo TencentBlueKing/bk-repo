@@ -36,9 +36,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
@@ -140,11 +138,11 @@ class PermissionServiceTest {
             )
         )
 
-        val permissionList2 = permissionService.listPermission("bk_test", null)
+        val permissionList2 = permissionService.listPermission("bk_test", null, null)
         Assertions.assertTrue(permissionList2.size == 1)
-        val permissionList3 = permissionService.listPermission("bk_test", "test-local")
+        val permissionList3 = permissionService.listPermission("bk_test", "test-local", null)
         Assertions.assertTrue(permissionList3.size == 1)
-        val permissionList5 = permissionService.listPermission("bkrepo_test", null)
+        val permissionList5 = permissionService.listPermission("bkrepo_test", null, null)
         Assertions.assertTrue(permissionList5.isEmpty())
     }
 
@@ -252,44 +250,8 @@ class PermissionServiceTest {
     @DisplayName("删除权限测试用例")
     fun deletePermissionTest() {
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null).forEach {
+        permissionService.listPermission("test", null, null).forEach {
             permissionService.deletePermission(it.id!!)
-        }
-    }
-
-    @DisplayName("修改包含路径测试用例")
-    fun updateIncludePathTest() {
-        assertThrows<ErrorCodeException> {
-            permissionService.updateIncludePath(
-                UpdatePermissionPathRequest(
-                    "test_test",
-                    listOf("/include")
-                )
-            )
-        }
-        permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null).forEach {
-            val request = UpdatePermissionPathRequest(it.id!!, listOf("/include"))
-            val updateIncludePath = permissionService.updateIncludePath(request)
-            Assertions.assertTrue(updateIncludePath)
-        }
-    }
-
-    @DisplayName("修改排除路径测试用例")
-    fun updateExcludePathTest() {
-        assertThrows<ErrorCodeException> {
-            permissionService.updateExcludePath(
-                UpdatePermissionPathRequest(
-                    "test_test",
-                    listOf("/exclude")
-                )
-            )
-        }
-        permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null).forEach {
-            val request = UpdatePermissionPathRequest(it.id!!, listOf("/exclude"))
-            val updateExcludePath = permissionService.updateExcludePath(request)
-            Assertions.assertTrue(updateExcludePath)
         }
     }
 
@@ -304,7 +266,7 @@ class PermissionServiceTest {
             )
         }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null).forEach {
+        permissionService.listPermission("test", null, null).forEach {
             val request = UpdatePermissionRepoRequest(it.id!!, listOf("test-local", "test-remote"))
             val updateStatus = permissionService.updateRepoPermission(request)
             Assertions.assertTrue(updateStatus)
@@ -318,25 +280,9 @@ class PermissionServiceTest {
             permissionService.updatePermissionUser(UpdatePermissionUserRequest("test_test", "dev", listOf(userId)))
         }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null).forEach {
+        permissionService.listPermission("test", null, null).forEach {
             val request = UpdatePermissionUserRequest(it.id!!, "dev", listOf(userId))
             val updateStatus = permissionService.updatePermissionUser(request)
-            Assertions.assertTrue(updateStatus)
-        }
-    }
-
-    @DisplayName("更新权限绑定角色测试")
-    fun updateRolePermissionTest() {
-        val rid = roleService.createRole(createRoleRequest())!!
-        assertThrows<ErrorCodeException> {
-            permissionService.updatePermissionRole(
-                UpdatePermissionRoleRequest("test_test", listOf(rid))
-            )
-        }
-        permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null).forEach {
-            val request = UpdatePermissionRoleRequest(it.id!!, listOf(rid))
-            val updateStatus = permissionService.updatePermissionRole(request)
             Assertions.assertTrue(updateStatus)
         }
     }

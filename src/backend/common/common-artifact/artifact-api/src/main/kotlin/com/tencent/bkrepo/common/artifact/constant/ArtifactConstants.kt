@@ -118,6 +118,11 @@ const val PIPELINE = "pipeline"
 const val CUSTOM = "custom"
 
 /**
+ * lsync仓库
+ */
+const val LSYNC = "lsync"
+
+/**
  * 报告仓库
  */
 const val REPORT = "report"

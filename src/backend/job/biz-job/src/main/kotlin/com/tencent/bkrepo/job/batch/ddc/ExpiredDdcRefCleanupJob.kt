@@ -43,6 +43,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 @Component
 @EnableConfigurationProperties(ExpiredDdcRefCleanupJobProperties::class)
@@ -72,7 +73,7 @@ class ExpiredDdcRefCleanupJob(
         )
     }
 
-    override fun entityClass(): Class<Ref> = Ref::class.java
+    override fun entityClass(): KClass<Ref> = Ref::class
 
     override fun run(row: Ref, collectionName: String, context: JobContext) {
         // 清理过期ref

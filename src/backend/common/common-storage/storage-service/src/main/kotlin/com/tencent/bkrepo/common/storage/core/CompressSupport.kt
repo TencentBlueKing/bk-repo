@@ -4,16 +4,15 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.google.common.cache.RemovalListener
-import com.tencent.bkrepo.common.api.util.StreamUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.file.BkSyncDeltaSource
 import com.tencent.bkrepo.common.bksync.file.BDUtils
 import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
+import com.tencent.bkrepo.common.storage.util.StorageUtils
 import com.tencent.bkrepo.common.storage.util.createFile
 import java.io.File
 import java.nio.file.Files
@@ -32,10 +31,13 @@ abstract class CompressSupport : OverlaySupport() {
      * */
     private val checksumFileCache: LoadingCache<FileKey, File> by lazy {
         CacheBuilder.newBuilder()
-            .expireAfterAccess(Duration.ofHours(1))
+            .expireAfterAccess(Duration.ofHours(12))
             .maximumSize(1000)
             .removalListener(
-                RemovalListener<FileKey, File> { it.value?.delete() },
+                RemovalListener<FileKey, File> {
+                    it.value?.delete()
+                    logger.info("Delete checksum file ${it.value?.absolutePath}")
+                },
             )
             .build(CacheLoader.from(this::signFile))
     }
@@ -162,39 +164,40 @@ abstract class CompressSupport : OverlaySupport() {
     /**
      * 获取压缩工作路径
      * */
-    private fun getWorkDir(digest: String, storageCredentials: StorageCredentials?): Path {
-        return Paths.get(getTempPath(storageCredentials).toString(), COMPRESS_WORK_DIR, digest)
+    private fun getWorkDir(digest: String, storageCredentials: StorageCredentials): Path {
+        return Paths.get(storageCredentials.compress.path, COMPRESS_WORK_DIR, digest)
     }
 
     /**
      * 下载[digest]到指定目录[dir]
      * */
     protected fun download(digest: String, credentials: StorageCredentials, dir: Path): File {
-        val tempFile = FileSystemClient(dir).touch("", "$digest.temp")
-        try {
-            val path = fileLocator.locate(digest)
-            val inputStream = fileStorage.load(path, digest, Range.FULL_RANGE, credentials)
-                ?: error("Miss data $digest on ${credentials.key}")
-            StreamUtils.useCopy(inputStream, tempFile.outputStream())
-            return tempFile
-        } catch (e: Exception) {
-            tempFile.delete()
-            throw e
+        val filePath = dir.resolve("$digest.temp")
+        if (!Files.isDirectory(filePath.parent)) {
+            Files.createDirectories(filePath.parent)
         }
+        val path = fileLocator.locate(digest)
+        StorageUtils.download(path, digest, credentials, filePath)
+        return filePath.toFile()
     }
 
     /**
      * 签名指定的文件
      * */
     private fun signFile(key: FileKey): File {
-        val file = download(key.digest, key.storageCredentials, getTempPath(key.storageCredentials))
-        try {
-            val checksumFile = getTempPath(key.storageCredentials)
-                .resolve(key.digest.plus(SIGN_FILE_SUFFIX)).createFile()
-            checksumFile.outputStream().use { BkSync().checksum(file, it) }
-            return checksumFile
-        } finally {
-            file.delete()
+        with(key) {
+            logger.info("Start sign file [$digest].")
+            val signDir = Paths.get(storageCredentials.compress.path, SIGN_WORK_DIR)
+            val file = download(digest, storageCredentials, signDir)
+            try {
+                val checksumFile = signDir.resolve(digest.plus(SIGN_FILE_SUFFIX)).createFile()
+                checksumFile.outputStream().use { BkSync().checksum(file, it) }
+                logger.info("Success to generate sign file [${checksumFile.absolutePath}].")
+                return checksumFile
+            } finally {
+                file.delete()
+                logger.info("Delete temp file ${file.absolutePath}.")
+            }
         }
     }
 
@@ -206,6 +209,7 @@ abstract class CompressSupport : OverlaySupport() {
     companion object {
         private val logger = LoggerFactory.getLogger(CompressSupport::class.java)
         private const val COMPRESS_WORK_DIR = "compress"
+        private const val SIGN_WORK_DIR = "sign"
         private const val BD_FILE_SUFFIX = ".bd"
         private const val SIGN_FILE_SUFFIX = ".checksum"
     }

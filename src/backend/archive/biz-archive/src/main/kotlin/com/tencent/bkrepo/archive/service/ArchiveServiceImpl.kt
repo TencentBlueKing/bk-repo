@@ -109,7 +109,6 @@ class ArchiveServiceImpl(
         val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
             ?: return null
         return ArchiveFile(
-            id = af.id,
             createdBy = af.createdBy,
             createdDate = af.createdDate,
             lastModifiedBy = af.lastModifiedBy,

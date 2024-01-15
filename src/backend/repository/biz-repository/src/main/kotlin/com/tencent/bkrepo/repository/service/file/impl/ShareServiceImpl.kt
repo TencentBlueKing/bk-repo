@@ -112,7 +112,7 @@ class ShareServiceImpl(
                     .and(TShareRecord::token).isEqualTo(token),
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
-                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, token)
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw PermissionException("unauthorized")
             }
@@ -126,7 +126,7 @@ class ShareServiceImpl(
     override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
         logger.info("artifact[$artifactInfo] download user: $userId")
         val shareRecord = checkToken(userId, token, artifactInfo)
-        checkAlphaApkDownloadUser(userId, artifactInfo)
+        checkAlphaApkDownloadUser(userId, artifactInfo, shareRecord.createdBy)
         with(artifactInfo) {
             val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             val repo = repositoryService.getRepoDetail(projectId, repoName)
@@ -149,16 +149,16 @@ class ShareServiceImpl(
     }
 
     /**
-     * 加固签名的apk包，不允许匿名下载
+     * 加固签名的apk包，匿名下载时，使用分享人身份下载
      */
-    private fun checkAlphaApkDownloadUser(userId: String, artifactInfo: ArtifactInfo) {
+    private fun checkAlphaApkDownloadUser(userId: String, artifactInfo: ArtifactInfo, shareUserId: String) {
         val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo)
             ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
         val appStageKey = nodeDetail.metadata.keys.find { it.equals(BK_CI_APP_STAGE_KEY, true) }
             ?: return
         val alphaApk = nodeDetail.metadata[appStageKey]?.toString().equals(ALPHA, true)
         if (alphaApk && userId == ANONYMOUS_USER) {
-            throw PermissionException("anonymous user can not download the alpha apk.")
+            HttpContextHolder.getRequest().setAttribute(USER_KEY, shareUserId)
         }
     }
 

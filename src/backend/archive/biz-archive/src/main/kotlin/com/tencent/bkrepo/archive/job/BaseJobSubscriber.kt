@@ -56,7 +56,7 @@ open class BaseJobSubscriber<T> : BaseSubscriber<T>() {
     /**
      * 处理[value]
      * */
-    protected open fun doOnNext(value: T) {
+    open fun doOnNext(value: T) {
     }
 
     /**
@@ -79,6 +79,10 @@ open class BaseJobSubscriber<T> : BaseSubscriber<T>() {
     override fun hookFinally(type: SignalType) {
         ArchiveUtils.monitor.removeMonitor(getJobName())
         countDownLatch.countDown()
+    }
+
+    override fun hookOnCancel() {
+        LoggerHolder.jobLogger.info("Job[${getJobName()}] cancelled.")
     }
 
     override fun currentContext(): Context {

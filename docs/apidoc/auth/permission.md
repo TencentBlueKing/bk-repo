@@ -410,44 +410,7 @@
 |departments|string array|部门id|the department id|
 |actions|string array|action id|the action id|
 
-### 更新权限绑定仓库
 
-- API: PUT /auth/api/permission/repo
-- 功能说明：
-	- 中文：更新权限绑定仓库
-	- English：update permission repo
-- input body:
-
-``` json
-{
-    "permissionId":"5ea4f6608c165f702f5bd41e",
-    "repos":[
-        "owen",
-        "tt"
-    ]
-}
-```
-- input 字段说明
-
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|permissionId|string|是|无|角色主键id|the permission primary key|
-|repos|string array|是|[]|仓库名称列表|the repo name array|
-
-- output:
-
-```
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | object array | result data,具体字段见创建请求 |the data for response|
-|traceId|string|请求跟踪id|the trace id|
 
 ### 更新权限绑定用户
 
@@ -498,203 +461,13 @@
 |data | bool | the request result |the request result|
 |traceId|string|请求跟踪id|the trace id|
 
-### 更新权限绑定角色
+### 更新仓库下配置的权限
 
-- API:PUT /auth/api/permission/role
-- API 名称: update_permission_role
+- API:PUT /auth/api/permission/update/config
+- API 名称: 更新仓库下配置的权限
 - 功能说明：
-	- 中文：更新权限绑定角色
-	- English：update permission role
-
-- input body:
-
-``` json
-{
-    "permissionId":"5ea4f6608c165f702f5bd41e",
-    "rId":[
-        "ops",
-        "dev"
-    ]
-}
-```
-
-- input 字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|permissionId|string|是|无|角色主键id|the permission primary key|
-|rId|string array|是|[]|角色主键id列表|the role id primary key array|
-
-- output:
-
-```
-{
-    "code":0,
-    "data":true,
-    "message":"",
-    "traceId":""
-}
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | bool | the request result |the request result|
-|traceId|string|请求跟踪id|the trace id|
-
-
-### 更新权限绑定部门
-
-- API:PUT /auth/api/permission/department
-- API 名称: update_permission_department
-- 功能说明：
-	- 中文：更新角色绑定部门
-	- English：update permission department 
-
-- input body:
-
-``` json
-{
-    "permissionId":"5ea4f6608c165f702f5bd41e",
-    "departmentId":[
-        "ops",
-        "dev"
-    ]
-}
-```
-
-- input 字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|permissionId|string|是|无|角色主键id|the permission primary key|
-|departmentId|string array|是|[]|部门id列表|the department id array|
-
-- output:
-
-```
-{
-    "code":0,
-    "data":true,
-    "message":"",
-    "traceId":""
-}
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | bool | the request result |the request result|
-|traceId|string|请求跟踪id|the trace id|
-
-### 更新权限绑定动作
-
-- API:PUT /auth/api/permission/action
-- API 名称: update_permission_action
-- 功能说明：
-	- 中文：更新角色绑定动作
-	- English：update permission department 
-
-- input body:
-
-``` json
-{
-    "permissionId":"5ea4f6608c165f702f5bd41e",
-    "actions":[
-        "ops",
-        "dev"
-    ]
-}
-```
-
-- input 字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|permissionId|string|是|无|角色主键id|the permission primary key|
-|actions|string array|是|[]|动作列表|the action list|
-
-- output:
-
-```
-{
-    "code":0,
-    "data":true,
-    "message":"",
-    "traceId":""
-}
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | bool | the request result |the request result|
-|traceId|string|请求跟踪id|the trace id|
-
-
-### 更新权限包含路径
-
-- API: PUT /auth/api/permission/includePath
-- API 名称: update_include_path
-- 功能说明：
-	- 中文：更新权限包含路径
-	- English：update permission include path
-- input body:
-
-``` json
-{
-    "permissionId":"5ea4f6608c165f702f5bd41e",
-    "path":[
-        "/path1",
-        "/path2"
-    ]
-}
-```
-
-- input 字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|permissionId|string|是|无|角色主键id|the permission primary key|
-|path|string array|是|[]|路径列表|the path list|
-
-- output:
-```
-{
-    "code":0,
-    "message":null,
-    "data":true,
-    "traceId":""
-}
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | bool | result data |the data for response|
-|traceId|string|请求跟踪id|the trace id|
-
-
-### 更新权限排除路径
-
-- API: PUT /auth/api/permission/excludePath
-
-- API 名称: update_exclude_path
-- 功能说明：
-	- 中文：更新权限排除路径
-	- English：update permission exclude path
+    - 中文：更新仓库下配置的权限
+    - English：update permission
 
 - input body:
 
@@ -702,26 +475,34 @@
 {
     "permissionId":"5ea4f6608c165f702f5bd41e",
     "path":[
-        "/path1",
-        "/path2"
-    ]
+        "/ops",
+        "/dev"
+    ],
+    "users": [
+    	"test"
+    ],
+    "name": "perm1",
+    "projectId": "blueking"
 }
 ```
 
 - input 字段说明
 
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|permissionId|string|是|无|角色主键id|the permission primary key|
-|path|string array|是|[]|路径列表|the path list|
+| 字段           |类型|是否必须| 默认值 | 说明       | Description                |
+|--------------|---|---|-----|----------|----------------------------|
+| permissionId |string|是| 无   | 角色主键id   | the permission primary key |
+| path         |string array|是| 无   | 更新权限包含路径 | the department id array    |
+| users        |string array|是| 无   | 绑定用户     | the userName               |
+| name         |string|是| 无   | 权限名称     | the permission name        |
+| projectId    |string|是| 无   | 项目名称     | the project Id             |
 
 - output:
 
 ```
 {
     "code":0,
-    "message":null,
     "data":true,
+    "message":"",
     "traceId":""
 }
 
@@ -732,14 +513,5 @@
 |---|---|---|---|
 |code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
 |message|result message|错误消息 |the failure message |
-|data | bool | result data |the data for response|
+|data | bool | the request result |the request result|
 |traceId|string|请求跟踪id|the trace id|
-
-
-
-
-
-
-
-
-

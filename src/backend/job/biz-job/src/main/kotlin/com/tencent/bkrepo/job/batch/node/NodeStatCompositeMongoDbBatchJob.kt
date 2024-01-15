@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.Date
+import kotlin.reflect.KClass
 
 @Component
 @EnableConfigurationProperties(NodeStatCompositeMongoDbBatchJobProperties::class)
@@ -28,7 +29,7 @@ class NodeStatCompositeMongoDbBatchJob(
 
     override fun mapToEntity(row: Map<String, Any?>): Node = Node(row)
 
-    override fun entityClass(): Class<Node> = Node::class.java
+    override fun entityClass(): KClass<Node> = Node::class
 
     override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
         return listOf(

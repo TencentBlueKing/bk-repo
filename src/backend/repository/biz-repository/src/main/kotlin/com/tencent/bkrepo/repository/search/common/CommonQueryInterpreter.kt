@@ -39,7 +39,8 @@ open class CommonQueryInterpreter(
     override fun interpret(queryModel: QueryModel): QueryContext {
         val context = super.interpret(queryModel) as CommonQueryContext
         if (!context.permissionChecked) {
-            permissionManager.checkProjectPermission(PermissionAction.READ, context.findProjectId())
+            // 未执行权限校验时表示没有仓库查询条件，可能为跨仓库查询，需要项目管理员权限
+            permissionManager.checkProjectPermission(PermissionAction.MANAGE, context.findProjectId())
             context.permissionChecked = true
         }
         return context

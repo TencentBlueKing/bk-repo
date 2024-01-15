@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 清理被标记为删除的node，同时减少文件引用
@@ -87,8 +88,8 @@ class DeletedBlockNodeCleanupJob(
         )
     }
 
-    override fun entityClass(): Class<BlockNode> {
-        return BlockNode::class.java
+    override fun entityClass(): KClass<BlockNode> {
+        return BlockNode::class
     }
 
     override fun run(row: BlockNode, collectionName: String, context: JobContext) {

@@ -25,32 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.artifact.configuration
+package com.tencent.bkrepo.job.pojo.project
 
-import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-
-/**
- * 自动创建索引配置
- */
-data class AutoIndexRepositorySettings(
-    /**
-     * 是否启用自动创建目录索引功能
-     */
-    val enabled: Boolean = true
-) {
-
-
-    companion object {
-        /**
-         * [RepositoryConfiguration.settings]中的配置键
-         */
-        const val SETTINGS_KEY_AUTO_INDEX = "autoIndex"
-
-        fun from(configuration: RepositoryConfiguration): AutoIndexRepositorySettings? {
-            val autoIndexSettingsMap = configuration.getSetting<Map<String, Any>>(SETTINGS_KEY_AUTO_INDEX)
-                ?: return null
-            val enabled = autoIndexSettingsMap[AutoIndexRepositorySettings::enabled.name] as Boolean? ?: true
-            return AutoIndexRepositorySettings(enabled = enabled)
-        }
-    }
-}
+data class TRepoMetrics(
+    val repoName: String,
+    val credentialsKey: String? = "default",
+    val size: Long,
+    val num: Long,
+    val type: String,
+)

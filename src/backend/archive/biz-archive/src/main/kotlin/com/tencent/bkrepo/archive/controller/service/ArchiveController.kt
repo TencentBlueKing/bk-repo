@@ -2,6 +2,7 @@ package com.tencent.bkrepo.archive.controller.service
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
+import com.tencent.bkrepo.archive.pojo.CompressFile
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
@@ -46,9 +47,8 @@ class ArchiveController(
         return ResponseBuilder.success()
     }
 
-    override fun compress(request: CompressFileRequest): Response<Void> {
-        compressService.compress(request)
-        return ResponseBuilder.success()
+    override fun compress(request: CompressFileRequest): Response<Int> {
+        return ResponseBuilder.success(compressService.compress(request))
     }
 
     override fun uncompress(request: UncompressFileRequest): Response<Void> {
@@ -63,6 +63,21 @@ class ArchiveController(
 
     override fun completeCompress(request: CompleteCompressRequest): Response<Void> {
         compressService.complete(request)
+        return ResponseBuilder.success()
+    }
+
+    override fun getCompressInfo(sha256: String, storageCredentialsKey: String?): Response<CompressFile?> {
+        return ResponseBuilder.success(compressService.getCompressInfo(sha256, storageCredentialsKey))
+    }
+
+    override fun deleteAll(request: ArchiveFileRequest): Response<Void> {
+        archiveService.delete(request)
+        val deleteCompressRequest = DeleteCompressRequest(
+            sha256 = request.sha256,
+            storageCredentialsKey = request.storageCredentialsKey,
+            operator = request.operator,
+        )
+        compressService.delete(deleteCompressRequest)
         return ResponseBuilder.success()
     }
 }

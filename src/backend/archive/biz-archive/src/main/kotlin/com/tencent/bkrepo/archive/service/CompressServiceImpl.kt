@@ -1,8 +1,13 @@
 package com.tencent.bkrepo.archive.service
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.CompressStatus
+import com.tencent.bkrepo.archive.job.compress.CompressSubscriber
+import com.tencent.bkrepo.archive.job.compress.UncompressSubscriber
 import com.tencent.bkrepo.archive.model.TCompressFile
+import com.tencent.bkrepo.archive.pojo.CompressFile
+import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
@@ -23,24 +28,41 @@ class CompressServiceImpl(
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
     private val fileReferenceClient: FileReferenceClient,
+    private val compressFileDao: CompressFileDao,
 ) : CompressService {
+    private val executor = ArchiveUtils.newFixedAndCachedThreadPool(
+        1,
+        ThreadFactoryBuilder().setNameFormat("compress-worker").build(),
+    )
+    private val compressor = CompressSubscriber(
+        compressFileDao,
+        compressFileRepository,
+        storageService,
+        fileReferenceClient,
+        executor,
+    )
+    private val uncompressor = UncompressSubscriber(
+        compressFileDao,
+        compressFileRepository,
+        storageService,
+        executor,
+    )
 
-    override fun compress(request: CompressFileRequest) {
+    override fun compress(request: CompressFileRequest): Int {
         with(request) {
             // 队头元素
             val head = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
             if (head != null && head.status != CompressStatus.NONE) {
                 // 压缩任务已存在
                 logger.info("Compress file [$sha256] already exists，status: ${head.status}.")
-                head.lastModifiedBy = operator
-                head.lastModifiedDate = LocalDateTime.now()
                 // 重新触发压缩后逻辑，删除原存储文件和更新node状态
-                head.status = if (head.status == CompressStatus.COMPLETED) {
-                    CompressStatus.COMPRESSED
-                } else {
-                    CompressStatus.CREATED
+                if (head.status == CompressStatus.COMPLETED) {
+                    head.lastModifiedBy = operator
+                    head.lastModifiedDate = LocalDateTime.now()
+                    head.status = CompressStatus.COMPRESSED
+                    compressFileRepository.save(head)
                 }
-                return
+                return 1
             }
             var currentChainLength = 0
             // 这是队头
@@ -50,7 +72,7 @@ class CompressServiceImpl(
                 if (currentChainLength > MAX_CHAIN_LENGTH) {
                     // 超出队列长度
                     logger.info("Exceed max chain length,ignore it.")
-                    return
+                    return 0
                 }
                 // 删除旧头
                 compressFileRepository.delete(head)
@@ -92,6 +114,10 @@ class CompressServiceImpl(
             compressFileRepository.save(newChain)
             fileReferenceClient.increment(baseSha256, storageCredentialsKey)
             logger.info("Compress file [$sha256] on $storageCredentialsKey.")
+            if (sync) {
+                compressor.doOnNext(compressFile)
+            }
+            return 1
         }
     }
 
@@ -105,6 +131,9 @@ class CompressServiceImpl(
                 file.lastModifiedDate = LocalDateTime.now()
                 compressFileRepository.save(file)
                 logger.info("Uncompress file [$sha256] on $storageCredentialsKey.")
+                if (sync) {
+                    uncompressor.doOnNext(file)
+                }
             }
         }
     }
@@ -113,19 +142,23 @@ class CompressServiceImpl(
         with(request) {
             val file = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
                 ?: return
-            if (file.status != CompressStatus.NONE) {
+            if (file.status == CompressStatus.NONE) {
+                return
+            }
+            if (file.status != CompressStatus.COMPRESS_FAILED) {
                 val storageCredentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
                 if (storageService.isCompressed(sha256, storageCredentials)) {
                     storageService.deleteCompressed(sha256, storageCredentials)
                 }
+                // 压缩失败的已经解除了base sha256的引用
                 fileReferenceClient.decrement(file.baseSha256, storageCredentialsKey)
-                /*
-                * 解压是小概率事件，所以这里链长度我们就不减少，这样带来的问题是，
-                * 压缩链更容易达到最大长度。但是这个影响并不重要。
-                * */
-                compressFileRepository.delete(file)
-                logger.info("Delete compress file [$sha256].")
             }
+            /*
+            * 解压是小概率事件，所以这里链长度我们就不减少，这样带来的问题是，
+            * 压缩链更容易达到最大长度。但是这个影响并不重要。
+            * */
+            compressFileRepository.delete(file)
+            logger.info("Delete compress file [$sha256].")
         }
     }
 
@@ -140,6 +173,27 @@ class CompressServiceImpl(
                 compressFileRepository.save(file)
                 logger.info("Complete compress file [$sha256].")
             }
+        }
+    }
+
+    override fun getCompressInfo(sha256: String, storageCredentialsKey: String?): CompressFile? {
+        val file = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
+        if (file == null || file.status == CompressStatus.NONE) {
+            return null
+        }
+        with(file) {
+            return CompressFile(
+                createdBy = createdBy,
+                createdDate = createdDate,
+                lastModifiedBy = lastModifiedBy,
+                lastModifiedDate = lastModifiedDate,
+                sha256 = sha256,
+                baseSha256 = baseSha256,
+                status = status,
+                compressedSize = compressedSize,
+                uncompressedSize = uncompressedSize,
+                storageCredentialsKey = storageCredentialsKey,
+            )
         }
     }
 

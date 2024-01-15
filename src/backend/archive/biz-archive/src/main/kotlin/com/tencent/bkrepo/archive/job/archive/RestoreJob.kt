@@ -2,6 +2,7 @@ package com.tencent.bkrepo.archive.job.archive
 
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
+import com.tencent.bkrepo.archive.job.Cancellable
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
@@ -25,8 +26,10 @@ class RestoreJob(
     private val storageService: StorageService,
     private val archiveProperties: ArchiveProperties,
     private val archiveFileDao: ArchiveFileDao,
-) {
+) : Cancellable {
     private val cosClient = CosClient(archiveProperties.cos)
+
+    private var subscriber: RestoreSubscriber? = null
 
     /**
      * 获取待归档文件列表
@@ -48,6 +51,12 @@ class RestoreJob(
             archiveProperties.workDir,
         )
         listFiles().subscribe(subscriber)
+        this.subscriber = subscriber
         subscriber.blockLast()
+        this.subscriber = null
+    }
+
+    override fun cancel() {
+        subscriber?.dispose()
     }
 }

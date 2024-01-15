@@ -436,7 +436,7 @@ class CosClient(val credentials: InnerCosCredentials) {
                 }
             }
         } catch (exception: Exception) {
-            logger.error("load failed: ", exception)
+            logger.info("load failed: ", exception)
             cleanup(futureList, activeCount, tempRootPath)
             session.closed = true
             throw exception

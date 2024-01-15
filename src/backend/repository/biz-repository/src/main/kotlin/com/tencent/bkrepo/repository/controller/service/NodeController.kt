@@ -48,6 +48,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
@@ -117,14 +118,12 @@ class NodeController(
         return ResponseBuilder.success()
     }
 
-    override fun moveNode(nodeMoveRequest: NodeMoveCopyRequest): Response<Void> {
-        nodeService.moveNode(nodeMoveRequest)
-        return ResponseBuilder.success()
+    override fun moveNode(nodeMoveRequest: NodeMoveCopyRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(nodeService.moveNode(nodeMoveRequest))
     }
 
-    override fun copyNode(nodeCopyRequest: NodeMoveCopyRequest): Response<Void> {
-        nodeService.copyNode(nodeCopyRequest)
-        return ResponseBuilder.success()
+    override fun copyNode(nodeCopyRequest: NodeMoveCopyRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(nodeService.copyNode(nodeCopyRequest))
     }
 
     override fun deleteNode(nodeDeleteRequest: NodeDeleteRequest): Response<NodeDeleteResult> {
@@ -228,5 +227,9 @@ class NodeController(
     override fun uncompressedNode(nodeUnCompressedRequest: NodeUnCompressedRequest): Response<Void> {
         nodeService.uncompressedNode(nodeUnCompressedRequest)
         return ResponseBuilder.success()
+    }
+
+    override fun link(nodeLinkRequest: NodeLinkRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(nodeService.link(nodeLinkRequest))
     }
 }
