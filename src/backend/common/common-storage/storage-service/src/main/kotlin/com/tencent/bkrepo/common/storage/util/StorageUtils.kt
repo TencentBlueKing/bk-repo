@@ -30,12 +30,18 @@ class StorageUtils(
          * @param credentials 存储实例
          * @param filePath 下载目标路径
          * */
-        fun download(path: String, digest: String, credentials: StorageCredentials, filePath: Path) {
+        fun download(
+            path: String,
+            digest: String,
+            range: Range = Range.FULL_RANGE,
+            credentials: StorageCredentials,
+            filePath: Path,
+        ) {
             val dir = credentials.upload.localPath
             val fileName = StringPool.randomStringByLongValue(DOWNLOAD_PREFIX, DOWNLOAD_SUFFIX)
             val tempFile = FileSystemClient(dir).touch("", fileName)
             try {
-                val inputStream = fileStorage.load(path, digest, Range.FULL_RANGE, credentials)
+                val inputStream = fileStorage.load(path, digest, range, credentials)
                     ?: error("Miss data $digest on ${credentials.key}")
                 StreamUtils.useCopy(inputStream, tempFile.outputStream())
                 Files.move(tempFile.toPath(), filePath)
