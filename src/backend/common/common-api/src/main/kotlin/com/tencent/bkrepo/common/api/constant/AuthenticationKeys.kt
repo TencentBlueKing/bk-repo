@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.api.constant
 
 object AuthenticationKeys {
     const val BEARER_REALM = "Bearer realm"
-    const val BASIC_REALM = "Basic realm"
     const val SERVICE = "service"
     const val SCOPE = "scope"
 }

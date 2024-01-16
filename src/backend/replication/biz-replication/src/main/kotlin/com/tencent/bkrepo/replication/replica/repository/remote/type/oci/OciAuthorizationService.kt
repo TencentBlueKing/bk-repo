@@ -90,6 +90,8 @@ class OciAuthorizationService : AuthorizationService {
         if (wwwAuthenticate.isNullOrBlank() ||
             (!wwwAuthenticate.startsWith(BEARER_AUTH_PREFIX) && !wwwAuthenticate.startsWith(BASIC_AUTH_PREFIX)))
             throw ArtifactPushException("Auth url can not be parsed from header.")
+        if (wwwAuthenticate.startsWith(BASIC_AUTH_PREFIX))
+            return authorizationCode ?: StringPool.EMPTY
         val authProperty = parseWWWAuthenticateHeader(wwwAuthenticate, scope)
             ?: throw ArtifactPushException("Auth url can not be parsed from header.")
         val urlStr = buildAuthenticationUrl(authProperty, userName)
