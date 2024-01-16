@@ -68,7 +68,7 @@ object ChunkedUploadUtils {
      * 从Content-Range头中解析出起始位置
      * Content-Range 类型为"start-end"
      */
-    private fun getRangeInfo(range: String): Pair<Long, Long> {
+    fun getRangeInfo(range: String): Pair<Long, Long> {
         if (range.isNullOrEmpty()) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "range is empty!")
         }

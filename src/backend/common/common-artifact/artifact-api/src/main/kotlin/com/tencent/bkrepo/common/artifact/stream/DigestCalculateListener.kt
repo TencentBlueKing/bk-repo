@@ -56,7 +56,6 @@ class DigestCalculateListener : StreamReceiveListener {
     override fun data(buffer: ByteArray, offset: Int, length: Int) {
         md5Digest.update(buffer, offset, length)
         sha256Digest.update(buffer, offset, length)
-
     }
 
     override fun finished() {
