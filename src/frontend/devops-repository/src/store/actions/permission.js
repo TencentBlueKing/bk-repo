@@ -72,9 +72,15 @@ export default {
         })
     },
     // 项目下用户列表
-    getProjectUserList (_, { projectId }) {
+    getProjectUserList (_, { projectId, isAdmin }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/list/${projectId}`
+            `${authPrefix}/user/list/project`,
+            {
+                params: {
+                    projectId: projectId,
+                    isAdmin: isAdmin
+                }
+            }
         )
     },
     // 校验userId是否重复
@@ -149,16 +155,10 @@ export default {
             `${authPrefix}/role/delete/${id}`
         )
     },
-    // 查询所有角色
-    getRoleList () {
-        return Vue.prototype.$ajax.get(
-            `${authPrefix}/role/sys/list`
-        )
-    },
     // 查询项目下角色
     getProjectRoleList (_, { projectId }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/role/sys/list/${projectId}`
+            `${authPrefix}/role/list/${projectId}`
         )
     },
     // 查询所有部门

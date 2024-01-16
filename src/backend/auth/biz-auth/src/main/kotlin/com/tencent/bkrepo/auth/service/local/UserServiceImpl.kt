@@ -33,8 +33,11 @@ package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
@@ -73,7 +76,7 @@ import java.time.format.DateTimeParseException
 
 class UserServiceImpl constructor(
     private val userRepository: UserRepository,
-    roleRepository: RoleRepository,
+    private val roleRepository: RoleRepository,
     private val mongoTemplate: MongoTemplate
 ) : UserService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
 
@@ -437,6 +440,22 @@ class UserServiceImpl constructor(
     override fun getRelatedUserById(asstUser: String, userName: String?): List<UserInfo> {
         val query = UserQueryHelper.getUserByAsstUsers(asstUser, userName)
         return mongoTemplate.find(query, TUser::class.java).map { UserRequestUtil.convToUserInfo(it) }
+    }
+
+    override fun getListByProjectIdAndUserType(projectId: String, isAdmin: Boolean): List<UserInfo> {
+        val roleId = if (isAdmin) {
+            PROJECT_MANAGE_ID
+        } else {
+            PROJECT_VIEWER_ID
+        }
+        val role = roleRepository.findFirstByRoleIdAndProjectId(roleId, projectId)
+        if (role != null) {
+            return userRepository.findAllByRolesIn(listOf(role.id).requireNoNulls()).map {
+                UserRequestUtil.convToUserInfo(it)
+            }
+        } else {
+            return emptyList()
+        }
     }
 
     companion object {

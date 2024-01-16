@@ -135,10 +135,11 @@ class RoleController @Autowired constructor(
         return ResponseBuilder.success(roleService.updateRoleInfo(id, updateRoleRequest))
     }
 
-    @GetMapping("/sys/list")
+    @GetMapping("/list/{projectId}")
     fun allRole(
-        @RequestAttribute userId: String
+        @PathVariable projectId: String
     ): Response<List<Role>> {
-        return ResponseBuilder.success(emptyList())
+        isContextUserProjectAdmin(projectId)
+        return ResponseBuilder.success(roleService.listRoleByProject(projectId))
     }
 }
