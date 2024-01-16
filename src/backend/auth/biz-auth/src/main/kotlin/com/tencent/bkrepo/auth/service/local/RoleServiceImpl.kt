@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.exception.RoleUpdateException
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
@@ -122,7 +124,11 @@ class RoleServiceImpl constructor(
             return roleRepository.findByProjectIdAndRepoNameAndType(projectId, repoName, RoleType.REPO)
                 .map { transfer(it) }
         }
-        return roleRepository.findByTypeAndProjectId(RoleType.PROJECT, projectId).map { transfer(it) }
+        return roleRepository.findByTypeAndProjectIdAndRoleIdNotIn(
+            RoleType.PROJECT,
+            projectId,
+            listOf(PROJECT_MANAGE_ID, PROJECT_VIEWER_ID)
+        ).map { transfer(it) }
     }
 
     override fun deleteRoleByid(id: String): Boolean {
@@ -132,8 +138,9 @@ class RoleServiceImpl constructor(
             logger.warn("delete role [$id ] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         } else {
-            if (listUserByRoleId(role.id!!).isNotEmpty()) {
-                throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_USER_NOT_EMPTY)
+            var users = listUserByRoleId(role.id!!)
+            if (users.isNotEmpty()) {
+                userService.removeUserFromRoleBatch(users.map { it.userId }, id)
             }
             roleRepository.deleteTRolesById(ObjectId(role.id))
         }

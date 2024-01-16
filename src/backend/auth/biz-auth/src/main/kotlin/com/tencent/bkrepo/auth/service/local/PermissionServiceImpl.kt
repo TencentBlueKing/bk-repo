@@ -581,6 +581,7 @@ open class PermissionServiceImpl constructor(
         return updatePermissionById(request.permissionId, TPermission::includePattern.name, request.path)
                 && updatePermissionById(request.permissionId, TPermission::users.name, request.users)
                 && updatePermissionById(request.permissionId, TPermission::permName.name, request.name)
+                && updatePermissionById(request.permissionId, TPermission::roles.name, request.roles)
     }
 
     companion object {
