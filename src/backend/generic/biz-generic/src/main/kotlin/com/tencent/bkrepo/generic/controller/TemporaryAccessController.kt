@@ -30,6 +30,8 @@ package com.tencent.bkrepo.generic.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
@@ -43,6 +45,8 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.CHUNKED
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.DELTA_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericChunkedArtifactInfo
+import com.tencent.bkrepo.generic.config.GenericProperties
+import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_CLIENT
 import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
@@ -66,8 +70,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 @RequestMapping("/temporary/")
 class TemporaryAccessController(
     private val temporaryAccessService: TemporaryAccessService,
-    private val permissionManager: PermissionManager
-) {
+    private val permissionManager: PermissionManager,
+    private val genericProperties: GenericProperties,
+    ) {
 
     @PostMapping("/token/create")
     @Principal(PrincipalType.GENERAL)
@@ -165,6 +170,8 @@ class TemporaryAccessController(
         artifactFile: ArtifactFile,
         @RequestParam token: String
     ) {
+        if (!validateClientAgent())
+            throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
         temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
         temporaryAccessService.getUuidForChunkedUpload(artifactInfo, artifactFile)
     }
@@ -175,6 +182,8 @@ class TemporaryAccessController(
         artifactFile: ArtifactFile,
         @RequestParam token: String
     ) {
+        if (!validateClientAgent())
+            throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
         temporaryAccessService.uploadArtifact(artifactInfo, artifactFile)
 
@@ -182,5 +191,13 @@ class TemporaryAccessController(
         if (HttpContextHolder.getRequest().method == HttpMethod.PUT.name) {
             temporaryAccessService.decrementPermits(tokenInfo)
         }
+    }
+
+    /**
+     * 判断来源是否可信
+     */
+    private fun validateClientAgent(): Boolean {
+        val uploadClient = HttpContextHolder.getRequest().getHeader(CHUNKED_UPLOAD_CLIENT)
+        return !uploadClient.isNullOrEmpty() && genericProperties.chunkedUploadClients.contains(uploadClient)
     }
 }

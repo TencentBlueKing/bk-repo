@@ -55,13 +55,4 @@ object ChunkedRequestUtil {
             }
         }
     }
-
-    /**
-     * 从Content-Range头中解析出起始位置
-     */
-    fun getRangeInfo(range: String): Pair<Long?, Long?> {
-        val values = range.split("-")
-        if (values.isEmpty() || values.size < 2) return Pair(null, null)
-        return Pair(values[0].toLong(), values[1].toLong())
-    }
 }

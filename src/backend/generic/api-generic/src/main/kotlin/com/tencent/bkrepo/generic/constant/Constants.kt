@@ -55,4 +55,5 @@ const val CHUNKED_UPLOAD = "CHUNKED-UPLOAD"
 /**
  * 分块上传uuid
  */
-const val CHUNKED_UPLOAD_UUID_ID = "Chunked-Upload-Uuid-ID"
+const val CHUNKED_UPLOAD_UUID_ID = "CHUNKED-UPLOAD-UUID-ID"
+const val CHUNKED_UPLOAD_CLIENT = "CHUNKED-UPLOAD-CLIENT"

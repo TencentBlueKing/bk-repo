@@ -29,9 +29,14 @@ package com.tencent.bkrepo.generic.artifact
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -56,6 +61,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -74,7 +80,6 @@ import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
-import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.getRangeInfo
 import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.api.ReplicaTaskClient
@@ -590,29 +595,38 @@ class GenericLocalRepository(
                 "The file with range $range and length $length in repo $projectId|$repoName " +
                     "is being uploaded with uuid: $uuid"
             )
-            if (!range.isNullOrEmpty() && length > -1) {
-                val (start, end) = getRangeInfo(range)
-                // 判断要上传的长度是否超长
-                if (end == null || start == null || end - start > length - 1) {
-                    return ChunkedResponseProperty(
-                        status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-                        range = length.toLong(),
-                        uuid = uuid!!,
-                        contentLength = 0
+
+            val lengthOfAppendFile = storageService.findLengthOfAppendFile(uuid!!, context.repositoryDetail.storageCredentials)
+            logger.info("current length of append file is $lengthOfAppendFile")
+            val (patchLen, status) = when (ChunkedUploadUtils.chunkedRequestCheck(
+                lengthOfAppendFile = lengthOfAppendFile,
+                range = range,
+                contentLength = length
+            )) {
+                ChunkedUploadUtils.RangeStatus.ILLEGAL_RANGE -> {
+                    Pair(length.toLong(), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                }
+                ChunkedUploadUtils.RangeStatus.READY_TO_APPEND -> {
+                    val patchLen = storageService.append(
+                        appendId = uuid!!,
+                        artifactFile = context.getArtifactFile(),
+                        storageCredentials = context.repositoryDetail.storageCredentials
                     )
+                    logger.info(
+                        "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
+                            "has been uploaded, size pf append file is $patchLen and uuid: $uuid"
+                    )
+                    Pair(patchLen, HttpStatus.ACCEPTED)
+                }
+                else -> {
+                    logger.info(
+                        "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
+                            "already appended, size pf append file is $lengthOfAppendFile and uuid: $uuid")
+                    Pair(lengthOfAppendFile, HttpStatus.ACCEPTED)
                 }
             }
-            val patchLen = storageService.append(
-                appendId = uuid!!,
-                artifactFile = context.getArtifactFile(),
-                storageCredentials = context.repositoryDetail.storageCredentials
-            )
-            logger.info(
-                "The size of file has been uploaded is $patchLen in repo $projectId|$repoName " +
-                    "is being uploaded with uuid: $uuid"
-            )
             return ChunkedResponseProperty(
-                status = HttpStatus.ACCEPTED,
+                status = status,
                 range = patchLen,
                 uuid = uuid!!
             )

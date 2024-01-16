@@ -30,7 +30,6 @@ package com.tencent.bkrepo.generic.pojo
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 
 data class ChunkedResponseProperty(
-    val location: String? = null,
     val uuid: String? = null,
     val range: Long? = null,
     val status: HttpStatus? = null,
