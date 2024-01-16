@@ -596,7 +596,9 @@ class GenericLocalRepository(
                     "is being uploaded with uuid: $uuid"
             )
 
-            val lengthOfAppendFile = storageService.findLengthOfAppendFile(uuid!!, context.repositoryDetail.storageCredentials)
+            val lengthOfAppendFile = storageService.findLengthOfAppendFile(
+                uuid!!, context.repositoryDetail.storageCredentials
+            )
             logger.info("current length of append file is $lengthOfAppendFile")
             val (patchLen, status) = when (ChunkedUploadUtils.chunkedRequestCheck(
                 lengthOfAppendFile = lengthOfAppendFile,
