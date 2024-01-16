@@ -94,14 +94,14 @@ class BlobChunkedServiceImpl(
                 )
                 logger.info(
                     "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
-                        "has been uploaded, size pf append file is $patchLen and uuid: $uuid"
+                        "has been uploaded, size of append file is $patchLen and uuid: $uuid"
                 )
                 Pair(patchLen, HttpStatus.ACCEPTED)
             }
             else -> {
                 logger.info(
                     "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
-                        "already appended, size pf append file is $lengthOfAppendFile and uuid: $uuid")
+                        "already appended, size of append file is $lengthOfAppendFile and uuid: $uuid")
                 Pair(lengthOfAppendFile, HttpStatus.ACCEPTED)
             }
         }
