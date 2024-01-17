@@ -45,12 +45,14 @@ import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
+import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.query.UserQueryHelper
 import com.tencent.bkrepo.auth.util.query.UserUpdateHelper
 import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.auth.util.scope.ProjectRuleUtil
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -58,6 +60,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import java.time.LocalDateTime
 
 open class AbstractServiceImpl constructor(
     private val mongoTemplate: MongoTemplate,
@@ -86,6 +89,31 @@ open class AbstractServiceImpl constructor(
             userRepository.findFirstByUserId(it) ?: run {
                 logger.warn(" user not  exist.")
                 throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+            }
+        }
+    }
+
+    private fun checkUserOrCreateUser(idList: List<String>) {
+        idList.forEach {
+            userRepository.findFirstByUserId(it) ?: run {
+                if (it != ANONYMOUS_USER) {
+                    var user = TUser(
+                        userId = it,
+                        name = it,
+                        pwd = DataDigestUtils.md5FromStr(IDUtil.genRandomId()),
+                        admin = false,
+                        locked = false,
+                        tokens = emptyList(),
+                        roles = emptyList(),
+                        asstUsers = emptyList(),
+                        group = false,
+                        email = null,
+                        phone = null,
+                        createdDate = LocalDateTime.now(),
+                        lastModifiedDate = LocalDateTime.now()
+                    )
+                    userRepository.insert(user)
+                }
             }
         }
     }
@@ -222,7 +250,7 @@ open class AbstractServiceImpl constructor(
 
     fun addUserToRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
         logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
-        checkUserExistBatch(userIdList)
+        checkUserOrCreateUser(userIdList)
         checkRoleExist(roleId)
         val query = UserQueryHelper.getUserByIdList(userIdList)
         val update = UserUpdateHelper.buildAddRole(roleId)
@@ -233,6 +261,16 @@ open class AbstractServiceImpl constructor(
     fun removeUserFromRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
         logger.info("remove user from role  batch userId : [$userIdList], roleId : [$roleId]")
         checkUserExistBatch(userIdList)
+        checkRoleExist(roleId)
+        val query = UserQueryHelper.getUserByIdListAndRoleId(userIdList, roleId)
+        val update = UserUpdateHelper.buildUnsetRoles()
+        mongoTemplate.updateMulti(query, update, TUser::class.java)
+        return true
+    }
+
+    fun removeUserFromRole(userIdList: List<String>, roleId: String): Boolean {
+        logger.info("remove user from role  batch userId : [$userIdList], roleId : [$roleId]")
+        checkUserOrCreateUser(userIdList)
         checkRoleExist(roleId)
         val query = UserQueryHelper.getUserByIdListAndRoleId(userIdList, roleId)
         val update = UserUpdateHelper.buildUnsetRoles()

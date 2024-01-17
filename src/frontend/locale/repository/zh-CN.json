@@ -829,5 +829,6 @@
     "roleID": "用户组ID",
     "roleName":"用户组名称",
     "addUserGroupTitle":"创建用户组",
-    "editUserGroupTitle": "编辑用户组"
+    "editUserGroupTitle": "编辑用户组",
+    "associatedUseGroup": "关联用户组"
 }

@@ -828,5 +828,6 @@
     "roleID": "RoleID",
     "roleName":"Name",
     "addUserGroupTitle":"Create UserGroup",
-    "editUserGroupTitle": "Edit UserGroup"
+    "editUserGroupTitle": "Edit UserGroup",
+    "associatedUseGroup": "UserGroup"
 }

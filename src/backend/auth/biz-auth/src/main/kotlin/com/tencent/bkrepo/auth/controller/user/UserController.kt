@@ -374,16 +374,6 @@ class UserController @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    @ApiOperation("根据项目Id获取特定用户")
-    @GetMapping("/list/project")
-    fun getUserByProject(
-        @RequestParam projectId: String,
-        @RequestParam isAdmin: Boolean,
-    ): Response<List<UserInfo>> {
-        val result = userService.getListByProjectIdAndUserType(projectId, isAdmin)
-        return ResponseBuilder.success(result)
-    }
-
     companion object {
         private val logger = LoggerFactory.getLogger(UserController::class.java)
     }

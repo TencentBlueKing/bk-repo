@@ -96,6 +96,4 @@ interface UserService {
     fun validateEntityUser(userId: String): Boolean
 
     fun getRelatedUserById(asstUser: String, userName: String? = null): List<UserInfo>
-
-    fun getListByProjectIdAndUserType(projectId: String, isAdmin: Boolean): List<UserInfo>
 }

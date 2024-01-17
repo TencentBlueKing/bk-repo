@@ -13,16 +13,16 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(role)"></empty-data>
             </template>
-            <bk-table-column :label="$t('roleID')" show-overflow-tooltip>
-                <template #default="{ row }">{{ row.roleId }}</template>
-            </bk-table-column>
             <bk-table-column :label="$t('roleName')" show-overflow-tooltip>
                 <template #default="{ row }">
-                    <span class="hover-btn" @click="showUsers(row)">{{row.name}}</span>
+                    {{row.name}}
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('description')" show-overflow-tooltip>
                 <template #default="{ row }">{{row.description || '/'}}</template>
+            </bk-table-column>
+            <bk-table-column :label="$t('user')" show-overflow-tooltip>
+                <template #default="{ row }">{{row.users || '/'}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
@@ -42,14 +42,20 @@
             :title="editRoleConfig.id ? $t('editUserGroupTitle') : $t('addUserGroupTitle')"
             @cancel="editRoleConfig.show = false">
             <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm">
-                <bk-form-item :label="$t('roleID')" property="roleId" error-display-type="normal">
-                    <bk-input v-model.trim="editRoleConfig.roleId" maxlength="32" show-word-limit></bk-input>
-                </bk-form-item>
                 <bk-form-item :label="$t('roleName')" :required="true" property="name" error-display-type="normal">
                     <bk-input v-model.trim="editRoleConfig.name" maxlength="32" show-word-limit></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('description')">
                     <bk-input type="textarea" v-model.trim="editRoleConfig.description" maxlength="200"></bk-input>
+                </bk-form-item>
+                <bk-form-item :label="$t('user')" property="users" error-display-type="normal">
+                    <bk-tag-input
+                        v-model="editRoleConfig.users"
+                        :placeholder="$t('enterPlaceHolder')"
+                        trigger="focus"
+                        :has-delete-icon="true"
+                        allow-create>
+                    </bk-tag-input>
                 </bk-form-item>
             </bk-form>
             <template #footer>
@@ -57,46 +63,6 @@
                 <bk-button class="ml10" theme="primary" @click="confirm">{{ $t('confirm') }}</bk-button>
             </template>
         </canway-dialog>
-        <bk-sideslider
-            class="show-userlist-sideslider"
-            :quick-close="true"
-            :is-show.sync="editRoleUsers.show"
-            :title="editRoleUsers.title"
-            :width="500">
-            <template #content>
-                <div class="m10 flex-align-center">
-                    <bk-tag-input
-                        style="width: 300px"
-                        v-model="editRoleUsers.addUsers"
-                        :list="Object.values(selectList)"
-                        :search-key="['id', 'name']"
-                        :title="editRoleUsers.addUsers.map(u => userList[u] ? userList[u].name : u)"
-                        :placeholder="$t('createUsersTip')"
-                        trigger="focus"
-                        allow-create>
-                    </bk-tag-input>
-                    <bk-button :disabled="!editRoleUsers.addUsers.length" theme="primary" class="ml10" @click="handleAddUsers">{{ $t('add') }}}</bk-button>
-                    <bk-button :disabled="!editRoleUsers.deleteUsers.length" theme="default" class="ml10" @click="handleDeleteUsers">{{ $t('batchRemove') }}</bk-button>
-                </div>
-                <bk-table
-                    :data="editRoleUsers.users"
-                    height="calc(100% - 60px)"
-                    stripe
-                    border
-                    size="small"
-                    @select="list => {
-                        editRoleUsers.deleteUsers = list
-                    }"
-                    @select-all="list => {
-                        editRoleUsers.deleteUsers = list
-                    }">
-                    <bk-table-column type="selection" width="60"></bk-table-column>
-                    <bk-table-column :label="$t('user')">
-                        <template #default="{ row }">{{userList[row] ? userList[row].name : row}}</template>
-                    </bk-table-column>
-                </bk-table>
-            </template>
-        </bk-sideslider>
     </div>
 </template>
 <script>
@@ -115,6 +81,7 @@
                     loading: false,
                     roleId: '',
                     name: '',
+                    users: [],
                     description: ''
                 },
                 editRoleUsers: {
@@ -153,7 +120,6 @@
         },
         created () {
             this.getRoleListHandler()
-            this.getProjectUsers()
         },
         methods: {
             ...mapActions([
@@ -217,7 +183,8 @@
                     loading: false,
                     id: '',
                     name: '',
-                    description: ''
+                    description: '',
+                    users: []
                 }
             },
             editRoleHandler (row) {
@@ -227,6 +194,7 @@
                     show: true,
                     loading: false,
                     roleId: row.roleId,
+                    users: row.users,
                     name,
                     description
                 }
@@ -246,12 +214,21 @@
                         description: this.editRoleConfig.description
                     }
                 }).then(res => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: (this.editRoleConfig.id ? this.$t('editUserGroupTitle') : this.$t('addUserGroupTitle')) + this.$t('space') + this.$t('success')
-                    })
-                    this.editRoleConfig.show = false
-                    this.getRoleListHandler()
+                    if (!this.editRoleConfig.id && this.editRoleConfig.users.length > 0) {
+                        this.editRole({
+                            id: res,
+                            body: {
+                                userIds: this.editRoleConfig.users
+                            }
+                        }).then(_ => {
+                            this.$bkMessage({
+                                theme: 'success',
+                                message: (this.editRoleConfig.id ? this.$t('editUserGroupTitle') : this.$t('addUserGroupTitle')) + this.$t('space') + this.$t('success')
+                            })
+                            this.editRoleConfig.show = false
+                            this.getRoleListHandler()
+                        })
+                    }
                 }).finally(() => {
                     this.editRoleConfig.loading = false
                 })
@@ -272,17 +249,6 @@
                             this.getRoleListHandler()
                         })
                     }
-                })
-            },
-            getProjectUsers () {
-                this.getProjectUserList({ projectId: this.projectId, isAdmin: false }).then(res => {
-                    res.forEach(user => {
-                        const userMap = {
-                            id: user.userId,
-                            name: user.userId
-                        }
-                        this.users.push(userMap)
-                    })
                 })
             }
         }
