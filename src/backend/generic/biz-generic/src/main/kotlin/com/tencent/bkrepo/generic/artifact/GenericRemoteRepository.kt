@@ -40,10 +40,12 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -61,6 +63,9 @@ import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveContentRange
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
@@ -72,7 +77,9 @@ import com.tencent.bkrepo.generic.artifact.remote.RemoteArtifactCacheLocks
 import com.tencent.bkrepo.generic.artifact.remote.RemoteArtifactCacheWriter
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -89,6 +96,7 @@ class GenericRemoteRepository(
     private val storageHealthMonitorHelper: StorageHealthMonitorHelper,
     private val asyncCacheWriter: AsyncRemoteArtifactCacheWriter,
     private val cacheLocks: RemoteArtifactCacheLocks,
+    private val metadataClient: MetadataClient,
 ) : RemoteRepository() {
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
@@ -210,12 +218,31 @@ class GenericRemoteRepository(
         } ?: emptyList()
     }
 
-    private fun safeQuery(context: ArtifactQueryContext): Any? {
+    /**
+     * 查询[artifactInfo]对应的节点及其父节点
+     */
+    private fun safeSearchParents(
+        repositoryDetail: RepositoryDetail,
+        artifactInfo: ArtifactInfo
+    ): List<Any> {
         return try {
-            query(context)
+            val fullPath = artifactInfo.getArtifactFullPath()
+            val parents = PathUtils.resolveAncestorFolder(fullPath)
+            val rules = mutableListOf<Rule>(
+                Rule.QueryRule(NodeDetail::projectId.name, repositoryDetail.projectId),
+                Rule.QueryRule(NodeDetail::repoName.name, repositoryDetail.name),
+                Rule.QueryRule(NodeDetail::fullPath.name, parents + fullPath, OperationType.IN)
+            )
+            val queryModel = QueryModel(sort = null, select = null, rule = Rule.NestedRule(rules))
+            val searchContext = GenericArtifactSearchContext(
+                repo = repositoryDetail,
+                artifact = artifactInfo,
+                model = queryModel
+            )
+            search(searchContext)
         } catch (ignored: Exception) {
-            logger.warn("Failed to query remote artifact[${context.artifactInfo}]", ignored)
-            null
+            logger.warn("Failed to query remote artifact[${artifactInfo}]", ignored)
+            emptyList()
         }
     }
 
@@ -228,7 +255,7 @@ class GenericRemoteRepository(
 
     private fun asyncCache(context: ArtifactDownloadContext, request: Request) {
         val repoDetail = context.repositoryDetail
-        val remoteNode = safeQuery(ArtifactQueryContext(context.repositoryDetail, context.artifactInfo)) as? NodeDetail
+        val remoteNodes = safeSearchParents(context.repositoryDetail, context.artifactInfo)
         val cacheTask = AsyncRemoteArtifactCacheWriter.CacheTask(
             projectId = repoDetail.projectId,
             repoName = repoDetail.name,
@@ -237,7 +264,7 @@ class GenericRemoteRepository(
             fullPath = context.artifactInfo.getArtifactFullPath(),
             userId = context.userId,
             request = request,
-            remoteNode = remoteNode
+            remoteNodes = remoteNodes
         )
         asyncCacheWriter.cache(cacheTask)
     }
@@ -246,12 +273,13 @@ class GenericRemoteRepository(
         val storageCredentials = context.repositoryDetail.storageCredentials
             ?: storageProperties.defaultStorageCredentials()
         val monitor = storageHealthMonitorHelper.getMonitor(storageProperties, storageCredentials)
-        val remoteNode = safeQuery(ArtifactQueryContext(context.repositoryDetail, context.artifactInfo)) as? NodeDetail
+        val remoteNodes = safeSearchParents(context.repositoryDetail, context.artifactInfo)
         return RemoteArtifactCacheWriter(
             context = context,
             storageManager = storageManager,
             cacheLocks = cacheLocks,
-            remoteNode = remoteNode,
+            remoteNodes = remoteNodes,
+            metadataClient = metadataClient,
             monitor = monitor,
             contentLength = contentLength,
             storageProperties = storageProperties

@@ -35,7 +35,9 @@ import com.tencent.bkrepo.common.artifact.stream.StreamReadListener
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.generic.artifact.findRemoteMetadata
+import com.tencent.bkrepo.generic.artifact.updateParentMetadata
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 
@@ -46,7 +48,8 @@ class RemoteArtifactCacheWriter(
     private val context: ArtifactContext,
     private val storageManager: StorageManager,
     private val cacheLocks: RemoteArtifactCacheLocks,
-    private val remoteNode: NodeDetail?,
+    private val remoteNodes: List<Any>,
+    private val metadataClient: MetadataClient,
     monitor: StorageHealthMonitor,
     contentLength: Long,
     storageProperties: StorageProperties,
@@ -120,6 +123,7 @@ class RemoteArtifactCacheWriter(
                 artifactFile,
                 context.repositoryDetail.storageCredentials
             )
+            metadataClient.updateParentMetadata(remoteNodes, projectId, repoName, fullPath)
             logger.info(
                 "receive[${receiver.filePath}] finished, store remote artifact[${context.artifactInfo}] cache success"
             )
@@ -136,14 +140,14 @@ class RemoteArtifactCacheWriter(
 
     private fun buildCacheNodeCreateRequest(context: ArtifactContext, artifactFile: ArtifactFile): NodeCreateRequest {
         return NodeCreateRequest(
-            projectId = context.repositoryDetail.projectId,
-            repoName = context.repositoryDetail.name,
+            projectId = projectId,
+            repoName = repoName,
             folder = false,
-            fullPath = context.artifactInfo.getArtifactFullPath(),
+            fullPath = fullPath,
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
-            nodeMetadata = remoteNode?.nodeMetadata,
+            nodeMetadata = findRemoteMetadata(remoteNodes, fullPath),
             overwrite = true,
             operator = context.userId
         )
