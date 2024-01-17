@@ -50,6 +50,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 清理被标记为删除的repository
@@ -93,8 +94,8 @@ class DeletedRepositoryCleanupJob(
     }
 
 
-    override fun entityClass(): Class<Repository> {
-        return Repository::class.java
+    override fun entityClass(): KClass<Repository> {
+        return Repository::class
     }
 
     override fun mapToEntity(row: Map<String, Any?>): Repository {
