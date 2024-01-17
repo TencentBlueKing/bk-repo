@@ -57,6 +57,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 
@@ -114,8 +115,8 @@ class DeletedNodeCleanupJob(
         )
     }
 
-    override fun entityClass(): Class<Node> {
-        return Node::class.java
+    override fun entityClass(): KClass<Node> {
+        return Node::class
     }
 
 

@@ -127,7 +127,7 @@ class BkciProjectMetadataSyncJob(
         return Project(row[Project::name.name]!! as String, metadata)
     }
 
-    override fun entityClass() = Project::class.java
+    override fun entityClass() = Project::class
 
     companion object {
         private val logger = LoggerFactory.getLogger(BkciProjectMetadataSyncJob::class.java)

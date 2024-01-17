@@ -28,14 +28,15 @@
 package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
-import com.tencent.bkrepo.job.PROJECT
-import com.tencent.bkrepo.job.TYPE
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.ne
+import org.springframework.data.mongodb.core.query.not
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -52,6 +53,7 @@ class ActiveProjectService(
 
     private var uploadActiveProjects = mutableSetOf<String>()
 
+    private var activeUsers = mutableSetOf<String>()
 
     fun getActiveProjects(): MutableSet<String> {
         return activeProjects
@@ -65,32 +67,23 @@ class ActiveProjectService(
         return uploadActiveProjects
     }
 
-
-    private fun getActiveProjectsFromOpLog() {
-        downloadActiveProjects = getActiveProjectsFromOplog(DOWNLOAD_EVENTS)
-        uploadActiveProjects = getActiveProjectsFromOplog(UPLOAD_EVENTS)
-        activeProjects = getActiveProjectsFromOplog()
+    fun getActiveUsers(): Set<String> {
+        return activeUsers
     }
 
-    private fun getActiveProjectsFromOplog(types: List<String> = emptyList()): MutableSet<String> {
-        val tempList = mutableSetOf<String>()
+    private fun findDistinct(field: String, criteria: Criteria): MutableSet<String> {
+        val tempList = HashSet<String>()
         val months = listOf(
             LocalDate.now().format(DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT)),
             LocalDate.now().minusMonths(1)
                 .format(DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT))
         )
 
-        months.forEach { month ->
-            val collectionName = COLLECTION_NAME_PREFIX +month
-            val criteria = Criteria().andOperator(
-                IGNORE_PROJECT_PREFIX_LIST.map { where(ProjectInfo::name).not().regex(it) }
-            )
-            if (types.isNotEmpty()) {
-                criteria.and(TYPE).`in`(types)
-            }
+        months.forEach {
+            val collectionName = COLLECTION_NAME_PREFIX + it
             val query = Query(criteria)
-            val data = mongoTemplate.findDistinct(query, PROJECT, collectionName, String::class.java)
-            tempList.addAll(data.filter { it.isNotBlank() })
+            val data = mongoTemplate.findDistinct(query, field, collectionName, String::class.java)
+            tempList.addAll(data)
         }
         return tempList
     }
@@ -100,10 +93,36 @@ class ActiveProjectService(
      */
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INITIAL_DELAY, timeUnit = TimeUnit.MINUTES)
     fun refreshActiveProjects() {
-        getActiveProjectsFromOpLog()
+        val criteriaList = IGNORE_PROJECT_PREFIX_LIST.mapTo(ArrayList()) { prefix ->
+            TOperateLog::projectId.not().regex("^$prefix")
+        }
+        criteriaList.add(TOperateLog::projectId.ne(""))
+        fun buildTypesCriteriaList(types: List<String>): List<Criteria> {
+            return ArrayList(criteriaList).apply { add(TOperateLog::type.inValues(types)) }
+        }
+
+        // all
+        activeProjects = findDistinct(TOperateLog::projectId.name, Criteria().andOperator(criteriaList))
+
+        // download event
+        downloadActiveProjects = findDistinct(
+            TOperateLog::projectId.name,
+            Criteria().andOperator(buildTypesCriteriaList(DOWNLOAD_EVENTS))
+        )
+
+        // upload event
+        uploadActiveProjects = findDistinct(
+            TOperateLog::projectId.name,
+            Criteria().andOperator(buildTypesCriteriaList(UPLOAD_EVENTS))
+        )
+
+        // active users
+        activeUsers = findDistinct(TOperateLog::userId.name, TOperateLog::userId.ne(""))
+        logger.info("refresh active projects and users success")
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ActiveProjectService::class.java)
         private const val INITIAL_DELAY = 2L
         private const val FIXED_DELAY = 60L
         private const val COLLECTION_NAME_PREFIX = "artifact_oplog_"

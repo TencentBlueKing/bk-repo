@@ -29,6 +29,8 @@ package com.tencent.bkrepo.job.batch.context
 
 import com.tencent.bkrepo.job.batch.ProjectRepoMetricsStatJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
+import com.tencent.bkrepo.job.pojo.project.TRepoMetrics
 import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.LongAdder
@@ -57,8 +59,8 @@ data class ProjectRepoMetricsStatJobContext(
             repo.size.add(row.size)
         }
 
-        fun toDO(statDate: LocalDateTime = LocalDateTime.now()): ProjectRepoMetricsStatJob.TProjectMetrics {
-            val repoMetrics = ArrayList<ProjectRepoMetricsStatJob.TRepoMetrics>(repoMetrics.size)
+        fun toDO(statDate: LocalDateTime = LocalDateTime.now()): TProjectMetrics {
+            val repoMetrics = ArrayList<TRepoMetrics>(repoMetrics.size)
             this.repoMetrics.values.forEach { repo ->
                 val num = repo.num.toLong()
                 val size = repo.size.toLong()
@@ -68,7 +70,7 @@ data class ProjectRepoMetricsStatJobContext(
                 }
             }
 
-            return ProjectRepoMetricsStatJob.TProjectMetrics(
+            return TProjectMetrics(
                 projectId = projectId,
                 nodeNum = nodeNum.toLong(),
                 capSize = capSize.toLong(),
@@ -85,8 +87,8 @@ data class ProjectRepoMetricsStatJobContext(
         var num: LongAdder = LongAdder(),
         var type: String,
     ) {
-        fun toDO(): ProjectRepoMetricsStatJob.TRepoMetrics {
-            return ProjectRepoMetricsStatJob.TRepoMetrics(
+        fun toDO(): TRepoMetrics {
+            return TRepoMetrics(
                 repoName = repoName,
                 credentialsKey = credentialsKey,
                 size = size.toLong(),

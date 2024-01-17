@@ -37,7 +37,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_EXT_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_INFO_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_LIST_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_LIST_IN_PROJECT_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_PROJECT_ADMIN_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_SYS_LIST_PREFIX
@@ -58,6 +58,10 @@ import com.tencent.bkrepo.auth.constant.AUTH_PROJECT_SUFFIX
 import com.tencent.bkrepo.auth.constant.AUTH_REPO_SUFFIX
 import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_LIST_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_CREATE_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_DELETE_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_UPDATE_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
@@ -249,14 +253,18 @@ class AuthInterceptor(
 
         private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
 
-        // 项目内权限校验api,开放给basic访问
+        // 项目内权限校验api, 开放给项目内有权限用户使用，具体校验权限在方法内
         private val userProjectApiSet = setOf(
             AUTH_REPO_SUFFIX,
             AUTH_PROJECT_SUFFIX,
             AUTH_API_ACCOUNT_PREFIX,
             AUTH_API_KEY_PREFIX,
             AUTH_API_OAUTH_PREFIX,
-            AUTH_API_EXT_PERMISSION_PREFIX
+            AUTH_API_EXT_PERMISSION_PREFIX,
+            AUTH_API_PERMISSION_LIST_PREFIX,
+            AUTH_API_PERMISSION_CREATE_PREFIX,
+            AUTH_API_PERMISSION_DELETE_PREFIX,
+            AUTH_API_PERMISSION_UPDATE_PREFIX
         )
 
         // 普通用户可访问api,开放给basic and platform用户访问
@@ -268,7 +276,7 @@ class AuthInterceptor(
             AUTH_API_USER_LIST_PREFIX,
             AUTH_API_INFO_PREFIX,
             AUTH_API_ROLE_SYS_LIST_PREFIX,
-            AUTH_API_PERMISSION_LIST_PREFIX,
+            AUTH_API_PERMISSION_LIST_IN_PROJECT_PREFIX,
             AUTH_API_PERMISSION_USER_PREFIX,
             AUTH_API_USER_UPDATE_PREFIX,
             AUTH_API_USER_DELETE_PREFIX,

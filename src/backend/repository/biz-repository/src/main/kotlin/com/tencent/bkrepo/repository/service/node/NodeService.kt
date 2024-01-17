@@ -41,4 +41,5 @@ interface NodeService :
     NodeMoveCopyOperation,
     NodeRenameOperation,
     NodeRestoreOperation,
-    NodeArchiveOperation
+    NodeArchiveOperation,
+    NodeCompressOperation

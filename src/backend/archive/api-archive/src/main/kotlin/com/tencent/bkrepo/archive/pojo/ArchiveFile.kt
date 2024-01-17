@@ -4,7 +4,6 @@ import com.tencent.bkrepo.archive.ArchiveStatus
 import java.time.LocalDateTime
 
 data class ArchiveFile(
-    var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,

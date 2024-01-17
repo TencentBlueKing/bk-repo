@@ -35,13 +35,10 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.controller.OpenResource
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -67,6 +64,11 @@ class PermissionController @Autowired constructor(
     @PostMapping("/create")
     fun createPermission(@RequestBody request: CreatePermissionRequest): Response<Boolean> {
         // todo check request
+        if (request.projectId != null) {
+            preCheckProjectAdmin(request.projectId)
+        } else {
+            preCheckUserAdmin()
+        }
         return ResponseBuilder.success(permissionService.createPermission(request))
     }
 
@@ -95,8 +97,12 @@ class PermissionController @Autowired constructor(
 
     @ApiOperation("权限列表")
     @GetMapping("/list")
-    fun listPermission(@RequestParam projectId: String, @RequestParam repoName: String?): Response<List<Permission>> {
-        return ResponseBuilder.success(permissionService.listPermission(projectId, repoName))
+    fun listPermission(@RequestParam projectId: String,
+                       @RequestParam repoName: String?,
+                       @RequestParam resourceType: String?
+    ): Response<List<Permission>> {
+        preCheckProjectAdmin(projectId)
+        return ResponseBuilder.success(permissionService.listPermission(projectId, repoName, resourceType))
     }
 
     @ApiOperation("获取仓库内置权限列表")
@@ -111,19 +117,13 @@ class PermissionController @Autowired constructor(
     @ApiOperation("删除权限")
     @DeleteMapping("/delete/{id}")
     fun deletePermission(@PathVariable id: String): Response<Boolean> {
+        val permission = permissionService.getPermission(id) ?: return ResponseBuilder.success(false)
+        if (permission.projectId != null) {
+            preCheckProjectAdmin(permission.projectId)
+        } else {
+            preCheckUserAdmin()
+        }
         return ResponseBuilder.success(permissionService.deletePermission(id))
-    }
-
-    @ApiOperation("更新权限include path")
-    @PutMapping("/includePath")
-    fun updateIncludePermissionPath(@RequestBody request: UpdatePermissionPathRequest): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updateIncludePath(request))
-    }
-
-    @ApiOperation("更新权限exclude path")
-    @PutMapping("/excludePath")
-    fun updateExcludePermissionPath(@RequestBody request: UpdatePermissionPathRequest): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updateExcludePath(request))
     }
 
     @ApiOperation("更新权限权限绑定repo")
@@ -143,25 +143,6 @@ class PermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.updatePermissionUser(request))
     }
 
-    @ApiOperation("更新权限绑定角色")
-    @PutMapping("/role")
-    fun updatePermissionRole(@RequestBody request: UpdatePermissionRoleRequest): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updatePermissionRole(request))
-    }
-
-    @ApiOperation("更新权限绑定部门")
-    @PutMapping("/department")
-    fun updatePermissionDepartment(@RequestBody request: UpdatePermissionDepartmentRequest): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updatePermissionDepartment(request))
-    }
-
-    @ApiOperation("更新权限绑定动作")
-    @PutMapping("/action")
-    fun updatePermissionAction(@RequestBody request: UpdatePermissionActionRequest): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updatePermissionAction(request))
-    }
-
-
     @ApiOperation("获取项目内置权限列表")
     @GetMapping("/list/inproject")
     fun listProjectBuiltinPermission(
@@ -169,5 +150,14 @@ class PermissionController @Autowired constructor(
     ): Response<List<Permission>> {
         preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(permissionService.listProjectBuiltinPermission(projectId))
+    }
+
+    @ApiOperation("更新配置权限")
+    @PutMapping("/update/config")
+    fun updatePermissionDeployInRepo(
+        @RequestBody request: UpdatePermissionDeployInRepoRequest
+    ): Response<Boolean> {
+        preCheckProjectAdmin(request.projectId)
+        return ResponseBuilder.success(permissionService.updatePermissionDeployInRepo(request))
     }
 }

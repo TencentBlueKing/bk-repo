@@ -15,16 +15,23 @@ import org.springframework.data.mongodb.core.mapping.Document
     CompoundIndex(name = SHA256_IDX, def = SHA256_IDX_DEF, unique = true, background = true),
     CompoundIndex(name = STATUS_IDX, def = STATUS_IDX_DEF, background = true),
 )
-data class TArchiveFile(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
+@Suppress("LongParameterList")
+class TArchiveFile(
+    id: String? = null,
+    createdBy: String,
+    createdDate: LocalDateTime,
+    lastModifiedBy: String,
+    lastModifiedDate: LocalDateTime,
     val sha256: String,
     val size: Long,
     val storageCredentialsKey: String?,
     var status: ArchiveStatus,
+) : AbstractEntity(
+    id,
+    createdBy,
+    createdDate,
+    lastModifiedBy,
+    lastModifiedDate,
 ) {
     companion object {
         const val SHA256_IDX = "sha256_storageCredentialsKey_idx"

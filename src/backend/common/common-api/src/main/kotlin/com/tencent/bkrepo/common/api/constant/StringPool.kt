@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.api.constant
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.text.DecimalFormat
 import java.util.UUID
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.abs
@@ -73,14 +74,20 @@ object StringPool {
         suffix?.let { value += suffix }
         return value
     }
+
+    fun calculateRatio(originSize: Long, newSize: Long, format: DecimalFormat = DecimalFormat("#.#")): String {
+        return format.format((originSize - newSize.toDouble()) / originSize * 100).plus("%")
+    }
 }
 
 fun String.ensurePrefix(prefix: CharSequence): String {
     return if (startsWith(prefix)) this else StringBuilder(prefix).append(this).toString()
 }
+
 fun String.ensureSuffix(suffix: CharSequence): String {
     return if (endsWith(suffix)) this else this + suffix
 }
+
 fun String.ensurePrefix(prefix: Char) = if (startsWith(prefix)) this else prefix + this
 fun String.ensureSuffix(suffix: Char) = if (endsWith(suffix)) this else this + suffix
 fun String.urlEncode() = URLEncoder.encode(this, StandardCharsets.UTF_8.displayName()).apply {

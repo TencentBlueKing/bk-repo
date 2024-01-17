@@ -38,6 +38,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -90,6 +91,9 @@ interface RRepositoryClient {
         @RequestParam fullPath: String,
         @RequestParam estimated: Boolean = false
     ): Mono<Response<NodeSizeInfo>>
+
+    @PostMapping("/node/link")
+    fun link(@RequestBody nodeLinkRequest: NodeLinkRequest): Mono<Response<NodeDetail>>
 
     @GetMapping("/repo/detail/{projectId}/{repoName}")
     fun getRepoDetail(
