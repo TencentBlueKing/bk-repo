@@ -136,7 +136,7 @@ class DownloadService(
 
     fun search(queryModel: QueryModel): List<Any> {
         val nodes = LinkedHashMap<String, Any>()
-        repository.search(GenericArtifactSearchContext(queryModel)).forEach {
+        repository.search(GenericArtifactSearchContext(model = queryModel)).forEach {
             require(it is Map<*, *>)
             if (it[RepositoryInfo::category.name] == RepositoryCategory.LOCAL.name) {
                 // composite仓库的local node优先展示

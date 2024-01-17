@@ -62,7 +62,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.random.Random
 import org.springframework.util.StreamUtils
-import java.util.concurrent.CountDownLatch
 
 @ExtendWith(SpringExtension::class)
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
@@ -254,7 +253,9 @@ internal class CacheStorageServiceTest {
             // 增量存储
             val compressedSize = storageService.compress(
                 digest1,
+                data1.size.toLong(),
                 digest2,
+                data2.size.toLong(),
                 null,
             )
             // 压缩后，源文件已经不在
@@ -275,7 +276,13 @@ internal class CacheStorageServiceTest {
             }
 
             // 恢复文件
-            val restored = storageService.uncompress(digest1, null)
+            val restored = storageService.uncompress(
+                digest1,
+                compressedSize,
+                digest2,
+                data2.size.toLong(),
+                null,
+            )
             Assertions.assertEquals(1, restored)
             // 恢复后，数据不变
             val newLoad = storageService.load(digest1, Range.full(originFileSize), null)
@@ -297,6 +304,7 @@ internal class CacheStorageServiceTest {
         val artifactFile3 = createTempArtifactFile(data3)
         val file1Len = artifactFile1.getSize()
         val file2Len = artifactFile2.getSize()
+        val file3Len = artifactFile3.getSize()
         try {
             val digest1 = artifactFile1.getFileSha256()
             val digest2 = artifactFile2.getFileSha256()
@@ -304,14 +312,18 @@ internal class CacheStorageServiceTest {
             storageService.store(digest1, artifactFile1, null)
             storageService.store(digest2, artifactFile2, null)
             storageService.store(digest3, artifactFile3, null)
-            storageService.compress(
+            val digest1CompressedSize = storageService.compress(
                 digest1,
+                file1Len,
                 digest2,
+                file2Len,
                 null,
             )
-            storageService.compress(
+            val digest2CompressedSize = storageService.compress(
                 digest2,
+                file2Len,
                 digest3,
+                file3Len,
                 null,
             )
             // 压缩后，源文件已经不在
@@ -319,7 +331,20 @@ internal class CacheStorageServiceTest {
             Assertions.assertNull(storageService.load(digest1, Range.full(file1Len), null))
             Assertions.assertNull(storageService.load(digest2, Range.full(file2Len), null))
             // 级联恢复
-            val restored = storageService.uncompress(digest1, null)
+            storageService.uncompress(
+                digest2,
+                digest2CompressedSize,
+                digest3,
+                file3Len,
+                null,
+            )
+            val restored = storageService.uncompress(
+                digest1,
+                digest1CompressedSize,
+                digest2,
+                file2Len,
+                null,
+            )
             Assertions.assertEquals(1, restored)
             // 恢复后，数据不变
             val file1Data = storageService.load(digest1, Range.full(file1Len), null)
@@ -341,21 +366,21 @@ internal class CacheStorageServiceTest {
         val artifactFile1 = createTempArtifactFile(data1)
         val digest = artifactFile1.getFileSha256()
         storageService.store(digest, artifactFile1, null)
-        val fileList = mutableListOf<ArtifactFile>()
+        val cyclicBarrier = CyclicBarrier(10)
         repeat(10) {
             val data = data1.copyOfRange(it + 1, data1.size)
             val artifactFile = createTempArtifactFile(data)
-            storageService.store(artifactFile.getFileSha256(), artifactFile, null)
-            fileList.add(artifactFile)
-        }
-        val countDownLatch = CountDownLatch(10)
-        fileList.forEach {
+            val sha256 = artifactFile.getFileSha256()
+            storageService.store(sha256, artifactFile, null)
             thread {
-                storageService.compress(it.getFileSha256(), digest, null)
-                countDownLatch.countDown()
+                // 等待异步存储完成
+                Thread.sleep(1000)
+                cyclicBarrier.await()
+                storageService.compress(sha256, data.size.toLong(), digest, data1.size.toLong(), null)
             }
         }
-        countDownLatch.await()
+        // 等待执行
+        Thread.sleep(2000)
     }
 
     private fun createTempArtifactFile(size: Long): ArtifactFile {

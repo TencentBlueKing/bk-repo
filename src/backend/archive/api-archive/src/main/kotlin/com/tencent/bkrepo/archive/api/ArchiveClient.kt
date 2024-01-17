@@ -44,7 +44,7 @@ interface ArchiveClient {
     ): Response<ArchiveFile?>
 
     @PutMapping("/compress")
-    fun compress(@RequestBody request: CompressFileRequest): Response<Int>
+    fun compress(@RequestBody request: CompressFileRequest): Response<Void>
 
     @PutMapping("/uncompress")
     fun uncompress(@RequestBody request: UncompressFileRequest): Response<Void>

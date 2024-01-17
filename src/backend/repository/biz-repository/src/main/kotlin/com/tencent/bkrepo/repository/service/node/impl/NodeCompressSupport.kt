@@ -8,6 +8,7 @@ import com.tencent.bkrepo.repository.service.node.NodeCompressOperation
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Update
+import java.time.LocalDateTime
 
 class NodeCompressSupport(
     nodeBaseService: NodeBaseService,
@@ -26,6 +27,7 @@ class NodeCompressSupport(
         with(nodeUnCompressedRequest) {
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
             val update = Update().unset(TNode::compressed.name)
+                .set(TNode::lastAccessDate.name, LocalDateTime.now())
             nodeDao.updateFirst(query, update)
             logger.info("Success to uncompress node $projectId/$repoName/$fullPath")
         }

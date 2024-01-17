@@ -445,9 +445,12 @@ class GenericLocalRepository(
             // 仅在查询流水线仓库第一页时返回用户有权限的流水线目录
             if (queryModel.page.pageNumber == DEFAULT_PAGE_NUMBER) {
                 pipelineNodeClient.listPipeline(context.projectId, context.repoName).data!!.map { node ->
+                    val nodePropMap = LinkedHashMap<String, Any?>()
                     NodeInfo::class.memberProperties
                         .filter { it.name != NodeInfo::deleted.name }
-                        .associate { Pair(it.name, it.get(node)) }
+                        .associateTo(nodePropMap) { Pair(it.name, it.get(node)) }
+                    nodePropMap[RepositoryInfo::category.name] = RepositoryCategory.LOCAL.name
+                    nodePropMap
                 }
             } else {
                 emptyList()

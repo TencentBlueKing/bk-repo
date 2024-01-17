@@ -547,6 +547,8 @@ class ReplicaTaskServiceImpl(
                         .startNow()
                         .build()
                     replicaTaskScheduler.scheduleJob(jobDetail, trigger)
+                    tReplicaTask.status = ReplicaStatus.WAITING
+                    replicaTaskDao.save(tReplicaTask)
                 } else {
                     // 提示用户该任务未执行
                     throw ErrorCodeException(ReplicationMessageCode.SCHEDULED_JOB_LOADING, key)

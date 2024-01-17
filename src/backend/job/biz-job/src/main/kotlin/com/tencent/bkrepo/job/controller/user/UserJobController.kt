@@ -59,8 +59,12 @@ class UserJobController(val systemJobService: SystemJobService) {
     }
 
     @PutMapping("/stop")
-    fun stop(@RequestParam(required = false) name: String?, @RequestParam maxWaitTime: Long = 0): Response<Void> {
-        systemJobService.stop(name, maxWaitTime)
+    fun stop(
+        @RequestParam(required = false) name: String?,
+        @RequestParam maxWaitTime: Long = 0,
+        @RequestParam failover: Boolean,
+    ): Response<Void> {
+        systemJobService.stop(name, maxWaitTime, failover)
         return ResponseBuilder.success()
     }
 }
