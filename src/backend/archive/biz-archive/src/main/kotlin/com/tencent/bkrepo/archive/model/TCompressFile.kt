@@ -24,6 +24,7 @@ class TCompressFile(
     lastModifiedDate: LocalDateTime,
     val sha256: String,
     val baseSha256: String,
+    val baseSize: Long? = null,
     val uncompressedSize: Long,
     var compressedSize: Long = -1,
     val storageCredentialsKey: String?,

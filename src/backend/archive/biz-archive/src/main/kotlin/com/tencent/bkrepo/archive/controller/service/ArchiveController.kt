@@ -47,8 +47,9 @@ class ArchiveController(
         return ResponseBuilder.success()
     }
 
-    override fun compress(request: CompressFileRequest): Response<Int> {
-        return ResponseBuilder.success(compressService.compress(request))
+    override fun compress(request: CompressFileRequest): Response<Void> {
+        compressService.compress(request)
+        return ResponseBuilder.success()
     }
 
     override fun uncompress(request: UncompressFileRequest): Response<Void> {
