@@ -30,7 +30,6 @@ dependencies {
     implementation(project(":common:common-job"))
     implementation(project(":common:common-security"))
     implementation(project(":common:common-storage:storage-service"))
-    implementation(project(":common:common-storage:storage-metrics"))
     implementation(project(":common:common-stream"))
     implementation(project(":common:common-redis"))
     implementation(project(":repository:api-repository"))
