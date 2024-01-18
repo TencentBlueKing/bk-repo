@@ -45,6 +45,7 @@ import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
+import java.time.Duration
 
 /**
  * 存储层缓存使用情况数据统计
@@ -53,6 +54,7 @@ import java.nio.file.attribute.BasicFileAttributes
 class ArtifactCacheMetrics(
     private val registry: MeterRegistry,
     private val storageProperties: StorageProperties,
+    private val artifactMetricsProperties: ArtifactMetricsProperties,
     private val monitorHelper: StorageHealthMonitorHelper
 ) {
 
@@ -60,6 +62,9 @@ class ArtifactCacheMetrics(
      * 统计缓存使用情况
      */
     fun record(resource: ArtifactResource) {
+        if (!artifactMetricsProperties.enableArtifactCacheMetrics) {
+            return
+        }
         try {
             addMetrics(resource)
         } catch (e: Exception) {
@@ -86,7 +91,7 @@ class ArtifactCacheMetrics(
             if (inputStream is FileArtifactInputStream) {
                 incHitCount(credentials.key(), projectId)
                 // 统计缓存访问时间分布
-                recordAccessInterval(inputStream.file.toPath())
+                recordAccessInterval(inputStream.file.toPath(), credentials.cache.expireDuration)
             } else {
                 incMissCount(credentials.key(), projectId)
             }
@@ -98,7 +103,7 @@ class ArtifactCacheMetrics(
     /**
      * 记录缓存访问时间与创建时间间隔时长的分布
      */
-    private fun recordAccessInterval(filePath: Path) {
+    private fun recordAccessInterval(filePath: Path, maxDuration: Duration) {
         val attr = Files.readAttributes(
             filePath,
             BasicFileAttributes::class.java,
@@ -111,6 +116,8 @@ class ArtifactCacheMetrics(
             .description("storage cache access time and modified time interval")
             .baseUnit(BaseUnits.MILLISECONDS)
             .publishPercentileHistogram()
+            .minimumExpectedValue(MIN_CACHE_ACCESS_INTERVAL)
+            .maximumExpectedValue(maxDuration.toMillis().toDouble())
             .register(registry)
             .record(intervalOfMillis.toDouble())
     }
@@ -123,6 +130,8 @@ class ArtifactCacheMetrics(
             .description("storage cache file size")
             .baseUnit(BaseUnits.BYTES)
             .publishPercentileHistogram()
+            .minimumExpectedValue(storageProperties.receive.fileSizeThreshold.toBytes().toDouble())
+            .maximumExpectedValue(MAX_CACHE_FILE_SIZE)
             .register(registry)
             .record(size.toDouble())
     }
@@ -165,6 +174,8 @@ class ArtifactCacheMetrics(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactCacheMetrics::class.java)
+        private const val MAX_CACHE_FILE_SIZE = 100.0 * 1024 * 1024 * 1024
+        private const val MIN_CACHE_ACCESS_INTERVAL = 1000.0
         private const val CACHE_COUNT_HIT = "storage.cache.count.hit"
         private const val CACHE_COUNT_MISS = "storage.cache.count.miss"
         private const val CACHE_ACCESS_INTERVAL = "storage.cache.access.interval"

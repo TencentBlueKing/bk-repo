@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.metrics
 
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.BaseUnits
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
 
@@ -46,6 +47,7 @@ class StorageCacheMetrics(
     fun setCacheSize(storageKey: String, size: Long) {
         cacheSizeMap.getOrPut(storageKey) { size }
         Gauge.builder(CACHE_SIZE, cacheSizeMap) { cacheSizeMap.getOrDefault(storageKey, 0L).toDouble() }
+            .baseUnit(BaseUnits.BYTES)
             .tag("storageKey", storageKey)
             .description("storage cache total size")
             .register(registry)
