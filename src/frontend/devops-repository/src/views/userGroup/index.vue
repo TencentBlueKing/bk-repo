@@ -1,7 +1,7 @@
 <template>
     <div class="role-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button class="ml20" icon="plus" theme="primary" @click="createRoleHandler">{{ $t('create') }}</bk-button>
+            <bk-button icon="plus" theme="primary" @click="createRoleHandler">{{ $t('create') }}</bk-button>
         </div>
         <bk-table
             class="mt10 role-table"
@@ -169,6 +169,22 @@
                         userIds: this.editRoleConfig.users
                     }
                 }).then(res => {
+                    if (!this.editRoleConfig.id && this.editRoleConfig.users.length > 0) {
+                        this.editRole({
+                            id: res,
+                            body: {
+                                userIds: this.editRoleConfig.users
+                            }
+                        }).then(_ => {
+                            this.$bkMessage({
+                                theme: 'success',
+                                message: (this.editRoleConfig.id ? this.$t('editUserGroupTitle') : this.$t('addUserGroupTitle')) + this.$t('space') + this.$t('success')
+                            })
+                            this.editRoleConfig.show = false
+                            this.getRoleListHandler()
+                        })
+                        return
+                    }
                     this.$bkMessage({
                         theme: 'success',
                         message: (this.editRoleConfig.id ? this.$t('editUserGroupTitle') : this.$t('addUserGroupTitle')) + this.$t('space') + this.$t('success')

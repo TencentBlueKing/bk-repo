@@ -126,7 +126,7 @@ class RoleController @Autowired constructor(
     }
 
     @ApiOperation("编辑用户组信息")
-    @PutMapping("/{id}")
+    @PutMapping("/update/info/{id}")
     @Transactional(rollbackFor = [Exception::class])
     fun updateRoleInfo(
         @PathVariable id: String,

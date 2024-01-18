@@ -145,7 +145,7 @@ export default {
     // 编辑角色
     editRole (_, { id, body }) {
         return Vue.prototype.$ajax.put(
-            `${authPrefix}/role/${id}`,
+            `${authPrefix}/role/update/info/${id}`,
             body
         )
     },

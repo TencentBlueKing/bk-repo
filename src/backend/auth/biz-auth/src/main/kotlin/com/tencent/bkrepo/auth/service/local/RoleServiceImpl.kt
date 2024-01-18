@@ -138,8 +138,9 @@ class RoleServiceImpl constructor(
             logger.warn("delete role [$id ] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         } else {
-            if (listUserByRoleId(role.id!!).isNotEmpty()) {
-                throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_USER_NOT_EMPTY)
+            var users = listUserByRoleId(role.id!!)
+            if (users.isNotEmpty()) {
+                userService.removeUserFromRoleBatch(users.map { it.userId }, id)
             }
             roleRepository.deleteTRolesById(ObjectId(role.id))
         }
