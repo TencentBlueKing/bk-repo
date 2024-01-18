@@ -65,7 +65,7 @@ class RoleController @Autowired constructor(
     @ApiOperation("创建角色")
     @PostMapping("/create")
     fun createRole(@RequestBody request: CreateRoleRequest): Response<String?> {
-        // todo check request
+        isContextUserProjectAdmin(request.projectId)
         val id = roleService.createRole(request)
         return ResponseBuilder.success(id)
     }
@@ -89,6 +89,8 @@ class RoleController @Autowired constructor(
     @ApiOperation("删除角色")
     @DeleteMapping("/delete/{id}")
     fun deleteRole(@PathVariable id: String): Response<Boolean> {
+        val role = roleService.detail(id) ?: return ResponseBuilder.success(false)
+        isContextUserProjectAdmin(role.projectId)
         roleService.deleteRoleByid(id)
         return ResponseBuilder.success(true)
     }

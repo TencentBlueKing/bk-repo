@@ -97,7 +97,10 @@ const val AUTH_API_TOKEN_LIST_PREFIX = "api/user/list/token"
 const val AUTH_API_TOKEN_PREFIX = "api/user/token"
 const val AUTH_API_USER_LIST_PREFIX = "api/user/list"
 const val AUTH_API_INFO_PREFIX = "api/user/info"
-const val AUTH_API_ROLE_SYS_LIST_PREFIX = "api/role/list"
+
+const val AUTH_API_ROLE_LIST_PREFIX = "api/role/list"
+const val AUTH_API_ROLE_CREATE_PREFIX = "api/role/create"
+const val AUTH_API_ROLE_DELETE_PREFIX = "api/role/delete"
 
 const val AUTH_API_USER_UPDATE_PREFIX = "api/user/update/info"
 const val AUTH_API_USER_DELETE_PREFIX = "api/user/delete"

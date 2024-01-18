@@ -403,18 +403,38 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
+        val user = userRepository.findFirstByUserId(userId) ?: run {
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+
+        if (user.admin || isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
+            return emptyList()
+        }
+
         val projectPermission = permissionRepository.findByResourceTypeAndProjectIdAndRepos(
             NODE.name,
             projectId,
             repoName,
         )
-        if (isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
-            return emptyList()
-        }
+
         val excludePath = mutableListOf<String>()
         val includePath = mutableListOf<String>()
         projectPermission.forEach {
             if (it.users.contains(userId)) {
+                if (it.excludePattern.isNotEmpty()) {
+                    excludePath.addAll(it.excludePattern)
+                }
+                if (it.includePattern.isNotEmpty()) {
+                    includePath.addAll(it.includePattern)
+                }
+            } else {
+                if (it.includePattern.isNotEmpty()) {
+                    excludePath.addAll(it.includePattern)
+                }
+            }
+
+            val interRole = it.roles.intersect(user.roles.toSet())
+            if (interRole.isNotEmpty()) {
                 if (it.excludePattern.isNotEmpty()) {
                     excludePath.addAll(it.excludePattern)
                 }
