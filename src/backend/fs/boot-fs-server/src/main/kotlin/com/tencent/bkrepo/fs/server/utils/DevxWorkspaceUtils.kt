@@ -51,6 +51,7 @@ import reactor.netty.resources.ConnectionProvider
 import reactor.util.retry.RetryBackoffSpec
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 class DevxWorkspaceUtils(
     devXProperties: DevXProperties
@@ -65,7 +66,7 @@ class DevxWorkspaceUtils(
         private lateinit var devXProperties: DevXProperties
         private val httpClient by lazy {
             val provider = ConnectionProvider.builder("DevX").maxIdleTime(Duration.ofSeconds(30L)).build()
-            val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(30L))
+            val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(15L))
             val connector = ReactorClientHttpConnector(client)
             WebClient.builder().clientConnector(connector).build()
         }
@@ -77,10 +78,28 @@ class DevxWorkspaceUtils(
         }
 
         suspend fun getIpList(projectId: String): Mono<Set<String>> {
-            return projectIpsCache[projectId] ?: mutex.withLock {
-                projectIpsCache.getOrPut(projectId) { listIpFromProject(projectId) }
-            }
+            return projectIpsCache[projectId] ?: requestIpList(projectId)
         }
+
+        /**
+         * 获取项目ip列表, 5s内获取不到ip列表则返回空
+         * 为了避免接口异常，阻塞大量请求, 获取锁的超时比请求读超时短
+         */
+        private suspend fun requestIpList(projectId: String): Mono<Set<String>> {
+            val start = System.currentTimeMillis()
+            while (System.currentTimeMillis() - start < TimeUnit.SECONDS.toMillis(5)) {
+                if (mutex.tryLock()) {
+                    val ipList = try {
+                        projectIpsCache.getOrPut(projectId) { listIpFromProject(projectId) }
+                    } finally {
+                        mutex.unlock()
+                    }
+                    return ipList
+                }
+            }
+            return Mono.empty()
+        }
+
 
         /**
          * 是否为已知ip

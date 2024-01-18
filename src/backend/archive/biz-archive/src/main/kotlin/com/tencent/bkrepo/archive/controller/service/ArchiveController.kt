@@ -2,6 +2,7 @@ package com.tencent.bkrepo.archive.controller.service
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
+import com.tencent.bkrepo.archive.pojo.CompressFile
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
@@ -64,6 +65,10 @@ class ArchiveController(
     override fun completeCompress(request: CompleteCompressRequest): Response<Void> {
         compressService.complete(request)
         return ResponseBuilder.success()
+    }
+
+    override fun getCompressInfo(sha256: String, storageCredentialsKey: String?): Response<CompressFile?> {
+        return ResponseBuilder.success(compressService.getCompressInfo(sha256, storageCredentialsKey))
     }
 
     override fun deleteAll(request: ArchiveFileRequest): Response<Void> {

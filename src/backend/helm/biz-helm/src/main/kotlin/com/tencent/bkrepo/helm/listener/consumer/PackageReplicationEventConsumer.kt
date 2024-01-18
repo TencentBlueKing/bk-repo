@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,47 +29,38 @@ package com.tencent.bkrepo.helm.listener.consumer
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.helm.listener.base.AbstractEventJobExecutor
-import com.tencent.bkrepo.helm.service.impl.HelmOperationService
+import com.tencent.bkrepo.helm.listener.base.RemoteEventJobExecutor
 import org.slf4j.LoggerFactory
+import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
+import java.util.function.Consumer
 
-@Component
-class RemoteEventJobExecutor(
-    private val helmOperationService: HelmOperationService
-) : AbstractEventJobExecutor() {
+/**
+ * 消费基于MQ传递的事件
+ * 消费分发同步的Package， 用于更新index文件
+ */
+@Component("packageReplication")
+class PackageReplicationEventConsumer(
+    private val remoteEventJobExecutor: RemoteEventJobExecutor
+) : Consumer<Message<ArtifactEvent>> {
+
     /**
-     * 执行同步
+     * 允许接收的事件类型
      */
-    fun execute(event: ArtifactEvent) {
-        try {
-            logger.info("Will start to handle event $event")
-            with(event) {
-                val action: () -> Unit = when (type) {
-                    EventType.REPO_CREATED -> {
-                        {
-                            helmOperationService.lockAction(projectId, repoName) {
-                                helmOperationService.updatePackageForRemote(projectId, repoName, userId)
-                            }
-                        }
-                    }
-                    else -> {
-                        {
-                            helmOperationService.lockAction(projectId, repoName) {
-                                helmOperationService.updatePackageForRemote(projectId, repoName, userId)
-                            }
-                        }
-                    }
-                }
-                submit(action)
-                logger.info("Helm Remote event ${getFullResourceKey()} completed.")
-            }
-        } catch (exception: Exception) {
-            logger.warn("Helm Remote event ${event.getFullResourceKey()}} failed: $exception")
+    private val acceptTypes = setOf(
+        EventType.VERSION_CREATED,
+        EventType.VERSION_UPDATED,
+    )
+
+    override fun accept(message: Message<ArtifactEvent>) {
+        if (!acceptTypes.contains(message.payload.type)) {
+            return
         }
+        logger.info("current package replication message header is ${message.headers}")
+        remoteEventJobExecutor.execute(message.payload)
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(RemoteEventJobExecutor::class.java)
+        private val logger = LoggerFactory.getLogger(PackageReplicationEventConsumer::class.java)
     }
 }

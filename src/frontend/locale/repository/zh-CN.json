@@ -814,5 +814,16 @@
     "deletePermissionMsg": "确认删除此权限？",
     "createPermNameTip": "请输入权限名称",
     "createPathsTip": "请添加路径",
-    "createUsersTip": "请添加用户"
+    "createUsersTip": "请添加用户",
+    "cleanConfigTip": "请填写正确的输入",
+    "cleanupStrategy": "清理策略",
+    "retentionDays":"保留天数",
+    "retentionDate":"保留日期",
+    "retentionNums":"保留数目",
+    "chooseDateTip": "请选择日期时间",
+    "cleanTarget":"清理目标",
+    "addTarget": "添加目标",
+    "cleanConfig":"清理设置",
+    "and": "和",
+    "cleanPackageRuleTip": "请输入包名，例如：nginx"
 }

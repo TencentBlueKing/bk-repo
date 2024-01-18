@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.resolve.response
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
@@ -120,6 +121,14 @@ abstract class AbstractArtifactResourceHandler(
                 HttpStatus.INTERNAL_SERVER_ERROR
             throw ArtifactResponseException(message, status)
         }
+    }
+
+    /**
+     * 解析响应状态
+     */
+    protected fun resolveStatus(request: HttpServletRequest): Int {
+        val isRangeRequest = request.getHeader(HttpHeaders.RANGE)?.isNotBlank() ?: false
+        return if (isRangeRequest) HttpStatus.PARTIAL_CONTENT.value else HttpStatus.OK.value
     }
 
 }
