@@ -62,6 +62,7 @@
                             'repoSearch',
                             MODE_CONFIG === 'ci' && 'repoToken',
                             showRepoScan && (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
+                            (this.userInfo.admin || this.userInfo.manage) && 'userGroup',
                             SHOW_PROJECT_CONFIG_MENU && (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig' // 仅项目管理员
                         ].filter(Boolean),
                         global: [
@@ -69,7 +70,7 @@
                             'userManage',
                             'nodeManage',
                             // 'securityConfig',
-                            this.userInfo.admin && 'planManage',
+                            'planManage',
                             'repoAudit'
                         ].filter(Boolean)
                     }
