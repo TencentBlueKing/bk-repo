@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
@@ -66,6 +67,7 @@ import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
 import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyContext
 import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyExtension
+import com.tencent.bkrepo.generic.pojo.ChunkedMetrics
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
@@ -74,6 +76,7 @@ import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.time.LocalDateTime
@@ -276,6 +279,10 @@ class TemporaryAccessService(
         ArtifactContextHolder.getRepository().upload(context)
     }
 
+    fun reportChunkedMetrics(metrics: ChunkedMetrics) {
+        logger.info(metrics.toJsonString().replace(System.lineSeparator(), ""))
+    }
+
 
     /**
      * 根据token生成url
@@ -393,6 +400,7 @@ class TemporaryAccessService(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(TemporaryAccessService::class.java)
         private const val TEMPORARY_DOWNLOAD_ENDPOINT = "/temporary/download"
         private const val TEMPORARY_UPLOAD_ENDPOINT = "/temporary/upload"
     }

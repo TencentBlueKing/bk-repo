@@ -48,6 +48,7 @@ import com.tencent.bkrepo.generic.artifact.GenericChunkedArtifactInfo
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_CLIENT
 import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
+import com.tencent.bkrepo.generic.pojo.ChunkedMetrics
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
@@ -191,6 +192,17 @@ class TemporaryAccessController(
         if (HttpContextHolder.getRequest().method == HttpMethod.PUT.name) {
             temporaryAccessService.decrementPermits(tokenInfo)
         }
+    }
+
+    @PostMapping("/chunked/metrics")
+    @Principal(PrincipalType.GENERAL)
+    fun recordChunkedMetrics(
+        @RequestBody metrics: ChunkedMetrics,
+    ): Response<Void> {
+        if (!validateClientAgent())
+            throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+        temporaryAccessService.reportChunkedMetrics(metrics)
+        return ResponseBuilder.success()
     }
 
     /**
