@@ -101,14 +101,6 @@ open class AbstractServiceImpl constructor(
                         userId = it,
                         name = it,
                         pwd = DataDigestUtils.md5FromStr(IDUtil.genRandomId()),
-                        admin = false,
-                        locked = false,
-                        tokens = emptyList(),
-                        roles = emptyList(),
-                        asstUsers = emptyList(),
-                        group = false,
-                        email = null,
-                        phone = null,
                         createdDate = LocalDateTime.now(),
                         lastModifiedDate = LocalDateTime.now()
                     )

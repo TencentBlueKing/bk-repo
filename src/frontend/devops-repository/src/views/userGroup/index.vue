@@ -82,16 +82,8 @@
                     roleId: '',
                     name: '',
                     users: [],
-                    description: ''
-                },
-                editRoleUsers: {
-                    show: false,
-                    loading: false,
-                    title: '',
-                    id: '',
-                    users: [],
-                    addUsers: [],
-                    deleteUsers: []
+                    description: '',
+                    id: ''
                 },
                 users: [],
                 rules: {
@@ -137,45 +129,6 @@
                     this.isLoading = false
                 })
             },
-            showUsers (row) {
-                this.editRoleUsers = {
-                    show: true,
-                    loading: false,
-                    title: row.name,
-                    id: row.id,
-                    users: row.users,
-                    addUsers: [],
-                    deleteUsers: []
-                }
-            },
-            handleAddUsers () {
-                if (!this.editRoleUsers.addUsers.length) return
-                this.editRoleMixin([].concat(this.editRoleUsers.users, this.editRoleUsers.addUsers), this.$t('add') + this.$t('space') + this.$t('success'))
-            },
-            handleDeleteUsers () {
-                if (!this.editRoleUsers.deleteUsers.length) return
-                this.editRoleMixin(this.editRoleUsers.users.filter(v => !this.editRoleUsers.deleteUsers.find(w => w === v)), this.$t('delete') + this.$t('space') + this.$t('success'))
-            },
-            editRoleMixin (userIds, message) {
-                this.editRoleUsers.loading = true
-                return this.editRole({
-                    id: this.editRoleUsers.id,
-                    body: {
-                        userIds
-                    }
-                }).then(() => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message
-
-                    })
-                    this.getRoleListHandler().then(() => {
-                        this.showUsers(this.roleList.find(v => v.id === this.editRoleUsers.id))
-                    })
-                }).finally(() => {
-                    this.editRoleUsers.loading = false
-                })
-            },
             createRoleHandler () {
                 this.$refs.roleForm && this.$refs.roleForm.clearError()
                 this.editRoleConfig = {
@@ -195,6 +148,7 @@
                     loading: false,
                     roleId: row.roleId,
                     users: row.users,
+                    id: row.id,
                     name,
                     description
                 }
@@ -211,24 +165,16 @@
                         type: 'PROJECT',
                         projectId: this.projectId,
                         admin: false,
-                        description: this.editRoleConfig.description
+                        description: this.editRoleConfig.description,
+                        userIds: this.editRoleConfig.users
                     }
                 }).then(res => {
-                    if (!this.editRoleConfig.id && this.editRoleConfig.users.length > 0) {
-                        this.editRole({
-                            id: res,
-                            body: {
-                                userIds: this.editRoleConfig.users
-                            }
-                        }).then(_ => {
-                            this.$bkMessage({
-                                theme: 'success',
-                                message: (this.editRoleConfig.id ? this.$t('editUserGroupTitle') : this.$t('addUserGroupTitle')) + this.$t('space') + this.$t('success')
-                            })
-                            this.editRoleConfig.show = false
-                            this.getRoleListHandler()
-                        })
-                    }
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: (this.editRoleConfig.id ? this.$t('editUserGroupTitle') : this.$t('addUserGroupTitle')) + this.$t('space') + this.$t('success')
+                    })
+                    this.editRoleConfig.show = false
+                    this.getRoleListHandler()
                 }).finally(() => {
                     this.editRoleConfig.loading = false
                 })
