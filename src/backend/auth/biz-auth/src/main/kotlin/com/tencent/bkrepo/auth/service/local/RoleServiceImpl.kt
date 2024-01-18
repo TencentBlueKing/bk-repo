@@ -61,7 +61,7 @@ class RoleServiceImpl constructor(
 ) : RoleService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
 
     override fun createRole(request: CreateRoleRequest): String? {
-        return  createRoleCommon(request)
+        return createRoleCommon(request)
     }
 
 
@@ -124,21 +124,22 @@ class RoleServiceImpl constructor(
             return roleRepository.findByProjectIdAndRepoNameAndType(projectId, repoName, RoleType.REPO)
                 .map { transfer(it) }
         }
-        return roleRepository.findByTypeAndProjectIdAndRoleIdNotIn(
+        return roleRepository.findByTypeAndProjectIdAndAdminAndRoleIdNotIn(
             RoleType.PROJECT,
             projectId,
+            false,
             listOf(PROJECT_MANAGE_ID, PROJECT_VIEWER_ID)
         ).map { transfer(it) }
     }
 
-    override fun deleteRoleByid(id: String): Boolean {
+    override fun deleteRoleById(id: String): Boolean {
         logger.info("delete  role  id : [$id]")
         val role = roleRepository.findTRoleById(ObjectId(id))
         if (role == null) {
             logger.warn("delete role [$id ] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         } else {
-            var users = listUserByRoleId(role.id!!)
+            val users = listUserByRoleId(role.id!!)
             if (users.isNotEmpty()) {
                 userService.removeUserFromRoleBatch(users.map { it.userId }, id)
             }

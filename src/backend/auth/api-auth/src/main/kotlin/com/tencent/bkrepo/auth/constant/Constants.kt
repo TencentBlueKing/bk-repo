@@ -52,7 +52,7 @@ const val DEFAULT_PASSWORD = "blueking"
 const val AUTHORIZATION = "Authorization"
 
 const val AUTH_FAILED_RESPONSE = "{\"code\":401,\"message\":\"Authorization value [%s] " +
-    "is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
+        "is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
 
 const val BASIC_AUTH_HEADER_PREFIX = "Basic "
 
@@ -101,6 +101,7 @@ const val AUTH_API_INFO_PREFIX = "api/user/info"
 const val AUTH_API_ROLE_LIST_PREFIX = "api/role/list"
 const val AUTH_API_ROLE_CREATE_PREFIX = "api/role/create"
 const val AUTH_API_ROLE_DELETE_PREFIX = "api/role/delete"
+const val AUTH_API_ROLE_EDIT_PREFIX = "api/role/update/info"
 
 const val AUTH_API_USER_UPDATE_PREFIX = "api/user/update/info"
 const val AUTH_API_USER_DELETE_PREFIX = "api/user/delete"

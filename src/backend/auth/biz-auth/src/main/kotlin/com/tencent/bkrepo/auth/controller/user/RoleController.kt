@@ -91,7 +91,7 @@ class RoleController @Autowired constructor(
     fun deleteRole(@PathVariable id: String): Response<Boolean> {
         val role = roleService.detail(id) ?: return ResponseBuilder.success(false)
         isContextUserProjectAdmin(role.projectId)
-        roleService.deleteRoleByid(id)
+        roleService.deleteRoleById(id)
         return ResponseBuilder.success(true)
     }
 
@@ -132,6 +132,8 @@ class RoleController @Autowired constructor(
         @PathVariable id: String,
         @RequestBody updateRoleRequest: UpdateRoleRequest
     ): Response<Boolean> {
+        val role = roleService.detail(id) ?: return ResponseBuilder.success(false)
+        isContextUserProjectAdmin(role.projectId)
         return ResponseBuilder.success(roleService.updateRoleInfo(id, updateRoleRequest))
     }
 

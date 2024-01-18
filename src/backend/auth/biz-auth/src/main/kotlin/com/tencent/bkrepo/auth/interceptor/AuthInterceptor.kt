@@ -64,6 +64,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_DELETE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_UPDATE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_DELETE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_CREATE_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_EDIT_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
@@ -269,7 +270,8 @@ class AuthInterceptor(
             AUTH_API_PERMISSION_UPDATE_PREFIX,
             AUTH_API_ROLE_LIST_PREFIX,
             AUTH_API_ROLE_CREATE_PREFIX,
-            AUTH_API_ROLE_DELETE_PREFIX
+            AUTH_API_ROLE_DELETE_PREFIX,
+            AUTH_API_ROLE_EDIT_PREFIX
         )
 
         // 普通用户可访问api,开放给basic and platform用户访问

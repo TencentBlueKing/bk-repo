@@ -60,7 +60,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import java.time.LocalDateTime
 
 open class AbstractServiceImpl constructor(
     private val mongoTemplate: MongoTemplate,
@@ -93,21 +92,23 @@ open class AbstractServiceImpl constructor(
         }
     }
 
-    private fun checkUserOrCreateUser(idList: List<String>) {
-        idList.forEach {
+    private fun checkOrCreateUser(userIdList: List<String>) {
+        userIdList.forEach {
             userRepository.findFirstByUserId(it) ?: run {
                 if (it != ANONYMOUS_USER) {
                     var user = TUser(
                         userId = it,
                         name = it,
-                        pwd = DataDigestUtils.md5FromStr(IDUtil.genRandomId()),
-                        createdDate = LocalDateTime.now(),
-                        lastModifiedDate = LocalDateTime.now()
+                        pwd = randomPassWord()
                     )
                     userRepository.insert(user)
                 }
             }
         }
+    }
+
+    fun randomPassWord(): String {
+        return DataDigestUtils.md5FromStr(IDUtil.genRandomId())
     }
 
     // check role is existed
@@ -242,8 +243,8 @@ open class AbstractServiceImpl constructor(
 
     fun addUserToRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
         logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
-        checkUserOrCreateUser(userIdList)
         checkRoleExist(roleId)
+        checkOrCreateUser(userIdList)
         val query = UserQueryHelper.getUserByIdList(userIdList)
         val update = UserUpdateHelper.buildAddRole(roleId)
         mongoTemplate.updateMulti(query, update, TUser::class.java)
