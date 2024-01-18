@@ -68,7 +68,11 @@ class ArtifactCacheMetrics(
     }
 
     private fun addMetrics(resource: ArtifactResource) {
-        val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull() ?: return
+        val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
+        val projectId = repositoryDetail?.projectId
+        if (projectId == null || projectId.startsWith("CODE_") || projectId.startsWith("CLOSED_SOURCE_")) {
+            return
+        }
         val credentials = repositoryDetail.storageCredentials()
 
         for (inputStream in resource.artifactMap.values) {
@@ -80,11 +84,11 @@ class ArtifactCacheMetrics(
 
             // 统计缓存命中率
             if (inputStream is FileArtifactInputStream) {
-                incHitCount(credentials.key(), repositoryDetail.projectId)
+                incHitCount(credentials.key(), projectId)
                 // 统计缓存访问时间分布
                 recordAccessInterval(inputStream.file.toPath())
             } else {
-                incMissCount(credentials.key(), repositoryDetail.projectId)
+                incMissCount(credentials.key(), projectId)
             }
             // 统计访问的缓存文件大小分布
             recordAccessCacheFileSize(inputStream.range.total!!)
