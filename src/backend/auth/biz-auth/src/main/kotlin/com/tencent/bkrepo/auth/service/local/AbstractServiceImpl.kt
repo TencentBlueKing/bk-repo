@@ -260,17 +260,6 @@ open class AbstractServiceImpl constructor(
         return true
     }
 
-    fun removeUserFromRole(userIdList: List<String>, roleId: String): Boolean {
-        logger.info("remove user from role  batch userId : [$userIdList], roleId : [$roleId]")
-        checkUserOrCreateUser(userIdList)
-        checkRoleExist(roleId)
-        val query = UserQueryHelper.getUserByIdListAndRoleId(userIdList, roleId)
-        val update = UserUpdateHelper.buildUnsetRoles()
-        mongoTemplate.updateMulti(query, update, TUser::class.java)
-        return true
-    }
-
-
     private fun findUsableProjectTypeRoleId(roleId: String?, projectId: String): String {
         var tempRoleId = roleId ?: "${projectId}_role_${IDUtil.shortUUID()}"
         while (true) {
