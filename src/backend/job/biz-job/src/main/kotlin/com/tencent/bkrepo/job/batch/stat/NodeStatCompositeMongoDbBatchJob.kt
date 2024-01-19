@@ -13,7 +13,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
 import java.time.Duration
-import java.util.Date
 import kotlin.reflect.KClass
 
 @Component
