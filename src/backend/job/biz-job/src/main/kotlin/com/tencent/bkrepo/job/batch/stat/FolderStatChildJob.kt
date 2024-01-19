@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.node
+package com.tencent.bkrepo.job.batch.stat
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -84,9 +84,8 @@ class FolderStatChildJob(
         require(properties is NodeStatCompositeMongoDbBatchJobProperties)
         if (!context.runFlag) return
         if (!collectionRunCheck(collectionName)) return
-        if (row.deleted != null) return
         //只统计非目录类节点；没有根目录这个节点，不需要统计
-        if (row.folder || row.path == PathUtils.ROOT) {
+        if (row.path == PathUtils.ROOT) {
             return
         }
         // 判断是否在不统计项目或者仓库列表中

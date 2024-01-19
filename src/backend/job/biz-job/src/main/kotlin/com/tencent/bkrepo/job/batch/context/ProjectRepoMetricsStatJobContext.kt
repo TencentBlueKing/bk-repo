@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.context
 
-import com.tencent.bkrepo.job.batch.ProjectRepoMetricsStatJob
+import com.tencent.bkrepo.job.batch.stat.ProjectRepoMetricsStatJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import com.tencent.bkrepo.job.pojo.project.TRepoMetrics
@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.LongAdder
 data class ProjectRepoMetricsStatJobContext(
     var metrics: ConcurrentHashMap<String, ProjectMetrics> = ConcurrentHashMap(),
     var statDate: LocalDateTime,
-    var activeProjects: Set<String> = emptySet()
+    var statProjects: Set<String> = emptySet()
 ) : JobContext() {
 
     data class ProjectMetrics(
@@ -59,7 +59,10 @@ data class ProjectRepoMetricsStatJobContext(
             repo.size.add(row.size)
         }
 
-        fun toDO(statDate: LocalDateTime = LocalDateTime.now()): TProjectMetrics {
+        fun toDO(
+            active: Boolean,
+            statDate: LocalDateTime = LocalDateTime.now()
+        ): TProjectMetrics {
             val repoMetrics = ArrayList<TRepoMetrics>(repoMetrics.size)
             this.repoMetrics.values.forEach { repo ->
                 val num = repo.num.toLong()
@@ -75,7 +78,8 @@ data class ProjectRepoMetricsStatJobContext(
                 nodeNum = nodeNum.toLong(),
                 capSize = capSize.toLong(),
                 repoMetrics = repoMetrics,
-                createdDate = statDate
+                createdDate = statDate,
+                active = active
             )
         }
     }

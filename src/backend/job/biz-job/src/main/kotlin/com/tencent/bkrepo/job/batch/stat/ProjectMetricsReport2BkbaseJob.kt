@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.job.batch.stat
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -124,6 +124,7 @@ class ProjectMetricsReport2BkbaseJob(
             centerName = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_CENTER_NAME }?.value as? String,
             productId = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_PRODUCT_ID }?.value as? Int,
             enabled = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_ENABLED }?.value as? Boolean,
+            active = current.active
         )
     }
 
@@ -156,6 +157,7 @@ class ProjectMetricsReport2BkbaseJob(
         var helmRepoCapSize: Long = 0,
         var dockerRepoCapSize: Long = 0,
         val createdDate: LocalDateTime,
+        val active: Boolean = true
     )
 
     data class ProjectInfo(

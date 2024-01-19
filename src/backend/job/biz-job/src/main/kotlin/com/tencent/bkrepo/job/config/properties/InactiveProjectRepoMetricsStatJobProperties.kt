@@ -25,15 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.pojo.project
+package com.tencent.bkrepo.job.config.properties
 
-import java.time.LocalDateTime
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-data class TProjectMetrics(
-    var projectId: String,
-    var nodeNum: Long,
-    var capSize: Long,
-    val repoMetrics: List<TRepoMetrics>,
-    val createdDate: LocalDateTime? = LocalDateTime.now(),
-    val active: Boolean = true
-)
+/**
+ * 非活跃项目仓库指标统计任务配置项
+ */
+@ConfigurationProperties("job.inactive-project-repo-metrics-stat")
+data class InactiveProjectRepoMetricsStatJobProperties(
+    override var enabled: Boolean = true,
+    override var cron: String = "0 0 1 * * ?",
+) : MongodbJobProperties()

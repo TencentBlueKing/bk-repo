@@ -25,19 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.batch.stat
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
+import com.tencent.bkrepo.job.config.properties.ActiveProjectRepoMetricsStatJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
- * 项目仓库指标统计任务配置项
+ * 活跃项目仓库指标统计任务
  */
-@ConfigurationProperties("job.project-repo-metrics-stat")
-data class ProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 18 * * ?",
-    /**
-     * 是否遍历所有项目记录
-     */
-    var runAllProjects: Boolean = true
-) : MongodbJobProperties()
+@Component
+@EnableConfigurationProperties(ActiveProjectRepoMetricsStatJobProperties::class)
+class ActiveProjectRepoMetricsStatJob(
+    properties: ActiveProjectRepoMetricsStatJobProperties,
+    activeProjectService: ActiveProjectService,
+) : ProjectRepoMetricsStatJob(properties, activeProjectService) {
+
+    override fun statProjectCheck(
+        projectId: String,
+        context: ProjectRepoMetricsStatJobContext
+    ): Boolean {
+        if (context.statProjects.isEmpty() ||
+            context.statProjects.contains(projectId)) return true
+        return false
+    }
+}

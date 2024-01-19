@@ -1,11 +1,14 @@
-package com.tencent.bkrepo.job.batch.node
+package com.tencent.bkrepo.job.batch.stat
 
+import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.CompositeMongoDbBatchJob
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
@@ -25,7 +28,10 @@ class NodeStatCompositeMongoDbBatchJob(
         return (0 until SHARDING_COUNT).map { "node_$it" }.toList()
     }
 
-    override fun buildQuery(): Query = Query()
+    override fun buildQuery(): Query = Query(
+        Criteria.where(DELETED_DATE).`is`(null)
+            .and(FOLDER).`is`(false)
+    )
 
     override fun mapToEntity(row: Map<String, Any?>): Node = Node(row)
 
@@ -63,9 +69,6 @@ class NodeStatCompositeMongoDbBatchJob(
         val size: Long
 
         @JvmField
-        val deleted: Date?
-
-        @JvmField
         val projectId: String
 
         @JvmField
@@ -78,8 +81,6 @@ class NodeStatCompositeMongoDbBatchJob(
             fullPath = map[Node::fullPath.name] as String
             name = map[Node::name.name] as String
             size = map[Node::size.name].toString().toLong()
-            // 查询出的deleted默认为Date类型
-            deleted = map[Node::deleted.name] as Date?
             projectId = map[Node::projectId.name] as String
             repoName = map[Node::repoName.name] as String
         }
