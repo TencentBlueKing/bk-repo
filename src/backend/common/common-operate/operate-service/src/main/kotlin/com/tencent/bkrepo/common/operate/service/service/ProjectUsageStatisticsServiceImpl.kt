@@ -50,7 +50,10 @@ import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.LongAdder
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.annotation.PreDestroy
+import kotlin.concurrent.withLock
 
 open class ProjectUsageStatisticsServiceImpl(
     private val properties: ProjectUsageStatisticsProperties,
@@ -85,9 +88,10 @@ open class ProjectUsageStatisticsServiceImpl(
             executor.execute(
                 Runnable {
                     rateLimiter.acquire()
-                    synchronized(it.value!!) {
-                        flush(it.key!!, it.value!!)
+                    it.value!!.lock.writeLock().withLock {
+                        it.value!!.flushed = true
                     }
+                    flush(it.key!!, it.value!!)
                 }.trace()
             )
         }
@@ -109,7 +113,7 @@ open class ProjectUsageStatisticsServiceImpl(
             val adder = cache.get(projectId)
             var added = false
             // 加锁避免inc与flush操作同一个adder对象导致丢失部分计数
-            synchronized(adder) {
+            adder.lock.readLock().withLock {
                 if (!adder.flushed) {
                     adder.reqCount.add(reqCount)
                     adder.receivedBytes.add(receivedBytes)
@@ -171,7 +175,6 @@ open class ProjectUsageStatisticsServiceImpl(
             adder.responseBytes.toLong(),
             start
         )
-        adder.flushed = true
     }
 
     private fun TProjectUsageStatistics.convert(): ProjectUsageStatistics = ProjectUsageStatistics(
@@ -186,10 +189,11 @@ open class ProjectUsageStatisticsServiceImpl(
         val receivedBytes: LongAdder = LongAdder(),
         val responseBytes: LongAdder = LongAdder(),
         /**
-         * 是否已经写入缓存
+         * 是否已经写入数据库
          */
         @Volatile
-        var flushed: Boolean = false
+        var flushed: Boolean = false,
+        val lock: ReadWriteLock = ReentrantReadWriteLock(),
     )
 
     companion object {
