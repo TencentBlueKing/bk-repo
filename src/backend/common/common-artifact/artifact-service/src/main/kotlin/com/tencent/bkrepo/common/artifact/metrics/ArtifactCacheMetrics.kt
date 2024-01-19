@@ -93,6 +93,13 @@ class ArtifactCacheMetrics(
                 // 统计缓存访问时间分布
                 recordAccessInterval(inputStream.file.toPath(), credentials.cache.expireDuration)
             } else {
+                if (inputStream.range.total!! > LOG_CACHE_MISS_FILE_SIZE) {
+                    val fullPath = resource.node?.fullPath
+                    logger.info(
+                        "large file cache miss, " +
+                                "project[$projectId], repoName[${repositoryDetail.name}], fullPath[$fullPath]"
+                    )
+                }
                 incMissCount(credentials.key(), projectId)
             }
             // 统计访问的缓存文件大小分布
@@ -174,6 +181,7 @@ class ArtifactCacheMetrics(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactCacheMetrics::class.java)
+        private const val LOG_CACHE_MISS_FILE_SIZE = 1L * 1024 * 1024 * 1024
         private const val MAX_CACHE_FILE_SIZE = 100.0 * 1024 * 1024 * 1024
         private const val MIN_CACHE_ACCESS_INTERVAL = 1000.0
         private const val CACHE_COUNT_HIT = "storage.cache.count.hit"
