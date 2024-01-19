@@ -46,6 +46,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -135,6 +136,26 @@ open class ProjectUsageStatisticsServiceImpl(
 
     override fun delete(start: Long?, end: Long) {
         projectUsageStatisticsDao.delete(start, end)
+    }
+
+    override fun sumRecentDays(days: Long): Map<String, ProjectUsageStatistics> {
+        val start = LocalDate.now().atStartOfDay().minusDays(days - 1)
+            .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val result = ConcurrentHashMap<String, ProjectUsageStatisticsAdder>()
+        projectUsageStatisticsDao.findAfter(start).stream().parallel().forEach {
+            val statistics = result.getOrPut(it.projectId) { ProjectUsageStatisticsAdder() }
+            statistics.reqCount.add(it.reqCount)
+            statistics.responseBytes.add(it.responseByte)
+            statistics.receivedBytes.add(it.receiveBytes)
+        }
+        return result.mapValues {
+            ProjectUsageStatistics(
+                projectId = it.key,
+                reqCount = it.value.reqCount.toLong(),
+                receiveBytes = it.value.receivedBytes.toLong(),
+                responseBytes = it.value.responseBytes.toLong(),
+            )
+        }
     }
 
     @PreDestroy
