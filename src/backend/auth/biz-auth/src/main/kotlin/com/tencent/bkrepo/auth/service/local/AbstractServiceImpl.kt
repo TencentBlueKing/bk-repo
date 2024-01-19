@@ -45,12 +45,14 @@ import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
+import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.query.UserQueryHelper
 import com.tencent.bkrepo.auth.util.query.UserUpdateHelper
 import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.auth.util.scope.ProjectRuleUtil
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -88,6 +90,25 @@ open class AbstractServiceImpl constructor(
                 throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
             }
         }
+    }
+
+    private fun checkOrCreateUser(userIdList: List<String>) {
+        userIdList.forEach {
+            userRepository.findFirstByUserId(it) ?: run {
+                if (it != ANONYMOUS_USER) {
+                    var user = TUser(
+                        userId = it,
+                        name = it,
+                        pwd = randomPassWord()
+                    )
+                    userRepository.insert(user)
+                }
+            }
+        }
+    }
+
+    fun randomPassWord(): String {
+        return DataDigestUtils.md5FromStr(IDUtil.genRandomId())
     }
 
     // check role is existed
@@ -222,8 +243,8 @@ open class AbstractServiceImpl constructor(
 
     fun addUserToRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
         logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
-        checkUserExistBatch(userIdList)
         checkRoleExist(roleId)
+        checkOrCreateUser(userIdList)
         val query = UserQueryHelper.getUserByIdList(userIdList)
         val update = UserUpdateHelper.buildAddRole(roleId)
         mongoTemplate.updateMulti(query, update, TUser::class.java)
@@ -239,7 +260,6 @@ open class AbstractServiceImpl constructor(
         mongoTemplate.updateMulti(query, update, TUser::class.java)
         return true
     }
-
 
     private fun findUsableProjectTypeRoleId(roleId: String?, projectId: String): String {
         var tempRoleId = roleId ?: "${projectId}_role_${IDUtil.shortUUID()}"

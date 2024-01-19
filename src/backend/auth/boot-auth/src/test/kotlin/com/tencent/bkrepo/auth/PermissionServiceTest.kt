@@ -77,7 +77,7 @@ class PermissionServiceTest {
 
         // 删除创建的角色
         roleService.detail(roleId, projectId)?.let {
-            roleService.deleteRoleByid(it.id!!)
+            roleService.deleteRoleById(it.id!!)
         }
     }
 

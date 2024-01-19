@@ -32,6 +32,7 @@ const repoSearch = () => import('@repository/views/repoSearch')
 const WebError440 = () => import('@repository/components/Exception/440')
 
 const oauth = () => import('@repository/views/oauth')
+const userGroup = () => import('@repository/views/userGroup')
 
 const routes = [
     {
@@ -136,6 +137,16 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { name: 'userManage', label: '用户管理' }
+                    ]
+                }
+            },
+            {
+                path: 'userGroup',
+                name: 'userGroup',
+                component: userGroup,
+                meta: {
+                    breadcrumb: [
+                        { name: 'userGroup', label: '用户组管理' }
                     ]
                 }
             },

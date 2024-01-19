@@ -403,18 +403,46 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
+        val user = userRepository.findFirstByUserId(userId) ?: run {
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+
+        if (user.admin || isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
+            return emptyList()
+        }
+
         val projectPermission = permissionRepository.findByResourceTypeAndProjectIdAndRepos(
             NODE.name,
             projectId,
             repoName,
         )
-        if (isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
-            return emptyList()
-        }
+
+        return getNoPermissionPathFromConfig(userId, user.roles, projectPermission)
+    }
+
+    private fun getNoPermissionPathFromConfig(
+        userId: String,
+        roles: List<String>,
+        config: List<TPermission>
+    ): List<String> {
         val excludePath = mutableListOf<String>()
         val includePath = mutableListOf<String>()
-        projectPermission.forEach {
+        config.forEach {
             if (it.users.contains(userId)) {
+                if (it.excludePattern.isNotEmpty()) {
+                    excludePath.addAll(it.excludePattern)
+                }
+                if (it.includePattern.isNotEmpty()) {
+                    includePath.addAll(it.includePattern)
+                }
+            } else {
+                if (it.includePattern.isNotEmpty()) {
+                    excludePath.addAll(it.includePattern)
+                }
+            }
+
+            val interRole = it.roles.intersect(roles.toSet())
+            if (interRole.isNotEmpty()) {
                 if (it.excludePattern.isNotEmpty()) {
                     excludePath.addAll(it.excludePattern)
                 }
@@ -581,6 +609,7 @@ open class PermissionServiceImpl constructor(
         return updatePermissionById(request.permissionId, TPermission::includePattern.name, request.path)
                 && updatePermissionById(request.permissionId, TPermission::users.name, request.users)
                 && updatePermissionById(request.permissionId, TPermission::permName.name, request.name)
+                && updatePermissionById(request.permissionId, TPermission::roles.name, request.roles)
     }
 
     companion object {
