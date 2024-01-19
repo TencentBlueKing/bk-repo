@@ -76,7 +76,7 @@ class UserServiceTest {
             userService.deleteById(userId)
         }
         roleService.detail(roleId, testProjectId)?.let {
-            roleService.deleteRoleByid(it.id!!)
+            roleService.deleteRoleById(it.id!!)
         }
     }
 
@@ -86,7 +86,7 @@ class UserServiceTest {
             userService.deleteById(userId)
         }
         roleService.detail(roleId, testProjectId)?.let {
-            roleService.deleteRoleByid(it.id!!)
+            roleService.deleteRoleById(it.id!!)
         }
         repeat(repeatTimes) {
             userService.getUserById(userId + "_" + it)?.let { user ->

@@ -824,5 +824,10 @@
     "addTarget": "Add Target",
     "cleanConfig":"Clean Config",
     "and": "and",
-    "cleanPackageRuleTip": "Package name,e.g., nginx"
+    "cleanPackageRuleTip": "Package name,e.g., nginx",
+    "roleID": "RoleID",
+    "roleName":"Name",
+    "addUserGroupTitle":"Create UserGroup",
+    "editUserGroupTitle": "Edit UserGroup",
+    "associatedUseGroup": "UserGroup"
 }
