@@ -41,6 +41,10 @@ data class ProjectRepoMetricsStatJobContext(
     var statProjects: Set<String> = emptySet()
 ) : JobContext() {
 
+    override fun toString(): String {
+        return "Success[$success], failed[$failed], total[$total], statDate[$statDate]"
+    }
+
     data class ProjectMetrics(
         val projectId: String,
         var nodeNum: LongAdder = LongAdder(),
