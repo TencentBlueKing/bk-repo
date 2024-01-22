@@ -25,22 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.service
+package com.tencent.bkrepo.job.pojo
 
-import com.tencent.bkrepo.job.pojo.FileCacheCheckRequest
-import com.tencent.bkrepo.job.pojo.FileCacheRequest
-import com.tencent.bkrepo.job.pojo.TFileCache
-
-interface FileCacheService {
-    fun list(): List<TFileCache>
-
-    fun create(fileCacheRequest: FileCacheRequest)
-
-    fun delete(id: String)
-
-    fun getById(id: String): TFileCache?
-
-    fun checkExist(request: FileCacheCheckRequest): TFileCache
-
-    fun update(fileCacheRequest: FileCacheRequest)
-}
+data class FileCacheCheckRequest(
+    var projectId: String,
+    var repoName: String,
+    // 保留最近多少天内访问
+    var days: Int,
+    var size: Long,
+)

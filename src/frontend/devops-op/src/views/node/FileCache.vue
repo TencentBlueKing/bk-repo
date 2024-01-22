@@ -4,7 +4,7 @@
       <el-table-column prop="projectId" label="项目Id" />
       <el-table-column prop="repoName" label="仓库名称" />
       <el-table-column prop="paths" label="路径前缀匹配" width="780" />
-      <el-table-column prop="size" label="大小(GB)" />
+      <el-table-column prop="size" label="大小(MB)" />
       <el-table-column prop="days" label="保存时间（天）" />
       <el-table-column align="right">
         <template slot="header">
@@ -12,6 +12,7 @@
         </template>
         <template slot-scope="scope">
           <el-button
+            v-if="consulType || (!consulType && scope.row.id)"
             size="mini"
             type="primary"
             @click="showCreateOrUpdateDialog(false, scope.$index, scope.row)"
@@ -19,6 +20,7 @@
             编辑
           </el-button>
           <el-button
+            v-if="consulType || (!consulType && scope.row.id)"
             size="mini"
             type="danger"
             @click="handleDelete(scope.$index, scope.row)"
@@ -40,7 +42,7 @@
 </template>
 <script>
 
-import { deleteFileCache, queryFileCache } from '@/api/fileCache'
+import { deleteFileCache, queryFileCache, getNodeConfig } from '@/api/fileCache'
 import { getConfig, updateConfig } from '@/api/config'
 import CreateOrUpdateFileCacheDialog from '@/views/node/components/CreateOrUpdateFileCacheDialog'
 import { formatFileSize } from '@/utils/file'
@@ -63,7 +65,8 @@ export default {
         pathPrefix: [],
         days: 30
       },
-      fileCacheConf: undefined
+      fileCacheConf: undefined,
+      consulType: true
     }
   },
   async created() {
@@ -128,34 +131,42 @@ export default {
         }
       })
       await getConfig(this.keyName, 'job').then(res => {
-        if (res.data) {
-          const obj = JSON.parse(res.data)
-          this.fileCacheConf = obj
-          if (obj.repoConfig) {
-            if (obj.repoConfig.repos) {
-              let size = ''
-              if (obj.repoConfig.size) {
-                size = formatFileSize(obj.repoConfig.size)
-              }
-              obj.repoConfig.repos.forEach(repo => {
-                if (repo.pathPrefix.length === 0) {
-                  repo.paths = []
-                } else {
-                  for (let j = 0; j < repo.pathPrefix.length; j++) {
-                    if (j === 0) {
-                      repo.paths = repo.pathPrefix[0]
-                    } else {
-                      repo.paths = repo.paths + ',' + repo.pathPrefix[j]
-                    }
+        this.handleDateFromConfig(res)
+      }).catch(_ => {
+        this.consulType = false
+        getNodeConfig().then(res => {
+          this.handleDateFromConfig(res)
+        })
+      })
+    },
+    handleDateFromConfig(res) {
+      if (res.data) {
+        const obj = JSON.parse(res.data)
+        this.fileCacheConf = obj
+        if (obj.repoConfig) {
+          if (obj.repoConfig.repos) {
+            let size = ''
+            if (obj.repoConfig.size) {
+              size = formatFileSize(obj.repoConfig.size, 'MB')
+            }
+            obj.repoConfig.repos.forEach(repo => {
+              if (repo.pathPrefix.length === 0) {
+                repo.paths = []
+              } else {
+                for (let j = 0; j < repo.pathPrefix.length; j++) {
+                  if (j === 0) {
+                    repo.paths = repo.pathPrefix[0]
+                  } else {
+                    repo.paths = repo.paths + ',' + repo.pathPrefix[j]
                   }
                 }
-              })
-              const temp = obj.repoConfig.repos.map(v => ({ ...v, size: size }))
-              this.fileCaches.push.apply(this.fileCaches, temp)
-            }
+              }
+            })
+            const temp = obj.repoConfig.repos.map(v => ({ ...v, size: size }))
+            this.fileCaches.push.apply(this.fileCaches, temp)
           }
         }
-      })
+      }
     }
   }
 }

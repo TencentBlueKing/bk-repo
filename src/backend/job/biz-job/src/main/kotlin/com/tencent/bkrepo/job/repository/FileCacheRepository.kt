@@ -38,4 +38,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface FileCacheRepository : MongoRepository<TFileCache, String> {
     fun findAllBy(): List<TFileCache>
+
+    fun findByRepoNameAndProjectIdAndDaysAndSize(
+        repoName: String, projectId: String,days: Int, size: Long ): TFileCache
 }

@@ -31,3 +31,10 @@ export function updateFileCache(data) {
     data: data
   })
 }
+
+export function getNodeConfig() {
+  return request({
+    url: `${PREFIX_SERVICES}/config/`,
+    method: 'get'
+  })
+}

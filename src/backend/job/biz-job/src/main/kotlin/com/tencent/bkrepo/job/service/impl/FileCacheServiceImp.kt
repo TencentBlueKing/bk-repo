@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.service.impl
 
+import com.tencent.bkrepo.job.pojo.FileCacheCheckRequest
 import com.tencent.bkrepo.job.pojo.FileCacheRequest
 import com.tencent.bkrepo.job.pojo.TFileCache
 import com.tencent.bkrepo.job.repository.FileCacheRepository
@@ -59,6 +60,15 @@ class FileCacheServiceImp constructor(
 
     override fun getById(id: String): TFileCache? {
         return fileCacheRepository.findById(id).orElseGet(null)
+    }
+
+    override fun checkExist(request: FileCacheCheckRequest): TFileCache {
+        return fileCacheRepository.findByRepoNameAndProjectIdAndDaysAndSize(
+            request.repoName,
+            request.projectId,
+            request.days,
+            request.size
+        )
     }
 
     override fun update(fileCacheRequest: FileCacheRequest) {

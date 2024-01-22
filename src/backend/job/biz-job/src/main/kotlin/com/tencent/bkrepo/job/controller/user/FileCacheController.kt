@@ -29,9 +29,12 @@ package com.tencent.bkrepo.job.controller.user
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.job.config.properties.ExpiredCacheFileCleanupJobProperties
+import com.tencent.bkrepo.job.pojo.FileCacheCheckRequest
 import com.tencent.bkrepo.job.pojo.FileCacheRequest
 import com.tencent.bkrepo.job.pojo.TFileCache
 import com.tencent.bkrepo.job.service.FileCacheService
@@ -46,7 +49,10 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/cache")
 @Principal(PrincipalType.ADMIN)
-class FileCacheController(val fileCacheService: FileCacheService) {
+class FileCacheController(
+    val fileCacheService: FileCacheService,
+    val properties: ExpiredCacheFileCleanupJobProperties,
+) {
 
     @GetMapping("/list")
     fun list(): Response<List<TFileCache>> {
@@ -68,6 +74,15 @@ class FileCacheController(val fileCacheService: FileCacheService) {
     // 新增
     @PostMapping("/create")
     fun create(@RequestBody request:FileCacheRequest):Response<Void> {
+        var fileCacheCheckRequest = FileCacheCheckRequest(
+            repoName = request.repoName,
+            projectId = request.projectId,
+            days = request.days,
+            size = request.size
+        )
+        fileCacheService.checkExist(fileCacheCheckRequest).let {
+            return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "has same config")
+        }
         fileCacheService.create(request)
         return ResponseBuilder.success()
     }
@@ -80,6 +95,13 @@ class FileCacheController(val fileCacheService: FileCacheService) {
             return ResponseBuilder.success()
         }
         return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id not existed")
+    }
+
+    // 获取配置中的属性
+    @GetMapping("/config")
+    fun getConfig(): Response<String> {
+        var config = properties
+        return ResponseBuilder.success(config.toJsonString())
     }
 
 }

@@ -33,7 +33,7 @@
           </template>
         </el-autocomplete>
       </el-form-item>
-      <el-form-item label="大小(GB单位)" prop="size" :rules="[{ required: true, message: '大小不能为空'}]">
+      <el-form-item label="大小(MB单位)" prop="size" :rules="[{ required: true, message: '大小不能为空'}]">
         <el-input v-model="fileCache.size" type="number" />
       </el-form-item>
       <el-form-item label="保存时间(天)" prop="days" :rules="[{ required: true, message: '保存天数不能为空'}]">
@@ -151,7 +151,7 @@ export default {
       this.$refs['form'].validate((valid) => {
         if (valid) {
           const fileCache = this.fileCache
-          fileCache.pathPrefix = fileCache.paths.split(',')
+          fileCache.pathPrefix = fileCache.paths === '' ? ['/'] : fileCache.paths.split(',')
           // 根据是否为创建模式发起不同请求
           let reqPromise
           let msg
@@ -224,7 +224,7 @@ export default {
         if (repo.projectId === this.fileCache.projectId &&
           repo.repoName === this.fileCache.repoName &&
           repo.days === Number(this.fileCache.days) &&
-            formatFileSize(this.repoConfig.repoConfig.size) === Number(this.fileCache.size)
+            formatFileSize(this.repoConfig.repoConfig.size, 'MB') === Number(this.fileCache.size)
         ) { return true }
       }
       return false
