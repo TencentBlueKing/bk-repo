@@ -80,6 +80,9 @@ spec:
             httpGet:
               path: /actuator/health/livenessState
               port: http
+              httpHeaders:
+                - name: Accept
+                  value: application/json
             initialDelaySeconds: 120
             periodSeconds: 15
             timeoutSeconds: 10
@@ -89,6 +92,9 @@ spec:
             httpGet:
               path: /actuator/health/readinessState
               port: http
+              httpHeaders:
+                - name: Accept
+                  value: application/json
             initialDelaySeconds: 60
             periodSeconds: 15
             timeoutSeconds: 10
