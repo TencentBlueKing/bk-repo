@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/component: s3
     {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
     {{- if .Values.commonLabels }}
-      {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
   {{- if .Values.commonAnnotations }}
   annotations: {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
@@ -56,28 +56,6 @@ spec:
       securityContext: {{- omit .Values.s3.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       containers:
-        {{- if .Values.bkstore.enabled }}
-        - name: plugin-bkstore
-          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.bkstore.image "global" .Values.global "bkrepo" .Values.common) }}
-          args:
-            - /bin/sh
-            - -c
-            - cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep infinity
-          volumeMounts:
-            - name: shared-data
-              mountPath: /data/workspace/plugin/
-        {{- end }}
-        {{- if .Values.gitci.enabled }}
-        - name: plugin-gitci
-          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.gitci.image "global" .Values.global "bkrepo" .Values.common) }}
-          args:
-            - /bin/sh
-            - -c
-            - cp /data/workspace/plugin*jar /data/workspace/plugin/; sleep infinity
-          volumeMounts:
-            - name: shared-data
-              mountPath: /data/workspace/plugin/
-        {{- end }}
         - name: s3
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.s3.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.s3.image.pullPolicy }}
@@ -119,8 +97,6 @@ spec:
           volumeMounts:
             - name: storage
               mountPath: {{ .Values.common.mountPath }}
-            - name: shared-data
-              mountPath: /data/workspace/plugin/
       volumes:
         - name: storage
           {{- if .Values.common.config.storage.nfs.enabled }}
@@ -132,6 +108,4 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
-        - name: shared-data
-          emptyDir: {}
-{{- end }}
+  {{- end }}
