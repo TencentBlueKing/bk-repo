@@ -89,8 +89,8 @@ class ExpiredCacheFileCleanupJob(
             storageService.cleanUp(storage)
         }.apply {
             first[storage.cache.path.toPath()]?.let {
-                storageCacheMetrics.setCacheCount(key, it.visitedRootDirFile)
-                storageCacheMetrics.setCacheSize(key, it.visitedRootDirSize)
+                storageCacheMetrics.setCacheCount(key, it.rootDirNotDeletedFile)
+                storageCacheMetrics.setCacheSize(key, it.rootDirNotDeletedSize)
             }
             logger.info("Clean up on storage[$key] completed, summary: $first, elapse [${second.seconds}] s.")
         }
