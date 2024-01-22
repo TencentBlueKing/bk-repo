@@ -126,15 +126,20 @@ function _M:verify_bk_token(auth_url, token)
     local user_cache_value = user_cache:get(token)
     if user_cache_value == nil then
         local http_cli = http.new()
-        local auth = config.oauth
-        local query = "bk_app_code=" .. auth.app_code .. "&bk_app_secret=" .. auth.app_secret .. "&bk_token=" .. token
+        local oauth = config.oauth
+        local query = "bk_token=" .. token
         local addr = "http://" .. auth_url .. "/api/c/compapi/v2/bk_login/get_user/?" .. query
+        local auth_content = '{"bk_app_code":"' .. oauth.app_code .. '","bk_app_secret":"' .. oauth.app_secret .. '"}'
         --- 开始连接
         http_cli:set_timeout(3000)
         http_cli:connect(addr)
         --- 发送请求
         local res, err = http_cli:request_uri(addr, {
             method = "GET",
+            ssl_verify = false,
+            headers = {
+                ["X-Bkapi-Authorization"] = auth_content
+            }
         })
         --- 判断是否出错了
         if not res then

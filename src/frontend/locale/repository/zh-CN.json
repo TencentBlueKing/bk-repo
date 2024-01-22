@@ -825,5 +825,10 @@
     "addTarget": "添加目标",
     "cleanConfig":"清理设置",
     "and": "和",
-    "cleanPackageRuleTip": "请输入包名，例如：nginx"
+    "cleanPackageRuleTip": "请输入包名，例如：nginx",
+    "roleID": "用户组ID",
+    "roleName":"用户组名称",
+    "addUserGroupTitle":"创建用户组",
+    "editUserGroupTitle": "编辑用户组",
+    "associatedUseGroup": "关联用户组"
 }

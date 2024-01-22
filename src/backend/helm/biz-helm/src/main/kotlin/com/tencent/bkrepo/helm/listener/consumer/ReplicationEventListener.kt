@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,42 +27,38 @@
 
 package com.tencent.bkrepo.helm.listener.consumer
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
+import com.tencent.bkrepo.common.artifact.event.packages.VersionUpdatedEvent
 import com.tencent.bkrepo.helm.listener.base.RemoteEventJobExecutor
-import java.util.function.Consumer
-import org.slf4j.LoggerFactory
-import org.springframework.messaging.Message
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 /**
- * 构件事件消费者，用于实时同步
- * 对应destination为对应ArtifactEvent.topic
+ * 消费基于Spring进程内传递的事件
  */
-@Component("remoteRepo")
-class RemoteRepoEventConsumer(
-    private val remoteEventJobExecutor: RemoteEventJobExecutor
-) : Consumer<Message<ArtifactEvent>> {
+@Component("HelmReplicationEventListener")
+class ReplicationEventListener(
+    private val remoteEventJobExecutor: RemoteEventJobExecutor,
+){
 
     /**
-     * 允许接收的事件类型
+     * 监听package version创建事件，主要用于单体环境下支持支持分发的package进行index更新
      */
-    private val acceptTypes = setOf(
-        EventType.REPO_CREATED,
-        EventType.REPO_UPDATED,
-        EventType.REPO_REFRESHED
-    )
-
-    override fun accept(message: Message<ArtifactEvent>) {
-        if (!acceptTypes.contains(message.payload.type)) {
-            return
-        }
-        // TODO 针对有些特定场景需要验证消息是否重复消费
-        logger.info("current helm message header is ${message.headers}")
-        remoteEventJobExecutor.execute(message.payload)
+    @EventListener(VersionCreatedEvent::class)
+    fun handleReplicationVersionCreatedEvent(event: VersionCreatedEvent) {
+        if (event.packageType != PackageType.HELM.name) return
+        remoteEventJobExecutor.execute(event)
     }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(RemoteRepoEventConsumer::class.java)
+    /**
+     * 监听package version 更新事件，主要用于单体环境下支持支持分发的package进行index更新
+     */
+    @EventListener(VersionUpdatedEvent::class)
+    fun handleReplicationVersionUpdatedEvent(event: VersionUpdatedEvent) {
+        if (event.packageType != PackageType.HELM.name) return
+        remoteEventJobExecutor.execute(event)
     }
+
+
 }
