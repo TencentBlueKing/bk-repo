@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.storage.core.cache
 import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
@@ -118,8 +119,7 @@ class CacheStorageService(
         val loadCacheFirst = isLoadCacheFirst(range, credentials)
         if (loadCacheFirst) {
             loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let {
-                it.putMetadata(ArtifactInputStream.METADATA_KEY_LOAD_FROM_CACHE, true)
-                return it
+                return it.apply { putMetadata(METADATA_KEY_CACHE_ENABLED, true) }
             }
         }
         val artifactInputStream = fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
@@ -129,17 +129,12 @@ class CacheStorageService(
             val readListener = CachedFileWriter(cachePath, filename, tempPath)
             artifactInputStream.addListener(readListener)
         }
-        if (loadCacheFirst) {
-            artifactInputStream?.putMetadata(ArtifactInputStream.METADATA_KEY_LOAD_FROM_CACHE, false)
-        }
 
         return if (artifactInputStream == null && !loadCacheFirst) {
-            cacheClient.load(path, filename)?.artifactStream(range)?.also {
-                it.putMetadata(ArtifactInputStream.METADATA_KEY_LOAD_FROM_CACHE, true)
-            }
+            cacheClient.load(path, filename)?.artifactStream(range)
         } else {
             artifactInputStream
-        }
+        }?.apply { putMetadata(METADATA_KEY_CACHE_ENABLED, loadCacheFirst) }
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {

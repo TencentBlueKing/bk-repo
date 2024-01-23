@@ -107,8 +107,8 @@ open class ArtifactInputStream(
 
     companion object {
         /**
-         * 是否是从缓存中加载的数据流，value为true时表示从缓存加载，为false时表示缓存不存在，为null时表示不支持从缓存加载
+         * 存储缓存是否开启
          */
-        const val METADATA_KEY_LOAD_FROM_CACHE = "loadFromCache"
+        const val METADATA_KEY_CACHE_ENABLED = "cacheEnabled"
     }
 }

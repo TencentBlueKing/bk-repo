@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_LOAD_FROM_CACHE
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -79,7 +79,7 @@ class ArtifactCacheMetrics(
         val credentials = repositoryDetail.storageCredentials()
 
         for (inputStream in resource.artifactMap.values) {
-            if (inputStream.getMetadata(METADATA_KEY_LOAD_FROM_CACHE) == null) {
+            if (inputStream.getMetadata(METADATA_KEY_CACHE_ENABLED) != true) {
                 // 不支持从缓存加载时不统计缓存命中率
                 continue
             }
