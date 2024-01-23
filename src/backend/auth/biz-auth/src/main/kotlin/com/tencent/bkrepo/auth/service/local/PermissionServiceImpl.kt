@@ -283,7 +283,7 @@ open class PermissionServiceImpl constructor(
         checkAction: String
     ): Boolean {
         patternList.forEach {
-            if (path.startsWith(it) && (actions.contains(PermissionAction.MANAGE.name) || actions.contains(checkAction))) return true
+            if (path.startsWith(it) && (actions.contains(MANAGE.name) || actions.contains(checkAction))) return true
         }
         return false
     }
