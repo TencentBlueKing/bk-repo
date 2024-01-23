@@ -20,6 +20,7 @@ import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import reactor.core.publisher.Mono
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
@@ -146,7 +147,9 @@ class BDZipManager(
                     )
                     SpringContextUtils.publishEvent(event)
                     logger.info("Complete compress file [$sha256] on $storageCredentialsKey")
-                }.subscribe()
+                }
+                .onErrorResume { Mono.empty() }
+                .subscribe()
         }
     }
 
@@ -205,6 +208,7 @@ class BDZipManager(
                     SpringContextUtils.publishEvent(event)
                     logger.info("Complete uncompress file [$sha256] on $storageCredentialsKey")
                 }
+                .onErrorResume { Mono.empty() }
                 .subscribe()
         }
     }
