@@ -167,11 +167,11 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         return true
     }
 
-    fun stop(name: String?, maxWaitTime: Long) {
+    fun stop(name: String?, maxWaitTime: Long, failover: Boolean = false) {
         if (name == null) {
-            jobs.forEach { it.stop(maxWaitTime) }
+            jobs.forEach { it.stop(maxWaitTime, failover) }
         } else {
-            jobs.first { it.getJobName() == name }.stop(maxWaitTime)
+            jobs.first { it.getJobName() == name }.stop(maxWaitTime, failover)
         }
     }
 }

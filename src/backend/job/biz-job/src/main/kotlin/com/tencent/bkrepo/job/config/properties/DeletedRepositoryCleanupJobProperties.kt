@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.artifact.context
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-class GenericArtifactSearchContext(
-    repo: RepositoryDetail? = null,
-    artifact: ArtifactInfo? = null,
-    model: QueryModel? = null,
-) : ArtifactSearchContext(repo, artifact) {
-    val queryModel: QueryModel?
-        get() = getAttribute(ATTR_KEY_QUERY_MODEL)
-
-    init {
-        model?.let { putAttribute(ATTR_KEY_QUERY_MODEL, it) }
-    }
-
-    companion object {
-        private const val ATTR_KEY_QUERY_MODEL = "ATTR_QUERY_MODEL"
-    }
-}
+@ConfigurationProperties(value = "job.deleted-repository-cleanup")
+class DeletedRepositoryCleanupJobProperties(
+    override var cron: String = "0 0 2 * * ?",
+): MongodbJobProperties()

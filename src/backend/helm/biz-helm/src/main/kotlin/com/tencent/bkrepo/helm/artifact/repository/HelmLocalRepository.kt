@@ -264,14 +264,11 @@ class HelmLocalRepository(
     private fun parseMetaData(context: ArtifactUploadContext): Map<String, Any>? {
         with(context) {
             val fullPath = getStringAttribute(FULL_PATH)
-            val forceUpdate = getBooleanAttribute(FORCE)
             val fileType = getStringAttribute(FILE_TYPE)
             var result: Map<String, Any>? = emptyMap()
-            if (!isOverwrite(fullPath!!, forceUpdate!!)) {
-                when (fileType) {
-                    CHART -> result = getAttribute(META_DETAIL)
-                    PROV -> result = FileNameParser.parseNameAndVersionWithRegex(fullPath)
-                }
+            when (fileType) {
+                CHART -> result = getAttribute(META_DETAIL)
+                PROV -> result = FileNameParser.parseNameAndVersionWithRegex(fullPath!!)
             }
             return result
         }
