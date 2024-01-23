@@ -120,7 +120,6 @@ class BDZipManager(
                 .doOnSuccess {
                     val newFileName = sha256.plus(BD_FILE_SUFFIX)
                     storageService.store(newFileName, it.toArtifactFile(), credentials)
-                    storageService.delete(sha256, credentials)
                     file.compressedSize = it.length()
                     file.status = CompressStatus.COMPRESSED
                     logger.info("Success to compress file [$sha256] on $storageCredentialsKey.")

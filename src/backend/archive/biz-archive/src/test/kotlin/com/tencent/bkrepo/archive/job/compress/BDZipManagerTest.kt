@@ -53,13 +53,12 @@ class BDZipManagerTest @Autowired constructor(
     @Test
     fun compressTest() {
         with(createCompressFile()) {
-            Thread.sleep(100000)
             val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, null)
             Assertions.assertNotNull(cf)
             Assertions.assertEquals(CompressStatus.COMPRESSED, cf!!.status)
             Assertions.assertTrue(cf.compressedSize != -1L)
-            // 原文件已经被压缩
-            Assertions.assertFalse(storageService.exist(sha256, null))
+            // 原文件还在，原文件的删除由单独job处理
+            Assertions.assertTrue(storageService.exist(sha256, null))
             // 压缩文件存在
             Assertions.assertTrue(storageService.exist(sha256.plus(".bd"), null))
             storageService.load(sha256.plus(".bd"), Range.full(compressedSize), null)!!.use {
@@ -107,6 +106,7 @@ class BDZipManagerTest @Autowired constructor(
     @Test
     fun uncompressTest() {
         val compressFile = createCompressFile()
+        storageService.delete(compressFile.sha256, null)
         compressFile.status = CompressStatus.WAIT_TO_UNCOMPRESS
         compressFileRepository.save(compressFile)
         bdZipManager.uncompress(compressFile)
@@ -124,6 +124,7 @@ class BDZipManagerTest @Autowired constructor(
     @Test
     fun uncompressFailedTest() {
         val compressFile = createCompressFile()
+        storageService.delete(compressFile.sha256, null)
         compressFile.status = CompressStatus.WAIT_TO_UNCOMPRESS
         compressFileRepository.save(compressFile)
         compressFile.compressedSize = 1 // set error

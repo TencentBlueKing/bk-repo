@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
+import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeCompressedJobProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
@@ -53,6 +54,14 @@ class NodeCompressedJob(
 
     override fun run(row: CompressFile, collectionName: String, context: NodeContext) {
         with(row) {
+            val storageCredentials = storageCredentialsKey?.let {
+                RepositoryCommonUtils.getStorageCredentials(storageCredentialsKey)
+            }
+            val bdFileName = "$sha256.bd"
+            if (!storageService.exist(bdFileName, storageCredentials)) {
+                logger.warn("Miss file $bdFileName.")
+                return
+            }
             listNode(sha256, storageCredentialsKey).forEach {
                 val compressedRequest = NodeCompressedRequest(
                     projectId = it.projectId,
@@ -62,6 +71,7 @@ class NodeCompressedJob(
                 )
                 nodeClient.compressedNode(compressedRequest)
             }
+            storageService.delete(sha256, storageCredentials)
             val request = CompleteCompressRequest(sha256, storageCredentialsKey, lastModifiedBy)
             archiveClient.completeCompress(request)
         }
