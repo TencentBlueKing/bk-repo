@@ -56,7 +56,10 @@ class ArchiveUtils(
         }
 
         fun getStorageCredentials(key: String?): StorageCredentials {
-            return storageCredentialsCache.get(key.orEmpty())
+            return storageCredentialsCache.get(key.orEmpty()).apply {
+                // 指定使用本地路径进行cos分片下载
+                upload.location = defaultStorageCredentials.upload.localPath
+            }
         }
 
         fun getRepositoryDetail(project: String, repoName: String): RepositoryDetail {
@@ -80,6 +83,18 @@ class ArchiveUtils(
             return ThreadPoolExecutor(
                 threads,
                 threads,
+                60,
+                TimeUnit.SECONDS,
+                ArrayBlockingQueue(DEFAULT_BUFFER_SIZE),
+                threadFactory,
+                ThreadPoolExecutor.CallerRunsPolicy(),
+            )
+        }
+
+        fun newCachedThreadPool(maxThreads: Int, threadFactory: ThreadFactory): ThreadPoolExecutor {
+            return ThreadPoolExecutor(
+                0,
+                maxThreads,
                 60,
                 TimeUnit.SECONDS,
                 ArrayBlockingQueue(DEFAULT_BUFFER_SIZE),
