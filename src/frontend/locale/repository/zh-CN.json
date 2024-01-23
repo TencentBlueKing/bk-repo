@@ -830,5 +830,10 @@
     "roleName":"用户组名称",
     "addUserGroupTitle":"创建用户组",
     "editUserGroupTitle": "编辑用户组",
-    "associatedUseGroup": "关联用户组"
+    "associatedUseGroup": "关联用户组",
+    "emptyGuide1": "本仓库暂无制品",
+    "emptyGuide2": "请根据指引推送制品",
+    "clickInfo":"点击",
+    "accessTokenPlaceholder":"请输入访问令牌，生成指引",
+    "tokenDependSubTitle": "生成您的个人访问令牌，管理访问令牌请跳转"
 }

@@ -829,5 +829,10 @@
     "roleName":"Name",
     "addUserGroupTitle":"Create UserGroup",
     "editUserGroupTitle": "Edit UserGroup",
-    "associatedUseGroup": "UserGroup"
+    "associatedUseGroup": "UserGroup",
+    "emptyGuide1": "There are currently no artifacts in this repository.",
+    "emptyGuide2": "Please follow the guidelines to push artifacts.",
+    "clickInfo":"Click",
+    "accessTokenPlaceholder":"Please enter access token to generate guides",
+    "tokenDependSubTitle": "Generate your personal access token. To manage access tokens, please go to "
 }

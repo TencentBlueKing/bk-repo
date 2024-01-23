@@ -12,7 +12,7 @@
                 </div> -->
             </div>
             <div class="flex-end-center flex-1">
-                <bk-button class="ml10 flex-align-center" text theme="primary" @click="showGuide = true">
+                <bk-button class="ml10 flex-align-center" @click="onClickShowGuide">
                     <span class="flex-align-center">
                         <Icon class="mr5" name="hand-guide" size="16" />
                         {{$t('guide')}}
@@ -79,29 +79,22 @@
         <template v-else>
             <empty-guide class="empty-guide" :article="articleGuide"></empty-guide>
         </template>
-
-        <bk-sideslider :is-show.sync="showGuide" :quick-close="true" :width="600">
-            <template #header>
-                <div class="flex-align-center"><icon class="mr5" :name="repoType" size="32"></icon>{{ replaceRepoName(repoName) + $t('guide') }}</div>
-            </template>
-            <template #content>
-                <repo-guide class="pt20 pb20 pl10 pr10" :article="articleGuide"></repo-guide>
-            </template>
-        </bk-sideslider>
+        <!-- 使用指引 -->
+        <useGuide ref="useGuideRef"></useGuide>
         <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import packageCard from '@repository/components/PackageCard'
-    import repoGuide from '@repository/views/repoCommon/repoGuide'
     import emptyGuide from '@repository/views/repoCommon/emptyGuide'
+    import useGuide from '@repository/views/repoCommon/useGuide'
     import repoGuideMixin from '@repository/views/repoCommon/repoGuideMixin'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageList',
-        components: { InfiniteScroll, packageCard, repoGuide, emptyGuide, iamDenyDialog },
+        components: { InfiniteScroll, packageCard, emptyGuide, useGuide, iamDenyDialog },
         mixins: [repoGuideMixin],
         data () {
             return {
@@ -116,7 +109,6 @@
                     count: 0,
                     limitList: [10, 20, 40]
                 },
-                showGuide: false,
                 showIamDenyDialog: false,
                 showData: {}
             }
@@ -256,6 +248,12 @@
                         // 因为在版本详情页存在一个version的watch，只有version有值的时候才会请求版本详情
                         version: undefined
                     }
+                })
+            },
+            onClickShowGuide () {
+                this.$refs.useGuideRef.setData({
+                    show: true,
+                    loading: false
                 })
             }
         }
