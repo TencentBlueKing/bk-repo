@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.constant.DOCKER_DISTRIBUTION_MANIFEST_LIST_V2
+import com.tencent.bkrepo.oci.constant.IMAGE_INDEX_MEDIA_TYPE
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 
 class OciManifestArtifactInfo(
@@ -54,7 +55,7 @@ class OciManifestArtifactInfo(
             } else {
                 // 根据 Content-type 区分 manifest.json / list.manifest.json
                 val mediaType = HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE)
-                if (mediaType == DOCKER_DISTRIBUTION_MANIFEST_LIST_V2) {
+                if (mediaType == DOCKER_DISTRIBUTION_MANIFEST_LIST_V2 || mediaType == IMAGE_INDEX_MEDIA_TYPE) {
                     OciLocationUtils.buildManifestListPath(packageName, reference)
                 } else {
                     OciLocationUtils.buildManifestPath(packageName, reference)
