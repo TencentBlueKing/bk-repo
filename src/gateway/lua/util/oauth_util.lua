@@ -128,7 +128,7 @@ function _M:verify_bk_token(auth_url, token)
         local http_cli = http.new()
         local oauth = config.oauth
         local query = "bk_token=" .. token
-        local addr = "http://" .. auth_url .. "/api/c/compapi/v2/bk_login/get_user/" .. query
+        local addr = "http://" .. auth_url .. "/api/c/compapi/v2/bk_login/get_user/?" .. query
         local auth_content = '{"bk_app_code":"' .. oauth.app_code .. '","bk_app_secret":"' .. oauth.app_secret .. '","bk_token":"' .. token .. '"}'
         --- 开始连接
         http_cli:set_timeout(3000)
