@@ -28,7 +28,7 @@ class ChecksumFileProvider(
     private val monitorExecutor = Executors.newSingleThreadScheduledExecutor()
 
     init {
-        monitorExecutor.scheduleAtFixedRate(this::deleteAfterAccess, 0, 10, TimeUnit.SECONDS)
+        monitorExecutor.scheduleAtFixedRate(this::deleteAfterAccess, 0, 1, TimeUnit.HOURS)
     }
 
     override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials): Mono<File> {
