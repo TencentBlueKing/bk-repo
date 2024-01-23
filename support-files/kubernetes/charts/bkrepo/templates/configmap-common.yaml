@@ -26,10 +26,9 @@ data:
     service.prefix: {{ include "common.names.fullname" . }}-
     {{- if or .Values.ingress.tls .Values.forceHttps }}
     oci.authUrl: https://{{ include "bkrepo.oci.authUrl" . }}
-    oci.https: true
+    oci.scheme: https
     {{- else }}
     oci.authUrl: http://{{ include "bkrepo.oci.authUrl" . }}
-    oci.https: false
     {{- end }}
     {{- if and .Values.gateway.service.nodeIP (and .Values.gateway.service.dockerNodePort (or (eq .Values.gateway.service.type "NodePort") (eq .Values.gateway.service.type "LoadBalancer"))) }}
     oci.domain: {{ .Values.gateway.service.nodeIP }}:{{ .Values.gateway.service.dockerNodePort }}

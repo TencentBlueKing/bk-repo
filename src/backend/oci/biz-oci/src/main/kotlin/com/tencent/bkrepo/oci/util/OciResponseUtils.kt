@@ -64,7 +64,7 @@ import javax.ws.rs.core.UriBuilder
 object OciResponseUtils {
     private const val LOCAL_HOST = "localhost"
 
-    fun getResponseURI(request: HttpServletRequest, enableHttps: Boolean, domain: String): URI {
+    fun getResponseURI(request: HttpServletRequest, domain: String, scheme: String?): URI {
         val hostHeaders = request.getHeaders(HOST)
         var host = LOCAL_HOST
         if (hostHeaders != null) {
@@ -76,7 +76,7 @@ object OciResponseUtils {
         if (domain.split(":").size > 1) {
             host = domain
         }
-        val builder = UriBuilder.fromPath(OCI_API_PREFIX).host(host).scheme(getProtocol(request, enableHttps))
+        val builder = UriBuilder.fromPath(OCI_API_PREFIX).host(host).scheme(getProtocol(request, scheme))
         return builder.build()
     }
 
@@ -84,13 +84,11 @@ object OciResponseUtils {
      * determine to return http protocol
      * prefix or https prefix
      */
-    private fun getProtocol(request: HttpServletRequest, enableHttps: Boolean): String {
-        if (enableHttps) return HTTP_PROTOCOL_HTTPS
-        val protocolHeaders = request.getHeaders(HTTP_FORWARDED_PROTO) ?: return HTTP_PROTOCOL_HTTP
-        return if (protocolHeaders.hasMoreElements()) {
-            protocolHeaders.iterator().next() as String
-        } else {
-            HTTP_PROTOCOL_HTTPS
+    private fun getProtocol(request: HttpServletRequest, scheme: String?): String {
+        return when (scheme) {
+            HTTP_PROTOCOL_HTTPS -> HTTP_PROTOCOL_HTTPS
+            HTTP_PROTOCOL_HTTP -> HTTP_PROTOCOL_HTTP
+            else -> request.getHeader(HTTP_FORWARDED_PROTO).takeIf { !it.isNullOrBlank() } ?: HTTP_PROTOCOL_HTTPS
         }
     }
 
