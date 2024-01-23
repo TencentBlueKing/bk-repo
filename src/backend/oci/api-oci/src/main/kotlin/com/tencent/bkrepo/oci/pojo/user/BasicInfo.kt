@@ -60,5 +60,5 @@ data class BasicInfo(
     @ApiModelProperty("修改时间")
     val lastModifiedDate: String,
     @ApiModelProperty("操作系统和架构信息")
-    val os: List<String>
+    val platform: List<String>
 )

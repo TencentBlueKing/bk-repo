@@ -30,6 +30,7 @@ package com.tencent.bkrepo.oci.service.impl
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -78,6 +79,7 @@ import com.tencent.bkrepo.oci.constant.OS
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PROXY_URL
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
+import com.tencent.bkrepo.oci.constant.VARIANT
 import com.tencent.bkrepo.oci.dao.OciReplicationRecordDao
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
@@ -321,7 +323,7 @@ class OciOperationServiceImpl(
         repoDetail: RepositoryDetail,
         packageName: String
     ): Pair<List<String>, List<History>> {
-        val os = mutableListOf<String>()
+        val platform = mutableListOf<String>()
         var history = listOf<History>()
         if (nodeDetail.name == OCI_MANIFEST_LIST) {
             // manifestList
@@ -332,7 +334,9 @@ class OciOperationServiceImpl(
             )?.let { manifestList ->
                 manifestList.manifests.forEach { manifest ->
                     val map = manifest.platform
-                    os.add("${map[OS]}/${map[ARCHITECTURE]}")
+                    platform.add(
+                        "${map[OS]}/${map[ARCHITECTURE]}" + (map[VARIANT]?.toString()?.ensurePrefix("/") ?: "")
+                    )
                 }
             }
         } else {
@@ -347,11 +351,11 @@ class OciOperationServiceImpl(
                 )
                 val inputStream = storageManager.loadArtifactInputStream(configNode, repoDetail.storageCredentials)
                 val config = JsonUtils.objectMapper.readValue(inputStream, ConfigSchema2::class.java)
-                os.add("${config.os}/${config.architecture}")
+                platform.add("${config.os}/${config.architecture}" + (config.variant?.ensurePrefix("/") ?: ""))
                 history = config.history
             }
         }
-        return Pair(os, history)
+        return Pair(platform, history)
     }
 
     /**
