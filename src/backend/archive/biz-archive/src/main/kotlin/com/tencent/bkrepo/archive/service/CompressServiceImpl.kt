@@ -12,6 +12,7 @@ import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
+import com.tencent.bkrepo.archive.request.UpdateCompressFileStatusRequest
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -162,6 +163,23 @@ class CompressServiceImpl(
                 compressFileRepository.save(file)
                 logger.info("Complete compress file [$sha256].")
             }
+        }
+    }
+
+    override fun updateStatus(request: UpdateCompressFileStatusRequest) {
+        with(request) {
+            val file = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
+                ?: throw ArchiveFileNotFound(sha256)
+            val oldStatus = file.status
+            file.status = status
+            compressFileRepository.save(file)
+            if (status == CompressStatus.CREATED) {
+                compress(file)
+            }
+            if (status == CompressStatus.WAIT_TO_UNCOMPRESS) {
+                uncompress(file)
+            }
+            logger.info("Update file $sha256 status $oldStatus -> $status.")
         }
     }
 

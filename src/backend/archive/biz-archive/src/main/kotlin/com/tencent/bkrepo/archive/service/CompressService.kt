@@ -7,6 +7,7 @@ import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
+import com.tencent.bkrepo.archive.request.UpdateCompressFileStatusRequest
 
 /**
  * 压缩服务
@@ -34,6 +35,11 @@ interface CompressService : Cancellable {
      * 完成压缩
      * */
     fun complete(request: CompleteCompressRequest)
+
+    /**
+     * 更新压缩文件状态
+     * */
+    fun updateStatus(request: UpdateCompressFileStatusRequest)
 
     /**
      * 获取压缩信息
