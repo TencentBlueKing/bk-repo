@@ -33,6 +33,8 @@ package com.tencent.bkrepo.s3.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
@@ -42,8 +44,9 @@ import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
 import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.s3.constant.S3HttpHeaders.X_AMZ_COPY_SOURCE
 import com.tencent.bkrepo.s3.pojo.CopyObjectResult
-import com.tencent.bkrepo.s3.pojo.ListBucketResult
+import com.tencent.bkrepo.s3.pojo.VersioningConfiguration
 import com.tencent.bkrepo.s3.service.S3ObjectService
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -58,15 +61,21 @@ class S3ObjectController(
     fun getOrListObject(
         @ArtifactPathVariable artifactInfo: S3ArtifactInfo,
         @RequestParam delimiter: String?,
+        @RequestParam marker: Int?,
         @RequestParam("max-keys") maxKeys: Int?,
         @RequestParam prefix: String?,
-    ): ListBucketResult? {
-        val queryParamsNotNull = delimiter != null || maxKeys != null || prefix != null
-        if (queryParamsNotNull || artifactInfo.getArtifactFullPath() == StringPool.ROOT) {
+        @RequestParam versioning: String?
+    ): Any? {
+        val versioningParamNotNull = versioning != null
+        val queryParamsNotNull = delimiter != null || marker != null || maxKeys != null || prefix != null
+        if (versioningParamNotNull) {
+            return VersioningConfiguration()
+        } else if (queryParamsNotNull || artifactInfo.getArtifactFullPath() == StringPool.ROOT) {
             return s3ObjectService.listObjects(
                 artifactInfo = artifactInfo,
-                maxKeys = maxKeys ?: 1000,
-                delimiter = delimiter ?: StringPool.SLASH,
+                marker = marker ?: DEFAULT_PAGE_NUMBER,
+                maxKeys = maxKeys ?: DEFAULT_PAGE_SIZE,
+                delimiter = delimiter ?: StringPool.EMPTY,
                 prefix = prefix ?: ""
             )
         } else {
@@ -88,6 +97,11 @@ class S3ObjectController(
         } else {
             s3ObjectService.copyObject(artifactInfo)
         }
+    }
 
+    @DeleteMapping(GENERIC_MAPPING_URI)
+    @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
+    fun deleteObject(@ArtifactPathVariable artifactInfo: S3ArtifactInfo) {
+        s3ObjectService.deleteObject(artifactInfo)
     }
 }
