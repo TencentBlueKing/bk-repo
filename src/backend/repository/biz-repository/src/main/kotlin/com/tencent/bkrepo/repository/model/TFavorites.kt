@@ -37,7 +37,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("favorites")
+@Document("path_favorites")
 @CompoundIndexes(
     CompoundIndex(
         name = "favorites_idx",
