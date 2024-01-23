@@ -1,8 +1,6 @@
 package com.tencent.bkrepo.auth.dao
 
 import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.util.query.PermissionQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -20,23 +18,10 @@ class PermissionDao : SimpleMongoDao<TPermission>() {
     fun updateById(id: String, key: String, value: Any): Boolean {
         val update = Update()
         update.set(key, value)
-        val result = this.upsert(buildIdQuery(id), update)
+        val query = buildIdQuery(id)
+        val result = this.updateFirst(query , update)
         if (result.matchedCount == 1L) return true
         return false
-    }
-
-    fun getPermissionByAction(
-        projectId: String?,
-        repoName: String?,
-        uid: String,
-        action: String,
-        resourceType: String,
-        roles: List<String>
-    ): List<TPermission> {
-        val query = PermissionQueryHelper.buildPermissionCheck(
-            projectId, repoName, uid, action, resourceType, roles
-        )
-        return this.find(query, TPermission::class.java)
     }
 
     fun findFirstById(id: String): TPermission? {
@@ -51,16 +36,33 @@ class PermissionDao : SimpleMongoDao<TPermission>() {
         return false
     }
 
-    fun findOneByPermNameAndProjectIdAndResourceType(
+    fun checkPermissionInProject(
         permName: String,
         projectId: String?,
-        resourceType: ResourceType
+        resourceType: String
     ): TPermission? {
         val query = Query.query(
             Criteria().andOperator(
                 Criteria.where(TPermission::permName.name).`is`(permName),
                 Criteria.where(TPermission::projectId.name).`is`(projectId),
-                Criteria.where(TPermission::resourceType.name).`is`(resourceType.toString())
+                Criteria.where(TPermission::resourceType.name).`is`(resourceType)
+            )
+        )
+        return this.findOne(query)
+    }
+
+    fun findOnePermission(
+        projectId: String,
+        repoName: String,
+        permName: String,
+        resourceType: String
+    ): TPermission? {
+        val query = Query.query(
+            Criteria().andOperator(
+                Criteria.where(TPermission::permName.name).`is`(permName),
+                Criteria.where(TPermission::projectId.name).`is`(projectId),
+                Criteria.where(TPermission::repos.name).`is`(repoName),
+                Criteria.where(TPermission::resourceType.name).`is`(resourceType)
             )
         )
         return this.findOne(query)
@@ -98,27 +100,70 @@ class PermissionDao : SimpleMongoDao<TPermission>() {
     }
 
     fun findByResourceTypeAndProjectIdAndRepos(
-        resourceType: ResourceType,
+        resourceType: String,
         projectId: String,
         repoName: String
     ): List<TPermission> {
         val query = Query.query(
             Criteria().andOperator(
                 Criteria.where(TPermission::projectId.name).`is`(projectId),
-                Criteria.where(TPermission::resourceType.name).`is`(resourceType.toString()),
+                Criteria.where(TPermission::resourceType.name).`is`(resourceType),
                 Criteria.where(TPermission::repos.name).`is`(repoName)
             )
         )
         return this.find(query)
     }
 
-    fun findByResourceTypeAndProjectId(resourceType: ResourceType, projectId: String): List<TPermission> {
+
+    fun findByResourceTypeAndProjectId(resourceType: String, projectId: String): List<TPermission> {
         val query = Query.query(
             Criteria().andOperator(
                 Criteria.where(TPermission::projectId.name).`is`(projectId),
-                Criteria.where(TPermission::resourceType.name).`is`(resourceType.toString())
+                Criteria.where(TPermission::resourceType.name).`is`(resourceType)
             )
         )
         return this.find(query)
+    }
+
+    fun inPermissionCheck(
+        projectId: String?,
+        repoName: String?,
+        uid: String,
+        resourceType: String,
+        roles: List<String>
+    ): List<TPermission> {
+        val criteria = Criteria()
+        var celeriac = criteria.orOperator(
+            Criteria.where(TPermission::users.name).`is`(uid),
+            Criteria.where(TPermission::roles.name).`in`(roles)
+        ).and(TPermission::resourceType.name).`is`(resourceType)
+        projectId?.let {
+            celeriac = celeriac.and(TPermission::projectId.name).`is`(projectId)
+        }
+        repoName?.let {
+            celeriac = celeriac.and(TPermission::repos.name).`is`(repoName)
+        }
+        return this.find(Query.query(celeriac))
+    }
+
+    fun noPermissionCheck(
+        projectId: String?,
+        repoName: String?,
+        uid: String,
+        resourceType: String,
+        roles: List<String>
+    ): List<TPermission>  {
+        val criteria = Criteria()
+        var celeriac = criteria.andOperator(
+            Criteria.where(TPermission::users.name).ne(uid),
+            Criteria.where(TPermission::roles.name).nin(roles)
+        ).and(TPermission::resourceType.name).`is`(resourceType)
+        projectId?.let {
+            celeriac = celeriac.and(TPermission::projectId.name).`is`(projectId)
+        }
+        repoName?.let {
+            celeriac = celeriac.and(TPermission::repos.name).`is`(repoName)
+        }
+        return this.find(Query.query(celeriac))
     }
 }

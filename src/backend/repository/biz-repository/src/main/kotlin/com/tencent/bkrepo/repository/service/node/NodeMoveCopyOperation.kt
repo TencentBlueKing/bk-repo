@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.service.node
 
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 
 /**
@@ -47,7 +48,7 @@ interface NodeMoveCopyOperation {
      * mv 目录名 目录名	目标目录已存在，将源目录（目录本身及子文件）移动到目标目录；目标目录不存在则改名
      * mv 目录名 文件名	出错
      */
-    fun moveNode(moveRequest: NodeMoveCopyRequest)
+    fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail
 
     /**
      * 拷贝文件或者文件夹
@@ -58,5 +59,5 @@ interface NodeMoveCopyOperation {
      * cp 目录名 目录名	目标目录已存在，将源目录（目录本身及子文件）拷贝到目标目录；目标目录不存在则将源目录下文件拷贝到目标目录
      * cp 目录名 文件名	出错
      */
-    fun copyNode(copyRequest: NodeMoveCopyRequest)
+    fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail
 }

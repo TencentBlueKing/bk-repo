@@ -35,16 +35,19 @@ import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
+import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
+import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.auth.util.scope.RuleUtil
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
@@ -78,6 +81,25 @@ open class AbstractServiceImpl constructor(
                 throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
             }
         }
+    }
+
+    private fun checkOrCreateUser(userIdList: List<String>) {
+        userIdList.forEach {
+            userDao.findFirstByUserId(it) ?: run {
+                if (it != ANONYMOUS_USER) {
+                    var user = TUser(
+                        userId = it,
+                        name = it,
+                        pwd = randomPassWord()
+                    )
+                    userDao.insert(user)
+                }
+            }
+        }
+    }
+
+    fun randomPassWord(): String {
+        return DataDigestUtils.md5FromStr(IDUtil.genRandomId())
     }
 
     // check role is existed

@@ -38,6 +38,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface AccountRepository : MongoRepository<TAccount, String> {
     fun findOneByAppId(appId: String): TAccount?
+    fun deleteByAppId(appId: String): Long
     fun findAllBy(): List<TAccount>
     fun findByOwner(owner: String): List<TAccount>
     fun findByIdIn(ids: List<String>): List<TAccount>

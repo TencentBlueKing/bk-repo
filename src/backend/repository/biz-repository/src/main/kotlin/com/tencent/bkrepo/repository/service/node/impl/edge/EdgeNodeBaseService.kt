@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.edge
 
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -54,6 +55,7 @@ abstract class EdgeNodeBaseService(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
+    override val servicePermissionClient: ServicePermissionClient,
     open val clusterProperties: ClusterProperties
 ) : NodeBaseService(
     nodeDao,
@@ -63,7 +65,8 @@ abstract class EdgeNodeBaseService(
     storageService,
     quotaService,
     repositoryProperties,
-    messageSupplier
+    messageSupplier,
+    servicePermissionClient,
 ) {
 
     val centerNodeClient: ClusterNodeClient by lazy {

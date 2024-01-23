@@ -181,12 +181,17 @@ abstract class ArtifactReplicationHandler(
         var startPosition: Long = 0
         var chunkedHandlerResult: DefaultHandlerResult? = null
         val (params, ignoredFailureCode) = buildChunkUploadRequestInfo(fileInfo.sha256, filePushContext)
+        val chunkedSize = if (replicationProperties.chunkedSize > Int.MAX_VALUE) {
+            Int.MAX_VALUE.toLong()
+        } else {
+            replicationProperties.chunkedSize
+        }
         while (startPosition < fileInfo.size) {
-            val offset = fileInfo.size - startPosition - replicationProperties.chunkedSize
+            val offset = fileInfo.size - startPosition - chunkedSize
             val byteCount: Long = if (offset < 0) {
                 (fileInfo.size - startPosition)
             } else {
-                replicationProperties.chunkedSize
+                chunkedSize
             }
             val contentRange = "$startPosition-${startPosition + byteCount - 1}"
             logger.info(

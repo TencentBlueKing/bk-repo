@@ -1,10 +1,11 @@
 package com.tencent.bkrepo.archive.listener
 
+import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.archive.event.FileArchivedEvent
 import com.tencent.bkrepo.archive.event.FileCompressedEvent
 import com.tencent.bkrepo.archive.event.FileRestoredEvent
 import com.tencent.bkrepo.archive.metrics.ArchiveMetrics
-import java.text.DecimalFormat
+import com.tencent.bkrepo.common.api.constant.StringPool
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -16,10 +17,8 @@ import org.springframework.stereotype.Component
 class ArchiveListener(val archiveMetrics: ArchiveMetrics) {
 
     /**
-     * 压缩比格式
+     * 归档文件事件
      * */
-    private val df = DecimalFormat("#.#")
-
     @EventListener(FileArchivedEvent::class)
     fun archive(event: FileArchivedEvent) {
         with(event) {
@@ -31,6 +30,9 @@ class ArchiveListener(val archiveMetrics: ArchiveMetrics) {
         }
     }
 
+    /**
+     * 归档文件恢复事件
+     * */
     @EventListener(FileRestoredEvent::class)
     fun restore(event: FileRestoredEvent) {
         with(event) {
@@ -42,21 +44,21 @@ class ArchiveListener(val archiveMetrics: ArchiveMetrics) {
         }
     }
 
+    /**
+     * 归档文件压缩事件
+     * */
     @EventListener(FileCompressedEvent::class)
     fun compress(event: FileCompressedEvent) {
         with(event) {
-            val ratio = df.format((uncompressed - compressed.toDouble()) / uncompressed * 100)
-            logger.info("Compress file $sha256, compressed:$compressed,uncompressed:$uncompressed,ratio:$ratio")
-            archiveMetrics.getCompressSizeCount(ArchiveMetrics.CompressCounterType.COMPRESSED.name)
-                .increment(compressed.toDouble())
-            archiveMetrics.getCompressSizeCount(ArchiveMetrics.CompressCounterType.UNCOMPRESSED.name)
-                .increment(uncompressed.toDouble())
-            archiveMetrics.getCompressTimer().record(throughput.duration)
+            val ratio = StringPool.calculateRatio(uncompressed, compressed)
+            logger.info(
+                "Archive utils compress file $sha256,compressed:$compressed," +
+                    "uncompressed:$uncompressed,ratio:$ratio, $throughput",
+            )
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArchiveListener::class.java)
-        private const val DEFAULT_KEY = "default"
     }
 }

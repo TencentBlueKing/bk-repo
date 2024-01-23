@@ -41,7 +41,13 @@ interface RoleRepository : MongoRepository<TRole, String> {
     fun deleteTRolesById(id: String)
     fun findFirstById(id: String): TRole?
     fun findByIdIn(roles: List<String>): List<TRole>
-    fun findByTypeAndProjectId(type: RoleType, projectId: String): List<TRole>
+    fun findByTypeAndProjectIdAndAdminAndRoleIdNotIn(
+        type: RoleType,
+        projectId: String,
+        admin: Boolean,
+        roles: List<String>
+    ): List<TRole>
+
     fun findByTypeAndProjectIdAndAdmin(type: RoleType, projectId: String, admin: Boolean): List<TRole>
     fun findByProjectIdAndRepoNameAndType(projectId: String, repoName: String, type: RoleType): List<TRole>
     fun findFirstByRoleIdAndProjectId(roleId: String, projectId: String): TRole?

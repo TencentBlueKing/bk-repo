@@ -85,6 +85,8 @@ data class NodeDetail(
     val clusterNames: Set<String>? = nodeInfo.clusterNames,
     @ApiModelProperty("是否归档")
     val archived: Boolean? = nodeInfo.archived,
+    @ApiModelProperty("是否压缩")
+    val compressed: Boolean? = nodeInfo.compressed,
 ) {
     /**
      * 获取node所属package的name

@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 用于将新上传/更新的制品推送到远端仓库
@@ -61,8 +62,8 @@ class ArtifactPushJob(
         return super.start()
     }
 
-    override fun entityClass(): Class<PackageVersionData> {
-        return PackageVersionData::class.java
+    override fun entityClass(): KClass<PackageVersionData> {
+        return PackageVersionData::class
     }
 
     override fun collectionNames(): List<String> {

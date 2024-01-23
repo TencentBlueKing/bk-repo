@@ -35,10 +35,10 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.channels.FileChannel
 import java.nio.channels.ReadableByteChannel
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.nio.file.FileAlreadyExistsException
 
 /**
  * 本地文件存储客户端
@@ -295,6 +295,17 @@ class FileSystemClient(private val root: String) {
             val rootPath = Paths.get(root)
             Files.walkFileTree(rootPath, visitor)
         }
+    }
+
+    /**
+     * 获取文件大小
+     */
+    fun length(dir: String, filename: String): Long {
+        val filePath = Paths.get(this.root, dir, filename)
+        if (!Files.isRegularFile(filePath)) {
+            throw IllegalArgumentException("[$filePath] is not a regular file.")
+        }
+        return Files.size(filePath)
     }
 
     private fun transfer(input: ReadableByteChannel, output: FileChannel, size: Long, append: Boolean = false) {

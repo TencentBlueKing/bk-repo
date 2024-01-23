@@ -33,6 +33,9 @@ import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.generic.artifact.findRemoteMetadata
+import com.tencent.bkrepo.generic.artifact.updateParentMetadata
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -51,6 +54,7 @@ class AsyncRemoteArtifactCacheWriter(
     private val httpClientBuilderFactory: AsyncCacheHttpClientBuilderFactory,
     private val executor: ThreadPoolTaskExecutor,
     private val cacheLocks: RemoteArtifactCacheLocks,
+    private val metadataClient: MetadataClient,
 ) {
     fun cache(cacheTask: CacheTask) {
         with(cacheTask) {
@@ -127,8 +131,12 @@ class AsyncRemoteArtifactCacheWriter(
      * 将远程拉取的构件缓存本地
      */
     private fun cacheArtifactFile(cacheTask: CacheTask, artifactFile: ArtifactFile): NodeDetail {
-        val nodeCreateRequest = buildCacheNodeCreateRequest(cacheTask, artifactFile)
-        return storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, cacheTask.storageCredentials)
+        with(cacheTask) {
+            val nodeCreateRequest = buildCacheNodeCreateRequest(cacheTask, artifactFile)
+            val nodeDetail = storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
+            metadataClient.updateParentMetadata(remoteNodes, projectId, repoName, fullPath)
+            return nodeDetail
+        }
     }
 
     /**
@@ -143,6 +151,7 @@ class AsyncRemoteArtifactCacheWriter(
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
+            nodeMetadata = findRemoteMetadata(cacheTask.remoteNodes, cacheTask.fullPath),
             overwrite = true,
             operator = cacheTask.userId
         )
@@ -156,6 +165,7 @@ class AsyncRemoteArtifactCacheWriter(
         val fullPath: String,
         val userId: String,
         val request: Request,
+        val remoteNodes: List<Any>
     )
 
     companion object {

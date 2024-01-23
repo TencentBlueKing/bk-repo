@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.edge
 
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
@@ -42,13 +43,16 @@ import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeArchiveSupport
+import com.tencent.bkrepo.repository.service.node.impl.NodeCompressSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeDeleteSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeRenameSupport
@@ -73,7 +77,8 @@ class EdgeNodeServiceImpl(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
-    override val clusterProperties: ClusterProperties
+    override val servicePermissionClient: ServicePermissionClient,
+    override val clusterProperties: ClusterProperties,
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -83,7 +88,8 @@ class EdgeNodeServiceImpl(
     quotaService,
     repositoryProperties,
     messageSupplier,
-    clusterProperties
+    servicePermissionClient,
+    clusterProperties,
 ) {
     override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact, estimated)
@@ -144,15 +150,15 @@ class EdgeNodeServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
+    override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         centerNodeClient.moveNode(moveRequest)
-        NodeMoveCopySupport(this).moveNode(moveRequest)
+        return NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
+    override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
         centerNodeClient.copyNode(copyRequest)
-        NodeMoveCopySupport(this).copyNode(copyRequest)
+        return NodeMoveCopySupport(this).copyNode(copyRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -189,5 +195,13 @@ class EdgeNodeServiceImpl(
 
     override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
         return NodeArchiveSupport(this).restoreNode(nodeArchiveRequest)
+    }
+
+    override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {
+        return NodeCompressSupport(this).compressedNode(nodeCompressedRequest)
+    }
+
+    override fun uncompressedNode(nodeUnCompressedRequest: NodeUnCompressedRequest) {
+        return NodeCompressSupport(this).uncompressedNode(nodeUnCompressedRequest)
     }
 }

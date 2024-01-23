@@ -44,10 +44,10 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
+import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import com.tencent.bkrepo.generic.artifact.configuration.AutoIndexRepositorySettings
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -136,7 +136,7 @@ class DownloadService(
 
     fun search(queryModel: QueryModel): List<Any> {
         val nodes = LinkedHashMap<String, Any>()
-        repository.search(GenericArtifactSearchContext(queryModel)).forEach {
+        repository.search(GenericArtifactSearchContext(model = queryModel)).forEach {
             require(it is Map<*, *>)
             if (it[RepositoryInfo::category.name] == RepositoryCategory.LOCAL.name) {
                 // composite仓库的local node优先展示

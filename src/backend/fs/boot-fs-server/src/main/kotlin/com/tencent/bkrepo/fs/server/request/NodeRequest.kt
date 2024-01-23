@@ -47,12 +47,20 @@ open class NodeRequest(
      * 节点所在位置，LOCAL 或 REMOTE
      */
     open val category: String = RepositoryCategory.LOCAL.name,
+    open val mode: Int? = null,
+    open val flags: Int? = null,
+    open val rdev: Int? = null,
+    open val type: Int? = null,
 ) {
     constructor(request: ServerRequest) : this(
         projectId = request.pathVariable(PROJECT_ID),
         repoName = request.pathVariable(REPO_NAME),
         fullPath = resolveFullPath(request),
-        category = request.queryParamOrNull("category") ?: RepositoryCategory.LOCAL.name
+        category = request.queryParamOrNull("category") ?: RepositoryCategory.LOCAL.name,
+        mode = request.queryParamOrNull("mode")?.toIntOrNull(),
+        flags = request.queryParamOrNull("flags")?.toIntOrNull(),
+        rdev = request.queryParamOrNull("rdev")?.toIntOrNull(),
+        type = request.queryParamOrNull("type")?.toIntOrNull()
     )
 
     override fun toString(): String {

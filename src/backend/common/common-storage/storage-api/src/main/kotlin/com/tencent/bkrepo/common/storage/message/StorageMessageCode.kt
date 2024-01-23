@@ -44,7 +44,10 @@ enum class StorageMessageCode(private val key: String) : MessageCode {
     QUERY_ERROR("storage.query.error"),
     COPY_ERROR("storage.copy.error"),
     BLOCK_EMPTY("storage.block.empty"),
-    BLOCK_MISSING("storage.block.missing");
+    BLOCK_MISSING("storage.block.missing"),
+    COMPRESS_ERROR("storage.compress.error"),
+    RESTORE_ERROR("storage.restore.error"),
+    ;
 
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key
