@@ -126,7 +126,7 @@ class BDZipManager(
                     logger.info("Success to compress file [$sha256] on $storageCredentialsKey.")
                 }
                 .doOnError {
-                    logger.info("Failed to compress file [$sha256].")
+                    logger.info("Failed to compress file [$sha256].", it)
                     status = CompressStatus.COMPRESS_FAILED
                     fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
                 }
@@ -189,8 +189,8 @@ class BDZipManager(
                     logger.info("Success to uncompress file [$sha256] on $storageCredentialsKey")
                 }
                 .doOnError {
+                    logger.info("Failed to uncompress file [$sha256] on $storageCredentialsKey", it)
                     file.status = CompressStatus.UNCOMPRESS_FAILED
-                    logger.info("Failed to uncompress file [$sha256] on $storageCredentialsKey")
                 }
                 .doFinally {
                     workDir.toFile().deleteRecursively()
