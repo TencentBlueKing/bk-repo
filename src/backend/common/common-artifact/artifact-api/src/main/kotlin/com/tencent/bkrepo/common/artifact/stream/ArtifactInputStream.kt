@@ -44,6 +44,7 @@ open class ArtifactInputStream(
 ) : DelegateInputStream(delegate) {
 
     private val listenerList = mutableListOf<StreamReadListener>()
+    private val metadata = mutableMapOf<String, Any?>()
 
     override fun read(): Int {
         return super.read().apply {
@@ -91,10 +92,23 @@ open class ArtifactInputStream(
         listenerList.add(listener)
     }
 
+    fun putMetadata(key: String, value: Any?) {
+        metadata[key] = value
+    }
+
+    fun getMetadata(key: String): Any? = metadata[key]
+
     /**
      * 通知各个listener流关闭
      */
     private fun notifyFinish() {
         listenerList.forEach { it.finish() }
+    }
+
+    companion object {
+        /**
+         * 是否是从缓存中加载的数据流，value为true时表示从缓存加载，为false时表示缓存不存在，为null时表示不支持从缓存加载
+         */
+        const val METADATA_KEY_LOAD_FROM_CACHE = "loadFromCache"
     }
 }

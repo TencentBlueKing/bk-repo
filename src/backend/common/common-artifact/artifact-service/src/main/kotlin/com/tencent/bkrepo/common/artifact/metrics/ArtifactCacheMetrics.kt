@@ -29,11 +29,10 @@ package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_LOAD_FROM_CACHE
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
@@ -55,7 +54,6 @@ class ArtifactCacheMetrics(
     private val registry: MeterRegistry,
     private val storageProperties: StorageProperties,
     private val artifactMetricsProperties: ArtifactMetricsProperties,
-    private val monitorHelper: StorageHealthMonitorHelper
 ) {
 
     /**
@@ -81,8 +79,7 @@ class ArtifactCacheMetrics(
         val credentials = repositoryDetail.storageCredentials()
 
         for (inputStream in resource.artifactMap.values) {
-            val loadCacheFirst = isLoadCacheFirst(inputStream.range, credentials)
-            if (!loadCacheFirst) {
+            if (inputStream.getMetadata(METADATA_KEY_LOAD_FROM_CACHE) == null) {
                 // 不支持从缓存加载时不统计缓存命中率
                 continue
             }
@@ -97,7 +94,7 @@ class ArtifactCacheMetrics(
                     val fullPath = resource.node?.fullPath
                     logger.info(
                         "large file cache miss, " +
-                                "project[$projectId], repoName[${repositoryDetail.name}], fullPath[$fullPath]"
+                            "project[$projectId], repoName[${repositoryDetail.name}], fullPath[$fullPath]"
                     )
                 }
                 incMissCount(credentials.key(), projectId)
@@ -165,19 +162,6 @@ class ArtifactCacheMetrics(
         storageCredentials ?: storageProperties.defaultStorageCredentials()
 
     private fun StorageCredentials.key() = key ?: "default"
-
-    /**
-     * 判断是否优先从缓存加载数据
-     * 判断规则:
-     * 当cacheFirst开启，并且cache磁盘健康，并且当前文件未超过内存阈值大小
-     */
-    private fun isLoadCacheFirst(range: Range, credentials: StorageCredentials): Boolean {
-        val total = range.total ?: return false
-        val isExceedThreshold = total > storageProperties.receive.fileSizeThreshold.toBytes()
-        val isHealth = monitorHelper.getMonitor(storageProperties, credentials).healthy.get()
-        val cacheFirst = credentials.cache.loadCacheFirst
-        return cacheFirst && isHealth && isExceedThreshold
-    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactCacheMetrics::class.java)

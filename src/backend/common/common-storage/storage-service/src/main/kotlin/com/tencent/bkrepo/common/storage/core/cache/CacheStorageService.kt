@@ -117,7 +117,10 @@ class CacheStorageService(
         val cacheClient = getCacheClient(credentials)
         val loadCacheFirst = isLoadCacheFirst(range, credentials)
         if (loadCacheFirst) {
-            loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let { return it }
+            loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let {
+                it.putMetadata(ArtifactInputStream.METADATA_KEY_LOAD_FROM_CACHE, true)
+                return it
+            }
         }
         val artifactInputStream = fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
         if (artifactInputStream != null && loadCacheFirst && range.isFullContent()) {
@@ -126,8 +129,14 @@ class CacheStorageService(
             val readListener = CachedFileWriter(cachePath, filename, tempPath)
             artifactInputStream.addListener(readListener)
         }
+        if (loadCacheFirst) {
+            artifactInputStream?.putMetadata(ArtifactInputStream.METADATA_KEY_LOAD_FROM_CACHE, false)
+        }
+
         return if (artifactInputStream == null && !loadCacheFirst) {
-            cacheClient.load(path, filename)?.artifactStream(range)
+            cacheClient.load(path, filename)?.artifactStream(range)?.also {
+                it.putMetadata(ArtifactInputStream.METADATA_KEY_LOAD_FROM_CACHE, true)
+            }
         } else {
             artifactInputStream
         }
