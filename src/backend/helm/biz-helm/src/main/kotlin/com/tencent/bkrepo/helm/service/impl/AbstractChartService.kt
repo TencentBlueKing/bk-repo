@@ -466,10 +466,6 @@ open class AbstractChartService : ArtifactService() {
         }
     }
 
-    private fun buildRedisKey(projectId: String, repoName: String): String {
-        return "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName"
-    }
-
     /**
      * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
      */
@@ -490,7 +486,7 @@ open class AbstractChartService : ArtifactService() {
         projectId: String,
         repoName: String
     ): Any? {
-        val lockKey = buildRedisKey(projectId, repoName)
+        val lockKey = buildKey(projectId, repoName, REDIS_LOCK_KEY_PREFIX)
         val lock = lockOperation.getLock(lockKey)
         return if (lockOperation.acquireLock(lockKey = lockKey, lock = lock)) {
             logger.info("Lock for key $lockKey has been acquired.")
@@ -501,7 +497,7 @@ open class AbstractChartService : ArtifactService() {
     }
 
     fun unlock(projectId: String, repoName: String, lock: Any){
-        val lockKey = buildRedisKey(projectId, repoName)
+        val lockKey = buildKey(projectId, repoName, REDIS_LOCK_KEY_PREFIX)
         lockOperation.close(lockKey, lock)
     }
 

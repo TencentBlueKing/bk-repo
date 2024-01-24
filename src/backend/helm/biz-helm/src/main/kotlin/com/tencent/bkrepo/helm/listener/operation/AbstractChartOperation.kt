@@ -50,7 +50,20 @@ abstract class AbstractChartOperation(
                     "in repo [$projectId/$repoName] by User [$operator]"
             )
             stopWatch.start()
-            handleOperation(this)
+            var flag = false
+            while (!flag) {
+                val lock = chartService.getLock(projectId, repoName)
+                if (lock != null) {
+                    try {
+                        handleOperation(this)
+                    } finally {
+                        chartService.unlock(projectId, repoName, lock)
+                        flag = true
+                    }
+                } else {
+                    Thread.sleep(500)
+                }
+            }
             stopWatch.stop()
             logger.info(
                 "Total cost for refreshing index.yaml" +
