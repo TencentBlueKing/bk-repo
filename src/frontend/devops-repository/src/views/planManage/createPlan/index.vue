@@ -119,6 +119,21 @@
                     :disabled="disabled">
                 </bk-input>
             </bk-form-item>
+            <bk-form-item>
+                <bk-checkbox v-model="planForm.record" :disabled="disabled">{{ $t('planRecordAllLog') }}</bk-checkbox>
+            </bk-form-item>
+            <bk-form-item property="recordReserveDays" error-display-type="normal">
+                <span>{{ $t('planLogReserveDays') }}</span>
+                <bk-input
+                    v-model="planForm.recordReserveDays"
+                    class="ml10 w180"
+                    type="number"
+                    :max="60"
+                    :min="1"
+                    :disabled="disabled"
+                    :placeholder="$t('planRecordReserveDaysInfo')">
+                </bk-input>
+            </bk-form-item>
             <bk-form-item v-if="!disabled">
                 <bk-button @click="$emit('close')">{{$t('cancel')}}</bk-button>
                 <bk-button class="ml10" theme="primary" :loading="planForm.loading" @click="save">{{$t('confirm')}}</bk-button>
@@ -168,7 +183,9 @@
                     remoteClusterIds: [],
                     creator: '',
                     created_time: '',
-                    description: ''
+                    description: '',
+                    record: true,
+                    recordReserveDays: 30
                 },
                 rules: {
                     name: [
@@ -216,6 +233,23 @@
                         {
                             required: true,
                             message: this.$t('pleaseSelect') + this.$t('space') + this.$t('targetNode'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    recordReserveDays: [
+                        {
+                            required: true,
+                            message: this.$t('planRecordReserveDaysInfo'),
+                            trigger: 'blur'
+                        },
+                        {
+                            validator: (value) => {
+                                if (!Number(value) && isNaN(value)) {
+                                    this.planForm.recordReserveDays = ''
+                                }
+                                return !isNaN(value)
+                            },
+                            message: this.$t('planRecordReserveDaysInfo'),
                             trigger: 'blur'
                         }
                     ]
@@ -289,7 +323,9 @@
                             conflictStrategy,
                             executionStrategy,
                             executionPlan: { executeTime, cronExpression }
-                        }
+                        },
+                        record,
+                        recordReserveDays
                     },
                     objects
                 }) => {
@@ -312,7 +348,9 @@
                         remoteClusterIds: this.checkClusterExist(remoteClusters.map(v => v.id)),
                         description,
                         createdBy,
-                        createdDate
+                        createdDate,
+                        record,
+                        recordReserveDays
                     }
                     this.replicaTaskObjects = objects
                 }).finally(() => {
@@ -376,7 +414,9 @@
                     },
                     remoteClusterIds: this.planForm.remoteClusterIds,
                     enabled: true,
-                    description: this.planForm.description
+                    description: this.planForm.description,
+                    record: this.planForm.record,
+                    recordReserveDays: Number(this.planForm.recordReserveDays)
                 }
                 const request = this.routeName === 'createPlan'
                     ? this.createPlan({ body })

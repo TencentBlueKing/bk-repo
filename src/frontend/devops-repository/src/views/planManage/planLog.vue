@@ -122,16 +122,28 @@
                 })
             },
             showLogDetailHandler ({ id }) {
-                this.$router.push({
-                    name: 'logDetail',
-                    params: {
-                        ...this.$route.params,
-                        logId: id
-                    },
-                    query: {
-                        planName: this.planData.name
-                    }
-                })
+                // 历史的分发计划，后端接口返回的record字段为null，后端开发原话：record为true与null表示同一个意思，都是记录所有的分发日志
+                if (this.planData?.record || this.planData.record === null) {
+                    this.$router.push({
+                        name: 'logDetail',
+                        params: {
+                            ...this.$route.params,
+                            logId: id
+                        },
+                        query: {
+                            planName: this.planData.name
+                        }
+                    })
+                } else {
+                    // 不记录日志详情，此时直接弹窗警告
+                    const name = this.planData.name
+                    this.$bkMessage({
+                        message: this.$t('planTaskLogInfo', { name }),
+                        theme: 'warning',
+                        limit: 1,
+                        offsetY: 50
+                    })
+                }
             }
         }
     }

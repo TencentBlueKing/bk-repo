@@ -657,7 +657,7 @@
     "runningStatus":"运行状态",
     "startExecutionTime":"开始执行时间",
     "endExecutionTime":"结束执行时间",
-    "planLogTitle":"{name} 执行日志",
+    "planLogTitle":"{name} 执行任务记录",
     "nodeTypeEnum": {
         "CENTER": "中心节点",
         "EDGE": "边缘节点",
@@ -830,5 +830,9 @@
     "roleName":"用户组名称",
     "addUserGroupTitle":"创建用户组",
     "editUserGroupTitle": "编辑用户组",
-    "associatedUseGroup": "关联用户组"
+    "associatedUseGroup": "关联用户组",
+    "planRecordAllLog":"记录所有分发日志",
+    "planLogReserveDays":"日志保留天数(60天内)",
+    "planRecordReserveDaysInfo":"请输入 1-60 之间的数字",
+    "planTaskLogInfo":"[{name}] 分发计划未选择记录所有分发日志，无法查看任务日志详情"
 }

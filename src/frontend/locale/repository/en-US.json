@@ -651,7 +651,7 @@
     "runningStatus":"Running status",
     "startExecutionTime":"Starting time",
     "endExecutionTime":"End Time",
-    "planLogTitle":"{name} execution log",
+    "planLogTitle":"{name} execution task record",
     "usedQuotaCapacity":"Quota capacity used by the repository",
     "nodeTypeEnum": {
         "CENTER": "center",
@@ -829,5 +829,9 @@
     "roleName":"Name",
     "addUserGroupTitle":"Create UserGroup",
     "editUserGroupTitle": "Edit UserGroup",
-    "associatedUseGroup": "UserGroup"
+    "associatedUseGroup": "UserGroup",
+    "planRecordAllLog":"Record all distribution logs",
+    "planLogReserveDays":"Log retention days (within 60 days)",
+    "planRecordReserveDaysInfo":"Please enter a number between 1-60",
+    "planTaskLogInfo":"[{name}] distribution plan does not select to record all distribution logs, and task log details cannot be viewed."
 }
