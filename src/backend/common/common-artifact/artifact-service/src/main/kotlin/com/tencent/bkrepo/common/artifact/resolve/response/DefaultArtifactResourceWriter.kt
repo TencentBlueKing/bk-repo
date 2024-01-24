@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
@@ -39,18 +38,17 @@ import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
+import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils.isClientBroken
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpMethod
-import org.springframework.web.util.UriUtils
 import java.io.IOException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -65,10 +63,11 @@ import javax.servlet.http.HttpServletResponse
  */
 open class DefaultArtifactResourceWriter(
     private val storageProperties: StorageProperties
-) : ArtifactResourceWriter {
+) : AbstractArtifactResourceHandler(storageProperties) {
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
+        responseRateLimitCheck()
         return if (resource.containsMultiArtifact()) {
             writeMultiArtifact(resource)
         } else {
@@ -90,7 +89,7 @@ open class DefaultArtifactResourceWriter(
             ?: StringPool.NO_CACHE
 
         response.bufferSize = getBufferSize(range.length.toInt())
-        val mediaType = resource.contentType ?: determineMediaType(name)
+        val mediaType = resource.contentType ?: determineMediaType(name, storageProperties.response.mimeMappings)
         response.characterEncoding = determineCharset(mediaType, resource.characterEncoding)
         response.contentType = mediaType
         response.status = resource.status?.value ?: resolveStatus(request)
@@ -124,7 +123,7 @@ open class DefaultArtifactResourceWriter(
 
         response.bufferSize = getBufferSize(resource.getTotalSize().toInt())
         response.characterEncoding = resource.characterEncoding
-        response.contentType = determineMediaType(name)
+        response.contentType = determineMediaType(name, storageProperties.response.mimeMappings)
         response.status = HttpStatus.OK.value
         response.setHeader(HttpHeaders.CACHE_CONTROL, StringPool.NO_CACHE)
         if (resource.useDisposition) {
@@ -149,14 +148,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
-     * 解析响应状态
-     */
-    private fun resolveStatus(request: HttpServletRequest): Int {
-        val isRangeRequest = request.getHeader(HttpHeaders.RANGE)?.isNotBlank() ?: false
-        return if (isRangeRequest) HttpStatus.PARTIAL_CONTENT.value else HttpStatus.OK.value
-    }
-
-    /**
      * 解析content range
      */
     private fun resolveContentRange(range: Range): String {
@@ -169,39 +160,6 @@ open class DefaultArtifactResourceWriter(
     private fun resolveLastModified(lastModifiedDate: String): Long {
         val localDateTime = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
         return localDateTime.atZone(ZoneOffset.systemDefault()).toInstant().toEpochMilli()
-    }
-
-    /**
-     * 将数据流以Range方式写入响应
-     */
-    private fun writeRangeStream(
-        resource: ArtifactResource,
-        request: HttpServletRequest,
-        response: HttpServletResponse
-    ): Throughput {
-        val inputStream = resource.getSingleStream()
-        if (request.method == HttpMethod.HEAD.name) {
-            return Throughput.EMPTY
-        }
-        val recordAbleInputStream = RecordAbleInputStream(inputStream)
-        try {
-            return measureThroughput {
-                recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
-                    it.copyTo(
-                        out = response.outputStream,
-                        bufferSize = getBufferSize(inputStream.range.length.toInt())
-                    )
-                }
-            }
-        } catch (exception: IOException) {
-            // 直接向上抛IOException经过CglibAopProxy会抛java.lang.reflect.UndeclaredThrowableException: null
-            // 由于已经设置了Content-Type为application/octet-stream, spring找不到对应的Converter，导致抛
-            // org.springframework.http.converter.HttpMessageNotWritableException异常，会重定向到/error页面
-            // 又因为/error页面不存在，最终返回404，所以要对IOException进行包装，在上一层捕捉处理
-            val message = exception.message.orEmpty()
-            val status = if (isClientBroken(exception)) HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
-            throw ArtifactResponseException(message, status)
-        }
     }
 
     /**
@@ -223,7 +181,9 @@ open class DefaultArtifactResourceWriter(
                     resource.artifactMap.forEach { (name, inputStream) ->
                         val recordAbleInputStream = RecordAbleInputStream(inputStream)
                         zipOutput.putNextEntry(generateZipEntry(name, inputStream))
-                        recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
+                        recordAbleInputStream.rateLimit(
+                            responseRateLimitWrapper(storageProperties.response.rateLimit)
+                        ).use {
                             it.copyTo(
                                 out = zipOutput,
                                 bufferSize = getBufferSize(inputStream.range.length.toInt())
@@ -244,15 +204,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
-     * 判断MediaType
-     */
-    private fun determineMediaType(name: String): String {
-        val extension = PathUtils.resolveExtension(name)
-        return mimeMappings.get(extension) ?: storageProperties.response.mimeMappings[extension]
-            ?: MediaTypes.APPLICATION_OCTET_STREAM
-    }
-
-    /**
      * 判断charset,一些媒体类型设置了charset会影响其表现，如application/vnd.android.package-archive
      * */
     private fun determineCharset(mediaType: String, defaultCharset: String): String? {
@@ -263,30 +214,10 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
-     * 编码Content-Disposition内容
-     */
-    private fun encodeDisposition(filename: String): String {
-        val encodeFilename = UriUtils.encode(filename, Charsets.UTF_8)
-        return CONTENT_DISPOSITION_TEMPLATE.format(encodeFilename, encodeFilename)
-    }
-
-    /**
      * 解析e-tag
      */
     private fun resolveETag(node: NodeDetail): String {
         return node.sha256!!
-    }
-
-    /**
-     * 获取动态buffer size
-     * @param totalSize 数据总大小
-     */
-    private fun getBufferSize(totalSize: Int): Int {
-        val bufferSize = storageProperties.response.bufferSize.toBytes().toInt()
-        if (bufferSize < 0 || totalSize < 0) {
-            return STREAM_BUFFER_SIZE
-        }
-        return if (totalSize < bufferSize) totalSize else bufferSize
     }
 
     /**
@@ -299,12 +230,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     companion object {
-        private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
-            add("yaml", MediaTypes.APPLICATION_YAML)
-            add("tgz", MediaTypes.APPLICATION_TGZ)
-            add("ico", MediaTypes.APPLICATION_ICO)
-            add("apk", MediaTypes.APPLICATION_APK)
-        }
         private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK)
     }
 }

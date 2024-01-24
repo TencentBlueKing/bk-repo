@@ -34,7 +34,7 @@ package com.tencent.bkrepo.common.storage.filesystem
 import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.bound
-import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
+import com.tencent.bkrepo.common.storage.core.AbstractEncryptorFileStorage
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import java.io.File
@@ -44,7 +44,7 @@ import java.nio.file.Paths
 /**
  * 文件系统存储
  */
-open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
+open class FileSystemStorage : AbstractEncryptorFileStorage<FileSystemCredentials, FileSystemClient>() {
 
     override fun store(path: String, name: String, file: File, client: FileSystemClient) {
         file.inputStream().use {

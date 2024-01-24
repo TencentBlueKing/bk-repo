@@ -12,7 +12,6 @@ const projectManage = () => import('@repository/views/projectManage')
 const projectConfig = () => import('@repository/views/projectManage/projectConfig')
 const nodeManage = () => import('@repository/views/nodeManage')
 const planManage = () => import('@repository/views/planManage')
-const createPlan = () => import('@repository/views/planManage/createPlan')
 const logDetail = () => import('@repository/views/planManage/logDetail')
 
 const repoScan = () => import('@repository/views/repoScan')
@@ -30,6 +29,11 @@ const commonPackageDetail = () => import('@repository/views/repoCommon/commonPac
 
 const repoSearch = () => import('@repository/views/repoSearch')
 
+const WebError440 = () => import('@repository/components/Exception/440')
+
+const oauth = () => import('@repository/views/oauth')
+const userGroup = () => import('@repository/views/userGroup')
+
 const routes = [
     {
         path: '/ui/:projectId/preview',
@@ -40,6 +44,10 @@ const routes = [
                 component: scanTask
             }
         ]
+    },
+    {
+        path: '/ui/:projectId/oauth/authorize',
+        component: oauth
     },
     {
         path: '/ui/:projectId',
@@ -55,6 +63,11 @@ const routes = [
                         { to: 'repositories', name: 'browser', label: '仓库列表' }
                     ]
                 }
+            },
+            {
+                path: '440/:msg',
+                name: '440',
+                component: WebError440
             },
             {
                 path: 'repoConfig/:repoType',
@@ -128,6 +141,16 @@ const routes = [
                 }
             },
             {
+                path: 'userGroup',
+                name: 'userGroup',
+                component: userGroup,
+                meta: {
+                    breadcrumb: [
+                        { name: 'userGroup', label: '用户组管理' }
+                    ]
+                }
+            },
+            {
                 path: 'repoAudit',
                 name: 'repoAudit',
                 component: repoAudit,
@@ -154,39 +177,6 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { name: 'planManage', label: '制品分发' }
-                    ]
-                }
-            },
-            {
-                path: 'planManage/createPlan',
-                name: 'createPlan',
-                component: createPlan,
-                meta: {
-                    breadcrumb: [
-                        { name: 'planManage', label: '制品分发' },
-                        { name: 'createPlan', label: '创建计划' }
-                    ]
-                }
-            },
-            {
-                path: 'planManage/editPlan/:planId',
-                name: 'editPlan',
-                component: createPlan,
-                meta: {
-                    breadcrumb: [
-                        { name: 'planManage', label: '{planName}', template: 'planManage' },
-                        { name: 'editPlan', label: '编辑计划' }
-                    ]
-                }
-            },
-            {
-                path: 'planManage/planDetail/:planId',
-                name: 'planDetail',
-                component: createPlan,
-                meta: {
-                    breadcrumb: [
-                        { name: 'planManage', label: '{planName}', template: 'planManage' },
-                        { name: 'planDetail', label: '计划详情' }
                     ]
                 }
             },

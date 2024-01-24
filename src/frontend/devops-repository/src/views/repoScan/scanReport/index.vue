@@ -79,7 +79,7 @@
                     <bk-table-column :label="$t('artifactName')" show-overflow-tooltip>
                         <template #default="{ row }">
                             <span v-if="row.groupId" class="mr5 repo-tag" :data-name="row.groupId"></span>
-                            <span class="hover-btn" :class="{ 'disabled': row.status !== 'SUCCESS' }" @click="showArtiReport(row)">{{ row.name }}</span>
+                            <span class="hover-btn" :class="{ 'disabled': !['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(row.status) }" @click="showArtiReport(row)">{{ row.name }}</span>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('artifactVersion') + '/' + $t('storagePath')" show-overflow-tooltip>
@@ -122,7 +122,7 @@
                                     viewType === 'OVERVIEW' && !scanPlan.readOnly && {
                                         label: $t('rescan'),
                                         clickEvent: () => startScanSingleHandler(row),
-                                        disabled: row.status !== 'SUCCESS' && row.status !== 'STOP' && row.status !== 'FAILED'
+                                        disabled: !['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS', 'STOP', 'FAILED'].includes(row.status)
                                     }
                                 ]"></operation-list>
                         </template>
@@ -344,7 +344,7 @@
                 })
             },
             showArtiReport ({ recordId, name, status }) {
-                if (status !== 'SUCCESS') return
+                if (!['UN_QUALITY', 'QUALITY_PASS', 'QUALITY_UNPASS'].includes(status)) return
                 this.$router.push({
                     name: 'artiReport',
                     params: {

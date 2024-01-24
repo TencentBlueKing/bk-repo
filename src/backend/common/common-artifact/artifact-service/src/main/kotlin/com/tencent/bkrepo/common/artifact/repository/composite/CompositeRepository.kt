@@ -51,9 +51,9 @@ import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.time.format.DateTimeFormatter
 
 /**
  * 组合仓库抽象逻辑
@@ -133,6 +133,21 @@ class CompositeRepository(
             require(it is ArtifactSearchContext)
             remoteRepository.search(it)
         }.apply { add(localResult) }.flatten()
+    }
+
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return if (localRepository.onDownloadRedirect(context)) {
+            true
+        } else {
+            mapFirstProxyRepo(context) {
+                require(it is ArtifactDownloadContext)
+                if (remoteRepository.onDownloadRedirect(it)) {
+                    true
+                } else {
+                    null
+                }
+            } ?: false
+        }
     }
 
     /**

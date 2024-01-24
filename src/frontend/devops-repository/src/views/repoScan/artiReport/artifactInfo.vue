@@ -130,7 +130,7 @@
         }
     }
     .arti-leak {
-        grid-template: auto / repeat(2, 1fr);
+        grid-template: auto / repeat(1, 1fr);
     }
 }
 </style>

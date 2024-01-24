@@ -10,14 +10,14 @@ import org.springframework.data.mongodb.core.query.and
 
 object UserQueryHelper {
 
-    fun buildUserPasswordCheck(userId: String, pwd: String, hashPwd: String): Query {
+    fun buildUserPasswordCheck(userId: String, pwd: String, hashPwd: String, sm3HashPwd: String): Query {
         val criteria = Criteria()
         criteria.orOperator(
             Criteria.where(TUser::pwd.name).`is`(hashPwd),
             Criteria.where("tokens.id").`is`(pwd),
-            Criteria.where("tokens.id").`is`(hashPwd)
+            Criteria.where("tokens.id").`is`(sm3HashPwd)
         ).and(TUser::userId.name).`is`(userId)
-        return Query.query(criteria)
+        return query(criteria)
     }
 
     fun filterNotLockedUser(): Query {
@@ -30,7 +30,7 @@ object UserQueryHelper {
     }
 
     fun getUserByIdAndPwd(userId: String, oldPwd: String): Query {
-        return Query.query(
+        return query(
             Criteria().andOperator(
                 Criteria.where(TUser::userId.name).`is`(userId),
                 Criteria.where(TUser::pwd.name).`is`(DataDigestUtils.md5FromStr(oldPwd))
@@ -75,7 +75,7 @@ object UserQueryHelper {
             )
         }
         userId.let {
-            criteria.and(TUser::asstUsers.name).`in`( *arrayOf(userId))
+            criteria.and(TUser::asstUsers.name).`in`(*arrayOf(userId))
             criteria.and(TUser::group.name).`is`(true)
         }
         return Query(criteria)

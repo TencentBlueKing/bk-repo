@@ -34,7 +34,13 @@ data class OauthToken(
     val accessToken: String,
     @JsonProperty("token_type")
     val tokenType: String,
-    val scope: String
+    val scope: String,
+    @JsonProperty("refresh_token")
+    val refreshToken: String?,
+    @JsonProperty("expires_in")
+    val expiresIn: Long?,
+    @JsonProperty("id_token")
+    val idToken: String? = null
 ) {
     override fun toString(): String {
         return "access_token=$accessToken&token_type=$tokenType&scope=$scope"

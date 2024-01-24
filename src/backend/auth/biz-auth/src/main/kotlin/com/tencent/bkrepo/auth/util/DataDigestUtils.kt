@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.util
 
 import java.security.MessageDigest
+import com.tencent.bk.sdk.crypto.util.SM3Util
 
 object DataDigestUtils {
 
@@ -44,6 +45,11 @@ object DataDigestUtils {
         val digest = MessageDigest.getInstance("MD5")
         val result = digest.digest(str.toByteArray())
         return toHex(result)
+    }
+
+    fun sm3FromStr(str: String): String {
+        val digest = SM3Util.digest(str.toByteArray())
+        return toHex(digest)
     }
 
     fun md5FromByteArray(byteArr: ByteArray): String {

@@ -81,6 +81,14 @@ interface ScanClient {
     ): Response<Boolean>
 
     /**
+     * 维持任务心跳
+     */
+    @PostMapping("/subtask/{subtaskId}/heartbeat")
+    fun heartbeat(
+        @PathVariable("subtaskId") subtaskId: String,
+    ): Response<Boolean>
+
+    /**
      * 根据许可id列表查询许可详细信息
      *
      * @return 许可id:许可详细信息
@@ -90,4 +98,18 @@ interface ScanClient {
         @ApiParam(value = "许可证唯一标识集合")
         @RequestBody licenseIds: List<String>
     ): Response<Map<String, SpdxLicenseInfo>>
+
+    /**
+     * 校验token
+     *
+     * @return 通过返回true,否则返回false
+     * */
+    @GetMapping("/token/verify")
+    fun verifyToken(@RequestParam subtaskId: String, @RequestParam token: String): Response<Boolean>
+
+    /**
+     * 查询task状态
+     * */
+    @GetMapping("/task/{taskId}")
+    fun getTask(@PathVariable taskId: String): Response<ScanTask>
 }

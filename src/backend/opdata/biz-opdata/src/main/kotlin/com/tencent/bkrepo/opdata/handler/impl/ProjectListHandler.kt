@@ -39,7 +39,9 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_STRING
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_SIZE
+import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
@@ -53,7 +55,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ProjectListHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val statDateModel: StatDateModel
 ) : QueryHandler {
 
     override val metric: Metrics get() = Metrics.PROJECTLIST
@@ -61,7 +64,7 @@ class ProjectListHandler(
     override fun handle(target: Target, result: MutableList<Any>) {
         val rows = mutableListOf<List<Any>>()
         val columns = mutableListOf<Columns>()
-        val info = projectMetricsRepository.findAll()
+        val info = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
         columns.add(Columns(TProjectMetrics::projectId.name, OPDATA_GRAFANA_STRING))
         columns.add(Columns(TProjectMetrics::nodeNum.name, OPDATA_GRAFANA_NUMBER))
         columns.add(Columns(TProjectMetrics::capSize.name, OPDATA_GRAFANA_NUMBER))
@@ -86,7 +89,7 @@ class ProjectListHandler(
             }
             val row = listOf(
                 repo.projectId, repo.nodeNum, repo.capSize,
-                customNum, customSize, pipelineNum, pipelineSize
+                customNum, customSize / TO_GIGABYTE, pipelineNum, pipelineSize / TO_GIGABYTE
             )
             rows.add(row)
         }

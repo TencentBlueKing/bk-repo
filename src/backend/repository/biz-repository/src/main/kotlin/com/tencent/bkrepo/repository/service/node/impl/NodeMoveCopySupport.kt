@@ -48,6 +48,7 @@ import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.service.node.NodeMoveCopyOperation
@@ -71,32 +72,50 @@ open class NodeMoveCopySupport(
     private val storageCredentialService: StorageCredentialService = nodeBaseService.storageCredentialService
     private val quotaService: QuotaService = nodeBaseService.quotaService
 
-    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
-        moveCopy(moveRequest, true)
-        publishEvent(NodeEventFactory.buildMovedEvent(moveRequest))
+    override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
+        val dstNode = moveCopy(moveRequest, true)
         logger.info("Move node success: [$moveRequest]")
+        return dstNode
     }
 
-    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
-        moveCopy(copyRequest, false)
-        publishEvent(NodeEventFactory.buildCopiedEvent(copyRequest))
+    override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
+        val dstNode = moveCopy(copyRequest, false)
         logger.info("Copy node success: [$copyRequest]")
+        return dstNode
     }
 
     /**
      * 处理节点操作请求
      */
-    private fun moveCopy(request: NodeMoveCopyRequest, move: Boolean) {
+    private fun moveCopy(request: NodeMoveCopyRequest, move: Boolean): NodeDetail {
         with(resolveContext(request, move)) {
             preCheck(this)
             if (canIgnore(this)) {
-                return
+                return NodeBaseService.convertToDetail(
+                    nodeBaseService.nodeDao.findNode(
+                        projectId = dstProjectId,
+                        repoName = dstRepoName,
+                        fullPath = dstFullPath
+                    )
+                )!!
             }
             if (srcNode.folder) {
                 moveCopyFolder(this)
             } else {
                 moveCopyFile(this)
             }
+            if (move) {
+                publishEvent(NodeEventFactory.buildMovedEvent(request))
+            } else {
+                publishEvent(NodeEventFactory.buildCopiedEvent(request))
+            }
+            return NodeBaseService.convertToDetail(
+                nodeBaseService.nodeDao.findNode(
+                    projectId = dstProjectId,
+                    repoName = dstRepoName,
+                    fullPath = dstFullPath
+                )
+            )!!
         }
     }
 
@@ -184,6 +203,8 @@ open class NodeMoveCopySupport(
                 path = dstPath,
                 name = dstName,
                 fullPath = dstFullPath,
+                size = if (node.folder) 0 else node.size,
+                nodeNum = if (node.folder) null else node.nodeNum,
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
@@ -307,7 +328,7 @@ open class NodeMoveCopySupport(
             val listOption = NodeListOption(includeFolder = true, includeMetadata = true, deep = true, sort = false)
             val query = NodeQueryHelper.nodeListQuery(srcNode.projectId, srcNode.repoName, srcRootNodePath, listOption)
             // 目录下的节点 -> 创建好的目录
-            nodeDao.find(query).forEach {
+            nodeDao.stream(query).stream().forEach {
                 doMoveCopy(this, it, it.path.replaceFirst(srcRootNodePath, dstRootNodePath), it.name)
             }
         }

@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -79,8 +78,7 @@ class TemporaryAccessService(
     private val genericProperties: GenericProperties,
     private val pluginManager: PluginManager,
     private val deltaSyncService: DeltaSyncService,
-    private val permissionManager: PermissionManager,
-    private val redirectService: EdgeNodeRedirectService
+    private val permissionManager: PermissionManager
 ) {
 
     /**
@@ -103,11 +101,6 @@ class TemporaryAccessService(
             val repo = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo)
-            if (redirectService.shouldRedirect(context.artifactInfo)) {
-                // 节点来自其他集群，重定向到其他节点。
-                redirectService.redirectToDefaultCluster(context)
-                return
-            }
             ArtifactContextHolder.getRepository(repo.category).download(context)
         }
     }
@@ -271,10 +264,10 @@ class TemporaryAccessService(
      */
     private fun checkToken(token: String): TemporaryTokenInfo {
         if (token.isBlank()) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, token)
         }
         return temporaryTokenClient.getTokenInfo(token).data
-            ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+            ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, token)
     }
 
     /**
@@ -305,7 +298,7 @@ class TemporaryAccessService(
      */
     private fun checkAccessType(grantedType: TokenType, accessType: TokenType) {
         if (grantedType != TokenType.ALL && grantedType != accessType) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, accessType)
         }
     }
 
@@ -315,11 +308,14 @@ class TemporaryAccessService(
     private fun checkAccessResource(tokenInfo: TemporaryTokenInfo, artifactInfo: ArtifactInfo) {
         // 校验项目/仓库
         if (tokenInfo.projectId != artifactInfo.projectId || tokenInfo.repoName != artifactInfo.repoName) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+            throw ErrorCodeException(
+                ArtifactMessageCode.TEMPORARY_TOKEN_INVALID,
+                "${artifactInfo.projectId}/${artifactInfo.repoName}"
+            )
         }
         // 校验路径
         if (!PathUtils.isSubPath(artifactInfo.getArtifactFullPath(), tokenInfo.fullPath)) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, artifactInfo.getArtifactFullPath())
         }
         // 校验创建人权限
         permissionManager.checkNodePermission(
@@ -340,7 +336,7 @@ class TemporaryAccessService(
         val authenticatedUid = SecurityUtils.getUserId()
         // 使用认证uid校验授权
         if (tokenInfo.authorizedUserList.isNotEmpty() && authenticatedUid !in tokenInfo.authorizedUserList) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, authenticatedUid)
         }
         // 获取需要审计的uid
         val auditedUid = if (SecurityUtils.isAnonymous()) {
@@ -353,7 +349,7 @@ class TemporaryAccessService(
         // 校验ip授权
         val clientIp = HttpContextHolder.getClientAddress()
         if (tokenInfo.authorizedIpList.isNotEmpty() && clientIp !in tokenInfo.authorizedIpList) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, clientIp)
         }
     }
 

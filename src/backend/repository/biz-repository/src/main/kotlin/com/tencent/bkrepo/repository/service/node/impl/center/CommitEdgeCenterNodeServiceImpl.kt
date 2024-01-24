@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.center
 
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -77,6 +78,7 @@ class CommitEdgeCenterNodeServiceImpl(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
+    override val servicePermissionClient: ServicePermissionClient,
     override val routerControllerClient: RouterControllerClient,
     val clusterProperties: ClusterProperties
 ) : NodeServiceImpl(
@@ -87,6 +89,8 @@ class CommitEdgeCenterNodeServiceImpl(
     storageService,
     quotaService,
     repositoryProperties,
+    messageSupplier,
+    servicePermissionClient,
     messageSupplier,
     routerControllerClient
 ) {
@@ -211,13 +215,15 @@ class CommitEdgeCenterNodeServiceImpl(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String
     ): NodeDeleteResult {
         return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteBeforeDate(
             projectId,
             repoName,
             date,
-            operator
+            operator,
+            path
         )
     }
 
@@ -225,11 +231,11 @@ class CommitEdgeCenterNodeServiceImpl(
         return CommitEdgeCenterNodeRestoreSupport(this).restoreNode(restoreContext)
     }
 
-    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
+    override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
         return CommitEdgeCenterNodeMoveCopySupport(this, clusterProperties).copyNode(copyRequest)
     }
 
-    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
+    override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         return CommitEdgeCenterNodeMoveCopySupport(this, clusterProperties).moveNode(moveRequest)
     }
 

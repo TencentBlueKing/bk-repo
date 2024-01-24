@@ -63,6 +63,17 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
+    override fun findLengthOfAppendFile(appendId: String, storageCredentials: StorageCredentials?): Long {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        val tempClient = getTempClient(credentials)
+        try {
+            return tempClient.length(CURRENT_PATH, appendId)
+        } catch (exception: Exception) {
+            logger.error("Failed to read length of id [$appendId] on [${credentials.key}]", exception)
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
+        }
+    }
+
     override fun append(appendId: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Long {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
@@ -78,11 +89,15 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
-    override fun finishAppend(appendId: String, storageCredentials: StorageCredentials?): FileInfo {
+    override fun finishAppend(
+        appendId: String,
+        storageCredentials: StorageCredentials?,
+        fileInfo: FileInfo?
+    ): FileInfo {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
         try {
-            val fileInfo = tempClient.load(CURRENT_PATH, appendId)?.let { storeMergedFile(it, credentials) }
+            val fileInfo = tempClient.load(CURRENT_PATH, appendId)?.let { storeMergedFile(it, credentials, fileInfo) }
                 ?: throw IllegalArgumentException("Append file does not exist.")
             tempClient.delete(CURRENT_PATH, appendId)
             logger.info("Success to finish append file [$appendId], file info [$fileInfo]")
@@ -206,18 +221,27 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
-    private fun storeMergedFile(file: File, credentials: StorageCredentials): FileInfo {
-        val sha256 = file.sha256()
-        val md5 = file.md5()
+    /**
+     * 合并文件并返回对应FileInfo(sha256、md5、size)
+     * 当 fileInfo不为空时：避免当文件过大时生成 sha256 或者 md5 需要过长时间，信任传递进来的 sha256 和md5 值
+     * 当 fileInfo为空时，生成对应的 sha256 或者 md5
+     */
+    private fun storeMergedFile(file: File, credentials: StorageCredentials, fileInfo: FileInfo? = null): FileInfo {
         val size = file.length()
-        val fileInfo = FileInfo(sha256, md5, size)
-        val path = fileLocator.locate(sha256)
-        if (!doExist(path, sha256, credentials)) {
-            doStore(path, sha256, file.toArtifactFile(), credentials)
+        val realFileInfo = if (fileInfo == null) {
+            FileInfo(file.sha256(), file.md5(), size)
         } else {
-            logger.info("File [$sha256] exist, skip store.")
+            if (fileInfo.size != size)
+                throw IllegalArgumentException("Merged file is broken!")
+            FileInfo(fileInfo.sha256, fileInfo.md5, size)
         }
-        return fileInfo
+        val path = fileLocator.locate(realFileInfo.sha256)
+        if (!doExist(path, realFileInfo.sha256, credentials)) {
+            doStore(path, realFileInfo.sha256, file.toArtifactFile(), credentials)
+        } else {
+            logger.info("File [${realFileInfo.sha256}] exist, skip store.")
+        }
+        return realFileInfo
     }
 
     companion object {

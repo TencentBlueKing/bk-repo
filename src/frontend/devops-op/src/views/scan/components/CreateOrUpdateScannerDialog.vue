@@ -121,7 +121,7 @@
 import { IMAGE_REGEX, URL_REGEX } from '@/utils/validate'
 import _ from 'lodash'
 import {
-  createScanner, dispatchers, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_SCANCODE, SCANNER_TYPE_STANDARD,
+  createScanner, listDispatchers, SCANNER_TYPE_ARROWHEAD, SCANNER_TYPE_SCANCODE, SCANNER_TYPE_STANDARD,
   SCANNER_TYPE_TRIVY, scanTypes,
   updateScanner
 } from '@/api/scan'
@@ -152,7 +152,7 @@ export default {
       SCANNER_TYPE_SCANCODE: SCANNER_TYPE_SCANCODE,
       scanTypes: scanTypes,
       repoTypes: repoTypes,
-      dispatchers: dispatchers,
+      dispatchers: [],
       rules: {
         'knowledgeBase.endpoint': [
           { validator: this.validateUrl, trigger: 'change' }
@@ -197,6 +197,7 @@ export default {
       this.extInputValue = ''
       if (newVal) {
         this.resetScanner()
+        this.refreshDispatchers()
         this.showDialog = true
       } else {
         this.close()
@@ -254,6 +255,11 @@ export default {
       }
       this.extInputVisible = false
       this.extInputValue = ''
+    },
+    refreshDispatchers() {
+      listDispatchers().then(res => {
+        this.dispatchers = res.data.map(dispatcher => dispatcher.name)
+      })
     },
     handleCreateOrUpdate(scanner) {
       this.$refs['form'].validate((valid) => {

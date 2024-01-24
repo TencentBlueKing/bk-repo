@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceAccountClient
 import com.tencent.bkrepo.auth.controller.OpenResource
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -48,12 +49,16 @@ class ServiceAccountController @Autowired constructor(
 
     @Deprecated("删除get方式校验")
     override fun checkCredential(accesskey: String, secretkey: String): Response<String?> {
-        val result = accountService.checkCredential(accesskey, secretkey)
+        val result = accountService.checkCredential(accesskey, secretkey, null)
         return ResponseBuilder.success(result)
     }
 
-    override fun checkAccountCredential(accesskey: String, secretkey: String): Response<String?> {
-        val result = accountService.checkCredential(accesskey, secretkey)
+    override fun checkAccountCredential(
+        accesskey: String,
+        secretkey: String,
+        authorizationGrantType: AuthorizationGrantType?
+    ): Response<String?> {
+        val result = accountService.checkCredential(accesskey, secretkey, authorizationGrantType)
         return ResponseBuilder.success(result)
     }
     override fun findSecretKey(appId: String, accessKey: String): Response<String?> {

@@ -60,14 +60,15 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
                     fixedDelay = fixedDelay,
                     fixedRate = fixedRate,
                     initialDelay = initialDelay,
-                    running = it.isRunning(),
+                    running = it.inProcess(),
                     lastBeginTime = it.lastBeginTime,
                     lastEndTime = it.lastEndTime,
                     lastExecuteTime = it.lastExecuteTime,
-                    nextExecuteTime = getNextExecuteTime(it.batchJobProperties,
-                            it.lastBeginTime,
-                            it.lastEndTime
-                    )
+                    nextExecuteTime = getNextExecuteTime(
+                        it.batchJobProperties,
+                        it.lastBeginTime,
+                        it.lastEndTime,
+                    ),
                 )
                 jobDetails.add(jobDetail)
             }
@@ -78,7 +79,7 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
     private fun getNextExecuteTime(
         batchJobProperties: BatchJobProperties,
         lastBeginTime: LocalDateTime?,
-        lastEndTime: LocalDateTime?
+        lastEndTime: LocalDateTime?,
     ): LocalDateTime? {
         if (!batchJobProperties.enabled) {
             return null
@@ -86,9 +87,11 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         val finalNextTime: Date
         val triggerContext = buildTriggerContext(lastBeginTime, lastEndTime)
         if (batchJobProperties.cron.equals(ScheduledTaskRegistrar.CRON_DISABLED)) {
-            finalNextTime = getNextTimeByPeriodic(batchJobProperties,
-                    triggerContext,
-                    lastBeginTime)
+            finalNextTime = getNextTimeByPeriodic(
+                batchJobProperties,
+                triggerContext,
+                lastBeginTime,
+            )
         } else {
             finalNextTime = getNextTimeByCron(batchJobProperties, triggerContext)
         }
@@ -100,7 +103,7 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
      */
     private fun buildTriggerContext(
         lastBeginTime: LocalDateTime?,
-        lastEndTime: LocalDateTime?
+        lastEndTime: LocalDateTime?,
     ): SimpleTriggerContext {
         val lastFinshTime = if (lastEndTime != null) {
             Date.from(lastEndTime.atZone(ZoneId.systemDefault()).toInstant())
@@ -120,7 +123,7 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
      */
     private fun getNextTimeByCron(
         batchJobProperties: BatchJobProperties,
-        triggerContext: SimpleTriggerContext
+        triggerContext: SimpleTriggerContext,
     ): Date {
         val cronTrigger = CronTrigger(batchJobProperties.cron)
         return cronTrigger.nextExecutionTime(triggerContext)
@@ -132,7 +135,7 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
     private fun getNextTimeByPeriodic(
         batchJobProperties: BatchJobProperties,
         triggerContext: SimpleTriggerContext,
-        lastBeginTime: LocalDateTime?
+        lastBeginTime: LocalDateTime?,
     ): Date {
         val fixRateStatus = if (batchJobProperties.fixedDelay != 0L) false else true
         val period = if (batchJobProperties.fixedDelay != 0L) {
@@ -162,5 +165,13 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
             jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().stop()
         }
         return true
+    }
+
+    fun stop(name: String?, maxWaitTime: Long, failover: Boolean = false) {
+        if (name == null) {
+            jobs.forEach { it.stop(maxWaitTime, failover) }
+        } else {
+            jobs.first { it.getJobName() == name }.stop(maxWaitTime, failover)
+        }
     }
 }

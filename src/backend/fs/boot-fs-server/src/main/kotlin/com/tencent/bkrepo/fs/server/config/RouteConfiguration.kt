@@ -36,8 +36,10 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.fs.server.constant.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
+import com.tencent.bkrepo.fs.server.filter.DevXAccessFilter
 import com.tencent.bkrepo.fs.server.filter.PermissionFilterFunction
 import com.tencent.bkrepo.fs.server.getOrNull
+import com.tencent.bkrepo.fs.server.handler.ClientHandler
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
@@ -64,16 +66,23 @@ class RouteConfiguration(
     private val fileOperationsHandler: FileOperationsHandler,
     private val loginHandler: LoginHandler,
     private val fsNodeHandler: FsNodeHandler,
+    private val clientHandler: ClientHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
+    private val devXAccessFilter: DevXAccessFilter,
     private val permissionFilterFunction: PermissionFilterFunction,
     private val artifactFileCleanupFilterFunction: ArtifactFileCleanupFilterFunction
 ) {
     fun router() = coRouter {
         filter(authHandlerFilterFunction::filter)
+        filter(devXAccessFilter::filter)
         before(RouteConfiguration::initArtifactContext)
         filter(permissionFilterFunction::filter)
         POST("/login/{projectId}/{repoName}", loginHandler::login)
+        POST("/devx/login/{repoName}", loginHandler::devxLogin)
+        POST("/ioa/login/{projectId}/{repoName}", loginHandler::ioaLogin)
+        POST("/ioa/ticket", loginHandler::ioaTicket)
+        POST("/token/refresh/{projectId}/{repoName}", loginHandler::refresh)
 
         "/service/block".nest {
             GET("/list$DEFAULT_MAPPING_URI", fsNodeHandler::listBlocks)
@@ -85,6 +94,8 @@ class RouteConfiguration(
             POST("/create$DEFAULT_MAPPING_URI", nodeOperationsHandler::createNode)
             DELETE("/delete$DEFAULT_MAPPING_URI", nodeOperationsHandler::deleteNode)
             POST("/mkdir$DEFAULT_MAPPING_URI", nodeOperationsHandler::mkdir)
+            POST("/mknod$DEFAULT_MAPPING_URI", nodeOperationsHandler::mknod)
+            POST("/symlink$DEFAULT_MAPPING_URI", nodeOperationsHandler::symlink)
             PUT("/set-length$DEFAULT_MAPPING_URI", nodeOperationsHandler::setLength)
             GET("/stat$DEFAULT_MAPPING_URI", nodeOperationsHandler::getStat)
             GET("/info$DEFAULT_MAPPING_URI", nodeOperationsHandler::info)
@@ -98,6 +109,16 @@ class RouteConfiguration(
             PUT("/write-flush/{offset}$DEFAULT_MAPPING_URI", fileOperationsHandler::writeAndFlush)
             PUT("/{offset}$DEFAULT_MAPPING_URI", fileOperationsHandler::write)
             addMetrics(serverMetrics.uploadingCount)
+        }
+
+        "/client".nest {
+            POST("/create/{projectId}/{repoName}", clientHandler::createClient)
+            DELETE("/delete/{projectId}/{repoName}/{clientId}", clientHandler::removeClient)
+            POST("/heartbeat/{projectId}/{repoName}/{clientId}", clientHandler::heartbeat)
+        }
+
+        "/service/client".nest {
+            GET("/list", clientHandler::listClients)
         }
 
         accept(APPLICATION_OCTET_STREAM).nest {
@@ -126,23 +147,28 @@ class RouteConfiguration(
         private val logger = LoggerFactory.getLogger(RouteConfiguration::class.java)
         private val antPathMatcher = AntPathMatcher()
         private fun initArtifactContext(request: ServerRequest): ServerRequest {
-            val projectId = request.pathVariable(PROJECT_ID)
-            val repoName = request.pathVariable(REPO_NAME)
-            val encodeUrl = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
-                (request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE).get() as PathPattern).patternString,
-                request.path()
-            )
-            val decodeUrl = URLDecoder.decode(encodeUrl, StandardCharsets.UTF_8.name())
-            val artifactUri = PathUtils.normalizeFullPath(decodeUrl)
-            request.exchange().attributes[PROJECT_ID] = projectId
-            request.exchange().attributes[REPO_NAME] = repoName
-            val artifactInfo = ArtifactInfo(
-                projectId = projectId,
-                repoName = repoName,
-                artifactUri = artifactUri
-            )
-            request.exchange().attributes[ARTIFACT_INFO_KEY] = artifactInfo
-            return request
+            try {
+                val projectId = request.pathVariable(PROJECT_ID)
+                val repoName = request.pathVariable(REPO_NAME)
+                val encodeUrl = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
+                    (request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE)
+                        .get() as PathPattern).patternString,
+                    request.path()
+                )
+                val decodeUrl = URLDecoder.decode(encodeUrl, StandardCharsets.UTF_8.name())
+                val artifactUri = PathUtils.normalizeFullPath(decodeUrl)
+                request.exchange().attributes[PROJECT_ID] = projectId
+                request.exchange().attributes[REPO_NAME] = repoName
+                val artifactInfo = ArtifactInfo(
+                    projectId = projectId,
+                    repoName = repoName,
+                    artifactUri = artifactUri
+                )
+                request.exchange().attributes[ARTIFACT_INFO_KEY] = artifactInfo
+                return request
+            } catch (ignore: IllegalArgumentException) {
+                return request
+            }
         }
     }
 }

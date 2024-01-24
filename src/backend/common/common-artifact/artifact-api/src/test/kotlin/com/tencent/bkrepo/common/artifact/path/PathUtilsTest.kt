@@ -139,4 +139,12 @@ class PathUtilsTest {
         assertEquals("/", PathUtils.getCommonPath("test1.txt", "test2.txt"))
         assertEquals("/test/", PathUtils.getCommonPath("/test/a", "/test/b"))
     }
+
+    @Test
+    fun testCommonParentPath() {
+        assertEquals("/a/b/", PathUtils.getCommonParentPath(listOf("/a/b/file1", "/a/b/file2", "/a/b/file3")))
+        assertEquals("/", PathUtils.getCommonParentPath(listOf("/a/file1", "/file2")))
+        assertEquals("/a/b/", PathUtils.getCommonParentPath(listOf("/a/b/file1")))
+        assertEquals("/a/", PathUtils.getCommonParentPath(listOf("/a/b", "/a/b")))
+    }
 }

@@ -3,6 +3,7 @@
         <div class="flex-between-center">
             <span class="report-title flex-align-center">{{ $t('overviewTitle') }}</span>
             <div class="flex-align-center">
+                <bk-button class="mr10" theme="default" @click="showExportDialog = true">{{$t('exportReport')}}</bk-button>
                 <bk-date-picker
                     class="mr10 w250"
                     v-model="filterTime"
@@ -14,7 +15,7 @@
                 </bk-date-picker>
                 <bk-button class="mr10" theme="default" @click="stopScanHandler">{{ $t('abortScan') }}</bk-button>
                 <bk-button v-if="!scanPlan.readOnly" class="mr10" theme="default" @click="startScanHandler">{{ $t('scanImmediately') }}</bk-button>
-                <bk-button v-if="!scanPlan.readOnly" theme="default" @click="scanSettingHandler">{{ $t('setting') }}</bk-button>
+                <bk-button theme="default" @click="scanSettingHandler">{{ $t('setting') }}</bk-button>
             </div>
         </div>
         <div class="mt10 flex-align-center">
@@ -24,6 +25,37 @@
                 <span class="base-info-value" :style="{ color: item.color }">{{ segmentNumberThree(overview[item.key]) }}</span>
             </div>
         </div>
+        <canway-dialog
+            v-model="showExportDialog"
+            :title="$t('ExportRecordFilter')"
+            :height-num="311"
+            @cancel="showExportDialog = false">
+            <bk-form :label-width="90">
+                <bk-form-item :label="$t('scanTime')">
+                    <bk-date-picker
+                        v-model="exportTime"
+                        :shortcuts="shortcuts"
+                        type="daterange"
+                        transfer
+                        :placeholder="$t('selectDatePlaceHolder')">
+                    </bk-date-picker>
+                </bk-form-item>
+                <bk-form-item :label="$t('scanStatus')">
+                    <bk-select
+                        v-model="exportStatus"
+                        :clearable="false">
+                        <bk-option id="ALL" :name="$t('total')"></bk-option>
+                        <bk-option id="UN_QUALITY" :name="$t(`scanStatusEnum.UN_QUALITY`)"></bk-option>
+                        <bk-option id="QUALITY_PASS" :name="$t(`scanStatusEnum.QUALITY_PASS`)"></bk-option>
+                        <bk-option id="QUALITY_UNPASS" :name="$t(`scanStatusEnum.QUALITY_UNPASS`)"></bk-option>
+                    </bk-select>
+                </bk-form-item>
+            </bk-form>
+            <template #footer>
+                <bk-button theme="default" @click="showExportDialog = false">{{$t('cancel')}}</bk-button>
+                <bk-button class="ml10" theme="primary" @click="exportReport">{{$t('confirm')}}</bk-button>
+            </template>
+        </canway-dialog>
     </div>
 </template>
 <script>
@@ -39,7 +71,10 @@
         },
         data () {
             return {
-                filterTime: [zeroTime(before(30)), nowTime.toDate()],
+                filterTime: [],
+                showExportDialog: false,
+                exportTime: [zeroTime(before(30)), nowTime.toDate()],
+                exportStatus: 'ALL',
                 overview: {
                     artifactCount: 0,
                     critical: 0,
@@ -181,6 +216,28 @@
                         scanName: this.scanPlan.name
                     }
                 })
+            },
+            exportReport () {
+                const [startTime, endTime] = this.exportTime.filter(Boolean)
+                const params = new URLSearchParams({
+                    projectId: this.scanPlan.projectId,
+                    id: this.scanPlan.id,
+                    ...(this.exportStatus === 'ALL'
+                        ? {}
+                        : {
+                            status: this.exportStatus
+                        }),
+                    ...(startTime instanceof Date ? { startTime: startTime.toISOString() } : {}),
+                    ...(endTime instanceof Date ? { endTime: endTime.toISOString() } : {})
+                })
+                this.showExportDialog = false
+                this.$bkNotify({
+                    title: this.$t('exportReportInfo'),
+                    position: 'bottom-right',
+                    theme: 'success'
+                })
+                const url = `/web/analyst/api/scan/plan/export?${params.toString()}`
+                window.open(url, '_self')
             }
         }
     }

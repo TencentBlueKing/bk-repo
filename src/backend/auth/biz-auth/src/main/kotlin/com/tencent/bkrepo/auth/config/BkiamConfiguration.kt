@@ -33,24 +33,26 @@ package com.tencent.bkrepo.auth.config
 
 import com.tencent.bk.sdk.iam.config.IamConfiguration
 import com.tencent.bk.sdk.iam.helper.AuthHelper
-import com.tencent.bk.sdk.iam.service.HttpClientService
 import com.tencent.bk.sdk.iam.service.PolicyService
 import com.tencent.bk.sdk.iam.service.TokenService
+import com.tencent.bk.sdk.iam.service.impl.ApigwHttpClientServiceImpl
 import com.tencent.bk.sdk.iam.service.impl.DefaultHttpClientServiceImpl
 import com.tencent.bk.sdk.iam.service.impl.GrantServiceImpl
-import com.tencent.bk.sdk.iam.service.impl.PolicyServiceImpl
+import com.tencent.bk.sdk.iam.service.impl.ManagerServiceImpl
 import com.tencent.bk.sdk.iam.service.impl.TokenServiceImpl
-import com.tencent.bkrepo.auth.service.bkiam.IamEsbClient
+import com.tencent.bk.sdk.iam.service.v2.impl.V2ManagerServiceImpl
+import com.tencent.bk.sdk.iam.service.v2.impl.V2PolicyServiceImpl
+import com.tencent.bkrepo.auth.condition.MultipleAuthCondition
+import com.tencent.bkrepo.auth.service.bkiamv3.IamEsbClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.Ordered
 
 @Configuration
-@AutoConfigureOrder(Ordered.LOWEST_PRECEDENCE)
+@Conditional(MultipleAuthCondition::class)
 class BkiamConfiguration {
 
     @Value("\${auth.iam.systemId:}")
@@ -65,23 +67,24 @@ class BkiamConfiguration {
     @Value("\${auth.iam.appSecret:}")
     private val appSecret = ""
 
+    @Value("\${auth.iam.apigwBaseUrl:}")
+    private val apigwBaseUrl = ""
+
     @Bean
-    fun iamConfiguration() = IamConfiguration(iamSystemId, appCode, appSecret, iamBaseUrl)
+    fun iamConfiguration() = IamConfiguration(iamSystemId, appCode, appSecret, iamBaseUrl, apigwBaseUrl)
 
     @Bean
     fun iamHttpClient(iamConfiguration: IamConfiguration) = DefaultHttpClientServiceImpl(iamConfiguration)
 
     @Bean
     fun iamPolicyService(
-        @Autowired iamConfiguration: IamConfiguration,
-        @Autowired httpClientService: HttpClientService
-    ) = PolicyServiceImpl(iamConfiguration, httpClientService)
+        @Autowired iamConfiguration: IamConfiguration
+    ) = V2PolicyServiceImpl(apigwHttpClientService(iamConfiguration), iamConfiguration)
 
     @Bean
     fun tokenService(
-        @Autowired iamConfiguration: IamConfiguration,
-        @Autowired httpClientService: HttpClientService
-    ) = TokenServiceImpl(iamConfiguration, httpClientService)
+        @Autowired iamConfiguration: IamConfiguration
+    ) = TokenServiceImpl(iamConfiguration, apigwHttpClientService(iamConfiguration))
 
     @Bean
     fun authHelper(
@@ -99,4 +102,27 @@ class BkiamConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun iamEsbService() = IamEsbClient()
+
+    // 接入V3(RBAC)
+    /**
+     * 鉴权类http实例。 管理类与鉴权类http实例分开，防止相互影响
+     */
+    @Bean
+    fun apigwHttpClientService(iamConfiguration: IamConfiguration) = ApigwHttpClientServiceImpl(iamConfiguration)
+
+    /**
+     * 管理类http实例。 管理类与鉴权类http实例分开，防止相互影响
+     */
+    @Bean
+    fun managerHttpClientService(iamConfiguration: IamConfiguration) = ApigwHttpClientServiceImpl(iamConfiguration)
+
+    @Bean
+    fun iamManagerServiceV2(
+        iamConfiguration: IamConfiguration
+    ) = V2ManagerServiceImpl(managerHttpClientService(iamConfiguration), iamConfiguration)
+
+    @Bean
+    fun iamManagerServiceV1(
+        iamConfiguration: IamConfiguration
+    ) = ManagerServiceImpl(managerHttpClientService(iamConfiguration), iamConfiguration)
 }

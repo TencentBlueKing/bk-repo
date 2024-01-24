@@ -15,7 +15,8 @@ object ProjectEventFactory {
         with(request) {
             return ProjectCreatedEvent(
                 projectId = name,
-                userId = operator
+                userId = operator,
+                createPermission = createPermission
             )
         }
     }

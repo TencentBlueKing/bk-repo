@@ -31,8 +31,9 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.toArtifactFile
+import com.tencent.bkrepo.common.artifact.cns.CnsService
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -47,6 +48,7 @@ import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_SECOND_STEP_URL
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.service.BlobChunkedService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -59,7 +61,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
-import java.io.File
 
 /**
  * blob数据同步接口
@@ -72,6 +73,9 @@ class BlobReplicaController(
     private val blobChunkedService: BlobChunkedService,
     private val baseCacheHandler: BaseCacheHandler
 ) {
+
+    @Autowired(required = false)
+    private var cnsService: CnsService? = null
 
     @PostMapping(BLOB_PULL_URI)
     fun pull(@RequestBody request: BlobPullRequest): ResponseEntity<InputStreamResource> {
@@ -110,21 +114,23 @@ class BlobReplicaController(
             ArtifactFileFactory.build(file, credentials)
         } else {
             val filepath: String = credentials.upload.location + "/" + fileName
-            val artifactFile = File(filepath)
-            file.transferTo(artifactFile)
-            artifactFile.toArtifactFile()
+            ArtifactFileFactory.build(file, filepath)
         }
     }
 
     @GetMapping(BLOB_CHECK_URI)
     fun check(
         @RequestParam sha256: String,
-        @RequestParam storageKey: String? = null
+        @RequestParam storageKey: String? = null,
+        @RequestParam(required = false) repoType: String? = null
     ): Response<Boolean> {
+        cnsService?.let {
+            val repositoryType = repoType?.let { RepositoryType.ofValueOrDefault(repoType) }
+            return ResponseBuilder.success(it.check(storageKey, sha256, repositoryType))
+        }
         val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         return ResponseBuilder.success(storageService.exist(sha256, credentials))
     }
-
 
     /**
      * 分块上传
@@ -143,7 +149,10 @@ class BlobReplicaController(
         logger.info("The file with sha256 [$sha256] will be handled with chunked upload!")
         val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         return blobChunkedService.obtainSessionIdForUpload(
-            projectId, repoName, credentials, sha256
+            projectId,
+            repoName,
+            credentials,
+            sha256
         )
     }
 
@@ -162,10 +171,14 @@ class BlobReplicaController(
         logger.info("The file with sha256 [$sha256] will be uploaded with $uuid")
         val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         blobChunkedService.uploadChunkedFile(
-            projectId, repoName, credentials, sha256, artifactFile, uuid
+            projectId,
+            repoName,
+            credentials,
+            sha256,
+            artifactFile,
+            uuid
         )
     }
-
 
     @RequestMapping(
         method = [RequestMethod.PUT],
@@ -175,14 +188,23 @@ class BlobReplicaController(
         artifactFile: ArtifactFile,
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null,
+        @RequestParam size: Long? = null,
+        @RequestParam md5: String? = null,
         @PathVariable uuid: String,
         @PathVariable projectId: String,
         @PathVariable repoName: String,
     ) {
-        logger.info("The file with sha256 [$sha256] will be finished with $uuid")
+        logger.info("The file (sha256 [$sha256], size [$size], md5 [$md5]) will be finished with $uuid")
         val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         blobChunkedService.finishChunkedUpload(
-            projectId, repoName, credentials, sha256, artifactFile, uuid
+            projectId = projectId,
+            repoName = repoName,
+            credentials = credentials,
+            sha256 = sha256,
+            artifactFile = artifactFile,
+            uuid = uuid,
+            size = size,
+            md5 = md5
         )
     }
 

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -40,9 +41,12 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
@@ -65,6 +69,7 @@ class NodeServiceImpl(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
+    override val servicePermissionClient: ServicePermissionClient,
     override val routerControllerClient: RouterControllerClient
 ) : NodeBaseService(
     nodeDao,
@@ -75,11 +80,12 @@ class NodeServiceImpl(
     quotaService,
     repositoryProperties,
     messageSupplier,
+    servicePermissionClient,
     routerControllerClient
 ) {
 
-    override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
-        return NodeStatsSupport(this).computeSize(artifact)
+    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
+        return NodeStatsSupport(this).computeSize(artifact, estimated)
     }
 
     override fun aggregateComputeSize(criteria: Criteria): Long {
@@ -109,7 +115,7 @@ class NodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
-        operator: String
+        operator: String,
     ): NodeDeleteResult {
         return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
     }
@@ -119,7 +125,7 @@ class NodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPaths: List<String>,
-        operator: String
+        operator: String,
     ): NodeDeleteResult {
         return NodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
     }
@@ -128,19 +134,20 @@ class NodeServiceImpl(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String,
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator)
+        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
-        NodeMoveCopySupport(this).moveNode(moveRequest)
+    override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
+        return NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
-        NodeMoveCopySupport(this).copyNode(copyRequest)
+    override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
+        return NodeMoveCopySupport(this).copyNode(copyRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -150,6 +157,14 @@ class NodeServiceImpl(
 
     override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         return NodeRestoreSupport(this).getDeletedNodeDetail(artifact)
+    }
+
+    override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {
+        return NodeRestoreSupport(this).getDeletedNodeDetailBySha256(
+            projectId,
+            repoName,
+            sha256,
+        )
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -163,5 +178,21 @@ class NodeServiceImpl(
 
     override fun restoreNode(restoreContext: NodeRestoreSupport.RestoreContext): NodeRestoreResult {
         return NodeRestoreSupport(this).restoreNode(restoreContext)
+    }
+
+    override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
+        return NodeArchiveSupport(this).archiveNode(nodeArchiveRequest)
+    }
+
+    override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
+        return NodeArchiveSupport(this).restoreNode(nodeArchiveRequest)
+    }
+
+    override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {
+        return NodeCompressSupport(this).compressedNode(nodeCompressedRequest)
+    }
+
+    override fun uncompressedNode(nodeUnCompressedRequest: NodeUnCompressedRequest) {
+        return NodeCompressSupport(this).uncompressedNode(nodeUnCompressedRequest)
     }
 }

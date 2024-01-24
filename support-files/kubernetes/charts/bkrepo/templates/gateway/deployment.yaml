@@ -105,6 +105,8 @@ spec:
               value: {{ .Values.gateway.ssmTokenUrl }}
             - name: BK_REPO_SSM_ENV
               value: {{ .Values.gateway.ssmEnv }}
+            - name: BK_APIGW_URL
+              value: {{ .Values.gateway.bkApigwUrl }}
             - name: BK_REPO_APP_CODE
               value: {{ .Values.gateway.appCode }}
             - name: BK_REPO_APP_TOKEN

@@ -29,9 +29,9 @@ package com.tencent.bkrepo.replication.fdtp
 
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.fdtp.SimpleChannelPoolMap
+import com.tencent.bkrepo.udt.netty.transport.nio.NioUdtProvider
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.nio.NioEventLoopGroup
-import io.netty.channel.udt.nio.NioUdtProvider
 import io.netty.util.concurrent.DefaultThreadFactory
 import org.springframework.beans.factory.DisposableBean
 import org.springframework.stereotype.Component
@@ -86,7 +86,11 @@ class FdtpAFTClientFactory(fdtpAuthManager: FdtpAuthManager, clientProperties: F
                     val udpPort = udpPort ?: defaultPort
                     val serverAddress = InetSocketAddress(host, udpPort!!)
                     val newClient = FdtpAFTClient(
-                        serverAddress, poolMap, certificate, fdtpAuthManager, clientProperties
+                        serverAddress,
+                        poolMap,
+                        certificate,
+                        fdtpAuthManager,
+                        clientProperties
                     )
                     clientCache.putIfAbsent(clusterInfo, newClient)
                     newClient

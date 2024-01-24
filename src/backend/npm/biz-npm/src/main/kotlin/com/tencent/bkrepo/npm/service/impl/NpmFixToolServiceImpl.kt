@@ -333,7 +333,7 @@ class NpmFixToolServiceImpl(
 			select = mutableListOf(),
 			rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
 		)
-		val queryResult = nodeClient.search(queryModel).data!!
+		val queryResult = nodeClient.queryWithoutCount(queryModel).data!!
 		return queryResult.records.associateBy(
 			{ resolverVersion(packageName, it["fullPath"] as String) },
 			{ resolveNode(it) }
@@ -363,7 +363,7 @@ class NpmFixToolServiceImpl(
 			select = mutableListOf(),
 			rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
 		)
-		return nodeClient.search(queryModel).data!!
+		return nodeClient.queryWithoutCount(queryModel).data!!
 	}
 
 	private fun resolveNode(record: Map<String, Any?>): NodeInfo {

@@ -29,6 +29,8 @@ package com.tencent.bkrepo.common.notify.client.weworkbot
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
@@ -52,12 +54,13 @@ class WeworkBotClient(
 
     override fun send(credential: NotifyChannelCredential, message: NotifyMessage) {
         require(credential is WeworkBotChannelCredential && message is WeworkBotMessage)
+        if (message.chatIds.isNullOrEmpty()) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "chatIds is empty")
+        }
 
         // 构造body
         val bodyMap = HashMap<String, Any>().apply {
-            if (!message.chatIds.isNullOrEmpty()) {
-                put("chatid", message.chatIds!!.joinToString("|"))
-            }
+            put("chatid", message.chatIds!!.joinToString("|"))
             put("msgtype", message.body.type())
             put(message.body.type(), message.body)
         }

@@ -44,15 +44,15 @@ import com.amazonaws.services.s3.model.PutObjectRequest
 import com.amazonaws.services.s3.transfer.TransferManager
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
+import com.tencent.bkrepo.common.storage.core.AbstractEncryptorFileStorage
 import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
 import java.io.InputStream
 
 class S3Storage(
-    private val executor: ThreadPoolTaskExecutor
-) : AbstractFileStorage<S3Credentials, S3Client>() {
+    private val executor: ThreadPoolTaskExecutor,
+) : AbstractEncryptorFileStorage<S3Credentials, S3Client>() {
 
     private var defaultTransferManager: TransferManager? = null
 
@@ -71,7 +71,9 @@ class S3Storage(
 
     override fun load(path: String, name: String, range: Range, client: S3Client): InputStream? {
         val getObjectRequest = GetObjectRequest(client.bucketName, name)
-        getObjectRequest.setRange(range.start, range.end)
+        if (range.isPartialContent()) {
+            getObjectRequest.setRange(range.start, range.end)
+        }
         return client.s3Client.getObject(getObjectRequest).objectContent
     }
 

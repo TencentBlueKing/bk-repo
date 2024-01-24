@@ -53,16 +53,40 @@ object CosSigner {
         val currentTimestamp = System.currentTimeMillis() / MILLIS_PER_SECOND
         val signTime = "$currentTimestamp;${currentTimestamp + expiredTime.seconds}"
         val signKey = hmacSha1(signTime, credentials.secretKey)
-        val formatString = buildFormatString(request)
-        val stringToSign = buildStringToSign(signTime, formatString)
+        val publicInnerAcess = credentials.public && credentials.inner
+        val formatString = if (publicInnerAcess) buildPublicFormatString(request) else buildFormatString(request)
+        val stringToSign = if (publicInnerAcess) {
+            buildPublicStringToSign(signTime, formatString)
+        } else {
+            buildStringToSign(signTime, formatString)
+        }
         val signature = hmacSha1(stringToSign, signKey)
         return buildAuthorization(
             secretId = credentials.secretId,
             signTime = signTime,
             signedHeaderList = request.getFormatHeaderKeys(),
             signedParameterList = request.getFormatParameterKeys(),
-            signature = signature
+            signature = signature,
         )
+    }
+
+    private fun buildPublicFormatString(request: CosRequest): String {
+        return StringBuilder()
+            .append(request.getFormatMethod())
+            .append("\n").append(request.getFormatUri())
+            .append("\n").append(request.getFormatParameters())
+            .append("\n").append(request.getFormatHeaders())
+            .append("\n")
+            .toString()
+    }
+
+    private fun buildPublicStringToSign(signTime: String, formatString: String): String {
+        return StringBuilder()
+            .append(ALGORITHM)
+            .append("\n").append(signTime)
+            .append("\n").append(sha1(formatString))
+            .append("\n")
+            .toString()
     }
 
     private fun buildFormatString(request: CosRequest): String {
@@ -87,7 +111,7 @@ object CosSigner {
         signTime: String,
         signedHeaderList: String,
         signedParameterList: String,
-        signature: String
+        signature: String,
     ): String {
         return StringBuilder()
             .append("q-sign-algorithm=").append(ALGORITHM).append('&')

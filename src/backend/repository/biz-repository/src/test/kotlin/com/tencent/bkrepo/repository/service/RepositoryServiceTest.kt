@@ -73,6 +73,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import java.time.Duration
 
 @DisplayName("仓库服务测试")
 @DataMongoTest
@@ -93,14 +94,20 @@ class RepositoryServiceTest @Autowired constructor(
         path = "test"
         cache.enabled = true
         cache.path = "cache-test"
-        cache.expireDays = 10
+        cache.expireDuration = Duration.ofHours(10)
     }
 
     @BeforeAll
     fun beforeAll() {
         initMock()
         if (!projectService.checkExist(UT_PROJECT_ID)) {
-            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
+            val projectCreateRequest = ProjectCreateRequest(
+                name = UT_PROJECT_ID,
+                displayName = UT_REPO_NAME,
+                description = UT_REPO_DISPLAY,
+                createPermission = true,
+                operator = UT_USER
+            )
             projectService.createProject(projectCreateRequest)
         }
         val request = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, storageCredentials, UT_REGION)

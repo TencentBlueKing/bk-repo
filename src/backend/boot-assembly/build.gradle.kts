@@ -38,13 +38,15 @@ dependencies {
     implementation(project(":maven:biz-maven"))
     implementation(project(":npm:biz-npm"))
     implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
     implementation(project(":rpm:biz-rpm"))
     implementation(project(":oci:biz-oci"))
     implementation(project(":job:biz-job"))
     implementation(project(":analyst:biz-analyst"))
     implementation(project(":replication:biz-replication"))
     implementation(project(":webhook:biz-webhook"))
+    implementation(project(":lfs:biz-lfs"))
+    implementation(project(":ddc:biz-ddc"))
+    implementation(project(":archive:biz-archive"))
 }
 
 configurations.all {

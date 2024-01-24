@@ -37,6 +37,10 @@ import org.springframework.data.mongodb.core.query.Query
 
 open class QueryContext(
     open var queryModel: QueryModel,
+    /**
+     * 是否已经检查过权限，用于interpreter执行完后判断是否需要校验权限，避免多次校验影响性能
+     */
+    open var permissionChecked: Boolean,
     open val mongoQuery: Query,
     open val interpreter: MongoQueryInterpreter
 )

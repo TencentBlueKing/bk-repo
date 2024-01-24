@@ -34,11 +34,11 @@ package com.tencent.bkrepo.opdata.handler.impl
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
 import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.stereotype.Component
 
 /**
@@ -46,17 +46,13 @@ import org.springframework.stereotype.Component
  */
 @Component
 class NodeNumHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository
-) : QueryHandler {
+    statDateModel: StatDateModel
+) : QueryHandler, BaseHandler(statDateModel) {
 
     override val metric: Metrics get() = Metrics.NODENUM
 
     override fun handle(target: Target, result: MutableList<Any>) {
-        var num = 0L
-        val projects = projectMetricsRepository.findAll()
-        projects.forEach {
-            num += it.nodeNum
-        }
+        var num = calculateMetricValue(target).values.firstOrNull() ?: 0
         val column = Columns(OPDATA_NODE_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(num)
         val data = QueryResult(listOf(column), listOf(row), target.type)

@@ -81,5 +81,5 @@ interface ProjectScanConfigurationService {
      *
      * @return 项目扫描配置
      */
-    fun findProjectOrGlobalScanConfiguration(projectId: String): ProjectScanConfiguration?
+    fun findProjectOrGlobalScanConfiguration(projectId: String? = null): ProjectScanConfiguration?
 }

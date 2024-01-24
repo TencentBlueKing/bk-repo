@@ -3,7 +3,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp")
     implementation(project(":common:common-api"))
     implementation("ch.qos.logback:logback-classic")
-    implementation("com.squareup.okhttp3:okhttp-sse")
+    implementation("com.squareup.okhttp3:okhttp-sse:${Versions.OKhttp}")
+    implementation("commons-codec:commons-codec")
 }
 plugins {
     id("me.champeau.gradle.jmh") version Versions.JMH

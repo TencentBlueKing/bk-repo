@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter.addProtocol
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.api.ReplicaTaskOperationClient
@@ -60,16 +61,15 @@ import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
-import com.tencent.bkrepo.replication.replica.base.executor.RunOnceThreadPoolExecutor
-import com.tencent.bkrepo.replication.replica.event.EventBasedReplicaJobExecutor
-import com.tencent.bkrepo.replication.replica.manual.ManualReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.executor.RunOnceThreadPoolExecutor
+import com.tencent.bkrepo.replication.replica.type.event.EventBasedReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.type.manual.ManualReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodePermissionService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaNodeDispatchService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
-import com.tencent.bkrepo.replication.util.HttpUtils.addProtocol
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationTaskMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import org.slf4j.LoggerFactory
@@ -99,24 +99,7 @@ class RemoteNodeServiceImpl(
     ): List<ClusterNodeInfo> {
         return requests.configs.map {
             validateName(it.name)
-            val realName = NAME.format(projectId, repoName, it.name)
-            val tClusterNode = if (it.clusterId.isNullOrEmpty()) {
-                val oldCluster = clusterNodeService.getByClusterName(realName)
-                if (oldCluster == null) {
-                    clusterNodeService.create(
-                        SecurityUtils.getUserId(), buildClusterNodeCreateRequest(projectId, repoName, it)
-                    )
-                } else {
-                    val updateRequest = convertCreateToUpdate(it)
-                    clusterNodeService.update(
-                        buildClusterNodeUpdateRequest(projectId, repoName, it.name, updateRequest)
-                    )
-                }
-            } else {
-                clusterNodeService.getByClusterId(it.clusterId!!)
-                    ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, it.clusterId!!)
-            }
-
+            val tClusterNode = createClusterInfo(projectId, repoName, it)
             createOrUpdateTask(
                 projectId = projectId,
                 repoName = repoName,
@@ -231,34 +214,6 @@ class RemoteNodeServiceImpl(
     }
 
 
-    private fun createWithRemoteClient(
-        projectId: String, repoName: String,
-        request: RemoteRunOnceTaskCreateRequest
-    ): Boolean {
-        val host = if (!request.clusterId.isNullOrEmpty()) {
-            val clusterInfo = clusterNodeService.getByClusterId(request.clusterId!!)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, request.clusterId!!)
-            clusterInfo.url
-        } else {
-            addProtocol(request.registry!!).toString()
-        }
-        buildExecuteClientWithHost(host)?.let {
-            try{
-                it.createRunOnceTask(projectId, repoName, request)
-                return true
-            } catch (e: Exception) {
-                // fegin连不上时需要降级为本地执行
-                logger.warn("Cloud not run task on remote node, will run with current node")
-            }
-        }
-        return false
-    }
-
-    private fun buildExecuteClientWithHost(host: String) : ReplicaTaskOperationClient? {
-        return replicaNodeDispatchService.findReplicaClientByHost(
-            host, ReplicaTaskOperationClient::class.java
-        )
-    }
 
     // dispatch 默认为TRUE, fegin调用时为FALSE，避免feign调用时再次进行配置判断
     override fun executeRunOnceTask(projectId: String, repoName: String, name: String, dispatch: Boolean) {
@@ -272,34 +227,6 @@ class RemoteNodeServiceImpl(
         executors.execute(Runnable { manualReplicaJobExecutor.execute(taskDetail) }.trace())
     }
 
-
-    /**
-     * 执行成功返回true，fegin连不上时需要降级为本地执行，返回false
-     */
-    private fun executeWithRemoteClient(
-        projectId: String, repoName: String, name: String,
-        taskDetail: ReplicaTaskDetail
-    ): Boolean {
-        buildExecuteClient(taskDetail)?.let {
-            try{
-                it.executeRunOnceTask(projectId, repoName, name)
-                return true
-            } catch (e: Exception) {
-                // fegin连不上时需要降级为本地执行
-                logger.warn("Cloud not run task on remote node, will run with current node")
-            }
-        }
-        return false
-    }
-
-
-    private fun buildExecuteClient(
-        taskDetail: ReplicaTaskDetail
-    ) : ReplicaTaskOperationClient? {
-        return replicaNodeDispatchService.findReplicaClient(
-                taskDetail, ReplicaTaskOperationClient::class.java
-            )
-    }
 
     override fun getRunOnceTaskResult(projectId: String, repoName: String, name: String): ReplicaRecordInfo? {
         val taskInfo = getReplicaTaskInfo(projectId, repoName, name)
@@ -323,38 +250,35 @@ class RemoteNodeServiceImpl(
         deleteByTaskName(taskName)
     }
 
-    private fun deleteByTaskName(taskName: String) {
-        logger.info("Task $taskName will be deleted!")
-        replicaTaskService.getByTaskName(taskName)?.let {
-            if (it.status!! != ReplicaStatus.COMPLETED && it.replicaType != ReplicaType.RUN_ONCE) {
-                logger.warn("The name $taskName of runonce task is still running")
-                throw ErrorCodeException(CommonMessageCode.REQUEST_DENIED, taskName)
+    /**
+     * 根据分发任务内容创建对应的集群信息
+     */
+    private fun createClusterInfo(
+        projectId: String,
+        repoName: String,
+        request: RemoteConfigCreateRequest
+    ): ClusterNodeInfo {
+        val realName = NAME.format(projectId, repoName, request.name)
+        // clusterId为空的情况默认为remote集群
+        return if (request.clusterId.isNullOrEmpty()) {
+            val oldCluster = clusterNodeService.getByClusterName(realName)
+            if (oldCluster == null) {
+                clusterNodeService.create(
+                    SecurityUtils.getUserId(), buildClusterNodeCreateRequest(projectId, repoName, request)
+                )
+            } else {
+                val updateRequest = convertCreateToUpdate(request)
+                clusterNodeService.update(
+                    buildClusterNodeUpdateRequest(projectId, repoName, request.name, updateRequest)
+                )
             }
-            clusterNodeService.getByClusterName(taskName)?.let { node ->
-                clusterNodeService.deleteById(node.id!!)
-            }
-            replicaTaskService.deleteByTaskKey(it.key)
+        } else {
+            // clusterId不为空则任务是通过集群，同构集群都是在任务创建前已经创建
+            clusterNodeService.getByClusterId(request.clusterId!!)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, request.clusterId!!)
         }
     }
 
-    private fun getTaskDetail(
-        projectId: String,
-        repoName: String,
-        name: String
-    ): ReplicaTaskDetail {
-        val taskInfo = getReplicaTaskInfo(projectId, repoName, name)
-        return replicaTaskService.getDetailByTaskKey(taskInfo.key)
-    }
-
-    private fun getReplicaTaskInfo(
-        projectId: String,
-        repoName: String,
-        name: String
-    ): ReplicaTaskInfo {
-        val realName = NAME.format(projectId, repoName, name)
-        return replicaTaskService.getByTaskName(realName)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
-    }
 
     /**
      * 当远端集群创建后，创建/更新对应的任务
@@ -372,29 +296,12 @@ class RemoteNodeServiceImpl(
             )
 
             val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
-            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty()
-                && replicaType == ReplicaType.RUN_ONCE) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Package or path")
-            }
-            val replicaTaskObjects = listOf(
-                ReplicaObjectInfo(
-                    localRepoName = repoName,
-                    repoType = repositoryDetail.type,
-                    remoteProjectId = remoteProjectId,
-                    remoteRepoName = remoteRepoName,
-                    packageConstraints = packageConstraints,
-                    pathConstraints = pathConstraints
-                )
+            // 只有在同构集群内部才可以通过一次性分发任务进行仓库同步
+            validateReplicaObject(request, clusterInfo)
+            val replicaObjectType = getReplicaObjectType(request)
+            val replicaTaskObjects = buildReplicaTaskObjects(
+                repoName, repositoryDetail.type, replicaObjectType, request
             )
-            val replicaObjectType = if (replicaType == ReplicaType.RUN_ONCE) {
-                if (!pathConstraints.isNullOrEmpty()) {
-                    ReplicaObjectType.PATH
-                } else {
-                    ReplicaObjectType.PACKAGE
-                }
-            } else {
-                ReplicaObjectType.REPOSITORY
-            }
             var task = replicaTaskService.getByTaskName(NAME.format(projectId, repoName, name))
             if (task == null) {
                 val taskCreateRequest = ReplicaTaskCreateRequest(
@@ -439,6 +346,72 @@ class RemoteNodeServiceImpl(
         }
     }
 
+    /**
+     * 校验分发内容
+     */
+    private fun validateReplicaObject(
+        request: RemoteConfigCreateRequest,
+        clusterInfo: ClusterNodeInfo
+    ) {
+        with(request) {
+            // 兼容历史数据，replicaObjectType为空的情况
+            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty() &&
+                clusterInfo.type == ClusterNodeType.REMOTE) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Package or path")
+            }
+
+            if (pathConstraints.isNullOrEmpty() && packageConstraints.isNullOrEmpty() &&
+                replicaObjectType != ReplicaObjectType.REPOSITORY) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Package or path")
+            }
+        }
+    }
+
+
+    /**
+     * 获取对应分发任务的内容类型
+     */
+    private fun getReplicaObjectType(request: RemoteConfigCreateRequest): ReplicaObjectType {
+        with(request) {
+            if (replicaObjectType != null) return replicaObjectType!!
+            return if (replicaType == ReplicaType.RUN_ONCE) {
+                if (!pathConstraints.isNullOrEmpty()) {
+                    ReplicaObjectType.PATH
+                } else {
+                    ReplicaObjectType.PACKAGE
+                }
+            } else {
+                ReplicaObjectType.REPOSITORY
+            }
+        }
+    }
+
+    private fun buildReplicaTaskObjects(
+        repoName: String,
+        repoType: RepositoryType,
+        replicaObjectType: ReplicaObjectType,
+        request: RemoteConfigCreateRequest
+    ): List<ReplicaObjectInfo> {
+        with(request) {
+            val taskObjects = mutableListOf<ReplicaObjectInfo>()
+            val (packageConstraints, pathConstraints) = if (replicaObjectType == ReplicaObjectType.REPOSITORY) {
+                Pair(null, null)
+            } else {
+                Pair(packageConstraints, pathConstraints)
+            }
+            taskObjects.add(ReplicaObjectInfo(
+                localRepoName = repoName,
+                repoType = repoType,
+                remoteProjectId = remoteProjectId,
+                remoteRepoName = remoteRepoName,
+                packageConstraints = packageConstraints,
+                pathConstraints = pathConstraints
+            ))
+            return taskObjects
+        }
+    }
+
+
     private fun getRemoteInfoByName(
         projectId: String,
         repoName: String,
@@ -455,6 +428,103 @@ class RemoteNodeServiceImpl(
             )
         }
     }
+
+    private fun getTaskDetail(
+        projectId: String,
+        repoName: String,
+        name: String
+    ): ReplicaTaskDetail {
+        val taskInfo = getReplicaTaskInfo(projectId, repoName, name)
+        return replicaTaskService.getDetailByTaskKey(taskInfo.key)
+    }
+
+
+
+    private fun createWithRemoteClient(
+        projectId: String, repoName: String,
+        request: RemoteRunOnceTaskCreateRequest
+    ): Boolean {
+        val host = if (!request.clusterId.isNullOrEmpty()) {
+            val clusterInfo = clusterNodeService.getByClusterId(request.clusterId!!)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, request.clusterId!!)
+            clusterInfo.url
+        } else {
+            addProtocol(request.registry!!).toString()
+        }
+        buildExecuteClientWithHost(host)?.let {
+            try{
+                it.createRunOnceTask(projectId, repoName, request)
+                return true
+            } catch (e: Exception) {
+                // fegin连不上时需要降级为本地执行
+                logger.warn("Cloud not run task on remote node, will run with current node")
+            }
+        }
+        return false
+    }
+
+    private fun buildExecuteClientWithHost(host: String) : ReplicaTaskOperationClient? {
+        return replicaNodeDispatchService.findReplicaClientByHost(
+            host, ReplicaTaskOperationClient::class.java
+        )
+    }
+
+
+    /**
+     * 执行成功返回true，fegin连不上时需要降级为本地执行，返回false
+     */
+    private fun executeWithRemoteClient(
+        projectId: String, repoName: String, name: String,
+        taskDetail: ReplicaTaskDetail
+    ): Boolean {
+        buildExecuteClient(taskDetail)?.let {
+            try{
+                it.executeRunOnceTask(projectId, repoName, name)
+                return true
+            } catch (e: Exception) {
+                // fegin连不上时需要降级为本地执行
+                logger.warn("Cloud not run task on remote node, will run with current node")
+            }
+        }
+        return false
+    }
+
+
+    private fun buildExecuteClient(
+        taskDetail: ReplicaTaskDetail
+    ) : ReplicaTaskOperationClient? {
+        return replicaNodeDispatchService.findReplicaClient(
+                taskDetail, ReplicaTaskOperationClient::class.java
+            )
+    }
+
+
+
+    private fun getReplicaTaskInfo(
+        projectId: String,
+        repoName: String,
+        name: String
+    ): ReplicaTaskInfo {
+        val realName = NAME.format(projectId, repoName, name)
+        return replicaTaskService.getByTaskName(realName)
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
+    }
+
+
+    private fun deleteByTaskName(taskName: String) {
+        logger.info("Task $taskName will be deleted!")
+        replicaTaskService.getByTaskName(taskName)?.let {
+            if (it.status!! != ReplicaStatus.COMPLETED && it.replicaType != ReplicaType.RUN_ONCE) {
+                logger.warn("The name $taskName of runonce task is still running")
+                throw ErrorCodeException(CommonMessageCode.REQUEST_DENIED, taskName)
+            }
+            clusterNodeService.getByClusterName(taskName)?.let { node ->
+                clusterNodeService.deleteById(node.id!!)
+            }
+            replicaTaskService.deleteByTaskKey(it.key)
+        }
+    }
+
 
     private fun buildClusterNodeCreateRequest(
         projectId: String,
@@ -530,6 +600,7 @@ class RemoteNodeServiceImpl(
                 remoteUserPassword = remoteUserPassword,
                 remoteProjectId = remoteProjectId,
                 remoteRepoName = remoteRepoName,
+                replicaObjectType = replicaObjectType,
                 packageConstraints = packageConstraints,
                 pathConstraints = pathConstraints,
                 replicaType = replicaType,
@@ -551,6 +622,7 @@ class RemoteNodeServiceImpl(
                 remoteUserUsername = remoteUserUsername,
                 remoteUserPassword = remoteUserPassword,
                 packageConstraints = packageConstraints,
+                replicaObjectType = replicaObjectType,
                 pathConstraints = pathConstraints,
                 replicaType = replicaType,
                 setting = setting,
@@ -577,6 +649,7 @@ class RemoteNodeServiceImpl(
                 remoteUserPassword = remoteUserPassword,
                 remoteProjectId = remoteProjectId,
                 remoteRepoName = remoteRepoName,
+                replicaObjectType = replicaObjectType,
                 packageConstraints = packageConstraints,
                 pathConstraints = pathConstraints,
                 replicaType = replicaType,

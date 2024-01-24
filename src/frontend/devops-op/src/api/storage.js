@@ -44,11 +44,16 @@ export function updateCredential(key, credential, defaultCredential = false) {
   if (defaultCredential) {
     const prefix = `${STORAGE_CONFIG_PREFIX}.${credential.type}`
     const expireDaysKey = `${prefix}.${STORAGE_CACHE_CONFIG_PREFIX}.expireDays`
+    const expireDurationKey = `${prefix}.${STORAGE_CACHE_CONFIG_PREFIX}.expireDuration`
     const loadCacheFirstKey = `${prefix}.${STORAGE_CACHE_CONFIG_PREFIX}.loadCacheFirst`
     const values = [
       {
         'key': expireDaysKey,
         'value': credential.cache.expireDays
+      },
+      {
+        'key': expireDurationKey,
+        'value': credential.cache.expireDuration * 1000 // consul上Duration不带单位时默认是毫秒
       },
       {
         'key': loadCacheFirstKey,

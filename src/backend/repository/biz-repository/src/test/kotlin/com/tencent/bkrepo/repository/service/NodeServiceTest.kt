@@ -31,10 +31,13 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
@@ -61,6 +64,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
@@ -86,12 +91,12 @@ class NodeServiceTest @Autowired constructor(
 
     @BeforeAll
     fun beforeAll() {
-        initMock()
         initRepoForUnitTest(projectService, repositoryService)
     }
 
     @BeforeEach
     fun beforeEach() {
+        initMock()
         repositoryProperties.nodeCreateTimeout = 5000
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
@@ -258,6 +263,41 @@ class NodeServiceTest @Autowired constructor(
     }
 
     @Test
+    @DisplayName("测试查询无路径权限的目录")
+    fun testListNoPathPermissionNode() {
+        val size = 5L
+        repeat(size.toInt()) { i -> nodeService.createNode(createRequest("/a/$i/$i.txt", false)) }
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(
+                    status = true,
+                    path = mapOf(OperationType.NIN to listOf("/a/1", "/a/2"))
+                )
+            )
+        )
+
+        val option = NodeListOption(
+            pageNumber = 0,
+            pageSize = 10,
+            includeFolder = true,
+            includeMetadata = false,
+            deep = false,
+            sort = false
+        )
+        val page = nodeService.listNodePage(node("/a"), option)
+        assertEquals(3, page.totalRecords)
+        assertEquals("/a/0", page.records[0].fullPath)
+        assertEquals("/a/3", page.records[1].fullPath)
+        assertEquals("/a/4", page.records[2].fullPath)
+
+        val result = nodeService.listNode(node("/a"), option)
+        assertEquals(3, result.size)
+        assertEquals("/a/0", result[0].fullPath)
+        assertEquals("/a/3", result[1].fullPath)
+        assertEquals("/a/4", result[2].fullPath)
+    }
+
+    @Test
     @DisplayName("测试删除文件")
     fun testDeleteFile() {
         nodeService.createNode(createRequest("/a/b/1.txt", false))
@@ -325,6 +365,7 @@ class NodeServiceTest @Autowired constructor(
         val pathSizeInfo = nodeService.computeSize(node("/a/b"))
 
         assertEquals(42, pathSizeInfo.subNodeCount)
+        assertEquals(40, pathSizeInfo.subNodeWithoutFolderCount)
         assertEquals(40, pathSizeInfo.size)
     }
 
@@ -348,6 +389,7 @@ class NodeServiceTest @Autowired constructor(
         val pathSizeInfo = nodeService.computeSize(node("/"))
 
         assertEquals(42, pathSizeInfo.subNodeCount)
+        assertEquals(40, pathSizeInfo.subNodeWithoutFolderCount)
         assertEquals(40, pathSizeInfo.size)
     }
 

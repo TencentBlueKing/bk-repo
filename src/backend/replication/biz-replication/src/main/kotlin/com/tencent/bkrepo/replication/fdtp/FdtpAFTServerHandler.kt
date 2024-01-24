@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.replication.fdtp
 
-import com.barchart.udt.StatusUDT
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedArtifactFile
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -42,9 +41,10 @@ import com.tencent.bkrepo.fdtp.codec.FdtpHeaders
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.fdtp.codec.FdtpStreamFrame
 import com.tencent.bkrepo.replication.constant.SHA256
+import com.tencent.bkrepo.udt.StatusUDT
+import com.tencent.bkrepo.udt.netty.transport.nio.NioUdtProvider
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
-import io.netty.channel.udt.nio.NioUdtProvider
 import io.netty.handler.timeout.IdleState
 import io.netty.handler.timeout.IdleStateEvent
 import org.slf4j.LoggerFactory
@@ -68,7 +68,7 @@ class FdtpAFTServerHandler(private val requestHandler: FdtpAFTRequestHandler) :
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         val socket = NioUdtProvider.socketUDT(ctx.channel())
-        if (socket.status() == StatusUDT.NONEXIST) {
+        if (socket?.status() == StatusUDT.NONEXIST) {
             logger.info("Peer close connection $socket")
         } else {
             logger.error("exceptionCaught $socket", cause)

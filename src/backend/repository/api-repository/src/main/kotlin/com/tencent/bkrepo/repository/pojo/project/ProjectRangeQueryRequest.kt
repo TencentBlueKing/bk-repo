@@ -41,5 +41,7 @@ data class ProjectRangeQueryRequest(
     @ApiModelProperty("分页偏移量", required = false)
     val offset: Long = 0L,
     @ApiModelProperty("分页大小", required = false)
-    val limit: Int = 20
+    val limit: Int = 20,
+    @ApiModelProperty("项目元数据", required = false)
+    val projectMetadata: List<ProjectMetadata> = emptyList(),
 )

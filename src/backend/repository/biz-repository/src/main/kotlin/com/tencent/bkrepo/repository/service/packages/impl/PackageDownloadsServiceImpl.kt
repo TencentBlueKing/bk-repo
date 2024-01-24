@@ -117,7 +117,7 @@ class PackageDownloadsServiceImpl(
                 eqDate = date
             )
             val query = Query(criteria)
-            if (packageDownloadsDao.findOne(query) != null) {
+            if (packageDownloadsDao.exists(query)) {
                 return
             }
             val downloads = TPackageDownloads(
@@ -271,7 +271,7 @@ class PackageDownloadsServiceImpl(
      * 查找包，不存在则抛异常
      */
     private fun checkPackage(projectId: String, repoName: String, packageKey: String): TPackage {
-        return packageDao.findByKey(projectId, repoName, packageKey)
+        return packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)
             ?: throw ErrorCodeException(ArtifactMessageCode.PACKAGE_NOT_FOUND, packageKey)
     }
 

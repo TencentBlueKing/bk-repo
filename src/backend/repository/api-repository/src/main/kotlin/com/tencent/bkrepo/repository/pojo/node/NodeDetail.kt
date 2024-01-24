@@ -67,6 +67,8 @@ data class NodeDetail(
     val fullPath: String = nodeInfo.fullPath,
     @ApiModelProperty("文件大小，单位byte")
     val size: Long = nodeInfo.size,
+    @ApiModelProperty("文件节点个数")
+    val nodeNum: Long? = nodeInfo.nodeNum,
     @ApiModelProperty("文件sha256")
     val sha256: String? = nodeInfo.sha256,
     @ApiModelProperty("文件md5")
@@ -80,7 +82,11 @@ data class NodeDetail(
     @ApiModelProperty("所属仓库名称")
     val repoName: String = nodeInfo.repoName,
     @ApiModelProperty("集群信息")
-    val clusterNames: Set<String>? = nodeInfo.clusterNames
+    val clusterNames: Set<String>? = nodeInfo.clusterNames,
+    @ApiModelProperty("是否归档")
+    val archived: Boolean? = nodeInfo.archived,
+    @ApiModelProperty("是否压缩")
+    val compressed: Boolean? = nodeInfo.compressed,
 ) {
     /**
      * 获取node所属package的name
@@ -91,4 +97,6 @@ data class NodeDetail(
      * 获取node所属package的版本
      */
     fun packageVersion() = metadata[METADATA_KEY_PACKAGE_VERSION]?.toString()
+
+    fun identity(): String = "$projectId/$repoName/$fullPath"
 }

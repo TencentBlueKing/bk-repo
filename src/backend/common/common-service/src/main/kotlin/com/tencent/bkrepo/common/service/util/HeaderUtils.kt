@@ -39,6 +39,10 @@ import java.net.URLDecoder
 
 object HeaderUtils {
 
+    fun getHeaderNames(): List<String>? {
+        return request()?.headerNames?.toList()
+    }
+
     fun getHeader(name: String): String? {
         return request()?.getHeader(name)
     }

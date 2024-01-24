@@ -47,7 +47,6 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
-import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.query.UserQueryHelper
 import com.tencent.bkrepo.auth.util.query.UserUpdateHelper
 import com.tencent.bkrepo.auth.util.request.UserRequestUtil
@@ -114,7 +113,7 @@ class UserServiceImpl constructor(
             createUser(createRequest)
         }
         val hashPwd = if (request.pwd == null) {
-            DataDigestUtils.md5FromStr(IDUtil.genRandomId())
+            randomPassWord()
         } else {
             DataDigestUtils.md5FromStr(request.pwd!!)
         }
@@ -281,13 +280,15 @@ class UserServiceImpl constructor(
                 // conv time
                 expiredTime = expiredTime!!.plusHours(8)
             }
+            val sm3Id = DataDigestUtils.sm3FromStr(id)
             val userToken = Token(name = name, id = id, createdAt = createdTime, expiredAt = expiredTime)
-            update.addToSet(TUser::tokens.name, userToken)
+            val dataToken = Token(name = name, id = sm3Id, createdAt = createdTime, expiredAt = expiredTime)
+            update.addToSet(TUser::tokens.name, dataToken)
             mongoTemplate.upsert(query, update, TUser::class.java)
             val userInfo = userRepository.findFirstByUserId(userId)
             val tokens = userInfo!!.tokens
             tokens.forEach {
-                if (it.name == name) return it
+                if (it.name == name) return userToken
             }
             return null
         } catch (ignored: DateTimeParseException) {
@@ -299,6 +300,13 @@ class UserServiceImpl constructor(
     override fun listUserToken(userId: String): List<TokenResult> {
         checkUserExist(userId)
         return UserRequestUtil.convTokenResult(userRepository.findFirstByUserId(userId)!!.tokens)
+    }
+
+    override fun listValidToken(userId: String): List<Token> {
+        checkUserExist(userId)
+        return userRepository.findFirstByUserId(userId)!!.tokens.filter {
+            it.expiredAt == null || it.expiredAt!!.isAfter(LocalDateTime.now())
+        }
     }
 
     override fun removeToken(userId: String, name: String): Boolean {
@@ -325,8 +333,10 @@ class UserServiceImpl constructor(
                 return null
             }
         }
+        logger.debug("find user userId : [$userId]")
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
-        val query = UserQueryHelper.buildUserPasswordCheck(userId, pwd, hashPwd)
+        val sm3HashPwd = DataDigestUtils.sm3FromStr(pwd)
+        val query = UserQueryHelper.buildUserPasswordCheck(userId, pwd, hashPwd, sm3HashPwd)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: run {
             return null
         }
@@ -338,9 +348,9 @@ class UserServiceImpl constructor(
         // token 匹配成功
         result.tokens.forEach {
             // 永久token，校验通过，临时token校验有效期
-            if (UserRequestUtil.matchToken(pwd, hashPwd, it.id) && it.expiredAt == null) {
+            if (UserRequestUtil.matchToken(pwd, sm3HashPwd, it.id) && it.expiredAt == null) {
                 return UserRequestUtil.convToUser(result)
-            } else if (UserRequestUtil.matchToken(pwd, hashPwd, it.id) &&
+            } else if (UserRequestUtil.matchToken(pwd, sm3HashPwd, it.id) &&
                 it.expiredAt != null && it.expiredAt!!.isAfter(LocalDateTime.now())
             ) {
                 return UserRequestUtil.convToUser(result)
@@ -365,6 +375,11 @@ class UserServiceImpl constructor(
     override fun getUserInfoById(userId: String): UserInfo? {
         val tUser = userRepository.findFirstByUserId(userId) ?: return null
         return UserRequestUtil.convToUserInfo(tUser)
+    }
+
+    override fun getUserPwdById(userId: String): String? {
+        val tUser = userRepository.findFirstByUserId(userId) ?: return null
+        return tUser.pwd
     }
 
     override fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean {

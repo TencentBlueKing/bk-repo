@@ -61,7 +61,7 @@
                 <bk-select
                     v-model="genericShare.time"
                     :clearable="false"
-                    placeholder="请选择过期时间">
+                    :placeholder="$t('sharePlaceHolder3')">
                     <bk-option :id="1" name="1"></bk-option>
                     <bk-option :id="7" name="7"></bk-option>
                     <bk-option :id="30" name="30"></bk-option>
@@ -73,15 +73,18 @@
             <bk-button v-if="!shareUrl" theme="default" @click="cancel">{{ $t('cancel') }}</bk-button>
             <bk-button class="ml10" :loading="genericShare.loading" theme="primary" @click="shareUrl ? cancel() : submit()">{{$t('confirm')}}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
-    // import QRCode from '@repository/components/QRCode'
+// import QRCode from '@repository/components/QRCode'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapActions, mapState } from 'vuex'
     import { copyToClipboard } from '@repository/utils'
     export default {
         name: 'genericShare',
         // components: { QRCode },
+        components: { iamDenyDialog },
         data () {
             return {
                 shareUrl: '',
@@ -97,14 +100,16 @@
                     ip: [],
                     permits: '',
                     time: 0
-                }
+                },
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['userList'])
+            ...mapState(['userList', 'userInfo'])
         },
         methods: {
-            ...mapActions(['shareArtifactory', 'sendEmail']),
+            ...mapActions(['shareArtifactory', 'sendEmail', 'getPermissionUrl']),
             parseFn (data) {
                 if (data !== '') {
                     const users = data.toString().split(',')
@@ -153,6 +158,40 @@
                         message: this.$t('share') + this.$t('space') + this.$t('success')
                     })
                     this.cancel()
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                path: path,
+                                repoName: repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: projectId,
+                                    repoName: repoName,
+                                    action: 'READ',
+                                    path: path,
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
                 }).finally(() => {
                     this.genericShare.loading = false
                 })

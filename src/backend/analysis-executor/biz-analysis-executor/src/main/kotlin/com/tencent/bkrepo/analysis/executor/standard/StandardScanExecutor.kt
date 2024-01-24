@@ -77,7 +77,9 @@ class StandardScanExecutor(
             binds = Binds(Bind(taskWorkDir.absolutePath, Volume(CONTAINER_WORK_DIR))),
             args = args,
             scannerInputFile = scannerInputFile,
-            task = task
+            task = task,
+            userName = scanner.dockerRegistryUsername,
+            password = scanner.dockerRegistryPassword
         )
         return if (result) {
             SubScanTaskStatus.SUCCESS
@@ -121,7 +123,8 @@ class StandardScanExecutor(
             task.repoType,
             scannerInputFile.length(),
             task.packageKey,
-            task.packageVersion
+            task.packageVersion,
+            task.extra
         )
         val toolInput = ToolInput.create(
             task.taskId, convertToContainerPath(scannerInputFile.absolutePath, workDir), sha256, args

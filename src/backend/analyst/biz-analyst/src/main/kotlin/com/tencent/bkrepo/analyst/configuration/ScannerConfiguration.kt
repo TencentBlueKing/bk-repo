@@ -28,72 +28,46 @@
 package com.tencent.bkrepo.analyst.configuration
 
 import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
-import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
-import com.tencent.bkrepo.analyst.dispatcher.DockerDispatcher
-import com.tencent.bkrepo.analyst.dispatcher.KubernetesDispatcher
-import com.tencent.bkrepo.analyst.dispatcher.SubtaskDispatcher
+import com.tencent.bkrepo.analyst.dispatcher.SubtaskDispatcherFactory
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
-import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ScannerService
-import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
-import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
+import com.tencent.bkrepo.analyst.service.impl.ProjectUsageStatisticsServiceImpl
 import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import com.tencent.bkrepo.repository.api.OperateLogClient
-import com.tencent.bkrepo.statemachine.StateMachine
+import com.tencent.bkrepo.repository.api.ProjectUsageStatisticsClient
 import org.springframework.beans.factory.ObjectProvider
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(
     ScannerProperties::class,
     ReportExportProperties::class,
-    KubernetesDispatcherProperties::class,
-    DockerDispatcherProperties::class
 )
 @LoadBalancerClients(defaultConfiguration = [AnalysisLoadBalancerConfiguration::class])
+@Suppress("LongParameterList")
 class ScannerConfiguration {
     @Bean
-    @ConditionalOnProperty("scanner.dispatcher.k8s.enabled", havingValue = "true")
-    fun k8sDispatcher(
-        scannerProperties: ScannerProperties,
-        kubernetesDispatcherProperties: KubernetesDispatcherProperties
-    ): SubtaskDispatcher {
-        return KubernetesDispatcher(scannerProperties, kubernetesDispatcherProperties)
-    }
-
-    @Bean
-    @ConditionalOnProperty("scanner.dispatcher.docker.enabled", havingValue = "true")
-    fun dockerDispatcher(
-        subScanTaskDao: SubScanTaskDao,
-        scannerProperties: ScannerProperties,
-        dockerDispatcherProperties: DockerDispatcherProperties,
-        redisTemplate: ObjectProvider<RedisTemplate<String, String>>
-    ): SubtaskDispatcher {
-        return DockerDispatcher(scannerProperties, dockerDispatcherProperties, subScanTaskDao, redisTemplate)
-    }
-
-    @Bean
-    @ConditionalOnBean(SubtaskDispatcher::class)
     fun poller(
-        dispatcher: SubtaskDispatcher,
-        scanService: ScanService,
+        subtaskDispatcherFactory: SubtaskDispatcherFactory,
+        executionClusterService: ExecutionClusterService,
         scannerService: ScannerService,
-        temporaryScanTokenService: TemporaryScanTokenService,
-        @Qualifier(STATE_MACHINE_ID_SUB_SCAN_TASK)
-        subtaskStateMachine: StateMachine,
-        executorClient: ObjectProvider<ExecutorClient>
+        executorClient: ObjectProvider<ExecutorClient>,
+        executor: ThreadPoolTaskExecutor,
     ): SubtaskPoller {
         return SubtaskPoller(
-            dispatcher, scanService, scannerService, temporaryScanTokenService, subtaskStateMachine, executorClient
+            subtaskDispatcherFactory,
+            executionClusterService,
+            scannerService,
+            executorClient,
+            executor
         )
     }
 
@@ -101,5 +75,13 @@ class ScannerConfiguration {
     @ConditionalOnNotAssembly // 仅在非单体包部署时创建，避免循环依赖问题
     fun operateLogService(operateLogClient: OperateLogClient): OperateLogService {
         return OperateLogServiceImpl(operateLogClient)
+    }
+
+    @Bean
+    @ConditionalOnNotAssembly // 仅在非单体包部署时创建，避免循环依赖问题
+    fun projectUsageStatisticsService(
+        client: ObjectProvider<ProjectUsageStatisticsClient>
+    ): ProjectUsageStatisticsService {
+        return ProjectUsageStatisticsServiceImpl(client)
     }
 }

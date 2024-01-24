@@ -35,6 +35,7 @@ dependencies {
     api(project(":replication:api-replication"))
     api(project(":fs:api-fs-server"))
     api(project(":router-controller:api-router-controller"))
+    api(project(":archive:api-archive"))
     api(project(":common:common-service"))
     api(project(":common:common-security"))
     api(project(":common:common-artifact:artifact-api"))

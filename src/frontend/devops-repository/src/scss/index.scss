@@ -136,22 +136,26 @@ body {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    vertical-align: middle;
     &:before {
         content: attr(data-name);
     }
+    &.QUALITY_PASS,
     &.SUCCESS {
         color: var(--successColor);
         background-color: var(--successBgColor);
     }
+    &.STOP,
     &.WARNING {
         color: var(--warningColor);
         background-color: var(--warningBgColor);
     }
-    &.FAILED,
-    &.STOP {
+    &.QUALITY_UNPASS,
+    &.FAILED{
         color: var(--dangerColor);
         background-color: #FFDDDD;
     }
+    &.UN_QUALITY,
     &.INIT
     &.CANCEL  {
         color: var(--fontSubsidiaryColor);
@@ -198,12 +202,16 @@ body {
     word-break: break-all;
 }
 
+.w180 {
+    width: 180px !important;
+}
+
 .w250 {
-    width: 250px!important;
+    width: 250px !important;
 }
 
 .w480 {
-    width: 480px!important;
+    width: 480px !important;
 }
 
 .spin-icon {

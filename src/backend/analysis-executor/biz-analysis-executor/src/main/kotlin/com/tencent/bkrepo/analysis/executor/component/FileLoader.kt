@@ -174,12 +174,13 @@ class FileLoader(
     }
 
     private fun getNodeSize(projectId: String, repoName: String, sha256: String): Long {
-        val nodes = nodeClient.search(
+        val nodes = nodeClient.queryWithoutCount(
             NodeQueryBuilder()
                 .projectId(projectId)
                 .repoName(repoName)
                 .sha256(sha256)
                 .select(NodeDetail::size.name)
+                .page(1, 1)
                 .build()
         )
         if (nodes.isNotOk() || nodes.data!!.records.isEmpty()) {

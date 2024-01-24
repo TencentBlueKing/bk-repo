@@ -34,7 +34,7 @@ import com.tencent.bkrepo.analyst.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.analyst.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.analyst.pojo.request.SubtaskInfoRequest
 import com.tencent.bkrepo.analyst.pojo.request.UpdateScanPlanRequest
-import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelations
 import com.tencent.bkrepo.analyst.pojo.response.ScanLicensePlanInfo
 import com.tencent.bkrepo.analyst.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
@@ -186,11 +186,18 @@ class UserScanPlanController(
         )
     }
 
+    @ApiOperation("扫描方案数据导出")
+    @GetMapping("/export")
+    fun planScanRecordExport(subtaskInfoRequest: SubtaskInfoRequest) {
+        permissionCheckHandler.checkProjectPermission(subtaskInfoRequest.projectId, PermissionAction.MANAGE)
+        scanTaskService.exportScanPlanRecords(ScanPlanConverter.convert(subtaskInfoRequest))
+    }
+
     @ApiOperation("文件/包关联的扫描方案列表")
     @GetMapping("/relation/artifact")
     fun artifactPlanList(
         artifactRequest: ArtifactPlanRelationRequest
-    ): Response<List<ArtifactPlanRelation>> {
+    ): Response<ArtifactPlanRelations> {
         return ResponseBuilder.success(scanPlanService.artifactPlanList(artifactRequest))
     }
 

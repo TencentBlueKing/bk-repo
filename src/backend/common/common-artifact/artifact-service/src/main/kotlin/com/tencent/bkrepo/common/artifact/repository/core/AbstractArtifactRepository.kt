@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.artifact.repository.core
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
@@ -47,11 +49,13 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
+import com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectManager
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -108,6 +112,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     @Autowired
     lateinit var messageSupplier: MessageSupplier
 
+    @Autowired
+    lateinit var redirectManager: DownloadRedirectManager
+
     override fun upload(context: ArtifactUploadContext) {
         try {
             this.onUploadBefore(context)
@@ -123,6 +130,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     override fun download(context: ArtifactDownloadContext) {
         try {
             this.onDownloadBefore(context)
+            if (this.onDownloadRedirect(context)) {
+                return
+            }
             val artifactResponse = this.onDownload(context)
                 ?: throw ArtifactNotFoundException(context.artifactInfo.toString())
             val throughput = artifactResourceWriter.write(artifactResponse)
@@ -134,9 +144,10 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val code = exception.messageCode.getCode()
             val clientAddress = HttpContextHolder.getClientAddress()
             val xForwardedFor = HttpContextHolder.getXForwardedFor()
+            val range = HeaderUtils.getHeader(HttpHeaders.RANGE) ?: StringPool.DASH
             logger.warn(
                 "User[$principal],ip[$clientAddress] download artifact[$artifactInfo] failed[$code]$message" +
-                    " X_FORWARDED_FOR: $xForwardedFor"
+                    " X_FORWARDED_FOR: $xForwardedFor, range: $range"
             )
             ArtifactMetrics.getDownloadFailedCounter().increment()
         } catch (exception: Exception) {
@@ -226,7 +237,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         if (throughput != Throughput.EMPTY) {
             publisher.publishEvent(ArtifactResponseEvent(artifactResource, throughput, context.storageCredentials))
             publishNodeDownloadEvent(context)
-            logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
+            val range = HeaderUtils.getHeader(HttpHeaders.RANGE) ?: StringPool.DASH
+            logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success," +
+                " range: $range")
         }
     }
 
@@ -289,6 +302,26 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onDownloadFinished(context: ArtifactDownloadContext) {
         artifactMetrics.downloadingCount.decrementAndGet()
+    }
+
+    /**
+     * 是否支持重定向下载请求
+     *
+     * @param context 下载请求上下文
+     *
+     * @return true 支持重定向 false 不支持重定向
+     */
+    open fun supportRedirect(context: ArtifactDownloadContext): Boolean = false
+
+    /**
+     * 重定向下载请求
+     *
+     * @param context 下载请求上下文
+     *
+     * @return true 重定向成功 false 重定向失败
+     */
+    open fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return false
     }
 
     private fun publishPackageDownloadEvent(context: ArtifactDownloadContext, record: PackageDownloadRecord) {

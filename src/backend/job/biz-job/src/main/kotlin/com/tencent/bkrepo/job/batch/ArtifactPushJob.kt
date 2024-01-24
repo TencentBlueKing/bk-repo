@@ -38,13 +38,13 @@ import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.replication.api.ArtifactPushClient
 import com.tencent.bkrepo.replication.pojo.remote.request.ArtifactPushRequest
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 用于将新上传/更新的制品推送到远端仓库
@@ -53,7 +53,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(ArtifactPushJobProperties::class)
 class ArtifactPushJob(
     private val properties: ArtifactPushJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val artifactPushClient: ArtifactPushClient
 ) : DefaultContextMongoDbJob<ArtifactPushJob.PackageVersionData>(properties) {
     private val types: List<String>
@@ -63,8 +62,8 @@ class ArtifactPushJob(
         return super.start()
     }
 
-    override fun entityClass(): Class<PackageVersionData> {
-        return PackageVersionData::class.java
+    override fun entityClass(): KClass<PackageVersionData> {
+        return PackageVersionData::class
     }
 
     override fun collectionNames(): List<String> {

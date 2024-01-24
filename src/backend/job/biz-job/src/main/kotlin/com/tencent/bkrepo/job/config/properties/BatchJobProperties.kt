@@ -41,5 +41,10 @@ open class BatchJobProperties(
     open var cron: String = Scheduled.CRON_DISABLED,
     open var fixedDelay: Long = 0,
     open var fixedRate: Long = 0,
-    open var initialDelay: Long = 0
+    open var initialDelay: Long = 0,
+
+    /**
+     * 停止任务超时时间，查过该时间，则会强制停止任务
+     * */
+    var stopTimeout: Long = 30000,
 )

@@ -26,9 +26,9 @@
 
 package com.tencent.bkrepo.fdtp.example.helloworld
 
+import com.tencent.bkrepo.udt.netty.transport.nio.NioUdtProvider
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.nio.NioEventLoopGroup
-import io.netty.channel.udt.nio.NioUdtProvider
 import io.netty.handler.ssl.SslContext
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.SelfSignedCertificate

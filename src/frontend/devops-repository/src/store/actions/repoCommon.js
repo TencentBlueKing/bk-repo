@@ -97,7 +97,7 @@ export default {
         )
     },
     // 跨仓库搜索
-    searchPackageList (_, { projectId, repoType, repoName, packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
+    searchPackageList (_, { projectId, repoType, repoName, repoNames = [], packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
         const isGeneric = repoType === 'generic'
         return Vue.prototype.$ajax.post(
             `${prefix}/${isGeneric ? 'node/queryWithoutCount' : 'package/search'}`,
@@ -119,7 +119,7 @@ export default {
                                 operation: 'EQ'
                             }]
                             : []),
-                        ...(repoType
+                        ...((MODE_CONFIG === 'ci' ? !isGeneric : true) && repoType
                             ? [{
                                 field: 'repoType',
                                 value: repoType.toUpperCase(),
@@ -136,8 +136,8 @@ export default {
                                 ...(MODE_CONFIG === 'ci' && isGeneric
                                     ? [{
                                         field: 'repoName',
-                                        value: ['report', 'log'],
-                                        operation: 'NIN'
+                                        value: repoNames,
+                                        operation: 'IN'
                                     }]
                                     : [])
                             ]),

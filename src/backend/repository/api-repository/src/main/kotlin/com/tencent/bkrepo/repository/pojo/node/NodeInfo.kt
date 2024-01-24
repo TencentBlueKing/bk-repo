@@ -41,6 +41,7 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("节点信息")
 data class NodeInfo(
+    var id: String? = null,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")
@@ -62,6 +63,8 @@ data class NodeInfo(
     val fullPath: String,
     @ApiModelProperty("文件大小，单位byte")
     val size: Long,
+    @ApiModelProperty("文件节点个数")
+    val nodeNum: Long? = null,
     @ApiModelProperty("文件sha256")
     val sha256: String? = null,
     @ApiModelProperty("文件md5")
@@ -82,5 +85,9 @@ data class NodeInfo(
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val deleted: String? = null,
     @ApiModelProperty("集群信息")
-    val clusterNames: Set<String>? = null
+    val clusterNames: Set<String>? = null,
+    @ApiModelProperty("是否归档")
+    val archived: Boolean? = null,
+    @ApiModelProperty("是否压缩")
+    val compressed: Boolean? = null,
 )

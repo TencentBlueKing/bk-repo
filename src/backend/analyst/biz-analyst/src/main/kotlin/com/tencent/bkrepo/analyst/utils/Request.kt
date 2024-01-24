@@ -69,8 +69,13 @@ object Request {
             listOf(NodeDetail::projectId.name, NodeDetail::repoName.name, NodeDetail::fullPath.name),
             Sort.Direction.ASC
         )
-        val queryModel = QueryModel(PageLimit(page, pageSize), sort, nodeSelected, rule)
-        return request { nodeClient.search(queryModel) }!!.records.map {
+        val queryModel = QueryModel(
+            page = PageLimit(page, pageSize),
+            sort = sort,
+            select = nodeSelected,
+            rule = rule
+        )
+        return request { nodeClient.queryWithoutCount(queryModel) }!!.records.map {
             val projectId = it[NodeDetail::projectId.name]!! as String
             val repoName = it[NodeDetail::repoName.name]!! as String
             val sha256 = it[NodeDetail::sha256.name]!! as String
