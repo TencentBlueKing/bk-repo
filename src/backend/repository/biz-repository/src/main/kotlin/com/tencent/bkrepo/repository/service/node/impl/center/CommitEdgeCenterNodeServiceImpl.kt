@@ -91,7 +91,6 @@ class CommitEdgeCenterNodeServiceImpl(
     repositoryProperties,
     messageSupplier,
     servicePermissionClient,
-    messageSupplier,
     routerControllerClient
 ) {
 

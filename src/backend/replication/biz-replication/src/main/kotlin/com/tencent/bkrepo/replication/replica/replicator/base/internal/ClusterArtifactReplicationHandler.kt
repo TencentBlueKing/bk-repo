@@ -51,7 +51,6 @@ import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.replicator.base.ArtifactReplicationHandler
-import com.tencent.bkrepo.replication.util.StreamRequestBody
 import io.netty.channel.ChannelProgressiveFuture
 import io.netty.channel.ChannelProgressiveFutureListener
 import okhttp3.MultipartBody

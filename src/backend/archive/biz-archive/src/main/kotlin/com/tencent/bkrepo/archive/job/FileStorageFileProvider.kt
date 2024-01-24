@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.archive.job
 
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.StorageUtils
 import org.slf4j.LoggerFactory

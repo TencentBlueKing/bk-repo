@@ -66,6 +66,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -121,6 +122,9 @@ open class ServiceBaseTest {
     @MockBean
     lateinit var resourcePermissionListener: ResourcePermissionListener
 
+    @MockBean
+    lateinit var routerControllerClient: RouterControllerClient
+
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
 
@@ -158,6 +162,7 @@ open class ServiceBaseTest {
         whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull(), any()))
             .then {}
         whenever(resourcePermissionListener.handle(any<ProjectCreatedEvent>())).then {}
+//        whenever(routerControllerClient.)
     }
 
     fun initRepoForUnitTest(

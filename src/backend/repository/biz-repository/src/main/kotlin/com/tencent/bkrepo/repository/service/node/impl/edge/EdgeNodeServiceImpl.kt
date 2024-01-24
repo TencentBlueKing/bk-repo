@@ -90,9 +90,9 @@ class EdgeNodeServiceImpl(
     quotaService,
     repositoryProperties,
     messageSupplier,
+    routerControllerClient,
     servicePermissionClient,
     clusterProperties,
-    routerControllerClient,
 ) {
     override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact, estimated)

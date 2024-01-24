@@ -51,8 +51,6 @@ import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.config.RateLimitProperties
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.ObjectProvider
@@ -60,13 +58,6 @@ import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.first
-import kotlin.collections.forEach
-import kotlin.collections.get
-import kotlin.collections.isNotEmpty
-import kotlin.collections.mutableMapOf
 import kotlin.collections.set
 
 @Suppress("LateinitUsage", "LongParameterList", "TooManyFunctions") // 静态成员通过init构造函数初始化
@@ -74,8 +65,6 @@ class ArtifactContextHolder(
     artifactConfigurers: List<ArtifactConfigurer>,
     compositeRepository: CompositeRepository,
     proxyRepository: ProxyRepository,
-    repositoryClient: RepositoryClient,
-    nodeClient: NodeClient,
     artifactClient: ArtifactClient,
     private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
 ) {

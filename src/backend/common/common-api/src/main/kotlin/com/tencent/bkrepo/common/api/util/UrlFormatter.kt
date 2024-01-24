@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.HTTP
 import com.tencent.bkrepo.common.api.constant.StringPool.HTTPS
-import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.common.api.constant.retry
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL

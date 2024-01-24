@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.common.artifact.repository.remote
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
@@ -45,9 +44,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.OkHttpClient

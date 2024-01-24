@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.replication.replica.replicator.base.remote
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.OCI_BLOBS_UPLOAD_FIRST_STEP_URL

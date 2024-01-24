@@ -29,7 +29,7 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT

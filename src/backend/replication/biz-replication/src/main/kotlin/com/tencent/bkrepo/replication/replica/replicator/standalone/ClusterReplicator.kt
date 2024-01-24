@@ -29,11 +29,11 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
