@@ -27,42 +27,52 @@
 
 package com.tencent.bkrepo.helm.listener
 
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.helm.config.HelmProperties
+import com.tencent.bkrepo.helm.constants.CHANGE_EVENT_COUNT_PREFIX
+import com.tencent.bkrepo.helm.constants.REFRESH_INDEX_KEY
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
 import com.tencent.bkrepo.helm.listener.operation.ChartDeleteOperation
 import com.tencent.bkrepo.helm.listener.operation.ChartPackageDeleteOperation
 import com.tencent.bkrepo.helm.listener.operation.ChartUploadOperation
+import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
+import com.tencent.bkrepo.helm.pojo.chart.ChartPackageDeleteRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
+import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
 import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
-import com.tencent.bkrepo.helm.utils.HelmUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Component
+import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class ChartEventListener(
     private val helmProperties: HelmProperties,
-) : AbstractChartService() {
+    private val redisOperation: RedisOperation,
+    taskScheduler: ThreadPoolTaskScheduler,
+    ) : AbstractChartService() {
+
+    private val eventMap: ConcurrentHashMap<String, MutableList<ChartOperationRequest>> = ConcurrentHashMap()
+
+    init {
+        taskScheduler.scheduleWithFixedDelay(this::refreshIndex, helmProperties.refreshTime)
+    }
 
     /**
      * 删除chart版本，更新index.yaml文件
      */
     @EventListener(ChartVersionDeleteEvent::class)
     fun handle(event: ChartVersionDeleteEvent) {
-        // 如果index.yaml文件不存在，说明还没有初始化该文件，return
-        // 如果index.yaml文件存在，则进行更新
         with(event.request) {
             logger.info("handling chart version delete event for [$name@$version] in repo [$projectId/$repoName]")
-            if (!exist(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) {
-                logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
-                return
-            }
-            val task = ChartDeleteOperation(event.request, this@ChartEventListener)
-            threadPoolExecutor.submit(task)
+            handleEvent(event.request)
         }
     }
 
@@ -73,14 +83,7 @@ class ChartEventListener(
     fun handle(event: ChartDeleteEvent) {
         with(event.requestPackage) {
             logger.info("Handling package delete event for [$name] in repo [$projectId/$repoName]")
-            if (!exist(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) {
-                logger.info(
-                    "Index yaml file is not initialized in repo [$projectId/$repoName], refresh index.yaml interrupted."
-                )
-                return
-            }
-            val task = ChartPackageDeleteOperation(event.requestPackage, this@ChartEventListener)
-            threadPoolExecutor.submit(task)
+            handleEvent(event.requestPackage)
         }
     }
 
@@ -89,31 +92,127 @@ class ChartEventListener(
      */
     @EventListener(ChartUploadEvent::class)
     fun handle(event: ChartUploadEvent) {
-        handleChartUploadEvent(event.uploadRequest)
-    }
-
-    /**
-     * 当chart新上传成功后，更新index.yaml
-     */
-    private fun handleChartUploadEvent(uploadRequest: ChartUploadRequest) {
-        with(uploadRequest) {
+        with(event.uploadRequest) {
             logger.info("Handling package upload event for [$name] in repo [$projectId/$repoName]")
             metadataMap?.let {
-                val helmChartMetadata = HelmMetadataUtils.convertToObject(metadataMap!!)
-                val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-                nodeDetail?.let {
-                    logger.info("Creating upload event request....")
-                    val task = ChartUploadOperation(
-                        uploadRequest,
-                        helmChartMetadata,
-                        helmProperties.domain,
-                        nodeDetail,
-                        this@ChartEventListener
-                    )
-                    threadPoolExecutor.submit(task)
+                handleEvent(event.uploadRequest)
+            }
+        }
+    }
+
+    private fun handleEvent(request: ChartOperationRequest) {
+        with(request) {
+            if (helmProperties.useCacheToStore) {
+                val mapKey = buildKey(projectId, repoName)
+                eventMap.putIfAbsent(mapKey, mutableListOf())
+                eventMap[mapKey]!!.add(request)
+            } else {
+                val requestStr = request.toJsonString()
+                redisOperation.ladd(REFRESH_INDEX_KEY, requestStr)
+            }
+            val incKey = buildKey(projectId, repoName, CHANGE_EVENT_COUNT_PREFIX)
+            casService.increment(incKey, 1)
+        }
+    }
+
+    fun refreshIndex() {
+        if (helmProperties.useCacheToStore) {
+            if (eventMap.isNotEmpty()) {
+                eventMap.forEach { (k, v) ->
+                    val (projectId, repoName) = splitKey(k)
+                    val lock = getLock(projectId, repoName)
+                    if (lock != null) {
+                        try {
+                            if (v.size != 0) {
+                                val request = v.removeAt(0)
+                                val task = when (request) {
+                                    is ChartUploadRequest -> {
+                                        val helmChartMetadata = HelmMetadataUtils.convertToObject(request.metadataMap!!)
+                                        val nodeDetail = nodeClient.getNodeDetail(
+                                            projectId, repoName, request.fullPath
+                                        ).data
+                                        if (nodeDetail != null) {
+                                            ChartUploadOperation(
+                                                request,
+                                                helmChartMetadata,
+                                                helmProperties.domain,
+                                                nodeDetail,
+                                                this@ChartEventListener
+                                            )
+                                        } else {
+                                            null
+                                        }
+                                    }
+                                    is ChartPackageDeleteRequest -> {
+                                        ChartPackageDeleteOperation(request, this@ChartEventListener)
+                                    }
+                                    is ChartVersionDeleteRequest -> {
+                                        ChartDeleteOperation(request, this@ChartEventListener)
+                                    }
+                                    else -> null
+                                }
+                                task?.let { threadPoolExecutor.submit(it) }
+                            }
+                        } catch (e: Exception) {
+                            val incKey = buildKey(projectId, repoName, CHANGE_EVENT_COUNT_PREFIX)
+                            casService.increment(incKey, -1)
+                            logger.warn("Failed to create refresh task for $v, ignore it!")
+                        } finally {
+                            unlock(projectId, repoName, lock)
+                        }
+                    }
+                }
+            }
+        } else {
+            var size = redisOperation.lsize(REFRESH_INDEX_KEY) ?: return
+            val eventList = redisOperation.lall(REFRESH_INDEX_KEY) ?: return
+            eventList.forEach {
+                val request = it.readJsonString<ChartOperationRequest>()
+                val lock = getLock(request.projectId, request.repoName)
+                if (lock != null) {
+                    try {
+                        val task = when (request) {
+                            is ChartUploadRequest -> {
+                                val helmChartMetadata = HelmMetadataUtils.convertToObject(request.metadataMap!!)
+                                val nodeDetail = nodeClient.getNodeDetail(
+                                    request.projectId, request.repoName, request.fullPath
+                                ).data
+                                if (nodeDetail != null) {
+                                    ChartUploadOperation(
+                                        request,
+                                        helmChartMetadata,
+                                        helmProperties.domain,
+                                        nodeDetail,
+                                        this@ChartEventListener
+                                    )
+                                } else {
+                                    null
+                                }
+                            }
+                            is ChartPackageDeleteRequest -> {
+                                ChartPackageDeleteOperation(request, this@ChartEventListener)
+                            }
+                            is ChartVersionDeleteRequest -> {
+                                ChartDeleteOperation(request, this@ChartEventListener)
+                            }
+                            else -> null
+                        }
+                        task?.let { threadPoolExecutor.submit(it) }
+                    } catch (e: Exception) {
+                        val incKey = buildKey(request.projectId, request.repoName, CHANGE_EVENT_COUNT_PREFIX)
+                        casService.increment(incKey, -1)
+                        logger.warn("Failed to create refresh task for $request, ignore it!")
+                    } finally {
+                        unlock(request.projectId, request.repoName, lock)
+                        redisOperation.lremove(REFRESH_INDEX_KEY, it)
+                    }
                 }
             }
         }
+
+
+
+
     }
 
     companion object {

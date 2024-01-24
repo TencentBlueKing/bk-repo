@@ -54,9 +54,21 @@ const val VERSION = "version"
 const val CHART_PACKAGE_FILE_EXTENSION = "tgz"
 const val PROVENANCE_FILE_EXTENSION = "tgz.prov"
 const val REDIS_LOCK_KEY_PREFIX = "helm:lock:indexFile:"
+const val REFRESH_INDEX_KEY = "helm:lock:refreshIndex"
+const val CHANGE_EVENT_COUNT_PREFIX = "helm:changeEventCount:"
 
 // 定义返回代码片段
 val CHART_NOT_FOUND = mapOf("error" to "chart not found")
 val NO_CHART_NAME_FOUND = mapOf("error" to "no chart name found")
 
 const val SLEEP_MILLIS = 20L
+
+
+const val HELM_EVENT_TASK_ACTIVE_COUNT = "helm.event.task.active.count"
+const val HELM_EVENT_TASK_ACTIVE_COUNT_DESC = "helm事件处理实时执行数量"
+
+const val HELM_EVENT_TASK_QUEUE_SIZE = "helm.event.task.queue.size"
+const val HELM_EVENT_TASK_QUEUE_SIZE_DESC = "helm事件处理线程池等待队列大小"
+
+const val HELM_EVENT_TASK_COMPLETED_COUNT = "helm.event.task.completed.count"
+const val HELM_EVENT_TASK_COMPLETED_COUNT_DESC = "helm事件处理已完成的任务数量"

@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.helm.config.HelmProperties
+import com.tencent.bkrepo.helm.constants.CHANGE_EVENT_COUNT_PREFIX
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
@@ -78,7 +79,17 @@ class ChartRepositoryServiceImpl(
 
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
         helmOperationService.checkNodePermission(INDEX_YAML, PermissionAction.READ)
-        lockAction(artifactInfo.projectId, artifactInfo.repoName) { downloadIndex(artifactInfo) }
+        val incKey = buildKey(artifactInfo.projectId, artifactInfo.repoName, CHANGE_EVENT_COUNT_PREFIX)
+        val value = casService.get(incKey)
+        if ((value <= 0)) {
+            downloadIndex(artifactInfo)
+        } else {
+            if (casService.targetCheck(incKey) &&
+                filterProjectRepo(artifactInfo.projectId, artifactInfo.repoName, helmProperties.useV2Repos)) {
+                regenerateIndex(artifactInfo, false)
+            }
+            downloadIndex(artifactInfo)
+        }
     }
 
     private fun downloadIndex(artifactInfo: HelmArtifactInfo) {
@@ -245,6 +256,8 @@ class ChartRepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun updatePackageForRemote(artifactInfo: HelmArtifactInfo) {
         helmOperationService.lockAction(artifactInfo.projectId, artifactInfo.repoName) {
+            val incKey = buildKey(artifactInfo.projectId, artifactInfo.repoName, CHANGE_EVENT_COUNT_PREFIX)
+            casService.targetCheck(incKey)
             helmOperationService.updatePackageForRemote(artifactInfo.projectId, artifactInfo.repoName)
         }
     }

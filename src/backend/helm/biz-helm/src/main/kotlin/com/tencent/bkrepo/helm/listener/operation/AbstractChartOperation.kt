@@ -27,14 +27,17 @@
 
 package com.tencent.bkrepo.helm.listener.operation
 
+import com.tencent.bkrepo.helm.constants.CHANGE_EVENT_COUNT_PREFIX
 import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
+import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.util.StopWatch
+import java.time.LocalDateTime
 
 abstract class AbstractChartOperation(
     private val request: ChartOperationRequest,
@@ -47,7 +50,7 @@ abstract class AbstractChartOperation(
                     "in repo [$projectId/$repoName] by User [$operator]"
             )
             stopWatch.start()
-            chartService.lockAction(projectId, repoName) { handleOperation(this) }
+            handleOperation(this)
             stopWatch.stop()
             logger.info(
                 "Total cost for refreshing index.yaml" +
@@ -67,6 +70,7 @@ abstract class AbstractChartOperation(
                         "in repo [$projectId/$repoName] by User [$operator]"
                 )
                 stopWatch.start()
+                val now = LocalDateTime.now()
                 val originalIndexYamlMetadata =
                     if (!chartService.exist(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) {
                         HelmUtils.initIndexYamlMetadata()
@@ -79,6 +83,7 @@ abstract class AbstractChartOperation(
                         "in repo [$projectId/$repoName] by User [$operator] cost: ${stopWatch.totalTimeSeconds}s"
                 )
                 handleEvent(originalIndexYamlMetadata)
+                originalIndexYamlMetadata.generated = TimeFormatUtil.convertToUtcTime(now)
                 logger.info("index.yaml in repo [$projectId/$repoName] is ready to upload...")
                 val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
                     originalIndexYamlMetadata, this
@@ -94,6 +99,9 @@ abstract class AbstractChartOperation(
                         " User [$operator] in repo [$projectId/$repoName] !"
                 )
                 throw e
+            } finally {
+                val incKey = chartService.buildKey(projectId, repoName, CHANGE_EVENT_COUNT_PREFIX)
+                chartService.casService.increment(incKey, -1)
             }
         }
     }

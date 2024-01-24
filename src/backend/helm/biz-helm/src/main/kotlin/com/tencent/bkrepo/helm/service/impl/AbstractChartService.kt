@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.helm.service.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -56,11 +57,13 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWrite
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.lock.service.CasService
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.helm.config.HelmProperties
+import com.tencent.bkrepo.helm.constants.CHANGE_EVENT_COUNT_PREFIX
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
@@ -143,6 +146,9 @@ open class AbstractChartService : ArtifactService() {
 
     @Autowired
     lateinit var properties: HelmProperties
+
+    @Autowired
+    lateinit var casService: CasService
 
     val threadPoolExecutor: ThreadPoolExecutor = HelmThreadPoolExecutor.instance
 
@@ -467,23 +473,36 @@ open class AbstractChartService : ArtifactService() {
     /**
      * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
      */
-    fun <T> lockAction(projectId: String, repoName: String, action: () -> T): T {
-        val lockKey = buildRedisKey(projectId, repoName)
-        val lock = lockOperation.getLock(lockKey)
-        return if (lockOperation.getSpinLock(
-                lockKey = lockKey, lock = lock,
-                retryTimes = properties.retryTimes,
-                sleepTime = properties.sleepTime
-            )) {
-            logger.info("Lock for key $lockKey has been acquired.")
-            try {
-                action()
-            } finally {
-                lockOperation.close(lockKey, lock)
-            }
+    fun <T> lockAction(
+        projectId: String,
+        repoName: String,
+        action: () -> T
+    ): T {
+        val incKey = buildKey(projectId, repoName, CHANGE_EVENT_COUNT_PREFIX)
+        return if (casService.targetCheck(incKey)) {
+            action()
         } else {
             action()
         }
+    }
+
+    fun getLock(
+        projectId: String,
+        repoName: String
+    ): Any? {
+        val lockKey = buildRedisKey(projectId, repoName)
+        val lock = lockOperation.getLock(lockKey)
+        return if (lockOperation.acquireLock(lockKey = lockKey, lock = lock)) {
+            logger.info("Lock for key $lockKey has been acquired.")
+            lock
+        } else {
+            null
+        }
+    }
+
+    fun unlock(projectId: String, repoName: String, lock: Any){
+        val lockKey = buildRedisKey(projectId, repoName)
+        lockOperation.close(lockKey, lock)
     }
 
     /**
@@ -507,6 +526,43 @@ open class AbstractChartService : ArtifactService() {
             )
         }
         return originalIndexYamlMetadata
+    }
+
+    fun buildKey(projectId: String, repoName: String, keyPrefix: String = StringPool.EMPTY): String {
+        return "$keyPrefix$projectId/$repoName"
+    }
+
+    /**
+     * 从key中提取出项目ID和仓库ID
+     */
+    fun splitKey(key: String, keyPrefix: String = StringPool.EMPTY): Pair<String, String> {
+        val list = key.removePrefix(keyPrefix).split(StringPool.SLASH)
+        if (list.size != 2) throw IllegalArgumentException("key $key is invalid!")
+        return Pair(list[0], list[1])
+    }
+
+    /**
+     * 针对仓库特殊配置进行过滤
+     */
+    fun filterProjectRepo(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {
+        if (contains(StringPool.POUND, StringPool.POUND, includeRepositories)) {
+            return true
+        }
+        if (contains(projectId, repoName, includeRepositories)) {
+            return true
+        }
+        if (contains(projectId, StringPool.POUND, includeRepositories)) {
+            return true
+        }
+        if (contains(StringPool.POUND, repoName, includeRepositories)) {
+            return true
+        }
+        return false
+    }
+
+    private fun contains(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {
+        val key = "$projectId/$repoName"
+        return includeRepositories.contains(key)
     }
 
     /**
