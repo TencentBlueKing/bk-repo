@@ -1,7 +1,7 @@
-import Vue from 'vue'
-import { mapState, mapMutations } from 'vuex'
 import ConfirmDialog from '@repository/components/ConfirmDialog'
 import GlobalUploadViewport from '@repository/components/GlobalUploadViewport'
+import Vue from 'vue'
+import { mapMutations, mapState } from 'vuex'
 export default {
     name: 'App',
     components: { ConfirmDialog, GlobalUploadViewport },
@@ -40,7 +40,7 @@ export default {
         goHome (projectId) {
             const params = projectId ? { projectId } : {}
             this.$router.replace({
-                name: 'repoList',
+                name: 'repositories',
                 params
             })
         },
