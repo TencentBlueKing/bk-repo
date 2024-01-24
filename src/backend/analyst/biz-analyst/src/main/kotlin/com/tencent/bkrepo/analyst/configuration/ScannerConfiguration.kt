@@ -33,14 +33,18 @@ import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
 import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
+import com.tencent.bkrepo.analyst.service.impl.ProjectUsageStatisticsServiceImpl
 import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import com.tencent.bkrepo.repository.api.OperateLogClient
+import com.tencent.bkrepo.repository.api.ProjectUsageStatisticsClient
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(
@@ -55,14 +59,29 @@ class ScannerConfiguration {
         subtaskDispatcherFactory: SubtaskDispatcherFactory,
         executionClusterService: ExecutionClusterService,
         scannerService: ScannerService,
-        executorClient: ObjectProvider<ExecutorClient>
+        executorClient: ObjectProvider<ExecutorClient>,
+        executor: ThreadPoolTaskExecutor,
     ): SubtaskPoller {
-        return SubtaskPoller(subtaskDispatcherFactory, executionClusterService, scannerService, executorClient)
+        return SubtaskPoller(
+            subtaskDispatcherFactory,
+            executionClusterService,
+            scannerService,
+            executorClient,
+            executor
+        )
     }
 
     @Bean
     @ConditionalOnNotAssembly // 仅在非单体包部署时创建，避免循环依赖问题
     fun operateLogService(operateLogClient: OperateLogClient): OperateLogService {
         return OperateLogServiceImpl(operateLogClient)
+    }
+
+    @Bean
+    @ConditionalOnNotAssembly // 仅在非单体包部署时创建，避免循环依赖问题
+    fun projectUsageStatisticsService(
+        client: ObjectProvider<ProjectUsageStatisticsClient>
+    ): ProjectUsageStatisticsService {
+        return ProjectUsageStatisticsServiceImpl(client)
     }
 }

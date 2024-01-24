@@ -28,8 +28,12 @@
 package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFileExpireResolver
+import com.tencent.bkrepo.common.storage.util.toPath
+import java.nio.file.Path
 
 /**
  * 文件清理操作实现类
@@ -39,8 +43,27 @@ abstract class CleanupSupport : HealthCheckSupport() {
     override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempPath = getTempPath(credentials)
-        val visitor = CleanupFileVisitor(tempPath, tempPath, null, fileStorage, fileLocator, credentials)
-        getTempClient(credentials).walk(visitor)
+        return cleanupPath(tempPath, credentials)
+            .merge(cleanUploadPath(credentials))
+    }
+
+    protected fun cleanUploadPath(credentials: StorageCredentials): CleanupResult {
+        return cleanupPath(credentials.upload.location.toPath(), credentials)
+            .merge(cleanupPath(credentials.upload.localPath.toPath(), credentials))
+    }
+
+    private fun cleanupPath(path: Path, credentials: StorageCredentials): CleanupResult {
+        val fileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
+        val visitor = CleanupFileVisitor(
+            path,
+            path,
+            null,
+            fileStorage,
+            fileLocator,
+            credentials,
+            fileExpireResolver,
+        )
+        FileSystemClient(path).walk(visitor)
         return visitor.result
     }
 }

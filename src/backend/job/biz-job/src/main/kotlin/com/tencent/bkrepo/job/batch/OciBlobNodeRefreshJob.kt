@@ -35,13 +35,13 @@ import com.tencent.bkrepo.job.config.properties.OciBlobNodeRefreshJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.oci.api.OciClient
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
+import kotlin.reflect.KClass
 
 /**
  * 用于将存储在blobs目录下的公共blob节点全部迁移到对应版本目录下，
@@ -51,7 +51,6 @@ import java.time.Duration
 @EnableConfigurationProperties(OciBlobNodeRefreshJobProperties::class)
 class OciBlobNodeRefreshJob(
     private val properties: OciBlobNodeRefreshJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val ociClient: OciClient
 ) : DefaultContextMongoDbJob<OciBlobNodeRefreshJob.PackageData>(properties) {
     private val types: List<String>
@@ -61,8 +60,8 @@ class OciBlobNodeRefreshJob(
         return super.start()
     }
 
-    override fun entityClass(): Class<PackageData> {
-        return PackageData::class.java
+    override fun entityClass(): KClass<PackageData> {
+        return PackageData::class
     }
 
     override fun collectionNames(): List<String> {

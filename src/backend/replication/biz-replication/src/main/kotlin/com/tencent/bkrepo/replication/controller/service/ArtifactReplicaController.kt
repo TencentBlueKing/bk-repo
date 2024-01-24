@@ -118,11 +118,13 @@ class ArtifactReplicaController(
     }
 
     override fun replicaNodeCopyRequest(request: NodeMoveCopyRequest): Response<Void> {
-        return nodeClient.copyNode(request)
+        nodeClient.copyNode(request)
+        return ResponseBuilder.success()
     }
 
     override fun replicaNodeMoveRequest(request: NodeMoveCopyRequest): Response<Void> {
-        return nodeClient.moveNode(request)
+        nodeClient.moveNode(request)
+        return ResponseBuilder.success()
     }
 
     override fun replicaNodeDeleteRequest(request: NodeDeleteRequest): Response<NodeDeleteResult> {

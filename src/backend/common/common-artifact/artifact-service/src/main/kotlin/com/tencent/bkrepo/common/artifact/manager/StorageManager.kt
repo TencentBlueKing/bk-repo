@@ -67,7 +67,7 @@ class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
     private val nodeResourceFactoryImpl: NodeResourceFactoryImpl,
-    private val pluginManager: PluginManager
+    private val pluginManager: PluginManager,
 ) {
 
     /**
@@ -77,7 +77,7 @@ class StorageManager(
     fun storeArtifactFile(
         request: NodeCreateRequest,
         artifactFile: ArtifactFile,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
     ): NodeDetail {
         val cancel = AtomicBoolean(false)
         val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials, cancel)
@@ -106,7 +106,7 @@ class StorageManager(
     @Deprecated("NodeInfo移除后此方法也会移除")
     fun loadArtifactInputStream(
         node: NodeInfo?,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
     ): ArtifactInputStream? {
         if (node == null || node.folder) {
             return null
@@ -118,14 +118,11 @@ class StorageManager(
             logger.warn("Failed to resolve http range: ${exception.message}")
             throw ErrorCodeException(
                 status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
+                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID,
             )
         }
         if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-        }
-        if (node.archived == true) {
-            throw ErrorCodeException(CommonMessageCode.RESOURCE_ARCHIVED, node.fullPath)
         }
         val nodeResource = nodeResourceFactoryImpl.getNodeResource(node, range, storageCredentials)
         return nodeResource.getArtifactInputStream()
@@ -138,7 +135,7 @@ class StorageManager(
      */
     fun loadArtifactInputStream(
         node: NodeDetail?,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
     ): ArtifactInputStream? {
         if (node == null) {
             return null
@@ -153,6 +150,7 @@ class StorageManager(
         val load = forwardNode ?: node
         return loadArtifactInputStream(load.nodeInfo, storageCredentials)
     }
+
     companion object {
         private val logger = LoggerFactory.getLogger(StorageManager::class.java)
     }

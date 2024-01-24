@@ -27,20 +27,24 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.archive.request.ArchiveFileRequest
+import com.tencent.bkrepo.archive.request.DeleteCompressRequest
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.COUNT
 import com.tencent.bkrepo.job.CREDENTIALS
+import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.FileJobContext
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -48,6 +52,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 /**
  * 清理引用=0的文件
@@ -56,9 +61,9 @@ import java.util.concurrent.ConcurrentHashMap
 @EnableConfigurationProperties(FileReferenceCleanupJobProperties::class)
 class FileReferenceCleanupJob(
     private val storageService: StorageService,
-    private val mongoTemplate: MongoTemplate,
     private val storageCredentialsClient: StorageCredentialsClient,
-    properties: FileReferenceCleanupJobProperties
+    properties: FileReferenceCleanupJobProperties,
+    private val archiveClient: ArchiveClient,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
     override fun start(): Boolean {
@@ -69,8 +74,8 @@ class FileReferenceCleanupJob(
         return FileJobContext()
     }
 
-    override fun entityClass(): Class<FileReferenceData> {
-        return FileReferenceData::class.java
+    override fun entityClass(): KClass<FileReferenceData> {
+        return FileReferenceData::class
     }
 
     override fun collectionNames(): List<String> {
@@ -95,9 +100,10 @@ class FileReferenceCleanupJob(
                 }
                 storageService.delete(sha256, storageCredentials)
             } else {
-                (context as FileJobContext).fileMissing.incrementAndGet()
+                context.fileMissing.incrementAndGet()
                 logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
             }
+            cleanupRelatedResources(sha256, credentialsKey)
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
             throw JobExecuteException("Failed to delete file[$sha256] on [$storageCredentials].", e)
@@ -112,7 +118,7 @@ class FileReferenceCleanupJob(
     private fun existNode(sha256: String): Boolean {
         (0 until SHARDING_COUNT).forEach {
             val query = Query(where(Node::sha256).isEqualTo(sha256))
-            val exist = mongoTemplate.findOne(query, Node::class.java, COLLECTION_NODE_PREFIX+it) != null
+            val exist = mongoTemplate.findOne(query, Node::class.java, COLLECTION_NODE_PREFIX + it) != null
             if (exist) {
                 logger.info("sha256[$sha256] still has existed node in collection[$it]")
                 return true
@@ -127,12 +133,29 @@ class FileReferenceCleanupJob(
         }
     }
 
+    private fun cleanupRelatedResources(sha256: String, credentialsKey: String?) {
+        val criteria = Criteria.where(SHA256).isEqualTo(sha256)
+            .and(STORAGE_CREDENTIALS).isEqualTo(credentialsKey)
+        val query = Query(criteria)
+        mongoTemplate.findOne(query, Node::class.java, COMPRESS_FILE_COLLECTION)?.let {
+            val deleteCompressFileRequest = DeleteCompressRequest(sha256, credentialsKey, SYSTEM_USER)
+            archiveClient.deleteCompress(deleteCompressFileRequest)
+        }
+        mongoTemplate.findOne(query, Node::class.java, ARCHIVE_FILE_COLLECTION)?.let {
+            val deleteArchiveFileRequest = ArchiveFileRequest(sha256, credentialsKey, SYSTEM_USER)
+            archiveClient.delete(deleteArchiveFileRequest)
+        }
+    }
+
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()
 
     companion object {
         private val logger = LoggerHolder.jobLogger
         private const val COLLECTION_NAME_PREFIX = "file_reference_"
         private const val COLLECTION_NODE_PREFIX = "node_"
+        private const val COMPRESS_FILE_COLLECTION = "compress_file"
+        private const val ARCHIVE_FILE_COLLECTION = "archive_file"
+        private const val STORAGE_CREDENTIALS = "storageCredentialsKey"
     }
 
     data class FileReferenceData(private val map: Map<String, Any?>) {
@@ -143,7 +166,7 @@ class FileReferenceCleanupJob(
 
     data class Node(
         val id: String,
-        val sha256: String?
+        val sha256: String?,
     )
 
     override fun mapToEntity(row: Map<String, Any?>): FileReferenceData {

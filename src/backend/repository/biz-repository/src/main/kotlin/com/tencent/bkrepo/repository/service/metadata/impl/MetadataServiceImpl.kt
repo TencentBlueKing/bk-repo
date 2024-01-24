@@ -97,7 +97,11 @@ class MetadataServiceImpl(
                 MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
             )
             checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
-            node.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
+            node.metadata = if (replace) {
+                newMetadata
+            } else {
+                MetadataUtils.merge(oldMetadata, newMetadata)
+            }
 
             val currentTime = LocalDateTime.now()
             node.lastModifiedBy = operator

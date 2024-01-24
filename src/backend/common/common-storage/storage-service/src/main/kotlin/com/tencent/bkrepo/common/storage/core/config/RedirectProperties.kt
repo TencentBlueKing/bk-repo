@@ -57,5 +57,12 @@ data class RedirectProperties(
     /**
      * 重定向URL的过期时间
      */
-    var redirectUrlExpireTime: Duration = Duration.ofMinutes(3L)
+    var redirectUrlExpireTime: Duration = Duration.ofMinutes(3L),
+
+    /**
+     * 指定存储在重定向时使用的域名
+     * key为存储Key
+     * value为域名，例如http://bkrepo.example.com
+     */
+    var storageHosts: Map<String, String> = emptyMap()
 )

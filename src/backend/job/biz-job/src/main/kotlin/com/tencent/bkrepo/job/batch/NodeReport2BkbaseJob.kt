@@ -41,6 +41,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.reflect.KClass
 
 /**
  * 导出node表至数据平台
@@ -88,8 +89,8 @@ class NodeReport2BkbaseJob(
         )
     }
 
-    override fun entityClass(): Class<Node> {
-        return Node::class.java
+    override fun entityClass(): KClass<Node> {
+        return Node::class
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {

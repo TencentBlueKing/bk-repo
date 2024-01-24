@@ -48,6 +48,7 @@ import com.tencent.bkrepo.repository.model.TProjectMetrics
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
@@ -64,7 +65,9 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.elemMatch
 import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.regex
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
@@ -159,18 +162,23 @@ class ProjectServiceImpl(
     override fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?> {
         val limit = request.limit
         val skip = request.offset
-        return if (request.projectIds.isEmpty()) {
-            val query = Query()
-            val totalCount = projectDao.count(query)
-            val records = projectDao.find(query.skip(skip).limit(limit)).map { convert(it) }
-            Page(0, limit, totalCount, records)
+        var criteria = if (request.projectIds.isEmpty()) {
+            Criteria()
         } else {
-            val criteria = TProject::name.inValues(request.projectIds)
-            val query = Query(criteria)
-            val totalCount = projectDao.count(query)
-            val records = projectDao.find(query.limit(limit).skip(skip)).map { convert(it) }
-            Page(0, limit, totalCount, records)
+            TProject::name.inValues(request.projectIds)
         }
+        if (request.projectMetadata.isNotEmpty()) {
+            val metadataCriteria = request.projectMetadata.map {
+               TProject::metadata.elemMatch(
+                    ProjectMetadata::key.isEqualTo(it.key).and(ProjectMetadata::value.name).isEqualTo(it.value)
+                )
+            }
+            criteria = Criteria().andOperator(metadataCriteria + criteria)
+        }
+        val query = Query(criteria)
+        val totalCount = projectDao.count(query)
+        val records = projectDao.find(query.limit(limit).skip(skip)).map { convert(it) }
+        return Page(0, limit, totalCount, records)
     }
 
     override fun checkExist(name: String): Boolean {

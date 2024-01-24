@@ -15,3 +15,13 @@ export function zeroTime (date) {
         return moment([moment().year(), moment().month(), moment().date()]).toDate()
     }
 }
+
+// 获取当前时间前几年的date
+export function beforeYears (years) {
+    return moment().subtract(years, 'years').toDate()
+}
+
+// 获取当前时间前几月的date
+export function beforeMonths (months) {
+    return moment().subtract(months, 'months').toDate()
+}

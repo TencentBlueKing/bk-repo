@@ -35,18 +35,20 @@ import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.PipelineArtifactCleanupJobProperties
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 流水线构件清理任务
@@ -55,7 +57,7 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(PipelineArtifactCleanupJobProperties::class)
 class PipelineArtifactCleanupJob(
     private val properties: PipelineArtifactCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate
+    private val nodeClient: NodeClient,
 ) : DefaultContextMongoDbJob<PipelineArtifactCleanupJob.Node>(properties) {
     override fun collectionNames(): List<String> {
         return (0 until SHARDING_COUNT)
@@ -84,13 +86,13 @@ class PipelineArtifactCleanupJob(
         return Node(row)
     }
 
-    override fun entityClass(): Class<Node> {
-        return Node::class.java
+    override fun entityClass(): KClass<Node> {
+        return Node::class
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
         getEarliestBuildNode(collectionName, row)?.let { buildNode ->
-            deleteBeforeBuild(collectionName, buildNode)
+            deleteBeforeBuild(buildNode)
         }
     }
 
@@ -119,20 +121,22 @@ class PipelineArtifactCleanupJob(
     /**
      * 删除流水线/报告仓库早于[getEarliestBuildNode]的构建文件
      */
-    private fun deleteBeforeBuild(collectionName: String, buildNode: Node) {
-        val query = Query(
-            where(Node::projectId.name).isEqualTo(buildNode.projectId)
-                .and(Node::repoName.name).isEqualTo(buildNode.repoName)
-                .and(Node::fullPath.name).regex("^${(buildNode.path)}")
-                .and(Node::createdDate.name).lt(buildNode.createdDate)
-                .and(Node::deleted.name).isEqualTo(null)
-        )
-        val update = Update.update(Node::deleted.name, LocalDateTime.now())
-        val result = mongoTemplate.updateMulti(query, update, collectionName)
-        logger.info(
-            "delete ${result.modifiedCount} node " +
-                "in [${buildNode.projectId}/${buildNode.repoName}${buildNode.path}]"
-        )
+    private fun deleteBeforeBuild(buildNode: Node) {
+        try {
+            val result = nodeClient.cleanNodes((NodeCleanRequest(
+                projectId = buildNode.projectId,
+                repoName = buildNode.repoName,
+                path = buildNode.path,
+                date = buildNode.createdDate,
+                operator = SYSTEM_USER
+            ))).data
+            logger.info(
+                "delete ${result?.deletedNumber} node " +
+                    "in [${buildNode.projectId}/${buildNode.repoName}${buildNode.path}]"
+            )
+        } catch (e: NullPointerException) {
+            logger.warn("clean nodes in [${buildNode.projectId}/${buildNode.repoName}${buildNode.path}] timeout")
+        }
     }
 
     data class Node(

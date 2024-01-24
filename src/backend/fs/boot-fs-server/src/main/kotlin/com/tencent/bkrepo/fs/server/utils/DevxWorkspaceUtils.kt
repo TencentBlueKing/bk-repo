@@ -27,13 +27,17 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
+import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
@@ -47,6 +51,7 @@ import reactor.netty.resources.ConnectionProvider
 import reactor.util.retry.RetryBackoffSpec
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 class DevxWorkspaceUtils(
     devXProperties: DevXProperties
@@ -61,18 +66,51 @@ class DevxWorkspaceUtils(
         private lateinit var devXProperties: DevXProperties
         private val httpClient by lazy {
             val provider = ConnectionProvider.builder("DevX").maxIdleTime(Duration.ofSeconds(30L)).build()
-            val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(30L))
+            val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(15L))
             val connector = ReactorClientHttpConnector(client)
             WebClient.builder().clientConnector(connector).build()
         }
 
+        private val mutex = Mutex()
+        private val ipSet: ConcurrentHashSet<String> = ConcurrentHashSet()
         private val projectIpsCache: ConcurrentHashMap<String, Mono<Set<String>>> by lazy {
             ConcurrentHashMap(devXProperties.cacheSize.toInt())
         }
 
-        fun getIpList(projectId: String): Mono<Set<String>> {
-            return projectIpsCache[projectId] ?: synchronized(DevxWorkspaceUtils::class) {
-                projectIpsCache.getOrPut(projectId) { listIpFromProject(projectId) }
+        suspend fun getIpList(projectId: String): Mono<Set<String>> {
+            return projectIpsCache[projectId] ?: requestIpList(projectId)
+        }
+
+        /**
+         * 获取项目ip列表, 5s内获取不到ip列表则返回空
+         * 为了避免接口异常，阻塞大量请求, 获取锁的超时比请求读超时短
+         */
+        private suspend fun requestIpList(projectId: String): Mono<Set<String>> {
+            val start = System.currentTimeMillis()
+            while (System.currentTimeMillis() - start < TimeUnit.SECONDS.toMillis(5)) {
+                if (mutex.tryLock()) {
+                    val ipList = try {
+                        projectIpsCache.getOrPut(projectId) { listIpFromProject(projectId) }
+                    } finally {
+                        mutex.unlock()
+                    }
+                    return ipList
+                }
+            }
+            return Mono.empty()
+        }
+
+
+        /**
+         * 是否为已知ip
+         */
+        fun knownIp(ip: String): Boolean {
+            return ipSet.contains(ip)
+        }
+
+        suspend fun refreshIpListCache(projectId: String) {
+            mutex.withLock {
+                projectIpsCache[projectId] = listIpFromProject(projectId)
             }
         }
 
@@ -99,13 +137,13 @@ class DevxWorkspaceUtils(
                 )
         }
 
-        private fun listIpFromProject(projectId: String): Mono<Set<String>> {
+        private suspend fun listIpFromProject(projectId: String): Mono<Set<String>> {
             val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
             val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
             val workspaceUrl = devXProperties.workspaceUrl
 
             logger.info("Update project[$projectId] ips.")
-            return httpClient
+            val ips = httpClient
                 .get()
                 .uri("$workspaceUrl?project_id=$projectId")
                 .header("X-Bkapi-Authorization", token)
@@ -121,6 +159,8 @@ class DevxWorkspaceUtils(
                             retry
                         }
                 ).cache(devXProperties.cacheExpireTime)
+            ipSet.addAll(ips.awaitSingle())
+            return ips
         }
 
         private suspend fun parseResponse(response: ClientResponse, projectId: String): Set<String> {

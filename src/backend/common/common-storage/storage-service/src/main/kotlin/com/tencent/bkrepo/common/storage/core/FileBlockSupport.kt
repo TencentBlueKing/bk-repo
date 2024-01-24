@@ -63,6 +63,17 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
+    override fun findLengthOfAppendFile(appendId: String, storageCredentials: StorageCredentials?): Long {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        val tempClient = getTempClient(credentials)
+        try {
+            return tempClient.length(CURRENT_PATH, appendId)
+        } catch (exception: Exception) {
+            logger.error("Failed to read length of id [$appendId] on [${credentials.key}]", exception)
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
+        }
+    }
+
     override fun append(appendId: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Long {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)

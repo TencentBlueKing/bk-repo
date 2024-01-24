@@ -29,9 +29,12 @@ package com.tencent.bkrepo.fs.server.handler
 
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.bodyToArtifactFile
+import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.io.RegionInputStreamResource
 import com.tencent.bkrepo.fs.server.request.BlockRequest
 import com.tencent.bkrepo.fs.server.request.FlushRequest
@@ -50,7 +53,9 @@ import org.springframework.http.ZeroCopyHttpOutputMessage
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
+import org.springframework.web.reactive.function.server.ServerResponse.temporaryRedirect
 import org.springframework.web.reactive.function.server.buildAndAwait
+import java.net.URI
 
 /**
  * 文件操作相关处理器
@@ -68,6 +73,10 @@ class FileOperationsHandler(
      * */
     suspend fun read(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
+            val repoType = ReactiveArtifactContextHolder.getRepoDetail().type
+            if (category == RepositoryCategory.REMOTE.name && repoType == RepositoryType.GENERIC) {
+                return temporaryRedirect(URI.create("/generic${request.uri().path}")).buildAndAwait()
+            }
             val node = rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data
             if (node?.folder == true || node == null) {
                 throw NodeNotFoundException(this.toString())
@@ -91,7 +100,7 @@ class FileOperationsHandler(
                     artifactInputStream.range.length
                 ).awaitSingleOrNull()
             } else {
-                val source = RegionInputStreamResource(artifactInputStream, range.total)
+                val source = RegionInputStreamResource(artifactInputStream, range.total!!)
                 val body = DataBufferUtils.read(source, DefaultDataBufferFactory.sharedInstance, DEFAULT_BUFFER_SIZE)
                 response.writeWith(body).awaitSingleOrNull()
             }

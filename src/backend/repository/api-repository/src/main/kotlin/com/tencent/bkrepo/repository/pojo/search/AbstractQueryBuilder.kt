@@ -51,6 +51,22 @@ open class AbstractQueryBuilder<T : AbstractQueryBuilder<T>> {
     private var rootRule: Rule.NestedRule = createNestedRule(Rule.NestedRule.RelationType.AND)
     private var currentRule: Rule.NestedRule = rootRule
 
+    fun newBuilder(): T {
+        val constructor = javaClass.getDeclaredConstructor()
+        val newInstance = constructor.newInstance() as T
+        newInstance.projectId = projectId
+        newInstance.repoNames = repoNames
+        newInstance.repoType = repoType
+        newInstance.fields = fields
+        newInstance.sort = sort?.let { Sort(it.properties, it.direction) }
+        newInstance.pageLimit = PageLimit(pageLimit.pageNumber, pageLimit.pageSize)
+        val newRootRule: MutableList<Rule> = mutableListOf()
+        newRootRule.addAll(rootRule.rules)
+        newInstance.rootRule = Rule.NestedRule(newRootRule, rootRule.relation)
+        newInstance.currentRule = newInstance.rootRule
+        return newInstance
+    }
+
     /**
      * 设置查询字段[fields]
      */

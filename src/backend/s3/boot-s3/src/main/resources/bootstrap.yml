@@ -1,0 +1,2 @@
+spring.application.name: s3
+server.port: 25819

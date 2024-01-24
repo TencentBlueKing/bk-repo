@@ -88,6 +88,9 @@ const val OCI_SERVICE_NAME = "\${service.prefix:}docker\${service.suffix:}"
 const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"
 const val FS_SERVER_SERVICE_NAME = "\${service.prefix:}fs-server\${service.suffix:}"
 const val MAVEN_SERVICE_NAME = "\${service.prefix:}maven\${service.suffix:}"
+const val ARCHIVE_SERVICE_NAME = "\${service.prefix:}archive\${service.suffix:}"
+const val OPDATA_SERVICE_NAME = "\${service.prefix:}opdata\${service.suffix:}"
+const val GENERIC_SERVICE_NAME = "\${service.prefix:}generic\${service.suffix:}"
 
 /**
  * 认证相关
@@ -112,3 +115,18 @@ const val MS_REQUEST_SRC_CLUSTER = "X-BKREPO-MS-CLUSTER"
  */
 const val CLIENT_ADDRESS = "clientAddress"
 const val DOWNLOAD_SOURCE = "downloadSource"
+
+/**
+ * 用于标记访问来源，web或api
+ */
+const val HEADER_ACCESS_FROM = "X-BKREPO-ACCESS-FROM"
+
+/**
+ * 来源于API调用
+ */
+const val ACCESS_FROM_API = "api"
+
+/**
+ * 来源于浏览器访问
+ */
+const val ACCESS_FROM_WEB = "web"

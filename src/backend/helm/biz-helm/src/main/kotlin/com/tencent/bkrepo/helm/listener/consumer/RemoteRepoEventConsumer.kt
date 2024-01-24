@@ -29,6 +29,7 @@ package com.tencent.bkrepo.helm.listener.consumer
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.helm.listener.base.RemoteEventJobExecutor
 import java.util.function.Consumer
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message

@@ -92,6 +92,20 @@ class AuthenticationManager(
     fun findUserAccount(userId: String): UserInfo? {
         return serviceUserClient.userInfoById(userId).data
     }
+    /**
+     * 根据用户id[userId]查询用户密码
+     * 当用户不存在时返回`null`
+     */
+    fun findUserPwd(userId: String): String? {
+        return serviceUserClient.userPwdById(userId).data
+    }
+
+    /**
+     * 根据用户id[userId]查询用户token
+     */
+    fun findUserToken(userId: String): List<String>? {
+        return serviceUserClient.userTokenById(userId).data
+    }
 
     fun findOauthToken(accessToken: String): OauthToken? {
         return serviceOauthAuthorizationClient.getToken(accessToken).data

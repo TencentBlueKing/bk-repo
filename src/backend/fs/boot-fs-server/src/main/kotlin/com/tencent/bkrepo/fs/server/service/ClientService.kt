@@ -99,6 +99,9 @@ class ClientService(
         val criteria = Criteria()
         request.projectId?.let { criteria.and(TClient::projectId.name).isEqualTo(request.projectId) }
         request.repoName?.let { criteria.and(TClient::repoName.name).isEqualTo(request.repoName) }
+        request.online?.let { criteria.and(TClient::online.name).isEqualTo(request.online) }
+        request.ip?.let { criteria.and(TClient::ip.name).isEqualTo(request.ip) }
+        request.version?.let { criteria.and(TClient::version.name).isEqualTo(request.version) }
         val query = Query(criteria)
         val count = clientRepository.count(query)
         val data = clientRepository.find(query.with(pageRequest))

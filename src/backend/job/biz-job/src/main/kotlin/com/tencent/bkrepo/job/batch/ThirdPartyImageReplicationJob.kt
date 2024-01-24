@@ -37,6 +37,7 @@ import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
+import kotlin.reflect.KClass
 
 /**
  * 生成
@@ -52,8 +53,8 @@ class ThirdPartyImageReplicationJob(
         return super.start()
     }
 
-    override fun entityClass(): Class<OciReplicationRecordInfoData> {
-        return OciReplicationRecordInfoData::class.java
+    override fun entityClass(): KClass<OciReplicationRecordInfoData> {
+        return OciReplicationRecordInfoData::class
     }
 
     override fun collectionNames(): List<String> {

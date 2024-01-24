@@ -39,6 +39,7 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.regex
 import org.springframework.data.mongodb.core.query.where
 import java.time.LocalDateTime
 
@@ -85,7 +86,17 @@ object NodeQueryHelper {
         if (!option.includeFolder) {
             criteria.and(TNode::folder).isEqualTo(false)
         }
-        return criteria
+        return if (option.noPermissionPath.isNotEmpty()) {
+            val noPermissionPathCriteria = option.noPermissionPath.flatMap {
+                listOf(
+                    TNode::fullPath.isEqualTo(it),
+                    TNode::fullPath.regex("^${escapeRegex(it)}")
+                )
+            }
+            Criteria().andOperator(criteria, Criteria().norOperator(noPermissionPathCriteria))
+        } else {
+            criteria
+        }
     }
 
     fun nodeListQuery(
@@ -195,7 +206,9 @@ object NodeQueryHelper {
     }
 
     fun nodeDeleteUpdate(operator: String, deleteTime: LocalDateTime = LocalDateTime.now()): Update {
-        return update(operator).set(TNode::deleted.name, deleteTime)
+        return Update()
+            .set(TNode::lastModifiedBy.name, operator)
+            .set(TNode::deleted.name, deleteTime)
     }
 
     fun update(operator: String, time: LocalDateTime = LocalDateTime.now()): Update {

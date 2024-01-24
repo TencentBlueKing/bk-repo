@@ -59,6 +59,8 @@ class ServiceAuthManager(
                     Thread.sleep(REFRESH_DELAY)
                 } catch (e: Exception) {
                     logger.error("Refresh token failed", e)
+                    // 防止错误无限重试
+                    Thread.sleep(RETRY_INTERVAL)
                 }
             }
         }
@@ -94,5 +96,6 @@ class ServiceAuthManager(
         private const val TOKEN_EXPIRATION = 10 * 60 * 1000L
         private const val REFRESH_DELAY = TOKEN_EXPIRATION - 60 * 1000L
         private const val REFRESH_THREAD_NAME = "ms-token-refresh"
+        private const val RETRY_INTERVAL = 1000L
     }
 }

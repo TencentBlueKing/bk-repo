@@ -28,12 +28,14 @@
 package com.tencent.bkrepo.repository.listener
 
 import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.google.common.cache.RemovalCause
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.constant.LOG
-import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.artifact.event.node.NodeCleanEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeDeletedEvent
@@ -41,11 +43,14 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
+import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.node.NodeService
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -55,6 +60,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.LongAdder
 
 
 /**
@@ -63,24 +69,25 @@ import java.util.concurrent.TimeUnit
 @Component
 class NodeModifyEventListener(
     private val nodeService: NodeService,
-    private val nodeDao: NodeDao
+    private val nodeDao: NodeDao,
     )  {
 
-    private val cache = CacheBuilder.newBuilder()
+    private val cache: LoadingCache<Triple<String, String, String>, Pair<LongAdder, LongAdder>>
+    = CacheBuilder.newBuilder()
         .maximumSize(1000)
         .expireAfterWrite(1, TimeUnit.MINUTES)
-        .removalListener<Triple<String, String, String>, Pair<Long, Long>> {
+        .removalListener<Triple<String, String, String>, Pair<LongAdder, LongAdder>> {
             if (it.cause == RemovalCause.REPLACED) return@removalListener
             logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
             nodeDao.incSizeAndNodeNumOfFolder(
                 projectId = it.key!!.first,
                 repoName = it.key!!.second,
                 fullPath = it.key!!.third,
-                size = it.value.first,
-                nodeNum = it.value.second
+                size = it.value.first.sumThenReset(),
+                nodeNum = it.value.second.sumThenReset()
             )
         }
-        .build<Triple<String, String, String>, Pair<Long, Long>>()
+        .build(CacheLoader.from { _ -> Pair(LongAdder(), LongAdder()) })
 
     /**
      * 允许接收的事件类型
@@ -90,7 +97,8 @@ class NodeModifyEventListener(
         EventType.NODE_CREATED,
         EventType.NODE_DELETED,
         EventType.NODE_MOVED,
-        EventType.NODE_RENAMED
+        EventType.NODE_RENAMED,
+        EventType.NODE_CLEAN,
     )
 
 
@@ -126,7 +134,7 @@ class NodeModifyEventListener(
                 return true
             }
         }
-        return IGNORE_REPO_LIST.contains(repoName)
+        return false
     }
 
 
@@ -135,7 +143,7 @@ class NodeModifyEventListener(
      * 将变更的目录节点数据存放在缓存中
      */
     private fun updateCacheOfModifiedFolder(event: ArtifactEvent) {
-        logger.info("event type ${event.type}")
+        logger.info("event $event")
         val modifiedNodeList = mutableListOf<ModifiedNodeInfo>()
         when (event.type) {
             EventType.NODE_DELETED -> {
@@ -205,6 +213,17 @@ class NodeModifyEventListener(
                 )
                 modifiedNodeList.add(createdNode)
             }
+            EventType.NODE_CLEAN -> {
+                require(event is NodeCleanEvent)
+                val deletedNode = ModifiedNodeInfo(
+                    projectId = event.projectId,
+                    repoName = event.repoName,
+                    fullPath = event.resourceKey,
+                    deleted = true,
+                    deletedDateTime = event.deletedDate
+                )
+                modifiedNodeList.add(deletedNode)
+            }
             else -> throw UnsupportedOperationException()
         }
         modifiedNodeList.forEach {
@@ -219,7 +238,12 @@ class NodeModifyEventListener(
             artifactUri = modifiedNode.fullPath
         )
         val node = if (modifiedNode.deleted) {
-            nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return
+            var temp = nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull()
+            // 节点清理只会清理目录下指定时间之前的节点，目录不会被清理
+            if (temp == null && !modifiedNode.deletedDateTime.isNullOrEmpty()) {
+                temp = nodeService.getNodeDetail(artifactInfo)
+            }
+            temp ?: return
         } else {
             // 查询节点信息，当节点新增，然后删除后可能会找不到节点
             nodeService.getNodeDetail(artifactInfo)
@@ -235,7 +259,7 @@ class NodeModifyEventListener(
             if (sourceNodes != null && sourceNodes.isEmpty()) return
             findAndCacheSubFolders(
                 artifactInfo = artifactInfo,
-                deleted = node.nodeInfo.deleted,
+                deleted = modifiedNode.deletedDateTime ?: node.nodeInfo.deleted,
                 deletedFlag = modifiedNode.deleted,
                 includePrefix = modifiedNode.includePrefix,
                 sourceNodes = sourceNodes
@@ -273,15 +297,14 @@ class NodeModifyEventListener(
             // 当只需要更新特定目录前缀目录的缓存记录时设置folderPrefix
             if (!includePrefix.isNullOrEmpty() && !it.startsWith(includePrefix)) return@forEach
             val key = Triple(projectId, repoName, it)
-            var (cachedSize, nodeNum) = cache.getIfPresent(key) ?: Pair(0L, 0L)
+            val (cachedSize, nodeNum) = cache.get(key)
             if (deleted) {
-                cachedSize -= size
-                nodeNum -= 1
+                cachedSize.add(-1 * size)
+                nodeNum.decrement()
             } else {
-                cachedSize += size
-                nodeNum += 1
+                cachedSize.add(size)
+                nodeNum.increment()
             }
-            cache.put(key, Pair(cachedSize, nodeNum))
         }
     }
 
@@ -292,22 +315,26 @@ class NodeModifyEventListener(
         includePrefix: String? = null,
         sourceNodes: List<String>? = null
     ) {
+        val action: ((List<TNode>) -> Unit) = {  nodeList ->
+            nodeList.forEach {
+                if (!sourceNodes.isNullOrEmpty() && !sourceNodes.contains(it.fullPath)) return@forEach
+                updateCache(
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    fullPath = it.fullPath,
+                    size = it.size,
+                    deleted = deletedFlag,
+                    includePrefix = includePrefix
+                )
+            }
+        }
         findAllNodesUnderFolder(
             artifactInfo.projectId,
             artifactInfo.repoName,
             artifactInfo.getArtifactFullPath(),
-            deleted = deleted
-        ).forEach {
-            if (!sourceNodes.isNullOrEmpty() && !sourceNodes.contains(it.fullPath)) return@forEach
-            updateCache(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                fullPath = it.fullPath,
-                size = it.size,
-                deleted = deletedFlag,
-                includePrefix = includePrefix
-            )
-        }
+            deleted = deleted,
+            action = action
+        )
     }
 
 
@@ -315,11 +342,20 @@ class NodeModifyEventListener(
         projectId: String,
         repoName: String,
         fullPath: String,
-        deleted: String? = null
-    ): List<TNode> {
+        deleted: String? = null,
+        action: (List<TNode>) -> Unit
+    ) {
         val srcRootNodePath = PathUtils.toPath(fullPath)
         val query = buildNodeQuery(projectId, repoName, srcRootNodePath, deleted)
-        return nodeDao.find(query)
+        var nodes: List<TNode>
+        var pageNumber = DEFAULT_PAGE_NUMBER
+        do {
+            val pageRequest = Pages.ofRequest(pageNumber, 1000)
+            query.with(pageRequest).with(Sort.by(AbstractMongoDao.ID).ascending())
+            nodes = nodeDao.find(query)
+            action(nodes)
+            pageNumber++
+        } while (nodes.isNotEmpty())
     }
 
 
@@ -344,14 +380,18 @@ class NodeModifyEventListener(
         }
         val path = PathUtils.resolveParent(modifiedNode.srcFullPath!!)
         if (node.folder) {
+            val action: ((List<TNode>) -> Unit) = {  nodeList ->
+                nodeList.forEach {
+                    sourceNodes.add(combineFullPath(modifiedNode.fullPath, it.fullPath.removePrefix(path)))
+                }
+            }
             findAllNodesUnderFolder(
                 artifactInfo.projectId,
                 artifactInfo.repoName,
                 artifactInfo.getArtifactFullPath(),
-                node.nodeInfo.deleted
-            ).map {
-                sourceNodes.add(combineFullPath(modifiedNode.fullPath, it.fullPath.removePrefix(path)))
-            }
+                node.nodeInfo.deleted,
+                action = action
+            )
         } else {
             sourceNodes.add(combineFullPath(modifiedNode.fullPath, node.fullPath.removePrefix(path)))
         }
@@ -395,13 +435,13 @@ class NodeModifyEventListener(
         var srcProjectId: String? = null,
         var srcRepoName: String? = null,
         var srcFullPath: String? = null,
-        var srcDeleted: Boolean = false
+        var srcDeleted: Boolean = false,
+        var deletedDateTime: String? = null
     )
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeModifyEventListener::class.java)
         private const val FIXED_DELAY = 10000L
-        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_", "git_")
-        private val IGNORE_REPO_LIST = listOf(REPORT, LOG)
+        private val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_")
     }
 }

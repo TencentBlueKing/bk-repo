@@ -47,7 +47,6 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
-import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.query.UserQueryHelper
 import com.tencent.bkrepo.auth.util.query.UserUpdateHelper
 import com.tencent.bkrepo.auth.util.request.UserRequestUtil
@@ -114,7 +113,7 @@ class UserServiceImpl constructor(
             createUser(createRequest)
         }
         val hashPwd = if (request.pwd == null) {
-            DataDigestUtils.md5FromStr(IDUtil.genRandomId())
+            randomPassWord()
         } else {
             DataDigestUtils.md5FromStr(request.pwd!!)
         }
@@ -303,6 +302,13 @@ class UserServiceImpl constructor(
         return UserRequestUtil.convTokenResult(userRepository.findFirstByUserId(userId)!!.tokens)
     }
 
+    override fun listValidToken(userId: String): List<Token> {
+        checkUserExist(userId)
+        return userRepository.findFirstByUserId(userId)!!.tokens.filter {
+            it.expiredAt == null || it.expiredAt!!.isAfter(LocalDateTime.now())
+        }
+    }
+
     override fun removeToken(userId: String, name: String): Boolean {
         logger.info("remove token userId : [$userId] ,name : [$name]")
         checkUserExist(userId)
@@ -369,6 +375,11 @@ class UserServiceImpl constructor(
     override fun getUserInfoById(userId: String): UserInfo? {
         val tUser = userRepository.findFirstByUserId(userId) ?: return null
         return UserRequestUtil.convToUserInfo(tUser)
+    }
+
+    override fun getUserPwdById(userId: String): String? {
+        val tUser = userRepository.findFirstByUserId(userId) ?: return null
+        return tUser.pwd
     }
 
     override fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean {

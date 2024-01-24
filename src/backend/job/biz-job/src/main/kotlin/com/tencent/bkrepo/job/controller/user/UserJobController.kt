@@ -38,6 +38,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -55,5 +56,15 @@ class UserJobController(val systemJobService: SystemJobService) {
     @LogOperate(type = "JOB_STATUS_UPDATE")
     fun update(@PathVariable name: String, enabled: Boolean, running: Boolean): Response<Boolean> {
         return ResponseBuilder.success(systemJobService.update(name, enabled, running))
+    }
+
+    @PutMapping("/stop")
+    fun stop(
+        @RequestParam(required = false) name: String?,
+        @RequestParam maxWaitTime: Long = 0,
+        @RequestParam failover: Boolean,
+    ): Response<Void> {
+        systemJobService.stop(name, maxWaitTime, failover)
+        return ResponseBuilder.success()
     }
 }

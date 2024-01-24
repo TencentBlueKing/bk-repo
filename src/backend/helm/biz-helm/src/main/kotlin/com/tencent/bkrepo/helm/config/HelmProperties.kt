@@ -7,5 +7,7 @@ data class HelmProperties(
     /**
      * generic服务domain地址，用于生成临时url
      */
-    var domain: String = "localhost"
+    var domain: String = "localhost",
+    var retryTimes: Int = 10000,
+    var sleepTime: Long = 30L
 )
