@@ -35,6 +35,7 @@ import cn.hutool.crypto.CryptoException
 import com.google.common.hash.Hashing
 import com.tencent.bkrepo.auth.api.ServiceProxyClient
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
@@ -47,6 +48,7 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.slf4j.LoggerFactory
+import org.springframework.http.MediaType
 import org.springframework.web.servlet.AsyncHandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
 import java.io.ByteArrayOutputStream
@@ -60,6 +62,10 @@ class ProxyAuthInterceptor(
     private val serviceProxyClient: ServiceProxyClient by lazy { SpringContextUtils.getBean() }
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
+        // 设置uid
+        request.getHeader(MS_AUTH_HEADER_UID)?.let {
+            request.setAttribute(USER_KEY, it)
+        }
         if (proxyAuthProperties.enabled) {
             val projectId = request.getParameter(PROJECT_ID)
             val name = request.getParameter(PROXY_NAME)
@@ -73,10 +79,17 @@ class ProxyAuthInterceptor(
                 val proxyKey = serviceProxyClient.getEncryptedKey(projectId, name).data!!
                 val secretKey = AESUtils.decrypt(proxyKey.encSecretKey)
                 val sessionKey = AESUtils.decrypt(proxyKey.encSessionKey, secretKey)
-                val body = ByteArrayOutputStream()
-                request.inputStream.copyTo(body)
+
                 val uri = getUrlPath(request)
-                val bodyHash = Hashing.sha256().hashBytes(body.toByteArray()).toString()
+                val bodyHash = if (request.contentType?.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE) == false &&
+                    request.contentType?.startsWith(MediaType.APPLICATION_OCTET_STREAM_VALUE) == false
+                ) {
+                    val body = ByteArrayOutputStream()
+                    request.inputStream.copyTo(body)
+                    Hashing.sha256().hashBytes(body.toByteArray()).toString()
+                } else {
+                    emptyStringHash
+                }
                 val sig = HttpSigner.sign(request, uri, bodyHash, sessionKey, HmacAlgorithms.HMAC_SHA_1.getName())
                 if (sig != request.getParameter(SIGN)) {
                     val signatureStr = HttpSigner.getSignatureStr(request, uri, bodyHash)
@@ -90,10 +103,6 @@ class ProxyAuthInterceptor(
                 throw AuthenticationException(e.localizedMessage)
             }
         }
-        // 设置uid
-        request.getHeader(MS_AUTH_HEADER_UID)?.let {
-            request.setAttribute(USER_KEY, it)
-        }
         return true
     }
 
@@ -103,5 +112,6 @@ class ProxyAuthInterceptor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProxyAuthInterceptor::class.java)
+        private val emptyStringHash = Hashing.sha256().hashBytes(StringPool.EMPTY.toByteArray()).toString()
     }
 }

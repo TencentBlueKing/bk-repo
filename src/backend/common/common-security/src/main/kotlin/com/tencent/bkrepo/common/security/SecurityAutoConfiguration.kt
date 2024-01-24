@@ -70,10 +70,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
     SecurityExceptionHandler::class,
     PermissionConfiguration::class,
     HttpAuthConfiguration::class,
+    ProxyAuthConfiguration::class,
     ServiceAuthConfiguration::class,
     ActuatorAuthConfiguration::class,
-    CryptoConfiguration::class,
-    ProxyAuthConfiguration::class
+    CryptoConfiguration::class
 )
 @EnableConfigurationProperties(DevXProperties::class)
 class SecurityAutoConfiguration {
