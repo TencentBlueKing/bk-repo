@@ -62,13 +62,16 @@ class CleanupFileVisitor(
     @Throws(IOException::class)
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         val size = attributes.size()
+        val isTempFile = isTempFile(filePath)
+        var deleted = false
         try {
             if (fileExpireResolver.isExpired(filePath.toFile()) && !isNFSTempFile(filePath)) {
-                if (isTempFile(filePath) || existInStorage(filePath)) {
+                if (isTempFile || existInStorage(filePath)) {
                     rateLimiter.acquire()
                     Files.delete(filePath)
                     result.cleanupFile += 1
                     result.cleanupSize += size
+                    deleted = true
                     logger.info("Clean up file[$filePath], size[$size], summary: $result")
                 }
             }
@@ -78,6 +81,11 @@ class CleanupFileVisitor(
         } finally {
             result.totalFile += 1
             result.totalSize += size
+            if(!isTempFile && !deleted) {
+                // 仅统计非temp目录下未被清理的文件
+                result.rootDirNotDeletedFile += 1
+                result.rootDirNotDeletedSize += size
+            }
         }
         return FileVisitResult.CONTINUE
     }
