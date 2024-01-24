@@ -46,11 +46,15 @@ import org.springframework.scheduling.annotation.Scheduled
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.LongAdder
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.annotation.PreDestroy
+import kotlin.concurrent.withLock
 
 open class ProjectUsageStatisticsServiceImpl(
     private val properties: ProjectUsageStatisticsProperties,
@@ -85,9 +89,10 @@ open class ProjectUsageStatisticsServiceImpl(
             executor.execute(
                 Runnable {
                     rateLimiter.acquire()
-                    synchronized(it.value!!) {
-                        flush(it.key!!, it.value!!)
+                    it.value!!.lock.writeLock().withLock {
+                        it.value!!.flushed = true
                     }
+                    flush(it.key!!, it.value!!)
                 }.trace()
             )
         }
@@ -109,7 +114,7 @@ open class ProjectUsageStatisticsServiceImpl(
             val adder = cache.get(projectId)
             var added = false
             // 加锁避免inc与flush操作同一个adder对象导致丢失部分计数
-            synchronized(adder) {
+            adder.lock.readLock().withLock {
                 if (!adder.flushed) {
                     adder.reqCount.add(reqCount)
                     adder.receivedBytes.add(receivedBytes)
@@ -131,6 +136,26 @@ open class ProjectUsageStatisticsServiceImpl(
 
     override fun delete(start: Long?, end: Long) {
         projectUsageStatisticsDao.delete(start, end)
+    }
+
+    override fun sumRecentDays(days: Long): Map<String, ProjectUsageStatistics> {
+        val start = LocalDate.now().atStartOfDay().minusDays(days - 1)
+            .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val result = ConcurrentHashMap<String, ProjectUsageStatisticsAdder>()
+        projectUsageStatisticsDao.findAfter(start).stream().parallel().forEach {
+            val statistics = result.getOrPut(it.projectId) { ProjectUsageStatisticsAdder() }
+            statistics.reqCount.add(it.reqCount)
+            statistics.responseBytes.add(it.responseByte)
+            statistics.receivedBytes.add(it.receiveBytes)
+        }
+        return result.mapValues {
+            ProjectUsageStatistics(
+                projectId = it.key,
+                reqCount = it.value.reqCount.toLong(),
+                receiveBytes = it.value.receivedBytes.toLong(),
+                responseBytes = it.value.responseBytes.toLong(),
+            )
+        }
     }
 
     @PreDestroy
@@ -171,7 +196,6 @@ open class ProjectUsageStatisticsServiceImpl(
             adder.responseBytes.toLong(),
             start
         )
-        adder.flushed = true
     }
 
     private fun TProjectUsageStatistics.convert(): ProjectUsageStatistics = ProjectUsageStatistics(
@@ -186,10 +210,11 @@ open class ProjectUsageStatisticsServiceImpl(
         val receivedBytes: LongAdder = LongAdder(),
         val responseBytes: LongAdder = LongAdder(),
         /**
-         * 是否已经写入缓存
+         * 是否已经写入数据库
          */
         @Volatile
-        var flushed: Boolean = false
+        var flushed: Boolean = false,
+        val lock: ReadWriteLock = ReentrantReadWriteLock(),
     )
 
     companion object {
