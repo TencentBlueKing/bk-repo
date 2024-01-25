@@ -58,6 +58,10 @@ object TaskRecordQueryHelper {
                     path?.let { and("pathConstraint.path").isEqualTo("^$it") }
                 }.apply {
                     status?.let { and(TReplicaRecordDetail::status).isEqualTo(it) }
+                }.apply {
+                    artifactName?.let { and(TReplicaRecordDetail::artifactName).regex("^$it") }
+                }.apply {
+                    version?.let { and(TReplicaRecordDetail::version).isEqualTo(it) }
                 }
             return Query(criteria)
                 .with(Sort.by(Sort.Order(Sort.Direction.DESC, TReplicaRecordDetail::startTime.name)))

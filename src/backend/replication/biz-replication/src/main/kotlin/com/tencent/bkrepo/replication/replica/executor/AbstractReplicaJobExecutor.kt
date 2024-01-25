@@ -34,7 +34,10 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
+import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.ResultsSummary
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
@@ -69,40 +72,65 @@ open class AbstractReplicaJobExecutor(
         clusterNodeName: ClusterNodeName,
         event: ArtifactEvent? = null
     ): Future<ExecutionResult> {
-        return threadPoolExecutor.submit<ExecutionResult>( Callable {
-            try {
-                val clusterNode = clusterNodeService.getByClusterId(clusterNodeName.id)
-                require(clusterNode != null) { "Cluster[${clusterNodeName.id}] does not exist." }
-                var status = ExecutionStatus.SUCCESS
-                var message: String? = null
-                taskDetail.objects.map { taskObject ->
-                    val localRepo = localDataManager.findRepoByName(
-                        taskDetail.task.projectId,
-                        taskObject.localRepoName,
-                        taskObject.repoType.toString()
-                    )
-                    val context = ReplicaContext(
-                        taskDetail = taskDetail,
-                        taskObject = taskObject,
-                        taskRecord = taskRecord,
-                        localRepo = localRepo,
-                        remoteCluster = clusterNode,
-                        replicationProperties = replicationProperties
-                    )
-                    event?.let { context.event = it }
-                    replicaService.replica(context)
-                    if (context.status == ExecutionStatus.FAILED) {
-                        status = context.status
-                        message = context.errorMessage
+        return threadPoolExecutor.submit<ExecutionResult>(
+            Callable {
+                var replicaProgress = ReplicaProgress()
+                try {
+                    val clusterNode = clusterNodeService.getByClusterId(clusterNodeName.id)
+                    require(clusterNode != null) { "Cluster[${clusterNodeName.id}] does not exist." }
+                    var status = ExecutionStatus.SUCCESS
+                    var message: String? = null
+                    taskDetail.objects.map { taskObject ->
+                        val localRepo = localDataManager.findRepoByName(
+                            taskDetail.task.projectId,
+                            taskObject.localRepoName,
+                            taskObject.repoType.toString()
+                        )
+                        val context = ReplicaContext(
+                            taskDetail = taskDetail,
+                            taskObject = taskObject,
+                            taskRecord = taskRecord,
+                            localRepo = localRepo,
+                            remoteCluster = clusterNode,
+                            replicationProperties = replicationProperties
+                        )
+                        event?.let { context.event = it }
+                        replicaService.replica(context)
+                        replicaProgress = replicaProgress.plus(context.replicaProgress)
+                        if (context.status == ExecutionStatus.FAILED) {
+                            status = context.status
+                            message = context.errorMessage
+                        }
                     }
+                    ExecutionResult(status = status, errorReason = message, progress = replicaProgress)
+                } catch (exception: Throwable) {
+                    logger.error("${taskDetail.task.name}/$clusterNodeName] replica exception:${exception}")
+                    ExecutionResult.fail("${clusterNodeName.name}:${exception.message}\n", replicaProgress)
                 }
-                ExecutionResult(status = status, errorReason = message)
-            } catch (exception: Throwable) {
-                logger.error("同步任务执行失败", exception)
-                ExecutionResult.fail(exception.message)
-            }
-        }.trace()
+            }.trace()
         )
+    }
+
+    /**
+     * 以Task维度，汇总线程执行结果
+     */
+    protected fun getResultsSummary(results: List<ExecutionResult>): ResultsSummary {
+        val replicaOverview = ReplicaOverview()
+        var status = ExecutionStatus.SUCCESS
+        var errorReason = ""
+        results.forEach { result ->
+            if (result.status == ExecutionStatus.FAILED) {
+                status = ExecutionStatus.FAILED
+                errorReason = "部分数据同步失败 "
+                errorReason += result.errorReason ?: ""
+            }
+            result.progress?.let { progress ->
+                replicaOverview.success += (progress.success + progress.skip)
+                replicaOverview.failed += progress.failed
+                replicaOverview.conflict += progress.conflict
+            }
+        }
+        return ResultsSummary(replicaOverview, errorReason, status)
     }
 
     companion object {

@@ -41,6 +41,7 @@ import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
@@ -96,6 +97,8 @@ class ReplicaContext(
     var targetVersions: List<String>?
 
     val httpClient: OkHttpClient
+
+    var replicaProgress = ReplicaProgress()
 
     init {
         cluster = ClusterInfo(
@@ -172,6 +175,14 @@ class ReplicaContext(
         if (taskObject.packageConstraints!!.first().versions.isNullOrEmpty()) return null
         if (taskObject.packageConstraints!!.first().versions!!.size != 1) return null
         return taskObject.packageConstraints!!.first().targetVersions
+    }
+
+    fun updateProgress(executed: Boolean) {
+        if (executed) {
+            replicaProgress.success++
+        } else {
+            replicaProgress.skip++
+        }
     }
 
     companion object {
