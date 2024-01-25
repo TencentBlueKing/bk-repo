@@ -403,9 +403,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
-        val user = userRepository.findFirstByUserId(userId) ?: run {
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
+        val user = userRepository.findFirstByUserId(userId) ?: return emptyList()
 
         if (user.admin || isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
