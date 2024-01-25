@@ -34,7 +34,6 @@ package com.tencent.bkrepo.s3.service
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
-import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -43,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.repository.api.MetadataClient
@@ -50,6 +50,7 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
@@ -104,26 +105,43 @@ class S3ObjectService(
         repository.upload(context)
     }
 
-    fun listObjects(artifactInfo: S3ArtifactInfo, maxKeys: Int, delimiter: String, prefix: String): ListBucketResult {
+    fun listObjects(
+        artifactInfo: S3ArtifactInfo,
+        marker: Int,
+        maxKeys: Int,
+        delimiter: String,
+        prefix: String
+    ): ListBucketResult {
         val projectId = artifactInfo.projectId
         val repoName = artifactInfo.repoName
+        val queryPrefix = if (prefix.isEmpty()) StringPool.ROOT else PathUtils.normalizePath(prefix)
         val nodeQueryBuilder = NodeQueryBuilder()
             .projectId(projectId).repoName(repoName)
             .apply {
-                if (prefix.isEmpty()) {
-                    path(StringPool.ROOT)
+                if (delimiter.isEmpty()) {
+                    path(queryPrefix, OperationType.PREFIX)
                 } else {
-                    path(PathUtils.normalizePath(prefix.ensurePrefix(SLASH)))
+                    path(queryPrefix)
                 }
             }
-        val folderQueryBuilder = nodeQueryBuilder.newBuilder().excludeFile().select(NodeDetail::fullPath.name)
-        val folders = nodeClient.queryWithoutCount(folderQueryBuilder.build()).data!!.records
-            .map {
-                it[NodeDetail::fullPath.name].toString().removePrefix(SLASH).ensureSuffix(SLASH)
+
+        val folders = if (delimiter.isNotEmpty()) {
+            val folderQueryBuilder = nodeQueryBuilder.newBuilder().excludeFile().select(NodeDetail::fullPath.name)
+            nodeClient.queryWithoutCount(folderQueryBuilder.build()).data!!.records
+                .map {
+                    it[NodeDetail::fullPath.name].toString().removePrefix(SLASH).ensureSuffix(SLASH)
+                }
+        } else {
+            emptyList()
+        }
+        val queryBuilder = nodeQueryBuilder.newBuilder().page(marker, maxKeys)
+            .apply {
+                if (delimiter.isNotEmpty()) {
+                    excludeFolder()
+                }
             }
-        val fileQueryBuilder = nodeQueryBuilder.newBuilder().excludeFolder()
-        val files = nodeClient.queryWithoutCount(fileQueryBuilder.build()).data!!.records
-        return ListBucketResult(repoName, files, maxKeys, prefix, folders)
+        val data = nodeClient.search(queryBuilder.build()).data!!
+        return ListBucketResult(repoName, data, maxKeys, prefix, folders, delimiter)
     }
 
     fun copyObject(artifactInfo: S3ArtifactInfo): CopyObjectResult {
@@ -153,7 +171,18 @@ class S3ObjectService(
         )
     }
 
-    fun replaceMetadata(nodeDetail: NodeDetail): NodeDetail {
+    fun deleteObject(artifactInfo: S3ArtifactInfo) {
+        with(artifactInfo) {
+            nodeClient.deleteNode(NodeDeleteRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = getArtifactFullPath(),
+                operator = SecurityUtils.getUserId()
+            ))
+        }
+    }
+
+    private fun replaceMetadata(nodeDetail: NodeDetail): NodeDetail {
         val directive = HeaderUtils.getHeader(X_AMZ_METADATA_DIRECTIVE)
         if (directive.equals("REPLACE", true)) {
             val metadataHeader = HeaderUtils.getHeaderNames()?.filter {

@@ -31,6 +31,8 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 @JacksonXmlRootElement(localName = "ListBucketResult", namespace = "http://s3.amazonaws.com/doc/2006-03-01/")
@@ -39,6 +41,8 @@ data class ListBucketResult(
     val isTruncated: Boolean,
     @JacksonXmlProperty(localName = "Marker")
     val marker: String? = null,
+    @JacksonXmlProperty(localName = "NextMarker")
+    val nextMarker: String? = null,
     @JacksonXmlProperty(localName = "Contents")
     @JacksonXmlElementWrapper(useWrapping = false)
     val contents: List<Content>,
@@ -46,6 +50,8 @@ data class ListBucketResult(
     val name: String,
     @JacksonXmlProperty(localName = "Prefix")
     val prefix: String,
+    @JacksonXmlProperty(localName = "Delimiter")
+    val delimiter: String? = null,
     @JacksonXmlProperty(localName = "CommonPrefixes")
     @JacksonXmlElementWrapper(useWrapping = false)
     val commonPrefixes: List<CommonPrefix>?,
@@ -54,29 +60,45 @@ data class ListBucketResult(
 ) {
     constructor(
         repoName: String,
-        nodeDetailList: List<Map<String, Any?>>,
+        data: Page<Map<String, Any?>>,
         maxKeys: Int,
         prefix: String,
-        folders: List<String>?
+        folders: List<String>?,
+        delimiter: String
     ) : this(
         name = repoName,
         prefix = prefix,
+        delimiter = delimiter.ifEmpty { null },
         commonPrefixes = folders?.map { CommonPrefix(it) }.orEmpty(),
-        marker = null,
+        marker = data.pageNumber.toString(),
+        nextMarker = if (data.pageNumber.toLong() < data.totalPages) (data.pageNumber + 1).toString() else null,
         maxKeys = maxKeys,
-        isTruncated = false,
-        contents = nodeDetailList.map {
-            val owner = it[NodeDetail::createdBy.name].toString()
-            Content(
-                key = it[NodeDetail::fullPath.name].toString().removePrefix(StringPool.SLASH),
-                lastModified = it[NodeDetail::lastModifiedDate.name].toString(),
-                eTag = "\"${it[NodeDetail::md5.name].toString()}\"",
-                size = it[NodeDetail::size.name].toString().toLong(),
-                storageClass = "STANDARD",
-                owner = Owner(owner, owner)
-            )
-        }
+        isTruncated = data.pageNumber.toLong() < data.totalPages,
+        contents = convertToContents(data.records)
     )
+
+    companion object {
+
+        private val emptyMD5 = StringPool.EMPTY.md5()
+        private fun convertToContents(nodeDetailList: List<Map<String, Any?>>): List<Content> {
+            return nodeDetailList.map {
+                val owner = it[NodeDetail::createdBy.name].toString()
+                val folder = it[NodeDetail::folder.name].toString().toBoolean()
+                Content(
+                    key = it[NodeDetail::fullPath.name].toString().removePrefix(StringPool.SLASH),
+                    lastModified = it[NodeDetail::lastModifiedDate.name].toString(),
+                    eTag = if (folder) {
+                        "\"$emptyMD5\""
+                    } else {
+                        "\"${it[NodeDetail::md5.name].toString()}\""
+                    },
+                    size = it[NodeDetail::size.name].toString().toLong(),
+                    storageClass = "STANDARD",
+                    owner = Owner(owner, owner)
+                )
+            }
+        }
+    }
 }
 
 data class Content(
