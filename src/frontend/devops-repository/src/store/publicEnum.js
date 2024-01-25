@@ -153,3 +153,18 @@ export const specialRepoEnum = [
     'report',
     'custom'
 ]
+
+// 分发计划的任务日志详情页数量显示
+export const planLogEnum = {
+    total: '同步总数量',
+    success: '成功数量',
+    failed: '失败数量',
+    conflict: '冲突数量'
+}
+
+// 分发计划冲突策略
+export const conflictStrategyEnum = {
+    SKIP: '跳过冲突',
+    OVERWRITE: '替换制品',
+    FAST_FAIL: '终止同步'
+}

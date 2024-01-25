@@ -834,5 +834,16 @@
     "planRecordAllLog":"记录所有分发日志",
     "planLogReserveDays":"日志保留天数(60天内)",
     "planRecordReserveDaysInfo":"请输入 1-60 之间的数字",
-    "planTaskLogInfo":"[{name}] 分发计划未选择记录所有分发日志，无法查看任务日志详情"
+    "planTaskLogInfo":"[{name}] 分发计划未选择记录所有分发日志，无法查看任务日志详情",
+    "planLogEnum" : {
+        "total": "同步总数量",
+        "success": "成功数量",
+        "failed": "失败数量",
+        "conflict": "冲突数量"
+    },
+    "conflictStrategyEnum": {
+        "SKIP": "跳过冲突",
+        "OVERWRITE": "替换制品",
+        "FAST_FAIL": "终止同步"
+    }
 }

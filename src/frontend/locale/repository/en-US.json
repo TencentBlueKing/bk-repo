@@ -833,5 +833,16 @@
     "planRecordAllLog":"Record all distribution logs",
     "planLogReserveDays":"Log retention days (within 60 days)",
     "planRecordReserveDaysInfo":"Please enter a number between 1-60",
-    "planTaskLogInfo":"[{name}] distribution plan does not select to record all distribution logs, and task log details cannot be viewed."
+    "planTaskLogInfo":"[{name}] distribution plan does not select to record all distribution logs, and task log details cannot be viewed.",
+    "planLogEnum" :{
+        "total": "Total number of syncs",
+        "success": "Number of successes",
+        "failed": "Number of failures",
+        "conflict": "Number of conflicts"
+    },
+    "conflictStrategyEnum": {
+        "SKIP": "Skip conflicts",
+        "OVERWRITE": "Replacement artifacts",
+        "FAST_FAIL": "Terminate synchronization"
+    }
 }
