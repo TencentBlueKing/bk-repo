@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.storage.credentials
 import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
 import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
 import com.tencent.bkrepo.common.storage.config.CacheProperties
+import com.tencent.bkrepo.common.storage.config.CompressProperties
 import com.tencent.bkrepo.common.storage.config.EncryptProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 
@@ -50,14 +51,16 @@ data class InnerCosCredentials(
     var cmdId: Int? = null,
     var timeout: Float = 0.5F,
     var public: Boolean = false,
+    var inner: Boolean = false,
     var slowLogSpeed: Int = MB,
     var slowLogTimeInMillis: Long = 30_000,
     var download: DownloadProperties = DownloadProperties(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties(),
-    override var encrypt: EncryptProperties = EncryptProperties()
-) : StorageCredentials(key, cache, upload, encrypt) {
+    override var encrypt: EncryptProperties = EncryptProperties(),
+    override var compress: CompressProperties = CompressProperties(),
+) : StorageCredentials(key, cache, upload, encrypt, compress) {
 
     companion object {
         const val type = "innercos"

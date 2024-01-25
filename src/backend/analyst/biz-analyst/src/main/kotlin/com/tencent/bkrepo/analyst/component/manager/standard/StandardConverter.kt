@@ -99,7 +99,8 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
                 description = it.des,
                 officialSolution = it.solution ?: "",
                 reference = it.references,
-                path = it.path
+                path = it.path,
+                versionsPaths = it.versionsPaths
             )
         }.toList()
         return Pages.ofResponse(pageRequest, result.totalRecords, reports)

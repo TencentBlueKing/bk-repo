@@ -28,11 +28,11 @@
 package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import org.springframework.http.HttpStatus
 import org.springframework.util.AntPathMatcher
@@ -46,14 +46,11 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse,
     ): ServerResponse {
-        if (request.path().startsWith("/login") ||
-            request.path().startsWith("/service") ||
-            request.path().startsWith("/token")
-        ) {
+        if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
         val action = request.getAction()
-        val token = request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+        val token = request.bearerToken()
         return if (token == null) {
             ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
         } else {
@@ -97,5 +94,6 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
             "/node/set-length/**",
             "/block/**",
         )
+        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/service", "/token", "/ioa")
     }
 }

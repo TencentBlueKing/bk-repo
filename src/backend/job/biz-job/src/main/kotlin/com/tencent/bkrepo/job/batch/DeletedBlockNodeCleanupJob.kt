@@ -37,7 +37,6 @@ import com.tencent.bkrepo.job.config.properties.DeletedBlockNodeCleanupJobProper
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -45,6 +44,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 清理被标记为删除的node，同时减少文件引用
@@ -53,7 +53,6 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(DeletedBlockNodeCleanupJobProperties::class)
 class DeletedBlockNodeCleanupJob(
     private val properties: DeletedBlockNodeCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val fileReferenceClient: FileReferenceClient
 ) : DefaultContextMongoDbJob<DeletedBlockNodeCleanupJob.BlockNode>(properties) {
 
@@ -89,8 +88,8 @@ class DeletedBlockNodeCleanupJob(
         )
     }
 
-    override fun entityClass(): Class<BlockNode> {
-        return BlockNode::class.java
+    override fun entityClass(): KClass<BlockNode> {
+        return BlockNode::class
     }
 
     override fun run(row: BlockNode, collectionName: String, context: JobContext) {

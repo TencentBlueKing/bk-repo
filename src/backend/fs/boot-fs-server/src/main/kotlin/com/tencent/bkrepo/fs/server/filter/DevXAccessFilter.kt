@@ -27,59 +27,28 @@
 
 package com.tencent.bkrepo.fs.server.filter
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.IpUtils
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
-import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
-import org.springframework.http.client.reactive.ReactorClientHttpConnector
-import org.springframework.web.reactive.function.client.ClientResponse
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
-import reactor.core.publisher.Mono
-import reactor.netty.http.client.HttpClient
-import reactor.netty.http.client.PrematureCloseException
-import reactor.netty.resources.ConnectionProvider
-import reactor.util.retry.RetryBackoffSpec
-import java.time.Duration
 
 class DevXAccessFilter(
     private val devXProperties: DevXProperties
 ) : CoHandlerFilterFunction {
-    private val httpClient by lazy {
-        val provider = ConnectionProvider.builder("DevX").maxIdleTime(Duration.ofSeconds(30L)).build()
-        val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(30L))
-        val connector = ReactorClientHttpConnector(client)
-        WebClient.builder().clientConnector(connector).build()
-    }
-    private val projectIpsCache: LoadingCache<String, Mono<Set<String>>> = CacheBuilder.newBuilder()
-        .maximumSize(devXProperties.cacheSize)
-        .expireAfterWrite(devXProperties.cacheExpireTime)
-        .build(CacheLoader.from { key -> listIpFromProject(key) })
-
     override suspend fun filter(
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse
     ): ServerResponse {
-        if (request.path().startsWith("/login") ||
-            request.path().startsWith("/service") ||
-            request.path().startsWith("/token")
-        ) {
+        if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
 
@@ -121,9 +90,15 @@ class DevXAccessFilter(
         }
     }
 
-    private suspend fun checkIpBelongToProject(projectId: String, srcIp: String) {
-        val projectIps = projectIpsCache.get(projectId).awaitSingle()
-        if (srcIp !in projectIps && !projectIps.any { it.contains('/') && IpUtils.isInRange(srcIp, it) }) {
+    private suspend fun checkIpBelongToProject(projectId: String, srcIp: String, isRetry: Boolean = false) {
+        val projectIps = DevxWorkspaceUtils.getIpList(projectId).awaitSingle()
+        val notBelong = srcIp !in projectIps &&
+            !projectIps.any { it.contains('/') && IpUtils.isInRange(srcIp, it) }
+        if (notBelong && !isRetry && !DevxWorkspaceUtils.knownIp(srcIp)) {
+            DevxWorkspaceUtils.refreshIpListCache(projectId)
+            return checkIpBelongToProject(projectId, srcIp, true)
+        }
+        if (notBelong) {
             logger.info("Illegal src ip[$srcIp] in project[$projectId].")
             throw PermissionException()
         }
@@ -139,46 +114,9 @@ class DevXAccessFilter(
         }
     }
 
-    private fun listIpFromProject(projectId: String): Mono<Set<String>> {
-        val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
-        val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
-        val workspaceUrl = devXProperties.workspaceUrl
-
-        logger.info("Update project[$projectId] ips.")
-        return httpClient
-            .get()
-            .uri("$workspaceUrl?project_id=$projectId")
-            .header("X-Bkapi-Authorization", token)
-            .exchangeToMono {
-                mono { parseResponse(it, projectId) }
-            }
-            .retryWhen(
-                RetryBackoffSpec
-                    .backoff(2L, Duration.ofSeconds(1))
-                    .filter {
-                        val retry = it.cause is PrematureCloseException
-                        logger.warn("request ips of project[$projectId] failed, will retry: $retry")
-                        retry
-                    }
-            )
-    }
-
-    private suspend fun parseResponse(response: ClientResponse, projectId: String): Set<String> {
-        return if (response.statusCode() != HttpStatus.OK) {
-            val errorMsg = response.awaitBody<String>()
-            logger.error("${response.statusCode()} $errorMsg")
-            devXProperties.projectCvmWhiteList[projectId] ?: emptySet()
-        } else {
-            val ips = HashSet<String>()
-            devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
-            response.awaitBody<QueryResponse>().data.forEach { workspace ->
-                workspace.innerIp?.substringAfter('.')?.let { ips.add(it) }
-            }
-            ips
-        }
-    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevXAccessFilter::class.java)
+        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/service", "/token", "/ioa")
     }
 }

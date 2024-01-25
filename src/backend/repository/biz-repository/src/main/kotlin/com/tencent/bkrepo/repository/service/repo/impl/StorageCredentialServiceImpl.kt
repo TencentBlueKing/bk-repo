@@ -100,6 +100,10 @@ class StorageCredentialServiceImpl(
                 expireDuration = request.credentials.cache.expireDuration
             )
             upload = upload.copy(localPath = request.credentials.upload.localPath)
+            compress = compress.copy(
+                path = request.credentials.compress.path,
+                ratio = request.credentials.compress.ratio
+            )
             credentialUpdaters[StorageCredentialsUpdater.name(this::class.java)]?.update(this, request)
         }
 

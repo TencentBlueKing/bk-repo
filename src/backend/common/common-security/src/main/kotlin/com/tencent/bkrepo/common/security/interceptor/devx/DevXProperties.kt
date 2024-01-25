@@ -86,13 +86,35 @@ data class DevXProperties(
      */
     var srcHeaderValues: List<String> = emptyList(),
     /**
-     * devX拦截器优先级，如果需要取用户信息优先级需要比[HttpAuthInterceptor]拦截器低
+     * devX拦截器优先级，
+     * 如果需要取用户信息优先级需要比[com.tencent.bkrepo.common.security.http.core.HttpAuthInterceptor]拦截器低
      */
     var interceptorOrder: Int = Ordered.LOWEST_PRECEDENCE - 100,
     /**
      * 不应用devX拦截器的接口
      */
     var excludePatterns: List<String> = emptyList(),
+    /**
+     * 远程制品库集群url
+     */
+    var remoteBkRepoUrl: String = "",
+    /**
+     * 将host解析到指定ip，不指定时则使用默认dns
+     */
+    var remoteBkRepoIp: String = "",
+    /**
+     * 远程制品库集群平台账号
+     */
+    var remoteBkRepoAccessKey: String = "",
+    /**
+     * 远程制品库集群平台账号密钥
+     */
+    var remoteBkRepoSecretKey: String = "",
+    /**
+     * 使用的远程制品库集群用户身份
+     */
+    var remoteBkRepoUser: String = "",
+
     /**
      * 应用devX拦截器的接口
      */

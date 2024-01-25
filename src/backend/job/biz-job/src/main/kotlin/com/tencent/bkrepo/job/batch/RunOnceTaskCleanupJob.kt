@@ -42,6 +42,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 清除已经执行完成的一次性分发任务
@@ -56,8 +57,8 @@ class RunOnceTaskCleanupJob(
         return super.start()
     }
 
-    override fun entityClass(): Class<TaskData> {
-        return TaskData::class.java
+    override fun entityClass(): KClass<TaskData> {
+        return TaskData::class
     }
 
     override fun collectionNames(): List<String> {

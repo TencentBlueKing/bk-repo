@@ -36,8 +36,12 @@ data class DevXWorkSpace(
     val projectId: String,
     @JsonProperty("creator")
     val creator: String,
+    @JsonProperty("owner")
+    val owner: String,
     @JsonProperty("region_id")
     val regionId: String,
     @JsonProperty("inner_ip")
     val innerIp: String? = null,
+    @JsonProperty("real_owner")
+    val realOwner: String,
 )

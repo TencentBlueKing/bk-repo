@@ -29,9 +29,12 @@ package com.tencent.bkrepo.generic.artifact
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -42,10 +45,13 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
@@ -53,9 +59,11 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
@@ -75,12 +83,15 @@ import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
+import com.tencent.bkrepo.repository.api.PipelineNodeClient
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
@@ -89,11 +100,13 @@ import java.util.Base64
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
+import kotlin.reflect.full.memberProperties
 
 @Component
 class GenericLocalRepository(
     private val replicaTaskClient: ReplicaTaskClient,
-    private val clusterNodeClient: ClusterNodeClient
+    private val clusterNodeClient: ClusterNodeClient,
+    private val pipelineNodeClient: PipelineNodeClient,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -414,6 +427,71 @@ class GenericLocalRepository(
         return redirectManager.redirect(context)
     }
 
+    override fun query(context: ArtifactQueryContext): Any? {
+        val artifactInfo = context.artifactInfo
+        return nodeClient.getNodeDetail(
+            artifactInfo.projectId,
+            artifactInfo.repoName,
+            artifactInfo.getArtifactFullPath()
+        ).data
+    }
+
+    override fun search(context: ArtifactSearchContext): List<Any> {
+        require(context is GenericArtifactSearchContext)
+        val queryModel = context.queryModel ?: return emptyList()
+        val isSearchPipelineRoot = isSearchPipelineRoot(context)
+
+        return if (isSearchPipelineRoot) {
+            // 仅在查询流水线仓库第一页时返回用户有权限的流水线目录
+            if (queryModel.page.pageNumber == DEFAULT_PAGE_NUMBER) {
+                pipelineNodeClient.listPipeline(context.projectId, context.repoName).data!!.map { node ->
+                    val nodePropMap = LinkedHashMap<String, Any?>()
+                    NodeInfo::class.memberProperties
+                        .filter { it.name != NodeInfo::deleted.name }
+                        .associateTo(nodePropMap) { Pair(it.name, it.get(node)) }
+                    nodePropMap[RepositoryInfo::category.name] = RepositoryCategory.LOCAL.name
+                    nodePropMap
+                }
+            } else {
+                emptyList()
+            }
+        } else {
+            // 强制替换为请求的projectId与repoName避免越权
+            val newRule = replaceProjectIdAndRepo(queryModel.rule, context.projectId, context.repoName)
+            nodeClient.queryWithoutCount(queryModel.copy(rule = newRule)).data!!.records.onEach { node ->
+                (node as MutableMap<String, Any?>)[RepositoryInfo::category.name] = RepositoryCategory.LOCAL.name
+            }
+        }
+    }
+
+    /**
+     * 请求类似下方例子时，将作为前端首次进入流水线仓库的请求
+     *
+     * {
+     *   ”projectId“: "xxx",
+     *   "repoName": "pipeline",
+     *   "path": "/",
+     *   "folder": true // 可选
+     * }
+     */
+    private fun isSearchPipelineRoot(context: GenericArtifactSearchContext): Boolean {
+        val rule = context.queryModel?.rule
+        if (rule !is Rule.NestedRule) {
+            return false
+        }
+        var searchProject = false
+        var searchPipeline = false
+        var searchRoot = false
+        rule.rules.filterIsInstance<Rule.QueryRule>().forEach { queryRule ->
+            val field = queryRule.field
+            val value = queryRule.value
+            searchProject = searchProject || field == NodeDetail::projectId.name
+            searchPipeline = searchPipeline || field == NodeDetail::repoName.name && value in PIPELINE_REPO_NAME
+            searchRoot = searchRoot || field == NodeDetail::path.name && value == ROOT
+        }
+        return searchProject && searchPipeline && searchRoot
+    }
+
     /**
      * 判断是否为分块上传
      */
@@ -503,5 +581,7 @@ class GenericLocalRepository(
          * 节点分页查询单页大小
          */
         private const val PAGE_SIZE = 1000
+
+        private val PIPELINE_REPO_NAME = listOf(PIPELINE, "$PIPELINE-devx")
     }
 }

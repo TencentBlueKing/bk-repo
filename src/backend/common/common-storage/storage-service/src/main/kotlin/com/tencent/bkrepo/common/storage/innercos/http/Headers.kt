@@ -38,5 +38,6 @@ interface Headers {
         const val RANGE = "Range"
         const val ETAG = "ETag"
         const val AUTHORIZATION = "Authorization"
+        const val STORAGE_CLASS = "x-cos-storage-class"
     }
 }

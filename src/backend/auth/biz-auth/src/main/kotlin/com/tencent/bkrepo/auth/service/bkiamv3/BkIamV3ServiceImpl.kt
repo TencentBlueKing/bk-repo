@@ -75,8 +75,10 @@ import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Conditional
+import org.springframework.context.annotation.Lazy
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -87,15 +89,29 @@ import java.util.concurrent.TimeUnit
 class BkIamV3ServiceImpl(
     private val iamConfiguration: IamConfiguration,
     private val authHelper: AuthHelper,
-    private val projectClient: ProjectClient,
     private val managerService: V2ManagerService,
     private val managerServiceV1: ManagerService,
-    private val repositoryClient: RepositoryClient,
-    private val nodeClient: NodeClient,
     private val authManagerRepository: BkIamAuthManagerRepository,
-    private val userService: UserService,
     val mongoTemplate: MongoTemplate
     ) : BkIamV3Service, BkiamV3BaseService(mongoTemplate) {
+
+
+    @Autowired
+    @Lazy
+    private lateinit var projectClient: ProjectClient
+
+    @Autowired
+    @Lazy
+    private lateinit var nodeClient: NodeClient
+
+
+    @Autowired
+    @Lazy
+    private lateinit var userService: UserService
+
+    @Autowired
+    @Lazy
+    private lateinit var repositoryClient: RepositoryClient
 
     @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}")
     private var ciAuthServer: String = ""

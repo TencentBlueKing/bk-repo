@@ -27,10 +27,16 @@
 
 package com.tencent.bkrepo.opdata.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
+import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatisticsListOption
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
@@ -43,37 +49,79 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/project/metrics")
-@Principal(PrincipalType.ADMIN)
 class ProjectController(
-    private val projectMetricsService: ProjectMetricsService
+    private val projectMetricsService: ProjectMetricsService,
+    private val projectUsageStatisticsService: ProjectUsageStatisticsService,
+    private val permissionManager: PermissionManager,
 ) {
 
     /**
      * 获取项目的统计数据
      */
     @GetMapping("/list")
+    @Principal(PrincipalType.ADMIN)
     fun getProjectMetrics(
         option: ProjectMetricsOption
     ): Response<Page<TProjectMetrics>> {
         return ResponseBuilder.success(projectMetricsService.page(option))
     }
 
+    @GetMapping("/list/usage")
+    fun getUsageStatistics(
+        options: ProjectUsageStatisticsListOption
+    ): Response<Page<ProjectUsageStatistics>> {
+        if (options.projectId == null) {
+            permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+        } else {
+            permissionManager.checkProjectPermission(PermissionAction.MANAGE, options.projectId!!)
+        }
+        return ResponseBuilder.success(projectUsageStatisticsService.page(options))
+    }
+
     /**
      * 获取项目的统计数据
      */
     @GetMapping("/list/project/capSize")
+    @Principal(PrincipalType.ADMIN)
     fun getProjectCapSizeMetrics(
         metricsRequest: ProjectMetricsRequest
     ): Response<List<ProjectMetrics>> {
         return ResponseBuilder.success(projectMetricsService.list(metricsRequest))
     }
+
     /**
      * 获取项目的统计数据
      */
     @GetMapping("/list/project/capSize/download")
-    fun downloadProjectCapSizeMetrics(
-        metricsRequest: ProjectMetricsRequest
-    ) {
+    @Principal(PrincipalType.ADMIN)
+    fun downloadProjectCapSizeMetrics(metricsRequest: ProjectMetricsRequest) {
         projectMetricsService.download(metricsRequest)
+    }
+
+    /**
+     * 获取活跃项目列表
+     */
+    @GetMapping("/list/activeProjects")
+    @Principal(PrincipalType.ADMIN)
+    fun getActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(projectMetricsService.getActiveProjects())
+    }
+
+    /**
+     * 获取下载活跃项目列表
+     */
+    @GetMapping("/list/downloadActiveProjects")
+    @Principal(PrincipalType.ADMIN)
+    fun getDownloadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(projectMetricsService.getDownloadActiveProjects())
+    }
+
+    /**
+     * 获取上传活跃项目列表
+     */
+    @GetMapping("/list/uploadActiveProjects")
+    @Principal(PrincipalType.ADMIN)
+    fun getUploadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(projectMetricsService.getUploadActiveProjects())
     }
 }

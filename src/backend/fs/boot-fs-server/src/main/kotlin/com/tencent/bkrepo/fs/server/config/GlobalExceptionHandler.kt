@@ -27,16 +27,22 @@
 
 package com.tencent.bkrepo.fs.server.config
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.fs.server.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.fs.server.utils.LocaleMessageUtils
+import com.tencent.bkrepo.fs.server.utils.SpringContextUtils
 import org.slf4j.LoggerFactory
+import org.springframework.beans.BeansException
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler
+import org.springframework.cloud.sleuth.Tracer
 import org.springframework.http.HttpHeaders
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
@@ -54,17 +60,22 @@ class GlobalExceptionHandler : ErrorWebExceptionHandler {
     }
 
     private fun handlerErrorCodeException(exchange: ServerWebExchange, exception: ErrorCodeException): Response<Void> {
-        val errorMsg = "[${exception.messageCode.getCode()}]${exception.messageCode.getKey()}"
+        val userId = exchange.attributes[USER_KEY] ?: ANONYMOUS_USER
+        val method = exchange.request.method
+        val uri = exchange.request.path
+        val exceptionName = exception.javaClass.simpleName
+        val errorMsg = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+        val fullMessage = "User[$userId] $method [$uri] failed[$exceptionName]: $errorMsg"
         if (exception.status.isServerError()) {
-            logger.error(errorMsg)
+            logger.error(fullMessage)
         } else {
-            logger.warn(errorMsg)
+            logger.warn(fullMessage)
         }
         if (exception is AuthenticationException) {
             exchange.response.headers[HttpHeaders.WWW_AUTHENTICATE] = BASIC_AUTH_PROMPT
         }
         exchange.response.rawStatusCode = exception.status.value
-        return Response(exception.messageCode.getCode(), errorMsg, null, null)
+        return Response(exception.messageCode.getCode(), errorMsg, null, getTraceId())
     }
 
     private fun handlerRemoteErrorCodeException(
@@ -73,14 +84,22 @@ class GlobalExceptionHandler : ErrorWebExceptionHandler {
     ): Response<Void> {
         logger.warn("[${exception.methodKey}][${exception.errorCode}]${exception.errorMessage}")
         exchange.response.rawStatusCode = HttpStatus.BAD_REQUEST.value
-        return Response(exception.errorCode, exception.errorMessage, null, null)
+        return Response(exception.errorCode, exception.errorMessage, null, getTraceId())
     }
 
     private fun handlerError(exchange: ServerWebExchange, ex: Throwable): Response<Void> {
         val errorMsg = CommonMessageCode.SYSTEM_ERROR.getKey()
         exchange.response.rawStatusCode = HttpStatus.INTERNAL_SERVER_ERROR.value
         logger.error(errorMsg, ex)
-        return Response(CommonMessageCode.SYSTEM_ERROR.getCode(), errorMsg, null, null)
+        return Response(CommonMessageCode.SYSTEM_ERROR.getCode(), errorMsg, null, getTraceId())
+    }
+
+    private fun getTraceId(): String? {
+        return try {
+            SpringContextUtils.getBean<Tracer>().currentSpan()?.context()?.traceId()
+        } catch (_: BeansException) {
+            null
+        }
     }
 
     companion object {

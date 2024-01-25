@@ -33,21 +33,37 @@ package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
+import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
+import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServiceUserController @Autowired constructor(
-    private val userService: UserService
+    private val userService: UserService,
+    private val roleService: RoleService
 ) : ServiceUserClient {
 
     override fun createUser(request: CreateUserRequest): Response<Boolean> {
         userService.createUser(request)
+        return ResponseBuilder.success(true)
+    }
+
+    @ApiOperation("创建项目用户")
+    @PostMapping("/create/project")
+    override fun createUserToProject(request: CreateUserToProjectRequest): Response<Boolean> {
+        userService.createUserToProject(request)
+        val createRoleRequest = RequestUtil.buildProjectAdminRequest(request.projectId)
+        val roleId = roleService.createRole(createRoleRequest)
+        userService.addUserToRole(request.userId, roleId!!)
         return ResponseBuilder.success(true)
     }
 
@@ -68,5 +84,13 @@ class ServiceUserController @Autowired constructor(
 
     override fun userInfoById(uid: String): Response<UserInfo?> {
         return ResponseBuilder.success(userService.getUserInfoById(uid))
+    }
+
+    override fun userPwdById(uid: String): Response<String?> {
+        return ResponseBuilder.success(userService.getUserPwdById(uid))
+    }
+
+    override fun userTokenById(uid: String): Response<List<String>> {
+        return ResponseBuilder.success(userService.listValidToken(uid).map { it.id })
     }
 }

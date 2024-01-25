@@ -37,7 +37,6 @@ import com.tencent.bkrepo.job.config.properties.DistributedDockerImageCleanupJob
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.oci.api.OciClient
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -45,6 +44,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 清理镜像仓库下存储的已经分发的镜像
@@ -53,13 +53,12 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(DistributedDockerImageCleanupJobProperties::class)
 class DistributedDockerImageCleanupJob(
     private val properties: DistributedDockerImageCleanupJobProperties,
-    private val mongoTemplate: MongoTemplate,
     private val ociClient: OciClient
 ) : DefaultContextMongoDbJob<DistributedDockerImageCleanupJob.PackageData>(properties) {
 
 
-    override fun entityClass(): Class<PackageData> {
-        return PackageData::class.java
+    override fun entityClass(): KClass<PackageData> {
+        return PackageData::class
     }
 
     override fun collectionNames(): List<String> {

@@ -127,9 +127,10 @@ class ProjectScanConfigurationServiceImpl(
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
     }
 
-    override fun findProjectOrGlobalScanConfiguration(projectId: String): ProjectScanConfiguration? {
-        val configuration = projectScanConfigurationDao.findByProjectId(projectId)
-            ?: projectScanConfigurationDao.findByProjectId(GLOBAL_PROJECT_ID)
+    override fun findProjectOrGlobalScanConfiguration(projectId: String?): ProjectScanConfiguration? {
+        val configuration = projectId?.let {
+            projectScanConfigurationDao.findByProjectId(it)
+        } ?: projectScanConfigurationDao.findByProjectId(GLOBAL_PROJECT_ID)
         return configuration?.let { Converter.convert(it) }
     }
 

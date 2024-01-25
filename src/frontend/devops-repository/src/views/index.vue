@@ -69,7 +69,7 @@
                             'userManage',
                             'nodeManage',
                             // 'securityConfig',
-                            this.userInfo.admin && 'planManage',
+                            'planManage',
                             'repoAudit'
                         ].filter(Boolean)
                     }

@@ -57,6 +57,11 @@
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
+                        <bk-button class="ml10" v-if="(userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
+                            key.folder === true
+                        ))" @click="clean">
+                            {{ $t('clean') }}
+                        </bk-button>
                         <bk-input
                             class="w250 ml10"
                             v-model.trim="inFolderSearchName"
@@ -85,8 +90,8 @@
                     <template #empty>
                         <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)"></empty-data>
                     </template>
-                    <bk-table-column type="selection" width="60"></bk-table-column>
-                    <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
+                    <bk-table-column :selectable="selectable" type="selection" width="60"></bk-table-column>
+                    <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
                         <template #default="{ row }">
                             <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
                             <span
@@ -94,7 +99,8 @@
                                 v-if="!row.folder && row.metadata.forbidStatus"
                                 v-bk-tooltips="{ content: tooltipContent(row.metadata), placements: ['top'] }"
                             >{{row.name}}</span>
-                            <span v-else>{{ row.name }}</span>
+                            <!-- 文件夹支持: 鼠标悬浮时显示小手样式 -->
+                            <span v-else :class="{ 'hover-btn': row.folder }">{{ row.name }}</span>
                             <scan-tag class="mr5 table-svg"
                                 v-if="showRepoScan(row)"
                                 :status="row.metadata.scanStatus"
@@ -103,12 +109,12 @@
                             </scan-tag>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('size')" prop="size" width="90" sortable="custom" show-overflow-tooltip>
+                    <bk-table-column :label="$t('size')" prop="size" width="90" :sortable="sortableRepo" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ convertFileSize(row.size > 0 ? row.size : 0 ) }}
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('fileNum')" prop="nodeNum" sortable="custom" show-overflow-tooltip>
+                    <bk-table-column :label="$t('fileNum')" prop="nodeNum" :sortable="sortableRepo" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ row.nodeNum ? row.nodeNum : row.folder ? 0 : '--'}}
                         </template>
@@ -135,34 +141,54 @@
                             {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}
                         </template>
                     </bk-table-column>
+                    <bk-table-column :label="$t('createdBy')" width="150" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
+                        </template>
+                    </bk-table-column>
                     <bk-table-column :label="$t('operation')" width="100">
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
-                                    row.folder && { clickEvent: () => calculateFolderSize(row), label: $t('realSize') },
+                                    row.folder && row.category !== 'REMOTE' && { clickEvent: () => calculateFolderSize(row), label: $t('realSize') },
                                     !row.folder && getBtnDisabled(row.name) && { clickEvent: () => handlerPreviewBasicsFile(row), label: $t('preview') }, //基本类型文件 eg: txt
-                                    !row.folder && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
+                                    !row.folder && row.category !== 'REMOTE' && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
                                     ...(!row.metadata.forbidStatus ? [
-                                        { clickEvent: () => handlerDownload(row), label: $t('download') },
-                                        ...(repoName !== 'pipeline' ? [
+                                        (row.category !== 'REMOTE' || !row.folder) && { clickEvent: () => handlerDownload(row), label: $t('download') },
+                                        ...(repoName !== 'pipeline' && row.category !== 'REMOTE' ? [
                                             permission.edit && { clickEvent: () => renameRes(row), label: $t('rename') },
                                             permission.write && { clickEvent: () => moveRes(row), label: $t('move') },
                                             permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
-                                        ...(!row.folder ? [
+                                        ...(!row.folder && row.category !== 'REMOTE' ? [
                                             !community && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : [])
                                     ] : []),
-                                    !row.folder && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
-                                    permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
+                                    !row.folder && row.category !== 'REMOTE' && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
+                                    permission.delete && row.category !== 'REMOTE' && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline') && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ]">
                             </operation-list>
                         </template>
                     </bk-table-column>
                 </bk-table>
+                <bk-button v-if="!localRepo"
+                    :disabled="artifactoryList.length === 0 || artifactoryList.length < pagination.limit"
+                    size="small"
+                    icon="icon-angle-right"
+                    @click="changePage(1)"
+                    class="mt10 mr10 fr">
+                </bk-button>
+                <bk-button v-if="!localRepo"
+                    :disabled="pagination.current === 1"
+                    size="small"
+                    icon="icon-angle-left"
+                    @click="changePage(-1)"
+                    class="mt10 mr5 fr">
+                </bk-button>
                 <bk-pagination
+                    v-if="localRepo"
                     class="p10"
                     size="small"
                     align="right"
@@ -176,6 +202,7 @@
             </div>
         </div>
 
+        <generic-clean-dialog ref="genericCleanDialog" @refresh="refreshNodeChange"></generic-clean-dialog>
         <generic-detail ref="genericDetail"></generic-detail>
         <generic-form-dialog ref="genericFormDialog" @refresh="refreshNodeChange"></generic-form-dialog>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
@@ -205,6 +232,8 @@
     import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
+    import { beforeMonths, beforeYears } from '@repository/utils/date'
+    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
 
     export default {
         name: 'repoGeneric',
@@ -222,7 +251,8 @@
             genericTreeDialog,
             previewBasicFileDialog,
             compressedFileTable,
-            iamDenyDialog
+            iamDenyDialog,
+            genericCleanDialog
         },
         data () {
             return {
@@ -234,6 +264,7 @@
                 // 左侧树处于打开状态的目录
                 sideTreeOpenList: [],
                 sortType: 'lastModifiedDate',
+                sortDirection: 'DESC',
                 // 中间展示的table数据
                 artifactoryList: [],
                 multiSelect: [],
@@ -293,6 +324,19 @@
             },
             searchFileName () {
                 return this.$route.query.fileName
+            },
+            localRepo () {
+                const configuration = this.currentRepo.configuration
+                if (this.currentRepo.category === 'COMPOSITE') {
+                    const proxy = configuration.proxy
+                    return !proxy || !proxy.channelList || proxy.channelList.length === 0
+                } else {
+                    return this.currentRepo.category === 'LOCAL'
+                }
+            },
+            sortableRepo () {
+                // 仅允许LOCAL仓库排序
+                return this.localRepo ? 'custom' : false
             }
         },
         watch: {
@@ -318,18 +362,21 @@
             } else next()
         },
         created () {
-            this.getRepoListAll({ projectId: this.projectId })
+            this.getRepoListAll({ projectId: this.projectId }).then(_ => {
+                this.pathChange()
+            })
             this.initTree()
-            this.pathChange()
+            this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
             window.repositoryVue.$on('upload-refresh', debounce((path) => {
                 if (path.replace(/\/[^/]+$/, '').includes(this.selectedTreeNode.fullPath)) {
                     this.itemClickHandler(this.selectedTreeNode)
                 }
             }))
-            this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
             if (!this.community || SHOW_ANALYST_MENU) {
                 this.refreshSupportFileNameExtList()
             }
+
+            this.sortType = this.localRepo ? 'lastModifiedDate' : ''
         },
         methods: {
             convertFileSize,
@@ -383,30 +430,34 @@
                 }
             },
             renderHeader (h, { column }) {
+                const elements = [h('span', column.label)]
+                if (this.localRepo) {
+                    elements.push(h('i', { class: `ml5 devops-icon ${this.sortDirection === 'DESC' ? 'icon-down-shape' : 'icon-up-shape'}` }))
+                }
                 return h('div', {
                     class: {
-                        'flex-align-center hover-btn': true,
+                        'flex-align-center': true,
+                        'hover-btn': this.localRepo,
                         'selected-header': this.sortType === column.property
                     },
                     on: {
                         click: () => {
-                            this.sortType = column.property
-                            this.$refs.artifactoryTable.clearSort()
-                            this.sortParams = []
-                            const sortParam = {
-                                properties: column.property,
-                                direction: 'DESC'
+                            if (this.localRepo) {
+                                this.sortType = column.property
+                                this.$refs.artifactoryTable.clearSort()
+                                this.sortParams = []
+                                // 当点击切换排序时需要将升序修改为降序，降序修改为升序
+                                this.sortDirection = this.sortDirection === 'DESC' ? 'ASC' : 'DESC'
+                                const sortParam = {
+                                    properties: column.property,
+                                    direction: this.sortDirection
+                                }
+                                this.sortParams.push(sortParam)
+                                this.handlerPaginationChange()
                             }
-                            this.sortParams.push(sortParam)
-                            this.handlerPaginationChange()
                         }
                     }
-                }, [
-                    h('span', column.label),
-                    h('i', {
-                        class: 'ml5 devops-icon icon-down-shape'
-                    })
-                ])
+                }, elements)
             },
             initTree () {
                 this.INIT_TREE([{
@@ -421,17 +472,36 @@
             pathChange () {
                 const paths = (this.$route.query.path || '').split('/').filter(Boolean)
                 paths.pop() // 定位到文件/文件夹的上级目录
-                paths.reduce(async (chain, path) => {
-                    const node = await chain
-                    if (!node) return
-                    await this.updateGenericTreeNode(node)
-                    const child = node.children.find(child => child.name === path)
-                    if (!child) return
-                    this.sideTreeOpenList.push(child.roadMap)
-                    return child
-                }, Promise.resolve(this.genericTree[0])).then(node => {
-                    this.itemClickHandler(node || this.genericTree[0])
-                })
+                const tempPaths = paths
+                const num = paths.length
+                let tempTree = this.genericTree[0]
+                if (tempTree.children.length === 0 && num > 0) {
+                    paths.reduce(async (chain, path) => {
+                        const node = await chain
+                        if (!node) return
+                        await this.updateGenericTreeNode(node)
+                        const child = node.children.find(child => child.name === path)
+                        if (!child) return
+                        this.sideTreeOpenList.push(child.roadMap)
+                        return child
+                    }, Promise.resolve(this.genericTree[0])).then(node => {
+                        this.itemClickHandler(node || this.genericTree[0])
+                    })
+                } else {
+                    let destNode
+                    while (tempPaths.length !== 0) {
+                        tempTree = tempTree.children.find(node => node.name === tempPaths[0])
+                        if (tempPaths.length === 1) {
+                            destNode = tempTree
+                        }
+                        tempPaths.shift()
+                    }
+                    if (num !== 0) {
+                        this.itemClickHandler(destNode)
+                    } else {
+                        this.itemClickHandler(this.genericTree[0])
+                    }
+                }
             },
             // 获取中间列表数据
             async getArtifactories () {
@@ -477,7 +547,8 @@
                     limit: this.pagination.limit,
                     sortType: sortTypes,
                     isPipeline: this.repoName === 'pipeline',
-                    searchFlag: this.searchFileName
+                    searchFlag: this.searchFileName,
+                    localRepo: this.localRepo
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
@@ -549,6 +620,22 @@
                     this.isLoading = false
                 })
             },
+            changePage (inc) {
+                if (this.isLoading) {
+                    return
+                }
+                const oldPage = this.pagination.current
+
+                if (this.pagination.current + inc <= 0) {
+                    this.pagination.current = 1
+                } else if (this.artifactoryList.length !== 0 || inc < 0) {
+                    this.pagination.current += inc
+                }
+
+                if (oldPage !== this.pagination.current) {
+                    this.handlerPaginationChange({ current: this.pagination.current })
+                }
+            },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
@@ -560,29 +647,31 @@
                 this.debounceClickTreeNode(node)
             },
             clickTreeNodeHandler (node) {
-                this.selectedTreeNode = node
+                if (node.fullPath + '/default' === this.$route.query.path) {
+                    this.selectedTreeNode = node
 
-                this.handlerPaginationChange()
-                // 更新已展开文件夹数据
-                const reg = new RegExp(`^${node.roadMap}`)
-                const openList = this.sideTreeOpenList
-                openList.splice(0, openList.length, ...openList.filter(v => !reg.test(v)))
-                // 打开选中节点的左侧树的所有祖先节点
-                node.roadMap.split(',').forEach((v, i, arr) => {
-                    const roadMap = arr.slice(0, i + 1).join(',')
-                    !openList.includes(roadMap) && openList.push(roadMap)
-                })
-                // 更新子文件夹
-                if (node.loading) return
-                this.updateGenericTreeNode(node)
-
-                // 更新url参数
-                this.$router.replace({
-                    query: {
-                        ...this.$route.query,
-                        path: `${node.fullPath}/default`
-                    }
-                })
+                    this.handlerPaginationChange()
+                    // 更新已展开文件夹数据
+                    const reg = new RegExp(`^${node.roadMap}`)
+                    const openList = this.sideTreeOpenList
+                    openList.splice(0, openList.length, ...openList.filter(v => !reg.test(v)))
+                    // 打开选中节点的左侧树的所有祖先节点
+                    node.roadMap.split(',').forEach((v, i, arr) => {
+                        const roadMap = arr.slice(0, i + 1).join(',')
+                        !openList.includes(roadMap) && openList.push(roadMap)
+                    })
+                    // 更新子文件夹
+                    if (node.loading) return
+                    this.updateGenericTreeNode(node)
+                } else {
+                    // 更新url参数
+                    this.$router.replace({
+                        query: {
+                            ...this.$route.query,
+                            path: `${node.fullPath}/default`
+                        }
+                    })
+                }
             },
             iconClickHandler (node) {
                 // 更新已展开文件夹数据
@@ -606,7 +695,8 @@
                     repoName: this.repoName,
                     fullPath: item.fullPath,
                     roadMap: item.roadMap,
-                    isPipeline: this.repoName === 'pipeline'
+                    isPipeline: this.repoName === 'pipeline',
+                    localRepo: this.localRepo
                 }).catch(err => {
                     if (err.status === 403) {
                         this.getPermissionUrl({
@@ -638,6 +728,7 @@
                 if (!row.folder) return
                 if (this.searchFileName) {
                     // 搜索中打开文件夹
+                    this.inFolderSearchName = ''
                     this.searchFullPath = row.fullPath
                     this.handlerPaginationChange()
                 } else {
@@ -645,7 +736,7 @@
                     this.itemClickHandler(node)
                 }
             },
-            showDetail ({ folder, fullPath }) {
+            showDetail ({ folder, fullPath, category }) {
                 this.$refs.genericDetail.setData({
                     show: true,
                     loading: false,
@@ -654,7 +745,8 @@
                     folder,
                     path: fullPath,
                     data: {},
-                    metadataLabelList: this.metadataLabelList
+                    metadataLabelList: this.metadataLabelList,
+                    localNode: category !== 'REMOTE'
                 })
             },
             renameRes ({ name, fullPath }) {
@@ -986,6 +1078,9 @@
                     this.$set(row, 'sizeLoading', false)
                 })
             },
+            selectable (row, index) {
+                return row.category !== 'REMOTE'
+            },
             selectMultiRow (selects) {
                 this.multiSelect = selects
             },
@@ -1068,8 +1163,8 @@
                     isLoading: true
                 })
                 const res = await this.previewBasicFile({
-                    projectId: row.projectId,
-                    repoName: row.repoName,
+                    projectId: this.projectId,
+                    repoName: this.repoName,
                     path: row.fullPath
                 }).catch(e => {
                     if (e.status === 403) {
@@ -1233,6 +1328,42 @@
             closeLoading () {
                 clearInterval(this.timer)
                 this.timer = null
+            },
+            clean () {
+                const fullPaths = []
+                const displayPaths = []
+                this.multiSelect.forEach(value => {
+                    let tempTree = this.genericTree[0]
+                    let tempDisplayName = '/'
+                    if (value.folder === true) {
+                        const pas = value.fullPath.split('/').filter(Boolean)
+                        while (pas.length !== 0) {
+                            tempTree = tempTree.children.find(node => node.name === pas[0])
+                            tempDisplayName = tempDisplayName + tempTree.displayName + '/'
+                            pas.shift()
+                        }
+                        displayPaths.push({
+                            path: tempDisplayName,
+                            isComplete: false
+                        })
+                        fullPaths.push({
+                            path: value.fullPath,
+                            isComplete: false
+                        })
+                    }
+                })
+                this.$refs.genericCleanDialog.show = true
+                this.$refs.genericCleanDialog.repoName = this.repoName
+                this.$refs.genericCleanDialog.projectId = this.projectId
+                this.$refs.genericCleanDialog.paths = fullPaths
+                this.$refs.genericCleanDialog.displayPaths = displayPaths
+                this.$refs.genericCleanDialog.loading = false
+                this.$refs.genericCleanDialog.isComplete = false
+                if (this.repoName === 'pipeline') {
+                    this.$refs.genericCleanDialog.date = beforeMonths(2)
+                } else {
+                    this.$refs.genericCleanDialog.date = beforeYears(1)
+                }
             }
         }
     }
@@ -1291,6 +1422,9 @@
             ::v-deep .selected-header {
                 color: var(--fontPrimaryColor);
                 .icon-down-shape {
+                    color: var(--primaryColor);
+                }
+                .icon-up-shape {
                     color: var(--primaryColor);
                 }
             }

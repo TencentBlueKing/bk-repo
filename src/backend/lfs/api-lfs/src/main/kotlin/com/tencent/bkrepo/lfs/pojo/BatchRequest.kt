@@ -28,10 +28,11 @@
 package com.tencent.bkrepo.lfs.pojo
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
 
 data class BatchRequest(
     val operation: String,
-    val transfers: List<String>,
+    val transfers: List<String> = listOf(BASIC_TRANSFER),
     val ref: Map<String, String>,
     val objects: List<LfsObject>,
     @JsonProperty("hash_algo")

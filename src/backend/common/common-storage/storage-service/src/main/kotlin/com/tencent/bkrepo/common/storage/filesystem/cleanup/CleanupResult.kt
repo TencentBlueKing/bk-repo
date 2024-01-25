@@ -36,8 +36,30 @@ data class CleanupResult(
     var cleanupFile: Long = 0,
     var cleanupFolder: Long = 0,
     var cleanupSize: Long = 0,
-    var errorCount: Long = 0
+    var errorCount: Long = 0,
+    /**
+     * 根目录下除了tempPath与stagingPath子目录外被访问的文件数量
+     */
+    var rootDirNotDeletedFile: Long = 0,
+    /**
+     * 根目录下除了tempPath与stagingPath子目录外被访问的文件大小
+     */
+    var rootDirNotDeletedSize: Long = 0,
 ) {
+
+    fun merge(vararg others: CleanupResult): CleanupResult {
+        others.forEach {
+            totalFile += it.totalFile
+            totalFolder += it.totalFolder
+            totalSize += it.totalSize
+            cleanupFile += it.cleanupFile
+            cleanupFolder += it.cleanupFolder
+            cleanupSize += it.cleanupSize
+            errorCount += it.errorCount
+        }
+        return this
+    }
+
     override fun toString(): String {
         return "$cleanupFile/$totalFile[${HumanReadable.size(cleanupSize)}/${HumanReadable.size(totalSize)}] " +
             "files deleted,errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted."

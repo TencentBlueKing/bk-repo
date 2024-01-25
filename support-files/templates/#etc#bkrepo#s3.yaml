@@ -1,0 +1,2 @@
+server:
+  port: __BK_REPO_S3_PORT__

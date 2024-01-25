@@ -56,9 +56,13 @@ import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
+import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
@@ -78,6 +82,7 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
+import java.time.Duration
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
@@ -110,6 +115,7 @@ class RepositoryServiceImpl(
     private val repositoryProperties: RepositoryProperties,
     private val messageSupplier: MessageSupplier,
     private val servicePermissionClient: ServicePermissionClient,
+    private val projectMetricsRepository: ProjectMetricsRepository,
 ) : RepositoryService {
 
     init {
@@ -221,10 +227,11 @@ class RepositoryServiceImpl(
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
+            Preconditions.checkArgument(checkCategory(category, configuration), this::configuration.name)
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             // 确保项目一定存在
             if (!projectService.checkExist(projectId)) {
-                throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
+                throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, projectId)
             }
             // 确保同名仓库不存在
             if (checkExist(projectId, name)) {
@@ -233,7 +240,7 @@ class RepositoryServiceImpl(
             // 解析存储凭证
             val credentialsKey = determineStorageKey(this)
             // 确保存储凭证Key一定存在
-            val storageCredential = credentialsKey?.takeIf { it.isNotBlank() }?.let {
+            credentialsKey?.takeIf { it.isNotBlank() }?.let {
                 storageCredentialService.findByKey(it) ?: throw ErrorCodeException(
                     CommonMessageCode.RESOURCE_NOT_FOUND,
                     it,
@@ -259,7 +266,7 @@ class RepositoryServiceImpl(
                     key = event.getFullResourceKey(),
                 )
                 logger.info("Create repository [$repoCreateRequest] success.")
-                convertToDetail(repository, storageCredential)!!
+                convertToDetail(repository)!!
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert repository[$projectId/$name] error: [${exception.message}]")
                 getRepoDetail(projectId, name, type.name)!!
@@ -366,6 +373,16 @@ class RepositoryServiceImpl(
         repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
         val result = repositoryDao.find(Query(criteria))
         return result.map { convertToInfo(it) }
+    }
+
+    override fun statRepo(projectId: String, repoName: String): NodeSizeInfo {
+        val projectMetrics = projectMetricsRepository.findFirstByProjectIdOrderByCreatedDateDesc(projectId)
+        val repoMetrics = projectMetrics?.repoMetrics?.firstOrNull { it.repoName == repoName }
+        return NodeSizeInfo(
+            subNodeCount = repoMetrics?.num ?: 0,
+            subNodeWithoutFolderCount = repoMetrics?.num ?: 0,
+            size = repoMetrics?.size ?: 0,
+        )
     }
 
     /**
@@ -586,11 +603,27 @@ class RepositoryServiceImpl(
         }
     }
 
+    override fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long?): Long {
+        val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(days.toLong()))
+        val criteria = where(TNode::folder).isEqualTo(false)
+            .and(TNode::deleted).isEqualTo(null)
+            .and(TNode::sha256).ne(FAKE_SHA256)
+            .and(TNode::archived).ne(true)
+            .and(TNode::projectId).isEqualTo(projectId)
+            .orOperator(
+                where(TNode::lastAccessDate).isEqualTo(null),
+                where(TNode::lastAccessDate).lt(cutoffTime),
+            ).apply {
+                repoName?.let { and(TNode::repoName).isEqualTo(it) }
+                size?.let { and(TNode::size).gt(it) }
+            }
+        return nodeService.aggregateComputeSize(criteria)
+    }
+
     /**
      * 检查下载拦截器配置
      *
      */
-    @Suppress("UNCHECKED_CAST")
     private fun checkInterceptorConfig(configuration: RepositoryConfiguration?): Boolean {
         val settings = configuration?.settings
         settings?.let {
@@ -607,6 +640,24 @@ class RepositoryServiceImpl(
         }
 
         return true
+    }
+
+    /**
+     * 检查仓库类型是否一致
+     */
+    private fun checkCategory(category: RepositoryCategory, configuration: RepositoryConfiguration?): Boolean {
+        if (configuration == null) {
+            return true
+        }
+        return when(configuration) {
+            is com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration ->
+                category == RepositoryCategory.PROXY
+            is CompositeConfiguration -> category == RepositoryCategory.COMPOSITE
+            is LocalConfiguration -> category == RepositoryCategory.LOCAL
+            is RemoteConfiguration -> category == RepositoryCategory.REMOTE
+            is VirtualConfiguration -> category == RepositoryCategory.VIRTUAL
+            else -> false
+        }
     }
 
     /**

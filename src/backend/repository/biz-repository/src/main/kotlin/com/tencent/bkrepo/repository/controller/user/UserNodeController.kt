@@ -57,10 +57,12 @@ import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.user.UserNodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
@@ -181,10 +183,10 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.countDeleteNodes(nodesDeleteRequest))
     }
 
-    @ApiOperation("清理创建时间早于{date}的文件节点")
+    @ApiOperation("清理最后修改时间早于{date}的文件节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping("/clean/$DEFAULT_MAPPING_URI")
-    fun deleteNodeCreatedBeforeDate(
+    fun deleteNodeLastModifiedBeforeDate(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) date: LocalDateTime
@@ -195,6 +197,26 @@ class UserNodeController(
                 date, userId, artifactInfo.getArtifactFullPath()
             )
         )
+    }
+
+    @ApiOperation("创建链接节点")
+    @PostMapping("/link")
+    fun link(
+        @RequestAttribute userId: String,
+        @RequestBody request: UserNodeLinkRequest,
+    ): Response<NodeDetail> {
+        val linkReq = NodeLinkRequest(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            fullPath = request.fullPath,
+            targetProjectId = request.targetProjectId,
+            targetRepoName = request.targetRepoName,
+            targetFullPath = request.targetFullPath,
+            overwrite = request.overwrite,
+            nodeMetadata = request.nodeMetadata,
+            operator = userId,
+        )
+        return ResponseBuilder.success(nodeService.link(linkReq))
     }
 
     @ApiOperation("更新节点")

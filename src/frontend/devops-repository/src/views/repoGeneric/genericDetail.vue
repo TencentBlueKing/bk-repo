@@ -27,7 +27,7 @@
                                 <span class="flex-1 text-overflow" :title="detailSlider.data.md5">{{ detailSlider.data.md5 }}</span>
                             </div>
                         </div>
-                        <div v-if="!detailSlider.folder && !hasErr" class="display-block" data-title="命令行下载">
+                        <div v-if="!detailSlider.folder && !hasErr" class="display-block" :data-title="$t('commandDownload')">
                             <div class="pl30">
                                 <bk-button text theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
                                 {{ $t('tokenSubTitle') }}
@@ -37,8 +37,8 @@
                             <create-token-dialog ref="createToken"></create-token-dialog>
                         </div>
                     </bk-tab-panel>
-                    <bk-tab-panel v-if="!detailSlider.folder && !hasErr" name="metaDate" :label="$t('metaData')">
-                        <div class="version-metadata display-block" data-title="元数据">
+                    <bk-tab-panel v-if="!detailSlider.folder && !hasErr && detailSlider.localNode" name="metaDate" :label="$t('metaData')">
+                        <div class="version-metadata display-block" :data-title="$t('metaData')">
                             <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
                                 <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
                                 <div class="version-metadata-add-board"
@@ -76,20 +76,20 @@
                                     </template>
                                 </bk-table-column>
 
-                        <bk-table-column :label="$t('description')" prop="description" show-overflow-tooltip></bk-table-column>
-                        <bk-table-column width="60">
-                            <template #default="{ row }">
-                                <Icon class="hover-btn" size="24" name="icon-delete" v-if="!row.system"
-                                    @click.native.stop="deleteMetadataHandler(row)" />
-                            </template>
-                        </bk-table-column>
-                    </bk-table>
-                </div>
-            </bk-tab-panel>
-        </bk-tab>
-        </template>
-    </bk-sideslider>
-    <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
+                                <bk-table-column :label="$t('description')" prop="description" show-overflow-tooltip></bk-table-column>
+                                <bk-table-column width="60">
+                                    <template #default="{ row }">
+                                        <Icon class="hover-btn" size="24" name="icon-delete" v-if="!row.system"
+                                            @click.native.stop="deleteMetadataHandler(row)" />
+                                    </template>
+                                </bk-table-column>
+                            </bk-table>
+                        </div>
+                    </bk-tab-panel>
+                </bk-tab>
+            </template>
+        </bk-sideslider>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
@@ -177,7 +177,8 @@
                 this.getNodeDetail({
                     projectId: this.detailSlider.projectId,
                     repoName: this.detailSlider.repoName,
-                    fullPath: this.detailSlider.path
+                    fullPath: this.detailSlider.path,
+                    localNode: this.detailSlider.localNode
                 }).then(data => {
                     this.detailSlider.data = {
                         ...data,
@@ -228,6 +229,7 @@
                 })
             },
             createToken () {
+                this.$refs.createToken.userName = this.userInfo.name
                 this.$refs.createToken.showDialogHandler()
             },
             showAddMetadata () {

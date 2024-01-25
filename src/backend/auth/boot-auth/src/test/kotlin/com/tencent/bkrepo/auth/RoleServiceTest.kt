@@ -57,14 +57,14 @@ class RoleServiceTest {
     @BeforeEach
     fun setUp() {
         roleService.detail(roleId, projectId)?.let {
-            roleService.deleteRoleByid(it.id!!)
+            roleService.deleteRoleById(it.id!!)
         }
     }
 
     @AfterEach
     fun teardown() {
         roleService.detail(roleId, projectId)?.let {
-            roleService.deleteRoleByid(it.id!!)
+            roleService.deleteRoleById(it.id!!)
         }
     }
 
@@ -80,9 +80,9 @@ class RoleServiceTest {
 
     @DisplayName("根据主键id删除角色测试")
     fun deleteRoleByidTest() {
-        assertThrows<ErrorCodeException> { roleService.deleteRoleByid(roleId) }
+        assertThrows<ErrorCodeException> { roleService.deleteRoleById(roleId) }
         val id = roleService.createRole(buildRoleRequest())!!
-        val deleteRoleByid = roleService.deleteRoleByid(id)
+        val deleteRoleByid = roleService.deleteRoleById(id)
         Assertions.assertTrue(deleteRoleByid)
     }
 
@@ -103,9 +103,9 @@ class RoleServiceTest {
         // has problems -> The last if condition never goes in
         // val listRoleByProject7 = roleService.listRoleByProject(null, "test_projectId_001", "test_repo")
         // Assertions.assertTrue(listRoleByProject7.size == 0)
-        roleService.deleteRoleByid(id!!)
-        roleService.deleteRoleByid(id1!!)
-        roleService.deleteRoleByid(id2!!)
+        roleService.deleteRoleById(id!!)
+        roleService.deleteRoleById(id1!!)
+        roleService.deleteRoleById(id2!!)
     }
 
     @DisplayName("角色详情测试")

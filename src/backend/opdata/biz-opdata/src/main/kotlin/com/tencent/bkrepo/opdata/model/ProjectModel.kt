@@ -49,19 +49,43 @@ class ProjectModel @Autowired constructor(
     fun getProjectNum(projectType: ProjectType): Long {
         val query = when (projectType) {
             ProjectType.ALL -> Query()
-            ProjectType.BLUEKING -> Query(
-                Criteria().andOperator(
-                    where(ProjectInfo::name).not().regex(ProjectType.CODECC.prefix),
-                    where(ProjectInfo::name).not().regex(ProjectType.GIT.prefix)
+            ProjectType.BLUEKING -> {
+                val criteriaList = mutableListOf<String>()
+                criteriaList.addAll(ProjectType.GIT.prefix!!)
+                criteriaList.addAll(ProjectType.CODECC.prefix!!)
+                Query(
+                    Criteria().andOperator(buildCriteria(criteriaList))
                 )
-            )
-            ProjectType.CODECC -> Query(where(ProjectInfo::name).regex(ProjectType.CODECC.prefix))
-            ProjectType.GIT -> Query(where(ProjectInfo::name).regex(ProjectType.GIT.prefix))
+            }
+            ProjectType.CODECC -> {
+                Query(
+                    Criteria().orOperator(
+                        buildCriteria(ProjectType.CODECC.prefix!!.toMutableList(), false)
+                    )
+                )
+            }
+            ProjectType.GIT -> {
+                Query(
+                    Criteria().orOperator(
+                        buildCriteria(ProjectType.GIT.prefix!!.toMutableList(), false)
+                    )
+                )
+            }
         }
         return mongoTemplate.count(query, OPDATA_PROJECT)
     }
 
     fun getProjectList(): List<ProjectInfo> {
         return mongoTemplate.findAll(ProjectInfo::class.java, OPDATA_PROJECT)
+    }
+
+    private fun buildCriteria(prefixList: MutableList<String>, notFlag: Boolean = true): List<Criteria> {
+        return prefixList.map {
+            if (notFlag) {
+                where(ProjectInfo::name).not().regex(it)
+            } else {
+                where(ProjectInfo::name).regex(it)
+            }
+        }
     }
 }

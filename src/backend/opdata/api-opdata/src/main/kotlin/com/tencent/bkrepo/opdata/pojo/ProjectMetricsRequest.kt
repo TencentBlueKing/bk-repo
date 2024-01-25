@@ -31,5 +31,8 @@ data class ProjectMetricsRequest(
     val limitSize: Long = 1024 * 1024 * 1024L,
     val minusDay: Long = 1,
     val default: Boolean = true,
-    val type: String? = null
+    val type: String? = null,
+    var showDelta: Boolean = false,
+    // 0表示显示全部， 1表示只显示活跃项目，2表示只显示非活跃项目
+    var projectFlag: Int = 0,
 )
