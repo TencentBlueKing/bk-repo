@@ -48,9 +48,8 @@ import org.springframework.core.Ordered
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @Import(
     MongoDistributedLockDao::class,
-    RedisOperation::class,
-    MongoCasOperation::class,
-    RedisCasOperation::class
+    MongoCasDao::class,
+    RedisOperation::class
 )
 class LockAutoConfiguration {
 

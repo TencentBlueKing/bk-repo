@@ -256,8 +256,6 @@ class ChartRepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun updatePackageForRemote(artifactInfo: HelmArtifactInfo) {
         helmOperationService.lockAction(artifactInfo.projectId, artifactInfo.repoName) {
-            val incKey = buildKey(artifactInfo.projectId, artifactInfo.repoName, CHANGE_EVENT_COUNT_PREFIX)
-            casService.targetCheck(incKey)
             helmOperationService.updatePackageForRemote(artifactInfo.projectId, artifactInfo.repoName)
         }
     }

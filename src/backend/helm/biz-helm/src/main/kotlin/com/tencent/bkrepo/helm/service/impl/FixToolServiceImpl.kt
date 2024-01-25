@@ -395,7 +395,7 @@ class FixToolServiceImpl(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    override fun metaDataRegenerate(userId: String, artifactInfo: HelmArtifactInfo) {
+    override fun metaDataRegenerate(userId: String, artifactInfo: HelmArtifactInfo, updatePackage: Boolean) {
         logger.info("handling meta data regenerate request: [$artifactInfo]")
         when (getRepositoryInfo(artifactInfo).category) {
             RepositoryCategory.REMOTE -> {
@@ -421,14 +421,16 @@ class FixToolServiceImpl(
                 val chartMetadata = queryHelmChartMetadata(context, path)
                 val metadata = HelmMetadataUtils.convertToMetadata(chartMetadata)
                 context.putAttribute(FULL_PATH, path)
-                createVersion(
-                    userId = context.userId,
-                    projectId = artifactInfo.projectId,
-                    repoName = artifactInfo.repoName,
-                    chartInfo = chartMetadata,
-                    size = context.getLongAttribute(SIZE)!!,
-                    isOverwrite = true
-                )
+                if (updatePackage) {
+                    createVersion(
+                        userId = context.userId,
+                        projectId = artifactInfo.projectId,
+                        repoName = artifactInfo.repoName,
+                        chartInfo = chartMetadata,
+                        size = context.getLongAttribute(SIZE)!!,
+                        isOverwrite = true
+                    )
+                }
                 val metadataSaveRequest = MetadataSaveRequest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
@@ -438,7 +440,7 @@ class FixToolServiceImpl(
                 )
                 metadataClient.saveMetadata(metadataSaveRequest)
             } catch (e: Exception) {
-                logger.error("error occurred while updating meta data, error: ${e.message}")
+                logger.warn("error occurred while updating meta data, error: ${e.message}")
             }
         }
     }
