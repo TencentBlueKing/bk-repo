@@ -844,5 +844,7 @@
         "SKIP": "Skip conflicts",
         "OVERWRITE": "Replacement artifacts",
         "FAST_FAIL": "Terminate synchronization"
-    }
+    },
+    "planLogErrorReason":"Error reason",
+    "planLogEmptyTitle":"There is no data or the data has been cleared after exceeding the maximum retention days."
 }

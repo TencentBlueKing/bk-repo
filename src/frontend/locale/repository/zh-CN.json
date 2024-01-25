@@ -845,5 +845,7 @@
         "SKIP": "跳过冲突",
         "OVERWRITE": "替换制品",
         "FAST_FAIL": "终止同步"
-    }
+    },
+    "planLogErrorReason":"异常原因",
+    "planLogEmptyTitle":"暂无数据或数据已超过最大保留天数被清除"
 }
