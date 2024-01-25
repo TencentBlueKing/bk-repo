@@ -349,8 +349,8 @@
                         description,
                         createdBy,
                         createdDate,
-                        record,
-                        recordReserveDays
+                        record: record || true,
+                        recordReserveDays: recordReserveDays || 60
                     }
                     this.replicaTaskObjects = objects
                 }).finally(() => {
