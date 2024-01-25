@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicBoolean
@@ -183,6 +184,19 @@ class CacheStorageService(
             throw IllegalStateException("Cache storage is unhealthy: ${monitor.fallBackReason}")
         }
         super.doCheckHealth(credentials)
+    }
+
+    /**
+     * 删除缓存文件
+     */
+    fun deleteCacheFile(
+        path: String,
+        filename: String,
+        credentials: StorageCredentials,
+    ) {
+        if (doExist(path, filename, credentials)) {
+            getCacheClient(credentials).delete(path, filename)
+        }
     }
 
     /**
