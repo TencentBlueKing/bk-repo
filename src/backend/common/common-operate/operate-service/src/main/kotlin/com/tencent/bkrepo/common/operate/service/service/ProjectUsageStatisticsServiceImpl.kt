@@ -139,7 +139,8 @@ open class ProjectUsageStatisticsServiceImpl(
     }
 
     override fun sumRecentDays(days: Long): Map<String, ProjectUsageStatistics> {
-        val start = LocalDate.now().atStartOfDay().minusDays(days - 1)
+        require(days > 0)
+        val start = LocalDate.now().atStartOfDay().minusDays(days)
             .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val result = ConcurrentHashMap<String, ProjectUsageStatisticsAdder>()
         projectUsageStatisticsDao.findAfter(start).stream().parallel().forEach {
