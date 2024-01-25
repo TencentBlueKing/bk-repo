@@ -28,7 +28,7 @@ class UncompressJob(
         return ReactiveDaoUtils.query(query, TCompressFile::class.java)
     }
 
-    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.DAYS)
     fun uncompress() {
         val subscriber = UncompressSubscriber(compressService)
         listFiles().subscribe(subscriber)

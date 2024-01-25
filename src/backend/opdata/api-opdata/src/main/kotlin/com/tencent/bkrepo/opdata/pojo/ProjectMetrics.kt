@@ -90,6 +90,24 @@ data class ProjectMetrics(
     @ExcelProperty(value = ["自定义仓库用量变化量-1月(GB)"], order = 18)
     var cCapSizeOfOneMonthBefore: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["统计时间"], order = 19)
+    @ExcelProperty(value = ["当日上传流量(GB)"], order = 19)
+    var receiveBytes: Long = 0L,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["当日下载流量(GB)"], order = 20)
+    var responseByte: Long = 0L,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["最近一周上传流量(GB)"], order = 21)
+    var receiveBytesOneWeekBefore: Long = 0L,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["最近一周下载流量(GB)"], order = 22)
+    var responseByteOneWeekBefore: Long = 0L,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["最近一月上传流量(GB)"], order = 23)
+    var receiveBytesOneMonthBefore: Long = 0L,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["最近一月下载流量(GB)"], order = 24)
+    var responseByteOneMonthBefore: Long = 0L,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["统计时间"], order = 25)
     val createdDate: LocalDateTime? = LocalDateTime.now(),
 )

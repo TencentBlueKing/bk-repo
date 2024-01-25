@@ -403,9 +403,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
-        val user = userRepository.findFirstByUserId(userId) ?: run {
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
+        val user = userRepository.findFirstByUserId(userId) ?: return emptyList()
 
         if (user.admin || isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
@@ -417,9 +415,17 @@ open class PermissionServiceImpl constructor(
             repoName,
         )
 
+        return getNoPermissionPathFromConfig(userId, user.roles, projectPermission)
+    }
+
+    private fun getNoPermissionPathFromConfig(
+        userId: String,
+        roles: List<String>,
+        config: List<TPermission>
+    ): List<String> {
         val excludePath = mutableListOf<String>()
         val includePath = mutableListOf<String>()
-        projectPermission.forEach {
+        config.forEach {
             if (it.users.contains(userId)) {
                 if (it.excludePattern.isNotEmpty()) {
                     excludePath.addAll(it.excludePattern)
@@ -433,7 +439,7 @@ open class PermissionServiceImpl constructor(
                 }
             }
 
-            val interRole = it.roles.intersect(user.roles.toSet())
+            val interRole = it.roles.intersect(roles.toSet())
             if (interRole.isNotEmpty()) {
                 if (it.excludePattern.isNotEmpty()) {
                     excludePath.addAll(it.excludePattern)
