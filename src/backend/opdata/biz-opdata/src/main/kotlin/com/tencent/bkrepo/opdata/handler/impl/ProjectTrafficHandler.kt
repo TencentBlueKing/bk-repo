@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
-import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
 import com.tencent.bkrepo.opdata.constant.DURATION
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_STRING
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.pojo.Columns
@@ -55,15 +55,15 @@ class ProjectTrafficHandler(
             rows.add(
                 listOf(
                     projectId,
-                    HumanReadable.size(statistics.receiveBytes),
-                    HumanReadable.size(statistics.responseBytes)
+                    statistics.receiveBytes,
+                    statistics.responseBytes
                 ),
             )
         }
         val columns = ArrayList<Columns>()
         columns.add(Columns("projectId", OPDATA_GRAFANA_STRING))
-        columns.add(Columns("receive", OPDATA_GRAFANA_STRING))
-        columns.add(Columns("response", OPDATA_GRAFANA_STRING)) // GC前
+        columns.add(Columns("receive", OPDATA_GRAFANA_NUMBER))
+        columns.add(Columns("response", OPDATA_GRAFANA_NUMBER))
         val data = QueryResult(columns, rows, target.type)
         result.add(data)
     }
