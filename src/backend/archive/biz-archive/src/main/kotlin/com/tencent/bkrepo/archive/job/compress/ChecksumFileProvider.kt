@@ -53,7 +53,13 @@ class ChecksumFileProvider(
     }
 
     private fun sign(file: File, checksumFilePath: Path, sha256: String, key: String?): File {
+        if (Files.exists(checksumFilePath)) {
+            return checksumFilePath.toFile()
+        }
         synchronized(sha256.intern()) {
+            if (Files.exists(checksumFilePath)) {
+                return checksumFilePath.toFile()
+            }
             Files.newOutputStream(checksumFilePath).use { out ->
                 val bkSync = BkSync()
                 val throughput = measureThroughput(file.length()) { bkSync.checksum(file, out) }
