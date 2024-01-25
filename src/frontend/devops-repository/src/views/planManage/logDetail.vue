@@ -62,6 +62,12 @@
             <bk-table-column :label="$t('version')" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.version || (row.versions || ['/']).join('、') }}</template>
             </bk-table-column>
+            <bk-table-column :label="$t('size')" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.size ? convertFileSize(row.size > 0 ? row.size : 0 ) : '/'}}</template>
+            </bk-table-column>
+            <bk-table-column label="sha256" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.sha256 || '/' }}</template>
+            </bk-table-column>
             <bk-table-column :label="$t('syncStatus')" width="90">
                 <template #default="{ row }">
                     <div class="status-sign" :class="row.status" :data-name="$t(`asyncPlanStatusEnum.${row.status}`) || $t('notExecuted')"></div>
@@ -104,7 +110,7 @@
 </template>
 <script>
     import { mapGetters, mapActions } from 'vuex'
-    import { formatDate } from '@repository/utils'
+    import { formatDate, convertFileSize } from '@repository/utils'
     import { asyncPlanStatusEnum, planLogEnum } from '@repository/store/publicEnum'
     export default {
         name: 'logDetail',
@@ -167,6 +173,7 @@
         },
         methods: {
             formatDate,
+            convertFileSize,
             ...mapActions(['getPlanLogDetail', 'getPlanLogPackageList', 'getPlanLogDetailOverview']),
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
