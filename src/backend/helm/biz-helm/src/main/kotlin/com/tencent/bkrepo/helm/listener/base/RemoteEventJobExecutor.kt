@@ -112,7 +112,6 @@ class RemoteEventJobExecutor(
                 operator = SYSTEM_USER,
                 fullPath = fullPath,
                 metadataMap = packageVersion.metadata,
-                artifactInfo = HelmArtifactInfo(projectId, repoName, fullPath)
             )
         )
     }

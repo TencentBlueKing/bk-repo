@@ -34,8 +34,9 @@ import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 
 class ChartPackageDeleteOperation(
     private val request: ChartOperationRequest,
-    chartService: AbstractChartService
-) : AbstractChartOperation(request, chartService) {
+    chartService: AbstractChartService,
+    lock: Any
+) : AbstractChartOperation(request, chartService, lock) {
 
     override fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {
         logger.info("Prepare to delete metadata list from index's metadata..")

@@ -36,8 +36,9 @@ import java.util.SortedSet
 
 class ChartDeleteOperation(
     private val request: ChartOperationRequest,
-    chartService: AbstractChartService
-) : AbstractChartOperation(request, chartService) {
+    chartService: AbstractChartService,
+    lock: Any
+) : AbstractChartOperation(request, chartService, lock) {
 
     override fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {
         logger.info("Prepare to delete metadata from index's metadata..")

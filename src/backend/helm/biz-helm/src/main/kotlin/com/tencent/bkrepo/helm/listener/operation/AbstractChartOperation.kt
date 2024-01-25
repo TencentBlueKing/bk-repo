@@ -41,7 +41,8 @@ import java.time.LocalDateTime
 
 abstract class AbstractChartOperation(
     private val request: ChartOperationRequest,
-    private val chartService: AbstractChartService
+    private val chartService: AbstractChartService,
+    private val lock: Any
 ) : Runnable {
     override fun run() {
         with(request) {
@@ -50,20 +51,7 @@ abstract class AbstractChartOperation(
                     "in repo [$projectId/$repoName] by User [$operator]"
             )
             stopWatch.start()
-            var flag = false
-            while (!flag) {
-                val lock = chartService.getLock(projectId, repoName)
-                if (lock != null) {
-                    try {
-                        handleOperation(this)
-                    } finally {
-                        chartService.unlock(projectId, repoName, lock)
-                        flag = true
-                    }
-                } else {
-                    Thread.sleep(500)
-                }
-            }
+            handleOperation(this)
             stopWatch.stop()
             logger.info(
                 "Total cost for refreshing index.yaml" +
@@ -115,6 +103,7 @@ abstract class AbstractChartOperation(
             } finally {
                 val incKey = chartService.buildKey(projectId, repoName, CHANGE_EVENT_COUNT_PREFIX)
                 chartService.casService.increment(incKey, -1)
+                chartService.unlock(projectId, repoName, lock)
             }
         }
     }

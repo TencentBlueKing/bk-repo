@@ -52,8 +52,11 @@ class MongoCasDao : SimpleMongoDao<TMongoCas>() {
     fun incrByKey(key: String, increase: Long): TMongoCas? {
         val criteria = where(TMongoCas::key).isEqualTo(key)
         val query = Query(criteria)
-        val update = Update().inc(TMongoCas::value.name, increase)
+        val updateMax = Update().max(TMongoCas::value.name, 0L)
         val options = FindAndModifyOptions().apply { this.upsert(true).returnNew(true) }
+        determineMongoTemplate()
+            .findAndModify(query, updateMax, options, TMongoCas::class.java)
+        val update = Update().inc(TMongoCas::value.name, increase)
         return determineMongoTemplate()
             .findAndModify(query, update, options, TMongoCas::class.java)
     }

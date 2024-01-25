@@ -475,7 +475,7 @@ open class AbstractChartService : ArtifactService() {
         action: () -> T
     ): T {
         val incKey = buildKey(projectId, repoName, CHANGE_EVENT_COUNT_PREFIX)
-        return if (casService.targetCheck(incKey)) {
+        return if (casService.targetCheck(incKey, retryTimes = properties.retryTimes, sleepTime = properties.sleepTime)) {
             action()
         } else {
             action()

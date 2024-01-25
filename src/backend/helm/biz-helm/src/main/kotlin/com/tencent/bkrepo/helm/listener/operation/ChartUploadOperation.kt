@@ -34,15 +34,14 @@ import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 class ChartUploadOperation(
     private val request: ChartOperationRequest,
     private val helmChartMetadata: HelmChartMetadata,
     private val domain: String,
-    private val nodeDetail: NodeDetail,
-    chartService: AbstractChartService
-) : AbstractChartOperation(request, chartService) {
+    chartService: AbstractChartService,
+    lock: Any
+) : AbstractChartOperation(request, chartService, lock) {
 
     override fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {
         logger.info("Prepare to add metadata to index's metadata..")
@@ -56,8 +55,6 @@ class ChartUploadOperation(
                     domain, "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
                 )
             )
-            helmChartMetadata.created = AbstractChartService.convertDateTime(nodeDetail.createdDate)
-            helmChartMetadata.digest = nodeDetail.sha256
             ChartParserUtil.addIndexEntries(helmIndexYamlMetadata, helmChartMetadata)
         }
     }

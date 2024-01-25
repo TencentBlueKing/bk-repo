@@ -57,6 +57,11 @@ const val REDIS_LOCK_KEY_PREFIX = "helm:lock:indexFile:"
 const val REFRESH_INDEX_KEY = "helm:lock:refreshIndex"
 const val CHANGE_EVENT_COUNT_PREFIX = "helm:changeEventCount:"
 
+const val DEFAULT_TYPE = "mongodb"
+const val UPLOAD_EVENT_REQUEST_TYPE = "upload"
+const val VERSION_DELETE_EVENT_REQUEST_TYPE = "versionDelete"
+const val PACKAGE_DELETE_EVENT_REQUEST_TYPE = "packageDelete"
+
 // 定义返回代码片段
 val CHART_NOT_FOUND = mapOf("error" to "chart not found")
 val NO_CHART_NAME_FOUND = mapOf("error" to "no chart name found")

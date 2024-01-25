@@ -8,8 +8,8 @@ data class HelmProperties(
      * generic服务domain地址，用于生成临时url
      */
     var domain: String = "localhost",
-    var retryTimes: Int = 10000,
-    var sleepTime: Long = 30L,
+    var retryTimes: Int = 600,
+    var sleepTime: Long = 500L,
     // 读取事件更新index的频率
     var refreshTime: Long = 500,
     // 使用v2 版本方式重新生成index项目列表
