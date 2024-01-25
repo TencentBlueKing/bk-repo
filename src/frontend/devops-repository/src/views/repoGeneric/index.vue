@@ -214,26 +214,26 @@
     </div>
 </template>
 <script>
-    import OperationList from '@repository/components/OperationList'
     import Breadcrumb from '@repository/components/Breadcrumb'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import Loading from '@repository/components/Loading/loading'
     import MoveSplitBar from '@repository/components/MoveSplitBar'
+    import OperationList from '@repository/components/OperationList'
     import RepoTree from '@repository/components/RepoTree'
-    import ScanTag from '@repository/views/repoScan/scanTag'
+    import { getIconName } from '@repository/store/publicEnum'
+    import { convertFileSize, debounce, formatDate } from '@repository/utils'
+    import { beforeMonths, beforeYears } from '@repository/utils/date'
+    import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import metadataTag from '@repository/views/repoCommon/metadataTag'
+    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
     import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
     import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
-    import previewBasicFileDialog from './previewBasicFileDialog'
-    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import ScanTag from '@repository/views/repoScan/scanTag'
+    import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
-    import { convertFileSize, formatDate, debounce } from '@repository/utils'
-    import { beforeMonths, beforeYears } from '@repository/utils/date'
-    import { customizeDownloadFile } from '@repository/utils/downloadFile'
-    import { getIconName } from '@repository/store/publicEnum'
-    import { mapState, mapMutations, mapActions } from 'vuex'
-    import Loading from '@repository/components/Loading/loading'
-    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
+    import previewBasicFileDialog from './previewBasicFileDialog'
 
     export default {
         name: 'repoGeneric',
@@ -354,7 +354,7 @@
             // 前端隐藏report仓库/log仓库
             if (MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log')) {
                 next({
-                    name: 'repoList',
+                    name: 'repositories',
                     params: {
                         projectId: to.params.projectId
                     }
