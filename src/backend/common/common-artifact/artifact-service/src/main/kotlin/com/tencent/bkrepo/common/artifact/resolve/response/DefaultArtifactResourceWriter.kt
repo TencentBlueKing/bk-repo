@@ -88,7 +88,7 @@ open class DefaultArtifactResourceWriter(
             ?: resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL.toLowerCase())?.toString()
             ?: StringPool.NO_CACHE
 
-        response.bufferSize = getBufferSize(range.length.toInt())
+        response.bufferSize = getBufferSize(range.length)
         val mediaType = resource.contentType ?: determineMediaType(name, storageProperties.response.mimeMappings)
         response.characterEncoding = determineCharset(mediaType, resource.characterEncoding)
         response.contentType = mediaType
@@ -121,7 +121,7 @@ open class DefaultArtifactResourceWriter(
         val response = HttpContextHolder.getResponse()
         val name = resolveMultiArtifactName(resource)
 
-        response.bufferSize = getBufferSize(resource.getTotalSize().toInt())
+        response.bufferSize = getBufferSize(resource.getTotalSize())
         response.characterEncoding = resource.characterEncoding
         response.contentType = determineMediaType(name, storageProperties.response.mimeMappings)
         response.status = HttpStatus.OK.value
@@ -186,7 +186,7 @@ open class DefaultArtifactResourceWriter(
                         ).use {
                             it.copyTo(
                                 out = zipOutput,
-                                bufferSize = getBufferSize(inputStream.range.length.toInt())
+                                bufferSize = getBufferSize(inputStream.range.length)
                             )
                         }
                         zipOutput.closeEntry()
