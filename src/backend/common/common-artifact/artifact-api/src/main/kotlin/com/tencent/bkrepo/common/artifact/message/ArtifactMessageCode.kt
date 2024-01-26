@@ -44,7 +44,7 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     PROJECT_EXISTED("artifact.project.existed"),
     REPOSITORY_NOT_FOUND("artifact.repository.not-found"),
     REPOSITORY_EXISTED("artifact.repository.existed"),
-    REPOSITORY_CONTAINS_FILE("artifact.repository.not-empty"),
+    REPOSITORY_CONTAINS_ARTIFACT("artifact.repository.not-empty"),
     FOLDER_CONTAINS_FILE("artifact.folder.not-empty"),
     NODE_NOT_FOUND("artifact.node.not-found"),
     NODE_PATH_INVALID("artifact.node.path.invalid"),
