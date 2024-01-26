@@ -45,6 +45,12 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item style="margin-left: 15px" label="IP" prop="ip">
+        <el-input v-model="clientQuery.ip" type="text" size="small" width="50" placeholder="请输入ip" />
+      </el-form-item>
+      <el-form-item style="margin-left: 15px" label="版本" prop="version">
+        <el-input v-model="clientQuery.version" type="text" size="small" width="50" placeholder="请输入版本号" />
+      </el-form-item>
       <el-form-item>
         <el-button
           size="mini"
@@ -103,7 +109,9 @@ export default {
         projectId: '',
         repoName: '',
         pageNumber: 1,
-        online: ''
+        online: '',
+        ip: '',
+        version: ''
       },
       clients: [],
       options: [{
@@ -165,6 +173,8 @@ export default {
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
       query.online = this.clientQuery.online
+      query.ip = this.clientQuery.ip
+      query.version = this.clientQuery.version
       this.$router.push({ path: '/nodes/FileSystem', query: query })
     },
     onRouteUpdate(route) {
@@ -174,6 +184,8 @@ export default {
       clientQuery.repoName = query.repoName ? query.repoName : ''
       clientQuery.pageNumber = query.page ? Number(query.page) : 1
       clientQuery.online = query.online ? query.online : ''
+      clientQuery.ip = query.ip ? query.ip : ''
+      clientQuery.version = query.version ? query.version : ''
       this.$nextTick(() => {
         this.queryClients(clientQuery)
       })
@@ -190,7 +202,7 @@ export default {
     doQueryClients(clientQuery) {
       this.loading = true
       let promise = null
-      promise = queryFileSystemClient(clientQuery.projectId, clientQuery.repoName, clientQuery.pageNumber, clientQuery.online)
+      promise = queryFileSystemClient(clientQuery)
       promise.then(res => {
         this.clients = res.data.records
         this.total = res.data.totalRecords

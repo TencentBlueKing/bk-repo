@@ -31,14 +31,22 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil
 import com.tencent.bkrepo.common.service.util.proxy.ProxyCallHandler
 import com.tencent.bkrepo.svn.utils.SvnProxyHelper.getRepoId
 import org.springframework.web.servlet.HandlerInterceptor
+import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class ProxyInterceptor(private val proxyHandler: ProxyCallHandler) : HandlerInterceptor {
+    private val client = HttpClientBuilderFactory.create()
+        .readTimeout(15, TimeUnit.MINUTES)
+        .writeTimeout(15, TimeUnit.MINUTES)
+        .build()
+    private val httpProxyUtil = HttpProxyUtil(client)
+
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val repositoryId = getRepoId(request) ?: return false
         val repo = ArtifactContextHolder.getRepoDetail(repositoryId)
@@ -50,7 +58,7 @@ class ProxyInterceptor(private val proxyHandler: ProxyCallHandler) : HandlerInte
         val configuration = repo.configuration as ProxyConfiguration
         val proxyUrl = configuration.proxy.url
         val prefix = "/${repo.projectId}/${repo.name}"
-        HttpProxyUtil.proxy(
+        httpProxyUtil.proxy(
             HttpContextHolder.getRequest(),
             HttpContextHolder.getResponse(),
             proxyUrl,

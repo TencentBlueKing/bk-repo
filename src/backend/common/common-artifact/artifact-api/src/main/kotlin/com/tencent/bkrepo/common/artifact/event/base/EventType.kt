@@ -49,6 +49,7 @@ enum class EventType(val msgKey: String) {
     NODE_COPIED("artifact.event.node-copied"),
     NODE_DELETED("artifact.event.node-deleted"),
     NODE_DOWNLOADED("artifact.event.node-downloaded"),
+    NODE_CLEAN("artifact.event.node-clean"),
 
     // METADATA
     METADATA_DELETED("artifact.event.metadata-deleted"),

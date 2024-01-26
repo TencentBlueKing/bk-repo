@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
@@ -60,6 +61,10 @@ class ScannerPermissionCheckHandler(
 
     override fun onPrincipalCheck(userId: String, principal: Principal) {
         permissionManager.checkPrincipal(userId, principal.type)
+    }
+
+    fun checkPrincipal(userId: String, principal: PrincipalType) {
+        permissionManager.checkPrincipal(userId, principal)
     }
 
     fun checkProjectPermission(

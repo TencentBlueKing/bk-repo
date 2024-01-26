@@ -30,6 +30,7 @@ package com.tencent.bkrepo.analyst.event
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.pojo.AutoScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact.Companion.RULE_FIELD_LATEST_VERSION
@@ -218,7 +219,11 @@ class ScanEventConsumer(
                     val packageVersion = data[VersionCreatedEvent::packageVersion.name] as String
                     RuleConverter.convert(projectId, repoName, packageKey, packageVersion)
                 }
-                val request = ScanRequest(scanner = scanner, rule = rule)
+                val request = ScanRequest(
+                    scanner = scanner,
+                    rule = rule,
+                    metadata = listOf(TaskMetadata(TaskMetadata.TASK_METADATA_GLOBAL, "true"))
+                )
                 scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT_SYSTEM, SYSTEM_USER)
             }
         }

@@ -65,7 +65,7 @@ export default {
     // 请求文件夹下的子文件夹
     getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false, localRepo = true }) {
         let request
-        if (isPipeline && !fullPath) {
+        if (isPipeline && !fullPath && localRepo) {
             request = Vue.prototype.$ajax.get(
                 `${prefix}/pipeline/list/${projectId}`
             ).then(records => ({ records }))
@@ -330,6 +330,56 @@ export default {
                 }
             }
         )
+    },
+    // 查询repo下一级目录
+    getFirstLevelFolder (_, { projectId, repoName, fullPath = '', isPipeline = false, localRepo = true }) {
+        let request
+        if (isPipeline && !fullPath && localRepo) {
+            request = Vue.prototype.$ajax.get(
+                `${prefix}/pipeline/list/${projectId}`
+            ).then(records => ({ records }))
+        } else {
+            request = Vue.prototype.$ajax.post(
+                localRepo ? `${prefix}/node/search` : `generic/${projectId}/${repoName}/search`,
+                {
+                    select: ['name', 'fullPath', 'metadata'],
+                    page: {
+                        pageNumber: 1,
+                        pageSize: 10000
+                    },
+                    sort: {
+                        properties: ['lastModifiedDate'],
+                        direction: 'DESC'
+                    },
+                    rule: {
+                        rules: [
+                            {
+                                field: 'projectId',
+                                value: projectId,
+                                operation: 'EQ'
+                            },
+                            {
+                                field: 'repoName',
+                                value: repoName,
+                                operation: 'EQ'
+                            },
+                            {
+                                field: 'path',
+                                value: `${fullPath === '/' ? '' : fullPath}/`,
+                                operation: 'EQ'
+                            },
+                            {
+                                field: 'folder',
+                                value: true,
+                                operation: 'EQ'
+                            }
+                        ],
+                        relation: 'AND'
+                    }
+                }
+            )
+        }
+        return request
     },
     // 统计时间早于{date}的文件节点信息
     getFolderSizeBefore (_, { path, date }) {

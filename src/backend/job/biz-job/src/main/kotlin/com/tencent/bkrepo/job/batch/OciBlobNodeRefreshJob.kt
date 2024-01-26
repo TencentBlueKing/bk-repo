@@ -41,6 +41,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
+import kotlin.reflect.KClass
 
 /**
  * 用于将存储在blobs目录下的公共blob节点全部迁移到对应版本目录下，
@@ -59,8 +60,8 @@ class OciBlobNodeRefreshJob(
         return super.start()
     }
 
-    override fun entityClass(): Class<PackageData> {
-        return PackageData::class.java
+    override fun entityClass(): KClass<PackageData> {
+        return PackageData::class
     }
 
     override fun collectionNames(): List<String> {

@@ -58,4 +58,11 @@ interface ProjectUsageStatisticsService {
      * @param end 结束时间，不包含
      */
     fun delete(start: Long? = null, end: Long)
+
+    /**
+     * 查询最近几天使用量总和
+     *
+     * @param days 最近天数
+     */
+    fun sumRecentDays(days: Long): Map<String, ProjectUsageStatistics>
 }

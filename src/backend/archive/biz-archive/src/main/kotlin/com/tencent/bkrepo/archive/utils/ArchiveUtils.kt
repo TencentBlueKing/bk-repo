@@ -4,9 +4,15 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.archive.job.JobProcessMonitor
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -15,21 +21,28 @@ import org.springframework.stereotype.Component
 class ArchiveUtils(
     storageCredentialsClient: StorageCredentialsClient,
     storageProperties: StorageProperties,
+    repositoryClient: RepositoryClient,
 ) {
 
     init {
         Companion.storageCredentialsClient = storageCredentialsClient
+        Companion.repositoryClient = repositoryClient
         defaultStorageCredentials = storageProperties.defaultStorageCredentials()
     }
 
     companion object {
         private lateinit var storageCredentialsClient: StorageCredentialsClient
         private lateinit var defaultStorageCredentials: StorageCredentials
+        private lateinit var repositoryClient: RepositoryClient
         private val logger = LoggerFactory.getLogger(ArchiveUtils::class.java)
         private val storageCredentialsCache: LoadingCache<String, StorageCredentials> = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(1, TimeUnit.MINUTES)
             .build(CacheLoader.from { key -> loadStorageCredentials(key) })
+        private val repositoryDetailCache = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(60, TimeUnit.SECONDS)
+            .build<RepositoryId, RepositoryDetail>()
 
         val monitor = JobProcessMonitor()
 
@@ -43,7 +56,18 @@ class ArchiveUtils(
         }
 
         fun getStorageCredentials(key: String?): StorageCredentials {
-            return storageCredentialsCache.get(key.orEmpty())
+            return storageCredentialsCache.get(key.orEmpty()).apply {
+                // 指定使用本地路径进行cos分片下载
+                upload.location = defaultStorageCredentials.upload.localPath
+            }
+        }
+
+        fun getRepositoryDetail(project: String, repoName: String): RepositoryDetail {
+            val repoId = RepositoryId(project, repoName)
+            return repositoryDetailCache.get(repoId) {
+                repositoryClient.getRepoDetail(project, repoName).data
+                    ?: throw RepoNotFoundException("$project/$repoName")
+            }
         }
 
         fun supportXZCmd(): Boolean {
@@ -53,6 +77,30 @@ class ArchiveUtils(
             } catch (ignore: Exception) {
                 false
             }
+        }
+
+        fun newFixedAndCachedThreadPool(threads: Int, threadFactory: ThreadFactory): ThreadPoolExecutor {
+            return ThreadPoolExecutor(
+                threads,
+                threads,
+                60,
+                TimeUnit.SECONDS,
+                ArrayBlockingQueue(DEFAULT_BUFFER_SIZE),
+                threadFactory,
+                ThreadPoolExecutor.CallerRunsPolicy(),
+            )
+        }
+
+        fun newCachedThreadPool(maxThreads: Int, threadFactory: ThreadFactory): ThreadPoolExecutor {
+            return ThreadPoolExecutor(
+                0,
+                maxThreads,
+                60,
+                TimeUnit.SECONDS,
+                ArrayBlockingQueue(DEFAULT_BUFFER_SIZE),
+                threadFactory,
+                ThreadPoolExecutor.CallerRunsPolicy(),
+            )
         }
 
         fun runCmd(cmd: List<String>) {
@@ -65,5 +113,10 @@ class ArchiveUtils(
                 error("cmd failed,exit: $ev.")
             }
         }
+
+        data class RepositoryId(
+            val project: String,
+            val repoName: String,
+        )
     }
 }

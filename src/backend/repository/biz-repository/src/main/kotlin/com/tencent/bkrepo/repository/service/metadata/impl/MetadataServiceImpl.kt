@@ -92,7 +92,11 @@ class MetadataServiceImpl(
                 MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
             )
             checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
-            node.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
+            node.metadata = if (replace) {
+                newMetadata
+            } else {
+                MetadataUtils.merge(oldMetadata, newMetadata)
+            }
 
             nodeDao.save(node)
             publishEvent(buildMetadataSavedEvent(request))

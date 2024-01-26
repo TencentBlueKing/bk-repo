@@ -31,15 +31,10 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
-import com.tencent.bkrepo.auth.api.ServicePipelineClient
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
-import com.tencent.bkrepo.common.artifact.constant.PIPELINE
-import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.repository.service.node.PipelineNodeService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -49,8 +44,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/pipeline/")
 class UserPipelineController(
-    private val nodeService: NodeService,
-    private val servicePipelineClient: ServicePipelineClient
+    private val pipelineNodeService: PipelineNodeService
 ) {
 
     @GetMapping("/list/{projectId}")
@@ -58,25 +52,6 @@ class UserPipelineController(
         @RequestAttribute userId: String,
         @PathVariable projectId: String
     ): Response<List<NodeInfo>> {
-        // 1. auth查询有权限的pipeline
-        val pipelines = servicePipelineClient.listPermissionedPipelines(userId, projectId).data.orEmpty()
-        // 2. 查询根节点下的目录
-        val artifactInfo = DefaultArtifactInfo(projectId, PIPELINE, ROOT)
-        val option = NodeListOption(includeMetadata = true, sort = true)
-        val nodeMap = nodeService.listNode(artifactInfo, option).associateBy { it.name }
-        // 3. 内存过滤
-        val pipelineNodeList = mutableListOf<NodeInfo>()
-        if (pipelines.firstOrNull().equals("*")) {
-            pipelineNodeList.addAll(nodeMap.values)
-        } else {
-            pipelines.forEach {
-                val node = nodeMap[it]
-                if (node != null) {
-                    pipelineNodeList.add(node)
-                }
-            }
-        }
-        // 4. 返回结果
-        return ResponseBuilder.success(pipelineNodeList)
+        return ResponseBuilder.success(pipelineNodeService.listPipeline(userId, projectId))
     }
 }

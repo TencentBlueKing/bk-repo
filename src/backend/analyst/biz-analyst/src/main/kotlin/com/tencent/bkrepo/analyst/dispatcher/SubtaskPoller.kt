@@ -41,6 +41,7 @@ import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
@@ -48,7 +49,8 @@ open class SubtaskPoller(
     private val dispatcherFactory: SubtaskDispatcherFactory,
     private val executionClusterService: ExecutionClusterService,
     private val scannerService: ScannerService,
-    private val executorClient: ObjectProvider<ExecutorClient>
+    private val executorClient: ObjectProvider<ExecutorClient>,
+    private val executor: ThreadPoolTaskExecutor,
 ) {
 
     private val dispatcherCache: LoadingCache<String, SubtaskDispatcher> by lazy {
@@ -65,7 +67,13 @@ open class SubtaskPoller(
 
     @Scheduled(initialDelay = POLL_INITIAL_DELAY, fixedDelay = POLL_DELAY)
     open fun dispatch() {
-        executionClusterService.list().forEach { dispatcherCache.get(it.name).dispatch() }
+        executionClusterService.list().forEach {
+            executor.execute {
+                logger.info("cluster [${it.name}] start to dispatch subtask")
+                dispatcherCache.get(it.name).dispatch()
+                logger.info("cluster [${it.name}] dispatch finished")
+            }
+        }
     }
 
     /**

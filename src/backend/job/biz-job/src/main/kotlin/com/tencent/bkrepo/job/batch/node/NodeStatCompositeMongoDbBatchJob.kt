@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.batch.node
 
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.ChildMongoDbBatchJob
 import com.tencent.bkrepo.job.batch.base.CompositeMongoDbBatchJob
 import com.tencent.bkrepo.job.config.properties.NodeStatCompositeMongoDbBatchJobProperties
@@ -10,12 +11,14 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.Date
+import kotlin.reflect.KClass
 
 @Component
 @EnableConfigurationProperties(NodeStatCompositeMongoDbBatchJobProperties::class)
 class NodeStatCompositeMongoDbBatchJob(
     val properties: NodeStatCompositeMongoDbBatchJobProperties,
-    private val redisTemplate: RedisTemplate<String, String>
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val activeProjectService: ActiveProjectService
 ) : CompositeMongoDbBatchJob<NodeStatCompositeMongoDbBatchJob.Node>(properties) {
 
     override fun collectionNames(): List<String> {
@@ -26,11 +29,11 @@ class NodeStatCompositeMongoDbBatchJob(
 
     override fun mapToEntity(row: Map<String, Any?>): Node = Node(row)
 
-    override fun entityClass(): Class<Node> = Node::class.java
+    override fun entityClass(): KClass<Node> = Node::class
 
     override fun createChildJobs(): List<ChildMongoDbBatchJob<Node>> {
         return listOf(
-            FolderStatChildJob(properties, redisTemplate)
+            FolderStatChildJob(properties, redisTemplate, mongoTemplate, activeProjectService)
         )
     }
 

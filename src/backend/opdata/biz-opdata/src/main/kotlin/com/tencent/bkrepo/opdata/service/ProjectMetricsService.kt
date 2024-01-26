@@ -27,10 +27,17 @@
 
 package com.tencent.bkrepo.opdata.service
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
@@ -41,17 +48,61 @@ import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
+import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_BG_NAME
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_CENTER_NAME
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_DEPT_NAME
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_ENABLED
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_PRODUCT_ID
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 @Service
 class ProjectMetricsService (
     private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel
+    private val statDateModel: StatDateModel,
+    private val projectClient: ProjectClient,
+    private val jobClient: JobClient,
+    private val projectUsageStatisticsService: ProjectUsageStatisticsService,
     ){
+
+    private val projectInfoCache: LoadingCache<String, Optional<ProjectInfo>> = CacheBuilder.newBuilder()
+        .maximumSize(DEFAULT_PROJECT_CACHE_SIZE)
+        .expireAfterWrite(1, TimeUnit.DAYS)
+        .build(CacheLoader.from { key -> Optional.ofNullable(projectClient.getProjectInfo(key).data) })
+
+    private val activeProjectsCache:  LoadingCache<String, MutableSet<String>> by lazy {
+        val cacheLoader = object : CacheLoader<String, MutableSet<String>>() {
+            override fun load(key: String): MutableSet<String> {
+                return when (key) {
+                    DOWNLOAD_ACTIVE_PROJECTS -> {
+                        jobClient.downloadActiveProjects().data
+                            ?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
+                    }
+                    ACTIVE_PROJECTS -> {
+                        jobClient.activeProjects().data
+                            ?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
+                    }
+                    UPLOAD_ACTIVE_PROJECTS -> {
+                        jobClient.uploadActiveProjects().data
+                            ?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf<String>()
+                    }
+                    else -> {
+                        mutableSetOf<String>()
+                    }
+                }
+            }
+        }
+        CacheBuilder.newBuilder()
+            .maximumSize(10)
+            .expireAfterWrite(1, TimeUnit.HOURS)
+            .build(cacheLoader)
+    }
 
     fun page(option: ProjectMetricsOption): Page<TProjectMetrics> {
         with(option) {
@@ -95,11 +146,36 @@ class ProjectMetricsService (
             ProjectMetrics::cCapSizeOfOneDayBefore.name,
             ProjectMetrics::cCapSizeOfOneWeekBefore.name,
             ProjectMetrics::cCapSizeOfOneMonthBefore.name,
+            ProjectMetrics::bgName.name,
+            ProjectMetrics::deptName.name,
+            ProjectMetrics::centerName.name,
             ProjectMetrics::createdDate.name,
+            ProjectMetrics::productId.name,
+            ProjectMetrics::enabled.name,
+            ProjectMetrics::receiveBytes.name,
+            ProjectMetrics::responseByte.name,
+            ProjectMetrics::receiveBytesOneWeekBefore.name,
+            ProjectMetrics::responseByteOneWeekBefore.name,
+            ProjectMetrics::receiveBytesOneMonthBefore.name,
+            ProjectMetrics::responseByteOneMonthBefore.name,
             )
         val fileName = "大于${metricsRequest.limitSize/TO_GIGABYTE}GB的项目信息"
         EasyExcelUtils.download(records, fileName, ProjectMetrics::class.java, includeColumns)
     }
+
+
+    fun getActiveProjects(): MutableSet<String> {
+        return activeProjectsCache.get(ACTIVE_PROJECTS)
+    }
+
+    fun getDownloadActiveProjects(): MutableSet<String> {
+        return activeProjectsCache.get(DOWNLOAD_ACTIVE_PROJECTS)
+    }
+
+    fun getUploadActiveProjects(): MutableSet<String> {
+        return activeProjectsCache.get(UPLOAD_ACTIVE_PROJECTS)
+    }
+
 
     /**
      * 定时将db中的数据更新到缓存中
@@ -123,6 +199,16 @@ class ProjectMetricsService (
             MetricsCacheUtil.gerProjectNodeNum(it.name)
         }
 
+        listOf(ACTIVE_PROJECTS, DOWNLOAD_ACTIVE_PROJECTS, UPLOAD_ACTIVE_PROJECTS).forEach {
+            activeProjectsCache.get(it)
+        }
+
+        activeProjectsCache.get(ACTIVE_PROJECTS).forEach {
+            try {
+                getProject(it)
+            } catch (ignore: RemoteErrorCodeException) {
+            }
+        }
     }
 
     private fun getProjectMetrics(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
@@ -152,9 +238,26 @@ class ProjectMetricsService (
         }
 
 
-        val currentMetrics = MetricsCacheUtil.getProjectMetrics(
+        var currentMetrics = MetricsCacheUtil.getProjectMetrics(
             createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
         )
+        val activeProjects =  getActiveProjects()
+
+        when (metricsRequest.projectFlag) {
+            SHOW_ACTIVE_PROJECTS -> {
+                oneDayBeforeMetrics = oneDayBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
+                oneWeekBeforeMetrics = oneWeekBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
+                oneMonthBeforeMetrics = oneMonthBeforeMetrics?.filter { activeProjects.contains(it.projectId) }
+                currentMetrics = currentMetrics.filter { activeProjects.contains(it.projectId) }
+            }
+            SHOW_INACTIVE_PROJECTS-> {
+                oneDayBeforeMetrics = oneDayBeforeMetrics?.filter { !activeProjects.contains(it.projectId) }
+                oneWeekBeforeMetrics = oneWeekBeforeMetrics?.filter { !activeProjects.contains(it.projectId) }
+                oneMonthBeforeMetrics = oneMonthBeforeMetrics?.filter { !activeProjects.contains(it.projectId) }
+                currentMetrics = currentMetrics.filter { !activeProjects.contains(it.projectId) }
+            }
+            else -> {}
+        }
 
         return getMetricsResult(
             type = metricsRequest.type,
@@ -163,6 +266,9 @@ class ProjectMetricsService (
             oneDayBeforeMetrics = oneDayBeforeMetrics,
             oneWeekBeforeMetrics = oneWeekBeforeMetrics,
             oneMonthBeforeMetrics = oneMonthBeforeMetrics,
+            currentProjectUsageStatistics = projectUsageStatisticsService.sumRecentDays(1L),
+            oneWeekBeforeProjectUsageStatistics = projectUsageStatisticsService.sumRecentDays(7L),
+            oneMonthBeforeProjectUsageStatistics = projectUsageStatisticsService.sumRecentDays(30L),
         )
     }
 
@@ -173,6 +279,9 @@ class ProjectMetricsService (
         oneDayBeforeMetrics: List<TProjectMetrics>? = null,
         oneWeekBeforeMetrics: List<TProjectMetrics>? = null,
         oneMonthBeforeMetrics: List<TProjectMetrics>? = null,
+        currentProjectUsageStatistics: Map<String, ProjectUsageStatistics>? = null,
+        oneWeekBeforeProjectUsageStatistics: Map<String, ProjectUsageStatistics>? = null,
+        oneMonthBeforeProjectUsageStatistics: Map<String, ProjectUsageStatistics>? = null,
     ): List<ProjectMetrics> {
         val result = mutableListOf<ProjectMetrics>()
         currentMetrics.forEach { current ->
@@ -182,8 +291,12 @@ class ProjectMetricsService (
                 oneDayBefore = oneDayBeforeMetrics?.firstOrNull { it.projectId == current.projectId },
                 oneWeekBefore = oneWeekBeforeMetrics?.firstOrNull { it.projectId == current.projectId },
                 oneMonthBefore = oneMonthBeforeMetrics?.firstOrNull { it.projectId == current.projectId },
-                )
+                currentProjectUsageStatistics = currentProjectUsageStatistics?.get(current.projectId),
+                oneWeekBeforeProjectUsageStatistics = oneWeekBeforeProjectUsageStatistics?.get(current.projectId),
+                oneMonthBeforeProjectUsageStatistics = oneMonthBeforeProjectUsageStatistics?.get(current.projectId),
+            )
             if (projectInfo.capSize >= limitSize) {
+                val project = getProject(current.projectId)
                 result.add(ProjectMetrics(
                     projectId = current.projectId,
                     capSize = projectInfo.capSize / TO_GIGABYTE,
@@ -200,6 +313,17 @@ class ProjectMetricsService (
                     cCapSizeOfOneDayBefore = projectInfo.cCapSizeOfOneDayBefore / TO_GIGABYTE,
                     cCapSizeOfOneWeekBefore = projectInfo.cCapSizeOfOneWeekBefore / TO_GIGABYTE,
                     cCapSizeOfOneMonthBefore = projectInfo.cCapSizeOfOneMonthBefore / TO_GIGABYTE,
+                    bgName = project?.metadata?.firstOrNull { it.key == KEY_BG_NAME }?.value as? String?,
+                    deptName = project?.metadata?.firstOrNull { it.key == KEY_DEPT_NAME }?.value as? String,
+                    centerName = project?.metadata?.firstOrNull { it.key == KEY_CENTER_NAME }?.value as? String,
+                    productId = project?.metadata?.firstOrNull { it.key == KEY_PRODUCT_ID }?.value as? Int,
+                    enabled = project?.metadata?.firstOrNull { it.key == KEY_ENABLED }?.value as? Boolean,
+                    receiveBytes = projectInfo.receiveBytes / TO_GIGABYTE,
+                    receiveBytesOneWeekBefore = projectInfo.receiveBytesOneWeekBefore / TO_GIGABYTE,
+                    receiveBytesOneMonthBefore = projectInfo.receiveBytesOneMonthBefore / TO_GIGABYTE,
+                    responseByte = projectInfo.responseByte / TO_GIGABYTE,
+                    responseByteOneWeekBefore = projectInfo.responseByteOneWeekBefore / TO_GIGABYTE,
+                    responseByteOneMonthBefore = projectInfo.responseByteOneMonthBefore / TO_GIGABYTE,
                 ))
             }
         }
@@ -213,7 +337,11 @@ class ProjectMetricsService (
         oneDayBefore: TProjectMetrics? = null,
         oneWeekBefore: TProjectMetrics? = null,
         oneMonthBefore: TProjectMetrics? = null,
+        currentProjectUsageStatistics: ProjectUsageStatistics? = null,
+        oneWeekBeforeProjectUsageStatistics: ProjectUsageStatistics? = null,
+        oneMonthBeforeProjectUsageStatistics: ProjectUsageStatistics? = null,
     ): ProjectMetrics {
+        val project = getProject(current.projectId)
         return if (type.isNullOrEmpty()) {
 
             val pipelineCapSize = filterByRepoName(current, PIPELINE)
@@ -243,6 +371,17 @@ class ProjectMetricsService (
                 cCapSizeOfOneDayBefore = customCapSize - cCapSizeOfOneDayBefore,
                 cCapSizeOfOneWeekBefore = customCapSize - cCapSizeOfOneWeekBefore,
                 cCapSizeOfOneMonthBefore = customCapSize - cCapSizeOfOneMonthBefore,
+                bgName = project?.metadata?.firstOrNull { it.key == KEY_BG_NAME }?.value as? String,
+                deptName = project?.metadata?.firstOrNull { it.key == KEY_DEPT_NAME }?.value as? String,
+                centerName = project?.metadata?.firstOrNull { it.key == KEY_CENTER_NAME }?.value as? String,
+                productId = project?.metadata?.firstOrNull { it.key == KEY_PRODUCT_ID }?.value as? Int,
+                enabled = project?.metadata?.firstOrNull { it.key == KEY_ENABLED }?.value as? Boolean,
+                receiveBytes = currentProjectUsageStatistics?.receiveBytes.ifNull(0L),
+                receiveBytesOneWeekBefore = oneWeekBeforeProjectUsageStatistics?.receiveBytes.ifNull(0L),
+                receiveBytesOneMonthBefore = oneMonthBeforeProjectUsageStatistics?.receiveBytes.ifNull(0L),
+                responseByte = currentProjectUsageStatistics?.responseBytes.ifNull(0L),
+                responseByteOneWeekBefore = oneWeekBeforeProjectUsageStatistics?.responseBytes.ifNull(0L),
+                responseByteOneMonthBefore = oneMonthBeforeProjectUsageStatistics?.responseBytes.ifNull(0L),
             )
         } else {
 
@@ -260,12 +399,27 @@ class ProjectMetricsService (
                 capSizeOfOneMonthBefore = sizeOfRepoType - sizeOfOneMonthBefore,
                 createdDate = current.createdDate,
                 pipelineCapSize = 0,
-                customCapSize = 0
+                customCapSize = 0,
+                bgName = project?.metadata?.firstOrNull { it.key == KEY_BG_NAME }?.value as? String,
+                deptName = project?.metadata?.firstOrNull { it.key == KEY_DEPT_NAME }?.value as? String,
+                centerName = project?.metadata?.firstOrNull { it.key == KEY_CENTER_NAME }?.value as? String,
+                productId = project?.metadata?.firstOrNull { it.key == KEY_PRODUCT_ID }?.value as? Int,
+                enabled = project?.metadata?.firstOrNull { it.key == KEY_ENABLED }?.value as? Boolean,
+                receiveBytes = currentProjectUsageStatistics?.receiveBytes.ifNull(0L),
+                receiveBytesOneWeekBefore = oneWeekBeforeProjectUsageStatistics?.receiveBytes.ifNull(0L),
+                receiveBytesOneMonthBefore = oneMonthBeforeProjectUsageStatistics?.receiveBytes.ifNull(0L),
+                responseByte = currentProjectUsageStatistics?.responseBytes.ifNull(0L),
+                responseByteOneWeekBefore = oneWeekBeforeProjectUsageStatistics?.responseBytes.ifNull(0L),
+                responseByteOneMonthBefore = oneMonthBeforeProjectUsageStatistics?.responseBytes.ifNull(0L),
             )
         }
     }
 
+    private fun Long?.ifNull(default: Long) = this ?: default
 
+    private fun getProject(projectId: String): ProjectInfo? {
+        return projectInfoCache.get(projectId).orElse(null)
+    }
 
     private fun filterByRepoName(metric: TProjectMetrics?, repoName: String): Long {
         return metric?.repoMetrics?.firstOrNull { it.repoName == repoName }?.size ?: 0
@@ -284,7 +438,14 @@ class ProjectMetricsService (
     }
 
     companion object {
-        private const val FIXED_DELAY = 1L
+        private const val DEFAULT_PROJECT_CACHE_SIZE = 100_000L
+        private const val FIXED_DELAY = 30L
         private const val INIT_DELAY = 3L
+        private const val DOWNLOAD_ACTIVE_PROJECTS = "downloadActiveProjects"
+        private const val ACTIVE_PROJECTS = "activeProjects"
+        private const val UPLOAD_ACTIVE_PROJECTS = "uploadActiveProjects"
+        private const val SHOW_ACTIVE_PROJECTS = 1
+        private const val SHOW_INACTIVE_PROJECTS = 2
+
     }
 }

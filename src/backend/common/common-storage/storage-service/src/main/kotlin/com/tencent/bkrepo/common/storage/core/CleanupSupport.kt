@@ -28,19 +28,48 @@
 package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFileExpireResolver
+import com.tencent.bkrepo.common.storage.util.toPath
+import java.nio.file.Path
 
 /**
  * 文件清理操作实现类
  */
 abstract class CleanupSupport : HealthCheckSupport() {
 
-    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
+    override fun cleanUp(storageCredentials: StorageCredentials?): Map<Path, CleanupResult> {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempPath = getTempPath(credentials)
-        val visitor = CleanupFileVisitor(tempPath, tempPath, null, fileStorage, fileLocator, credentials)
-        getTempClient(credentials).walk(visitor)
+        val result = mutableMapOf<Path, CleanupResult>()
+        result[tempPath] = cleanupPath(tempPath, credentials)
+        result.putAll(cleanUploadPath(credentials))
+        return result
+    }
+
+    protected fun cleanUploadPath(credentials: StorageCredentials): Map<Path, CleanupResult> {
+        val uploadPath = credentials.upload.location.toPath()
+        val localUploadPath = credentials.upload.localPath.toPath()
+        return mapOf(
+            uploadPath to  cleanupPath(uploadPath, credentials),
+            localUploadPath to cleanupPath(localUploadPath, credentials),
+        )
+    }
+
+    private fun cleanupPath(path: Path, credentials: StorageCredentials): CleanupResult {
+        val fileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
+        val visitor = CleanupFileVisitor(
+            path,
+            path,
+            null,
+            fileStorage,
+            fileLocator,
+            credentials,
+            fileExpireResolver,
+        )
+        FileSystemClient(path).walk(visitor)
         return visitor.result
     }
 }

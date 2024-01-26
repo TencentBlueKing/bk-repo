@@ -74,7 +74,7 @@ class DdcBlobCleanupJob(
         )
     }
 
-    override fun entityClass() = Blob::class.java
+    override fun entityClass() = Blob::class
 
     override fun run(row: Blob, collectionName: String, context: JobContext) {
         nodeClient.deleteNode(

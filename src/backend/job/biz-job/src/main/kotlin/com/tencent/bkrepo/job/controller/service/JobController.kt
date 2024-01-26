@@ -30,13 +30,33 @@ package com.tencent.bkrepo.job.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.api.JobClient
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.pojo.JobDetail
 import com.tencent.bkrepo.job.service.SystemJobService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class JobController(val systemJobService: SystemJobService) : JobClient {
+class JobController(
+    val systemJobService: SystemJobService,
+    private val activeProjectService: ActiveProjectService
+    ) : JobClient {
     override fun detail(): Response<List<JobDetail>> {
         return ResponseBuilder.success(systemJobService.detail())
+    }
+
+    override fun downloadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(activeProjectService.getDownloadActiveProjects())
+    }
+
+    override fun uploadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(activeProjectService.getUploadActiveProjects())
+    }
+
+    override fun activeProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(activeProjectService.getActiveProjects())
+    }
+
+    override fun activeUsers(): Response<Set<String>> {
+        return ResponseBuilder.success(activeProjectService.getActiveUsers())
     }
 }

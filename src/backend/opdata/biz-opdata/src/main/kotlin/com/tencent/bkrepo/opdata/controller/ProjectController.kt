@@ -82,18 +82,46 @@ class ProjectController(
      * 获取项目的统计数据
      */
     @GetMapping("/list/project/capSize")
+    @Principal(PrincipalType.ADMIN)
     fun getProjectCapSizeMetrics(
         metricsRequest: ProjectMetricsRequest
     ): Response<List<ProjectMetrics>> {
         return ResponseBuilder.success(projectMetricsService.list(metricsRequest))
     }
+
     /**
      * 获取项目的统计数据
      */
     @GetMapping("/list/project/capSize/download")
-    fun downloadProjectCapSizeMetrics(
-        metricsRequest: ProjectMetricsRequest
-    ) {
+    @Principal(PrincipalType.ADMIN)
+    fun downloadProjectCapSizeMetrics(metricsRequest: ProjectMetricsRequest) {
         projectMetricsService.download(metricsRequest)
+    }
+
+    /**
+     * 获取活跃项目列表
+     */
+    @GetMapping("/list/activeProjects")
+    @Principal(PrincipalType.ADMIN)
+    fun getActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(projectMetricsService.getActiveProjects())
+    }
+
+    /**
+     * 获取下载活跃项目列表
+     */
+    @GetMapping("/list/downloadActiveProjects")
+    @Principal(PrincipalType.ADMIN)
+    fun getDownloadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(projectMetricsService.getDownloadActiveProjects())
+    }
+
+    /**
+     * 获取上传活跃项目列表
+     */
+    @GetMapping("/list/uploadActiveProjects")
+    @Principal(PrincipalType.ADMIN)
+    fun getUploadActiveProjects(): Response<MutableSet<String>> {
+        return ResponseBuilder.success(projectMetricsService.getUploadActiveProjects())
     }
 }

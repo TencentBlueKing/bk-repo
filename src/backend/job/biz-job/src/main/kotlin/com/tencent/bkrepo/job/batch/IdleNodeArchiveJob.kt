@@ -22,6 +22,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import kotlin.reflect.KClass
 
 /**
  * 空闲节点归档任务
@@ -79,6 +80,7 @@ class IdleNodeArchiveJob(
                 .and("deleted").isEqualTo(null)
                 .and("sha256").ne(FAKE_SHA256)
                 .and("archived").ne(true)
+                .and("compressed").ne(true)
                 .and("size").gt(properties.fileSizeThreshold.toBytes())
                 .apply {
                     if (properties.projects.isNotEmpty()) {
@@ -184,8 +186,8 @@ class IdleNodeArchiveJob(
         )
     }
 
-    override fun entityClass(): Class<Node> {
-        return Node::class.java
+    override fun entityClass(): KClass<Node> {
+        return Node::class
     }
 
     override fun createJobContext(): NodeContext {

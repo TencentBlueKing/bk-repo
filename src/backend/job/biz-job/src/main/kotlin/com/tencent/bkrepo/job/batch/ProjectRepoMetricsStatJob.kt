@@ -34,6 +34,7 @@ import com.tencent.bkrepo.job.PATH
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
@@ -41,6 +42,7 @@ import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobProperties
+import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.BulkOperations
@@ -51,6 +53,7 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 项目仓库指标统计任务
@@ -59,6 +62,7 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(ProjectRepoMetricsStatJobProperties::class)
 class ProjectRepoMetricsStatJob(
     private val properties: ProjectRepoMetricsStatJobProperties,
+    private val activeProjectService: ActiveProjectService,
 ) : DefaultContextMongoDbJob<ProjectRepoMetricsStatJob.Repository>(properties) {
     override fun collectionNames(): List<String> {
         return listOf(COLLECTION_REPOSITORY_NAME)
@@ -70,14 +74,16 @@ class ProjectRepoMetricsStatJob(
         return Repository(row)
     }
 
-    override fun entityClass(): Class<Repository> {
-        return Repository::class.java
+    override fun entityClass(): KClass<Repository> {
+        return Repository::class
     }
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {
         require(context is ProjectRepoMetricsStatJobContext)
         with(row) {
             if (deleted != null) return
+            if (context.activeProjects.isNotEmpty() && !properties.runAllProjects &&
+                !context.activeProjects.contains(row.projectId)) return
             val query = Query(
                 Criteria.where(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(name)
                     .and(PATH).isEqualTo(PathUtils.ROOT).and(DELETED_DATE).isEqualTo(null)
@@ -122,7 +128,14 @@ class ProjectRepoMetricsStatJob(
     }
 
     override fun createJobContext(): ProjectRepoMetricsStatJobContext{
-        return ProjectRepoMetricsStatJobContext(statDate = LocalDate.now().atStartOfDay())
+        return ProjectRepoMetricsStatJobContext(
+            statDate = LocalDate.now().atStartOfDay(),
+            activeProjects = if (properties.runAllProjects) {
+                emptySet()
+            } else {
+                activeProjectService.getActiveProjects()
+            },
+        )
     }
 
 
@@ -173,22 +186,6 @@ class ProjectRepoMetricsStatJob(
         )
     }
 
-
-    data class TProjectMetrics(
-        var projectId: String,
-        var nodeNum: Long,
-        var capSize: Long,
-        val repoMetrics: List<TRepoMetrics>,
-        val createdDate: LocalDateTime? = LocalDateTime.now()
-    )
-
-    data class TRepoMetrics(
-        val repoName: String,
-        val credentialsKey: String? = "default",
-        val size: Long,
-        val num: Long,
-        val type: String,
-    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectRepoMetricsStatJob::class.java)

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
@@ -69,6 +70,17 @@ interface ServicePermissionClient {
         @ApiParam(value = "用户ID")
         @RequestParam userId: String
     ): Response<List<String>>
+
+    @ApiOperation("list无权限路径")
+    @GetMapping("/path/list")
+    fun listPermissionPath(
+        @ApiParam(value = "用户ID")
+        @RequestParam userId: String,
+        @ApiParam(value = "项目ID")
+        @RequestParam projectId: String,
+        @ApiParam(value = "仓库名称")
+        @RequestParam repoName: String
+    ): Response<ListPathResult>
 
     @ApiOperation("校验权限")
     @PostMapping("/check")

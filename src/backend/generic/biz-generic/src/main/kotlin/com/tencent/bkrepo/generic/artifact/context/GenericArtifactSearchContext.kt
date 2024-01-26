@@ -27,10 +27,16 @@
 
 package com.tencent.bkrepo.generic.artifact.context
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
-class GenericArtifactSearchContext(model: QueryModel? = null) : ArtifactSearchContext() {
+class GenericArtifactSearchContext(
+    repo: RepositoryDetail? = null,
+    artifact: ArtifactInfo? = null,
+    model: QueryModel? = null,
+) : ArtifactSearchContext(repo, artifact) {
     val queryModel: QueryModel?
         get() = getAttribute(ATTR_KEY_QUERY_MODEL)
 

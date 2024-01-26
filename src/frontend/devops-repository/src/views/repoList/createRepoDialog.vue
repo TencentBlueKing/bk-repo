@@ -349,7 +349,7 @@
                     description: this.repoBaseInfo.description,
                     category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
                     configuration: {
-                        type: 'composite',
+                        type: this.repoBaseInfo.type === 'generic' ? 'local' : 'composite',
                         settings: {
                             system: this.repoBaseInfo.system,
                             interceptors: interceptors.length ? interceptors : undefined,

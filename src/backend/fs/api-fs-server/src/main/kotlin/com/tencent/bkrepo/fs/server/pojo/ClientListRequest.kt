@@ -37,6 +37,8 @@ data class ClientListRequest(
     val projectId: String?,
     val repoName: String?,
     val online:Boolean?,
+    val ip: String?,
+    val version: String?,
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
     val pageSize: Int = DEFAULT_PAGE_SIZE
 )
