@@ -259,13 +259,18 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      */
     open fun shouldExecute(): Boolean {
         // job是否允许在该节点执行
-        val jobAffinityNode = batchJobProperties.affinityNodeIps.isEmpty() || host in batchJobProperties.affinityNodeIps
+        val isJobAffinityNode =
+            batchJobProperties.affinityNodeIps.isEmpty() || host in batchJobProperties.affinityNodeIps
+
         // 节点是否允许执行该Job
-        val nodeAffinityJob = jobProperties.nodeAffinityJobs[host]?.let { getJobName() in it } ?: true
-        if (!jobAffinityNode || !nodeAffinityJob) {
+        val nodeAffinityJobs = jobProperties.nodeAffinityJobs[host]
+        val isNodeAffinityJob = nodeAffinityJobs.isNullOrEmpty() || getJobName() in nodeAffinityJobs
+
+        // 是否允许执行Job
+        if (!isJobAffinityNode || !isNodeAffinityJob) {
             logger.info("job[${getJobName()}] cannot be executed on node[$host] due to affinity")
         }
-        return batchJobProperties.enabled && jobAffinityNode && nodeAffinityJob
+        return batchJobProperties.enabled && isJobAffinityNode && isNodeAffinityJob
     }
 
     /**
