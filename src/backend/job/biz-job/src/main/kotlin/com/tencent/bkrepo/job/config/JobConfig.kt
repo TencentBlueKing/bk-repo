@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.config
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -38,6 +39,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
  * Job配置
  * */
 @Configuration
+@EnableConfigurationProperties(JobProperties::class)
 class JobConfig {
     @Bean
     fun blockThreadPoolTaskExecutorDecorator(

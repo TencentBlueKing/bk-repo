@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.base
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.job.config.JobProperties
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
 import net.javacrumbs.shedlock.core.LockConfiguration
@@ -37,6 +38,7 @@ import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import net.javacrumbs.shedlock.core.SimpleLock
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.system.measureNanoTime
@@ -108,6 +110,12 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     var lastBeginTime: LocalDateTime? = null
     var lastEndTime: LocalDateTime? = null
     var lastExecuteTime: Long? = null
+
+    @Value("\${spring.cloud.client.ip-address}")
+    private lateinit var host: String
+
+    @Autowired
+    private lateinit var jobProperties: JobProperties
 
     open fun start(): Boolean {
         if (!shouldExecute()) {
@@ -250,7 +258,14 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      * 判断当前节点是否执行该任务
      */
     open fun shouldExecute(): Boolean {
-        return batchJobProperties.enabled
+        // job是否允许在该节点执行
+        val jobAffinityNode = batchJobProperties.affinityNodeIps.isEmpty() || host in batchJobProperties.affinityNodeIps
+        // 节点是否允许执行该Job
+        val nodeAffinityJob = jobProperties.nodeAffinityJobs[host]?.let { getJobName() in it } ?: true
+        if (!jobAffinityNode || !nodeAffinityJob) {
+            logger.info("job[${getJobName()}] cannot be executed on node[$host] due to affinity")
+        }
+        return batchJobProperties.enabled && jobAffinityNode && nodeAffinityJob
     }
 
     /**
