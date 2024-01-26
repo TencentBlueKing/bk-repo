@@ -130,6 +130,7 @@ class RouterAdminServiceImpl(
                 RouterControllerMessageCode.ROUTER_NODE_NOT_FOUND,
             )
             routerNodeRepository.delete(routerNode)
+            nodeLocationRepository.deleteAllByRouterNodeId(routerNode.id)
         }
     }
 

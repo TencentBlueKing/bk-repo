@@ -31,13 +31,14 @@ import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
 import org.springframework.web.servlet.HandlerMapping
 
 /**
- * 校验上传下载的项目是否和Proxy所属项目一致
+ * 校验上传的项目是否和Proxy所属项目一致
  */
 @Aspect
 class ProxyProjectPermissionAspect {
@@ -48,12 +49,14 @@ class ProxyProjectPermissionAspect {
     )
     fun checkProject(point: ProceedingJoinPoint): Any? {
         val request = HttpContextHolder.getRequest()
-        val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
-        require(uriAttribute is Map<*, *>)
-        val projectId = uriAttribute[PROJECT_ID]?.toString()
-        val proxyProjectId = ProxyEnv.getProjectId()
-        if (!projectId.isNullOrBlank() && projectId != proxyProjectId) {
-            throw PermissionException()
+        if (request.method.equals(HttpMethod.PUT.name, true)) {
+            val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
+            require(uriAttribute is Map<*, *>)
+            val projectId = uriAttribute[PROJECT_ID]?.toString()
+            val proxyProjectId = ProxyEnv.getProjectId()
+            if (!projectId.isNullOrBlank() && projectId != proxyProjectId) {
+                throw PermissionException()
+            }
         }
         return point.proceed()
     }

@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.AESUtils
@@ -78,6 +79,7 @@ class ProxyServiceImpl(
             displayName = request.displayName,
             projectId = request.projectId,
             clusterName = request.clusterName,
+            domain = UrlFormatter.formatHost(request.domain),
             ip = StringPool.UNKNOWN,
             secretKey = secretKey,
             sessionKey = StringPool.EMPTY,
@@ -85,6 +87,7 @@ class ProxyServiceImpl(
             ticketCreateInstant = Instant.now(),
             syncRateLimit = request.syncRateLimit.toBytes(),
             syncTimeRange = request.syncTimeRange,
+            cacheExpireDays = request.cacheExpireDays,
             createdBy = userId,
             createdDate = LocalDateTime.now(),
             lastModifiedBy = userId,
@@ -121,7 +124,13 @@ class ProxyServiceImpl(
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, request.name)
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, tProxy.projectId)
         request.displayName?.let { tProxy.displayName = it }
-        request.ip?.let { tProxy.ip = it }
+        request.domain?.let {
+            tProxy.domain = UrlFormatter.formatHost(it)
+            addRouterNode(tProxy)
+        }
+        request.syncRateLimit?.let { tProxy.syncRateLimit = it.toBytes() }
+        request.syncTimeRange?.let { tProxy.syncTimeRange = it }
+        request.cacheExpiredDays?.let { tProxy.cacheExpireDays = it }
         tProxy.lastModifiedBy = userId
         tProxy.lastModifiedDate = LocalDateTime.now()
         return proxyRepository.save(tProxy).convert()
@@ -168,18 +177,22 @@ class ProxyServiceImpl(
             tProxy.sessionKey = sessionKey
             tProxy.ip = HttpContextHolder.getClientAddress()
             proxyRepository.save(tProxy)
-            routerControllerClient.addRouterNode(
-                AddRouterNodeRequest(
-                    id = tProxy.name,
-                    name = tProxy.displayName,
-                    description = StringPool.EMPTY,
-                    type = RouterNodeType.PROXY,
-                    location = "${StringPool.HTTP}${tProxy.ip}",
-                    operator = tProxy.createdBy
-                )
-            )
+            addRouterNode(tProxy)
             return sessionKey
         }
+    }
+
+    private fun addRouterNode(tProxy: TProxy) {
+        routerControllerClient.addRouterNode(
+            AddRouterNodeRequest(
+                id = tProxy.name,
+                name = tProxy.displayName,
+                description = StringPool.EMPTY,
+                type = RouterNodeType.PROXY,
+                location = tProxy.domain,
+                operator = tProxy.createdBy
+            )
+        )
     }
 
     override fun shutdown(request: ProxyStatusRequest) {
@@ -217,10 +230,12 @@ class ProxyServiceImpl(
         displayName = displayName,
         projectId = projectId,
         clusterName = clusterName,
+        domain = domain,
         ip = ip,
         status = status,
         syncRateLimit = syncRateLimit,
-        syncTimeRange = syncTimeRange
+        syncTimeRange = syncTimeRange,
+        cacheExpireDays = cacheExpireDays
     )
 
     private fun randomString(length: Int): String {

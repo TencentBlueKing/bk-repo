@@ -63,4 +63,12 @@ class RouterControllerServiceImpl(
         )
         nodeLocationRepository.delete(node)
     }
+
+    override fun remoteNodes(projectId: String, repoName: String, fullPath: String) {
+        nodeLocationRepository.deleteAllByProjectIdAndRepoNameAndFullPathStartingWith(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath
+        )
+    }
 }

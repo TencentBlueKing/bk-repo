@@ -39,8 +39,12 @@ data class ProxyCreateRequest(
     val clusterName: String,
     @ApiModelProperty("展示名")
     val displayName: String,
+    @ApiModelProperty("访问域名")
+    val domain: String,
     @ApiModelProperty("同步限速")
     val syncRateLimit: DataSize = DataSize.ofBytes(-1),
     @ApiModelProperty("同步时间段")
-    val syncTimeRange: String = "0-24"
+    val syncTimeRange: String = "0-24",
+    @ApiModelProperty("缓存过期天数")
+    val cacheExpireDays: Int = 7,
 )

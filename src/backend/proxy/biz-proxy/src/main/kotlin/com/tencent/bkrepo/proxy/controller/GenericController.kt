@@ -28,9 +28,12 @@
 package com.tencent.bkrepo.proxy.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.manager.proxy.ProxyPermissionManager
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
+import com.tencent.bkrepo.generic.api.ProxyTemporaryAccessClient
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.proxy.service.DownloadService
@@ -38,6 +41,7 @@ import com.tencent.bkrepo.proxy.service.UploadService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -47,6 +51,10 @@ class GenericController(
     private val downloadService: DownloadService,
     private val proxyPermissionManager: ProxyPermissionManager
 ) {
+
+    private val temporaryAccessClient: ProxyTemporaryAccessClient by lazy {
+        ProxyFeignClientFactory.create("generic")
+    }
 
     @GetMapping(GENERIC_MAPPING_URI)
     fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
@@ -71,5 +79,42 @@ class GenericController(
             )
         }
         uploadService.upload(artifactInfo, file)
+    }
+
+    @GetMapping("/temporary/download/$GENERIC_MAPPING_URI")
+    fun temporaryDownload(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam token: String
+    ) {
+        with(artifactInfo) {
+            val tokenInfo = temporaryAccessClient.checkToken(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = getArtifactFullPath(),
+                token = token,
+                tokenType = TokenType.DOWNLOAD
+            ).data!!
+            downloadService.download(this)
+            temporaryAccessClient.decrementPermitsToken(tokenInfo)
+        }
+    }
+
+    @PutMapping("/temporary/upload/$GENERIC_MAPPING_URI")
+    fun temporaryUpload(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        file: ArtifactFile,
+        @RequestParam token: String
+    ) {
+        with(artifactInfo) {
+            val tokenInfo = temporaryAccessClient.checkToken(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = getArtifactFullPath(),
+                token = token,
+                tokenType = TokenType.UPLOAD
+            ).data!!
+            uploadService.upload(artifactInfo, file)
+            temporaryAccessClient.decrementPermitsToken(tokenInfo)
+        }
     }
 }

@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.router.service.impl
 
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.router.enum.RouterControllerMessageCode
 import com.tencent.bkrepo.router.model.TRouterPolicy
@@ -34,15 +37,17 @@ import com.tencent.bkrepo.router.repository.NodeLocationRepository
 import com.tencent.bkrepo.router.repository.RouterNodeRepository
 import com.tencent.bkrepo.router.repository.RouterPolicyRepository
 import com.tencent.bkrepo.router.service.NodeRedirectService
-import java.net.URL
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import java.net.URL
+import java.time.Duration
 
 @Service
 class NodeRedirectServiceImpl(
     val routerPolicyRepository: RouterPolicyRepository,
     val routerNodeRepository: RouterNodeRepository,
     val nodeLocationRepository: NodeLocationRepository,
+    val temporaryTokenClient: ServiceTemporaryTokenClient
 ) : NodeRedirectService {
 
     override fun generateRedirectUrl(
@@ -51,6 +56,7 @@ class NodeRedirectServiceImpl(
         repoName: String,
         fullPath: String,
         user: String,
+        serviceName: String,
     ): String? {
         val locations = nodeLocationRepository.findAllByProjectIdAndRepoNameAndFullPath(projectId, repoName, fullPath)
         if (locations.isEmpty()) {
@@ -70,7 +76,10 @@ class NodeRedirectServiceImpl(
         val node = routerNodeRepository.findByIdOrNull(dest)
             ?: throw ErrorCodeException(RouterControllerMessageCode.ROUTER_NODE_NOT_FOUND)
         val url = URL(originUrl)
-        return "${node.location}${url.path}?${url.query}"
+        return when (serviceName) {
+            "generic" -> generateTemporaryUrl(projectId, repoName, fullPath, node.location)
+            else -> "${node.location}$serviceName${url.path}?${url.query}"
+        }
     }
 
     private fun lookupPolicy(policies: List<TRouterPolicy>, user: String, projectId: String): TRouterPolicy? {
@@ -86,5 +95,22 @@ class NodeRedirectServiceImpl(
             return it
         }
         return null
+    }
+
+    private fun generateTemporaryUrl(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        location: String
+    ): String {
+        val request = TemporaryTokenCreateRequest(
+            projectId = projectId,
+            repoName = repoName,
+            fullPathSet = setOf(fullPath),
+            expireSeconds = Duration.ofHours(1).seconds,
+            type = TokenType.DOWNLOAD
+        )
+        val tokenInfo = temporaryTokenClient.createToken(request).data!!.first()
+        return "$location/generic/temporary/download/$projectId/$repoName$fullPath?token=${tokenInfo.token}"
     }
 }

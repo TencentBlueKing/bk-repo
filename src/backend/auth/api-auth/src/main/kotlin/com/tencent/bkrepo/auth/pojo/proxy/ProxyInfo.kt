@@ -40,6 +40,8 @@ data class ProxyInfo(
     val projectId: String,
     @ApiModelProperty("集群名")
     val clusterName: String,
+    @ApiModelProperty("访问域名")
+    val domain: String,
     @ApiModelProperty("IP")
     val ip: String,
     @ApiModelProperty("状态")
@@ -47,5 +49,7 @@ data class ProxyInfo(
     @ApiModelProperty("同步限速，单位Byte/s")
     val syncRateLimit: Long,
     @ApiModelProperty("同步时间段")
-    val syncTimeRange: String
+    val syncTimeRange: String,
+    @ApiModelProperty("缓存过期时间")
+    val cacheExpireDays: Int
 )

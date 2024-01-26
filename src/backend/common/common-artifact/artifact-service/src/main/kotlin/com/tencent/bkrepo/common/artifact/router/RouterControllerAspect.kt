@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.artifact.router
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -67,13 +66,10 @@ open class RouterControllerAspect(
      * 对下载构件请求进行拦截。
      * 只有GET方法的下载请求，和参数ArtifactInfo放在方法首位的方法才会被拦截。
      * */
-    @Around(
-        "args(com.tencent.bkrepo.common.artifact.api.ArtifactInfo, ..)" +
-            "&& @annotation(org.springframework.web.bind.annotation.GetMapping)",
-    )
+    @Around("@annotation(com.tencent.bkrepo.common.artifact.router.Router)")
     fun interceptorDownloadArtifactInfoRequest(proceedingJoinPoint: ProceedingJoinPoint): Any? {
         if (!properties.supportServices.contains(serviceName)) {
-            return true
+            return proceedingJoinPoint.proceed()
         }
         val artifactInfo = proceedingJoinPoint.args.first()
         require(artifactInfo is ArtifactInfo)
@@ -88,13 +84,13 @@ open class RouterControllerAspect(
         }
         with(artifactInfo) {
             val originUrl = "${request.requestURL}?${request.queryString}"
-            val location = routerControllerClient.getRedirectUrl(
+            val targetUrl = routerControllerClient.getRedirectUrl(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = getArtifactFullPath(),
                 originUrl = originUrl,
+                serviceName = serviceName,
             ).data ?: return proceedingJoinPoint.proceed()
-            val targetUrl = addServicePrefix(location)
             if (logger.isDebugEnabled) {
                 logger.debug("Redirect $originUrl --> $targetUrl")
             }
@@ -109,17 +105,6 @@ open class RouterControllerAspect(
      * */
     private fun hasPolicy(user: String, projectId: String): Boolean {
         return routerPolicyCache.any { it.users.contains(user) || it.projectIds.contains(projectId) }
-    }
-
-    /**
-     * 给url添加服务名。
-     * 因为经过网关到达服务的请求路径不是原始请求，所以这里需要添加服务名。
-     * */
-    private fun addServicePrefix(url: String): String {
-        val matchResult = Regex(StringPool.URL_REGEX).matchEntire(url)
-        require(matchResult != null)
-        val (_, protocol, domain, port, uri) = matchResult.groupValues
-        return "$protocol://$domain$port/$serviceName$uri"
     }
 
     /**

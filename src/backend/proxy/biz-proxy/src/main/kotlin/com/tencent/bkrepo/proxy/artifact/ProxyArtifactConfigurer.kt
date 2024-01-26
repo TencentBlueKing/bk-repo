@@ -63,6 +63,6 @@ class ProxyArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getVirtualRepository(): VirtualRepository = SpringContextUtils.getBean<ProxyVirtualRepository>()
 
     override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer = HttpAuthSecurityCustomizer {
-        it.includePattern("/**")
+        it.includePattern("/**").excludePattern("/generic/temporary/**")
     }
 }
