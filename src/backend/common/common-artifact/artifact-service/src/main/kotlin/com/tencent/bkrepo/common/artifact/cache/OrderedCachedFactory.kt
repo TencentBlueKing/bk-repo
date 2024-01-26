@@ -27,49 +27,18 @@
 
 package com.tencent.bkrepo.common.artifact.cache
 
-interface OrderedCache<K, V> {
-    fun put(key: K, value: V?): V?
-    fun get(key: K): V?
-    fun containsKey(key: K): Boolean
+import com.tencent.bkrepo.common.storage.config.CacheProperties
 
+/**
+ * 缓存工厂类，用于为不同存储分别创建缓存
+ */
+interface OrderedCachedFactory<K, V> {
     /**
-     * 移除缓存，需要调用该方法移除缓存，其他手段移除缓存可能导致weight统计异常
+     * 创建缓存
      *
-     * @param key key
-     * @return 缓存值，不存在时返回NULL
+     * @param cacheProperties 缓存配置
+     *
+     * @return 缓存
      */
-    fun remove(key: K): V?
-
-    /**
-     * 获取缓存数量
-     */
-    fun count(): Int
-
-    /**
-     * 获取缓存当前总权重
-     */
-    fun weight(): Long
-
-    fun setMaxWeight(max: Long)
-
-    fun getMaxWeight(): Long
-
-    fun setCapacity(capacity: Int)
-
-    fun getCapacity(): Int
-
-    fun setKeyWeightSupplier(supplier: (k: K, v: V) -> Long)
-
-    /**
-     * 获取最后一个key
-     */
-    fun last(): K?
-
-    fun addEldestRemovedListener(listener: EldestRemovedListener<K, V>)
-
-    fun getEldestRemovedListeners(): List<EldestRemovedListener<K, V>>
-}
-
-interface EldestRemovedListener<K, V> {
-    fun onEldestRemoved(key: K, value: V?)
+    fun create(cacheProperties: CacheProperties): OrderedCache<K, V>
 }

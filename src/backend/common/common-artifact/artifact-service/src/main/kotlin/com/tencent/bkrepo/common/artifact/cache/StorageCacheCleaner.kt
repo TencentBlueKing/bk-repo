@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.artifact.cache
 
 /**
- * 缓存清理器，用于清理存储层缓存
+ * 缓存清理器，用于记录缓存访问情况，在缓存达到限制大小时清理存储层缓存
  */
 interface StorageCacheCleaner {
     /**

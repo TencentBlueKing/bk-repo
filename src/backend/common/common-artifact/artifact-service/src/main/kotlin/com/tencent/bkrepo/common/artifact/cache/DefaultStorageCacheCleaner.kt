@@ -32,58 +32,76 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
-import org.springframework.stereotype.Component
+import org.springframework.scheduling.annotation.Scheduled
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
-@Component
 class DefaultStorageCacheCleaner(
-    private val cache: OrderedCache<String, Any?>,
+    private val cacheFactory: OrderedCachedFactory<String, Any?>,
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
     private val storageService: CacheStorageService,
     private val fileLocator: FileLocator,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val storageProperties: StorageProperties,
+    private val artifactCacheProperties: ArtifactCacheProperties,
 ) : StorageCacheCleaner {
 
-    init {
-        cache.addEldestRemovedListener(object : EldestRemovedListener<String, Any?> {
-            override fun onEldestRemoved(key: String, value: Any?) {
-                val (storageKey, sha256) = parseKey(key)
-                val path = fileLocator.locate(sha256)
-                storageService.deleteCacheFile(path, sha256, getStorageCredentials(storageKey))
-            }
-        })
-    }
+    private val storageCacheMap = ConcurrentHashMap<String, OrderedCache<String, Any?>>()
 
     override fun onCacheAccessed(projectId: String, repoName: String, fullPath: String) {
-        nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
-            if (!it.folder) {
-                val storageKey =
-                    repositoryClient.getRepoInfo(projectId, repoName).data?.storageCredentialsKey ?: DEFAULT_STORAGE_KEY
-                onCacheAccessed(storageKey, it.sha256!!)
+        if (!artifactCacheProperties.enabled) {
+            return
+        }
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        if (node != null && !node.folder) {
+            onCacheAccessed(getStorageKey(projectId, repoName), node.sha256!!)
+        }
+    }
+
+    @Synchronized
+    override fun onCacheAccessed(storageKey: String, sha256: String) {
+        if (!artifactCacheProperties.enabled || sha256 == FAKE_SHA256) {
+            return
+        }
+
+        val cache = storageCacheMap.getOrPut(storageKey) {
+            val credentials = getStorageCredentials(storageKey)
+            val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
+            cacheFactory.create(credentials.cache).apply { addEldestRemovedListener(listener) }
+        }
+        cache.put(sha256, null)
+    }
+
+    /**
+     * 定时同步最新的存储配置
+     */
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+    fun refreshStorageCredentials() {
+        val credentials = storageCredentialsClient.list().data ?: return
+        for (credential in credentials) {
+            storageCacheMap[credential.key!!]?.let { refreshCacheProperties(it, credential) }
+        }
+        storageCacheMap[DEFAULT_STORAGE_KEY]?.let {
+            refreshCacheProperties(it, storageProperties.defaultStorageCredentials())
+        }
+    }
+
+    private fun refreshCacheProperties(cache: OrderedCache<String, Any?>, credentials: StorageCredentials) {
+        cache.setMaxWeight(credentials.cache.maxSize)
+        cache.getEldestRemovedListeners().forEach {
+            if (it is StorageEldestRemovedListener) {
+                it.setCredentials(credentials)
             }
         }
     }
 
-    override fun onCacheAccessed(storageKey: String, sha256: String) {
-        val key = generateKey(storageKey, sha256)
-        onCacheAccessed(key)
-    }
-
-    private fun onCacheAccessed(key: String) {
-        cache.put(key, null)
-    }
-
-    private fun generateKey(storageKey: String, sha256: String) = "$storageKey:$sha256"
-
-    private fun parseKey(key: String): Pair<String, String> {
-        val splits = key.split(":")
-        require(splits.size == 2)
-        // (storageKey, sha256)
-        return Pair(splits[0], splits[1])
+    private fun getStorageKey(projectId: String, repoName: String): String {
+        return repositoryClient.getRepoInfo(projectId, repoName).data?.storageCredentialsKey ?: DEFAULT_STORAGE_KEY
     }
 
     private fun getStorageCredentials(key: String): StorageCredentials {
@@ -91,6 +109,22 @@ class DefaultStorageCacheCleaner(
             storageProperties.defaultStorageCredentials()
         } else {
             storageCredentialsClient.findByKey(key).data!!
+        }
+    }
+
+    private class StorageEldestRemovedListener(
+        @Volatile
+        private var storageCredentials: StorageCredentials,
+        private val fileLocator: FileLocator,
+        private val storageService: CacheStorageService,
+    ) : EldestRemovedListener<String, Any?> {
+        override fun onEldestRemoved(key: String, value: Any?) {
+            val path = fileLocator.locate(key)
+            storageService.deleteCacheFile(path, key, storageCredentials)
+        }
+
+        fun setCredentials(credentials: StorageCredentials) {
+            this.storageCredentials = credentials
         }
     }
 }

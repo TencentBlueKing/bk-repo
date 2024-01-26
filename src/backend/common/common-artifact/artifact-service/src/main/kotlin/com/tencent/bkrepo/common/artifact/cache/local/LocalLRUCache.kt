@@ -64,7 +64,7 @@ class LocalLRUCache(
         weightSupplier = supplier
     }
 
-    private fun shouldRemove() = totalWeight > maxWeight || size > capacity
+    private fun shouldRemove() = maxWeight > 0L && totalWeight > maxWeight || capacity > 0 && size > capacity
 
     override fun weight() = totalWeight
 
@@ -90,4 +90,6 @@ class LocalLRUCache(
     override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Any?>) {
         listeners.add(listener)
     }
+
+    override fun getEldestRemovedListeners() = listeners
 }

@@ -103,6 +103,8 @@ class LocalWTinyLFUCache(
         listeners.add(listener)
     }
 
+    override fun getEldestRemovedListeners() = listeners
+
     private class EdenLRUEldestRemovedListener(
         private val mainLRU: LocalSLRUCache,
         private val counter: Counter,

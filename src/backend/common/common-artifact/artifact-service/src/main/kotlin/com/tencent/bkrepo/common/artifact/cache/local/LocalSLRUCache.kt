@@ -104,6 +104,8 @@ class LocalSLRUCache(
         listeners.add(listener)
     }
 
+    override fun getEldestRemovedListeners() = listeners
+
     override fun weight(): Long = protected.weight() + probation.weight()
 
     override fun setMaxWeight(max: Long) {
