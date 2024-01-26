@@ -1,63 +1,48 @@
 package com.tencent.bkrepo.archive.service
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.CompressStatus
-import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.ArchiveMessageCode
-import com.tencent.bkrepo.archive.event.StorageFileCompressedEvent
-import com.tencent.bkrepo.archive.event.StorageFileUncompressedEvent
+import com.tencent.bkrepo.archive.constant.MAX_CHAIN_LENGTH
+import com.tencent.bkrepo.archive.job.compress.BDZipManager
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.pojo.CompressFile
-import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
-import com.tencent.bkrepo.archive.utils.ArchiveDaoUtils.optimisticLock
+import com.tencent.bkrepo.archive.request.UpdateCompressFileStatusRequest
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.innercos.retry
-import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Sinks
-import reactor.core.scheduler.Schedulers
 import java.time.LocalDateTime
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 压缩服务实现类
  * */
-@Suppress("LeakingThis")
 @Service
 class CompressServiceImpl(
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
     private val fileReferenceClient: FileReferenceClient,
-    private val compressFileDao: CompressFileDao,
-    archiveProperties: ArchiveProperties,
+    private val bdZipManager: BDZipManager,
 ) : CompressService {
 
     private val compressSink = Sinks.many().unicast().onBackpressureBuffer<TCompressFile>()
     private val uncompressSink = Sinks.many().unicast().onBackpressureBuffer<TCompressFile>()
-
-    init {
-        val executor = ArchiveUtils.newFixedAndCachedThreadPool(
-            archiveProperties.ioThreads,
-            ThreadFactoryBuilder().setNameFormat("compress-worker-%d").build(),
-        )
-        val scheduler = Schedulers.fromExecutor(executor)
-        compressSink.asFlux().parallel().runOn(scheduler).subscribe(this::compress0)
-        uncompressSink.asFlux().parallel().runOn(scheduler).subscribe(this::uncompress0)
-    }
+    private val compressDisposable = compressSink.asFlux().subscribe(bdZipManager::compress)
+    private val uncompressDisposable = uncompressSink.asFlux().subscribe(bdZipManager::uncompress)
+    private var shutdown = AtomicBoolean(false)
 
     override fun compress(request: CompressFileRequest) {
         with(request) {
+            require(sha256 != baseSha256)
             // 队头元素
             val head = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
             if (head != null && head.status != CompressStatus.NONE) {
@@ -98,7 +83,7 @@ class CompressServiceImpl(
                 status = CompressStatus.NONE,
                 chainLength = 1,
             )
-            if (newChain.status != CompressStatus.NONE) {
+            if (newChain.status != CompressStatus.NONE && newChain.status != CompressStatus.COMPRESS_FAILED) {
                 throw ErrorCodeException(ArchiveMessageCode.BASE_COMPRESSED)
             }
             /*
@@ -181,6 +166,23 @@ class CompressServiceImpl(
         }
     }
 
+    override fun updateStatus(request: UpdateCompressFileStatusRequest) {
+        with(request) {
+            val file = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
+                ?: throw ArchiveFileNotFound(sha256)
+            val oldStatus = file.status
+            file.status = status
+            compressFileRepository.save(file)
+            if (status == CompressStatus.CREATED) {
+                compress(file)
+            }
+            if (status == CompressStatus.WAIT_TO_UNCOMPRESS) {
+                uncompress(file)
+            }
+            logger.info("Update file $sha256 status $oldStatus -> $status.")
+        }
+    }
+
     override fun getCompressInfo(sha256: String, storageCredentialsKey: String?): CompressFile? {
         val file = compressFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
         if (file == null || file.status == CompressStatus.NONE) {
@@ -212,122 +214,17 @@ class CompressServiceImpl(
         logger.info("Emit file ${file.sha256} to uncompress: $result")
     }
 
-    private fun compress0(file: TCompressFile) {
-        with(file) {
-            logger.info("Start compress file [$sha256].")
-            // 乐观锁
-            val tryLock = compressFileDao.optimisticLock(
-                file,
-                TCompressFile::status.name,
-                CompressStatus.CREATED.name,
-                CompressStatus.COMPRESSING.name,
-            )
-            if (!tryLock) {
-                logger.info("File[$sha256] already start compress.")
-                return
-            }
-            // 压缩
-            val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
-            var compressedSize = -1L
-            try {
-                val throughput = measureThroughput(uncompressedSize) {
-                    compressedSize = retry(
-                        times = RETRY_TIMES,
-                        delayInSeconds = 1,
-                        ignoreExceptions = listOf(TooLowerReuseRateException::class.java),
-                    ) {
-                        storageService.compress(sha256, uncompressedSize, baseSha256, baseSize, credentials, true)
-                    }
-                }
-                if (compressedSize == -1L) {
-                    return
-                }
-                // 更新状态
-                file.compressedSize = compressedSize
-                file.status = CompressStatus.COMPRESSED
-                file.lastModifiedDate = LocalDateTime.now()
-                compressFileRepository.save(file)
-                val event = StorageFileCompressedEvent(
-                    sha256 = sha256,
-                    baseSha256 = baseSha256,
-                    uncompressed = uncompressedSize,
-                    compressed = compressedSize,
-                    storageCredentialsKey = storageCredentialsKey,
-                    throughput = throughput,
-                )
-                SpringContextUtils.publishEvent(event)
-            } catch (e: TooLowerReuseRateException) {
-                logger.info("Reuse rate is too lower.")
-                compressFailed(file)
-            } catch (e: Exception) {
-                compressFailed(file)
-                throw e
-            }
-        }
-    }
-
-    private fun uncompress0(file: TCompressFile) {
-        with(file) {
-            logger.info("Start uncompress file [$sha256].")
-            // 乐观锁
-            val tryLock = compressFileDao.optimisticLock(
-                file,
-                TCompressFile::status.name,
-                CompressStatus.WAIT_TO_UNCOMPRESS.name,
-                CompressStatus.UNCOMPRESSING.name,
-            )
-            if (!tryLock) {
-                logger.info("File[$sha256] already start uncompress.")
-                return
-            }
-            // 解压
-            val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
-            compressFileRepository.findBySha256AndStorageCredentialsKey(baseSha256, storageCredentialsKey)?.let {
-                if (file.status == CompressStatus.COMPLETED || file.status == CompressStatus.COMPRESSED) {
-                    uncompress0(it)
-                }
-            }
-            try {
-                var ret = 0
-                val throughput = measureThroughput(uncompressedSize) {
-                    ret = storageService.uncompress(sha256, compressedSize, baseSha256, baseSize, credentials)
-                }
-                if (ret == 0) {
-                    return
-                }
-                // 更新状态
-                file.status = CompressStatus.UNCOMPRESSED
-                file.lastModifiedDate = LocalDateTime.now()
-                compressFileRepository.save(file)
-                val event = StorageFileUncompressedEvent(
-                    sha256 = sha256,
-                    compressed = compressedSize,
-                    uncompressed = uncompressedSize,
-                    storageCredentialsKey = storageCredentialsKey,
-                    throughput = throughput,
-                )
-                SpringContextUtils.publishEvent(event)
-            } catch (e: Exception) {
-                file.status = CompressStatus.UNCOMPRESS_FAILED
-                file.lastModifiedDate = LocalDateTime.now()
-                compressFileRepository.save(file)
-                throw e
-            }
-        }
-    }
-
-    private fun compressFailed(file: TCompressFile) {
-        with(file) {
-            status = CompressStatus.COMPRESS_FAILED
-            lastModifiedDate = LocalDateTime.now()
-            compressFileRepository.save(file)
-            fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
+    override fun cancel() {
+        if (shutdown.compareAndSet(false, true)) {
+            compressDisposable?.dispose()
+            uncompressDisposable?.dispose()
+            logger.info("Shutdown compress service successful.")
+        } else {
+            logger.info("Compress service has been shutdown.")
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(CompressServiceImpl::class.java)
-        private const val MAX_CHAIN_LENGTH = 10
-        private const val RETRY_TIMES = 3
     }
 }
