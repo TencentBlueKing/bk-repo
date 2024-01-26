@@ -1,12 +1,11 @@
 package com.tencent.bkrepo.archive.request
 
+import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 
-data class CompressFileRequest(
+data class UpdateCompressFileStatusRequest(
     val sha256: String,
-    val size: Long,
-    val baseSha256: String,
-    val baseSize: Long,
     val storageCredentialsKey: String?,
+    val status: CompressStatus,
     val operator: String = SYSTEM_USER,
 )

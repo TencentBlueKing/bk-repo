@@ -50,4 +50,10 @@ data class ArchiveProperties(
      * 恢复数量限制
      * */
     var restoreLimit: Int = 1000,
+
+    /**
+     * gc 压缩相关配置
+     * */
+    @NestedConfigurationProperty
+    val compress: CompressProperties = CompressProperties(),
 )

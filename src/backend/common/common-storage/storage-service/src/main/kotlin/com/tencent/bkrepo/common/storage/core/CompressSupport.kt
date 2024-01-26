@@ -186,8 +186,7 @@ abstract class CompressSupport : OverlaySupport() {
         if (!Files.isDirectory(filePath.parent)) {
             Files.createDirectories(filePath.parent)
         }
-        val path = fileLocator.locate(digest)
-        val nanos = measureNanoTime { StorageUtils.download(path, digest, range, credentials, filePath) }
+        val nanos = measureNanoTime { StorageUtils.downloadUseLocalPath(digest, range, credentials, filePath) }
         if (range != Range.FULL_RANGE) {
             check(Files.size(filePath) == range.length)
         }

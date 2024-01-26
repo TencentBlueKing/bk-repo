@@ -31,7 +31,7 @@
             </div>
         </div> -->
         <bk-form style="margin-top:-15px" ref="genericShareForm" :label-width="360" form-type="vertical">
-            <bk-form-item :label="$t('authorizedUser')">
+            <bk-form-item :label="$t('authorizedUser') + $t('parseTip')">
                 <bk-tag-input
                     v-model="genericShare.user"
                     :list="Object.values(userList).filter(user => user.id !== 'anonymous')"

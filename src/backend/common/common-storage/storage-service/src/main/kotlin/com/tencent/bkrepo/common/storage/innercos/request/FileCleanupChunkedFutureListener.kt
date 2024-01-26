@@ -14,7 +14,7 @@ class FileCleanupChunkedFutureListener : ChunkedFutureListener<File> {
         val file = future.get()
         try {
             Files.deleteIfExists(file.toPath())
-            logger.info("Delete cos downloading temp file[$file] success.")
+            logger.debug("Delete cos downloading temp file[$file] success.")
         } catch (e: Exception) {
             logger.error("Delete cos downloading temp file[$file] failed.")
         }
