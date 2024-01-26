@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.common.artifact.cache
 
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+
 /**
  * 缓存清理器，用于记录缓存访问情况，在缓存达到限制大小时清理存储层缓存
  */
-interface StorageCacheCleaner {
+interface ArtifactCacheCleaner {
     /**
      * 缓存被访问时的回调，用于缓存清理决策
      *
@@ -41,10 +43,10 @@ interface StorageCacheCleaner {
     fun onCacheAccessed(projectId: String, repoName: String, fullPath: String)
 
     /**
-     * 缓存被访问时回调
+     * 缓存被访问时的回调，用于缓存清理决策
      *
-     * @param storageKey 缓存所在存储
-     * @param sha256 缓存文件sha256
+     * @param node 被访问的制品
+     * @param storageKey 制品所在存储
      */
-    fun onCacheAccessed(storageKey: String, sha256: String)
+    fun onCacheAccessed(node: NodeDetail, storageKey: String?)
 }

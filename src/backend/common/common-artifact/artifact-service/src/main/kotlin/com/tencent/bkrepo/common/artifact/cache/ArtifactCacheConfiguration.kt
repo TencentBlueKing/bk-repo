@@ -56,8 +56,8 @@ class ArtifactCacheConfiguration {
         storageCredentialsClient: StorageCredentialsClient,
         storageProperties: StorageProperties,
         artifactCacheProperties: ArtifactCacheProperties,
-    ): StorageCacheCleaner {
-        return DefaultStorageCacheCleaner(
+    ): ArtifactCacheCleaner {
+        return DefaultArtifactCacheCleaner(
             cacheFactory,
             nodeClient,
             repositoryClient,

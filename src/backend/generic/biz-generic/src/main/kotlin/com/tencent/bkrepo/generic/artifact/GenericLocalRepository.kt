@@ -287,7 +287,7 @@ class GenericLocalRepository(
             )
             // 添加node是为了下载单个空目录的时候以zip包的形式下载, 否则下载的是一个空文件而不是目录
             val node = if (allNodes.size == 1) allNodes.first() else null
-            return ArtifactResource(nodeMap, node, useDisposition = true)
+            return ArtifactResource(nodeMap, node, useDisposition = true, nodes = allNodes)
         }
     }
 
@@ -366,7 +366,7 @@ class GenericLocalRepository(
             val inputStream = storageManager.loadArtifactInputStream(it, context.storageCredentials) ?: return null
             name to inputStream
         }
-        return ArtifactResource(nodeMap, node, useDisposition = true)
+        return ArtifactResource(nodeMap, node, useDisposition = true, nodes = nodes)
     }
 
     private fun getNodeDetailsFromReq(allowFolder: Boolean): List<NodeDetail>? {

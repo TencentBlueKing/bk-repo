@@ -36,11 +36,12 @@ import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.springframework.scheduling.annotation.Scheduled
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-class DefaultStorageCacheCleaner(
+class DefaultArtifactCacheCleaner(
     private val cacheFactory: OrderedCachedFactory<String, Any?>,
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
@@ -49,7 +50,7 @@ class DefaultStorageCacheCleaner(
     private val storageCredentialsClient: StorageCredentialsClient,
     private val storageProperties: StorageProperties,
     private val artifactCacheProperties: ArtifactCacheProperties,
-) : StorageCacheCleaner {
+) : ArtifactCacheCleaner {
 
     private val storageCacheMap = ConcurrentHashMap<String, OrderedCache<String, Any?>>()
 
@@ -57,14 +58,19 @@ class DefaultStorageCacheCleaner(
         if (!artifactCacheProperties.enabled) {
             return
         }
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-        if (node != null && !node.folder) {
-            onCacheAccessed(getStorageKey(projectId, repoName), node.sha256!!)
+        nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
+            onCacheAccessed(it, getStorageKey(projectId, repoName))
+        }
+    }
+
+    override fun onCacheAccessed(node: NodeDetail, storageKey: String?) {
+        if (!node.folder) {
+            onCacheAccessed(storageKey ?: DEFAULT_STORAGE_KEY, node.sha256!!)
         }
     }
 
     @Synchronized
-    override fun onCacheAccessed(storageKey: String, sha256: String) {
+    fun onCacheAccessed(storageKey: String, sha256: String) {
         if (!artifactCacheProperties.enabled || sha256 == FAKE_SHA256) {
             return
         }
