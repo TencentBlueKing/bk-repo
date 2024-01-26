@@ -27,14 +27,10 @@
 
 package com.tencent.bkrepo.common.lock
 
-import com.tencent.bkrepo.common.lock.dao.MongoCasDao
 import com.tencent.bkrepo.common.lock.dao.MongoDistributedLockDao
-import com.tencent.bkrepo.common.lock.service.CasService
 import com.tencent.bkrepo.common.lock.service.LockOperation
-import com.tencent.bkrepo.common.lock.service.MongoCasOperation
 import com.tencent.bkrepo.common.lock.service.MongoDistributedLock
 import com.tencent.bkrepo.common.lock.service.MongoLockOperation
-import com.tencent.bkrepo.common.lock.service.RedisCasOperation
 import com.tencent.bkrepo.common.lock.service.RedisLockOperation
 import com.tencent.bkrepo.common.redis.RedisOperation
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
@@ -48,7 +44,6 @@ import org.springframework.core.Ordered
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @Import(
     MongoDistributedLockDao::class,
-    MongoCasDao::class,
     RedisOperation::class
 )
 class LockAutoConfiguration {
@@ -63,17 +58,5 @@ class LockAutoConfiguration {
     @ConditionalOnProperty(prefix = "lock", name = ["type"], havingValue = "redis")
     fun redisLockOperation(redisOperation: RedisOperation): LockOperation {
         return RedisLockOperation(redisOperation)
-    }
-
-    @Bean
-    @ConditionalOnProperty(prefix = "lock", name = ["type"], havingValue = "mongodb", matchIfMissing = true)
-    fun mongoCasOperation(mongoCasDao: MongoCasDao): CasService {
-        return MongoCasOperation(mongoCasDao)
-    }
-
-    @Bean
-    @ConditionalOnProperty(prefix = "lock", name = ["type"], havingValue = "redis")
-    fun redisCasOperation(redisOperation: RedisOperation): CasService {
-        return RedisCasOperation(redisOperation)
     }
 }

@@ -25,10 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.lock.service
+package com.tencent.bkrepo.helm.service.impl
 
-import com.tencent.bkrepo.common.lock.dao.MongoCasDao
+import com.tencent.bkrepo.helm.dao.MongoCasDao
+import com.tencent.bkrepo.helm.service.CasService
+import org.springframework.stereotype.Component
 
+@Component
 class MongoCasOperation(
     private val mongoCasDao: MongoCasDao
 ): CasService {

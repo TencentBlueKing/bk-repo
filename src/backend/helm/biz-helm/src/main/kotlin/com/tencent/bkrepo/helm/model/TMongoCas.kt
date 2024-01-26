@@ -25,41 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.lock.service
+package com.tencent.bkrepo.helm.model
 
-interface CasService {
-    fun increment(key: String, delta: Long): Long
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
 
-    fun get(key: String): Long
-
-    fun delete(key: String)
-
-    /**
-     * 判断key 对应的值是否被清零
-     */
-    fun targetCheck(
-        key: String,
-        target: Long = 0,
-        retryTimes: Int = RETRY_TIMES,
-        sleepTime: Long = SPIN_SLEEP_TIME
-    ): Boolean {
-        // 自旋获取锁
-        for (i in 0 until retryTimes) {
-            val result = get(key)
-            when (result <= target) {
-                true -> return true
-                else ->
-                    try {
-                        Thread.sleep(sleepTime)
-                    } catch (ignore: InterruptedException) {
-                    }
-            }
-        }
-        return false
-    }
-
-    companion object {
-        const val SPIN_SLEEP_TIME: Long = 30L
-        const val RETRY_TIMES: Int = 10000
-    }
-}
+@Document("mongo_cas")
+@CompoundIndexes(
+    CompoundIndex(name = "key_idx", def = "{'key': 1}", unique = true)
+)
+data class TMongoCas(
+    var key: String,
+    var value: Long,
+)

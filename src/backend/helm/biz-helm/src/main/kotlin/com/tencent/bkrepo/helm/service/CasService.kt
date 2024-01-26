@@ -25,39 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.lock.dao
+package com.tencent.bkrepo.helm.service
 
-import com.tencent.bkrepo.common.lock.model.TMongoCas
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import org.springframework.data.mongodb.core.FindAndModifyOptions
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
-import org.springframework.stereotype.Repository
+interface CasService {
+    fun increment(key: String, delta: Long): Long
 
-@Repository
-class MongoCasDao : SimpleMongoDao<TMongoCas>() {
+    fun get(key: String): Long
 
-    fun findByKey(key: String): TMongoCas? {
-        return this.findOne(Query(TMongoCas::key.isEqualTo(key)))
-    }
+    fun delete(key: String)
 
-    fun deleteByKey(key: String) {
-        if (key.isNotBlank()) {
-            this.remove(Query(TMongoCas::key.isEqualTo(key)))
+    /**
+     * 判断key 对应的值是否被清零
+     */
+    fun targetCheck(
+        key: String,
+        target: Long = 0,
+        retryTimes: Int = RETRY_TIMES,
+        sleepTime: Long = SPIN_SLEEP_TIME
+    ): Boolean {
+        // 自旋获取锁
+        for (i in 0 until retryTimes) {
+            val result = get(key)
+            when (result <= target) {
+                true -> return true
+                else ->
+                    try {
+                        Thread.sleep(sleepTime)
+                    } catch (ignore: InterruptedException) {
+                    }
+            }
         }
+        return false
     }
 
-    fun incrByKey(key: String, increase: Long): TMongoCas? {
-        val criteria = where(TMongoCas::key).isEqualTo(key)
-        val query = Query(criteria)
-        val updateMax = Update().max(TMongoCas::value.name, 0L)
-        val options = FindAndModifyOptions().apply { this.upsert(true).returnNew(true) }
-        determineMongoTemplate()
-            .findAndModify(query, updateMax, options, TMongoCas::class.java)
-        val update = Update().inc(TMongoCas::value.name, increase)
-        return determineMongoTemplate()
-            .findAndModify(query, update, options, TMongoCas::class.java)
+    companion object {
+        const val SPIN_SLEEP_TIME: Long = 30L
+        const val RETRY_TIMES: Int = 10000
     }
 }

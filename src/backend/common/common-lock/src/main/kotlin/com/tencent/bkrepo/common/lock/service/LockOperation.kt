@@ -101,7 +101,6 @@ interface LockOperation {
         /**
          * 定义Redis过期时间
          */
-        const val EXPIRED_TIME_IN_SECONDS: Long = 5 * 60 * 1000L
         const val SPIN_SLEEP_TIME: Long = 30L
         const val RETRY_TIMES: Int = 10000
     }

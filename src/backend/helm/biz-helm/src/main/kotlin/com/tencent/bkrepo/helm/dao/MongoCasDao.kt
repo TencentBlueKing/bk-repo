@@ -25,22 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.lock.service
+package com.tencent.bkrepo.helm.dao
 
-import com.tencent.bkrepo.common.redis.RedisOperation
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.helm.model.TMongoCas
+import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
+import org.springframework.stereotype.Repository
 
-class RedisCasOperation(
-    private val redisOperation: RedisOperation
-): CasService {
-    override fun increment(key: String, delta: Long): Long {
-        return redisOperation.increment(key, delta) ?: 0
+@Repository
+class MongoCasDao : SimpleMongoDao<TMongoCas>() {
+
+    fun findByKey(key: String): TMongoCas? {
+        return this.findOne(Query(TMongoCas::key.isEqualTo(key)))
     }
 
-    override fun get(key: String): Long {
-        return redisOperation.get(key)?.toLongOrNull() ?: 0
+    fun deleteByKey(key: String) {
+        if (key.isNotBlank()) {
+            this.remove(Query(TMongoCas::key.isEqualTo(key)))
+        }
     }
 
-    override fun delete(key: String) {
-        return redisOperation.delete(key)
+    fun incrByKey(key: String, increase: Long): TMongoCas? {
+        val criteria = where(TMongoCas::key).isEqualTo(key)
+        val query = Query(criteria)
+        val updateMax = Update().max(TMongoCas::value.name, 0L)
+        val options = FindAndModifyOptions().apply { this.upsert(true).returnNew(true) }
+        determineMongoTemplate()
+            .findAndModify(query, updateMax, options, TMongoCas::class.java)
+        val update = Update().inc(TMongoCas::value.name, increase)
+        return determineMongoTemplate()
+            .findAndModify(query, update, options, TMongoCas::class.java)
     }
 }

@@ -134,7 +134,7 @@ class ChartEventListener(
                             try {
                                 val requestStr = v.removeAt(0)
                                 val request = requestStr.readJsonString<ChartOperationRequest>()
-                                submitRequest(requestStr, request.type, lock)
+                                submitRequest(requestStr, request.projectId, request.repoName, request.type, lock)
                             } catch (e: Exception) {
                                 logger.error("Failed to create refresh task for $v, error is $e")
                             }
@@ -149,7 +149,7 @@ class ChartEventListener(
                 val lock = getLock(request.projectId, request.repoName)
                 if (lock != null) {
                     try {
-                        submitRequest(it, request.type, lock)
+                        submitRequest(it, request.projectId, request.repoName, request.type, lock)
                     } catch (e: Exception) {
                         logger.error("Failed to create refresh task for $it, error is $e")
                     } finally {
@@ -160,19 +160,23 @@ class ChartEventListener(
         }
     }
 
-    private fun submitRequest(json: String, type: String, lock: Any) {
+    private fun submitRequest(
+        json: String,
+        projectId: String,
+        repoName: String,
+        type: String,
+        lock: Any
+    ) {
         val task = when (type) {
             UPLOAD_EVENT_REQUEST_TYPE -> {
                 val request = json.readJsonString<ChartUploadRequest>()
                 val helmChartMetadata = HelmMetadataUtils.convertToObject(request.metadataMap!!)
                 val nodeDetail = nodeClient.getNodeDetail(
-                    request.projectId, request.repoName, request.fullPath
+                    projectId, repoName, request.fullPath
                 ).data
-                nodeDetail?.let {
+                if (nodeDetail != null) {
                     helmChartMetadata.created = convertDateTime(nodeDetail.createdDate)
                     helmChartMetadata.digest = nodeDetail.sha256
-                }
-                if (nodeDetail != null) {
                     ChartUploadOperation(
                         request,
                         helmChartMetadata,
@@ -194,7 +198,13 @@ class ChartEventListener(
             }
             else -> null
         }
-        task?.let { threadPoolExecutor.submit(it) }
+        if (task == null) {
+            val incKey = buildKey(projectId, repoName, CHANGE_EVENT_COUNT_PREFIX)
+            casService.increment(incKey, -1)
+            unlock(projectId, repoName, lock)
+        } else {
+            threadPoolExecutor.submit(task)
+        }
     }
 
     companion object {
