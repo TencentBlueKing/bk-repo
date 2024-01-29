@@ -25,25 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.service.impl
+package com.tencent.bkrepo.helm.model
 
-import com.tencent.bkrepo.helm.dao.MongoCasDao
-import com.tencent.bkrepo.helm.service.CasService
-import org.springframework.stereotype.Component
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@Component
-class MongoCasOperation(
-    private val mongoCasDao: MongoCasDao
-): CasService {
-    override fun increment(key: String, delta: Long): Long {
-        return mongoCasDao.incrByKey(key, delta)?.value ?: 0
-    }
-
-    override fun get(key: String): Long {
-        return mongoCasDao.findByKey(key)?.value ?: 0
-    }
-
-    override fun delete(key: String) {
-        mongoCasDao.deleteByKey(key)
-    }
-}
+/**
+ * 记录仓库下有变更记录时间以及对应index.yaml更新时间
+ */
+@Document("helm_chart_event_record")
+@CompoundIndexes(
+    CompoundIndex(name = "project_repo_idx", def = "{'projectId': 1, 'repoName': 1}", unique = true)
+)
+data class THelmChartEventRecord(
+    var projectId: String,
+    var repoName: String,
+    // 仓库内chart有上传或者删除变更时间
+    var eventTime: LocalDateTime,
+    // index文件刷新时间
+    var indexRefreshTime: LocalDateTime? = null
+)

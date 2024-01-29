@@ -59,9 +59,7 @@ class RemoteEventJobExecutor(
                 val action: () -> Unit = when (type) {
                     EventType.REPO_CREATED, EventType.REPO_UPDATED, EventType.REPO_REFRESHED -> {
                         {
-                            helmOperationService.lockAction(projectId, repoName) {
                                 helmOperationService.updatePackageForRemote(projectId, repoName, userId)
-                            }
                         }
                     }
                     EventType.VERSION_CREATED, EventType.VERSION_UPDATED -> {

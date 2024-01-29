@@ -48,7 +48,6 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.config.HelmProperties
-import com.tencent.bkrepo.helm.constants.CHANGE_EVENT_COUNT_PREFIX
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
@@ -96,7 +95,7 @@ class ChartRepositoryServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
-        return checkIndexIsReady(artifactInfo) { chartListSearch(artifactInfo, startTime) }
+        return queryLatestIndex(artifactInfo) { chartListSearch(artifactInfo, startTime) }
     }
 
     private fun chartListSearch(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
@@ -183,22 +182,24 @@ class ChartRepositoryServiceImpl(
 
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
         helmOperationService.checkNodePermission(INDEX_YAML, PermissionAction.READ)
-        checkIndexIsReady(artifactInfo) { downloadIndex(artifactInfo) }
+        queryLatestIndex(artifactInfo) { downloadIndex(artifactInfo) }
     }
 
-    private fun <T> checkIndexIsReady(
+    private fun <T> queryLatestIndex(
         artifactInfo: HelmArtifactInfo,
         action: () -> T
     ): T {
-        val incKey = buildKey(artifactInfo.projectId, artifactInfo.repoName, CHANGE_EVENT_COUNT_PREFIX)
-        val value = casService.get(incKey)
-        return if ((value <= 0)) {
-            action()
-        } else {
-            if (casService.targetCheck(incKey, retryTimes = properties.retryTimes, sleepTime = properties.sleepTime) &&
-                filterProjectRepo(artifactInfo.projectId, artifactInfo.repoName, helmProperties.useV2Repos)) {
-                regenerateIndex(artifactInfo, false)
+        return if (helmChartEventRecordDao.existCheckByProjectIdAndRepoName(artifactInfo.projectId, artifactInfo.repoName)) {
+            lockAction(artifactInfo.projectId, artifactInfo.repoName) {
+                val exist = helmChartEventRecordDao.existCheckByProjectIdAndRepoName(
+                    artifactInfo.projectId, artifactInfo.repoName
+                )
+                if (exist) {
+                    regenerateIndex(artifactInfo, false)
+                }
+                action()
             }
+        } else {
             action()
         }
     }
@@ -305,7 +306,7 @@ class ChartRepositoryServiceImpl(
                     chartMetadata.digest = it[NODE_SHA256] as String
                     ChartParserUtil.addIndexEntries(indexYamlMetadata, chartMetadata)
                 } catch (ex: HelmFileNotFoundException) {
-                    logger.error(
+                    logger.warn(
                         "generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
                             "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
                     )
@@ -366,9 +367,7 @@ class ChartRepositoryServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     override fun updatePackageForRemote(artifactInfo: HelmArtifactInfo) {
-        helmOperationService.lockAction(artifactInfo.projectId, artifactInfo.repoName) {
-            helmOperationService.updatePackageForRemote(artifactInfo.projectId, artifactInfo.repoName)
-        }
+        helmOperationService.updatePackageForRemote(artifactInfo.projectId, artifactInfo.repoName)
     }
 
     @Permission(ResourceType.NODE, PermissionAction.READ)
