@@ -14,7 +14,7 @@
 /src/backend/archive          @felixncheng
 /src/backend/git              @felixncheng
 /src/backend/buildSrc   @felixncheng @cnlkl
-/src/backend/lfs        @lfs
+/src/backend/lfs        @yaoxuwan
 /src/backend/repository @yaoxuwan @cnlkl
 /src/backend/webhook    @yaoxuwan @zacYL
 /src/backend/pypi       @yaoxuwan @zacYL
