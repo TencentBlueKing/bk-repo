@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.config
 
-import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-open class BatchJobProperties(
+@ConfigurationProperties("job")
+data class JobProperties(
     /**
-     * 是否开启任务
-     * */
-    open var enabled: Boolean = true,
-    /**
-     * 任务亲和节点列表，未配置时将可以调度到任意节点，配置后只能调度到亲和的节点
+     * 节点亲和的任务集合，未配置时节点可调度任意任务，配置后节点将只能执行配置的任务
+     * key为节点IP，value为任务名称集合
      */
-    open var affinityNodeIps: Set<String> = emptySet(),
-
-    /**
-     * cron表达式
-     * */
-    open var cron: String = Scheduled.CRON_DISABLED,
-    open var fixedDelay: Long = 0,
-    open var fixedRate: Long = 0,
-    open var initialDelay: Long = 0,
-
-    /**
-     * 停止任务超时时间，查过该时间，则会强制停止任务
-     * */
-    var stopTimeout: Long = 30000,
+    var nodeAffinityJobs: Map<String, Set<String>> = emptyMap()
 )

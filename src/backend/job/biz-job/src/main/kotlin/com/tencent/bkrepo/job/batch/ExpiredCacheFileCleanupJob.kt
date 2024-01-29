@@ -70,7 +70,7 @@ class ExpiredCacheFileCleanupJob(
         var region: String? = null
     )
 
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     override fun doStart0(jobContext: JobContext) {
         // cleanup default storage
