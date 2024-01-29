@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.service.node
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import org.springframework.data.mongodb.core.query.Criteria
+import java.time.LocalDateTime
 
 /**
  * 节点重命名接口
@@ -43,7 +44,10 @@ interface NodeStatsOperation {
     /**
      * 计算文件或者文件夹大小
      */
-    fun computeSize(artifact: ArtifactInfo, estimated: Boolean = false): NodeSizeInfo
+    fun computeSize(artifact: ArtifactInfo,
+                    estimated: Boolean = false,
+                    before: LocalDateTime = LocalDateTime.now()
+    ): NodeSizeInfo
 
     /**
      * 查询文件节点数量
@@ -54,4 +58,5 @@ interface NodeStatsOperation {
      * 聚合查询节点大小
      */
     fun aggregateComputeSize(criteria: Criteria): Long
+
 }
