@@ -338,6 +338,17 @@ class UserNodeController(
         return ResponseBuilder.success(nodeSizeInfo)
     }
 
+    @ApiOperation("查询时间早于{date}的节点大小信息")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
+    @GetMapping("/calculate/$DEFAULT_MAPPING_URI")
+    fun computeSizeBefore(
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) date: LocalDateTime
+    ): Response<NodeSizeInfo> {
+        val nodeSizeInfo = nodeService.computeSize(artifactInfo,false, date)
+        return ResponseBuilder.success(nodeSizeInfo)
+    }
+
     @ApiOperation("分页查询节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/page/$DEFAULT_MAPPING_URI")

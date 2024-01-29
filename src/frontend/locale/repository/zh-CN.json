@@ -831,5 +831,8 @@
     "roleName":"用户组名称",
     "addUserGroupTitle":"创建用户组",
     "editUserGroupTitle": "编辑用户组",
-    "associatedUseGroup": "关联用户组"
+    "associatedUseGroup": "关联用户组",
+    "cleanDetail": "共清理文件{0}个，大小{1}",
+    "preCleanDetail": "预计清理文件{0}个，大小{1}",
+    "querySize": "查询大小"
 }

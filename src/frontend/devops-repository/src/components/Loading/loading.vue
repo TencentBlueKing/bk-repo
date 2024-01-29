@@ -8,7 +8,7 @@
         v-model="isShow">
         <slot></slot>
         <div v-if="backUp" class="mainBackUpBody">
-            <div>
+            <div class="iconBackUpBody">
                 <Icon v-if="!complete && !backUp" name="loading" size="20" class="svg-loading" />
                 <Icon v-else-if="!complete && backUp" name="circle-2-1" size="20" style="color: #3a84ff" class="svg-loading" />
                 <Icon v-else name="check" size="20" class="svg-complete" />
@@ -17,7 +17,7 @@
             <span class="subMessage">{{ subMessage }}</span>
         </div>
         <div v-else class="mainBody">
-            <div>
+            <div class="iconBody">
                 <Icon v-if="!complete && !backUp" name="loading" size="20" class="svg-loading" />
                 <Icon v-else-if="!complete && backUp" name="circle-2-1" size="20" style="color: #3a84ff" class="svg-loading" />
                 <Icon v-else name="check" size="20" class="svg-complete" />
@@ -98,6 +98,11 @@ body .bk-dialog-wrapper .bk-dialog-body {
     .svg-complete {
         margin-right: 10px;
     }
+    .iconBody{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
     .mainMessage{
         font-size: 16px;
     }
@@ -127,6 +132,11 @@ body .bk-dialog-wrapper .bk-dialog-body {
     }
     .svg-complete {
         margin-right: 10px;
+    }
+    .iconBackUpBody{
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .mainMessage{
         font-size: 16px;
