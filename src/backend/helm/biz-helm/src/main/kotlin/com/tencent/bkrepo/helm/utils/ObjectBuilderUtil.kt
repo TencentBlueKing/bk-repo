@@ -243,6 +243,7 @@ object ObjectBuilderUtil {
             operator = context.userId,
             fullPath = context.getStringAttribute(FULL_PATH)!!,
             metadataMap = context.getAttribute(META_DETAIL),
+            artifactInfo = context.artifactInfo
         )
     }
 

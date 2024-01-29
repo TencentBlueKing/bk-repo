@@ -31,11 +31,17 @@
 
 package com.tencent.bkrepo.helm.pojo.chart
 
-import com.tencent.bkrepo.helm.constants.PACKAGE_DELETE_EVENT_REQUEST_TYPE
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-class ChartPackageDeleteRequest(
-    projectId: String,
-    repoName: String,
+@ApiModel("chart包删除请求")
+data class ChartPackageDeleteRequest(
+    @ApiModelProperty("所属项目id", required = true)
+    override val projectId: String,
+    @ApiModelProperty("所属仓库id", required = true)
+    override val repoName: String,
+    @ApiModelProperty("chart名称", required = true)
     val name: String,
-    operator: String
-) : ChartOperationRequest(projectId, repoName, operator, PACKAGE_DELETE_EVENT_REQUEST_TYPE)
+    @ApiModelProperty("操作用户id", required = true)
+    override val operator: String
+) : ChartOperationRequest

@@ -29,9 +29,7 @@ package com.tencent.bkrepo.helm.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.helm.model.THelmChartEventRecord
-import com.tencent.bkrepo.helm.pojo.HelmChartEventRecordDetail
-import org.springframework.data.mongodb.core.aggregation.Aggregation
-import org.springframework.data.mongodb.core.aggregation.AggregationOperation
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.UpdateDefinition
@@ -65,41 +63,29 @@ class HelmChartEventRecordDao : SimpleMongoDao<THelmChartEventRecord>() {
         determineMongoTemplate().upsert(query, update, THelmChartEventRecord::class.java)
     }
 
-    fun existCheckByProjectIdAndRepoName(projectId: String, repoName: String): Boolean {
-        val match = Aggregation.match(
-            where(THelmChartEventRecord::projectId).isEqualTo(projectId)
-                .and(THelmChartEventRecord::repoName.name).isEqualTo(repoName)
-        )
-        val records = filterRecords(match)
-        return records.isNotEmpty()
+    fun checkIndexExpiredStatus(projectId: String, repoName: String): Boolean {
+        val criteria = where(THelmChartEventRecord::projectId).isEqualTo(projectId)
+            .and(THelmChartEventRecord::repoName.name).isEqualTo(repoName)
+        val record = filterRecords(criteria)
+        return record.isNotEmpty()
     }
 
-    fun findAllRecords(): List<HelmChartEventRecordDetail> {
+    fun findAllRecordsNeedToRefresh(): List<THelmChartEventRecord> {
         return filterRecords()
     }
 
 
-    private fun filterRecords(match: AggregationOperation? = null): List<HelmChartEventRecordDetail> {
-        val expression = Aggregation.project(
-            THelmChartEventRecord::projectId.name,
-            THelmChartEventRecord::repoName.name,
-            THelmChartEventRecord::eventTime.name,
-            THelmChartEventRecord::indexRefreshTime.name
-        )
-            .andExpression("${THelmChartEventRecord::eventTime.name} - ${THelmChartEventRecord::indexRefreshTime.name}")
-            .`as`(HelmChartEventRecordDetail::duration.name)
+    private fun filterRecords(criteria: Criteria? = null): List<THelmChartEventRecord> {
+        val query = if (criteria == null) {
+            Query()
+        } else {
+            Query(criteria)
+        }
 
-        val operations = arrayListOf<AggregationOperation>(expression)
-        match?.let { operations.add(match) }
-        val aggregation = Aggregation.newAggregation(
-            THelmChartEventRecord::class.java,
-            operations
-        )
-        var records = determineMongoTemplate().aggregate(
-            aggregation, HelmChartEventRecordDetail::class.java
-        ).mappedResults
+        var records = determineMongoTemplate().find(query, THelmChartEventRecord::class.java)
+
         if (!records.isNullOrEmpty()) {
-            records = records.filter {  it.duration == null || it.duration!! >= 0  }
+            records = records.filter { it.indexRefreshTime == null || it.eventTime.isAfter(it.indexRefreshTime)  }
         }
         return records
     }

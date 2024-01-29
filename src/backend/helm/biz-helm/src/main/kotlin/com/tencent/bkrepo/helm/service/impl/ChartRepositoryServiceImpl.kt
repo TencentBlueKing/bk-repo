@@ -189,9 +189,9 @@ class ChartRepositoryServiceImpl(
         artifactInfo: HelmArtifactInfo,
         action: () -> T
     ): T {
-        return if (helmChartEventRecordDao.existCheckByProjectIdAndRepoName(artifactInfo.projectId, artifactInfo.repoName)) {
+        return if (helmChartEventRecordDao.checkIndexExpiredStatus(artifactInfo.projectId, artifactInfo.repoName)) {
             lockAction(artifactInfo.projectId, artifactInfo.repoName) {
-                val exist = helmChartEventRecordDao.existCheckByProjectIdAndRepoName(
+                val exist = helmChartEventRecordDao.checkIndexExpiredStatus(
                     artifactInfo.projectId, artifactInfo.repoName
                 )
                 if (exist) {

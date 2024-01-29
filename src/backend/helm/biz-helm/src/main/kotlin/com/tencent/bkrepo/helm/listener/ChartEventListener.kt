@@ -90,11 +90,11 @@ class ChartEventListener : AbstractChartService() {
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INIT_DELAY)
     fun refreshIndex() {
-        val records = helmChartEventRecordDao.findAllRecords()
+        val records = helmChartEventRecordDao.findAllRecordsNeedToRefresh()
         for (record in records) {
                 val lock = getLock(record.projectId, record.repoName) ?: continue
                 try {
-                    val exist = helmChartEventRecordDao.existCheckByProjectIdAndRepoName(
+                    val exist = helmChartEventRecordDao.checkIndexExpiredStatus(
                         record.projectId, record.repoName
                     )
                     if (!exist) {
