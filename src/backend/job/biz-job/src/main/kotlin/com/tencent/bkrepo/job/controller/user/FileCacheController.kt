@@ -63,12 +63,21 @@ class FileCacheController(
     fun update(@RequestBody request:FileCacheRequest):Response<Void> {
         request.id?.let {
             fileCacheService.getById(it)?.let {
+                var fileCacheCheckRequest = FileCacheCheckRequest(
+                    projectId = request.projectId,
+                    repoName = request.repoName,
+                    days = request.days,
+                    size = request.size
+                )
+                fileCacheService.checkExist(fileCacheCheckRequest)?.let {
+                    return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "has same config")
+                }
                 fileCacheService.update(request)
                 return ResponseBuilder.success()
             }
-            return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id is null")
+            return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id not existed")
         }
-        return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id not existed")
+        return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id is null")
     }
 
     // 新增
@@ -80,7 +89,7 @@ class FileCacheController(
             days = request.days,
             size = request.size
         )
-        fileCacheService.checkExist(fileCacheCheckRequest).let {
+        fileCacheService.checkExist(fileCacheCheckRequest)?.let {
             return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "has same config")
         }
         fileCacheService.create(request)

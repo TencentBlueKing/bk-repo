@@ -40,7 +40,7 @@ interface FileCacheService {
 
     fun getById(id: String): TFileCache?
 
-    fun checkExist(request: FileCacheCheckRequest): TFileCache
+    fun checkExist(request: FileCacheCheckRequest): TFileCache?
 
     fun update(fileCacheRequest: FileCacheRequest)
 }

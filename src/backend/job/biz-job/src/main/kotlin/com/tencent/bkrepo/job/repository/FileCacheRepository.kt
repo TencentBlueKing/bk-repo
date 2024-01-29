@@ -40,5 +40,5 @@ interface FileCacheRepository : MongoRepository<TFileCache, String> {
     fun findAllBy(): List<TFileCache>
 
     fun findByRepoNameAndProjectIdAndDaysAndSize(
-        repoName: String, projectId: String,days: Int, size: Long ): TFileCache
+        repoName: String, projectId: String,days: Int, size: Long ): TFileCache?
 }

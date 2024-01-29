@@ -62,7 +62,7 @@ class FileCacheServiceImp constructor(
         return fileCacheRepository.findById(id).orElseGet(null)
     }
 
-    override fun checkExist(request: FileCacheCheckRequest): TFileCache {
+    override fun checkExist(request: FileCacheCheckRequest): TFileCache? {
         return fileCacheRepository.findByRepoNameAndProjectIdAndDaysAndSize(
             request.repoName,
             request.projectId,

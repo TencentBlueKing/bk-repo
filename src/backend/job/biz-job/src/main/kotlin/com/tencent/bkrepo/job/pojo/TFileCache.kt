@@ -48,5 +48,5 @@ data class TFileCache(
     var pathPrefix: List<String> = emptyList(),
     // 保留最近多少天内访问
     var days: Int = 30,
-    var size: Long = 10,
+    var size: Long = 10
 )
