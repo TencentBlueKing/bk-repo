@@ -14,12 +14,13 @@
 /src/backend/archive          @felixncheng
 /src/backend/git              @felixncheng
 /src/backend/buildSrc   @felixncheng @cnlkl
+/src/backend/lfs        @lfs
 /src/backend/repository @yaoxuwan @cnlkl
 /src/backend/webhook    @yaoxuwan @zacYL
 /src/backend/pypi       @yaoxuwan @zacYL
 /src/backend/composer   @yaoxuwan @zacYL
 /src/backend/npm        @cnlkl
-/src/backend/generic    @cnlkl @yaoxuwan
+/src/backend/generic    @cnlkl @yaoxuwan @felixncheng
 /src/backend/common     @cnlkl @yaoxuwan @felixncheng
 /src/backend/analysis-executor    @cnlkl
 /src/backend/analysis   @cnlkl
