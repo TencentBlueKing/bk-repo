@@ -150,6 +150,12 @@ internal class RuleMatcherTest {
         assertTrue(RuleMatcher.match(rule, valuesToMatch))
         assertFalse(RuleMatcher.match(rule.copy(value = "test.*"), valuesToMatch))
 
+        // REGEX_I
+        rule = Rule.QueryRule(FIELD_PROJECT_ID, "[\\w]+-dev-.*", OperationType.REGEX_I)
+        assertTrue(RuleMatcher.match(rule, valuesToMatch))
+        assertTrue(RuleMatcher.match(rule.copy(value = "[\\w]+-DEV-.*"), valuesToMatch))
+        assertFalse(RuleMatcher.match(rule.copy(value = "test.*"), valuesToMatch))
+
         // NULL
         rule = Rule.QueryRule("$FIELD_FILE.notExistsField", "", OperationType.NULL)
         assertTrue(RuleMatcher.match(rule, valuesToMatch))
