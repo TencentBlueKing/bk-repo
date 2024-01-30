@@ -20,14 +20,25 @@
                     </node-table>
                 </template>
             </bk-form-item>
-            <bk-form-item :label="$t('user')" :required="true" property="users" error-display-type="normal">
+            <bk-form-item :label="$t('user')" property="users" error-display-type="normal">
                 <bk-tag-input
                     class="w480"
                     v-model="permissionForm.users"
-                    :placeholder="$t('enterPlaceHolder')"
+                    :placeholder="$t('enterPlaceHolder') + $t('parseTip')"
                     trigger="focus"
+                    :paste-fn="parseFn"
                     :has-delete-icon="true"
                     allow-create>
+                </bk-tag-input>
+            </bk-form-item>
+            <bk-form-item :label="$t('associatedUseGroup')" property="roles" error-display-type="normal">
+                <bk-tag-input
+                    class="w480"
+                    v-model="permissionForm.roles"
+                    :placeholder="$t('enterPlaceHolder')"
+                    trigger="focus"
+                    :list="roleList"
+                    :has-delete-icon="true">
                 </bk-tag-input>
             </bk-form-item>
         </bk-form>
@@ -47,6 +58,7 @@
                 default: {
                     id: '',
                     users: [],
+                    roles: [],
                     includePattern: [],
                     name: ''
                 }
@@ -61,6 +73,7 @@
                 show: false,
                 isLoading: false,
                 title: '',
+                roleList: [],
                 rules: {
                     name: [
                         {
@@ -73,13 +86,6 @@
                         {
                             required: true,
                             message: this.$t('createPathsTip'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    users: [
-                        {
-                            required: true,
-                            message: this.$t('createUsersTip'),
                             trigger: 'blur'
                         }
                     ]
@@ -95,10 +101,21 @@
                 return this.$route.query.repoName
             }
         },
+        created () {
+            this.getProjectRoleList({ projectId: this.projectId }).then(res => {
+                res.forEach(role => {
+                    this.roleList.push({
+                        id: role.id,
+                        name: role.name
+                    })
+                })
+            })
+        },
         methods: {
             ...mapActions([
                 'createPermissionDeployInRepo',
-                'UpdatePermissionConfigInRepo'
+                'UpdatePermissionConfigInRepo',
+                'getProjectRoleList'
             ]),
             clearError (val) {
                 this.permissionForm.includePattern = val
@@ -106,7 +123,6 @@
             },
             cancel () {
                 this.reset()
-                this.show = false
             },
             async confirm () {
                 await this.$refs.permissionForm.validate()
@@ -118,6 +134,7 @@
                         repos: [this.repoName],
                         includePattern: this.permissionForm.includePattern,
                         users: this.permissionForm.users,
+                        roles: this.permissionForm.roles,
                         actions: ['MANAGE'],
                         createBy: this.userInfo.userId,
                         updatedBy: this.userInfo.userId
@@ -126,7 +143,6 @@
                         body: body
                     }).then(() => {
                         this.reset()
-                        this.$emit('refresh')
                     })
                 } else {
                     const body = {
@@ -134,13 +150,13 @@
                         projectId: this.projectId,
                         path: this.permissionForm.includePattern,
                         permissionId: this.permissionForm.id,
-                        users: this.permissionForm.users
+                        users: this.permissionForm.users,
+                        roles: this.permissionForm.roles
                     }
                     this.UpdatePermissionConfigInRepo({
                         body: body
                     }).then(() => {
                         this.reset()
-                        this.$emit('refresh')
                     })
                 }
             },
@@ -149,11 +165,24 @@
                 this.permissionForm = {
                     id: [],
                     users: [],
+                    roles: [],
                     includePattern: [],
                     name: ''
                 }
                 this.type = 'create'
                 this.$refs.pathConfig.replicaTaskObjects = []
+                this.$refs.permissionForm.clearError()
+                this.$emit('refresh')
+            },
+            parseFn (data) {
+                if (data !== '') {
+                    const users = data.toString().split(',')
+                    for (let i = 0; i < users.length; i++) {
+                        users[i] = users[i].toString().trim()
+                        this.permissionForm.users.push(users[i])
+                    }
+                    this.permissionForm.user = Array.from(new Set(this.permissionForm.users))
+                }
             }
         }
     }

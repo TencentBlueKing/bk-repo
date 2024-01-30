@@ -17,6 +17,10 @@
                         <span v-if="detail.basic.groupId" class="ml5 repo-tag"> {{ detail.basic.groupId }} </span>
                     </span>
                 </div>
+                <div v-if="detail.basic.platform" class="package-platform grid-item">
+                    <label>OS/ARCH</label>
+                    <span class="flex-1 text-overflow" :title="detail.basic.platform.join()">{{ detail.basic.platform.join() }}</span>
+                </div>
                 <div class="grid-item"
                     v-for="{ name, label, value } in detailInfoMap"
                     :key="name">
@@ -335,6 +339,7 @@
                 }
             }
             .package-name,
+            .package-platform,
             .package-description {
                 grid-column: 1 / 3;
             }

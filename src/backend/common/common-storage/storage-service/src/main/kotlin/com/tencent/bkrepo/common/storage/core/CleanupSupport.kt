@@ -40,16 +40,22 @@ import java.nio.file.Path
  */
 abstract class CleanupSupport : HealthCheckSupport() {
 
-    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
+    override fun cleanUp(storageCredentials: StorageCredentials?): Map<Path, CleanupResult> {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempPath = getTempPath(credentials)
-        return cleanupPath(tempPath, credentials)
-            .merge(cleanUploadPath(credentials))
+        val result = mutableMapOf<Path, CleanupResult>()
+        result[tempPath] = cleanupPath(tempPath, credentials)
+        result.putAll(cleanUploadPath(credentials))
+        return result
     }
 
-    protected fun cleanUploadPath(credentials: StorageCredentials): CleanupResult {
-        return cleanupPath(credentials.upload.location.toPath(), credentials)
-            .merge(cleanupPath(credentials.upload.localPath.toPath(), credentials))
+    protected fun cleanUploadPath(credentials: StorageCredentials): Map<Path, CleanupResult> {
+        val uploadPath = credentials.upload.location.toPath()
+        val localUploadPath = credentials.upload.localPath.toPath()
+        return mapOf(
+            uploadPath to  cleanupPath(uploadPath, credentials),
+            localUploadPath to cleanupPath(localUploadPath, credentials),
+        )
     }
 
     private fun cleanupPath(path: Path, credentials: StorageCredentials): CleanupResult {

@@ -35,6 +35,7 @@ data class UpdatePermissionDeployInRepoRequest(
     val permissionId: String,
     val path: List<String>,
     val users: List<String>,
+    val roles: List<String>,
     val name: String,
     val projectId: String
 )
