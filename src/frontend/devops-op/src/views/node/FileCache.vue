@@ -55,7 +55,7 @@
         </template>
         <template slot-scope="scope">
           <el-button
-            v-if="consulType || (!consulType && scope.row.id)"
+            v-if="scope.row.id"
             size="mini"
             type="primary"
             @click="showCreateOrUpdateDialog(false, scope.$index, scope.row)"
@@ -63,7 +63,7 @@
             编辑
           </el-button>
           <el-button
-            v-if="consulType || (!consulType && scope.row.id)"
+            v-if="scope.row.id"
             size="mini"
             type="danger"
             @click="handleDelete(scope.$index, scope.row)"
@@ -86,7 +86,6 @@
 <script>
 
 import { deleteFileCache, queryFileCache, getNodeConfig } from '@/api/fileCache'
-import { getConfig, updateConfig } from '@/api/config'
 import CreateOrUpdateFileCacheDialog from '@/views/node/components/CreateOrUpdateFileCacheDialog'
 import { formatFileSize } from '@/utils/file'
 import { searchProjects } from '@/api/project'
@@ -170,23 +169,9 @@ export default {
         if (fileCache.id) {
           deleteFileCache(fileCache.id).then(_ => {
             this.fileCaches.splice(index, 1)
-            this.$message.success('删除成功')
-          })
-        } else {
-          const target = []
-          for (let i = 0; i < this.fileCacheConf.repoConfig.repos.length; i++) {
-            if (!(fileCache.projectId === this.fileCacheConf.repoConfig.repos[i].projectId &&
-              fileCache.repoName === this.fileCacheConf.repoConfig.repos[i].repoName)) {
-              target.push(this.fileCacheConf.repoConfig.repos[i])
-            }
-          }
-          this.fileCacheConf.repoConfig.repos = target
-          const values = [{
-            'key': this.keyName + '.repoConfig.repos',
-            'value': this.fileCacheConf.repoConfig.repos
-          }]
-          updateConfig(values, 'job').then(_ => {
-            this.fileCaches.splice(index, 1)
+            this.originFileCache = this.originFileCache.filter(file => {
+              return file.id !== fileCache.id
+            })
             this.$message.success('删除成功')
           })
         }
@@ -199,6 +184,7 @@ export default {
     },
     async getDates() {
       this.fileCaches = []
+      this.originFileCache = []
       await queryFileCache().then(res => {
         if (res.data && res.data.length !== 0) {
           for (let i = 0; i < res.data.length; i++) {
@@ -214,13 +200,8 @@ export default {
           this.originFileCache.push.apply(this.originFileCache, res.data)
         }
       })
-      await getConfig(this.keyName, 'job').then(res => {
+      await getNodeConfig().then(res => {
         this.handleDateFromConfig(res)
-      }).catch(_ => {
-        this.consulType = false
-        getNodeConfig().then(res => {
-          this.handleDateFromConfig(res)
-        })
       })
     },
     handleDateFromConfig(res) {
@@ -248,7 +229,7 @@ export default {
             })
             const temp = obj.repoConfig.repos.map(v => ({ ...v, size: size }))
             this.fileCaches.push.apply(this.fileCaches, temp)
-            this.originFileCache.push.apply(this.fileCaches, temp)
+            this.originFileCache.push.apply(this.originFileCache, temp)
           }
         }
       }
