@@ -62,22 +62,46 @@ class FileCacheController(
     @PostMapping("/update")
     fun update(@RequestBody request:FileCacheRequest):Response<Void> {
         request.id?.let {
-            fileCacheService.getById(it)?.let {
-                var fileCacheCheckRequest = FileCacheCheckRequest(
-                    projectId = request.projectId,
-                    repoName = request.repoName,
-                    days = request.days,
-                    size = request.size
-                )
-                fileCacheService.checkExist(fileCacheCheckRequest)?.let {
-                    return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "has same config")
-                }
-                fileCacheService.update(request)
+            var checkStatus = updateCheck(request)
+            if (checkStatus.status) {
                 return ResponseBuilder.success()
+            } else {
+                return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, checkStatus.msg)
             }
-            return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id not existed")
+        } ?: let {
+            return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id is null")
         }
-        return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id is null")
+    }
+
+    fun updateCheck(request: FileCacheRequest):CheckStatus {
+        fileCacheService.getById(request.id!!)?.let {
+            var fileCacheCheckRequest = FileCacheCheckRequest(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                days = request.days,
+                size = request.size
+            )
+            fileCacheService.checkExist(fileCacheCheckRequest)?.let {
+                if( it.id != request.id) {
+                    var checkStatus = CheckStatus(
+                        status = false,
+                        msg = "has same config"
+                    )
+                    return checkStatus
+                }
+            }
+            fileCacheService.update(request)
+            var checkStatus = CheckStatus(
+                status = true,
+                msg = ""
+            )
+            return checkStatus
+        }
+        var checkStatus = CheckStatus(
+            status = false,
+            msg = "id not existed"
+        )
+        return checkStatus
     }
 
     // 新增
@@ -114,3 +138,8 @@ class FileCacheController(
     }
 
 }
+
+data class CheckStatus(
+    val status: Boolean,
+    val msg: String
+)

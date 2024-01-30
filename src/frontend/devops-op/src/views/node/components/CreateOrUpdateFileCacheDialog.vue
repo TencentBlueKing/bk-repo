@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :title="createMode ? '创建缓存配置' : '更新缓存配置'" :visible.sync="showDialog" :before-close="close">
+  <el-dialog :title="createMode ? '创建缓存配置（必填项组合唯一）' : '更新缓存配置（必填项组合唯一）'" :visible.sync="showDialog" :before-close="close">
     <el-form ref="form" :rules="rules" :model="fileCache" status-icon>
       <el-form-item ref="project-form-item" label="项目ID" prop="projectId" :rules="[{ required: true, message: '应用ID不能为空'}]">
         <el-autocomplete
@@ -34,10 +34,10 @@
         </el-autocomplete>
       </el-form-item>
       <el-form-item label="大小(MB单位)" prop="size" :rules="[{ required: true, message: '大小不能为空'}]">
-        <el-input v-model="fileCache.size" type="number" />
+        <el-input v-model="fileCache.size" type="number" :min="0" />
       </el-form-item>
       <el-form-item label="保存时间(天)" prop="days" :rules="[{ required: true, message: '保存天数不能为空'}]">
-        <el-input v-model="fileCache.days" type="number" />
+        <el-input v-model="fileCache.days" type="number" :min="0" />
       </el-form-item>
       <el-form-item label="路径前缀" prop="paths">
         <el-input

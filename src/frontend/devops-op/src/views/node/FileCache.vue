@@ -1,5 +1,48 @@
 <template>
   <div class="app-container node-container">
+    <el-form ref="form" :inline="true" :model="clientQuery">
+      <el-form-item ref="project-form-item" label="项目ID" prop="projectId">
+        <el-autocomplete
+          v-model="clientQuery.projectId"
+          class="inline-input"
+          :fetch-suggestions="queryProjects"
+          placeholder="请输入项目ID"
+          size="mini"
+          @select="selectProject"
+        >
+          <template slot-scope="{ item }">
+            <div>{{ item.name }}</div>
+          </template>
+        </el-autocomplete>
+      </el-form-item>
+      <el-form-item
+        ref="repo-form-item"
+        style="margin-left: 15px"
+        label="仓库"
+        prop="repoName"
+      >
+        <el-autocomplete
+          v-model="clientQuery.repoName"
+          class="inline-input"
+          :fetch-suggestions="queryRepositories"
+          :disabled="!clientQuery.projectId"
+          placeholder="请输入仓库名"
+          size="mini"
+          @select="selectRepo"
+        >
+          <template slot-scope="{ item }">
+            <div>{{ item.name }}</div>
+          </template>
+        </el-autocomplete>
+      </el-form-item>
+      <el-form-item>
+        <el-button
+          size="mini"
+          type="primary"
+          @click="queryFileCache()"
+        >查询</el-button>
+      </el-form-item>
+    </el-form>
     <el-table v-loading="loading" :data="fileCaches" style="width: 100%">
       <el-table-column prop="projectId" label="项目Id" />
       <el-table-column prop="repoName" label="仓库名称" />
@@ -46,6 +89,8 @@ import { deleteFileCache, queryFileCache, getNodeConfig } from '@/api/fileCache'
 import { getConfig, updateConfig } from '@/api/config'
 import CreateOrUpdateFileCacheDialog from '@/views/node/components/CreateOrUpdateFileCacheDialog'
 import { formatFileSize } from '@/utils/file'
+import { searchProjects } from '@/api/project'
+import { listRepositories } from '@/api/repository'
 
 export default {
   name: 'FileCache',
@@ -58,6 +103,7 @@ export default {
       updatingIndex: undefined,
       updatingFileCache: undefined,
       fileCaches: [],
+      originFileCache: [],
       keyName: 'job.expired-cache-file-cleanup',
       defaultConf: {
         projectId: '',
@@ -66,13 +112,49 @@ export default {
         days: 30
       },
       fileCacheConf: undefined,
-      consulType: true
+      consulType: true,
+      repoCache: {},
+      clientQuery: {
+        projectId: '',
+        repoName: ''
+      }
     }
   },
   async created() {
     await this.getDates()
   },
   methods: {
+    queryProjects(queryStr, cb) {
+      searchProjects(queryStr).then(res => {
+        this.projects = res.data.records
+        cb(this.projects)
+      })
+    },
+    selectProject(project) {
+      this.$refs['project-form-item'].resetField()
+      this.clientQuery.projectId = project.name
+    },
+    queryRepositories(queryStr, cb) {
+      let repositories = this.repoCache[this.clientQuery.projectId]
+      if (!repositories) {
+        listRepositories(this.clientQuery.projectId).then(res => {
+          repositories = res.data
+          this.repoCache[this.clientQuery.projectId] = repositories
+          cb(this.doFilter(repositories, queryStr))
+        })
+      } else {
+        cb(this.doFilter(repositories, queryStr))
+      }
+    },
+    selectRepo(repo) {
+      this.$refs['repo-form-item'].resetField()
+      this.clientQuery.repoName = repo.name
+    },
+    doFilter(arr, queryStr) {
+      return queryStr ? arr.filter(obj => {
+        return obj.name.toLowerCase().indexOf(queryStr.toLowerCase()) !== -1
+      }) : arr
+    },
     showCreateOrUpdateDialog(create, index, fileCache) {
       this.showDialog = true
       this.createMode = create
@@ -116,6 +198,7 @@ export default {
       })
     },
     async getDates() {
+      this.fileCaches = []
       await queryFileCache().then(res => {
         if (res.data && res.data.length !== 0) {
           for (let i = 0; i < res.data.length; i++) {
@@ -127,7 +210,8 @@ export default {
               }
             }
           }
-          this.fileCaches = res.data
+          this.fileCaches.push.apply(this.fileCaches, res.data)
+          this.originFileCache.push.apply(this.originFileCache, res.data)
         }
       })
       await getConfig(this.keyName, 'job').then(res => {
@@ -164,8 +248,21 @@ export default {
             })
             const temp = obj.repoConfig.repos.map(v => ({ ...v, size: size }))
             this.fileCaches.push.apply(this.fileCaches, temp)
+            this.originFileCache.push.apply(this.fileCaches, temp)
           }
         }
+      }
+    },
+    queryFileCache() {
+      this.fileCaches = this.originFileCache
+      if (this.clientQuery.projectId === '' && this.clientQuery.repoName === '') {
+        this.fileCaches = this.originFileCache
+      } else {
+        this.fileCaches = this.fileCaches.filter(fileCache => {
+          const projectFilter = fileCache.projectId.toString().includes(this.clientQuery.projectId)
+          const repoFilter = fileCache.repoName.toString().includes(this.clientQuery.repoName)
+          return projectFilter && repoFilter
+        })
       }
     }
   }
