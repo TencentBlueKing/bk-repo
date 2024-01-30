@@ -371,9 +371,6 @@ class UserServiceImpl constructor(
     override fun repeatUid(userId: String): Boolean {
         val user = userDao.findFirstByUserId(userId)
         return user != null
-//        val query = UserQueryHelper.getUserById(userId)
-//        val record = mongoTemplate.find(query, TUser::class.java)
-//        return record.isNotEmpty()
     }
 
     override fun addUserAccount(userId: String, accountId: String): Boolean {
@@ -388,15 +385,11 @@ class UserServiceImpl constructor(
 
     override fun validateEntityUser(userId: String): Boolean {
         val user = userDao.findFirstByUserId(userId)
-//        val query = UserQueryHelper.getUserById(userId)
-//        val record = mongoTemplate.findOne(query, TUser::class.java)
         return user != null && !user.group
     }
 
     override fun getRelatedUserById(userId: String): List<UserInfo> {
         return userDao.getUserByAsstUser(userId).map { UserRequestUtil.convToUserInfo(it) }
-//        val query = UserQueryHelper.getUserByAsstUsers(asstUser, userId)
-//        return mongoTemplate.find(query, TUser::class.java).map { UserRequestUtil.convToUserInfo(it) }
     }
 
     companion object {
