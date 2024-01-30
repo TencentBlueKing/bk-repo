@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -54,7 +55,7 @@ import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
-import com.tencent.bkrepo.helm.constants.SIZE
+import com.tencent.bkrepo.helm.constants.NODE_METADATA
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
@@ -70,6 +71,7 @@ import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -414,21 +416,25 @@ class FixToolServiceImpl(
                 ", size [${nodeList.size}] "
         )
         val context = ArtifactQueryContext()
-        nodeList.forEach {
+        for (it in nodeList) {
             Thread.sleep(SLEEP_MILLIS)
             try {
                 val path = it[NODE_FULL_PATH] as String
+                val nodeMetadata = it[NODE_METADATA] as Map<String, Any>
+                if (nodeMetadata.size > 3) {
+                    continue
+                }
                 val chartMetadata = queryHelmChartMetadata(context, path)
                 val metadata = HelmMetadataUtils.convertToMetadata(chartMetadata)
                 context.putAttribute(FULL_PATH, path)
-                createVersion(
-                    userId = context.userId,
+                val packageMetadataRequest = PackageMetadataSaveRequest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
-                    chartInfo = chartMetadata,
-                    size = context.getLongAttribute(SIZE)!!,
-                    isOverwrite = true
+                    packageKey = PackageKeys.ofHelm(chartMetadata.name),
+                    version = chartMetadata.version,
+                    versionMetadata = metadata
                 )
+                packageMetadataClient.saveMetadata(packageMetadataRequest)
                 val metadataSaveRequest = MetadataSaveRequest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
