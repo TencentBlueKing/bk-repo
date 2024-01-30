@@ -94,11 +94,12 @@ class DevXAccessFilter(
         val projectIps = DevxWorkspaceUtils.getIpList(projectId).awaitSingle()
         val notBelong = srcIp !in projectIps &&
             !projectIps.any { it.contains('/') && IpUtils.isInRange(srcIp, it) }
-        if (notBelong && !isRetry && !DevxWorkspaceUtils.knownIp(srcIp)) {
+        if (notBelong && !isRetry && !DevxWorkspaceUtils.knownIllegalIp(srcIp, projectId)) {
             DevxWorkspaceUtils.refreshIpListCache(projectId)
             return checkIpBelongToProject(projectId, srcIp, true)
         }
         if (notBelong) {
+            DevxWorkspaceUtils.addIllegalIp(srcIp, projectId)
             logger.info("Illegal src ip[$srcIp] in project[$projectId].")
             throw PermissionException()
         }
