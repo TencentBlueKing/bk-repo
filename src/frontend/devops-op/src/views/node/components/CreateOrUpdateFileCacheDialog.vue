@@ -33,11 +33,11 @@
           </template>
         </el-autocomplete>
       </el-form-item>
-      <el-form-item label="大小(MB单位)" prop="size" :rules="[{ required: true, message: '大小不能为空'}]">
-        <el-input v-model="fileCache.size" type="number" :min="0" />
+      <el-form-item label="大小(单位MB)" prop="size" :rules="[{ required: true, message: '大小不能为空'}]">
+        <el-input-number v-model="fileCache.size" controls-position="right" :min="0" />
       </el-form-item>
       <el-form-item label="保存时间(天)" prop="days" :rules="[{ required: true, message: '保存天数不能为空'}]">
-        <el-input v-model="fileCache.days" type="number" :min="0" />
+        <el-input-number v-model="fileCache.days" controls-position="right" :min="0" />
       </el-form-item>
       <el-form-item label="路径前缀" prop="paths">
         <el-input
