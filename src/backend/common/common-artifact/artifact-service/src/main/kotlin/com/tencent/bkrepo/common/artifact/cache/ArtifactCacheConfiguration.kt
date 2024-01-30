@@ -36,17 +36,14 @@ import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Profile
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ArtifactCacheProperties::class)
+@EnableConfigurationProperties(ArtifactCacheEvictionProperties::class)
 class ArtifactCacheConfiguration {
     @Bean
-    @ConditionalOnBean(CacheStorageService::class, OrderedCachedFactory::class)
     fun storageCacheCleaner(
         cacheFactory: OrderedCachedFactory<String, Any?>,
         nodeClient: NodeClient,
@@ -55,7 +52,7 @@ class ArtifactCacheConfiguration {
         fileLocator: FileLocator,
         storageCredentialsClient: StorageCredentialsClient,
         storageProperties: StorageProperties,
-        artifactCacheProperties: ArtifactCacheProperties,
+        artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
     ): ArtifactCacheCleaner {
         return DefaultArtifactCacheCleaner(
             cacheFactory,
@@ -65,12 +62,11 @@ class ArtifactCacheConfiguration {
             fileLocator,
             storageCredentialsClient,
             storageProperties,
-            artifactCacheProperties
+            artifactCacheEvictionProperties
         )
     }
 
     @Bean
-    @Profile("dev")
     fun cacheFactory(): OrderedCachedFactory<String, Any?> {
         return object : OrderedCachedFactory<String, Any?> {
             override fun create(cacheProperties: CacheProperties): OrderedCache<String, Any?> {

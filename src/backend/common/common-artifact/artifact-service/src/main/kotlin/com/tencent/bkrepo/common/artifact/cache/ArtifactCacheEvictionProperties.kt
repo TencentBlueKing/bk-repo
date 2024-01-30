@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.artifact.cache
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties("artifact.cache")
-data class ArtifactCacheProperties(
+@ConfigurationProperties("artifact.cache.eviction")
+data class ArtifactCacheEvictionProperties(
     var enabled: Boolean = false
 )

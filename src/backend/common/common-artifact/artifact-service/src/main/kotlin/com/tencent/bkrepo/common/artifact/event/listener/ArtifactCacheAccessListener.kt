@@ -42,7 +42,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class ArtifactCacheListener(
+class ArtifactCacheAccessListener(
     private val artifactCacheCleanerProvider: ObjectProvider<ArtifactCacheCleaner>
 ) {
     @Async
@@ -95,6 +95,6 @@ class ArtifactCacheListener(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactCacheListener::class.java)
+        private val logger = LoggerFactory.getLogger(ArtifactCacheAccessListener::class.java)
     }
 }

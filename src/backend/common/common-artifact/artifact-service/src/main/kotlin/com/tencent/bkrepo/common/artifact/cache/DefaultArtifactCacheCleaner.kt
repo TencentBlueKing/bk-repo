@@ -41,7 +41,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-class DefaultArtifactCacheCleaner(
+open class DefaultArtifactCacheCleaner(
     private val cacheFactory: OrderedCachedFactory<String, Any?>,
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
@@ -49,13 +49,13 @@ class DefaultArtifactCacheCleaner(
     private val fileLocator: FileLocator,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val storageProperties: StorageProperties,
-    private val artifactCacheProperties: ArtifactCacheProperties,
+    private val artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
 ) : ArtifactCacheCleaner {
 
     private val storageCacheMap = ConcurrentHashMap<String, OrderedCache<String, Any?>>()
 
     override fun onCacheAccessed(projectId: String, repoName: String, fullPath: String) {
-        if (!artifactCacheProperties.enabled) {
+        if (!artifactCacheEvictionProperties.enabled) {
             return
         }
         nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
@@ -71,7 +71,7 @@ class DefaultArtifactCacheCleaner(
 
     @Synchronized
     fun onCacheAccessed(storageKey: String, sha256: String) {
-        if (!artifactCacheProperties.enabled || sha256 == FAKE_SHA256) {
+        if (!artifactCacheEvictionProperties.enabled || sha256 == FAKE_SHA256) {
             return
         }
 
@@ -87,7 +87,7 @@ class DefaultArtifactCacheCleaner(
      * 定时同步最新的存储配置
      */
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
-    fun refreshStorageCredentials() {
+    open fun refreshStorageCredentials() {
         val credentials = storageCredentialsClient.list().data ?: return
         for (credential in credentials) {
             storageCacheMap[credential.key!!]?.let { refreshCacheProperties(it, credential) }
