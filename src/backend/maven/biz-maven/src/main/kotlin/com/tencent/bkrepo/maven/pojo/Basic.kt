@@ -35,6 +35,7 @@ data class Basic(
     val groupId: String,
     val artifactId: String,
     val version: String,
+    val type: String?,
     val size: Long,
     val fullPath: String,
     val createdBy: String,

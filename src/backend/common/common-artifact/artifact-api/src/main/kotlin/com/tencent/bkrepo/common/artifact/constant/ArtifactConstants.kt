@@ -52,6 +52,11 @@ const val ARTIFACT_CONFIGURER = "artifact-configurer"
 const val NODE_DETAIL_KEY = "node-detail"
 
 /**
+ * 查询仓库上传下载限速配置后后将其写入request attributes的key
+ */
+const val REPO_RATE_LIMIT_KEY = "repo-rate-limit"
+
+/**
  * 项目id字段
  */
 const val PROJECT_ID = "projectId"
@@ -108,9 +113,25 @@ const val X_CHECKSUM_SHA256 = "X-Checksum-Sha256"
 const val PIPELINE = "pipeline"
 
 /**
+ * 自定义仓库
+ */
+const val CUSTOM = "custom"
+
+/**
+ * lsync仓库
+ */
+const val LSYNC = "lsync"
+
+/**
  * 报告仓库
  */
 const val REPORT = "report"
+
+
+/**
+ * 日志仓库
+ */
+const val LOG = "log"
 
 /**
  * 文件访问请求是否为直接下载
@@ -146,3 +167,16 @@ const val SCAN_STATUS = "scanStatus"
 
 const val METADATA_KEY_PACKAGE_NAME = "packageName"
 const val METADATA_KEY_PACKAGE_VERSION = "packageVersion"
+
+/**
+ * 节点链接的目标项目
+ */
+const val METADATA_KEY_LINK_PROJECT = "targetProjectId"
+/**
+ * 节点链接的目标仓库
+ */
+const val METADATA_KEY_LINK_REPO = "targetRepoName"
+/**
+ * 节点链接的目标路径
+ */
+const val METADATA_KEY_LINK_FULL_PATH = "targetFullPath"

@@ -122,7 +122,7 @@ class ChartInfoServiceImpl(
                     select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_FULL_PATH, NODE_METADATA),
                     rule = rule
                 )
-                val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
+                val nodeList: List<Map<String, Any?>>? = nodeClient.queryWithoutCount(queryModel).data?.records
                 if (nodeList.isNullOrEmpty()) HttpStatus.NOT_FOUND else HttpStatus.OK
             } else {
                 HttpStatus.NOT_FOUND

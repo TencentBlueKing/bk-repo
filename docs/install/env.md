@@ -10,24 +10,25 @@
 
 ## 网关配置项
 
-| 配置项                          | 说明                | 示例                                                                                                    |
-| ------------------------------- | ------------------- |-------------------------------------------------------------------------------------------------------|
-| BK_REPO_HOST                    | bkrepo主机地址      | bkrepo.example.com                                                                                    |
-| BK_REPO_UI_HOST                 | bkrepo前端主机地址  | bkrepo.example.com                                                                                    |
-| BK_REPO_HTTP_PORT               | bkrepo http端口     | 80                                                                                                    |
-| BK_REPO_HTTPS_PORT              | bkrepo https端口    | 443                                                                                                   |
-| BK_REPO_APIGW_URL               | bkrepo api网关url   |                                                                                                       |
-| BK_REPO_APP_CODE                | bkrepo app code     |                                                                                                       |
-| BK_REPO_APP_TOKEN               | bkrepo app token    |                                                                                                       |
-| BK_REPO_HOME                    | bkrepo部署目录      | /data/bkce                                                                                            |
-| BK_REPO_LOGS_DIR                | bkrepo日志目录      | /data/logs                                                                                            |
-| BK_REPO_PAAS_FQDN               | bkrepo paas fqdn    | paas.example.com                                                                                      |
-| BK_REPO_PAAS_LOGIN_URL          | 蓝鲸paas登录地址    | http://paas.example.com:80/login/?c_url=                                                              |
-| BK_REPO_AUTHORIZATION           | bkrepo认证token     | Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw== |
-| BK_REPO_GATEWAY_CORS_ALLOW_LIST | 网关跨域允许列表    |                                                                                                       |
-| BK_REPO_GATEWAY_DNS_ADDR        | 网关dns解析服务地址 | 127.0.0.1:53                                                                                          |
-| BK_REPO_SERVICE_PREFIX          | bkrepo微服务前缀    | bkrepo-                                                                                               |
-| BK_REPO_DEPLOY_MODE             | bkrepo部署模式      | standalone / ci                                                                                       |
+| 配置项                        | 说明               | 示例                                                                                                    |
+| -------------------------- |------------------|-------------------------------------------------------------------------------------------------------|
+| BK_REPO_HOST               | bkrepo主机地址       | bkrepo.example.com                                                                                    |
+| BK_REPO_UI_HOST            | bkrepo前端主机地址     | bkrepo.example.com                                                                                    |
+| BK_REPO_HTTP_PORT          | bkrepo http端口    | 80                                                                                                    |
+| BK_REPO_HTTPS_PORT         | bkrepo https端口   | 443                                                                                                   |
+| BK_REPO_APIGW_URL          | bkrepo api网关url  |                                                                                                       |
+| BK_APIGW_URL               | 蓝鲸 api网关url      |                                                                                                       |
+| BK_REPO_APP_CODE           | bkrepo app code  |                                                                                                       |
+| BK_REPO_APP_TOKEN          | bkrepo app token |                                                                                                       |
+| BK_REPO_HOME               | bkrepo部署目录       | /data/bkce                                                                                            |
+| BK_REPO_LOGS_DIR           | bkrepo日志目录       | /data/logs                                                                                            |
+| BK_REPO_PAAS_FQDN          | bkrepo paas fqdn | paas.example.com                                                                                      |
+| BK_REPO_PAAS_LOGIN_URL     | 蓝鲸paas登录地址       | http://paas.example.com:80/login/?c_url=                                                              |
+| BK_REPO_AUTHORIZATION      | bkrepo认证token    | Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw== |
+| BK_REPO_GATEWAY_CORS_ALLOW_LIST | 网关跨域允许列表         |                                                                                                       |
+| BK_REPO_GATEWAY_DNS_ADDR   | 网关dns解析服务地址      | 127.0.0.1:53                                                                                          |
+| BK_REPO_SERVICE_PREFIX     | bkrepo微服务前缀      | bkrepo-                                                                                               |
+| BK_REPO_DEPLOY_MODE        | bkrepo部署模式       | standalone / ci                                                                                       |
 
 ## consul配置项
 

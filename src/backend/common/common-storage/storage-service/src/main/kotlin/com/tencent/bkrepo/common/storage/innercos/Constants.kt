@@ -32,13 +32,13 @@
 package com.tencent.bkrepo.common.storage.innercos
 
 import java.net.URLEncoder
-import java.util.concurrent.TimeUnit
 
 const val DEFAULT_ENCODING = "UTF-8"
 const val PATH_DELIMITER = '/'
 const val PARAMETER_UPLOAD_ID = "uploadid"
 const val PARAMETER_PART_NUMBER = "partnumber"
 const val PARAMETER_UPLOADS = "uploads"
+const val PARAMETER_RESTORE = "restore"
 const val COS_COPY_SOURCE = "x-cos-copy-source"
 
 const val RESPONSE_UPLOAD_ID = "UploadId"
@@ -69,24 +69,4 @@ fun String.urlEncode(toLower: Boolean): String {
         }
     }
     return builder.toString()
-}
-
-/**
- * 重试函数，times表示重试次数，加上第一次执行，总共会执行times+1次，
- */
-@Suppress("TooGenericExceptionCaught") // 无法预知block具体异常类型
-inline fun <R> retry(times: Int, delayInSeconds: Long = 5, block: (Int) -> R): R {
-    var retries = 0
-    while (true) {
-        try {
-            return block(retries)
-        } catch (e: Exception) {
-            if (retries < times) {
-                TimeUnit.SECONDS.sleep(delayInSeconds)
-                retries += 1
-            } else {
-                throw e
-            }
-        }
-    }
 }

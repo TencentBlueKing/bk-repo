@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class ChartEventListener(
-    private val helmProperties: HelmProperties
+    private val helmProperties: HelmProperties,
 ) : AbstractChartService() {
 
     /**

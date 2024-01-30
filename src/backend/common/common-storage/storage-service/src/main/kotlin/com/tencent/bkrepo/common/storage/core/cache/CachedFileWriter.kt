@@ -114,7 +114,6 @@ class CachedFileWriter(
                 moveToCachePath()
             } finally {
                 close()
-                Files.deleteIfExists(tempFilePath)
             }
         }
     }
@@ -176,8 +175,6 @@ class CachedFileWriter(
             logger.info("File[$cacheFilePath] already exists")
         } catch (exception: Exception) {
             logger.error("Finish CacheFileWriter error: $exception", exception)
-        } finally {
-            releaseLock()
         }
     }
 
@@ -189,7 +186,18 @@ class CachedFileWriter(
                 logger.error("close CacheFileWriter error: $exception", exception)
             } finally {
                 outputStream = null
+                release()
             }
+        }
+    }
+
+    /**
+     * 释放资源
+     * */
+    private fun release() {
+        Files.deleteIfExists(tempFilePath)
+        if (isSelfLock()) {
+            releaseLock()
         }
     }
 

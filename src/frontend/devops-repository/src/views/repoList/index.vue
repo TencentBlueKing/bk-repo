@@ -6,7 +6,7 @@
                 <bk-input
                     v-model.trim="query.name"
                     class="w250"
-                    :placeholder="repoEnterTip"
+                    :placeholder="$t('repoEnterTip')"
                     clearable
                     @enter="handlerPaginationChange"
                     @clear="handlerPaginationChange"
@@ -32,6 +32,7 @@
             height="calc(100% - 100px)"
             :outer-border="false"
             :row-border="false"
+            @sort-change="orderByMetrics"
             size="small">
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(query.name || query.type)"></empty-data>
@@ -45,6 +46,12 @@
                     <span v-if="row.configuration.settings.system" class="mr5 repo-tag" :data-name="$t('system')"></span>
                     <span v-if="row.public" class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
                 </template>
+            </bk-table-column>
+            <bk-table-column :label="$t('repoUsage')" width="150" prop="fileSize" sortable="custom">
+                <template #default="{ row }">{{ row.fileSize ? convertFileSize(row.fileSize) : '0B' }}</template>
+            </bk-table-column>
+            <bk-table-column :label="$t('fileNum')" width="150" prop="fileNum" sortable="custom">
+                <template #default="{ row }">{{ row.fileNum ? row.fileNum : 0 }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('repoQuota')" width="250">
                 <template #default="{ row }">
@@ -77,7 +84,8 @@
                                     && row.name !== 'report'
                                     && row.name !== 'log'
                                     && row.name !== 'pipeline'
-                                )) && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
+                                )) && { label: $t('delete'), clickEvent: () => deleteRepo(row) },
+                            (userInfo.admin || userInfo.manage) && (row.repoType === 'generic') && { label: $t('cleanRepo'), clickEvent: () => cleanRepo(row) }
                         ]">
                     </operation-list>
                 </template>
@@ -96,15 +104,20 @@
             @limit-change="limit => handlerPaginationChange({ limit })">
         </bk-pagination>
         <create-repo-dialog ref="createRepo" @refresh="handlerPaginationChange"></create-repo-dialog>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
+        <generic-clean-dialog ref="genericCleanDialog" @refresh="handlerPaginationChange"></generic-clean-dialog>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
     import createRepoDialog from '@repository/views/repoList/createRepoDialog'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@repository/store/publicEnum'
     import { formatDate, convertFileSize, debounce } from '@repository/utils'
     import { cloneDeep } from 'lodash'
+    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
+    import { beforeMonths, beforeYears } from '@/utils/date'
     const paginationParams = {
         count: 0,
         current: 1,
@@ -113,7 +126,7 @@
     }
     export default {
         name: 'repoList',
-        components: { OperationList, createRepoDialog },
+        components: { OperationList, createRepoDialog, iamDenyDialog, genericCleanDialog },
         data () {
             return {
                 MODE_CONFIG,
@@ -128,11 +141,16 @@
                 },
                 value: 20,
                 pagination: cloneDeep(paginationParams),
-                debounceGetListData: null
+                debounceGetListData: null,
+                projectMetrics: [],
+                fullRepoList: [],
+                sortType: [],
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['userList']),
+            ...mapState(['userList', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             }
@@ -163,7 +181,9 @@
             ...mapActions([
                 'getRepoList',
                 'deleteRepoList',
-                'getRepoListWithoutPage'
+                'getRepoListWithoutPage',
+                'getPermissionUrl',
+                'getProjectMetrics'
             ]),
             initData () {
                 // 切换项目或者点击菜单时需要将筛选条件清空，并将页码相关参数重置，否则会导致点击菜单的时候筛选条件还在，不符合产品要求(点击菜单清空筛选条件，重新请求最新数据)
@@ -189,7 +209,9 @@
                     } else {
                         allRepo = records.map(v => ({ ...v, repoType: v.type.toLowerCase() }))
                     }
+                    this.fullRepoList = allRepo
                     this.repoList = allRepo.slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit >= records.length ? records.length : this.pagination.current * this.pagination.limit)
+                    this.getMetrics()
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -222,13 +244,14 @@
             },
             toPackageList ({ projectId, repoType, name }) {
                 this.$router.push({
-                    name: repoType === 'generic' ? 'repoGeneric' : 'commonList',
+                    name: (repoType === 'generic' || repoType === 'ddc') ? 'repoGeneric' : 'commonList',
                     params: {
                         projectId,
                         repoType
                     },
                     query: {
                         repoName: name,
+                        path: '/default',
                         ...this.$route.query,
                         c: this.pagination.current,
                         l: this.pagination.limit
@@ -262,9 +285,155 @@
                                 theme: 'success',
                                 message: this.$t('delete') + this.$t('success')
                             })
+                        }).catch(err => {
+                            if (err.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'REPO',
+                                        uid: this.userInfo.name,
+                                        repoName: name
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: name,
+                                            action: 'DELETE',
+                                            url: res
+                                        }
+                                    }
+                                })
+                            }
                         })
                     }
                 })
+            },
+            getMetrics () {
+                this.getProjectMetrics({ projectId: this.projectId }).then(res => {
+                    if (res.repoMetrics !== null && res.repoMetrics.length > 0) {
+                        this.projectMetrics = res.repoMetrics
+                        if (this.sortType.length > 0) {
+                            this.orderByMetricsDetail()
+                        } else {
+                            for (let i = 0; i < this.repoList.length; i++) {
+                                const metrics = res.repoMetrics.find((item) => {
+                                    return item.repoName === this.repoList[i].name
+                                })
+                                if (metrics) {
+                                    this.$set(this.repoList[i], 'fileSize', metrics.size)
+                                    this.$set(this.repoList[i], 'fileNum', metrics.num)
+                                } else {
+                                    this.$set(this.repoList[i], 'fileSize', 0)
+                                    this.$set(this.repoList[i], 'fileNum', 0)
+                                }
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < this.repoList.length; i++) {
+                            this.$set(this.repoList[i], 'fileSize', 0)
+                            this.$set(this.repoList[i], 'fileNum', 0)
+                        }
+                    }
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'PROJECT',
+                                uid: this.userInfo.name
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    action: 'READ',
+                                    repoName: '',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
+                })
+            },
+            orderByMetrics (sort) {
+                this.sortType = []
+                if (sort.prop && this.projectMetrics.length > 0) {
+                    const sortParam = {
+                        properties: sort.prop,
+                        direction: sort.order === 'ascending' ? 'ASC' : 'DESC'
+                    }
+                    this.sortType.push(sortParam)
+                    this.orderByMetricsDetail()
+                } else {
+                    this.repoList = this.fullRepoList.slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit >= this.fullRepoList.length ? this.fullRepoList.length : this.pagination.current * this.pagination.limit)
+                }
+            },
+            orderByMetricsDetail () {
+                const name = this.sortType[0].properties
+                const direction = this.sortType[0].direction
+                this.projectMetrics.sort(function (a, b) {
+                    if (name === 'fileSize' && direction === 'ASC') {
+                        return a.size - b.size
+                    } else if (name === 'fileSize' && direction === 'DESC') {
+                        return b.size - a.size
+                    } else if (name === 'fileNum' && direction === 'ASC') {
+                        return a.num - b.num
+                    } else {
+                        return b.num - a.num
+                    }
+                })
+                const existMetricsRepo = []
+                const notExistMetricsRepo = []
+                this.fullRepoList.forEach(repo => {
+                    if (this.projectMetrics.some(repoMetrics => {
+                        return repoMetrics.repoName === repo.name
+                    })) {
+                        existMetricsRepo.push(repo)
+                    } else {
+                        notExistMetricsRepo.push(repo)
+                    }
+                })
+                const existMetricsRepoOrder = []
+                this.projectMetrics.forEach(repoMetric => {
+                    const repo = existMetricsRepo.find(temp => {
+                        return temp.name === repoMetric.repoName
+                    })
+                    if (repo) {
+                        repo.fileSize = repoMetric.size
+                        repo.fileNum = repoMetric.num
+                        existMetricsRepoOrder.push(repo)
+                    }
+                })
+                let resRepo = []
+                if (this.sortType[0].direction === 'ASC') {
+                    resRepo = [...notExistMetricsRepo, ...existMetricsRepoOrder]
+                } else {
+                    resRepo = [...existMetricsRepoOrder, ...notExistMetricsRepo]
+                }
+                this.repoList = resRepo.slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit >= this.fullRepoList.length ? this.fullRepoList.length : this.pagination.current * this.pagination.limit)
+            },
+            cleanRepo (row) {
+                const fullPaths = []
+                fullPaths.push({
+                    path: '/',
+                    isComplete: false
+                })
+                this.$refs.genericCleanDialog.show = true
+                this.$refs.genericCleanDialog.repoName = row.name
+                this.$refs.genericCleanDialog.projectId = row.projectId
+                this.$refs.genericCleanDialog.paths = fullPaths
+                this.$refs.genericCleanDialog.loading = false
+                this.$refs.genericCleanDialog.isComplete = false
+                if (row.name === 'pipeline') {
+                    this.$refs.genericCleanDialog.date = beforeMonths(2)
+                } else {
+                    this.$refs.genericCleanDialog.date = beforeYears(1)
+                }
             }
         }
     }

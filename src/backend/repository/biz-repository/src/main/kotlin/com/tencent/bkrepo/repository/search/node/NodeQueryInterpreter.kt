@@ -31,20 +31,20 @@
 
 package com.tencent.bkrepo.repository.search.node
 
-import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.repository.search.common.CommonQueryInterpreter
 import com.tencent.bkrepo.repository.search.common.LocalDatetimeRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.MetadataRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.SelectFieldInterceptor
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.Lazy
 
 @Component
 class NodeQueryInterpreter @Autowired @Lazy constructor(
@@ -52,7 +52,7 @@ class NodeQueryInterpreter @Autowired @Lazy constructor(
     private val repoNameRuleInterceptor: RepoNameRuleInterceptor,
     private val repoTypeRuleInterceptor: RepoTypeRuleInterceptor,
     private val localDatetimeRuleInterceptor: LocalDatetimeRuleInterceptor
-) : MongoQueryInterpreter() {
+) : CommonQueryInterpreter(permissionManager) {
 
     @PostConstruct
     fun init() {
@@ -65,6 +65,6 @@ class NodeQueryInterpreter @Autowired @Lazy constructor(
     }
 
     override fun initContext(queryModel: QueryModel, mongoQuery: Query): QueryContext {
-        return NodeQueryContext(queryModel, mongoQuery, this)
+        return NodeQueryContext(queryModel, false, mongoQuery, this)
     }
 }

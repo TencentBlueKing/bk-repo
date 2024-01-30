@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.opdata.model
 
+import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,12 +39,13 @@ import org.springframework.stereotype.Service
 
 @Service
 class StorageCredentialsModel @Autowired constructor(
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val statDateModel: StatDateModel
 ) {
 
     fun getStorageCredentialsStat(metrics: StatMetrics): Map<String, Long> {
         val result = mutableMapOf<String, Long>()
-        val projectMetricsList = projectMetricsRepository.findAll()
+        val projectMetricsList = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
         projectMetricsList.forEach { projectMetrics ->
             projectMetrics.repoMetrics.forEach {
                 val value = if (metrics == StatMetrics.NUM) it.num else it.size
@@ -52,6 +54,11 @@ class StorageCredentialsModel @Autowired constructor(
                 } else {
                     result[it.credentialsKey!!] = value
                 }
+            }
+        }
+        if (metrics == StatMetrics.SIZE) {
+            result.keys.forEach {
+                result[it] = result[it]!! / TO_GIGABYTE
             }
         }
         return result

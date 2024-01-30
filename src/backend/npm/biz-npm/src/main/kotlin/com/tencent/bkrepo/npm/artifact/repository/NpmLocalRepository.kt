@@ -171,7 +171,7 @@ class NpmLocalRepository(
             .metadata("version", searchRequest.text, OperationType.MATCH)
             .metadata("keywords", searchRequest.text, OperationType.MATCH)
             .build()
-        val data = nodeClient.search(queryModel).data ?: run {
+        val data = nodeClient.queryWithoutCount(queryModel).data ?: run {
             logger.warn("failed to find npm package in repo [${context.projectId}/${context.repoName}]")
             return emptyList()
         }

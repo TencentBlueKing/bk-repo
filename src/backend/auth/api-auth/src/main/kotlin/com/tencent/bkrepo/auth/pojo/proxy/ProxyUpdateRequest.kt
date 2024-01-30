@@ -39,10 +39,12 @@ data class ProxyUpdateRequest(
     val name: String,
     @ApiModelProperty("展示名")
     val displayName: String? = null,
-    @ApiModelProperty("IP")
-    val ip: String? = null,
+    @ApiModelProperty("访问域名")
+    val domain: String? = null,
     @ApiModelProperty("同步限速")
     val syncRateLimit: DataSize? = null,
     @ApiModelProperty("同步时间段")
-    val syncTimeRange: String? = null
+    val syncTimeRange: String? = null,
+    @ApiModelProperty("缓存过期时间")
+    val cacheExpiredDays: Int? = null,
 )

@@ -27,23 +27,24 @@
 
 package com.tencent.bkrepo.job.batch
 
-import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ExpiredNodeMarkupJobProperties
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 /**
  * 标记已过期的节点为已删除
@@ -52,11 +53,13 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(ExpiredNodeMarkupJobProperties::class)
 class ExpiredNodeMarkupJob(
     properties: ExpiredNodeMarkupJobProperties,
-    private val mongoTemplate: MongoTemplate
+    private val nodeClient: NodeClient
 ) : DefaultContextMongoDbJob<ExpiredNodeMarkupJob.Node>(properties) {
 
     data class Node(
-        val id: String,
+        val projectId: String,
+        val repoName: String,
+        val fullPath: String,
         val expireDate: LocalDateTime,
         val deleted: LocalDateTime?
     )
@@ -80,26 +83,28 @@ class ExpiredNodeMarkupJob(
 
     override fun mapToEntity(row: Map<String, Any?>): Node {
         return Node(
-            row[ID].toString(),
+            row[Node::projectId.name].toString(),
+            row[Node::repoName.name].toString(),
+            row[Node::fullPath.name].toString(),
             TimeUtils.parseMongoDateTimeStr(row[Node::expireDate.name].toString())!!,
             TimeUtils.parseMongoDateTimeStr(row[Node::deleted.name].toString())
         )
     }
 
-    override fun entityClass(): Class<Node> {
-        return Node::class.java
+    override fun entityClass(): KClass<Node> {
+        return Node::class
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
-        val query = Query.query(Criteria.where(ID).isEqualTo(row.id))
-        mongoTemplate.updateFirst(
-            query,
-            Update().set(Node::deleted.name, LocalDateTime.now()),
-            collectionName
-        )
+        try {
+            nodeClient.deleteNode(NodeDeleteRequest(row.projectId, row.repoName, row.fullPath, SYSTEM_USER))
+        } catch (e: Exception) {
+            logger.warn("delete expired node[$row] failed: $e")
+        }
     }
 
     companion object {
         private const val COLLECTION_NAME_PREFIX = "node_"
+        private val logger = LoggerFactory.getLogger(ExpiredNodeMarkupJob::class.java)
     }
 }

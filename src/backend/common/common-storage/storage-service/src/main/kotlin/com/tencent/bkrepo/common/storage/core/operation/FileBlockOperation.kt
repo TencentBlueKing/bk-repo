@@ -48,6 +48,11 @@ interface FileBlockOperation {
     fun createAppendId(storageCredentials: StorageCredentials?): String
 
     /**
+     * 查询追加文件长度
+     */
+    fun findLengthOfAppendFile(appendId: String, storageCredentials: StorageCredentials?): Long
+
+    /**
      * 追加文件，返回当前文件长度
      * appendId: 文件追加Id
      */
@@ -57,7 +62,7 @@ interface FileBlockOperation {
      * 结束追加，存储并返回完整文件
      * appendId: 文件追加Id
      */
-    fun finishAppend(appendId: String, storageCredentials: StorageCredentials?): FileInfo
+    fun finishAppend(appendId: String, storageCredentials: StorageCredentials?, fileInfo: FileInfo? = null): FileInfo
 
     /**
      * 创建分块存储目录，返回分块存储Id

@@ -70,6 +70,8 @@
         </div>
 
         <common-form-dialog ref="commonFormDialog" @refresh="refresh"></common-form-dialog>
+        <loading ref="loading" @closeLoading="closeLoading"></loading>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
@@ -77,10 +79,12 @@
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import VersionDetail from '@repository/views/repoCommon/commonVersionDetail'
     import commonFormDialog from '@repository/views/repoCommon/commonFormDialog'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
+    import Loading from '@repository/components/Loading/loading'
     export default {
         name: 'commonPackageDetail',
-        components: { OperationList, InfiniteScroll, VersionDetail, commonFormDialog },
+        components: { Loading, OperationList, InfiniteScroll, VersionDetail, commonFormDialog, iamDenyDialog },
         data () {
             return {
                 tabName: 'commonVersion',
@@ -97,7 +101,7 @@
                     tag: [
                         {
                             required: true,
-                            message: this.$t('pleaseSelect') + this.$t('tag'),
+                            message: this.$t('pleaseSelect') + this.$t('space') + this.$t('tag'),
                             trigger: 'blur'
                         }
                     ]
@@ -118,11 +122,14 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                }
+                },
+                showIamDenyDialog: false,
+                showData: {},
+                timer: null
             }
         },
         computed: {
-            ...mapState(['permission', 'scannerSupportPackageType']),
+            ...mapState(['permission', 'scannerSupportPackageType', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId || ''
             },
@@ -160,7 +167,8 @@
                 'changeStageTag',
                 'deleteVersion',
                 'forbidPackageMetadata',
-                'refreshSupportPackageTypeList'
+                'refreshSupportPackageTypeList',
+                'getPermissionUrl'
             ]),
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}, load) {
                 this.pagination.current = current
@@ -241,7 +249,8 @@
                     type: 'upgrade',
                     version: row.name,
                     default: row.stageTag,
-                    tag: ''
+                    tag: '',
+                    path: this.currentVersion.contentPath
                 })
             },
             scanPackageHandler (row = this.currentVersion) {
@@ -252,7 +261,8 @@
                     type: 'scan',
                     id: '',
                     name: this.pkg.name,
-                    version: row.name
+                    version: row.name,
+                    path: this.currentVersion.contentPath
                 })
             },
             changeForbidStatusHandler (row = this.currentVersion) {
@@ -270,23 +280,90 @@
                         message: (row.metadata.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse')) + this.$t('space') + this.$t('success')
                     })
                     this.refresh(row.name)
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'UPDATE',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: this.currentVersion.contentPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'UPDATE',
+                                    url: res,
+                                    path: this.currentVersion.contentPath
+                                }
+                            }
+                        })
+                    }
                 })
             },
             downloadPackageHandler (row = this.currentVersion) {
                 if (this.repoType === 'docker') return
-                const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}&download=true`
+                const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${encodeURIComponent(row.name)}&download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
                         '/web' + url,
                         '_self'
                     )
                 }).catch(e => {
-                    const message = e.status === 403 ? this.$t('fileDownloadError') : this.$t('fileError')
-                    this.$bkMessage({
-                        theme: 'error',
-                        message
-                    })
+                    if (e.status === 451) {
+                        this.$refs.loading.isShow = true
+                        this.$refs.loading.complete = false
+                        this.$refs.loading.title = ''
+                        this.$refs.loading.backUp = true
+                        this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                        this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                        this.$refs.loading.message = this.$t('backUpMessage', { 0: this.currentVersion.contentPath })
+                        this.timerDownload(url, this.currentVersion.contentPath)
+                    } else {
+                        const message = e.status === 403 ? this.$t('fileDownloadError') : this.$t('fileError')
+                        this.$bkMessage({
+                            theme: 'error',
+                            message
+                        })
+                    }
                 })
+            },
+            timerDownload (url, fullPath) {
+                this.timer = setInterval(() => {
+                    this.$ajax.head(url).then(() => {
+                        clearInterval(this.timer)
+                        this.timer = null
+                        this.$refs.loading.isShow = false
+                        window.open(
+                            '/web' + url,
+                            '_self'
+                        )
+                    }).catch(e => {
+                        if (e.status === 451) {
+                            this.$refs.loading.isShow = true
+                            this.$refs.loading.complete = false
+                            this.$refs.loading.title = ''
+                            this.$refs.loading.backUp = true
+                            this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                            this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                            this.$refs.loading.message = this.$t('backUpMessage', { 0: fullPath })
+                        } else {
+                            clearInterval(this.timer)
+                            this.timer = null
+                            this.$refs.loading.isShow = false
+                            const message = e.status === 403 ? this.$t('fileDownloadError') : this.$t('fileError')
+                            this.$bkMessage({
+                                theme: 'error',
+                                message
+                            })
+                        }
+                    })
+                }, 5000)
             },
             deleteVersionHandler ({ name: version } = this.currentVersion) {
                 this.$confirm({
@@ -304,11 +381,40 @@
                             this.getVersionListHandler()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'NODE',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName,
+                                        path: this.currentVersion.contentPath
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            url: res,
+                                            packageName: this.currentVersion.metadata.name,
+                                            packageVersion: this.currentVersion.metadata.version
+                                        }
+                                    }
+                                })
+                            }
                         })
                     }
                 })
+            },
+            closeLoading () {
+                clearInterval(this.timer)
+                this.timer = null
             }
         }
     }

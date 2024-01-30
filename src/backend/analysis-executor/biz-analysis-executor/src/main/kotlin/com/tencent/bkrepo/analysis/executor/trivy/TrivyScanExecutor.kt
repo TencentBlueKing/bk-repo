@@ -103,7 +103,13 @@ class TrivyScanExecutor @Autowired constructor(
         val cacheBind = Bind(cacheDir.absolutePath, Volume(CACHE_DIR))
         val cmd = buildScanCmds(task, scannerInputFile)
         val result = dockerScanHelper.scan(
-            containerConfig.image, Binds(bind, cacheBind), cmd, scannerInputFile, task
+            image = containerConfig.image,
+            binds = Binds(bind, cacheBind),
+            args = cmd,
+            scannerInputFile = scannerInputFile,
+            task = task,
+            userName = containerConfig.dockerRegistryUsername,
+            password = containerConfig.dockerRegistryPassword
         )
         if (!result) {
             return scanStatus(task, taskWorkDir, SubScanTaskStatus.TIMEOUT)
@@ -187,7 +193,7 @@ class TrivyScanExecutor @Autowired constructor(
             .sort(Sort.Direction.DESC, "lastModifiedDate", "createdDate")
             .select("fullPath", "size", "sha256", "md5")
             .build()
-        val nodeRes = nodeClient.search(queryModel)
+        val nodeRes = nodeClient.queryWithoutCount(queryModel)
         if (nodeRes.isNotOk()) {
             logger.error(
                 "Get node info failed: code[${nodeRes.code}], message[${nodeRes.message}]," +

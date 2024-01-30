@@ -42,6 +42,7 @@ import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
+import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.statemachine.Action
@@ -59,6 +60,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils.getLocalizedMessage
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
@@ -74,6 +76,7 @@ import java.time.LocalDateTime
 @Action
 @Suppress("LongParameterList")
 class PendingAction(
+    private val executionClusterService: ExecutionClusterService,
     private val scannerProperties: ScannerProperties,
     private val projectScanConfigurationService: ProjectScanConfigurationService,
     private val scanPlanDao: ScanPlanDao,
@@ -96,7 +99,9 @@ class PendingAction(
         require(context is CreateTaskContext)
         with(context) {
             val task = createTask(scanRequest, triggerType, userId)
-            weworkBotUrl?.let { scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, it, chatIds) }
+            if (!weworkBotUrl.isNullOrEmpty() || !chatIds.isNullOrEmpty()) {
+                scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, weworkBotUrl, chatIds)
+            }
             // 开始调度扫描任务
             executor.execute {
                 val submitEvent = Event(ScanTaskEvent.SUBMIT.name, SubmitTaskContext(task))
@@ -113,19 +118,26 @@ class PendingAction(
             }
 
             val plan = planId?.let { scanPlanDao.get(it) }
-            val projectId = projectId(rule, plan)
+            val projectIds = parseProjectIds(rule, plan)
+            val projectId = if (projectIds.size == 1) {
+                projectIds.first()
+            } else {
+                null
+            }
             val repoNames = RuleUtil.getRepoNames(rule)
             val scanner = scannerService.get(scanner ?: plan!!.scanner)
             val metadata = customMetadata(metadata, projectId, scanner)
 
             // 校验权限
-            if (repoNames.isEmpty()) {
+            if (projectId == null) {
+                permissionCheckHandler.checkPrincipal(userId, PrincipalType.ADMIN)
+            } else if (repoNames.isEmpty()) {
                 permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, userId)
             } else {
                 permissionCheckHandler.checkReposPermission(projectId, repoNames, PermissionAction.READ, userId)
             }
 
-            val rule = RuleConverter.convert(rule, plan?.type, projectId)
+            val rule = RuleConverter.convert(rule, plan?.type, projectIds)
             val now = LocalDateTime.now()
             val scanTask = scanTaskDao.save(
                 TScanTask(
@@ -138,6 +150,7 @@ class PendingAction(
                     triggerType = triggerType.name,
                     planId = plan?.id,
                     projectId = projectId,
+                    projectIds = projectIds.toSet(),
                     status = ScanTaskStatus.PENDING.name,
                     total = 0L,
                     scanning = 0L,
@@ -153,12 +166,13 @@ class PendingAction(
             ).run { Converter.convert(this, plan, force) }
             plan?.id?.let { scanPlanDao.updateLatestScanTaskId(it, scanTask.taskId) }
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
-            logger.info("create scan task[${scanTask.taskId}] success")
+            val dispatcher = metadata.firstOrNull { it.key == TASK_METADATA_DISPATCHER } ?: "analysis-executor"
+            logger.info("create scan task[${scanTask.taskId}] success, will dispatch to [$dispatcher]")
             return scanTask
         }
     }
 
-    private fun customMetadata(metadata: List<TaskMetadata>, projectId: String, scanner: Scanner): List<TaskMetadata> {
+    private fun customMetadata(metadata: List<TaskMetadata>, projectId: String?, scanner: Scanner): List<TaskMetadata> {
         val projectScanConfiguration = projectScanConfigurationService.findProjectOrGlobalScanConfiguration(projectId)
         val customMetadata = metadata.filter { it.key != TASK_METADATA_DISPATCHER }
 
@@ -166,7 +180,8 @@ class PendingAction(
             ?.dispatcherConfiguration
             ?.firstOrNull { it.scanner == scanner.name }
             ?.dispatcher ?: scannerProperties.defaultDispatcher
-        return if (dispatcher.isEmpty() || dispatcher !in scanner.supportDispatchers) {
+        val dispatcherExists = dispatcher.isNotBlank() && executionClusterService.exists(dispatcher)
+        return if (!dispatcherExists || dispatcher !in scanner.supportDispatchers) {
             customMetadata
         } else {
             customMetadata + TaskMetadata(TASK_METADATA_DISPATCHER, dispatcher)
@@ -183,27 +198,26 @@ class PendingAction(
                 "$pipelineName-$buildNo-$pluginName"
             }
 
-            ScanTriggerType.MANUAL_SINGLE -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
             else -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_BATCH_SCAN)
         }
     }
 
-    private fun projectId(rule: Rule?, plan: TScanPlan?): String {
+    private fun parseProjectIds(rule: Rule?, plan: TScanPlan?): List<String> {
         // 尝试从rule取projectId，不存在时从plan中取projectId
         val projectIds = RuleUtil.getProjectIds(rule)
-        return if (projectIds.size == 1) {
-            projectIds.first()
-        } else if (projectIds.isEmpty() && plan != null) {
-            plan.projectId
+        return if (projectIds.isNotEmpty()) {
+            projectIds
+        } else if (plan != null) {
+            listOf(plan.projectId)
         } else {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId rule")
         }
     }
 
     override fun support(from: String, to: String, event: String): Boolean {
         return from == ScanTaskStatus.PENDING.name
-            && to == ScanTaskStatus.PENDING.name
-            && event == ScanTaskEvent.CREATE.name
+                && to == ScanTaskStatus.PENDING.name
+                && event == ScanTaskEvent.CREATE.name
     }
 
     companion object {

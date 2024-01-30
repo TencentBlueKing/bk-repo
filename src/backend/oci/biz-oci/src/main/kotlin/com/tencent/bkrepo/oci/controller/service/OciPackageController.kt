@@ -28,13 +28,18 @@
 package com.tencent.bkrepo.oci.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.oci.api.OciClient
 import com.tencent.bkrepo.oci.dao.OciReplicationRecordDao
+import com.tencent.bkrepo.oci.listener.base.EventExecutor
 import com.tencent.bkrepo.oci.model.TOciReplicationRecord
+import com.tencent.bkrepo.oci.pojo.artifact.OciDeleteArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.web.bind.annotation.RestController
@@ -42,8 +47,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class OciPackageController(
     private val operationService: OciOperationService,
-    private val ociReplicationRecordDao: OciReplicationRecordDao
-): OciClient {
+    private val ociReplicationRecordDao: OciReplicationRecordDao,
+    private val eventExecutor: EventExecutor
+    ): OciClient {
     override fun packageCreate(record: OciReplicationRecordInfo): Response<Void> {
         with(record) {
             val ociArtifactInfo = OciManifestArtifactInfo(
@@ -64,5 +70,42 @@ class OciPackageController(
             }
             return ResponseBuilder.success()
         }
+    }
+
+    override fun getPackagesFromThirdPartyRepo(projectId: String, repoName: String): Response<Void> {
+        eventExecutor.submit(RepoCreatedEvent(
+            projectId = projectId,
+            repoName = repoName,
+            userId = SecurityUtils.getUserId()
+        ))
+        return ResponseBuilder.success()
+    }
+
+    override fun blobPathRefresh(
+        projectId: String, repoName: String, packageName: String, version: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(
+            operationService.refreshBlobNode(
+            projectId = projectId,
+            repoName = repoName,
+            pName = packageName,
+            pVersion = version
+            ))
+    }
+
+    override fun deleteBlobsFolderAfterRefreshed(
+        projectId: String, repoName: String, packageName: String
+    ): Response<Void> {
+        operationService.deleteBlobsFolderAfterRefreshed(projectId, repoName, packageName)
+        return ResponseBuilder.success()
+    }
+
+    override fun deleteVersion(
+        projectId: String, repoName: String,
+        packageName: String, version: String
+    ): Response<Void> {
+        val artifactInfo = OciDeleteArtifactInfo(projectId, repoName, packageName, version)
+        operationService.deleteVersion(SYSTEM_USER, artifactInfo)
+        return ResponseBuilder.success()
     }
 }

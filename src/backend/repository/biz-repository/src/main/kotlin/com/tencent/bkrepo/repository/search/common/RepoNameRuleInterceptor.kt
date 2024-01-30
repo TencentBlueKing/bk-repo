@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.repository.search.common
 
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
@@ -43,6 +45,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
@@ -54,7 +57,8 @@ import org.springframework.stereotype.Component
 @Component
 class RepoNameRuleInterceptor(
     private val permissionManager: PermissionManager,
-    private val repositoryService: RepositoryService
+    private val repositoryService: RepositoryService,
+    private val servicePermissionClient: ServicePermissionClient,
 ) : QueryRuleInterceptor {
 
     override fun match(rule: Rule): Boolean {
@@ -77,10 +81,11 @@ class RepoNameRuleInterceptor(
                 OperationType.NIN -> {
                     val listValue = value
                     require(listValue is List<*>)
-                    handleRepoNameNin(projectId, listValue, context)
+                    handleRepoNameNin(projectId, listValue)
                 }
                 else -> throw IllegalArgumentException("RepoName only support EQ IN and NIN operation type.")
-            }.toFixed()
+            }
+            context.permissionChecked = true
             return context.interpreter.resolveRule(queryRule, context)
         }
     }
@@ -88,51 +93,88 @@ class RepoNameRuleInterceptor(
     private fun handleRepoNameEq(
         projectId: String,
         value: String
-    ): Rule.QueryRule {
+    ): Rule {
         if (!hasRepoPermission(projectId, value)) {
             throw PermissionException()
         }
-        return Rule.QueryRule(NodeInfo::repoName.name, value, OperationType.EQ)
+        return buildRule(projectId, listOf(value))
     }
 
     private fun handleRepoNameIn(
         projectId: String,
         value: List<*>,
         context: CommonQueryContext
-    ): Rule.QueryRule {
+    ): Rule {
         val repoNameList = if (context.repoList != null) {
             context.repoList!!.filter { hasRepoPermission(projectId, it.name, it.public) }.map { it.name }
         } else {
             value.filter { hasRepoPermission(projectId, it.toString()) }.map { it.toString() }
         }
-        return if (repoNameList.size == 1) {
-            Rule.QueryRule(NodeInfo::repoName.name, repoNameList.first(), OperationType.EQ)
-        } else {
-            Rule.QueryRule(NodeInfo::repoName.name, repoNameList, OperationType.IN)
-        }
+        return buildRule(projectId, repoNameList)
     }
 
     private fun handleRepoNameNin(
         projectId: String,
         value: List<*>,
-        context: CommonQueryContext
-    ): Rule.QueryRule {
+    ): Rule {
         val userId = SecurityUtils.getUserId()
         val repoNameList = repositoryService.listPermissionRepo(
             userId = userId,
             projectId = projectId,
             option = RepoListOption()
         )?.map { it.name }?.filter { repo -> repo !in (value.map { it.toString() }) }
-        return if (repoNameList.isNullOrEmpty()) {
+        return buildRule(projectId, repoNameList)
+    }
+
+    private fun buildRule(projectId: String, repoNames: List<String>): Rule {
+        if (repoNames.isEmpty()) {
             throw PermissionException(
                 "${SecurityUtils.getUserId()} hasn't any PermissionRepo in project [$projectId], " +
                         "or project [$projectId] hasn't any repo"
             )
-        } else if (repoNameList.size == 1) {
-            Rule.QueryRule(NodeInfo::repoName.name, repoNameList.first(), OperationType.EQ)
-        } else {
-            Rule.QueryRule(NodeInfo::repoName.name, repoNameList, OperationType.IN)
         }
+        if (repoNames.size == 1) {
+            // 单仓库查询
+            return buildRule(projectId, repoNames.first())
+        }
+
+        // 跨仓库查询
+        val rules = repoNames.mapTo(ArrayList(repoNames.size)) { repoName -> buildRule(projectId, repoName) }
+        return if (rules.all { it !is Rule.NestedRule }) {
+            // 不需要校验路径权限
+            Rule.QueryRule(NodeInfo::repoName.name, repoNames, OperationType.IN).toFixed()
+        } else {
+            // 存在某个仓库需要进行路径权限校验
+            Rule.NestedRule(rules, Rule.NestedRule.RelationType.OR)
+        }
+    }
+
+    private fun buildRule(projectId: String, repoName: String): Rule {
+        val repoRule = Rule.QueryRule(NodeInfo::repoName.name, repoName, OperationType.EQ).toFixed()
+        return listNoPermissionPath(projectId, repoName)?.let {
+            val pathRules = it.flatMapTo(ArrayList(it.size)) { path ->
+                listOf(
+                    Rule.QueryRule(NodeInfo::fullPath.name, path.ensureSuffix("/"), OperationType.PREFIX) as Rule,
+                    Rule.QueryRule(NodeInfo::fullPath.name, path, OperationType.EQ) as Rule,
+                )
+            }
+            val pathRule = Rule.NestedRule(pathRules, Rule.NestedRule.RelationType.NOR)
+            Rule.NestedRule(mutableListOf(repoRule, pathRule))
+        } ?: repoRule
+    }
+
+    private fun listNoPermissionPath(projectId: String, repoName: String): List<String>? {
+        val userId = SecurityUtils.getUserId()
+        val result = servicePermissionClient.listPermissionPath(userId, projectId, repoName).data!!
+        if (result.status) {
+            val paths = result.path.flatMap {
+                require(it.key == OperationType.NIN)
+                it.value
+            }
+            logger.info("user[$userId] does not have permission to $paths of [$projectId/$repoName], will be filtered")
+            return paths.ifEmpty { null }
+        }
+        return null
     }
 
     private fun hasRepoPermission(
@@ -157,5 +199,9 @@ class RepoNameRuleInterceptor(
         } catch (ignored: RepoNotFoundException) {
             false
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(RepoNameRuleInterceptor::class.java)
     }
 }

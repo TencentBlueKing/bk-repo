@@ -89,13 +89,15 @@ class RouterController(
         repoName: String,
         fullPath: String,
         originUrl: String,
+        serviceName: String,
     ): Response<String?> {
         val url = redirectService.generateRedirectUrl(
+            originUrl = originUrl,
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
             user = SecurityUtils.getUserId(),
-            originUrl = originUrl,
+            serviceName = serviceName,
         )
         return ResponseBuilder.success(url)
     }

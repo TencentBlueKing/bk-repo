@@ -237,25 +237,8 @@ class ChartRepositoryServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
-    override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
-        when (getRepositoryInfo(artifactInfo).category) {
-            RepositoryCategory.REMOTE -> {
-                helmOperationService.initPackageInfo(
-                    projectId = artifactInfo.projectId,
-                    repoName = artifactInfo.repoName,
-                    userId = SecurityUtils.getUserId()
-                )
-            }
-            else -> {
-                val nodeList = queryNodeList(artifactInfo, false)
-                logger.info(
-                    "query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
-                        ", size [${nodeList.size}], starting full refresh index.yaml ... "
-                )
-                val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo, true)
-                uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
-            }
-        }
+    override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo, v1Flag: Boolean) {
+        regenerateIndex(artifactInfo, v1Flag)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -276,6 +259,33 @@ class ChartRepositoryServiceImpl(
                 emptyList<String>()
             )
             else -> batchInstallLocalTgz(artifactInfo, startTime)
+        }
+    }
+
+    private fun regenerateIndex(artifactInfo: HelmArtifactInfo, v1Flag: Boolean = true) {
+        when (getRepositoryInfo(artifactInfo).category) {
+            RepositoryCategory.REMOTE -> {
+                helmOperationService.initPackageInfo(
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    userId = SecurityUtils.getUserId()
+                )
+            }
+            else -> {
+                val indexYamlMetadata = if (v1Flag) {
+                    val nodeList = queryNodeList(artifactInfo, false)
+                    logger.info(
+                        "query node list for full refresh index.yaml success " +
+                            "in repo [${artifactInfo.getRepoIdentify()}], size [${nodeList.size}]," +
+                            " starting full refresh index.yaml ... "
+                    )
+                    buildIndexYamlMetadata(nodeList, artifactInfo, true)
+                } else {
+                    logger.info("Use v2 version to regenerate index")
+                    regenerateHelmIndexYaml(artifactInfo)
+                }
+                uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
+            }
         }
     }
 

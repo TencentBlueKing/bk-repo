@@ -44,4 +44,6 @@ interface NodeLocationRepository : MongoRepository<TNodeLocation, String> {
         repoName: String,
         fullPath: String,
     )
+
+    fun deleteAllByRouterNodeId(routerNodeId: String)
 }

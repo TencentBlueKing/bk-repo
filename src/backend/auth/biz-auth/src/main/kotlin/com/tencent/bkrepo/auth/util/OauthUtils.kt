@@ -47,7 +47,11 @@ object OauthUtils {
         return generateRandomString(ACCESS_TOKEN_LENGTH)
     }
 
-    private fun generateRandomString(length: Int): String {
+    fun generateRefreshToken(): String {
+        return generateRandomString(ACCESS_TOKEN_LENGTH)
+    }
+
+    fun generateRandomString(length: Int): String {
         val buffer = ByteArray(length / 2)
         SecureRandom().nextBytes(buffer)
         return buffer.toHexString()

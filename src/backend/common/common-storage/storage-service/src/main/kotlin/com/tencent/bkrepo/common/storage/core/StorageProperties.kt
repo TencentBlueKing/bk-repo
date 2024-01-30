@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
+import com.tencent.bkrepo.common.storage.core.config.RedirectProperties
 import com.tencent.bkrepo.common.storage.core.config.ResponseProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
@@ -59,6 +60,12 @@ data class StorageProperties(
      */
     @NestedConfigurationProperty
     var response: ResponseProperties = ResponseProperties(),
+
+    /**
+     * 重定向配置
+     */
+    @NestedConfigurationProperty
+    var redirect: RedirectProperties = RedirectProperties(),
 
     /**
      * 存储类型

@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service
 class NodeService(
     private val emptyFolderService: EmptyFolderStatJob,
     private val folderMetricsRepository: FolderMetricsRepository
-) {
+    ) {
 
     fun getEmptyFolder(
         projectId: String,

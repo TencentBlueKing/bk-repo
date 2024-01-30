@@ -34,11 +34,13 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.repo.ArchiveInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoUpdateRequest
@@ -63,7 +65,7 @@ import org.springframework.web.bind.annotation.RestController
 class UserRepositoryController(
     private val permissionManager: PermissionManager,
     private val repositoryService: RepositoryService,
-    private val quotaService: QuotaService
+    private val quotaService: QuotaService,
 ) {
 
     @ApiOperation("根据名称类型查询仓库")
@@ -71,11 +73,14 @@ class UserRepositoryController(
     @GetMapping("/info/{projectId}/{repoName}", "/info/{projectId}/{repoName}/{type}")
     fun getRepoInfo(
         @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
+        @PathVariable
+        repoName: String,
         @ApiParam(value = "仓库类型", required = true)
-        @PathVariable type: String? = null
+        @PathVariable
+        type: String? = null,
     ): Response<RepositoryInfo?> {
         return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, type))
     }
@@ -84,9 +89,11 @@ class UserRepositoryController(
     @GetMapping("/exist/{projectId}/{repoName}")
     fun checkExist(
         @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String
+        @PathVariable
+        repoName: String,
     ): Response<Boolean> {
         return ResponseBuilder.success(repositoryService.checkExist(projectId, repoName))
     }
@@ -95,12 +102,12 @@ class UserRepositoryController(
     @PostMapping("/create")
     fun createRepo(
         @RequestAttribute userId: String,
-        @RequestBody userRepoCreateRequest: UserRepoCreateRequest
-    ): Response<Void> {
+        @RequestBody userRepoCreateRequest: UserRepoCreateRequest,
+    ): Response<RepositoryDetail> {
         val createRequest = with(userRepoCreateRequest) {
             permissionManager.checkProjectPermission(
                 action = if (pluginRequest) PermissionAction.WRITE else PermissionAction.MANAGE,
-                projectId = projectId
+                projectId = projectId,
             )
             RepoCreateRequest(
                 projectId = projectId,
@@ -114,11 +121,10 @@ class UserRepositoryController(
                 operator = userId,
                 quota = quota,
                 pluginRequest = pluginRequest,
-                display = display
+                display = display,
             )
         }
-        repositoryService.createRepo(createRequest)
-        return ResponseBuilder.success()
+        return ResponseBuilder.success(repositoryService.createRepo(createRequest))
     }
 
     @ApiOperation("查询有权限的仓库列表")
@@ -126,8 +132,9 @@ class UserRepositoryController(
     fun listUserRepo(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
-        @PathVariable projectId: String,
-        repoListOption: RepoListOption
+        @PathVariable
+        projectId: String,
+        repoListOption: RepoListOption,
     ): Response<List<RepositoryInfo>> {
         return ResponseBuilder.success(repositoryService.listPermissionRepo(userId, projectId, repoListOption))
     }
@@ -137,12 +144,15 @@ class UserRepositoryController(
     fun listUserRepoPage(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "当前页", required = true, example = "0")
-        @PathVariable pageNumber: Int,
+        @PathVariable
+        pageNumber: Int,
         @ApiParam(value = "分页大小", required = true, example = "20")
-        @PathVariable pageSize: Int,
-        repoListOption: RepoListOption
+        @PathVariable
+        pageSize: Int,
+        repoListOption: RepoListOption,
     ): Response<Page<RepositoryInfo>> {
         val page = repositoryService.listPermissionRepoPage(userId, projectId, pageNumber, pageSize, repoListOption)
         return ResponseBuilder.success(page)
@@ -153,9 +163,11 @@ class UserRepositoryController(
     @GetMapping("/quota/{projectId}/{repoName}")
     fun getRepoQuota(
         @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String
+        @PathVariable
+        repoName: String,
     ): Response<RepoQuotaInfo> {
         return ResponseBuilder.success(quotaService.getRepoQuotaInfo(projectId, repoName))
     }
@@ -166,17 +178,20 @@ class UserRepositoryController(
     fun updateRepoQuota(
         @RequestAttribute userId: String,
         @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
+        @PathVariable
+        repoName: String,
         @ApiParam(value = "仓库配额", required = true)
-        @RequestParam quota: Long
+        @RequestParam
+        quota: Long,
     ): Response<Void> {
         val repoUpdateRequest = RepoUpdateRequest(
             projectId = projectId,
             name = repoName,
             quota = quota,
-            operator = userId
+            operator = userId,
         )
         repositoryService.updateRepo(repoUpdateRequest)
         return ResponseBuilder.success()
@@ -188,11 +203,14 @@ class UserRepositoryController(
     fun deleteRepo(
         @RequestAttribute userId: String,
         @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
+        @PathVariable
+        repoName: String,
         @ApiParam(value = "是否强制删除", required = false)
-        @RequestParam forced: Boolean = false
+        @RequestParam
+        forced: Boolean = false,
     ): Response<Void> {
         repositoryService.deleteRepo(RepoDeleteRequest(projectId, repoName, forced, userId))
         return ResponseBuilder.success()
@@ -204,10 +222,12 @@ class UserRepositoryController(
     fun updateRepo(
         @RequestAttribute userId: String,
         @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
-        @RequestBody request: UserRepoUpdateRequest
+        @PathVariable
+        repoName: String,
+        @RequestBody request: UserRepoUpdateRequest,
     ): Response<Void> {
         val repoUpdateRequest = RepoUpdateRequest(
             projectId = projectId,
@@ -216,7 +236,7 @@ class UserRepositoryController(
             description = request.description,
             configuration = request.configuration,
             operator = userId,
-            display = request.display
+            display = request.display,
         )
         repositoryService.updateRepo(repoUpdateRequest)
         return ResponseBuilder.success()
@@ -227,8 +247,24 @@ class UserRepositoryController(
     @PostMapping
     fun create(
         @RequestAttribute userId: String,
-        @RequestBody userRepoCreateRequest: UserRepoCreateRequest
-    ): Response<Void> {
+        @RequestBody userRepoCreateRequest: UserRepoCreateRequest,
+    ): Response<RepositoryDetail> {
         return this.createRepo(userId, userRepoCreateRequest)
+    }
+
+    @ApiOperation("查询可归档文件大小")
+    @GetMapping("/archive/available")
+    fun getArchivableSize(
+        @RequestParam projectId: String,
+        @RequestParam(required = false) repoName: String?,
+        @RequestParam days: Int,
+        @RequestParam size: Long,
+        @RequestAttribute userId: String,
+    ): Response<ArchiveInfo> {
+        permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId, userId)
+        val archiveInfo = ArchiveInfo(
+            available = repositoryService.getArchivableSize(projectId, repoName, days, size),
+        )
+        return ResponseBuilder.success(archiveInfo)
     }
 }

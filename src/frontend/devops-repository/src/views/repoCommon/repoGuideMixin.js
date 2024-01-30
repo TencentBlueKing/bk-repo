@@ -411,8 +411,9 @@ export default {
                                 `   <groupId>${this.detail.basic.groupId}</groupId>`,
                                 `   <artifactId>${this.detail.basic.artifactId}</artifactId>`,
                                 `   <version>${this.versionLabel}</version>`,
+                                this.detail.basic.type && this.detail.basic.type !== 'jar' && `   <type>${this.detail.basic.type}</type>`,
                                 '</dependency>'
-                            ]
+                            ].filter(Boolean)
                         },
                         {
                             subTitle: 'Gradle Groovy DSL',

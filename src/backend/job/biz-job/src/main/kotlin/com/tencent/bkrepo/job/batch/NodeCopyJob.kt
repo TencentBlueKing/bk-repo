@@ -13,19 +13,18 @@ import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
+import kotlin.reflect.KClass
 
 @Component
 @EnableConfigurationProperties(NodeCopyJobProperties::class)
 class NodeCopyJob(
     private val storageService: StorageService,
-    private val mongoTemplate: MongoTemplate,
     private val fileReferenceClient: FileReferenceClient,
     properties: NodeCopyJobProperties
 ) : MongoDbBatchJob<NodeCopyJob.NodeCopyData, NodeCopyJobContext>(properties) {
@@ -48,7 +47,7 @@ class NodeCopyJob(
         return NodeCopyData(row)
     }
 
-    override fun entityClass(): Class<NodeCopyData> = NodeCopyData::class.java
+    override fun entityClass(): KClass<NodeCopyData> = NodeCopyData::class
 
     override fun createJobContext(): NodeCopyJobContext = NodeCopyJobContext()
 

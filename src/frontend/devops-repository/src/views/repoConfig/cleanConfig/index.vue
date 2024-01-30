@@ -1,30 +1,43 @@
 <template>
-    <bk-form class="clean-config-container" :label-width="120" :model="config" :rules="rules" ref="cleanForm">
+    <bk-form class="clean-config-container" :label-width="120" :model="cleanupStrategy" :rules="rules" ref="cleanForm">
         <bk-form-item :label="$t('autoCleanup')">
-            <bk-switcher v-model="config.autoClean" size="small" theme="primary" @change="clearError"></bk-switcher>
+            <bk-switcher v-model="cleanupStrategy.enable" size="small" theme="primary" @change="clearError"></bk-switcher>
         </bk-form-item>
-        <bk-form-item v-if="repoType !== 'generic'" :label="$t('minimumVersion')" required property="reserveVersions" error-display-type="normal">
-            <bk-input class="w250" v-model="config.reserveVersions" :disabled="!config.autoClean"></bk-input>
-            <div class="form-tip">{{'cleanTip'}}</div>
+        <bk-form-item :label="$t('cleanupStrategy')" required>
+            <bk-select
+                style="width:150px;"
+                v-model="cleanupStrategy.cleanupType"
+                @change="changeType"
+                :clearable="false"
+                :disabled="!cleanupStrategy.enable">
+                <bk-option id="retentionDays" :name="$t('retentionDays')"></bk-option>
+                <bk-option id="retentionDate" :name="$t('retentionDate')"></bk-option>
+                <bk-option v-if="repoType !== 'generic'" id="retentionNums" :name="$t('retentionNums')"></bk-option>
+            </bk-select>
         </bk-form-item>
-        <bk-form-item :label="$t('minRetentionTime')" required property="reserveDays" error-display-type="normal">
-            <bk-input class="w250" v-model="config.reserveDays" :disabled="!config.autoClean"></bk-input>
+        <bk-form-item :label="$t('retentionDays')" property="cleanupValue" required error-display-type="normal" v-if="cleanupStrategy.cleanupType === 'retentionDays'">
+            <bk-input class="w250" v-model="cleanupStrategy.cleanupValue" :disabled="!cleanupStrategy.enable"></bk-input>
         </bk-form-item>
-        <bk-form-item :label="$t('retentionRules')">
-            <bk-button :disabled="!config.autoClean" icon="plus" @click="addRule()">{{$t('addRules')}}</bk-button>
-            <div class="form-tip">
-                {{ repoType === 'generic' ? $t('genericTip') : $t('notGenericTip') }}
-            </div>
+        <bk-form-item :label="$t('retentionDate')" property="cleanupValue" required error-display-type="normal" v-if="cleanupStrategy.cleanupType === 'retentionDate'">
+            <bk-date-picker v-model="cleanupStrategy.cleanupValue" :placeholder="$t('chooseDateTip')" :clearable="false" :type="'datetime'" :disabled="!cleanupStrategy.enable"></bk-date-picker>
+        </bk-form-item>
+        <bk-form-item :label="$t('retentionNums')" property="cleanupValue" required error-display-type="normal" v-if="cleanupStrategy.cleanupType === 'retentionNums'">
+            <bk-input class="w250" v-model="cleanupStrategy.cleanupValue" :disabled="!cleanupStrategy.enable"></bk-input>
+        </bk-form-item>
+        <bk-form-item :label="$t('cleanTarget')">
+            <bk-button :disabled="!cleanupStrategy.enable" icon="plus" @click="addRule()">{{$t('addTarget')}}</bk-button>
             <div class="rule-list">
                 <component
-                    :is="repoType === 'generic' ? 'generic-clean-rule' : 'package-clean-rule'"
+                    :is="'generic-clean-rule'"
                     class="mt10"
-                    v-for="(rule, ind) in config.rules"
+                    v-for="(rule, ind) in cleanupStrategy.cleanTargets"
                     :key="ind"
-                    :disabled="!config.autoClean"
+                    :disabled="!cleanupStrategy.enable"
                     v-bind="rule"
-                    @change="r => config.rules.splice(ind, 1, r)"
-                    @delete="config.rules.splice(ind, 1)">
+                    :path.sync="rule"
+                    :type.sync="repoType"
+                    @change="changeTarget($event, ind)"
+                    @delete="deleteTarget(ind)">
                 </component>
             </div>
         </bk-form-item>
@@ -34,13 +47,12 @@
     </bk-form>
 </template>
 <script>
-    import packageCleanRule from './packageCleanRule'
     import genericCleanRule from './genericCleanRule.vue'
     import { mapActions } from 'vuex'
+    import moment from 'moment'
     export default {
         name: 'cleanConfig',
         components: {
-            packageCleanRule,
             genericCleanRule
         },
         props: {
@@ -49,24 +61,22 @@
         data () {
             return {
                 loading: false,
-                config: {
-                    autoClean: false,
-                    reserveVersions: 20,
-                    reserveDays: 30,
-                    rules: []
+                cleanupStrategy: {
+                    enable: false,
+                    cleanupValue: '',
+                    cleanTargets: [],
+                    cleanupType: 'retentionDays'
                 },
                 rules: {
-                    reserveVersions: [
+                    cleanupValue: [
                         {
-                            regex: /^[0-9]+$/,
-                            message: this.$t('nonNegativeIntegerTip'),
+                            validator: this.asynCheckCleanValue,
+                            message: this.$t('cleanConfigTip'),
                             trigger: 'blur'
-                        }
-                    ],
-                    reserveDays: [
+                        },
                         {
-                            regex: /^[0-9]+$/,
-                            message: this.$t('nonNegativeIntegerTip'),
+                            required: true,
+                            message: this.$t('cleanConfigTip'),
                             trigger: 'blur'
                         }
                     ]
@@ -87,24 +97,8 @@
         watch: {
             baseData: {
                 handler (val) {
-                    if (!val.configuration.cleanStrategy) return
-                    const {
-                        autoClean = false,
-                        reserveVersions = 20,
-                        reserveDays = 30,
-                        rule = { rules: [] }
-                    } = val.configuration.cleanStrategy
-                    this.config = { ...this.config, autoClean, reserveVersions, reserveDays }
-                    const rules = rule.rules.find(r => r.rules)?.rules || []
-                    this.config.rules = rules.map(r => {
-                        return r.rules?.reduce((target, item) => {
-                            target[item.field] = {
-                                ...item,
-                                value: item.operation === 'MATCH' ? item.value.replace(/^\*(.*)\*$/, '$1') : item.value
-                            }
-                            return target
-                        }, {})
-                    })
+                    if (!val.cleanupStrategy) return
+                    this.cleanupStrategy = val.cleanupStrategy
                 },
                 deep: true,
                 immediate: true
@@ -113,75 +107,95 @@
         methods: {
             ...mapActions(['updateRepoInfo']),
             addRule () {
-                if (!this.config.autoClean) return
-                this.config.rules.push({})
+                if (!this.cleanupStrategy.enable) return
+                if (!this.cleanupStrategy.cleanTargets) {
+                    const cleanStrategy = {
+                        enable: this.cleanupStrategy.enable,
+                        cleanupType: this.cleanupStrategy.cleanupType,
+                        cleanupValue: this.cleanupStrategy.cleanupValue,
+                        cleanTargets: []
+                    }
+                    this.cleanupStrategy = cleanStrategy
+                }
+                this.cleanupStrategy.cleanTargets.push('')
             },
             clearError () {
                 this.$refs.cleanForm.clearError()
             },
             async save () {
-                await this.$refs.cleanForm.validate()
-                const { autoClean, reserveVersions, reserveDays } = this.config
-                let rules = this.config.rules
-                rules = rules.map(rs => {
-                    return {
-                        relation: 'AND',
-                        rules: Object.values(rs).map(i => {
-                            return i.field.replace(/^metadata\./, '') && i.value && {
-                                ...i,
-                                value: i.operation === 'MATCH' ? `*${i.value}*` : i.value
-                            }
-                        }).filter(Boolean)
+                let cleanStrategy
+                if (!this.cleanupStrategy.enable) {
+                    cleanStrategy = {
+                        enable: this.cleanupStrategy.enable
                     }
-                }).filter(rs => rs.rules.length)
+                } else {
+                    await this.$refs.cleanForm.validate()
+                    let cleanValue = ''
+                    if (this.cleanupStrategy.cleanupType === 'retentionDate' && this.cleanupStrategy.cleanupValue instanceof Date) {
+                        cleanValue = moment(this.cleanupStrategy.cleanupValue).add(8, 'hours').toISOString()
+                    } else {
+                        cleanValue = this.cleanupStrategy.cleanupValue
+                    }
+                    if (this.cleanupStrategy.cleanTargets) {
+                        const target = this.cleanupStrategy.cleanTargets.filter(function (item, index, array) {
+                            if (item.trim().length !== 0 && item !== null) {
+                                return array.indexOf(item) === index
+                            } else {
+                                return false
+                            }
+                        })
+                        cleanStrategy = {
+                            enable: this.cleanupStrategy.enable,
+                            cleanupType: this.cleanupStrategy.cleanupType,
+                            cleanupValue: cleanValue,
+                            cleanTargets: target
+                        }
+                    } else {
+                        cleanStrategy = {
+                            enable: this.cleanupStrategy.enable,
+                            cleanupType: this.cleanupStrategy.cleanupType,
+                            cleanupValue: cleanValue
+                        }
+                    }
+                }
+                this.baseData.configuration.settings.cleanupStrategy = cleanStrategy
                 this.loading = true
                 this.updateRepoInfo({
                     projectId: this.projectId,
                     name: this.repoName,
                     body: {
                         configuration: {
-                            ...this.baseData.configuration,
-                            cleanStrategy: {
-                                autoClean,
-                                ...(this.repoType === 'generic' ? {} : { reserveVersions }),
-                                reserveDays,
-                                rule: {
-                                    relation: 'AND',
-                                    rules: rules.length
-                                        ? [
-                                            this.repoType === 'generic'
-                                                ? {
-                                                    field: 'projectId',
-                                                    value: this.projectId,
-                                                    operation: 'EQ'
-                                                }
-                                                : undefined,
-                                            this.repoType === 'generic'
-                                                ? {
-                                                    field: 'repoName',
-                                                    value: this.repoName,
-                                                    operation: 'EQ'
-                                                }
-                                                : undefined,
-                                            {
-                                                relation: 'OR',
-                                                rules
-                                            }
-                                        ].filter(Boolean)
-                                        : []
-                                }
-                            }
+                            ...this.baseData.configuration
                         }
                     }
                 }).then(() => {
                     this.$emit('refresh')
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('save') + this.$t('success')
+                        message: this.$t('save') + this.$t('space') + this.$t('success')
                     })
                 }).finally(() => {
                     this.loading = false
                 })
+            },
+            asynCheckCleanValue () {
+                if (this.cleanupStrategy.cleanupType === 'retentionDate') {
+                    return this.cleanupStrategy.cleanupValue instanceof Date || moment(this.cleanupStrategy.cleanupValue).isValid()
+                } else {
+                    return (/^[0-9]+$/).test(this.cleanupStrategy.cleanupValue)
+                }
+            },
+            changeType () {
+                if (this.cleanupStrategy.cleanupType !== 'retentionDate' && this.cleanupStrategy.cleanupValue instanceof Date) {
+                    this.cleanupStrategy.cleanupValue = ''
+                }
+                this.clearError()
+            },
+            deleteTarget (index) {
+                this.cleanupStrategy.cleanTargets.splice(index, 1)
+            },
+            changeTarget (r, ind) {
+                this.cleanupStrategy.cleanTargets.splice(ind, 1, r.path)
             }
         }
     }

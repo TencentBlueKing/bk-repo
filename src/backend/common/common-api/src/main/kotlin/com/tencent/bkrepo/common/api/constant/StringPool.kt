@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.api.constant
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.text.DecimalFormat
 import java.util.UUID
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.abs
@@ -73,6 +74,10 @@ object StringPool {
         prefix?.let { value = prefix + value }
         suffix?.let { value += suffix }
         return value
+    }
+
+    fun calculateRatio(originSize: Long, newSize: Long, format: DecimalFormat = DecimalFormat("#.#")): String {
+        return format.format((originSize - newSize.toDouble()) / originSize * 100).plus("%")
     }
 }
 

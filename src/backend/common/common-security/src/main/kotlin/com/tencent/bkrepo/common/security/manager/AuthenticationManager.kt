@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.api.ServiceAccountClient
 import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
@@ -66,7 +67,11 @@ open class AuthenticationManager {
      * @throws AuthenticationException 校验失败
      */
     open fun checkPlatformAccount(accessKey: String, secretKey: String): String {
-        val response = serviceAccountClient.checkAccountCredential(accessKey, secretKey)
+        val response = serviceAccountClient.checkAccountCredential(
+            accesskey = accessKey,
+            secretkey = secretKey,
+            authorizationGrantType = AuthorizationGrantType.PLATFORM
+        )
         return response.data ?: throw AuthenticationException("AccessKey/SecretKey check failed.")
     }
 
@@ -92,6 +97,20 @@ open class AuthenticationManager {
      */
     open fun findUserAccount(userId: String): UserInfo? {
         return serviceUserClient.userInfoById(userId).data
+    }
+    /**
+     * 根据用户id[userId]查询用户密码
+     * 当用户不存在时返回`null`
+     */
+    fun findUserPwd(userId: String): String? {
+        return serviceUserClient.userPwdById(userId).data
+    }
+
+    /**
+     * 根据用户id[userId]查询用户token
+     */
+    fun findUserToken(userId: String): List<String>? {
+        return serviceUserClient.userTokenById(userId).data
     }
 
     open fun findOauthToken(accessToken: String): OauthToken? {

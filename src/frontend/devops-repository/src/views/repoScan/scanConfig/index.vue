@@ -1,7 +1,7 @@
 <template>
     <div class="scan-config-container" v-bkloading="{ isLoading }">
         <bk-tab class="scan-config-tab page-tab" type="unborder-card" :active.sync="tabName">
-            <bk-tab-panel name="baseInfo" :label="$t('baseSetting')">
+            <bk-tab-panel name="baseInfo" :label="$t('baseSetting')" v-if="!scanBaseInfo.readOnly">
                 <bk-form :label-width="120">
                     <bk-form-item :label="$t('schemeName')">
                         <bk-input class="w250" v-model.trim="scanBaseInfo.name" maxlength="32" show-word-limit></bk-input>
@@ -21,7 +21,7 @@
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
-            <bk-tab-panel render-directive="if" name="autoConfig" :label="$t('monitorSettings')">
+            <bk-tab-panel render-directive="if" name="autoConfig" :label="$t('monitorSettings')" v-if="!scanBaseInfo.readOnly">
                 <auto-scan-config :data="scanBaseInfo" @save="ajaxSaveConfig"></auto-scan-config>
             </bk-tab-panel>
             <bk-tab-panel render-directive="if" name="qualityRule" :label="$t('qualityRules')">

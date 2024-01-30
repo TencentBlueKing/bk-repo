@@ -25,21 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.tencent.bkrepo.analyst.utils
 
 import com.tencent.bkrepo.analyst.message.ScannerMessageCode
+import com.tencent.bkrepo.analyst.model.LeakDetailExport
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TProjectScanConfiguration
 import com.tencent.bkrepo.analyst.model.TScanPlan
 import com.tencent.bkrepo.analyst.model.TScanTask
+import com.tencent.bkrepo.analyst.pojo.LeakType
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
+import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import java.time.format.DateTimeFormatter
 
@@ -53,6 +59,7 @@ object Converter {
             name = scanTaskName(triggerType, scanTask.name),
             taskId = id!!,
             projectId = projectId,
+            projectIds = projectIds,
             createdBy = createdBy,
             lastModifiedDateTime = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
             triggerDateTime = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
@@ -113,10 +120,33 @@ object Converter {
                 highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
                 duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
                 finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
-                status = ScanPlanConverter.convertToScanStatus(status).name,
+                status = ScanPlanConverter.convertToScanStatus(status, qualityRedLine).name,
                 createdBy = createdBy,
                 createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 qualityRedLine = qualityRedLine
+            )
+        }
+    }
+
+    private fun convertToLeakLevel(level: String): String = when (level) {
+        Level.CRITICAL.name -> LeakType.CRITICAL.value
+        Level.HIGH.name -> LeakType.HIGH.value
+        Level.MEDIUM.name -> LeakType.MEDIUM.value
+        Level.LOW.name -> LeakType.LOW.value
+        else -> "/"
+    }
+
+    fun convertToDetailExport(artifactVulnerabilityInfo: ArtifactVulnerabilityInfo): LeakDetailExport {
+        return with(artifactVulnerabilityInfo) {
+            LeakDetailExport(
+                vulId = vulId,
+                severity = convertToLeakLevel(severity),
+                pkgName = pkgName,
+                installedVersion = installedVersion.toJsonString(),
+                vulnerabilityName = vulnerabilityName,
+                description = description,
+                officialSolution = officialSolution,
+                reference = reference?.toJsonString()
             )
         }
     }
@@ -149,7 +179,8 @@ object Converter {
                 finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
                 qualityRedLine = qualityRedLine,
                 scanQuality = scanQuality,
-                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime)
+                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
+                scanStatus = ScanPlanConverter.convertToScanStatus(status, qualityRedLine).name
             )
         }
     }
@@ -184,9 +215,6 @@ object Converter {
         val defaultName = LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_BATCH_SCAN)
         return when (triggerType) {
             ScanTriggerType.PIPELINE.name -> name ?: defaultName
-            ScanTriggerType.MANUAL_SINGLE.name -> {
-                LocaleMessageUtils.getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
-            }
             else -> defaultName
         }
     }

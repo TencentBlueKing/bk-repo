@@ -33,6 +33,8 @@ package com.tencent.bkrepo.auth.util
 
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
+import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_NAME
 import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
@@ -50,6 +52,19 @@ object RequestUtil {
             type = RoleType.PROJECT,
             projectId = projectId,
             admin = true
+        )
+    }
+
+    /**
+     * 构造创建项目用户请求
+     */
+    fun buildProjectViewerRequest(projectId: String): CreateRoleRequest {
+        return CreateRoleRequest(
+            roleId = PROJECT_VIEWER_ID,
+            name = PROJECT_VIEWER_NAME,
+            type = RoleType.PROJECT,
+            projectId = projectId,
+            admin = false
         )
     }
 

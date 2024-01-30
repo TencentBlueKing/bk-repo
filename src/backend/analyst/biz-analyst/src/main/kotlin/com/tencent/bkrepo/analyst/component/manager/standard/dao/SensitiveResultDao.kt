@@ -32,7 +32,9 @@ import com.tencent.bkrepo.analyst.component.manager.standard.model.TSensitiveRes
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SensitiveResult
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
@@ -47,5 +49,9 @@ class SensitiveResultDao : ResultItemDao<TSensitiveResult>() {
             criteria.and(dataKey(SensitiveResult::content.name)).regex(arguments.sensitiveContent!!)
         }
         return criteria
+    }
+
+    override fun customizeQuery(query: Query, arguments: LoadResultArguments): Query {
+        return query.with(Sort.by(Sort.Order(Sort.Direction.ASC, TSensitiveResult::id.name)))
     }
 }

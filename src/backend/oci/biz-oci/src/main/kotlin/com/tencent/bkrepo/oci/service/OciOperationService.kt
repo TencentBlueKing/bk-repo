@@ -29,6 +29,7 @@ package com.tencent.bkrepo.oci.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
@@ -39,43 +40,9 @@ import com.tencent.bkrepo.oci.pojo.response.OciImageResult
 import com.tencent.bkrepo.oci.pojo.response.OciTagResult
 import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import javax.servlet.http.HttpServletRequest
 
 interface OciOperationService {
-
-    /**
-     * 保存节点元数据
-     */
-    fun saveMetaData(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        metadata: MutableMap<String, Any>,
-        userId: String
-    )
-
-    /**
-     * 当mediatype为CHART_LAYER_MEDIA_TYPE，需要解析chart.yaml文件
-     */
-    fun loadArtifactInput(
-        chartDigest: String?,
-        projectId: String,
-        repoName: String,
-        packageName: String,
-        version: String,
-        storageCredentials: StorageCredentials?
-    ): Map<String, Any>?
-
-    /**
-     * 需要将blob中相关metadata写进package version中
-     */
-    fun updatePackageInfo(
-        ociArtifactInfo: OciArtifactInfo,
-        packageKey: String,
-        appVersion: String? = null,
-        description: String? = null
-    )
 
     /**
      * 查询包版本详情
@@ -122,11 +89,6 @@ interface OciOperationService {
     ): Boolean
 
     /**
-     * 当使用追加上传时，文件已存储，只需存储节点信息
-     */
-    fun createNode(request: NodeCreateRequest, storageCredentials: StorageCredentials?): NodeDetail
-
-    /**
      * 保存文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
      * 特殊：对于manifest文件，node存tag
      */
@@ -145,13 +107,14 @@ interface OciOperationService {
     fun getNodeFullPath(artifactInfo: OciArtifactInfo): String?
 
     /**
-     * 根据sha256值获取对应的node fullpath,md5,size
+     * 根据sha256值和path获取对应的node fullpath,md5,size
      */
     fun getNodeByDigest(
         projectId: String,
         repoName: String,
-        digestStr: String
-    ): NodeProperty
+        digestStr: String,
+        path: String? = null
+    ): NodeProperty?
 
     /**
      * 针对老的docker仓库的数据做兼容性处理
@@ -193,4 +156,31 @@ interface OciOperationService {
         pageSize: Int,
         tag: String?
     ): OciTagResult
+
+    /**
+     * 拉取第三方镜像仓库package信息
+     */
+    fun getPackagesFromThirdPartyRepo(projectId: String, repoName: String)
+
+    /**
+     * oci blob 路径调整，由/packageName/blobs/XXX -> /packageName/blobs/version/XXX
+     */
+    fun refreshBlobNode(
+        projectId: String,
+        repoName: String,
+        pName: String,
+        pVersion: String,
+        userId: String = SecurityUtils.getUserId()
+    ): Boolean
+
+
+    /**
+     * 当package下所有版本的blob路径都刷新到新的路径下后，删除/packageName/blobs目录
+     */
+    fun deleteBlobsFolderAfterRefreshed(
+        projectId: String,
+        repoName: String,
+        pName: String,
+        userId: String = SecurityUtils.getUserId()
+    )
 }

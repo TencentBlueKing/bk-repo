@@ -36,19 +36,18 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.reflect.KClass
 
 @Component
 @EnableConfigurationProperties(SignFileCleanupJobProperties::class)
 class SignFileCleanupJob(
     private val nodeClient: NodeClient,
-    private val mongoTemplate: MongoTemplate,
     val properties: SignFileCleanupJobProperties
 ) : DefaultContextMongoDbJob<SignFileCleanupJob.SignFileData>(properties) {
 
@@ -85,8 +84,8 @@ class SignFileCleanupJob(
         return SignFileData(row)
     }
 
-    override fun entityClass(): Class<SignFileData> {
-        return SignFileData::class.java
+    override fun entityClass(): KClass<SignFileData> {
+        return SignFileData::class
     }
 
     override fun getLockAtMostFor(): Duration {

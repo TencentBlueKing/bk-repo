@@ -275,11 +275,11 @@ export default {
     },
     // 获取质量规则
     getQualityRule (_, { type, id }) {
-        return Vue.prototype.$ajax.get(`/analyst/api/scan${type.includes('LICENSE') ? '/license' : ''}/quality/${id}`)
+        return Vue.prototype.$ajax.get(`/analyst/api/scan/quality/${id}`)
     },
     // 更新质量规则
     saveQualityRule (_, { type, id, body }) {
-        return Vue.prototype.$ajax.post(`/analyst/api/scan${type.includes('LICENSE') ? '/license' : ''}/quality/${id}`, body)
+        return Vue.prototype.$ajax.post(`/analyst/api/scan/quality/${id}`, body)
     },
     // 查询任务列表
     getScanTaskList (_, { projectId, planId, triggerType, namePrefix, current = 1, limit = 20 }) {

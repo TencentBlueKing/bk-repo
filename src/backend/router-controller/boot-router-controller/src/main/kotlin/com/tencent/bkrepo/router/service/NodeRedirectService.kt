@@ -40,5 +40,6 @@ interface NodeRedirectService {
         repoName: String,
         fullPath: String,
         user: String,
+        serviceName: String
     ): String?
 }

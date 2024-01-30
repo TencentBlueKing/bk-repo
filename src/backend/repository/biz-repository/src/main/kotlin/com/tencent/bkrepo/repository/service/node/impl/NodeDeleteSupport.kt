@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
@@ -61,6 +62,7 @@ open class NodeDeleteSupport(
 
     val nodeDao: NodeDao = nodeBaseService.nodeDao
     val quotaService: QuotaService = nodeBaseService.quotaService
+    val routerControllerClient: RouterControllerClient = nodeBaseService.routerControllerClient
 
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
         with(deleteRequest) {
@@ -156,13 +158,18 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String
     ): NodeDeleteResult {
         val option = NodeListOption(includeFolder = false, deep = true)
-        val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, PathUtils.ROOT, option)
-            .and(TNode::createdDate).lt(date)
+        val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
+            .and(TNode::lastModifiedDate).lt(date)
         val query = Query(criteria)
-        return delete(query, operator, criteria, projectId, repoName)
+        val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName)
+/*        publishEvent(buildNodeCleanEvent(
+            projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString())
+        )*/
+        return nodeDeleteResult
     }
 
     private fun delete(
@@ -191,7 +198,10 @@ open class NodeDeleteSupport(
             }
             deletedSize = nodeBaseService.aggregateComputeSize(criteria.and(TNode::deleted).isEqualTo(deleteTime))
             quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
-            fullPaths?.forEach { publishEvent(buildDeletedEvent(projectId, repoName, it, operator)) }
+            fullPaths?.forEach {
+                routerControllerClient.removeNodes(projectId, repoName, it)
+                publishEvent(buildDeletedEvent(projectId, repoName, it, operator))
+            }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[$resourceKey] by [$operator] error: [${exception.message}]")
         }

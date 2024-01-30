@@ -31,11 +31,13 @@
 
 package com.tencent.bkrepo.pypi.controller
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.pypi.api.PypiWebResource
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.service.PypiWebService
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -62,5 +64,21 @@ class PypiWebResourceController(
         version: String?
     ): Response<Any?> {
         return ResponseBuilder.success(pypiWebService.artifactDetail(pypiArtifactInfo, packageKey, version))
+    }
+
+    override fun versionListPage(
+        pypiArtifactInfo: PypiArtifactInfo,
+        packageKey: String,
+        pageNumber: Int,
+        pageSize: Int
+    ): Response<Page<PackageVersion>> {
+        return ResponseBuilder.success(
+            pypiWebService.versionListPage(
+                pypiArtifactInfo,
+                packageKey,
+                pageNumber,
+                pageSize
+            )
+        )
     }
 }

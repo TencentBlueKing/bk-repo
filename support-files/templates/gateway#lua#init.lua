@@ -44,6 +44,7 @@ config = {
     url = "__BK_REPO_SSM_TOKEN_URL__",     -- 接口路径
     app_code = "__BK_REPO_APP_CODE__",
     app_secret = "__BK_REPO_APP_TOKEN__",
+    apigw_url = "__BK_APIGW_URL__"
   },
   bkrepo = {
     authorization = "__BK_REPO_AUTHORIZATION__",

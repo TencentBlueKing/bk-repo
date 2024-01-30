@@ -91,9 +91,9 @@ class ProxyStorageService : AbstractStorageService() {
     /**
      * 同步数据到服务端
      */
-    fun sync(rate: Long) {
+    fun sync(rate: Long, cacheExpireDays: Int) {
         val credentials = getCredentialsOrDefault(null)
-        val visitor = ProxySyncFileVisitor(rate)
+        val visitor = ProxySyncFileVisitor(rate, cacheExpireDays)
         require(credentials is FileSystemCredentials)
         FileSystemClient(credentials.path).walk(visitor)
         return

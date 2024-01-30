@@ -33,7 +33,9 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
 import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
+import net.javacrumbs.shedlock.core.SimpleLock
 import org.springframework.beans.factory.annotation.Autowired
 import java.time.Duration
 import java.time.LocalDateTime
@@ -42,7 +44,7 @@ import kotlin.system.measureNanoTime
 /**
  * 抽象批处理作业Job
  * */
-abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobProperties) {
+abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobProperties) : FailoverJob {
     /**
      * 锁名称
      */
@@ -63,6 +65,12 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      * */
     @Volatile
     private var stop = true
+
+    /**
+     * Job是否正在运行
+     * */
+    @Volatile
+    private var inProcess = false
 
     /**
      * 是否排他执行，如果是则会加分布式锁
@@ -93,6 +101,10 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
+    @Autowired
+    private lateinit var lockProvider: LockProvider
+    private var lock: SimpleLock? = null
+
     var lastBeginTime: LocalDateTime? = null
     var lastEndTime: LocalDateTime? = null
     var lastExecuteTime: Long? = null
@@ -105,9 +117,14 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         stop = false
         val jobContext = createJobContext()
         val wasExecuted = if (isExclusive) {
-            val task = LockingTaskExecutor.TaskWithResult { doStart(jobContext) }
-            val result = lockingTaskExecutor.executeWithLock(task, getLockConfiguration())
-            result.wasExecuted()
+            var wasExecuted = false
+            lockProvider.lock(getLockConfiguration()).ifPresent {
+                lock = it
+                it.use { doStart(jobContext) }
+                lock = null
+                wasExecuted = true
+            }
+            wasExecuted
         } else {
             doStart(jobContext)
             true
@@ -119,7 +136,6 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         if (!wasExecuted) {
             logger.info("Job[${getJobName()}] already execution.")
         }
-        stop = true
         return wasExecuted
     }
 
@@ -128,7 +144,11 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      * */
     private fun doStart(jobContext: C) {
         try {
+            inProcess = true
             lastBeginTime = LocalDateTime.now()
+            if (isFailover()) {
+                recover()
+            }
             val elapseNano = measureNanoTime {
                 doStart0(jobContext)
             }
@@ -139,11 +159,13 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
             val event = TaskExecutedEvent(
                 name = getJobName(),
                 context = jobContext,
-                time = Duration.ofNanos(elapseNano)
+                time = Duration.ofNanos(elapseNano),
             )
             SpringContextUtils.publishEvent(event)
         } catch (e: Exception) {
             logger.info("Job[${getJobName()}] execution failed.", e)
+        } finally {
+            inProcess = false
         }
     }
 
@@ -152,8 +174,41 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     /**
      * 停止任务
      * */
-    fun stop() {
+    fun stop(timeout: Long = DEFAULT_STOP_TIMEOUT, force: Boolean = false) {
+        if (stop && !inProcess) {
+            logger.info("Job [${getJobName()}] already stopped.")
+            return
+        }
+        logger.info("Stop job [${getJobName()}].")
+        // 尽量等待任务执行完毕
+        var waitTime = 0L
+        while (inProcess && waitTime < timeout) {
+            logger.info("Job [${getJobName()}] is still running, waiting for it to terminate.")
+            Thread.sleep(SLEEP_TIME_INTERVAL)
+            waitTime += SLEEP_TIME_INTERVAL
+        }
+        if (inProcess) {
+            logger.info("Stop job timeout [$timeout] ms.")
+        }
+        // 只有释放锁，才需要进行故障转移
+        if (inProcess && force) {
+            logger.info("Force stop job [${getJobName()}] and unlock.")
+            failover()
+            lock?.unlockQuietly()
+        }
         stop = true
+    }
+
+    override fun failover() {
+        // NO-OP
+    }
+
+    override fun isFailover(): Boolean {
+        return false
+    }
+
+    override fun recover() {
+        // NO-OP
     }
 
     /**
@@ -171,10 +226,17 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     }
 
     /**
-     * 任务是否在运行
+     * 任务是否应该运行
      * */
-    fun isRunning(): Boolean {
+    fun shouldRun(): Boolean {
         return !stop
+    }
+
+    /**
+     * 任务是否正在运行
+     * */
+    fun inProcess(): Boolean {
+        return inProcess
     }
 
     /**
@@ -191,7 +253,31 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         return batchJobProperties.enabled
     }
 
+    /**
+     * 使用锁,[block]运行完后，将会释放锁
+     * */
+    private fun SimpleLock.use(block: () -> Unit) {
+        try {
+            block()
+        } finally {
+            unlockQuietly()
+        }
+    }
+
+    /**
+     * 静默释放锁
+     * */
+    private fun SimpleLock.unlockQuietly() {
+        try {
+            unlock()
+        } catch (ignore: Exception) {
+            // ignore
+        }
+    }
+
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val SLEEP_TIME_INTERVAL = 1000L
+        private const val DEFAULT_STOP_TIMEOUT = 30000L
     }
 }

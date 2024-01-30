@@ -419,7 +419,7 @@
 | repoType         | string  | 仓库类型       | repository type          |
 | repoName         | string  | 仓库名        | repository name          |
 | highestLeakLevel | string  | 最高漏洞等级     | highest vul level        |
-| critical         | number  | 危急漏洞数      | critical level vul count |
+| critical         | number  | 严重漏洞数      | critical level vul count |
 | high             | number  | 高危漏洞数      | high level vul count     |
 | medium           | number  | 中危漏洞数      | medium level vul count   |
 | low              | number  | 低危漏洞数      | low level vul count      |

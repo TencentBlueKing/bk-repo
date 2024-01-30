@@ -79,7 +79,16 @@ class ChartRepositoryController(
      */
     @PostMapping("/{projectId}/{repoName}/regenerate")
     fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void> {
-        chartRepositoryService.regenerateIndexYaml(artifactInfo)
+        chartRepositoryService.regenerateIndexYaml(artifactInfo, true)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * regenerate index.yaml
+     */
+    @PostMapping("/{projectId}/{repoName}/regenerate/v2")
+    fun regenerateIndexYamlV2(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void> {
+        chartRepositoryService.regenerateIndexYaml(artifactInfo, false)
         return ResponseBuilder.success()
     }
 

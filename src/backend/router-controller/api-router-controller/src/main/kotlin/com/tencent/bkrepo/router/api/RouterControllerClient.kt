@@ -81,6 +81,7 @@ interface RouterControllerClient {
         @PathVariable repoName: String,
         @RequestParam fullPath: String,
         @RequestParam originUrl: String,
+        @RequestParam serviceName: String
     ): Response<String?>
 
     @ApiOperation("获取路由策略")

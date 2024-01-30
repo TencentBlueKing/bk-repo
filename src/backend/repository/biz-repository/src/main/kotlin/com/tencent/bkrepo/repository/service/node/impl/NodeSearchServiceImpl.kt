@@ -28,8 +28,11 @@
 package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -40,11 +43,14 @@ import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.util.MetadataUtils
+import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
+import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
 /**
  * 节点自定义查询服务实现类
@@ -54,7 +60,8 @@ import java.util.Date
 class NodeSearchServiceImpl(
     private val nodeDao: NodeDao,
     private val nodeQueryInterpreter: NodeQueryInterpreter,
-    private val repositoryService: RepositoryService
+    private val repositoryService: RepositoryService,
+    private val repositoryProperties: RepositoryProperties
 ) : NodeSearchService {
 
     override fun search(queryModel: QueryModel): Page<Map<String, Any?>> {
@@ -117,7 +124,15 @@ class NodeSearchServiceImpl(
     }
 
     private fun queryList(query: Query): List<MutableMap<String, Any?>> {
-        val nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any?>>
+        val nodeList: List<MutableMap<String, Any?>>
+        val time = measureTimeMillis {
+            nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any?>>
+        }
+        if (time > repositoryProperties.slowLogTimeThreshold) {
+            logger.warn("search node slow log, " +
+                "query[${query.toJsonString().replace(System.lineSeparator(), "")}], " +
+                "cost ${HumanReadable.time(time, TimeUnit.MILLISECONDS)}")
+        }
         // metadata格式转换，并排除id字段
         nodeList.forEach {
             it.remove("_id")
@@ -155,6 +170,7 @@ class NodeSearchServiceImpl(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(NodeSearchServiceImpl::class.java)
         fun convertDateTime(value: Any): LocalDateTime? {
             return if (value is Date) {
                 LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault())

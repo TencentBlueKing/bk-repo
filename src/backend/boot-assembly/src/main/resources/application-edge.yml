@@ -1,6 +1,6 @@
 spring:
   cloud:
     stream:
-      default-binder: fileMessageChannelBinder
+      default-binder: noOpBinder
 cluster:
   role: EDGE

@@ -104,7 +104,6 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import javax.servlet.http.HttpServletRequest
 
 @Component
 class PypiLocalRepository(
@@ -233,7 +232,7 @@ class PypiLocalRepository(
             select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
             rule = rule
         )
-        val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
+        val nodeList: List<Map<String, Any?>>? = nodeClient.queryWithoutCount(queryModel).data?.records
         if (nodeList != null) {
             return XmlUtil.nodeLis2Values(nodeList)
         }
@@ -336,9 +335,8 @@ class PypiLocalRepository(
     /**
      * 本地调试删除 pypi.domain 配置
      */
-    fun getRedirectUrl(request: HttpServletRequest): String {
+    fun getRedirectUrl(path: String): String {
         val domain = pypiProperties.domain
-        val path = request.servletPath
         return UrlFormatter.format(domain, path).ensureSuffix(StringPool.SLASH)
     }
 
@@ -346,11 +344,10 @@ class PypiLocalRepository(
      *
      */
     fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
-        val request = HttpContextHolder.getRequest()
-        if (!request.requestURI.endsWith("/")) {
+        val path = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
+        if (!path.endsWith("/")) {
             val response = HttpContextHolder.getResponse()
-            response.sendRedirect(getRedirectUrl(request))
-            response.writer.flush()
+            response.sendRedirect(getRedirectUrl(path))
             return null
         }
         with(artifactInfo) {

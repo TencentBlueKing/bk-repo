@@ -19,6 +19,8 @@ export const ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS = 'ProjectScanConfiguration
 export const ROUTER_NAME_FILTER_RULE = 'FilterRule'
 export const ROUTER_NAME_JOB = 'Job'
 export const ROUTER_NAME_SHED_LOCK = 'Shedlock'
+export const ROUTER_NAME_PROJECT_METRICS = 'ProjectMetrics'
+export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
 
 Vue.use(Router)
 
@@ -133,6 +135,12 @@ export const asyncRoutes = [
         component: () => import('@/views/node/index')
       },
       {
+        path: 'fileSystem',
+        name: ROUTER_NAME_FILE_SYSTEM,
+        meta: { title: '客户端管理', icon: 'file' },
+        component: () => import('@/views/node/FileSystem')
+      },
+      {
         path: 'emptyFolder',
         name: ROUTER_NAME_EMPTY_FOLDER,
         meta: { title: '清理空目录', icon: 'file' },
@@ -143,6 +151,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_FIRST_LEVEL_FOLDER,
         meta: { title: '一级目录统计', icon: 'file' },
         component: () => import('@/views/node/FirstLevelFolder')
+      },
+      {
+        path: 'projectMetrics',
+        name: ROUTER_NAME_PROJECT_METRICS,
+        meta: { title: '仓库大小统计', icon: 'file' },
+        component: () => import('@/views/node/ProjectMetrics')
       }
     ]
   },

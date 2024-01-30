@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.common.storage.credentials
 
 import com.tencent.bkrepo.common.storage.config.CacheProperties
+import com.tencent.bkrepo.common.storage.config.CompressProperties
+import com.tencent.bkrepo.common.storage.config.EncryptProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
@@ -41,8 +43,10 @@ data class FileSystemCredentials(
     var path: String = "data/store",
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
-    override var upload: UploadProperties = UploadProperties()
-) : StorageCredentials(key, cache, upload) {
+    override var upload: UploadProperties = UploadProperties(),
+    override var encrypt: EncryptProperties = EncryptProperties(),
+    override var compress: CompressProperties = CompressProperties(),
+) : StorageCredentials(key, cache, upload, encrypt, compress) {
 
     companion object {
         const val type = "filesystem"

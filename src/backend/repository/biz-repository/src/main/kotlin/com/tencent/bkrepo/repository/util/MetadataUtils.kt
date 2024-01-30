@@ -35,6 +35,9 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
 import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
@@ -49,7 +52,15 @@ object MetadataUtils {
     /**
      * 元数据KEY保留字，仅允许系统使用
      */
-    private val RESERVED_KEY = setOf(SCAN_STATUS, FORBID_STATUS, FORBID_USER, FORBID_TYPE)
+    private val RESERVED_KEY = setOf(
+        SCAN_STATUS,
+        FORBID_STATUS,
+        FORBID_USER,
+        FORBID_TYPE,
+        METADATA_KEY_LINK_PROJECT,
+        METADATA_KEY_LINK_REPO,
+        METADATA_KEY_LINK_FULL_PATH,
+    )
 
     /**
      * 用于兼容旧逻辑，优先从[metadataModels]取数据，[metadataModels]不存在时从[metadataMap]取
@@ -140,6 +151,18 @@ object MetadataUtils {
             return tMetadata
         }
     }
+
+    /**
+     * 将允许用户新增为系统元数据的元数据设置为System=true
+     */
+    fun changeSystem(nodeMetadata: List<MetadataModel>?, allowUserAddSystemMetadata: List<String>) =
+        nodeMetadata?.map { m ->
+            if (allowUserAddSystemMetadata.any { it.equals(m.key, true) }) {
+                m.copy(system = true)
+            } else {
+                m
+            }
+        }?.toMutableList()
 
     private fun convertAndCheck(metadataMap: Map<String, Any>?): MutableList<TMetadata> {
         return metadataMap

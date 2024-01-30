@@ -4,17 +4,6 @@
             <div class="ml20 flex-align-center">
                 <bk-button icon="plus" theme="primary" @click="showCreateUser">{{ $t('create') }}</bk-button>
             </div>
-            <div class="mr20 flex-align-center">
-                <bk-input
-                    v-model.trim="userInput"
-                    class="w250"
-                    :placeholder="$t('userPlaceHolder')"
-                    clearable
-                    @enter="handlerChange()"
-                    @clear="handlerChange()"
-                    right-icon="bk-icon icon-search">
-                </bk-input>
-            </div>
         </div>
         <bk-table
             class="mt10"
@@ -136,8 +125,6 @@
             }
         },
         created () {
-            const { user } = this.$route.query
-            this.userInput = user
             this.handlerChange()
         },
         methods: {
@@ -159,8 +146,7 @@
             handlerChange () {
                 this.$router.replace({
                     query: {
-                        ...this.$route.query,
-                        userName: this.userInput
+                        ...this.$route.query
                     }
                 })
                 this.getUserListHandler()
@@ -168,7 +154,6 @@
             getUserListHandler () {
                 this.isLoading = true
                 return this.getUserRelatedList({
-                    userName: this.userInput || undefined,
                     asstUser: this.userInfo.username
                 }).then((res) => {
                     this.userListPages = res

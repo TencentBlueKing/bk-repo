@@ -35,9 +35,10 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
+import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.constant.SIZE
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
@@ -64,7 +65,6 @@ class LocalDataManager(
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient,
-    private val metadataClient: MetadataClient,
     private val storageService: StorageService
 ) {
 
@@ -183,18 +183,23 @@ class LocalDataManager(
         projectId: String,
         repoName: String,
         sha256: String
-    ): Long {
+    ): FileInfo {
         val queryModel = NodeQueryBuilder()
-            .select(NODE_FULL_PATH, SIZE)
+            .select(NODE_FULL_PATH, SIZE, MD5)
             .projectId(projectId)
             .repoName(repoName)
             .sha256(sha256)
+            .page(1, 1)
             .sortByAsc(NODE_FULL_PATH)
-        val result = nodeClient.search(queryModel.build()).data
+        val result = nodeClient.queryWithoutCount(queryModel.build()).data
         if (result == null || result.records.isEmpty()) {
             throw NodeNotFoundException(sha256)
         }
-        return result.records[0][SIZE].toString().toLong()
+        return FileInfo(
+            sha256 = sha256,
+            md5 = result.records[0][MD5].toString(),
+            size = result.records[0][SIZE].toString().toLong()
+        )
     }
 
 /**
@@ -252,5 +257,15 @@ class LocalDataManager(
     fun loadInputStreamByRange(sha256: String, range: Range, projectId: String, repoName: String): InputStream {
         val repo = findRepoByName(projectId, repoName)
         return getBlobDataByRange(sha256, range, repo)
+    }
+
+
+    /**
+     * 从项目仓库统计信息中找出对应仓库的大小
+     */
+    fun getRepoMetricInfo(projectId: String, repoName: String): Long {
+        findRepoByName(projectId, repoName)
+        val projectMetrics = projectClient.getProjectMetrics(projectId).data ?: return 0
+        return projectMetrics.repoMetrics.firstOrNull { it.repoName == repoName }?.size ?: 0
     }
 }

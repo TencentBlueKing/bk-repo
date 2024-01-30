@@ -29,11 +29,11 @@ package com.tencent.bkrepo.proxy.job
 
 import com.tencent.bkrepo.auth.api.proxy.ProxyAuthClient
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.proxy.SessionKeyHolder
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.proxy.constant.PID_FILE_PATH
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments

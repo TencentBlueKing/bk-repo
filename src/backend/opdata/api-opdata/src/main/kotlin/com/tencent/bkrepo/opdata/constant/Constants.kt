@@ -52,15 +52,32 @@ const val OPDATA_PIPELINE_SIZE = "pipelineSize"
 
 const val OPDATA_PROJECT_NUM = "ProjectNum"
 const val OPDATA_CAP_SIZE = "CapSize"
+const val OPDATA_DOCKER_CAP_SIZE = "DockerCapSize"
+const val OPDATA_GENERIC_CAP_SIZE = "GenericCapSize"
 const val OPDATA_NODE_NUM = "NodeNum"
+const val OPDATA_NODE_SIZE = "NodeSize"
+const val OPDATA_PRE_GC = "PreGc"
+const val OPDATA_POST_GC = "PostGc"
+const val OPDATA_RATIO = "Ratio"
 
 const val OPDATA_PROJECT = "project"
 const val OPDATA_PROJECT_ID = "projectId"
 const val OPDATA_REPOSITORY = "repository"
 const val OPDATA_REPO_NAME = "repoName"
 const val OPDATA_PATH = "path"
+const val TO_GIGABYTE = 1024 * 1024 * 1024
 
 const val OPDATA_FILE_EXTENSION_METRICS = "file_extension_metrics"
+
+val DOCKER_TYPES = listOf("DOCKER", "OCI")
+const val FILTER_TYPE = "filterType"
+const val FILTER_VALUE = "filterValue"
+const val TOP_VALUE = "top"
+const val START_DATE = "startDate"
+const val END_DATE = "endDate"
+const val DURATION = "duration"
+const val DELTA_POSITIVE = "deltaPositive"
+
 
 const val B_0 = "0"
 const val MB_100 = (100 * FileUtils.ONE_MB).toString()

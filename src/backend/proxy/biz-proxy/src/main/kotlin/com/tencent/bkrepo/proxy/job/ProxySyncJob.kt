@@ -58,6 +58,6 @@ class ProxySyncJob(
         if (currentHour < startHour || currentHour > endHour) {
             return
         }
-        storageService.sync(proxyInfo.syncRateLimit)
+        storageService.sync(proxyInfo.syncRateLimit, proxyInfo.cacheExpireDays)
     }
 }

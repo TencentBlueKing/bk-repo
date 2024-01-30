@@ -27,11 +27,13 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.repository.JobSnapshotRepository
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import io.mockk.every
 import io.mockk.mockk
@@ -64,6 +66,11 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     @MockBean
     lateinit var storageCredentialsClient: StorageCredentialsClient
 
+    @MockBean
+    lateinit var archiveClient: ArchiveClient
+    @MockBean
+    lateinit var jobSnapshotRepository: JobSnapshotRepository
+
     @Autowired
     lateinit var mongoTemplate: MongoTemplate
 
@@ -79,7 +86,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         Mockito.`when`(storageService.exist(anyString(), any())).thenReturn(true)
         val credentials = InnerCosCredentials()
         Mockito.`when`(storageCredentialsClient.findByKey(anyString())).thenReturn(
-            ResponseBuilder.success(credentials)
+            ResponseBuilder.success(credentials),
         )
         mockkObject(SpringContextUtils)
         every { SpringContextUtils.publishEvent(any()) } returns Unit
@@ -131,12 +138,12 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
                 mutableMapOf(
                     "sha256" to it.toString(),
                     "credentialsKey" to it.toString(),
-                    "count" to 0
-                ) as Map<String, Any>?
+                    "count" to 0,
+                ) as Map<String, Any>?,
             )
             mongoTemplate.insert(
                 doc,
-                collectionName
+                collectionName,
             )
         }
     }

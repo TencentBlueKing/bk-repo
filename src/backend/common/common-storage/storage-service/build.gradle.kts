@@ -46,4 +46,5 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
     implementation("com.tencent.polaris:polaris-discovery-factory")
+    implementation("com.tencent.bk.sdk:crypto-java-sdk")
 }

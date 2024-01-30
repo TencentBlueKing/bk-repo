@@ -31,7 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.query.Query
 
-class SimpleMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
+open class SimpleMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
 
     // 抽象类使用构造器注入不方便
     @Suppress("LateinitUsage")

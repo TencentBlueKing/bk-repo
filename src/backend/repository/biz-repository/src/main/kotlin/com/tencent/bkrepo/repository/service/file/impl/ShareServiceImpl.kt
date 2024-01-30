@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -72,7 +71,6 @@ class ShareServiceImpl(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate,
-    private val redirectService: EdgeNodeRedirectService,
 ) : ShareService {
 
     override fun create(
@@ -114,7 +112,7 @@ class ShareServiceImpl(
                     .and(TShareRecord::token).isEqualTo(token),
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
-                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, token)
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw PermissionException("unauthorized")
             }
@@ -128,17 +126,13 @@ class ShareServiceImpl(
     override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
         logger.info("artifact[$artifactInfo] download user: $userId")
         val shareRecord = checkToken(userId, token, artifactInfo)
+        checkAlphaApkDownloadUser(userId, artifactInfo, shareRecord.createdBy)
         with(artifactInfo) {
             val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = userId)
             HttpContextHolder.getRequest().setAttribute(USER_KEY, downloadUser)
-            if (redirectService.shouldRedirect(context.artifactInfo)) {
-                // 节点来自其他集群，重定向到其他节点。
-                redirectService.redirectToDefaultCluster(context)
-                return
-            }
             context.shareUserId = shareRecord.createdBy
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
@@ -154,8 +148,24 @@ class ShareServiceImpl(
         return mongoTemplate.find(query, TShareRecord::class.java).map { convert(it) }
     }
 
+    /**
+     * 加固签名的apk包，匿名下载时，使用分享人身份下载
+     */
+    private fun checkAlphaApkDownloadUser(userId: String, artifactInfo: ArtifactInfo, shareUserId: String) {
+        val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo)
+            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val appStageKey = nodeDetail.metadata.keys.find { it.equals(BK_CI_APP_STAGE_KEY, true) }
+            ?: return
+        val alphaApk = nodeDetail.metadata[appStageKey]?.toString().equals(ALPHA, true)
+        if (alphaApk && userId == ANONYMOUS_USER) {
+            HttpContextHolder.getRequest().setAttribute(USER_KEY, shareUserId)
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ShareServiceImpl::class.java)
+        private const val BK_CI_APP_STAGE_KEY = "BK-CI-APP-STAGE"
+        private const val ALPHA = "Alpha"
 
         private fun generateToken(): String {
             return UUID.randomUUID().toString().replace(StringPool.DASH, StringPool.EMPTY).toLowerCase()

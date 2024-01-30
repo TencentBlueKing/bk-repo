@@ -31,9 +31,11 @@
 
 package com.tencent.bkrepo.pypi.api
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -67,4 +69,13 @@ interface PypiWebResource {
         @RequestParam packageKey: String,
         @RequestParam version: String?
     ): Response<Any?>
+
+    @ApiOperation("pypi 包版本列表接口")
+    @GetMapping(PypiArtifactInfo.PYPI_EXT_PACKAGE_LIST)
+    fun versionListPage(
+        @ArtifactPathVariable pypiArtifactInfo: PypiArtifactInfo,
+        @RequestParam packageKey: String,
+        @RequestParam pageNumber: Int,
+        @RequestParam pageSize: Int
+    ): Response<Page<PackageVersion>>
 }

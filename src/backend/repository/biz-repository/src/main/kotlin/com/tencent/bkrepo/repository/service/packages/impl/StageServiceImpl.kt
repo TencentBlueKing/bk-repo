@@ -84,7 +84,7 @@ class StageServiceImpl(
         packageKey: String,
         version: String
     ): TPackageVersion {
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey)
+        val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey)
         return packageVersionDao.findByName(tPackage.id!!, version)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, version)

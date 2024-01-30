@@ -50,4 +50,6 @@ enum class Metrics {
     NODECOLLECTION,
     REPONODENUM,
     REPONODESIZE,
+    GCINFO,
+    ARCHIVEDiNFO
 }

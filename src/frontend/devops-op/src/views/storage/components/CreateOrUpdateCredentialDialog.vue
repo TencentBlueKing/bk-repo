@@ -133,6 +133,51 @@
           <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
         </el-tooltip>
       </el-form-item>
+      <el-form-item
+        v-if="credential.type === STORAGE_TYPE_INNER_COS"
+        label="下载分块大小"
+        prop="download.minimumPartSize"
+        required
+      >
+        <el-input-number
+          v-model="credential.download.minimumPartSize"
+          controls-position="right"
+          :min="1"
+        />
+        <el-tooltip
+          effect="dark"
+          content="单位Mb"
+          placement="top-start"
+        >
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item
+        v-if="credential.type === STORAGE_TYPE_INNER_COS"
+        label="下载分片数量"
+        prop="download.maxDownloadParts"
+        required
+      >
+        <el-input-number
+          v-model="credential.download.maxDownloadParts"
+          controls-position="right"
+          :min="1"
+        />
+        <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+      </el-form-item>
+      <el-form-item
+        v-if="credential.type === STORAGE_TYPE_INNER_COS"
+        label="QPS"
+        prop="download.qps"
+        required
+      >
+        <el-input-number
+          v-model="credential.download.qps"
+          controls-position="right"
+          :min="1"
+        />
+        <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+      </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_S3" label="Endpoint" prop="endpoint" required>
         <el-input v-model="credential.endpoint" :disabled="!createMode" />
       </el-form-item>
@@ -158,8 +203,11 @@
       <el-form-item v-if="credential.cache.enabled" label="优先加载缓存" prop="cache.loadCacheFirst">
         <el-switch v-model="credential.cache.loadCacheFirst" />
       </el-form-item>
-      <el-form-item v-if="credential.cache.enabled" label="缓存天数" prop="cache.expireDays">
+      <el-form-item v-if="credential.cache.enabled" label="缓存天数（已废弃）" prop="cache.expireDays">
         <el-input-number v-model="credential.cache.expireDays" controls-position="right" :min="0" :max="30" />
+      </el-form-item>
+      <el-form-item v-if="credential.cache.enabled" label="缓存时间(秒)" prop="cache.expireDuration">
+        <el-input-number v-model="credential.cache.expireDuration" controls-position="right" :min="0" />
       </el-form-item>
     </el-form>
     <div slot="footer">
@@ -339,6 +387,9 @@ export default {
             credential.download.downloadTimeHighWaterMark = 25 * 1000
             credential.download.downloadTimeLowWaterMark = 5 * 1000
             credential.download.taskInterval = 10
+            credential.download.minimumPartSize = 10
+            credential.download.maxDownloadParts = 10 * 1000
+            credential.download.qps = 10
           }
           credential.secretKey = ''
           credential.bucket = ''

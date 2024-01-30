@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -45,7 +46,6 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.storage.innercos.http.toMediaTypeOrNull
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.pojo.ext.CheckRepoDifferenceRequest
@@ -56,9 +56,9 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import com.tencent.bkrepo.replication.replica.base.OkHttpClientPool
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext.Companion.READ_TIMEOUT
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext.Companion.WRITE_TIMEOUT
+import com.tencent.bkrepo.replication.util.OkHttpClientPool
+import com.tencent.bkrepo.replication.replica.context.ReplicaContext.Companion.READ_TIMEOUT
+import com.tencent.bkrepo.replication.replica.context.ReplicaContext.Companion.WRITE_TIMEOUT
 import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaExtService
 import com.tencent.bkrepo.repository.api.NodeClient

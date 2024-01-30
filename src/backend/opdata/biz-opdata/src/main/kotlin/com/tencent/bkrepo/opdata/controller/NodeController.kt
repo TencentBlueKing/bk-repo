@@ -65,7 +65,7 @@ class NodeController(
     }
 
     /**
-     * 获取当前仓库目录下的空目录列表
+     * 删除当前仓库目录下的空目录列表
      */
     @DeleteMapping("/emptyFolders/{projectId}/{repoName}")
     @LogOperate(type = "EMPTY_FOLDER_DELETE")

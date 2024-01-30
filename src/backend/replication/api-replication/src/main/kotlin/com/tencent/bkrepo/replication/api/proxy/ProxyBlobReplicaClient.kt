@@ -65,6 +65,7 @@ interface ProxyBlobReplicaClient {
     @GetMapping(BLOB_CHECK_URI)
     fun check(
         @RequestParam sha256: String,
-        @RequestParam storageKey: String? = null
+        @RequestParam storageKey: String? = null,
+        @RequestParam(required = false) repoType: String? = null
     ): Response<Boolean>
 }

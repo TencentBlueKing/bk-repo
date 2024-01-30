@@ -29,7 +29,7 @@ package com.tencent.bkrepo.analyst.pojo
 
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_FILE_NAME
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import java.io.File
+import com.tencent.bkrepo.common.api.constant.StringPool
 
 /**
  * 提交给扫描执行服务的子扫描任务
@@ -104,5 +104,10 @@ data class SubScanTask(
      */
     val extra: Map<String, Any>? = null,
 ) {
-    fun fileName() = extra?.get(TASK_METADATA_FILE_NAME)?.toString() ?: fullPath.substringAfterLast(File.separatorChar)
+    fun fileName() = extra?.get(TASK_METADATA_FILE_NAME)?.toString() ?: fullPath.substringAfterLast(StringPool.SLASH)
+
+    /**
+     * 拼接任务ID字符串用于日志输出，方便排查问题时通过日志追踪任务
+     */
+    fun trace() = "subtask[$taskId], parent[$parentScanTaskId]"
 }

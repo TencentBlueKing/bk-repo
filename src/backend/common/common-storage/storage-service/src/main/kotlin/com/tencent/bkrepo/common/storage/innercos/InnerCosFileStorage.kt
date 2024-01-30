@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.common.storage.innercos
 
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
+import com.tencent.bkrepo.common.storage.core.AbstractEncryptorFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
@@ -46,7 +46,7 @@ import java.io.InputStream
 /**
  * 内部cos文件存储实现类
  */
-open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosClient>() {
+open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredentials, CosClient>() {
 
     override fun store(path: String, name: String, file: File, client: CosClient) {
         client.putFileObject(name, file)
@@ -57,7 +57,12 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
     }
 
     override fun load(path: String, name: String, range: Range, client: CosClient): InputStream? {
-        val request = GetObjectRequest(name, range.start, range.end)
+        val request = if (range == Range.FULL_RANGE) {
+            GetObjectRequest(name)
+        } else {
+            // 确定范围可以使用并发下载
+            GetObjectRequest(name, range.start, range.end)
+        }
         return client.getObjectByChunked(request).inputStream
     }
 
@@ -83,6 +88,7 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
             require(fromClient.credentials.region == toClient.credentials.region)
             require(fromClient.credentials.secretId == toClient.credentials.secretId)
             require(fromClient.credentials.secretKey == toClient.credentials.secretKey)
+            require(fromClient.credentials.encrypt == toClient.credentials.encrypt)
         } catch (ignored: IllegalArgumentException) {
             throw IllegalArgumentException("Unsupported to copy object between different cos app id")
         }

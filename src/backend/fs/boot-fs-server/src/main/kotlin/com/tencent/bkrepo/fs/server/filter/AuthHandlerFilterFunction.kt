@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
@@ -48,7 +48,7 @@ class AuthHandlerFilterFunction(
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse
     ): ServerResponse {
-        if (request.path().startsWith("/login")) {
+        if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
         var user = ANONYMOUS_USER
@@ -58,7 +58,7 @@ class AuthHandlerFilterFunction(
             }
             request.headers().header("X-BKREPO-SECURITY-TOKEN").firstOrNull()
         } else {
-            request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+            request.bearerToken()
         } ?: throw AuthenticationException("missing token.")
 
         try {
@@ -72,5 +72,9 @@ class AuthHandlerFilterFunction(
         } catch (exception: IllegalArgumentException) {
             throw AuthenticationException("Empty token")
         }
+    }
+
+    companion object {
+        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/ioa")
     }
 }

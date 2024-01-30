@@ -74,9 +74,11 @@ class ExecutorScheduler @Autowired constructor(
         scanClient.updateSubScanTaskStatus(subtask.taskId, SubScanTaskStatus.EXECUTING.name)
 
         executingSubtaskExecutorMap[subtask.taskId] = scanExecutorFactory.get(subtask.scanner.type)
-        logger.info("task start, executing task count ${executingSubtaskExecutorMap.size}")
+        val executingCount = executingSubtaskExecutorMap.size
+        logger.info("task start, executing task count $executingCount")
         executor.execute {
             try {
+                startHeartbeat(subtask.taskId, executingCount)
                 doScan(subtask)
             } finally {
                 executingSubtaskExecutorMap.remove(subtask.taskId)
@@ -95,6 +97,21 @@ class ExecutorScheduler @Autowired constructor(
      */
     fun scanning(taskId: String): Boolean {
         return executingSubtaskExecutorMap.containsKey(taskId)
+    }
+
+    /**
+     * 开始发送任务心跳到制品分析服务
+     */
+    private fun startHeartbeat(subtaskId: String, executingCount: Int) {
+        if (scannerExecutorProperties.heartbeatInterval.seconds > 0) {
+            val runnable = SubtaskHeartbeatRunnable(
+                this,
+                scannerExecutorProperties.heartbeatInterval,
+                scanClient,
+                subtaskId
+            )
+            Thread(runnable, "subtask-heartbeat-$executingCount").start()
+        }
     }
 
     private fun pullSubtaskAtFixedRate() {

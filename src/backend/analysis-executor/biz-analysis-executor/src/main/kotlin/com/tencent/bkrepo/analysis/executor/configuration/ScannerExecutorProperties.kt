@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analysis.executor.configuration
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.util.unit.DataSize
+import java.time.Duration
 
 @ConfigurationProperties("scanner.executor")
 data class ScannerExecutorProperties(
@@ -63,5 +64,9 @@ data class ScannerExecutorProperties(
     /**
      * 是否输出分析工具容器执行日志
      */
-    var showContainerLogs: Boolean = true
+    var showContainerLogs: Boolean = true,
+    /**
+     * 子任务心跳间隔，为0时不上报心跳
+     */
+    var heartbeatInterval: Duration = Duration.ofSeconds(0)
 )

@@ -40,4 +40,16 @@ interface JobClient {
 
     @GetMapping("/detail")
     fun detail(): Response<List<JobDetail>>
+
+    @GetMapping("/downloadActiveProjects")
+    fun downloadActiveProjects(): Response<MutableSet<String>>
+
+    @GetMapping("/uploadActiveProjects")
+    fun uploadActiveProjects(): Response<MutableSet<String>>
+
+    @GetMapping("/activeProjects")
+    fun activeProjects(): Response<MutableSet<String>>
+
+    @GetMapping("/activeUsers")
+    fun activeUsers(): Response<Set<String>>
 }

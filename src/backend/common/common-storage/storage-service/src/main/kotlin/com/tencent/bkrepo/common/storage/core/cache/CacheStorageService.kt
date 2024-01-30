@@ -39,6 +39,9 @@ import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFileExpireResolver
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.CompositeFileExpireResolver
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -51,7 +54,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * 支持缓存的存储服务
  */
 class CacheStorageService(
-    private val threadPoolTaskExecutor: ThreadPoolTaskExecutor
+    private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
+    private val fileExpireResolver: FileExpireResolver? = null,
 ) : AbstractStorageService() {
 
     override fun doStore(
@@ -59,15 +63,17 @@ class CacheStorageService(
         filename: String,
         artifactFile: ArtifactFile,
         credentials: StorageCredentials,
-        cancel: AtomicBoolean?
+        cancel: AtomicBoolean?,
     ) {
         when {
             artifactFile.isInMemory() -> {
                 fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
             }
+
             artifactFile.isFallback() || artifactFile.isInLocalDisk() -> {
                 fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
             }
+
             else -> {
                 val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
                 async2Store(cancel, filename, credentials, path, cacheFile)
@@ -80,7 +86,7 @@ class CacheStorageService(
         filename: String,
         credentials: StorageCredentials,
         path: String,
-        cacheFile: File
+        cacheFile: File,
     ) {
         threadPoolTaskExecutor.execute {
             try {
@@ -106,7 +112,7 @@ class CacheStorageService(
         path: String,
         filename: String,
         range: Range,
-        credentials: StorageCredentials
+        credentials: StorageCredentials,
     ): ArtifactInputStream? {
         val cacheClient = getCacheClient(credentials)
         val loadCacheFirst = isLoadCacheFirst(range, credentials)
@@ -144,9 +150,23 @@ class CacheStorageService(
         val rootPath = Paths.get(credentials.cache.path)
         val tempPath = getTempPath(credentials)
         val stagingPath = getStagingPath(credentials)
-        val visitor = CleanupFileVisitor(rootPath, tempPath, stagingPath, fileStorage, fileLocator, credentials)
+        val resolver = if (fileExpireResolver != null) {
+            val baseFileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
+            CompositeFileExpireResolver(listOf(baseFileExpireResolver, fileExpireResolver))
+        } else {
+            BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
+        }
+        val visitor = CleanupFileVisitor(
+            rootPath,
+            tempPath,
+            stagingPath,
+            fileStorage,
+            fileLocator,
+            credentials,
+            resolver,
+        )
         getCacheClient(credentials).walk(visitor)
-        return visitor.result
+        return visitor.result.merge(cleanUploadPath(credentials))
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
@@ -183,7 +203,7 @@ class CacheStorageService(
         cacheClient: FileSystemClient,
         path: String,
         filename: String,
-        range: Range
+        range: Range,
     ): ArtifactInputStream? {
         try {
             return cacheClient.load(path, filename)?.artifactStream(range)
@@ -199,7 +219,8 @@ class CacheStorageService(
      * 当cacheFirst开启，并且cache磁盘健康，并且当前文件未超过内存阈值大小
      */
     private fun isLoadCacheFirst(range: Range, credentials: StorageCredentials): Boolean {
-        val isExceedThreshold = range.total > storageProperties.receive.fileSizeThreshold.toBytes()
+        val total = range.total ?: return false
+        val isExceedThreshold = total > storageProperties.receive.fileSizeThreshold.toBytes()
         val isHealth = getMonitor(credentials).healthy.get()
         val cacheFirst = credentials.cache.loadCacheFirst
         return cacheFirst && isHealth && isExceedThreshold

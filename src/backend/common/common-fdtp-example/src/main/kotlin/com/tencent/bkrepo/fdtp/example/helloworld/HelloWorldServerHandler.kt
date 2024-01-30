@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.fdtp.example.helloworld
 
-import com.barchart.udt.StatusUDT
 import com.tencent.bkrepo.fdtp.FdtpVersion
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpDataFrame
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaderFrame
@@ -38,11 +37,12 @@ import com.tencent.bkrepo.fdtp.codec.FdtpHeaderFrame
 import com.tencent.bkrepo.fdtp.codec.FdtpHeaderNames
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.fdtp.codec.FdtpStreamFrame
+import com.tencent.bkrepo.udt.StatusUDT
+import com.tencent.bkrepo.udt.netty.transport.nio.NioUdtProvider
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
-import io.netty.channel.udt.nio.NioUdtProvider
 import io.netty.handler.timeout.IdleState
 import io.netty.handler.timeout.IdleStateEvent
 
@@ -50,7 +50,7 @@ class HelloWorldServerHandler : SimpleChannelInboundHandler<FdtpStreamFrame>() {
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         val socket = NioUdtProvider.socketUDT(ctx.channel())
-        if (socket.status() == StatusUDT.NONEXIST) {
+        if (socket?.status() == StatusUDT.NONEXIST) {
             println("Peer close connection $socket")
         } else {
             cause.printStackTrace()

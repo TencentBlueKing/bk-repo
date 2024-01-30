@@ -99,12 +99,13 @@ class CommitEdgeCenterNodeDeleteSupport(
         projectId: String,
         repoName: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        path: String
     ): NodeDeleteResult {
         var deletedSize = 0L
         var deletedNum = 0L
         val option = NodeListOption(includeFolder = false, deep = true)
-        val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, PathUtils.ROOT, option)
+        val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
             .and(TNode::createdDate).lt(date)
         val pageSize = 1
         var queryCount: Int

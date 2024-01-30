@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -173,5 +174,16 @@ open class ArtifactContext(
     fun getCompositeConfiguration(): CompositeConfiguration {
         require(this.repositoryDetail.category == RepositoryCategory.COMPOSITE)
         return this.repositoryDetail.configuration as CompositeConfiguration
+    }
+
+    /**
+     * 获取代理仓库配置
+     *
+     * 当仓库类型和配置类型不符时抛[IllegalArgumentException]异常
+     */
+    @Throws(IllegalArgumentException::class)
+    fun getProxyConfiguration(): ProxyConfiguration {
+        require(this.repositoryDetail.category == RepositoryCategory.PROXY)
+        return this.repositoryDetail.configuration as ProxyConfiguration
     }
 }

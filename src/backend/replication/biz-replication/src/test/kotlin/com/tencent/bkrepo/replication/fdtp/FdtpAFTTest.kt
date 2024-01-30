@@ -32,7 +32,9 @@ import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
@@ -44,8 +46,6 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.replication.constant.SHA256
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
@@ -58,12 +58,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito
 import org.springframework.cloud.loadbalancer.support.SimpleObjectProvider
+import org.springframework.cloud.sleuth.Tracer
+import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 import java.io.ByteArrayInputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
-import org.springframework.cloud.sleuth.Tracer
-import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FdtpAFTTest {
@@ -92,14 +92,14 @@ class FdtpAFTTest {
     private fun mockPrerequisites() {
         val artifactConfigurer = Mockito.mock(ArtifactConfigurer::class.java)
         val compositeRepository = Mockito.mock(CompositeRepository::class.java)
-        val repositoryClient = Mockito.mock(RepositoryClient::class.java)
-        val nodeClient = Mockito.mock(NodeClient::class.java)
+        val proxyRepository = Mockito.mock(ProxyRepository::class.java)
+        val artifactClient = Mockito.mock(ArtifactClient::class.java)
         val httpAuthSecurity = SimpleObjectProvider<HttpAuthSecurity>(null)
         ArtifactContextHolder(
             listOf(artifactConfigurer),
             compositeRepository,
-            repositoryClient,
-            nodeClient,
+            proxyRepository,
+            artifactClient,
             httpAuthSecurity,
         )
         val helper = StorageHealthMonitorHelper(ConcurrentHashMap())

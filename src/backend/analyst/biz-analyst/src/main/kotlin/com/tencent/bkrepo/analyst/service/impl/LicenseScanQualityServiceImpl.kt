@@ -27,35 +27,13 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
 import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
-import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
-import com.tencent.bkrepo.analyst.dao.ScanPlanDao
-import com.tencent.bkrepo.analyst.pojo.request.LicenseScanQualityUpdateRequest
-import com.tencent.bkrepo.analyst.pojo.response.LicenseScanQualityResponse
 import com.tencent.bkrepo.analyst.service.LicenseScanQualityService
 import org.springframework.stereotype.Service
 
 @Service
-class LicenseScanQualityServiceImpl(
-    private val permissionCheckHandler: ScannerPermissionCheckHandler,
-    private val scanPlanDao: ScanPlanDao
-) : LicenseScanQualityService {
-    override fun getScanQuality(planId: String): LicenseScanQualityResponse {
-        val scanPlan = scanPlanDao.get(planId)
-        permissionCheckHandler.checkProjectPermission(scanPlan.projectId, PermissionAction.MANAGE)
-        return LicenseScanQualityResponse.create(scanPlan.scanQuality)
-    }
-
-    override fun updateScanQuality(planId: String, request: LicenseScanQualityUpdateRequest): Boolean {
-        val scanPlan = scanPlanDao.get(planId)
-        permissionCheckHandler.checkProjectPermission(scanPlan.projectId, PermissionAction.MANAGE)
-        val qualityMap = request.toMap().ifEmpty { return true }
-        scanPlanDao.updateScanPlanQuality(planId, qualityMap)
-        return true
-    }
-
+class LicenseScanQualityServiceImpl : LicenseScanQualityService {
     override fun checkLicenseScanQualityRedLine(
         scanQuality: Map<String, Any>,
         scanResultOverview: Map<String, Number>

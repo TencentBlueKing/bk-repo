@@ -1,2 +1,2 @@
 spring.application.name: router-controller
-server.port: 25910
+server.port: 25912

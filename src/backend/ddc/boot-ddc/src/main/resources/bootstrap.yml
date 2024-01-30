@@ -1,0 +1,5 @@
+server.port: 25817
+
+spring:
+  application:
+    name: ddc

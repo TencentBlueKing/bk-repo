@@ -154,6 +154,14 @@ init:
   entrance:
     enabled: false
     bkCiProjectInnerUrl:
+  iam:
+    enabled: true
+    image:
+      registry: registry.hub.docker.com
+      repository: bkrepo/bkrepo-init-rbac
+      tag: 1.1.0
+      pullPolicy: IfNotPresent
+      pullSecrets: [ ]
   ## bcs repo配置
   bcs:
     enabled: false
@@ -212,6 +220,7 @@ common:
       # 是否启用nfs挂载
       nfs:
         enabled: false
+        capacity: 100Ti
         path: /
         server:
 
@@ -262,6 +271,8 @@ gateway:
   ssmTokenUrl:
   ## ci模式必填，ssm env
   ssmEnv:
+  ## 蓝鲸apigw地址
+  bkApigwUrl:
   ## ci模式必填，app code
   appCode:
   ## ci模式必填，app token
@@ -373,6 +384,15 @@ auth:
     allowDefaultPwd: true
     ## 指定realm类型，支持local/devops
     realm: local
+    ## realm 指定为devops或者bkiamv3配置
+    ## 权限v3-rbac相关配置
+    iam: 
+      callbackUser: bk_iam
+      systemId: 
+      apigwBaseUrl:  
+      appCode:  
+      appSecret: 
+      applyJoinUserGroupUrl: 
     ## realm 指定为devops配置
     devops:
       # bkci accountId in bkrepo
@@ -437,6 +457,46 @@ generic:
   image:
     registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-generic
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
+## s3服务配置
+s3:
+  enabled: true
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-s3
     tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []

@@ -56,11 +56,11 @@ import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionStrategy
-import com.tencent.bkrepo.replication.replica.edge.EdgePullReplicaExecutor
-import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler
-import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
-import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
-import com.tencent.bkrepo.replication.replica.schedule.ScheduledReplicaJob
+import com.tencent.bkrepo.replication.replica.type.edge.EdgePullReplicaExecutor
+import com.tencent.bkrepo.replication.replica.type.schedule.ReplicaTaskScheduler
+import com.tencent.bkrepo.replication.replica.type.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
+import com.tencent.bkrepo.replication.replica.type.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
+import com.tencent.bkrepo.replication.replica.type.schedule.ScheduledReplicaJob
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
@@ -115,7 +115,14 @@ class ReplicaTaskServiceImpl(
 
     override fun listTasksPage(projectId: String, param: TaskPageParam): Page<ReplicaTaskInfo> {
         with(param) {
-            val query = buildListQuery(projectId, name, lastExecutionStatus, enabled, sortType)
+            val direction = sortDirection?.let {
+                Preconditions.checkArgument(
+                    it == Sort.Direction.DESC.name || it == Sort.Direction.ASC.name,
+                    TaskPageParam::sortDirection.name
+                )
+                Sort.Direction.valueOf(it)
+            }
+            val query = buildListQuery(projectId, name, lastExecutionStatus, enabled, sortType, direction)
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val totalRecords = replicaTaskDao.count(query)
             val records = replicaTaskDao.find(query.with(pageRequest)).map { convert(it)!! }
@@ -257,6 +264,7 @@ class ReplicaTaskServiceImpl(
         return when (replicaObjectType) {
             ReplicaObjectType.PACKAGE -> computePackageSize(localProjectId, replicaTaskObjects)
             ReplicaObjectType.PATH -> computeNodeSize(localProjectId, replicaTaskObjects)
+            ReplicaObjectType.REPOSITORY -> computeRepositorySize(localProjectId, replicaTaskObjects)
             else -> -1
         }
     }
@@ -279,7 +287,7 @@ class ReplicaTaskServiceImpl(
         val taskObject = replicaTaskObjects.first()
         return taskObject.pathConstraints!!.sumOf {
             val node = localDataManager.findNodeDetail(localProjectId, taskObject.localRepoName, it.path!!)
-            if (node.folder) {
+            if (node.folder && node.size == 0L) {
                 try {
                     localDataManager.listNode(localProjectId, taskObject.localRepoName, it.path!!).sumOf { n -> n.size }
                 } catch (e: Exception) {
@@ -290,6 +298,11 @@ class ReplicaTaskServiceImpl(
                 node.size
             }
         }
+    }
+
+    private fun computeRepositorySize(localProjectId: String, replicaTaskObjects: List<ReplicaObjectInfo>): Long {
+        val taskObject = replicaTaskObjects.first()
+        return localDataManager.getRepoMetricInfo(localProjectId, taskObject.localRepoName)
     }
 
     private fun validateRequest(request: ReplicaTaskCreateRequest) {
@@ -454,6 +467,7 @@ class ReplicaTaskServiceImpl(
                 clusterNodeName
             }.toSet()
             val task = tReplicaTask.copy(
+                id = null,
                 name = name,
                 replicaObjectType = replicaObjectType,
                 setting = setting,
@@ -490,7 +504,9 @@ class ReplicaTaskServiceImpl(
                 // 移除所有object对象，重新插入
                 replicaObjectDao.remove(key)
                 replicaObjectDao.insert(replicaObjectList)
-                replicaTaskDao.save(task)
+                // 任务更新后删除旧的数据，插入新的task，保持key不变
+                replicaTaskDao.deleteByKey(tReplicaTask.key)
+                replicaTaskDao.insert(task)
                 convert(task)
             } catch (exception: DuplicateKeyException) {
                 logger.warn("update task[$name] error: [${exception.message}]")
@@ -531,6 +547,8 @@ class ReplicaTaskServiceImpl(
                         .startNow()
                         .build()
                     replicaTaskScheduler.scheduleJob(jobDetail, trigger)
+                    tReplicaTask.status = ReplicaStatus.WAITING
+                    replicaTaskDao.save(tReplicaTask)
                 } else {
                     // 提示用户该任务未执行
                     throw ErrorCodeException(ReplicationMessageCode.SCHEDULED_JOB_LOADING, key)
