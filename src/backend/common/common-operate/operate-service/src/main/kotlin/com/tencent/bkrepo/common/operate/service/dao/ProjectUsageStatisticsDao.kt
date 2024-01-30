@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.operate.service.model.TProjectUsageStatistics
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.gt
+import org.springframework.data.mongodb.core.query.gte
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
@@ -88,8 +88,8 @@ class ProjectUsageStatisticsDao : SimpleMongoDao<TProjectUsageStatistics>() {
         }
     }
 
-    fun findAfter(start: Long): List<TProjectUsageStatistics> {
-        val criteria = TProjectUsageStatistics::start.gt(start)
+    fun findBetween(start: Long, end: Long): List<TProjectUsageStatistics> {
+        val criteria = TProjectUsageStatistics::start.gte(start).and(TProjectUsageStatistics::start.name).lt(end)
         return find(Query(criteria))
     }
 

@@ -58,6 +58,8 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Optional
 import java.util.concurrent.TimeUnit
@@ -266,10 +268,16 @@ class ProjectMetricsService (
             oneDayBeforeMetrics = oneDayBeforeMetrics,
             oneWeekBeforeMetrics = oneWeekBeforeMetrics,
             oneMonthBeforeMetrics = oneMonthBeforeMetrics,
-            currentProjectUsageStatistics = projectUsageStatisticsService.sumRecentDays(1L),
-            oneWeekBeforeProjectUsageStatistics = projectUsageStatisticsService.sumRecentDays(7L),
-            oneMonthBeforeProjectUsageStatistics = projectUsageStatisticsService.sumRecentDays(30L),
+            currentProjectUsageStatistics = sumRecentDaysUsage(createdDate, 1L),
+            oneWeekBeforeProjectUsageStatistics = sumRecentDaysUsage(createdDate, 7L),
+            oneMonthBeforeProjectUsageStatistics = sumRecentDaysUsage(createdDate, 30L),
         )
+    }
+
+    private fun sumRecentDaysUsage(createDate: LocalDateTime, days: Long): Map<String, ProjectUsageStatistics> {
+        val start = createDate.minusDays(days - 1).toLocalDate().atStartOfDay()
+            .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        return projectUsageStatisticsService.sum(start)
     }
 
     private fun getMetricsResult(
