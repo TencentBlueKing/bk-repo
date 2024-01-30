@@ -56,7 +56,6 @@ import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_METADATA
-import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
@@ -417,7 +416,6 @@ class FixToolServiceImpl(
         )
         val context = ArtifactQueryContext()
         for (it in nodeList) {
-            Thread.sleep(SLEEP_MILLIS)
             try {
                 val path = it[NODE_FULL_PATH] as String
                 val nodeMetadata = it[NODE_METADATA] as Map<String, Any>
@@ -444,7 +442,7 @@ class FixToolServiceImpl(
                 )
                 metadataClient.saveMetadata(metadataSaveRequest)
             } catch (e: Exception) {
-                logger.error("error occurred while updating meta data, error: ${e.message}")
+                logger.warn("error occurred while updating metadata of $it, error: ${e.message}")
             }
         }
     }
