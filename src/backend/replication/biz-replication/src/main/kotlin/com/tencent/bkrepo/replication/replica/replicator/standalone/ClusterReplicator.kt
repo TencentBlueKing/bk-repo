@@ -186,7 +186,7 @@ class ClusterReplicator(
                 packageDescription = packageSummary.description,
                 versionName = packageVersion.name,
                 size = packageVersion.size,
-                manifestPath = null,
+                manifestPath = packageVersion.manifestPath,
                 artifactPath = packageVersion.contentPath,
                 stageTag = packageVersion.stageTag,
                 packageMetadata = packageMetadata,
