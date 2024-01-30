@@ -92,7 +92,7 @@ class ProjectUsageStatisticsDao : SimpleMongoDao<TProjectUsageStatistics>() {
     fun findBetween(start: Long, end: Long): List<TProjectUsageStatistics> {
         val criteria = Criteria().andOperator(
             TProjectUsageStatistics::start.gte(start),
-            TProjectUsageStatistics::start.lt(start),
+            TProjectUsageStatistics::start.lt(end),
         )
         return find(Query(criteria))
     }
