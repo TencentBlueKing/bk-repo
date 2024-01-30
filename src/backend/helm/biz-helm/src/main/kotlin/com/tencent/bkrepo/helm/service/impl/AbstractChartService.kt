@@ -225,22 +225,8 @@ open class AbstractChartService : ArtifactService() {
         }
     }
 
-    /**
-     * 根据路径取读取chart的Chart.yaml文件
-     */
-    fun queryHelmChartMetadata(context: ArtifactQueryContext, path: String): HelmChartMetadata {
-        context.putAttribute(FULL_PATH, path)
-        val artifactInputStream =
-            ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream
-        context.putAttribute(SIZE, artifactInputStream.range.length)
-        val content = artifactInputStream.use {
-            it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION)
-        }
-        return content.byteInputStream().readYamlString()
-    }
 
-
-    private fun getChartYaml(projectId: String, repoName: String, fullPath: String): HelmChartMetadata {
+    fun getChartYaml(projectId: String, repoName: String, fullPath: String): HelmChartMetadata {
         val repository = repositoryClient.getRepoDetail(projectId, repoName, RepositoryType.HELM.name).data
             ?: throw RepoNotFoundException("Repository[$repoName] does not exist")
         val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data

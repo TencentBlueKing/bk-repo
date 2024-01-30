@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -51,9 +50,9 @@ import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
-import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
+import com.tencent.bkrepo.helm.constants.NODE_METADATA
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
@@ -72,6 +71,7 @@ import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -397,7 +397,8 @@ class FixToolServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun metaDataRegenerate(userId: String, artifactInfo: HelmArtifactInfo, updatePackage: Boolean) {
         logger.info("handling meta data regenerate request: [$artifactInfo]")
-        when (getRepositoryInfo(artifactInfo).category) {
+        val repositoryDetail = getRepositoryInfo(artifactInfo)
+        when (repositoryDetail.category) {
             RepositoryCategory.REMOTE -> {
                 val message = "Unable to regenerate metadata for remote repository " +
                     "[${artifactInfo.projectId}/${artifactInfo.repoName}]"
@@ -407,27 +408,32 @@ class FixToolServiceImpl(
                     emptyList<String>()
                 )
             }
+            else -> {}
         }
         val nodeList = queryNodeList(artifactInfo, false)
         logger.info(
             "query node list for regenerating meta data in repo [${artifactInfo.getRepoIdentify()}]" +
                 ", size [${nodeList.size}] "
         )
-        val context = ArtifactQueryContext()
-        nodeList.forEach {
+        for (node in nodeList) {
             Thread.sleep(SLEEP_MILLIS)
             try {
-                val path = it[NODE_FULL_PATH] as String
-                val chartMetadata = queryHelmChartMetadata(context, path)
+                val path = node[NODE_FULL_PATH] as String
+                    val nodeMetadata = node[NODE_METADATA] as Map<String, Any>
+                    if (nodeMetadata.size > 3) {
+                        continue
+                    }
+                val chartMetadata = getChartYaml(
+                    artifactInfo.projectId, artifactInfo.repoName, node[NODE_FULL_PATH] as String
+                )
                 val metadata = HelmMetadataUtils.convertToMetadata(chartMetadata)
-                context.putAttribute(FULL_PATH, path)
                 if (updatePackage) {
                     createVersion(
-                        userId = context.userId,
+                        userId = userId,
                         projectId = artifactInfo.projectId,
                         repoName = artifactInfo.repoName,
                         chartInfo = chartMetadata,
-                        size = context.getLongAttribute(SIZE)!!,
+                        size = node[SIZE] as Long,
                         isOverwrite = true
                     )
                 }
@@ -436,17 +442,26 @@ class FixToolServiceImpl(
                     repoName = artifactInfo.repoName,
                     fullPath = path,
                     nodeMetadata = metadata,
-                    operator = context.userId
+                    operator = userId
                 )
                 metadataClient.saveMetadata(metadataSaveRequest)
             } catch (e: Exception) {
                 logger.warn("error occurred while updating meta data, error: ${e.message}")
             }
         }
+        repositoryDetail.configuration.settings.put(META_DATA_REFRESH_CONFIG, true)
+        val request = RepoUpdateRequest(
+            projectId = artifactInfo.projectId,
+            name = artifactInfo.repoName,
+            operator = userId,
+            configuration = repositoryDetail.configuration
+        )
+        repositoryClient.updateRepo(request)
     }
 
     companion object {
         private const val pageSize = 10000
         private val logger = LoggerFactory.getLogger(FixToolServiceImpl::class.java)
+        private const val META_DATA_REFRESH_CONFIG = "metaDataRefreshStatus"
     }
 }
