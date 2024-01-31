@@ -144,14 +144,14 @@ class RetryInterceptor : Interceptor {
      * 从请求头中获取对于当前请求体大小信息
      */
     private fun getSizeFromHeader(request: Request): Long? {
-        return request.header(CONTENT_LENGTH)?.toLong()
+        return request.header(CONTENT_LENGTH)?.toLongOrNull()
     }
 
     /**
      * 从请求头中获取对于文件大小信息
      */
     private fun getFileLengthFromHeader(request: Request): Long? {
-        return request.header(SIZE)?.toLong()
+        return request.header(SIZE)?.toLongOrNull()
     }
 
     companion object {
