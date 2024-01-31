@@ -16,7 +16,8 @@ import kotlin.system.measureNanoTime
 
 class FileStorageFileProvider(
     private val fileDir: Path,
-    private val diskFreeThreshold: Long,
+    private val highWaterMark: Long,
+    private val lowWaterMark: Long,
     private val executor: Executor,
 ) : FileProvider {
 
@@ -51,19 +52,20 @@ class FileStorageFileProvider(
 
     private fun checkDiskSpace() {
         var diskFreeInBytes = fileDir.toFile().usableSpace
-        while (diskFreeInBytes < diskFreeThreshold) {
-            logger.info(
-                "DFree disk space below threshold.Available:" +
-                    " $diskFreeInBytes bytes (threshold: $diskFreeThreshold).",
-            )
-            Thread.sleep(CHECK_INTERVAL)
-            diskFreeInBytes = fileDir.toFile().usableSpace
+        val msg = "Free disk space below threshold.Available: %s bytes (threshold: %s)."
+        if (diskFreeInBytes < lowWaterMark) {
+            logger.info("Free disk below low water mark. ${msg.format(diskFreeInBytes, lowWaterMark)}")
+            while (diskFreeInBytes < highWaterMark) {
+                logger.info(msg.format(diskFreeInBytes, highWaterMark))
+                Thread.sleep(CHECK_INTERVAL)
+                diskFreeInBytes = fileDir.toFile().usableSpace
+            }
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(FileStorageFileProvider::class.java)
         private const val RETRY_TIMES = 3
-        private const val CHECK_INTERVAL = 60000L
+        private const val CHECK_INTERVAL = 10 * 60000L
     }
 }

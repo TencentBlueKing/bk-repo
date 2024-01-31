@@ -91,7 +91,7 @@
                         <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)"></empty-data>
                     </template>
                     <bk-table-column :selectable="selectable" type="selection" width="60"></bk-table-column>
-                    <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
+                    <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
                         <template #default="{ row }">
                             <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
                             <span
@@ -99,7 +99,8 @@
                                 v-if="!row.folder && row.metadata.forbidStatus"
                                 v-bk-tooltips="{ content: tooltipContent(row.metadata), placements: ['top'] }"
                             >{{row.name}}</span>
-                            <span v-else>{{ row.name }}</span>
+                            <!-- 文件夹支持: 鼠标悬浮时显示小手样式 -->
+                            <span v-else :class="{ 'hover-btn': row.folder }">{{ row.name }}</span>
                             <scan-tag class="mr5 table-svg"
                                 v-if="showRepoScan(row)"
                                 :status="row.metadata.scanStatus"
@@ -138,6 +139,11 @@
                     <bk-table-column :label="$t('lastModifiedBy')" width="150" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}
+                        </template>
+                    </bk-table-column>
+                    <bk-table-column :label="$t('createdBy')" width="150" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('operation')" width="100">
@@ -208,26 +214,26 @@
     </div>
 </template>
 <script>
-    import OperationList from '@repository/components/OperationList'
     import Breadcrumb from '@repository/components/Breadcrumb'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import Loading from '@repository/components/Loading/loading'
     import MoveSplitBar from '@repository/components/MoveSplitBar'
+    import OperationList from '@repository/components/OperationList'
     import RepoTree from '@repository/components/RepoTree'
-    import ScanTag from '@repository/views/repoScan/scanTag'
+    import { getIconName } from '@repository/store/publicEnum'
+    import { convertFileSize, debounce, formatDate } from '@repository/utils'
+    import { beforeMonths, beforeYears } from '@repository/utils/date'
+    import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import metadataTag from '@repository/views/repoCommon/metadataTag'
+    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
     import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
     import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
-    import previewBasicFileDialog from './previewBasicFileDialog'
-    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import ScanTag from '@repository/views/repoScan/scanTag'
+    import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
-    import { convertFileSize, formatDate, debounce } from '@repository/utils'
-    import { beforeMonths, beforeYears } from '@repository/utils/date'
-    import { customizeDownloadFile } from '@repository/utils/downloadFile'
-    import { getIconName } from '@repository/store/publicEnum'
-    import { mapState, mapMutations, mapActions } from 'vuex'
-    import Loading from '@repository/components/Loading/loading'
-    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
+    import previewBasicFileDialog from './previewBasicFileDialog'
 
     export default {
         name: 'repoGeneric',
@@ -258,6 +264,7 @@
                 // 左侧树处于打开状态的目录
                 sideTreeOpenList: [],
                 sortType: 'lastModifiedDate',
+                sortDirection: 'DESC',
                 // 中间展示的table数据
                 artifactoryList: [],
                 multiSelect: [],
@@ -347,7 +354,7 @@
             // 前端隐藏report仓库/log仓库
             if (MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log')) {
                 next({
-                    name: 'repoList',
+                    name: 'repositories',
                     params: {
                         projectId: to.params.projectId
                     }
@@ -425,7 +432,7 @@
             renderHeader (h, { column }) {
                 const elements = [h('span', column.label)]
                 if (this.localRepo) {
-                    elements.push(h('i', { class: 'ml5 devops-icon icon-down-shape' }))
+                    elements.push(h('i', { class: `ml5 devops-icon ${this.sortDirection === 'DESC' ? 'icon-down-shape' : 'icon-up-shape'}` }))
                 }
                 return h('div', {
                     class: {
@@ -439,9 +446,11 @@
                                 this.sortType = column.property
                                 this.$refs.artifactoryTable.clearSort()
                                 this.sortParams = []
+                                // 当点击切换排序时需要将升序修改为降序，降序修改为升序
+                                this.sortDirection = this.sortDirection === 'DESC' ? 'ASC' : 'DESC'
                                 const sortParam = {
                                     properties: column.property,
-                                    direction: 'DESC'
+                                    direction: this.sortDirection
                                 }
                                 this.sortParams.push(sortParam)
                                 this.handlerPaginationChange()
@@ -1413,6 +1422,9 @@
             ::v-deep .selected-header {
                 color: var(--fontPrimaryColor);
                 .icon-down-shape {
+                    color: var(--primaryColor);
+                }
+                .icon-up-shape {
                     color: var(--primaryColor);
                 }
             }

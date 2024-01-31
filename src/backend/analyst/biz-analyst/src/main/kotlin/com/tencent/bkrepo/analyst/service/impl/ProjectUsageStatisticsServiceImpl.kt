@@ -51,4 +51,8 @@ open class ProjectUsageStatisticsServiceImpl(
     override fun delete(start: Long?, end: Long) {
         throw UnsupportedOperationException()
     }
+
+    override fun sumRecentDays(days: Long): Map<String, ProjectUsageStatistics> {
+        throw UnsupportedOperationException()
+    }
 }

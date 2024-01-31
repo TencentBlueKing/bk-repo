@@ -29,7 +29,7 @@ package com.tencent.bkrepo.auth.job
 
 import com.tencent.bkrepo.auth.model.TProxy
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
-import com.tencent.bkrepo.auth.repository.ProxyRepository
+import com.tencent.bkrepo.auth.dao.ProxyDao
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -40,12 +40,12 @@ import java.time.LocalDateTime
 
 @Component
 class ProxyStatusManageJob(
-    private val proxyRepository: ProxyRepository
+    private val proxyDao: ProxyDao
 ) {
 
     @Scheduled(cron = "0 */1 * * * ? ")
     fun checkHeartbeat() {
-        val proxyList = proxyRepository.findStatusNotOffline()
+        val proxyList = proxyDao.findStatusNotOffline()
         proxyList.forEach {
             if (it.status == ProxyStatus.ONLINE &&
                 it.heartbeatTime?.isBefore(LocalDateTime.now().minusMinutes(1)) == true) {
@@ -65,6 +65,6 @@ class ProxyStatusManageJob(
                 .and(TProxy::name.name).isEqualTo(proxy.name)
         )
         val update = Update().set(TProxy::status.name, status)
-        proxyRepository.updateFirst(query, update)
+        proxyDao.updateFirst(query, update)
     }
 }

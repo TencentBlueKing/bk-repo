@@ -31,62 +31,58 @@
 
 package com.tencent.bkrepo.auth.service.local
 
-import com.tencent.bkrepo.auth.constant.AUTH_ADMIN
-import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_ADMIN
+import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+import com.tencent.bkrepo.auth.constant.AUTH_ADMIN
+import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.UPDATE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.SYSTEM
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.dao.repository.AccountRepository
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.UPDATE
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.Permission
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
-import com.tencent.bkrepo.auth.repository.AccountRepository
-import com.tencent.bkrepo.auth.repository.PermissionRepository
-import com.tencent.bkrepo.auth.repository.RoleRepository
-import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.util.RequestUtil
-import com.tencent.bkrepo.auth.util.query.PermissionQueryHelper
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.MongoTemplate
 import java.time.LocalDateTime
 
 open class PermissionServiceImpl constructor(
-    private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     private val account: AccountRepository,
-    private val permissionRepository: PermissionRepository,
-    private val mongoTemplate: MongoTemplate,
+    private val permissionDao: PermissionDao,
+    userDao: UserDao,
     val repoClient: RepositoryClient,
     val projectClient: ProjectClient
-) : PermissionService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
+) : PermissionService, AbstractServiceImpl(userDao, roleRepository) {
 
     override fun deletePermission(id: String): Boolean {
         logger.info("delete  permission  repoName: [$id]")
-        permissionRepository.deleteById(id)
+        permissionDao.deleteById(id)
         return true
     }
 
@@ -94,21 +90,21 @@ open class PermissionServiceImpl constructor(
         logger.debug("list  permission  projectId: [$projectId], repoName: [$repoName]")
         resourceType?.let {
             repoName?.let {
-                return permissionRepository.findByResourceTypeAndProjectIdAndRepos(
+                return permissionDao.findByResourceTypeAndProjectIdAndRepos(
                     resourceType, projectId, repoName
                 )
                     .map { PermRequestUtil.convToPermission(it) }
             }
-            return permissionRepository.findByResourceTypeAndProjectId(
+            return permissionDao.findByResourceTypeAndProjectId(
                 resourceType, projectId
             )
                 .map { PermRequestUtil.convToPermission(it) }
         }
         repoName?.let {
-            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(REPO.name, projectId, repoName)
+            return permissionDao.findByResourceTypeAndProjectIdAndRepos(REPO.name, projectId, repoName)
                 .map { PermRequestUtil.convToPermission(it) }
         }
-        return permissionRepository.findByResourceTypeAndProjectId(PROJECT.name, projectId)
+        return permissionDao.findByResourceTypeAndProjectId(PROJECT.name, projectId)
             .map { PermRequestUtil.convToPermission(it) }
     }
 
@@ -128,14 +124,14 @@ open class PermissionServiceImpl constructor(
     override fun createPermission(request: CreatePermissionRequest): Boolean {
         logger.info("create  permission request : [$request]")
         // todo check request
-        val permission = permissionRepository.findOneByPermNameAndProjectIdAndResourceType(
-            request.permName, request.projectId, request.resourceType
+        val permission = permissionDao.checkPermissionInProject(
+            request.permName, request.projectId, request.resourceType.toString()
         )
         permission?.let {
             logger.warn("create permission  [$request] is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_PERMNAME)
         }
-        val result = permissionRepository.insert(PermRequestUtil.convToTPermission(request))
+        val result = permissionDao.insert(PermRequestUtil.convToTPermission(request))
         result.id?.let {
             return true
         }
@@ -194,7 +190,7 @@ open class PermissionServiceImpl constructor(
 
         if (request.uid == ANONYMOUS_USER) return false
 
-        val user = userRepository.findFirstByUserId(request.uid) ?: run {
+        val user = userDao.findFirstByUserId(request.uid) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
@@ -252,21 +248,18 @@ open class PermissionServiceImpl constructor(
 
     private fun checkNodeAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
         with(request) {
-            val query = PermissionQueryHelper.buildPermissionCheck(
+            val result = permissionDao.inPermissionCheck(
                 projectId, repoName, uid, resourceType, roles
             )
-            val result = mongoTemplate.find(query, TPermission::class.java)
-
             result.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
 
                 if (checkExcludePatternAction(it.excludePattern, path!!, it.actions, action)) return false
             }
 
-            val noPermissionQuery = PermissionQueryHelper.buildNoPermissionCheck(
+            val noPermissionResult = permissionDao.noPermissionCheck(
                 projectId, repoName, uid, resourceType, roles
             )
-            val noPermissionResult = mongoTemplate.find(noPermissionQuery, TPermission::class.java)
             noPermissionResult.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
             }
@@ -275,7 +268,7 @@ open class PermissionServiceImpl constructor(
     }
 
     fun isNodeNeedLocalCheck(projectId: String, repoName: String): Boolean {
-        val projectPermission = permissionRepository.findByResourceTypeAndProjectIdAndRepos(
+        val projectPermission = permissionDao.findByResourceTypeAndProjectIdAndRepos(
             NODE.name,
             projectId,
             repoName,
@@ -310,7 +303,7 @@ open class PermissionServiceImpl constructor(
     override fun listPermissionProject(userId: String): List<String> {
         logger.debug("list permission project request : $userId ")
         if (userId.isEmpty()) return emptyList()
-        val user = userRepository.findFirstByUserId(userId) ?: run {
+        val user = userDao.findFirstByUserId(userId) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
         // 用户为系统管理员
@@ -349,7 +342,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun getPermission(permissionId: String): Permission? {
-        val result = permissionRepository.findFirstById(permissionId) ?: run {
+        val result = permissionDao.findFirstById(permissionId) ?: run {
             return null
         }
         return PermRequestUtil.convToPermission(result)
@@ -357,7 +350,7 @@ open class PermissionServiceImpl constructor(
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         logger.debug("list repo permission request : [$projectId, $userId] ")
-        val user = userRepository.findFirstByUserId(userId) ?: run {
+        val user = userDao.findFirstByUserId(userId) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
@@ -403,15 +396,13 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
-        val user = userRepository.findFirstByUserId(userId) ?: run {
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
+        val user = userDao.findFirstByUserId(userId) ?: return emptyList()
 
         if (user.admin || isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
         }
 
-        val projectPermission = permissionRepository.findByResourceTypeAndProjectIdAndRepos(
+        val projectPermission = permissionDao.findByResourceTypeAndProjectIdAndRepos(
             NODE.name,
             projectId,
             repoName,
@@ -470,7 +461,7 @@ open class PermissionServiceImpl constructor(
 
     private fun getNoAdminUserProject(userId: String): List<String> {
         val projectList = mutableListOf<String>()
-        permissionRepository.findByUsers(userId).forEach {
+        permissionDao.findByUsers(userId).forEach {
             if (it.actions.isNotEmpty() && it.projectId != null) {
                 projectList.add(it.projectId!!)
             }
@@ -491,7 +482,7 @@ open class PermissionServiceImpl constructor(
     private fun getNoAdminRoleProject(roles: List<String>): List<String> {
         val project = mutableListOf<String>()
         if (roles.isNotEmpty()) {
-            permissionRepository.findByRolesIn(roles).forEach {
+            permissionDao.findByRolesIn(roles).forEach {
                 if (it.actions.isNotEmpty() && it.projectId != null) {
                     project.add(it.projectId!!)
                 }
@@ -502,7 +493,7 @@ open class PermissionServiceImpl constructor(
 
     private fun getNoAdminUserRepo(projectId: String, userId: String): List<String> {
         val repoList = mutableListOf<String>()
-        permissionRepository.findByProjectIdAndUsers(projectId, userId).forEach {
+        permissionDao.findByProjectIdAndUsers(projectId, userId).forEach {
             if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
                 repoList.addAll(it.repos)
             }
@@ -513,7 +504,7 @@ open class PermissionServiceImpl constructor(
     private fun getNoAdminRoleRepo(project: String, role: List<String>): List<String> {
         val repoList = mutableListOf<String>()
         if (role.isNotEmpty()) {
-            permissionRepository.findByProjectIdAndRolesIn(project, role).forEach {
+            permissionDao.findByProjectIdAndRolesIn(project, role).forEach {
                 if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
                     repoList.addAll(it.repos)
                 }
@@ -523,7 +514,7 @@ open class PermissionServiceImpl constructor(
     }
 
     private fun checkPermissionExist(pId: String) {
-        permissionRepository.findFirstById(pId) ?: run {
+        permissionDao.findFirstById(pId) ?: run {
             logger.warn("update permission repos [$pId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
         }
@@ -535,8 +526,8 @@ open class PermissionServiceImpl constructor(
         permName: String,
         actions: Set<PermissionAction>
     ): TPermission {
-        permissionRepository.findOneByProjectIdAndReposAndPermNameAndResourceType(
-            projectId, repoName, permName, REPO
+        permissionDao.findOnePermission(
+            projectId, repoName, permName, REPO.name
         ) ?: run {
             val request = TPermission(
                 projectId = projectId,
@@ -550,10 +541,10 @@ open class PermissionServiceImpl constructor(
                 updatedBy = AUTH_ADMIN
             )
             logger.info("permission not exist, create [$request]")
-            permissionRepository.insert(request)
+            permissionDao.insert(request)
         }
-        return permissionRepository.findOneByProjectIdAndReposAndPermNameAndResourceType(
-            projectId = projectId, repoName = repoName, permName = permName, resourceType = REPO
+        return permissionDao.findOnePermission(
+            projectId = projectId, repoName = repoName, permName = permName, resourceType = REPO.name
         )!!
     }
 
@@ -579,27 +570,17 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun listProjectBuiltinPermission(projectId: String): List<Permission> {
-        val projectManager = Permission(
-            id = PROJECT_MANAGE_ID,
-            resourceType = PROJECT.name,
+        val projectManager = buildBuiltInPermission(
+            permissionId = PROJECT_MANAGE_ID,
             projectId = projectId,
-            permName = "project_manage_permission",
-            users = getProjectAdminUser(projectId),
-            createBy = SecurityUtils.getUserId(),
-            updatedBy = SecurityUtils.getUserId(),
-            createAt = LocalDateTime.now(),
-            updateAt = LocalDateTime.now()
+            permissionName = "project_manage_permission",
+            userList = getProjectAdminUser(projectId)
         )
-        val projectViewer = Permission(
-            id = PROJECT_VIEWER_ID,
-            resourceType = PROJECT.name,
+        val projectViewer = buildBuiltInPermission(
+            permissionId = PROJECT_VIEWER_ID,
             projectId = projectId,
-            permName = "project_view_permission",
-            users = getProjectCommonUser(projectId),
-            createBy = SecurityUtils.getUserId(),
-            updatedBy = SecurityUtils.getUserId(),
-            createAt = LocalDateTime.now(),
-            updateAt = LocalDateTime.now()
+            permissionName = "project_view_permission",
+            userList = getProjectCommonUser(projectId)
         )
         return listOf(projectManager, projectViewer)
     }
@@ -610,6 +591,10 @@ open class PermissionServiceImpl constructor(
                 && updatePermissionById(request.permissionId, TPermission::users.name, request.users)
                 && updatePermissionById(request.permissionId, TPermission::permName.name, request.name)
                 && updatePermissionById(request.permissionId, TPermission::roles.name, request.roles)
+    }
+
+    private fun updatePermissionById(id: String, key: String, value: Any): Boolean {
+        return permissionDao.updateById(id, key, value)
     }
 
     companion object {

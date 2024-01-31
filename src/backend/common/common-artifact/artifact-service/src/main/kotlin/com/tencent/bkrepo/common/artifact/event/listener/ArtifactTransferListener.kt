@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
@@ -69,6 +70,7 @@ class ArtifactTransferListener(
     private val artifactMetricsProperties: ArtifactMetricsProperties,
     private val commonTagProvider: ObjectProvider<CommonTagProvider>,
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
+    private val artifactCacheMetrics: ArtifactCacheMetrics,
 ) {
 
     private var queue = LinkedBlockingQueue<ArtifactTransferRecord>(QUEUE_LIMIT)
@@ -136,6 +138,7 @@ class ArtifactTransferListener(
             }
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
             recordAccessTimeDistribution(artifactResource)
+            artifactCacheMetrics.record(artifactResource)
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(
                     toJson(

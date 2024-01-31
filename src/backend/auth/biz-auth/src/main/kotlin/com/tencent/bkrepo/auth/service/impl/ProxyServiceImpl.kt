@@ -37,7 +37,7 @@ import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
-import com.tencent.bkrepo.auth.repository.ProxyRepository
+import com.tencent.bkrepo.auth.dao.ProxyDao
 import com.tencent.bkrepo.auth.service.ProxyService
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -62,7 +62,7 @@ import kotlin.random.Random
 
 @Service
 class ProxyServiceImpl(
-    private val proxyRepository: ProxyRepository,
+    private val proxyDao: ProxyDao,
     private val permissionManager: PermissionManager,
     private val routerControllerClient: RouterControllerClient
 ) : ProxyService {
@@ -94,11 +94,11 @@ class ProxyServiceImpl(
             lastModifiedDate = LocalDateTime.now(),
             status = ProxyStatus.CREATE
         )
-        return proxyRepository.insert(tProxy).convert()
+        return proxyDao.insert(tProxy).convert()
     }
 
     override fun getInfo(projectId: String, name: String): ProxyInfo {
-        val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
+        val tProxy = proxyDao.findByProjectIdAndName(projectId, name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
         permissionManager.checkProjectPermission(PermissionAction.READ, tProxy.projectId)
         return tProxy.convert()
@@ -107,20 +107,20 @@ class ProxyServiceImpl(
     override fun page(projectId: String, option: ProxyListOption): Page<ProxyInfo> {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         val pageRequest = Pages.ofRequest(option.pageNumber, option.pageSize)
-        val page = proxyRepository.findByOption(projectId, option)
+        val page = proxyDao.findByOption(projectId, option)
         return Pages.ofResponse(pageRequest, page.totalElements, page.content.map { it.convert() })
     }
 
     override fun getEncryptedKey(projectId: String, name: String): ProxyKey {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
-        val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
+        val tProxy = proxyDao.findByProjectIdAndName(projectId, name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
         return ProxyKey(tProxy.secretKey, tProxy.sessionKey)
     }
 
     override fun update(request: ProxyUpdateRequest): ProxyInfo {
         val userId = SecurityUtils.getUserId()
-        val tProxy = proxyRepository.findByProjectIdAndName(request.projectId, request.name)
+        val tProxy = proxyDao.findByProjectIdAndName(request.projectId, request.name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, request.name)
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, tProxy.projectId)
         request.displayName?.let { tProxy.displayName = it }
@@ -133,26 +133,27 @@ class ProxyServiceImpl(
         request.cacheExpiredDays?.let { tProxy.cacheExpireDays = it }
         tProxy.lastModifiedBy = userId
         tProxy.lastModifiedDate = LocalDateTime.now()
-        return proxyRepository.save(tProxy).convert()
+        logger.info("user[$userId] update proxy with request[$request]")
+        return proxyDao.save(tProxy).convert()
     }
 
     override fun delete(projectId: String, name: String) {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
-        proxyRepository.findByProjectIdAndName(projectId, name)
+        proxyDao.findByProjectIdAndName(projectId, name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
-        proxyRepository.deleteByProjectIdAndName(projectId, name)
+        proxyDao.deleteByProjectIdAndName(projectId, name)
         routerControllerClient.removeRouterNode(RemoveRouterNodeRequest(name, SecurityUtils.getUserId()))
     }
 
     override fun ticket(projectId: String, name: String): Int {
-        val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
+        val tProxy = proxyDao.findByProjectIdAndName(projectId, name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
 
         return if (!tProxy.ticketCreateInstant.plusSeconds(15).isAfter(Instant.now())) {
             val ticket = Random.nextInt()
             tProxy.ticket = ticket
             tProxy.ticketCreateInstant = Instant.now()
-            proxyRepository.save(tProxy)
+            proxyDao.save(tProxy)
             ticket
         } else {
             tProxy.ticket
@@ -161,7 +162,7 @@ class ProxyServiceImpl(
 
     override fun startup(request: ProxyStatusRequest): String {
         with(request) {
-            val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
+            val tProxy = proxyDao.findByProjectIdAndName(projectId, name)
                 ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
             val secretKey = AESUtils.decrypt(tProxy.secretKey)
             Preconditions.checkArgument(
@@ -176,7 +177,7 @@ class ProxyServiceImpl(
             tProxy.status = ProxyStatus.ONLINE
             tProxy.sessionKey = sessionKey
             tProxy.ip = HttpContextHolder.getClientAddress()
-            proxyRepository.save(tProxy)
+            proxyDao.save(tProxy)
             addRouterNode(tProxy)
             return sessionKey
         }
@@ -197,7 +198,7 @@ class ProxyServiceImpl(
 
     override fun shutdown(request: ProxyStatusRequest) {
         with(request) {
-            val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
+            val tProxy = proxyDao.findByProjectIdAndName(projectId, name)
                 ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
             val secretKey = AESUtils.decrypt(tProxy.secretKey)
             Preconditions.checkArgument(
@@ -210,19 +211,19 @@ class ProxyServiceImpl(
             )
             tProxy.status = ProxyStatus.OFFLINE
             tProxy.sessionKey = StringPool.EMPTY
-            proxyRepository.save(tProxy)
+            proxyDao.save(tProxy)
         }
     }
 
     override fun heartbeat(projectId: String, name: String) {
-        val tProxy = proxyRepository.findByProjectIdAndName(projectId, name)
+        val tProxy = proxyDao.findByProjectIdAndName(projectId, name)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
         tProxy.heartbeatTime = LocalDateTime.now()
-        proxyRepository.save(tProxy)
+        proxyDao.save(tProxy)
     }
 
     private fun checkExist(projectId: String, name: String): Boolean {
-        return proxyRepository.findByProjectIdAndName(projectId, name) != null
+        return proxyDao.findByProjectIdAndName(projectId, name) != null
     }
 
     private fun TProxy.convert() = ProxyInfo(

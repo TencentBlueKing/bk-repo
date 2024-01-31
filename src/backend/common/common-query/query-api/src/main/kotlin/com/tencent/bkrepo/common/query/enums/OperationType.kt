@@ -53,6 +53,7 @@ enum class OperationType(val valueType: KClass<*>) {
     MATCH(String::class),
     MATCH_I(String::class),
     REGEX(String::class),
+    REGEX_I(String::class),
     NULL(Void::class),
     NOT_NULL(Void::class);
 

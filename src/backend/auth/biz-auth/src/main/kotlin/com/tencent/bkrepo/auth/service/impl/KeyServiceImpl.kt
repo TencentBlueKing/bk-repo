@@ -30,7 +30,7 @@ package com.tencent.bkrepo.auth.service.impl
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TKey
 import com.tencent.bkrepo.auth.pojo.Key
-import com.tencent.bkrepo.auth.repository.KeyRepository
+import com.tencent.bkrepo.auth.dao.repository.KeyRepository
 import com.tencent.bkrepo.auth.service.KeyService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions

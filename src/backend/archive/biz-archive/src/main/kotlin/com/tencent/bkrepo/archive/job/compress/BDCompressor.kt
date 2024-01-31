@@ -35,7 +35,7 @@ class BDCompressor(
                 val start = System.nanoTime()
                 val file = BDUtils.deltaByChecksumFile(src, checksum, srcKey, destKey, workDir, ratio)
                 val nanos = System.nanoTime() - start
-                val throughput = Throughput(nanos, file.length())
+                val throughput = Throughput(src.length(), nanos)
                 logger.info("Success to bd compress $srcKey,$throughput.")
                 file
             } finally {
