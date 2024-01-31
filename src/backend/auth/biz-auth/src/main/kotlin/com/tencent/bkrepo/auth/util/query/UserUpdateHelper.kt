@@ -35,7 +35,7 @@ object UserUpdateHelper {
         request.admin?.let {
             update.set(TUser::admin.name, request.admin)
         }
-        request.asstUsers?.let {
+        if (request.asstUsers.isNotEmpty()) {
             update.set(TUser::asstUsers.name, request.asstUsers)
         }
         return update.set(TUser::lastModifiedDate.name, LocalDateTime.now())
@@ -53,7 +53,7 @@ object UserUpdateHelper {
         return update.push(TUser::roles.name, roleId)
     }
 
-    fun buildPwdUpdate(newPwd: String): Update {
-        return Update().set(TUser::pwd.name, DataDigestUtils.md5FromStr(newPwd))
+    fun buildPwdUpdate(newHashPwd: String): Update {
+        return Update().set(TUser::pwd.name, newHashPwd)
     }
 }

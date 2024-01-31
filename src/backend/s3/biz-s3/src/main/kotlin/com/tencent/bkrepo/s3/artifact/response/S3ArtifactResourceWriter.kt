@@ -72,7 +72,7 @@ class S3ArtifactResourceWriter (
         val totalSize = resource.getTotalSize().toString()
 
         prepareResponseHeaders(response, totalSize.toLong(), node, status, contentType, characterEncoding, range)
-        response.bufferSize = getBufferSize(range.length.toInt())
+        response.bufferSize = getBufferSize(range.length)
         return writeRangeStream(resource, request, response)
     }
 

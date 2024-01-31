@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.storage.core.cache
 import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
@@ -117,7 +118,9 @@ class CacheStorageService(
         val cacheClient = getCacheClient(credentials)
         val loadCacheFirst = isLoadCacheFirst(range, credentials)
         if (loadCacheFirst) {
-            loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let { return it }
+            loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let {
+                return it.apply { putMetadata(METADATA_KEY_CACHE_ENABLED, true) }
+            }
         }
         val artifactInputStream = fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
         if (artifactInputStream != null && loadCacheFirst && range.isFullContent()) {
@@ -126,11 +129,12 @@ class CacheStorageService(
             val readListener = CachedFileWriter(cachePath, filename, tempPath)
             artifactInputStream.addListener(readListener)
         }
+
         return if (artifactInputStream == null && !loadCacheFirst) {
             cacheClient.load(path, filename)?.artifactStream(range)
         } else {
             artifactInputStream
-        }
+        }?.apply { putMetadata(METADATA_KEY_CACHE_ENABLED, loadCacheFirst) }
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
@@ -145,7 +149,7 @@ class CacheStorageService(
     /**
      * 覆盖父类cleanUp逻辑，还包括清理缓存的文件内容
      */
-    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
+    override fun cleanUp(storageCredentials: StorageCredentials?): Map<Path, CleanupResult> {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val rootPath = Paths.get(credentials.cache.path)
         val tempPath = getTempPath(credentials)
@@ -166,7 +170,10 @@ class CacheStorageService(
             resolver,
         )
         getCacheClient(credentials).walk(visitor)
-        return visitor.result.merge(cleanUploadPath(credentials))
+        val result = mutableMapOf<Path, CleanupResult>()
+        result[rootPath] = visitor.result
+        result.putAll(cleanUploadPath(credentials))
+        return result
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {

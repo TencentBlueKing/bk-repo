@@ -13,6 +13,7 @@ import com.tencent.bkrepo.archive.utils.ArchiveDaoUtils.optimisticLock
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -56,7 +57,8 @@ class BDZipManager(
 
     private val fileProvider = FileStorageFileProvider(
         workDir.resolve(DOWNLOAD_DIR),
-        archiveProperties.threshold.toBytes(),
+        archiveProperties.compress.highWaterMark.toBytes(),
+        archiveProperties.compress.lowWaterMark.toBytes(),
         fileDownloadThreadPool,
     )
     private val checksumProvider = ChecksumFileProvider(
@@ -126,7 +128,9 @@ class BDZipManager(
                     logger.info("Success to compress file [$sha256] on $storageCredentialsKey.")
                 }
                 .doOnError {
-                    logger.info("Failed to compress file [$sha256].", it)
+                    if (it !is TooLowerReuseRateException) {
+                        logger.error("Failed to compress file [$sha256].", it)
+                    }
                     status = CompressStatus.COMPRESS_FAILED
                     fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
                 }
@@ -189,7 +193,7 @@ class BDZipManager(
                     logger.info("Success to uncompress file [$sha256] on $storageCredentialsKey")
                 }
                 .doOnError {
-                    logger.info("Failed to uncompress file [$sha256] on $storageCredentialsKey", it)
+                    logger.error("Failed to uncompress file [$sha256] on $storageCredentialsKey", it)
                     file.status = CompressStatus.UNCOMPRESS_FAILED
                 }
                 .doFinally {

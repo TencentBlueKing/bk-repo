@@ -41,10 +41,10 @@ import com.tencent.bkrepo.auth.pojo.oauth.IdToken
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKey
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.dao.repository.AccountRepository
+import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.pojo.oauth.OidcConfiguration
 import com.tencent.bkrepo.auth.pojo.oauth.UserInfo
-import com.tencent.bkrepo.auth.repository.AccountRepository
-import com.tencent.bkrepo.auth.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.OauthUtils
