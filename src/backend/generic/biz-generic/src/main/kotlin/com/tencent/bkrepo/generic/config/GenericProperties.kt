@@ -48,5 +48,6 @@ data class GenericProperties(
      * 平台账号，在Generic仓库代理远程BkRepo的Generic仓库时使用
      */
     var platforms: List<PlatformProperties> = emptyList(),
-    var proxyPath: String = "/data/bkrepo/proxy/proxy.jar"
+    @NestedConfigurationProperty
+    var proxy: ProxyProperties = ProxyProperties()
 )
