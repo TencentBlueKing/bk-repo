@@ -25,11 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.repository
+package com.tencent.bkrepo.auth.dao.repository
 
-import com.tencent.bkrepo.auth.model.TExternalPermission
+import com.tencent.bkrepo.auth.model.TOauthToken
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ExternalPermissionRepository: MongoRepository<TExternalPermission, String>
+interface OauthTokenRepository : MongoRepository<TOauthToken, String> {
+    fun findFirstByAccountIdAndUserId(accountId: String, userId: String): TOauthToken?
+    fun findFirstByAccessToken(accessToken: String): TOauthToken?
+    fun findByUserId(userId: String): List<TOauthToken>
+    fun findFirstByAccountIdAndRefreshToken(accountId: String, refreshToken: String): TOauthToken?
+    fun deleteByAccessToken(accessToken: String)
+    fun deleteByAccountId(accountId: String)
+    fun deleteByAccountIdAndUserId(accountId: String, userId: String)
+}

@@ -29,24 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.auth.dao.repository
 
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.auth.model.TAccount
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-@Configuration
-class InfluxDbConfig {
-
-    @Value("\${spring.influx.url:''}")
-    private val influxDBUrl: String? = null
-    @Value("\${spring.influx.user:''}")
-    private val userName: String? = null
-    @Value("\${spring.influx.password:''}")
-    private val password: String? = null
-    @Value("\${spring.influx.database:''}")
-    val database: String? = null
-
-    fun influxDbUtils(): InfluxDbUtils {
-        return InfluxDbUtils(userName, password, influxDBUrl, database, "100day")
-    }
+@Repository
+interface AccountRepository : MongoRepository<TAccount, String> {
+    fun findOneByAppId(appId: String): TAccount?
+    fun deleteByAppId(appId: String): Long
+    fun findAllBy(): List<TAccount>
+    fun findByOwner(owner: String): List<TAccount>
+    fun findByIdIn(ids: List<String>): List<TAccount>
 }
