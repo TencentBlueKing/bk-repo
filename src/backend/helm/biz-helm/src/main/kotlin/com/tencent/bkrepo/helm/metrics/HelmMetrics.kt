@@ -33,7 +33,14 @@ import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_COMPLETED_COUNT
 import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_COMPLETED_COUNT_DESC
 import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_QUEUE_SIZE
 import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_QUEUE_SIZE_DESC
+import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT
+import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT_DESC
+import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT
+import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT_DESC
+import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_QUEUE_SIZE
+import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_QUEUE_SIZE_DESC
 import com.tencent.bkrepo.helm.pool.EventHandlerThreadPoolExecutor
+import com.tencent.bkrepo.helm.pool.HelmThreadPoolExecutor
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
@@ -54,6 +61,21 @@ class HelmMetrics: MeterBinder {
         Gauge.builder(HELM_EVENT_TASK_COMPLETED_COUNT, EventHandlerThreadPoolExecutor.instance) {
             it.completedTaskCount.toDouble()
         }.description(HELM_EVENT_TASK_COMPLETED_COUNT_DESC)
+            .register(registry)
+
+
+        Gauge.builder(HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT, HelmThreadPoolExecutor.instance) {
+            it.activeCount.toDouble()
+        }.description(HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT_DESC)
+            .register(registry)
+
+        Gauge.builder(HELM_INDEX_REFRESH_TASK_QUEUE_SIZE, HelmThreadPoolExecutor.instance) { it.queue.size.toDouble() }
+            .description(HELM_INDEX_REFRESH_TASK_QUEUE_SIZE_DESC)
+            .register(registry)
+
+        Gauge.builder(HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT, HelmThreadPoolExecutor.instance) {
+            it.completedTaskCount.toDouble()
+        }.description(HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT_DESC)
             .register(registry)
     }
 }

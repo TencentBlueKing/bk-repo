@@ -10,8 +10,4 @@ data class HelmProperties(
     var domain: String = "localhost",
     var retryTimes: Int = 600,
     var sleepTime: Long = 500L,
-    // 读取事件更新index的频率
-    var refreshTime: Long = 15000,
-    // 使用v2 版本方式重新生成index项目列表
-    var useV2Repos: List<String> = listOf(),
 )

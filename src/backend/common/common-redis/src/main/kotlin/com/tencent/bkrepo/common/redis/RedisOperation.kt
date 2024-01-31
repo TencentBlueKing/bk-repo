@@ -132,27 +132,6 @@ class RedisOperation(private val redisTemplate: RedisTemplate<String, String>) {
         return redisTemplate.opsForHash<String, String>().entries(key)
     }
 
-    fun ladd(key: String, vararg values: String): Long? {
-        return redisTemplate.opsForList().leftPushAll(key, *values)
-    }
-
-    fun lrpop(key: String): String? {
-        return redisTemplate.opsForList().rightPop(key)
-    }
-
-    fun lsize(key: String): Long? {
-        return redisTemplate.opsForList().size(key)
-    }
-
-    fun lremove(key: String, value: String): Long? {
-        return redisTemplate.opsForList().remove(key, 1, value)
-    }
-
-    fun lall(key: String): List<String>? {
-        val size = lsize(key) ?: return null
-        return redisTemplate.opsForList().range(key, 0, size)
-    }
-
     fun sadd(key: String, vararg values: String): Long? {
         return redisTemplate.opsForSet().add(key, *values)
     }

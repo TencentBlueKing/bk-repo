@@ -548,30 +548,6 @@ open class AbstractChartService : ArtifactService() {
     }
 
     /**
-     * 针对仓库特殊配置进行过滤
-     */
-    fun filterProjectRepo(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {
-        if (contains(StringPool.POUND, StringPool.POUND, includeRepositories)) {
-            return true
-        }
-        if (contains(projectId, repoName, includeRepositories)) {
-            return true
-        }
-        if (contains(projectId, StringPool.POUND, includeRepositories)) {
-            return true
-        }
-        if (contains(StringPool.POUND, repoName, includeRepositories)) {
-            return true
-        }
-        return false
-    }
-
-    private fun contains(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {
-        val key = "$projectId/$repoName"
-        return includeRepositories.contains(key)
-    }
-
-    /**
      * 根据仓库类型获取对应index文件
      */
     fun getIndex(repoDetail: RepositoryDetail, domain: String): HelmIndexYamlMetadata? {

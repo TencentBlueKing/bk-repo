@@ -56,15 +56,6 @@ const val PROVENANCE_FILE_EXTENSION = "tgz.prov"
 const val QUERY_INDEX_KEY_PREFIX = "helm:lock:indexFile:"
 const val REFRESH_INDEX_KEY_PREFIX = "helm:lock:refreshIndex:"
 
-const val DEFAULT_TYPE = "mongodb"
-const val UPLOAD_EVENT_REQUEST_TYPE = "upload"
-const val VERSION_DELETE_EVENT_REQUEST_TYPE = "versionDelete"
-const val PACKAGE_DELETE_EVENT_REQUEST_TYPE = "packageDelete"
-
-// 定义返回代码片段
-val CHART_NOT_FOUND = mapOf("error" to "chart not found")
-val NO_CHART_NAME_FOUND = mapOf("error" to "no chart name found")
-
 const val SLEEP_MILLIS = 20L
 
 
@@ -76,3 +67,12 @@ const val HELM_EVENT_TASK_QUEUE_SIZE_DESC = "helm事件处理线程池等待队�
 
 const val HELM_EVENT_TASK_COMPLETED_COUNT = "helm.event.task.completed.count"
 const val HELM_EVENT_TASK_COMPLETED_COUNT_DESC = "helm事件处理已完成的任务数量"
+
+const val HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT = "helm.index.refresh.task.active.count"
+const val HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT_DESC = "helm index刷新实时执行数量"
+
+const val HELM_INDEX_REFRESH_TASK_QUEUE_SIZE = "helm.index.refresh.task.queue.size"
+const val HELM_INDEX_REFRESH_TASK_QUEUE_SIZE_DESC = "helm index刷新线程池等待队列大小"
+
+const val HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT = "helm.index.refresh.task.completed.count"
+const val HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT_DESC = "helm index刷新已完成的任务数量"
