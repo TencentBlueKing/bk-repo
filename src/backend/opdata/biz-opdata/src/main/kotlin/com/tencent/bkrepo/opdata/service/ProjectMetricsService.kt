@@ -277,7 +277,10 @@ class ProjectMetricsService (
     private fun sumRecentDaysUsage(createDate: LocalDateTime, days: Long): Map<String, ProjectUsageStatistics> {
         val start = createDate.minusDays(days - 1).toLocalDate().atStartOfDay()
             .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        return projectUsageStatisticsService.sum(start)
+        val end = createDate.toLocalDate().atStartOfDay()
+            .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // 默认查询时不会包含end，此处需要包含end这个时间点的数据，因此加1
+        return projectUsageStatisticsService.sum(start, end + 1L)
     }
 
     private fun getMetricsResult(
