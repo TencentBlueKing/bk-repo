@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 
 data class ChunkedResponseProperty(
     val uuid: String? = null,
-    val range: Long? = null,
+    val size: Long? = null,
     val status: HttpStatus? = null,
-    val contentLength: Int? = null
+    val contentLength: Long? = null
 )

@@ -29,7 +29,7 @@ package com.tencent.bkrepo.generic.util
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_UUID_ID
+import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_UUID
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
 import javax.servlet.http.HttpServletResponse
 
@@ -45,13 +45,13 @@ object ChunkedRequestUtil {
             response.status = status!!.value
 
             uuid?.let {
-                response.addHeader(CHUNKED_UPLOAD_UUID_ID, uuid)
+                response.addHeader(CHUNKED_UPLOAD_UUID, uuid)
             }
             contentLength?.let {
                 response.addHeader(HttpHeaders.CONTENT_LENGTH, contentLength.toString())
             }
-            range?.let {
-                response.addHeader(HttpHeaders.RANGE, "0-${range!! - 1}")
+            size?.let {
+                response.addHeader(HttpHeaders.RANGE, "0-${size!! - 1}")
             }
         }
     }

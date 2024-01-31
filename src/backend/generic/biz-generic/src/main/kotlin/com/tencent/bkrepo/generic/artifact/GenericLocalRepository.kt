@@ -629,7 +629,7 @@ class GenericLocalRepository(
             }
             return ChunkedResponseProperty(
                 status = status,
-                range = patchLen,
+                size = patchLen,
                 uuid = uuid!!
             )
         }
