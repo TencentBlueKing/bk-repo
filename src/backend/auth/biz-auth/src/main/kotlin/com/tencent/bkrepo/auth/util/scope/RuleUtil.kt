@@ -28,34 +28,40 @@
 package com.tencent.bkrepo.auth.util.scope
 
 import com.tencent.bkrepo.auth.pojo.account.ScopeRule
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.query.enums.OperationType
 
-object ProjectRuleUtil {
+object RuleUtil {
 
-    fun check(scopeRule: ScopeRule, projectId: String): Boolean {
+    fun check(scopeRule: ScopeRule, target: String, resourceType: ResourceType): Boolean {
+        var targetVal = target
+        if (resourceType == ResourceType.ENDPOINT) {
+            targetVal = "/" + target.removePrefix("/").removeSuffix("/")
+        }
+
         if (scopeRule.operation == OperationType.EQ) {
-            if (projectId == scopeRule.value) {
+            if (targetVal == scopeRule.value) {
                 return true
             }
         }
 
         if (scopeRule.operation == OperationType.IN) {
             val valueList = scopeRule.value as List<*>
-            if (valueList.contains(projectId)) {
+            if (valueList.contains(targetVal)) {
                 return true
             }
         }
 
         if (scopeRule.operation == OperationType.PREFIX) {
             val valuePrefix = scopeRule.value as String
-            if (projectId.startsWith(valuePrefix)) {
+            if (targetVal.startsWith(valuePrefix)) {
                 return true
             }
         }
 
         if (scopeRule.operation == OperationType.SUFFIX) {
             val valuePrefix = scopeRule.value as String
-            if (projectId.endsWith(valuePrefix)) {
+            if (targetVal.endsWith(valuePrefix)) {
                 return true
             }
         }

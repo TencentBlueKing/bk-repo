@@ -29,18 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.repository
+package com.tencent.bkrepo.auth.dao.repository
 
-import com.tencent.bkrepo.auth.model.TUser
+import com.tencent.bkrepo.auth.model.TRole
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface UserRepository : MongoRepository<TUser, String> {
-    fun findFirstByUserId(userId: String): TUser?
-    fun findFirstByUserIdAndRoles(userId: String, roleId: String): TUser?
-    fun deleteByUserId(userId: String)
-    fun findAllByRolesIn(rids: List<String>): List<TUser>
-    fun findAllByAsstUsersIn(userIds: List<String>): List<TUser>
-    fun findFirstByUserIdAndRolesIn(userId: String, rids: List<String>): TUser?
+interface RoleRepository : MongoRepository<TRole, String> {
+    fun deleteTRolesById(id: String)
+    fun findFirstById(id: String): TRole?
+    fun findByIdIn(roles: List<String>): List<TRole>
+    fun findByTypeAndProjectIdAndAdminAndRoleIdNotIn(
+        type: RoleType,
+        projectId: String,
+        admin: Boolean,
+        roles: List<String>
+    ): List<TRole>
+
+    fun findByTypeAndProjectIdAndAdmin(type: RoleType, projectId: String, admin: Boolean): List<TRole>
+    fun findByProjectIdAndRepoNameAndType(projectId: String, repoName: String, type: RoleType): List<TRole>
+    fun findFirstByRoleIdAndProjectId(roleId: String, projectId: String): TRole?
+    fun findFirstByProjectIdAndTypeAndName(projectId: String, type: RoleType, name: String): TRole?
+    fun findFirstByRoleIdAndProjectIdAndRepoName(roleId: String, projectId: String, repoName: String): TRole?
+    fun findByProjectIdAndTypeAndAdminAndIdIn(
+        projectId: String,
+        type: RoleType,
+        admin: Boolean,
+        ids: List<String>
+    ): List<TRole>
+
+    fun findByProjectIdAndTypeAndAdminAndRepoNameAndIdIn(
+        projectId: String,
+        type: RoleType,
+        admin: Boolean,
+        repoName: String,
+        ids: List<String>
+    ): List<TRole>
+
 }
