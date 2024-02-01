@@ -67,10 +67,9 @@ class HelmFixToolController(
     @PostMapping("/{projectId}/{repoName}/metaDate/regenerate")
     fun regenerateMetaData(
         @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: HelmArtifactInfo,
-        @RequestParam updatePackage: Boolean = true,
+        @ArtifactPathVariable artifactInfo: HelmArtifactInfo
     ): Response<Void> {
-        fixToolService.metaDataRegenerate(userId, artifactInfo, updatePackage)
+        fixToolService.metaDataRegenerate(userId, artifactInfo)
         return ResponseBuilder.success()
     }
 }

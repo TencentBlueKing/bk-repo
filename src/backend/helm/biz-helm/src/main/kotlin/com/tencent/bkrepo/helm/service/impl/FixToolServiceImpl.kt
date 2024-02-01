@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -53,8 +54,6 @@ import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_METADATA
-import com.tencent.bkrepo.helm.constants.SIZE
-import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
@@ -69,6 +68,7 @@ import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -395,7 +395,7 @@ class FixToolServiceImpl(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    override fun metaDataRegenerate(userId: String, artifactInfo: HelmArtifactInfo, updatePackage: Boolean) {
+    override fun metaDataRegenerate(userId: String, artifactInfo: HelmArtifactInfo) {
         logger.info("handling meta data regenerate request: [$artifactInfo]")
         val repositoryDetail = getRepositoryInfo(artifactInfo)
         when (repositoryDetail.category) {
@@ -416,7 +416,6 @@ class FixToolServiceImpl(
                 ", size [${nodeList.size}] "
         )
         for (node in nodeList) {
-            Thread.sleep(SLEEP_MILLIS)
             try {
                 val path = node[NODE_FULL_PATH] as String
                     val nodeMetadata = node[NODE_METADATA] as Map<String, Any>
@@ -427,16 +426,14 @@ class FixToolServiceImpl(
                     artifactInfo.projectId, artifactInfo.repoName, node[NODE_FULL_PATH] as String
                 )
                 val metadata = HelmMetadataUtils.convertToMetadata(chartMetadata)
-                if (updatePackage) {
-                    createVersion(
-                        userId = userId,
-                        projectId = artifactInfo.projectId,
-                        repoName = artifactInfo.repoName,
-                        chartInfo = chartMetadata,
-                        size = node[SIZE] as Long,
-                        isOverwrite = true
-                    )
-                }
+                val packageMetadataRequest = PackageMetadataSaveRequest(
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    packageKey = PackageKeys.ofHelm(chartMetadata.name),
+                    version = chartMetadata.version,
+                    versionMetadata = metadata
+                )
+                packageMetadataClient.saveMetadata(packageMetadataRequest)
                 val metadataSaveRequest = MetadataSaveRequest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
@@ -446,7 +443,7 @@ class FixToolServiceImpl(
                 )
                 metadataClient.saveMetadata(metadataSaveRequest)
             } catch (e: Exception) {
-                logger.warn("error occurred while updating meta data, error: ${e.message}")
+                logger.warn("error occurred while updating metadata of $node, error: ${e.message}")
             }
         }
         repositoryDetail.configuration.settings.put(META_DATA_REFRESH_CONFIG, true)

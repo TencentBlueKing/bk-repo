@@ -50,5 +50,5 @@ interface FixToolService {
     /**
      * 修复上传时没有将Chart.yaml中的元信息存储到node/package, remote仓库不需要
      */
-    fun metaDataRegenerate(userId: String, artifactInfo: HelmArtifactInfo, updatePackage: Boolean = true)
+    fun metaDataRegenerate(userId: String, artifactInfo: HelmArtifactInfo)
 }

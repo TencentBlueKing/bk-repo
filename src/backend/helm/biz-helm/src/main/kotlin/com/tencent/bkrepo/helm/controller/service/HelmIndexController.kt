@@ -90,7 +90,7 @@ class HelmIndexController(
 
     override fun metadataRefresh(projectId: String, repoName: String): Response<Void> {
         val artifactInfo = HelmArtifactInfo(projectId, repoName, PathUtils.ROOT)
-        fixToolService.metaDataRegenerate(SYSTEM_USER, artifactInfo, false)
+        fixToolService.metaDataRegenerate(SYSTEM_USER, artifactInfo)
         return ResponseBuilder.success()
     }
 }
