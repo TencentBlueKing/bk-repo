@@ -24,6 +24,10 @@ data:
           transaction:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
+    {{- if .Values.routercontroller.enabled }}
+    router.controller.enabled: true
+    router.controller.supportServices: generic
+    {{- else }}
     {{- if or .Values.ingress.tls .Values.forceHttps }}
     oci.authUrl: https://{{ include "bkrepo.oci.authUrl" . }}
     oci.https: true
@@ -41,6 +45,7 @@ data:
     job.repoRefreshJobProperties.types: HELM,OCI
     plugin.path: /data/workspace/plugin/
     management.metrics.collectByLog: true
+    
     cluster:
       region: {{ .Values.common.region }}
       architecture: {{ .Values.cluster.architecture }}

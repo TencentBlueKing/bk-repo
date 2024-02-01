@@ -14,8 +14,6 @@ metadata:
 data:
   application.yml: |-
     router-controller:
-      router.controller.enabled: true
-      router.controller.supportServices: generic
       {{- if keys $.Values.routercontroller.config }}
         {{- toYaml .Values.routercontroller.config | nindent 6 }}
       {{- end}}
