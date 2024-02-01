@@ -77,7 +77,7 @@ class NodeRedirectServiceImpl(
             ?: throw ErrorCodeException(RouterControllerMessageCode.ROUTER_NODE_NOT_FOUND)
         val url = URL(originUrl)
         return when (serviceName) {
-            "generic" -> generateTemporaryUrl(projectId, repoName, fullPath, node.location)
+            "generic" -> generateTemporaryUrl(projectId, repoName, fullPath, node.location, url)
             else -> "${node.location}$serviceName${url.path}?${url.query}"
         }
     }
@@ -101,8 +101,12 @@ class NodeRedirectServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
-        location: String
+        location: String,
+        url: URL
     ): String {
+        if (url.path.contains("temporary/download")) {
+            return "$location/generic${url.path}?${url.query}"
+        }
         val request = TemporaryTokenCreateRequest(
             projectId = projectId,
             repoName = repoName,
@@ -111,6 +115,7 @@ class NodeRedirectServiceImpl(
             type = TokenType.DOWNLOAD
         )
         val tokenInfo = temporaryTokenClient.createToken(request).data!!.first()
-        return "$location/generic/temporary/download/$projectId/$repoName$fullPath?token=${tokenInfo.token}"
+        return "$location/generic/temporary/download/$projectId/$repoName$fullPath" +
+            "?token=${tokenInfo.token}&${url.query}"
     }
 }
