@@ -24,10 +24,10 @@ data:
           transaction:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
-    {{- if .Values.routercontroller.enabled }}
+    {{- if .Values.generic.enabled -}}
     router.controller.enabled: true
     router.controller.supportServices: generic
-    {{- else }}
+    {{- end }}
     {{- if or .Values.ingress.tls .Values.forceHttps }}
     oci.authUrl: https://{{ include "bkrepo.oci.authUrl" . }}
     oci.https: true
