@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -107,7 +108,11 @@ class CleanupFileVisitor(
         if (fileExpireResolver.isExpired(dirPath.toFile())) {
             Files.newDirectoryStream(dirPath).use {
                 if (!it.iterator().hasNext()) {
-                    Files.delete(dirPath)
+                    try {
+                        Files.delete(dirPath)
+                    }  catch (e: DirectoryNotEmptyException) {
+                        logger.warn("Directory [$dirPath] is not empty!")
+                    }
                     logger.info("Clean up folder[$dirPath].")
                     result.cleanupFolder += 1
                 }
