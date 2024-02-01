@@ -60,9 +60,13 @@ interface ProjectUsageStatisticsService {
     fun delete(start: Long? = null, end: Long)
 
     /**
-     * 查询最近几天使用量总和
+     * 查询一段时间内的使用量总和
      *
-     * @param days 最近天数
+     * @param start 统计的起始时间,inclusive
+     * @param end 统计的结束时间,exclusive
      */
-    fun sumRecentDays(days: Long): Map<String, ProjectUsageStatistics>
+    fun sum(
+        start: Long,
+        end: Long = System.currentTimeMillis()
+    ): Map<String, ProjectUsageStatistics>
 }

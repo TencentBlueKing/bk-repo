@@ -63,7 +63,8 @@ object NpmUtils {
     }
 
     fun analyseVersionFromPackageName(filename: String, name: String): String {
-        return filename.substringBeforeLast(".tgz").substringAfter("$name-")
+        val unscopedName = name.substringAfterLast("/")
+        return filename.substringBeforeLast(".tgz").substringAfter("$unscopedName-")
     }
 
     /**

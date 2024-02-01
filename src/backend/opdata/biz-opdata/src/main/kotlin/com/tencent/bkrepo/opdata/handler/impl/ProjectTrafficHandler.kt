@@ -37,6 +37,8 @@ import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import org.springframework.stereotype.Component
+import java.time.LocalDate
+import java.time.ZoneId
 
 @Component
 class ProjectTrafficHandler(
@@ -51,7 +53,9 @@ class ProjectTrafficHandler(
         }
         val duration = reqData?.get(DURATION)?.toString()?.toLongOrNull() ?: 1
         val rows = ArrayList<List<Any>>()
-        projectUsageStatisticsService.sumRecentDays(duration).forEach { (projectId, statistics) ->
+        val start = LocalDate.now().minusDays(duration - 1).atStartOfDay()
+            .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        projectUsageStatisticsService.sum(start).forEach { (projectId, statistics) ->
             rows.add(
                 listOf(
                     projectId,

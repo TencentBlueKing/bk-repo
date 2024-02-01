@@ -380,5 +380,16 @@ export default {
             )
         }
         return request
+    },
+    // 统计时间早于{date}的文件节点信息
+    getFolderSizeBefore (_, { path, date }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/node/calculate/${path}`,
+            {
+                params: {
+                    date: date
+                }
+            }
+        )
     }
 }

@@ -32,6 +32,10 @@ export default {
         userName () {
             return this.userInfo.username || '<USERNAME>'
         },
+        // docker manifest 需要修改版本之前的分隔符，带有sha256:的使用@符号，其他的使用:
+        dockerSeparator () {
+            return this.versionLabel.includes('sha256:') ? '@' : ':'
+        },
         dockerGuide () {
             return [
                 {
@@ -74,7 +78,7 @@ export default {
                         {
                             subTitle: this.$t('useSubTips'),
                             codeList: [
-                                `docker pull ${this.domain.docker}/${this.projectId}/${this.repoName}/${this.packageName}:${this.versionLabel}`
+                                `docker pull ${this.domain.docker}/${this.projectId}/${this.repoName}/${this.packageName}${this.dockerSeparator}${this.versionLabel}`
                             ]
                         }
                     ]
