@@ -34,6 +34,10 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
@@ -49,6 +53,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.UrlUtils
+import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.config.GenericProperties
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -65,13 +70,28 @@ class ProxyService(
     private val artifactResourceWriter: ArtifactResourceWriter,
     private val permissionManager: PermissionManager,
     private val genericProperties: GenericProperties,
-    private val clusterProperties: ClusterProperties
-) {
+    private val clusterProperties: ClusterProperties,
+    private val storageManager: StorageManager
+): ArtifactService() {
 
     fun download(projectId: String, name: String) {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
-        val proxyJar = File(genericProperties.proxyPath)
-        val tmpJar = writeProxyProperties(proxyJar, projectId, name)
+        val repo = ArtifactContextHolder.getRepoDetail(
+            ArtifactContextHolder.RepositoryId(
+                genericProperties.proxy.projectId,
+                genericProperties.proxy.repoName
+            )
+        )
+        val artifactInfo = GenericArtifactInfo(
+            genericProperties.proxy.projectId,
+            genericProperties.proxy.repoName,
+            genericProperties.proxy.fullPath
+        )
+        val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
+            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val inputStream = storageManager.loadArtifactInputStream(node, repo.storageCredentials)
+            ?: throw ArtifactNotFoundException(node.fullPath)
+        val tmpJar = writeProxyProperties(inputStream, projectId, name)
         downloadProxy(tmpJar, projectId, name)
     }
 
@@ -105,11 +125,11 @@ class ProxyService(
         }
     }
 
-    private fun writeProxyProperties(proxyJar: File, projectId: String, name: String): File {
+    private fun writeProxyProperties(proxyJar: ArtifactInputStream, projectId: String, name: String): File {
         try {
             val secretKey = getSecretKey(projectId, name)
             val tmpJar = Files.createTempFile("proxy", ".jar").toFile()
-            tmpJar.outputStream().use { proxyJar.inputStream().copyTo(it) }
+            tmpJar.outputStream().use { proxyJar.copyTo(it) }
             val fs = FileSystems.newFileSystem(URI.create("jar:${tmpJar.toURI()}"), mapOf("create" to "true"))
             val properties = fs.getPath("BOOT-INF/classes/.proxy.properties")
             val writer = Files.newBufferedWriter(
@@ -120,7 +140,8 @@ class ProxyService(
             val content = String.format(
                 FORMAT,
                 projectId, name, secretKey,
-                clusterProperties.self.name, UrlUtils.extractDomain(genericProperties.domain)
+                clusterProperties.self.name,
+                UrlUtils.extractDomain(clusterProperties.self.url)
             )
             writer.write(content)
             writer.close()
