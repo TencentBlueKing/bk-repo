@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.opdata.model
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.constant.SHA256
 import org.slf4j.LoggerFactory
@@ -43,10 +44,12 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 @Service
@@ -117,6 +120,9 @@ class GcInfoModel @Autowired constructor(
         private const val SHARDING_COUNT = 256
         private const val SUM = "SUM"
         private const val RETRY_TIMES = 3
+        private const val MAX_EXECUTOR_POOL_SIZE = 64
+        private const val MAX_EXECUTOR_QUEUE_SIZE = 1024
+
         fun reduce(statistics: ConcurrentHashMap<String, Array<AtomicLong>>): Array<AtomicLong> {
             val longs = arrayOf(AtomicLong(), AtomicLong())
             statistics.forEachValue(1) {
@@ -146,6 +152,13 @@ class GcInfoModel @Autowired constructor(
             countDownLatch.await()
         }
 
-        private val pool: ExecutorService = Executors.newCachedThreadPool()
+        private val pool: ExecutorService = ThreadPoolExecutor(
+            MAX_EXECUTOR_POOL_SIZE,
+            MAX_EXECUTOR_POOL_SIZE,
+            1L,
+            TimeUnit.MINUTES,
+            ArrayBlockingQueue(MAX_EXECUTOR_QUEUE_SIZE),
+            ThreadFactoryBuilder().setNameFormat("gc-info-model-%d").build(),
+        )
     }
 }

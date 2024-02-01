@@ -46,6 +46,8 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation.match
 import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import java.time.LocalDateTime
 
 /**
  * 节点统计接口
@@ -56,7 +58,7 @@ open class NodeStatsSupport(
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
 
-    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
+    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean, before: LocalDateTime): NodeSizeInfo {
         val projectId = artifact.projectId
         val repoName = artifact.repoName
         val fullPath = artifact.getArtifactFullPath()
@@ -71,11 +73,12 @@ open class NodeStatsSupport(
         }
         val listOption = NodeListOption(includeFolder = true, deep = true)
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, node.fullPath, listOption)
+            .and(TNode::lastModifiedDate).lt(before)
         val count = nodeDao.count(Query(criteria))
         val listOptionWithOutFolder = NodeListOption(includeFolder = false, deep = true)
         val criteriaWithOutFolder = NodeQueryHelper.nodeListCriteria(
             projectId, repoName, node.fullPath, listOptionWithOutFolder
-        )
+        ).and(TNode::lastModifiedDate).lt(before)
         val countWithOutFolder = nodeDao.count(Query(criteriaWithOutFolder))
         val size = aggregateComputeSize(criteriaWithOutFolder)
         nodeDao.setSizeAndNodeNumOfFolder(

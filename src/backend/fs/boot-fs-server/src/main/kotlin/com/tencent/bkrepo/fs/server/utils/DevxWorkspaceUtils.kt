@@ -27,14 +27,13 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
-import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
+import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
-import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -72,7 +71,10 @@ class DevxWorkspaceUtils(
         }
 
         private val mutex = Mutex()
-        private val ipSet: ConcurrentHashSet<String> = ConcurrentHashSet()
+        private val illegalIp by lazy { CacheBuilder.newBuilder()
+            .expireAfterWrite(devXProperties.cacheExpireTime)
+            .maximumSize(devXProperties.cacheSize)
+            .build<String, String>() }
         private val projectIpsCache: ConcurrentHashMap<String, Mono<Set<String>>> by lazy {
             ConcurrentHashMap(devXProperties.cacheSize.toInt())
         }
@@ -102,10 +104,17 @@ class DevxWorkspaceUtils(
 
 
         /**
-         * 是否为已知ip
+         * 是否为已知非法ip
          */
-        fun knownIp(ip: String): Boolean {
-            return ipSet.contains(ip)
+        fun knownIllegalIp(ip: String, projectId: String): Boolean {
+            return illegalIp.getIfPresent(ip) == projectId
+        }
+
+        /**
+         * 添加非法ip
+         */
+        fun addIllegalIp(ip: String, projectId: String) {
+            illegalIp.put(ip, projectId)
         }
 
         suspend fun refreshIpListCache(projectId: String) {
@@ -159,7 +168,6 @@ class DevxWorkspaceUtils(
                             retry
                         }
                 ).cache(devXProperties.cacheExpireTime)
-            ipSet.addAll(ips.awaitSingle())
             return ips
         }
 
