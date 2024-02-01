@@ -212,15 +212,15 @@
   }
   ```
 
-- data字段说明
+ data字段说明
 
   |字段|类型|说明|Description|
   |---|---|---|---|
   |id|string|任务唯一id|task id|
   |key|string|任务唯一key|task key|
   |name|string|任务名称|task name|
-  |projectId|string/所属项目id|task projectId||
-  |replicaObjectType|enum|是|无|
+  |projectId|string/所属项目id|task projectId|
+  |replicaObjectType|enum|是|无|[REPOSITORY,PACKAGE,PATH]|replication object type|
   |replicaType|enum|[SCHEDULED,REAL_TIME]|replica type|
   |setting|object|计划相关设置|task setting|
   |remoteClusters|set|远程集成节点信息|the remote cluster node info|
@@ -229,7 +229,7 @@
   |lastExecutionTime|date|上次执行时间|task last execution time|
   |nextExecutionTime|date|下次执行时间|task next execution time|
   |executionTimes|long|执行次数|execution times|
-  |enabled|bool|是|true|
+  |enabled|bool|是|true|计划是否启动|do task enabled|
   |record|bool|是否记录分发详细日志|is record replica detail|
   |recordReserveDays|long|分发详细日志保留天数|replica detail reserve days|
   |createdBy|string|创建者|create user|

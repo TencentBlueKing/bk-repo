@@ -242,20 +242,19 @@
   此接口无请求体
 - 请求字段说明
 
-  |字段| 类型     |是否必须|默认值| 说明                       | Description       |
-  |---|--------|---|---|--------------------------|-------------------|
-  |recordId| string |是|无| 任务执行日志唯一id               | record id         |
-  |pageNumber| int    |是|无| 当前页                      | page number       |
-  |pageSize| int    |是|无| 分页数量                     | page size         |
-  |packageName| string |否|无| 包名称，支持前缀模糊匹配             | package name      |
-  |repoName| string |否|无| 仓库名称                     | repo name         |
-  |clusterName| string |否|无| 远程节点名称                   | cluster node name |
-  |path| string |否|无| 路径名称，支持前缀模糊匹配            | file path         |
-  |status| enum   |否|无| [SUCCESS,RUNNING,FAILED] | execute status    |
-  |artifactName| string |否|无| 制品名称（Generic为fullPath） | artifact name |
-  |version| string |否|无| 版本 | artifact version |
-  
-  
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |recordId|string|是|无|任务执行日志唯一id|record id|
+  |pageNumber|int|是|无|当前页|page number|
+  |pageSize|int|是|无|分页数量|page size|
+  |packageName|string|否|无|包名称，支持前缀模糊匹配|package name|
+  |repoName|string|否|无|仓库名称|repo name|
+  |clusterName|string|否|无|远程节点名称|cluster node name|
+  |path|string|否|无|路径名称，支持前缀模糊匹配|file path|
+  |status|enum|否|无|[SUCCESS,RUNNING,FAILED]|execute status|
+  |artifactName|string|否|无|制品名称（Generic为fullPath）|artifact name|
+  |version|string|否|无|版本|artifact version|
+
 - 响应体
 
   ```json
@@ -297,7 +296,7 @@
     "page" : 1
   },
   "traceId" : "2f6803fcf2b5d1ab8cbbb97fa1d20b52"
-}
+  }
   ```
 
 - data字段说明
@@ -310,27 +309,27 @@
   |remoteCluster|string|远程集群名称|remote cluster node name|
   |localRepoName|string|本地仓库名称|local repository name|
   |repoType|enum|[DOCKER,NPM,RPM,...]|local repository type|
-  |packageConstraints|object|否|无|
-  |pathConstraints|object|否|无|
+  |packageConstraints|object|否|无|包限制|package constraints|
+  |pathConstraints|object|否|无|路径限制|path constraints|
   |artifactName|string|制品名称（历史数据为null）|artifact name|
   |version|string|版本（Generic制品和历史数据为null）|artifact version|
   |conflictStrategy|string|冲突策略（没有冲突和历史数据为null）|conflict strategy|
   |size|long|制品大小|artifact size|
   |sha256|string|制品摘要（依赖源和历史数据为null）|artifact digest|
   |status|enum|[RUNNING,SUCCESS,FAILED]|task execute status|
-  |~~progress~~|~~object~~|~~同步进度~~|~~task execute progress~~|
+  |progress|object|同步进度|task execute progress|
   |startTime|date|任务开始执行时间|task execute start time|
   |endTime|date|任务结束执行时间|task execute end time|
   |errorReason|string|错误原因，未执行或执行成功则为null|task failed error reason|
 
-- ~~progress字段说明(废弃)~~
+- progress字段说明(废弃)
 
   |字段|类型|说明|Description|
   |---|---|---|---|
-  |~~success~~|~~long~~|~~成功数量~~|~~success size~~|
-  |~~skip~~|~~long~~|~~跳过数量~~|~~skip size~~|
-  |~~failed~~|~~long~~|~~失败数量~~|~~failed size~~|
-  |~~totalSize~~|~~long~~|~~数据总量~~|~~total size~~|
+  |success|long|成功数量|success size|
+  |skip|long|跳过数量|skip size|
+  |failed|long|失败数量|failed size|
+  |totalSize|long|数据总量|total size|
 
 
 
@@ -350,9 +349,9 @@
 
 - 请求字段说明
 
-  | 字段        | 类型   | 是否必须 | 默认值 | 说明                       | Description       |
-  | ----------- | ------ | -------- | ------ | -------------------------- | ----------------- |
-  | recordId    | string | 是       | 无     | 任务执行日志唯一id         | record id         |
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |recordId|string|是|无|任务执行日志唯一id|record id|
 
 
 - 响应体
@@ -385,8 +384,8 @@
 
 - data字段说明(历史数据为null)
 
-  | 字段     | 类型 | 说明     | Description   |
-  | -------- | ---- | -------- | ------------- |
-  | success  | long | 成功数量 | success size  |
-  | failed   | long | 失败数量 | failed size   |
-  | conflict | long | 冲突数量 | conflict size |
+  |字段|类型|说明|Description|
+  |---|---|---|---|
+  |success|long|成功数量|success size|
+  |failed|long|失败数量|failed size|
+  |conflict|long|冲突数量|conflict size|
