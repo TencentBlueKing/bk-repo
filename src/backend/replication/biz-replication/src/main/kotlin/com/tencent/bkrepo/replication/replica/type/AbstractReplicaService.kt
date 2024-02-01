@@ -156,13 +156,18 @@ abstract class AbstractReplicaService(
      */
     protected fun replicaByPackageConstraint(replicaContext: ReplicaContext, constraint: PackageConstraint) {
         with(replicaContext) {
-            // 查询本地包信息
-            val packageSummary = localDataManager.findPackageByKey(
-                projectId = localProjectId,
-                repoName = taskObject.localRepoName,
-                packageKey = constraint.packageKey!!
-            )
-            replicaByPackage(this, packageSummary, constraint.versions)
+            try {
+                // 查询本地包信息
+                val packageSummary = localDataManager.findPackageByKey(
+                    projectId = localProjectId,
+                    repoName = taskObject.localRepoName,
+                    packageKey = constraint.packageKey!!
+                )
+                replicaByPackage(this, packageSummary, constraint.versions)
+            } catch (throwable: Throwable) {
+                setRunOnceTaskFailedRecordMetrics(this, throwable, packageConstraint = constraint)
+                throw throwable
+            }
         }
     }
 
@@ -171,12 +176,18 @@ abstract class AbstractReplicaService(
      */
     protected fun replicaByPathConstraint(replicaContext: ReplicaContext, constraint: PathConstraint) {
         with(replicaContext) {
-            val nodeInfo = localDataManager.findNodeDetail(
-                projectId = localProjectId,
-                repoName = localRepoName,
-                fullPath = constraint.path!!
-            ).nodeInfo
-            replicaByPath(this, nodeInfo)
+            try {
+                val nodeInfo = localDataManager.findNodeDetail(
+                    projectId = localProjectId,
+                    repoName = localRepoName,
+                    fullPath = constraint.path!!
+                ).nodeInfo
+                replicaByPath(this, nodeInfo)
+            }  catch (throwable: Throwable) {
+                logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
+                setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
+                throw throwable
+            }
         }
     }
 
@@ -367,7 +378,7 @@ abstract class AbstractReplicaService(
      * 记录因需要分发的package或者path本地不存在而导致的异常，分发中的异常已在实际分发处记录
      */
     private fun setRunOnceTaskFailedRecordMetrics(
-        context: ReplicaExecutionContext,
+        context: ReplicaContext,
         throwable: Throwable,
         packageConstraint: PackageConstraint? = null,
         pathConstraint: PathConstraint? = null
@@ -379,11 +390,11 @@ abstract class AbstractReplicaService(
                 path = pathConstraint?.path
             )
             setRunOnceTaskRecordMetrics(
-                task = replicaContext.task,
-                recordId = detail.recordId,
+                task = task,
+                recordId = taskRecord.id,
                 startTime = LocalDateTime.now().toString(),
                 errorReason = throwable.message.orEmpty(),
-                status = status,
+                status = ExecutionStatus.FAILED,
                 record = record
             )
         }

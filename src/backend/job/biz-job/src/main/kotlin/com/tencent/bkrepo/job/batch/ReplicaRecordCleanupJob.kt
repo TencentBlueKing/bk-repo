@@ -23,7 +23,7 @@ import kotlin.reflect.KClass
 
 /**
  * 清理超过保留时间的分发记录
- * 根据分发计划设置的 保留天数，历史数据默认为 60 天
+ * 根据分发计划设置的 保留天数，历史数据默认为 30 天
  */
 @Component
 @EnableConfigurationProperties(ReplicaRecordCleanupJobProperties::class)
@@ -57,7 +57,7 @@ class ReplicaRecordCleanupJob(
         val expireDate = if (row.recordReserveDays != null) {
             LocalDateTime.now().minusDays(row.recordReserveDays)
         } else {
-            LocalDateTime.now().minusDays(60)
+            LocalDateTime.now().minusDays(30)
         }
         cleanUpReplicaTask(row.key, row.replicaType, expireDate)
     }
