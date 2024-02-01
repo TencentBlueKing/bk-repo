@@ -77,7 +77,7 @@ interface HelmClient {
     ): Response<Void>
 
     @ApiOperation("更新对应节点元数据")
-    @PostMapping("/{projectId}/{repoName}")
+    @PostMapping("/{projectId}/{repoName}/metaDate/regenerate")
     fun metadataRefresh(
         @PathVariable projectId: String,
         @PathVariable repoName: String
