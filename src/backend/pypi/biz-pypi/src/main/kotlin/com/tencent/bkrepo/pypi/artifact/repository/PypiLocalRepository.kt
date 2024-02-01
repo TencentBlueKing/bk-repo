@@ -27,11 +27,10 @@
 
 package com.tencent.bkrepo.pypi.artifact.repository
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -41,7 +40,6 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -51,10 +49,11 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
+import com.tencent.bkrepo.pypi.constants.PypiQueryType
+import com.tencent.bkrepo.pypi.constants.QUERY_TYPE
 import com.tencent.bkrepo.pypi.exception.PypiSimpleNotFoundException
 import com.tencent.bkrepo.pypi.pojo.Basic
 import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
@@ -76,8 +75,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class PypiLocalRepository(
-    private val stageClient: StageClient,
-    private val pypiProperties: PypiProperties
+    private val stageClient: StageClient
 ) : LocalRepository() {
 
     /**
@@ -254,16 +252,15 @@ class PypiLocalRepository(
      * 2，pypi simple html页面
      */
     override fun query(context: ArtifactQueryContext): Any? {
-        val servletPath = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
-        return if (servletPath.startsWith("/ext/version/detail")) {
-            // 请求版本详情
-            getVersionDetail(context)
-        } else {
-            getSimpleHtml(context.artifactInfo)
+        return when (val queryType = context.getAttribute<PypiQueryType>(QUERY_TYPE)) {
+            PypiQueryType.PACKAGE_INDEX,
+            PypiQueryType.VERSION_INDEX -> getSimpleHtml(context.artifactInfo, queryType)
+            PypiQueryType.VERSION_DETAIL -> getVersionDetail(context)
+            null -> throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
         }
     }
 
-    fun getVersionDetail(context: ArtifactQueryContext): Any? {
+    fun getVersionDetail(context: ArtifactQueryContext): PypiArtifactVersionData? {
         val packageKey = context.request.getParameter("packageKey")
         val version = context.request.getParameter("version")
         logger.info("Get version detail. packageKey[$packageKey], version[$version]")
@@ -300,33 +297,11 @@ class PypiLocalRepository(
         }
     }
 
-    /**
-     * 本地调试删除 pypi.domain 配置
-     */
-    fun getRedirectUrl(path: String): String {
-        val domain = pypiProperties.domain
-        return UrlFormatter.format(domain, path).ensureSuffix(StringPool.SLASH)
-    }
-
-    /**
-     *
-     */
-    fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
+    fun getSimpleHtml(artifactInfo: ArtifactInfo, type: PypiQueryType): String? {
         logger.info("Get simple html. artifactInfo[${artifactInfo.getArtifactFullPath()}]")
-        val path = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
-        if (!path.endsWith("/")) {
-            val response = HttpContextHolder.getResponse()
-            response.sendRedirect(getRedirectUrl(path))
-            return null
-        }
         with(artifactInfo) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                ?: throw PypiSimpleNotFoundException(getArtifactFullPath())
-            if (!node.folder) {
-                return null
-            }
             // 请求不带包名，返回包名列表.
-            if (getArtifactFullPath() == "/") {
+            if (type == PypiQueryType.PACKAGE_INDEX) {
                 val nodeList = nodeClient.listNode(
                     projectId, repoName, getArtifactFullPath(), includeFolder = true, deep = true
                 ).data
