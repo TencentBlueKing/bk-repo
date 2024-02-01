@@ -452,7 +452,11 @@ auth:
 ## generic服务配置
 generic:
   enabled: true
-  config: {}
+  config:
+    proxy:
+      projectId:
+      repoName:
+      fullPath:
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
