@@ -127,7 +127,8 @@ class LocalSLRUCache(
         probation.setKeyWeightSupplier(supplier)
     }
 
-    fun probationFull() = probation.size >= probation.getCapacity()
+    fun probationFull() = probation.getCapacity() > 0L && probation.size >= probation.getCapacity()
+            || probation.getMaxWeight() > 0L && probation.weight() >= probation.getMaxWeight()
 
     private class ProtectedLRUEldestRemovedListener(
         private val probationLru: LocalLRUCache

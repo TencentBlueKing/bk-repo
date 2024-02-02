@@ -201,6 +201,7 @@ class CacheStorageService(
         credentials: StorageCredentials,
     ) {
         if (doExist(path, filename, credentials)) {
+            logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
             getCacheClient(credentials).delete(path, filename)
         }
     }

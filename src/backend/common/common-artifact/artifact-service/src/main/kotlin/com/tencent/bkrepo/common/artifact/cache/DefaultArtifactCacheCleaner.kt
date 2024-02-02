@@ -37,6 +37,8 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -54,6 +56,7 @@ open class DefaultArtifactCacheCleaner(
 
     private val storageCacheMap = ConcurrentHashMap<String, OrderedCache<String, Any?>>()
 
+    @Async
     override fun onCacheAccessed(projectId: String, repoName: String, fullPath: String) {
         if (!artifactCacheEvictionProperties.enabled) {
             return
@@ -63,12 +66,14 @@ open class DefaultArtifactCacheCleaner(
         }
     }
 
+    @Async
     override fun onCacheAccessed(node: NodeDetail, storageKey: String?) {
         if (!node.folder) {
             onCacheAccessed(storageKey ?: DEFAULT_STORAGE_KEY, node.sha256!!, node.size)
         }
     }
 
+    @Async
     override fun onCacheDeleted(storageKey: String, sha256: String) {
         getCache(storageKey).remove(sha256)
     }
@@ -78,7 +83,7 @@ open class DefaultArtifactCacheCleaner(
         if (!artifactCacheEvictionProperties.enabled || sha256 == FAKE_SHA256) {
             return
         }
-
+        logger.info("Cache file accessed, sha256[$sha256], storage[$storageKey], size[$size]")
         getCache(storageKey).put(sha256, size)
     }
 
@@ -139,5 +144,9 @@ open class DefaultArtifactCacheCleaner(
         fun setCredentials(credentials: StorageCredentials) {
             this.storageCredentials = credentials
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(DefaultArtifactCacheCleaner::class.java)
     }
 }

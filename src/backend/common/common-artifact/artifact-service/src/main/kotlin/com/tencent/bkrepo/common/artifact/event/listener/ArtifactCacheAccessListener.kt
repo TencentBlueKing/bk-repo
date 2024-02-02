@@ -47,15 +47,14 @@ class ArtifactCacheAccessListener(
     private val artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
     private val artifactCacheCleanerProvider: ObjectProvider<ArtifactCacheCleaner>
 ) {
-    @Async
     @EventListener(ArtifactReceivedEvent::class)
     fun listen(event: ArtifactReceivedEvent) {
+        // 此时可能文件还在上传的临时目录中，未转移到缓存目录内
         if (artifactCacheEvictionProperties.enabled) {
             safeRecordArtifactCacheAccess(event.artifactFile)
         }
     }
 
-    @Async
     @EventListener(ArtifactResponseEvent::class)
     fun listen(event: ArtifactResponseEvent) {
         if (artifactCacheEvictionProperties.enabled) {
