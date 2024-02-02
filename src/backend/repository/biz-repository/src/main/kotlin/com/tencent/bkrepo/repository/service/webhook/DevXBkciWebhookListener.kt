@@ -105,26 +105,27 @@ class DevXBkciWebhookListener(
             display = false
         ).toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val req = Request.Builder().url(url).post(body).build()
-        val res = client.newCall(req).execute()
-        if (res.isSuccessful) {
-            logger.info("create remote repo[$projectId/$repoName] success")
-            return
-        }
-
-        // 输出请求错误日志
-        val msg = res.body?.string()
-        val errorLog = "create remote repo[$projectId/$repoName] failed, code[${res.code}], msg[$msg]"
-        try {
-            val response = msg?.readJsonString<Response<*>>()
-            // 忽略仓库已存在的错误
-            if (response?.code == ArtifactMessageCode.REPOSITORY_EXISTED.getCode()) {
-                logger.info(errorLog)
+        client.newCall(req).execute().use { res ->
+            if (res.isSuccessful) {
+                logger.info("create remote repo[$projectId/$repoName] success")
                 return
             }
-        } catch (ignore: Exception) {
-            // ignore
+
+            // 输出请求错误日志
+            val msg = res.body?.string()
+            val errorLog = "create remote repo[$projectId/$repoName] failed, code[${res.code}], msg[$msg]"
+            try {
+                val response = msg?.readJsonString<Response<*>>()
+                // 忽略仓库已存在的错误
+                if (response?.code == ArtifactMessageCode.REPOSITORY_EXISTED.getCode()) {
+                    logger.info(errorLog)
+                    return
+                }
+            } catch (ignore: Exception) {
+                // ignore
+            }
+            logger.error(errorLog)
         }
-        logger.error(errorLog)
     }
 
     /**
