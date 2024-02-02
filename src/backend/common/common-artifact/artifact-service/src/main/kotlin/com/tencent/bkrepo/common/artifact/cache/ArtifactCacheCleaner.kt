@@ -49,4 +49,12 @@ interface ArtifactCacheCleaner {
      * @param storageKey 制品所在存储
      */
     fun onCacheAccessed(node: NodeDetail, storageKey: String?)
+
+    /**
+     * 存储层缓存被删除时调用
+     *
+     * @param storageKey 缓存所在的存储
+     * @param sha256 被删除的缓存文件的sha256
+     */
+    fun onCacheDeleted(storageKey: String, sha256: String)
 }

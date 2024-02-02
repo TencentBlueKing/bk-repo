@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.artifact.event.listener
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheCleaner
+import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheEvictionProperties
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -43,18 +44,23 @@ import org.springframework.stereotype.Component
 
 @Component
 class ArtifactCacheAccessListener(
+    private val artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
     private val artifactCacheCleanerProvider: ObjectProvider<ArtifactCacheCleaner>
 ) {
     @Async
     @EventListener(ArtifactReceivedEvent::class)
     fun listen(event: ArtifactReceivedEvent) {
-        safeRecordArtifactCacheAccess(event.artifactFile)
+        if (artifactCacheEvictionProperties.enabled) {
+            safeRecordArtifactCacheAccess(event.artifactFile)
+        }
     }
 
     @Async
     @EventListener(ArtifactResponseEvent::class)
     fun listen(event: ArtifactResponseEvent) {
-        safeRecordArtifactCacheAccess(event.artifactResource, event.storageCredentials)
+        if (artifactCacheEvictionProperties.enabled) {
+            safeRecordArtifactCacheAccess(event.artifactResource, event.storageCredentials)
+        }
     }
 
     /**

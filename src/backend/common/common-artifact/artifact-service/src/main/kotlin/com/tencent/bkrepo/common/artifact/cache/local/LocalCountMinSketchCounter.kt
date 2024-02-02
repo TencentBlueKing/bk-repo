@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.cache.local
 
 import com.tencent.bkrepo.common.artifact.cache.Counter
+import kotlin.math.min
 
 class LocalCountMinSketchCounter : Counter {
     private val counts = HashMap<String, Int>()
@@ -35,7 +36,7 @@ class LocalCountMinSketchCounter : Counter {
     override fun incAndGet(key: String, n: Int): Int {
         incTotalAccessCount()
         val c = counts.getOrDefault(key, 0)
-        counts[key] = c + n
+        counts[key] = min(c + n, MAX_COUNT)
         return counts[key]!!
     }
 
@@ -75,5 +76,6 @@ class LocalCountMinSketchCounter : Counter {
 
     companion object {
         private const val MAX_ACCESS_COUNT = 5000
+        private const val MAX_COUNT = 15
     }
 }

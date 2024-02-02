@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.artifact.cache.local
 import com.tencent.bkrepo.common.artifact.cache.Counter
 import com.tencent.bkrepo.common.artifact.cache.EldestRemovedListener
 import com.tencent.bkrepo.common.artifact.cache.OrderedCache
+import java.util.concurrent.ThreadLocalRandom
 
 /**
  * 通过W-TinyLFU算法进行缓存淘汰
@@ -113,10 +114,7 @@ class LocalWTinyLFUCache(
         override fun onEldestRemoved(key: String, value: Any?) {
             if (mainLRU.probationFull()) {
                 // probation满时last一定不为NULL
-                val victimKey = mainLRU.last()!!
-                val victimCount = counter.get(victimKey)
-                val attackerCount = counter.get(key)
-                if (attackerCount > 5 && attackerCount > victimCount) {
+                if (admit(mainLRU.last()!!, key)) {
                     mainLRU.put(key, value)
                 } else {
                     parentListener.forEach { it.onEldestRemoved(key, value) }
@@ -125,9 +123,24 @@ class LocalWTinyLFUCache(
                 mainLRU.put(key, value)
             }
         }
+
+        private fun admit(victimKey: String, attackerKey: String): Boolean {
+            val victimCount = counter.get(victimKey)
+            val attackerCount = counter.get(attackerKey)
+            return if (attackerCount > victimCount) {
+                return  true
+            } else if (attackerCount >= ADMIT_THRESHOLD) {
+                // 随机选择一个淘汰
+                val random = ThreadLocalRandom.current().nextInt()
+                ((random and 127) == 0)
+            } else {
+                false
+            }
+        }
     }
 
     companion object {
+        private const val ADMIT_THRESHOLD = 6
         private const val FACTOR_EDEN = 0.01
         private const val FACTOR_MAIN = 0.99
     }

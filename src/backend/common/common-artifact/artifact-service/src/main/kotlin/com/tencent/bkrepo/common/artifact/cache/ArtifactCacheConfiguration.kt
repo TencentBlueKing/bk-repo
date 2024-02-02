@@ -72,6 +72,7 @@ class ArtifactCacheConfiguration {
             override fun create(cacheProperties: CacheProperties): OrderedCache<String, Any?> {
                 return LocalWTinyLFUCache(0, LocalCountMinSketchCounter()).apply {
                     setMaxWeight(cacheProperties.maxSize)
+                    setKeyWeightSupplier { _, v -> v.toString().toLong() }
                 }
             }
         }

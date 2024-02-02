@@ -65,22 +65,21 @@ open class DefaultArtifactCacheCleaner(
 
     override fun onCacheAccessed(node: NodeDetail, storageKey: String?) {
         if (!node.folder) {
-            onCacheAccessed(storageKey ?: DEFAULT_STORAGE_KEY, node.sha256!!)
+            onCacheAccessed(storageKey ?: DEFAULT_STORAGE_KEY, node.sha256!!, node.size)
         }
     }
 
+    override fun onCacheDeleted(storageKey: String, sha256: String) {
+        getCache(storageKey).remove(sha256)
+    }
+
     @Synchronized
-    fun onCacheAccessed(storageKey: String, sha256: String) {
+    open fun onCacheAccessed(storageKey: String, sha256: String, size: Long) {
         if (!artifactCacheEvictionProperties.enabled || sha256 == FAKE_SHA256) {
             return
         }
 
-        val cache = storageCacheMap.getOrPut(storageKey) {
-            val credentials = getStorageCredentials(storageKey)
-            val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
-            cacheFactory.create(credentials.cache).apply { addEldestRemovedListener(listener) }
-        }
-        cache.put(sha256, null)
+        getCache(storageKey).put(sha256, size)
     }
 
     /**
@@ -103,6 +102,14 @@ open class DefaultArtifactCacheCleaner(
             if (it is StorageEldestRemovedListener) {
                 it.setCredentials(credentials)
             }
+        }
+    }
+
+    private fun getCache(storageKey: String): OrderedCache<String, Any?> {
+        return storageCacheMap.getOrPut(storageKey) {
+            val credentials = getStorageCredentials(storageKey)
+            val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
+            cacheFactory.create(credentials.cache).apply { addEldestRemovedListener(listener) }
         }
     }
 
