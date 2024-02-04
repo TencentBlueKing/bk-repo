@@ -102,25 +102,45 @@ export default {
         npmGuide () {
             return [
                 {
-                    title: this.$t('setCredentials'),
+                    title: this.$t('npmCreditGuideSubTitle6'),
                     optionType: 'setCredentials',
                     main: [
                         {
-                            subTitle: this.$t('npmCreditGuideSubTitle1')
-                        },
-                        {
-                            subTitle: this.$t('npmCreditGuideSubTitle2'),
+                            subTitle: this.$t('npmCreditGuideSubTitle7'),
+                            constructType: 'npm',
                             codeList: [
-                                `registry=${this.domain.npm}/${this.projectId}/${this.repoName}/`,
-                                'always-auth=true',
-                                `//${this.domain.npm.split('//')[1]}/${this.projectId}/${this.repoName}/:username=${this.userName}`,
-                                `//${this.domain.npm.split('//')[1]}/${this.projectId}/${this.repoName}/:_password=<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>`,
-                                `//${this.domain.npm.split('//')[1]}/${this.projectId}/${this.repoName}/:email=<EMAIL>`
+                                `npm config set registry ${this.domain.npm}/${this.projectId}/${this.repoName}/`
                             ]
                         },
                         {
-                            subTitle: this.$t('generate') + this.$t('space') + '<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>'
+                            subTitle: this.$t('npmCreditGuideSubTitle7'),
+                            constructType: 'yarn',
+                            codeList: [
+                                `yarn config set registry=${this.domain.npm}/${this.projectId}/${this.repoName}/`
+                            ]
                         },
+                        {
+                            subTitle: this.$t('npmCreditGuideSubTitle8'),
+                            constructType: 'npm',
+                            codeList: [
+                                'npm login'
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('npmCreditGuideSubTitle8'),
+                            constructType: 'yarn',
+                            codeList: [
+                                'yarn login'
+                            ]
+                        }
+                    ]
+
+                },
+                {
+                    title: this.$t('npmCreditGuideSubTitle1'),
+                    optionType: 'setCredentials',
+                    main: [
+                       
                         {
                             subTitle: this.$t('npmCreditGuideSubTitle3'),
                             codeList: [
@@ -131,21 +151,13 @@ export default {
                             subTitle: this.$t('npmCreditGuideSubTitle4')
                         },
                         {
-                            subTitle: this.$t('npmCreditGuideSubTitle5')
-                        },
-                        {
-                            subTitle: this.$t('npmCreditGuideSubTitle6')
-                        },
-                        {
-                            subTitle: this.$t('npmCreditGuideSubTitle7'),
+                            subTitle: this.$t('npmCreditGuideSubTitle2'),
                             codeList: [
-                                `npm config set registry ${this.domain.npm}/${this.projectId}/${this.repoName}/`
-                            ]
-                        },
-                        {
-                            subTitle: this.$t('npmCreditGuideSubTitle8'),
-                            codeList: [
-                                'npm login'
+                                `registry=${this.domain.npm}/${this.projectId}/${this.repoName}/`,
+                                'always-auth=true',
+                                `//${this.domain.npm.split('//')[1]}/${this.projectId}/${this.repoName}/:username=${this.userName}`,
+                                `//${this.domain.npm.split('//')[1]}/${this.projectId}/${this.repoName}/:_password=<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>`,
+                                `//${this.domain.npm.split('//')[1]}/${this.projectId}/${this.repoName}/:email=${this.userInfo.email || '<EMAIL>'}`
                             ]
                         }
                     ]
@@ -155,8 +167,27 @@ export default {
                     optionType: 'push',
                     main: [
                         {
-                            subTitle: this.$t('pushGuideSubTitle'),
+                            subTitle: this.$t('npmPushGuideSubTitle1'),
+                            codeList: [
+                                ' {',
+                                '    "name": "<PACKAGE_NAME>}"',
+                                '    "version": "<PACKAGE_VERSION>}"',
+                                '    "description": ""',
+                                '    "main": "index.js"',
+                                '    "author": ""',
+                                '    "license": "MIT"',
+                                ' }'
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('npmPushGuideSubTitle2'),
+                            constructType: 'npm',
                             codeList: ['npm publish']
+                        },
+                        {
+                            subTitle: this.$t('npmPushGuideSubTitle2'),
+                            constructType: 'yarn',
+                            codeList: ['yarn publish']
                         }
                     ]
                 },
@@ -166,11 +197,23 @@ export default {
                     main: [
                         {
                             subTitle: this.$t('npmDownloadGuideSubTitle1'),
-                            codeList: [`npm install ${this.packageName}`]
+                            constructType: 'npm',
+                            codeList: [`npm install ${this.packageName}@${this.versionLabel}`]
+                        },
+                        {
+                            subTitle: this.$t('npmDownloadGuideSubTitle1'),
+                            constructType: 'yarn',
+                            codeList: [`yarn add ${this.packageName}@${this.versionLabel}`]
                         },
                         {
                             subTitle: this.$t('npmDownloadGuideSubTitle2'),
-                            codeList: [`npm install ${this.packageName} --registry ${this.domain.npm}/${this.projectId}/${this.repoName}/`]
+                            constructType: 'npm',
+                            codeList: [`npm install ${this.packageName}@${this.versionLabel} --registry ${this.domain.npm}/${this.projectId}/${this.repoName}/`]
+                        },
+                        {
+                            subTitle: this.$t('npmDownloadGuideSubTitle2'),
+                            constructType: 'yarn',
+                            codeList: [`yarn add ${this.packageName}@${this.versionLabel} --registry ${this.domain.npm}/${this.projectId}/${this.repoName}/`]
                         }
                     ]
                 }

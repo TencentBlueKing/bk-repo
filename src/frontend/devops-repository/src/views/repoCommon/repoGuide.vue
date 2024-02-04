@@ -11,7 +11,7 @@
                 {{ $t('tokenDependSubTitle') }}
                 <router-link :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
             </div>
-            <div>
+            <div v-if="repoType !== 'npm'">
                 <div>{{$t('accessTokenPlaceholder')}}</div>
                 <bk-input
                     class="mt10"
