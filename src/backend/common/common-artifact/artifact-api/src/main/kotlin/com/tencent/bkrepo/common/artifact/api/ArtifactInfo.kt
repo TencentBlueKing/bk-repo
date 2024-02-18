@@ -34,13 +34,9 @@ package com.tencent.bkrepo.common.artifact.api
 import com.tencent.bkrepo.common.api.constant.CharPool.AT
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import java.lang.reflect.InvocationTargetException
-import kotlin.reflect.KClass
-import kotlin.reflect.KMutableProperty
-import kotlin.reflect.KProperty1
-import kotlin.reflect.full.memberProperties
+import org.apache.commons.lang3.reflect.FieldUtils
+import java.lang.reflect.Modifier
 import kotlin.reflect.full.primaryConstructor
-import kotlin.reflect.jvm.isAccessible
 
 /**
  * 构件信息
@@ -141,51 +137,24 @@ open class ArtifactInfo(
 
     /**
      * 根据当前对象的属性值以及传入的[projectId]和[repoName]构造新的实例
-     * 非lateinit且不在构造函数中的属性需要覆写此方法单独赋值
      */
-    @Suppress("UNCHECKED_CAST")
-    open fun copy(projectId: String? = null, repoName: String? = null): ArtifactInfo {
+    fun copy(projectId: String? = null, repoName: String? = null): ArtifactInfo {
         val constructor = this::class.primaryConstructor!!
-        val properties = (this::class as KClass<ArtifactInfo>).memberProperties
         val paramMap = constructor.parameters.associateWith { param ->
             when (param.name) {
                 ArtifactInfo::projectId.name -> projectId ?: this.projectId
                 ArtifactInfo::repoName.name -> repoName ?: this.repoName
-                ArtifactInfo::artifactUri.name -> this.artifactUri
-                else -> properties.find { it.name == param.name }?.let { getPropertyValue(it, this) }
+                else -> FieldUtils.readField(this, param.name, true)
             }
         }
-        val artifactInfo = constructor.callBy(paramMap)
-        // 构造实例后需要初始化lateinit属性
-        properties.filter { it.isLateinit }.forEach { property ->
-            try {
-                setPropertyValue(property, artifactInfo, getPropertyValue(property, this))
-            // 访问未初始化的lateinit属性时会捕获到该异常
-            } catch (ignore: UninitializedPropertyAccessException) { }
-        }
-        return artifactInfo
-    }
-
-    private fun getPropertyValue(property: KProperty1<ArtifactInfo, *>, target: ArtifactInfo): Any? {
-        return try {
-            if (property.isAccessible) property.get(target) else {
-                property.isAccessible = true
-                property.get(target).apply { property.isAccessible = false }
-            }
-        // 访问失败时捕获到该异常, 重新抛出封装在此的真实异常对象
-        } catch (ignore: InvocationTargetException) {
-            throw ignore.targetException
-        }
-    }
-
-    private fun setPropertyValue(property: KProperty1<ArtifactInfo, *>, target: ArtifactInfo, value: Any?) {
-        if (property is KMutableProperty<*>) {
-            if (property.isAccessible) {
-                property.setter.call(target, value)
-            } else {
-                property.isAccessible = true
-                property.setter.call(target, value).apply { property.isAccessible = false }
+        val newInstance = constructor.callBy(paramMap)
+        val fields = FieldUtils.getAllFieldsList(this::class.java)
+        fields.forEach {
+            if (it.name != this::projectId.name && it.name != this::repoName.name && !Modifier.isStatic(it.modifiers)) {
+                val value = FieldUtils.readField(it, this, true)
+                FieldUtils.writeField(it, newInstance, value, true)
             }
         }
+        return newInstance
     }
 }
