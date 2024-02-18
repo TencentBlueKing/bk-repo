@@ -30,8 +30,8 @@ package com.tencent.bkrepo.common.artifact.event.listener
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheCleaner
 import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheEvictionProperties
-import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
+import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
@@ -47,11 +46,11 @@ class ArtifactCacheAccessListener(
     private val artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
     private val artifactCacheCleanerProvider: ObjectProvider<ArtifactCacheCleaner>
 ) {
-    @EventListener(ArtifactReceivedEvent::class)
-    fun listen(event: ArtifactReceivedEvent) {
-        // 此时可能文件还在上传的临时目录中，未转移到缓存目录内
-        if (artifactCacheEvictionProperties.enabled) {
-            safeRecordArtifactCacheAccess(event.artifactFile)
+    @EventListener(ArtifactUploadedEvent::class)
+    fun listen(event: ArtifactUploadedEvent) {
+        val artifactFile = event.context.getArtifactFileOrNull()
+        if (artifactCacheEvictionProperties.enabled && artifactFile != null) {
+            safeRecordArtifactCacheAccess(artifactFile)
         }
     }
 
