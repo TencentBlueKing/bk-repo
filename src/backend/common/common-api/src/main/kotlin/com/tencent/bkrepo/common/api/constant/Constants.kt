@@ -130,3 +130,8 @@ const val ACCESS_FROM_API = "api"
  * 来源于浏览器访问
  */
 const val ACCESS_FROM_WEB = "web"
+
+/**
+ * b3 trace header
+ */
+const val B3_TRACE = "b3"

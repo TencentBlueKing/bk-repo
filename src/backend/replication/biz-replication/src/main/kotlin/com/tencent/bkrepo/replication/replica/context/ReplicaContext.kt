@@ -46,6 +46,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
 import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
+import com.tencent.bkrepo.replication.replica.base.interceptor.TraceInterceptor
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
 import com.tencent.bkrepo.replication.replica.replicator.commitedge.CenterClusterReplicator
 import com.tencent.bkrepo.replication.replica.replicator.commitedge.CenterRemoteReplicator
@@ -129,7 +130,8 @@ class ReplicaContext(
                 writeTimeout,
                 closeTimeout,
                 BasicAuthInterceptor(cluster.username!!, cluster.password!!),
-                RetryInterceptor()
+                RetryInterceptor(),
+                TraceInterceptor()
                 )
         } else {
             OkHttpClientPool.getHttpClient(
@@ -139,7 +141,8 @@ class ReplicaContext(
                 writeTimeout,
                 closeTimeout,
                 SignInterceptor(cluster),
-                RetryInterceptor()
+                RetryInterceptor(),
+                TraceInterceptor()
                 )
         }
     }
