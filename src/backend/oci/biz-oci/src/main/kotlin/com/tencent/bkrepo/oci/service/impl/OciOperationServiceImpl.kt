@@ -377,7 +377,7 @@ class OciOperationServiceImpl(
                 packageName = name,
                 reference = version,
                 isValidDigest = false,
-                version = version
+                version = StringPool.EMPTY
             )
         } else {
             // 返回blob文件的节点信息
@@ -396,7 +396,7 @@ class OciOperationServiceImpl(
                 if (ociArtifactInfo !is OciManifestArtifactInfo) return null
                 // 兼容 list.manifest.json
                 val manifestListPath = OciLocationUtils.buildManifestListPath(
-                    ociArtifactInfo.packageName, ociArtifactInfo.version
+                    ociArtifactInfo.packageName, ociArtifactInfo.reference
                 )
                 nodeClient.getNodeDetail(projectId, repoName, manifestListPath).data
             }
