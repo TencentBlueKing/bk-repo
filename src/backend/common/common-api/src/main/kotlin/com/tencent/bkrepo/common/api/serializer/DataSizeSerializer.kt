@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,16 +29,17 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api("io.swagger:swagger-annotations")
-    api("io.swagger:swagger-models")
-    api("com.fasterxml.jackson.module:jackson-module-kotlin")
-    api("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
-    api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
-    api("com.fasterxml.jackson.module:jackson-module-parameter-names")
-    api("org.apache.commons:commons-compress")
-    api("com.google.guava:guava")
-    api("org.springframework.boot:spring-boot-starter-test")
+package com.tencent.bkrepo.common.api.serializer
+
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import org.springframework.util.unit.DataSize
+
+class DataSizeSerializer : StdSerializer<DataSize>(DataSize::class.java) {
+    override fun serialize(value: DataSize?, gen: JsonGenerator?, provider: SerializerProvider?) {
+        if (gen != null && value != null) {
+            gen.writeString(value.toMegabytes().toString() + "MB")
+        }
+    }
 }

@@ -21,6 +21,7 @@ export const ROUTER_NAME_JOB = 'Job'
 export const ROUTER_NAME_SHED_LOCK = 'Shedlock'
 export const ROUTER_NAME_PROJECT_METRICS = 'ProjectMetrics'
 export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
+export const ROUTER_NAME_FILE_CACHE = 'FileCache'
 
 Vue.use(Router)
 
@@ -133,6 +134,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_NODE,
         meta: { title: '文件管理', icon: 'file' },
         component: () => import('@/views/node/index')
+      },
+      {
+        path: 'fileCache',
+        name: ROUTER_NAME_FILE_CACHE,
+        meta: { title: '缓存管理', icon: 'file' },
+        component: () => import('@/views/node/FileCache')
       },
       {
         path: 'fileSystem',

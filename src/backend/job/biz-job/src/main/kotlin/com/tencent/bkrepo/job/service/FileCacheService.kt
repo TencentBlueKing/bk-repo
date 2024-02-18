@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.config
+package com.tencent.bkrepo.job.service
 
-import com.tencent.bkrepo.common.api.exception.BadRequestException
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
-import com.tencent.bkrepo.opdata.handler.MaskConfigItem
-import com.tencent.bkrepo.opdata.message.OpDataMessageCode
+import com.tencent.bkrepo.job.pojo.FileCacheCheckRequest
+import com.tencent.bkrepo.job.pojo.FileCacheRequest
+import com.tencent.bkrepo.job.pojo.TFileCache
 
-/**
- * 配置项
- */
-@Sensitive(handler = MaskConfigItem::class)
-data class ConfigItem(
-    val key: String,
-    val value: Any?
-) {
-    /**
-     * 校验value类型是否为String, Number, Boolean
-     */
-    fun validateValueType() {
-        if (value == null) {
-            return
-        }
+interface FileCacheService {
+    fun list(): List<TFileCache>
 
-        if (isBaseType() || value is ArrayList<*>) {
-            return
-        }
+    fun create(fileCacheRequest: FileCacheRequest)
 
-        throw BadRequestException(OpDataMessageCode.ConfigValueTypeInvalid)
-    }
+    fun delete(id: String)
 
-    fun isBaseType():Boolean {
-        return value is String || value is Number || value is Boolean
-    }
+    fun getById(id: String): TFileCache?
+
+    fun checkExist(request: FileCacheCheckRequest): TFileCache?
+
+    fun update(fileCacheRequest: FileCacheRequest)
 }

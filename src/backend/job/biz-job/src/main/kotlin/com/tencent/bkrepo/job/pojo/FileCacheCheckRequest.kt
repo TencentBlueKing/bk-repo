@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.config
+package com.tencent.bkrepo.job.pojo
 
-import com.tencent.bkrepo.common.api.exception.BadRequestException
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
-import com.tencent.bkrepo.opdata.handler.MaskConfigItem
-import com.tencent.bkrepo.opdata.message.OpDataMessageCode
-
-/**
- * 配置项
- */
-@Sensitive(handler = MaskConfigItem::class)
-data class ConfigItem(
-    val key: String,
-    val value: Any?
-) {
-    /**
-     * 校验value类型是否为String, Number, Boolean
-     */
-    fun validateValueType() {
-        if (value == null) {
-            return
-        }
-
-        if (isBaseType() || value is ArrayList<*>) {
-            return
-        }
-
-        throw BadRequestException(OpDataMessageCode.ConfigValueTypeInvalid)
-    }
-
-    fun isBaseType():Boolean {
-        return value is String || value is Number || value is Boolean
-    }
-}
+data class FileCacheCheckRequest(
+    var projectId: String,
+    var repoName: String,
+    // 保留最近多少天内访问
+    var days: Int,
+    var size: Long,
+)
