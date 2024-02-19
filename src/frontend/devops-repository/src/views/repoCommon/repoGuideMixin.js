@@ -247,6 +247,7 @@ export default {
                     main: [
                         {
                             subTitle: this.$t('mavenCreditGuideSubTitle1'),
+                            constructType: 'Apache Maven',
                             codeList: [
                                 '<servers>',
                                 '       <server>',
@@ -259,36 +260,20 @@ export default {
                         },
                         {
                             subTitle: this.$t('mavenCreditGuideSubTitle2'),
+                            constructType: 'Gradle Groovy DSL',
                             codeList: [
                                 `cpackUrl=${this.repoUrl}`,
                                 `cpackUsername=${this.userName}`,
                                 `cpackPassword=${this.accessToken}`
                             ]
-                        }
-                    ]
-                },
-                {
-                    title: this.$t('mavenGuideTitle'),
-                    optionType: 'setCredentials',
-                    main: [
-                        {
-                            subTitle: this.$t('mavenGuideSubTitle1'),
-                            codeList: [
-                                '<mirror>',
-                                `       <id>${this.projectId}-${this.repoName}</id>`,
-                                `       <name>${this.repoName}</name>`,
-                                `       <url>${this.repoUrl}/</url>`,
-                                '       <mirrorOf>central</mirrorOf>',
-                                '</mirror>'
-                            ]
                         },
                         {
-                            subTitle: this.$t('mavenGuideSubTitle2'),
+                            subTitle: this.$t('mavenCreditGuideSubTitle2'),
+                            constructType: 'Gradle Kotlin DSL',
                             codeList: [
-                                '<repository>',
-                                `       <id>${this.projectId}-${this.repoName}</id>`,
-                                `       <url>${this.repoUrl}/</url>`,
-                                '</repository>'
+                                `cpackUrl=${this.repoUrl}`,
+                                `cpackUsername=${this.userName}`,
+                                `cpackPassword=${this.accessToken}`
                             ]
                         }
                     ]
@@ -299,10 +284,11 @@ export default {
                     main: [
                         {
                             subTitle: this.$t('mavenPushGuideSubTitle1'),
+                            constructType: 'Apache Maven',
                             codeList: [
                                 '<distributionManagement>',
                                 '       <repository>',
-                                '               <!--id值与配置的server id 一致-->',
+                                `               <!--${this.$t('mavenPushGuideCodeListAnnotate')}-->`,
                                 `               <id>${this.projectId}-${this.repoName}</id>`,
                                 `               <name>${this.repoName}</name>`,
                                 `               <url>${this.repoUrl}/</url>`,
@@ -312,12 +298,14 @@ export default {
                         },
                         {
                             subTitle: this.$t('mavenPushGuideSubTitle2'),
+                            constructType: 'Apache Maven',
                             codeList: [
                                 'mvn clean deploy'
                             ]
                         },
                         {
                             subTitle: this.$t('mavenPushGuideSubTitle3'),
+                            constructType: 'Gradle Groovy DSL',
                             codeList: [
                                 'plugins {',
                                 '    id "maven-publish"',
@@ -325,8 +313,9 @@ export default {
                                 'publishing {',
                                 '    publications {',
                                 '        maven(MavenPublication) {',
-                                '            groupId = "com.company.group"',
-                                '            version = "1.0"',
+                                '            groupId = "<GROUP_ID>"',
+                                '            artifactId = "<ARTIFACT_ID>"',
+                                '            version = "<PACKAGE_VERSION>"',
                                 '            from components.java',
                                 '        }',
                                 '    }',
@@ -344,12 +333,14 @@ export default {
                         },
                         {
                             subTitle: this.$t('mavenPushGuideSubTitle4'),
+                            constructType: 'Gradle Groovy DSL',
                             codeList: [
                                 'gradle publish'
                             ]
                         },
                         {
                             subTitle: this.$t('mavenPushGuideSubTitle5'),
+                            constructType: 'Gradle Kotlin DSL',
                             codeList: [
                                 'plugins {',
                                 '    `maven-publish`',
@@ -357,8 +348,9 @@ export default {
                                 'publishing {',
                                 '    publications {',
                                 '        create<MavenPublication>("maven") {',
-                                '            groupId = "com.company.group"',
-                                '            version = "1.0"',
+                                '            groupId = "<GROUP_ID>"',
+                                '            artifactId = "<ARTIFACT_ID>"',
+                                '            version = "<PACKAGE_VERSION>"',
                                 '            from(components["java"])',
                                 '        }',
                                 '    }',
@@ -379,6 +371,7 @@ export default {
                         },
                         {
                             subTitle: this.$t('mavenPushGuideSubTitle6'),
+                            constructType: 'Gradle Kotlin DSL',
                             codeList: [
                                 'gradle publish'
                             ]
@@ -390,7 +383,21 @@ export default {
                     optionType: 'pull',
                     main: [
                         {
+                            title: this.$t('mavenGuideTitle'),
+                            subTitle: this.$t('mavenGuideSubTitle1'),
+                            constructType: 'Apache Maven',
+                            codeList: [
+                                '<mirror>',
+                                `       <id>${this.projectId}-${this.repoName}</id>`,
+                                `       <name>${this.repoName}</name>`,
+                                `       <url>${this.repoUrl}/</url>`,
+                                '       <mirrorOf>central</mirrorOf>',
+                                '</mirror>'
+                            ]
+                        },
+                        {
                             subTitle: this.$t('mavenPullGuideSubTitle1'),
+                            constructType: 'Apache Maven',
                             codeList: [
                                 '<profiles>',
                                 '       <profile>',
@@ -416,13 +423,44 @@ export default {
                             ]
                         },
                         {
+                            title: this.$t('mavenGuideTitle2'),
+                            subTitle: this.$t('mavenGuideSubTitle2'),
+                            constructType: 'Apache Maven',
+                            codeList: [
+                                '<repositories>',
+                                '    <repository>',
+                                `       <!--${this.$t('mavenPushGuideCodeListAnnotate')}-->`,
+                                `       <id>${this.projectId}-${this.repoName}</id>`,
+                                `       <name>${this.repoName}</name>`,
+                                `       <url>${this.repoUrl}/</url>`,
+                                '    </repository>',
+                                '</repositories>'
+                            ]
+                        },
+                        {
+                            title: this.$t('mavenGuideTitle3'),
+                            subTitle: this.$t('mavenPullGuideSubTitle7'),
+                            constructType: 'Apache Maven',
+                            codeList: [
+                                '<dependencies>',
+                                '    <dependency>',
+                                '        <groupId>[GROUP_ID]</groupId>',
+                                '        <artifactId>[ARTIFACT_ID]</artifactId>',
+                                '        <version>[VERSION]</version>',
+                                '    </dependency>',
+                                '</dependencies>'
+                            ]
+                        },
+                        {
                             subTitle: this.$t('mavenPullGuideSubTitle2'),
+                            constructType: 'Apache Maven',
                             codeList: [
                                 'mvn clean package'
                             ]
                         },
                         {
                             subTitle: this.$t('mavenPullGuideSubTitle3'),
+                            constructType: 'Gradle Groovy DSL',
                             codeList: [
                                 'repositories {',
                                 '    maven {',
@@ -432,17 +470,23 @@ export default {
                                 '            password = "${cpackPassword}"',
                                 '        }',
                                 '    }',
+                                '}',
+                                '   ',
+                                'dependencies { ',
+                                '    api \'[GROUP_ID]:[ARTIFACT_ID]:[VERSION]\'',
                                 '}'
                             ]
                         },
                         {
                             subTitle: this.$t('mavenPullGuideSubTitle4'),
+                            constructType: 'Gradle Groovy DSL',
                             codeList: [
                                 'gradle dependencies'
                             ]
                         },
                         {
                             subTitle: this.$t('mavenPullGuideSubTitle5'),
+                            constructType: 'Gradle Kotlin DSL',
                             codeList: [
                                 'repositories {',
                                 '    maven {',
@@ -455,11 +499,16 @@ export default {
                                 '            password = cpackPassword',
                                 '        }',
                                 '    }',
+                                '}',
+                                '   ',
+                                'dependencies { ',
+                                '     api ("[GROUP_ID]:[ARTIFACT_ID]:[VERSION]")',
                                 '}'
                             ]
                         },
                         {
                             subTitle: this.$t('mavenPullGuideSubTitle6'),
+                            constructType: 'Gradle Kotlin DSL',
                             codeList: [
                                 'gradle dependencies'
                             ]
