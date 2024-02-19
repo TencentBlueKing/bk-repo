@@ -35,9 +35,9 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
@@ -55,26 +55,23 @@ import java.time.LocalDateTime
 class PypiWebService(
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient
-) {
+) : ArtifactService() {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun deletePackage(pypiArtifactInfo: PypiArtifactInfo, packageKey: String) {
         val context = ArtifactRemoveContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun delete(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?) {
         val context = ArtifactRemoveContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun artifactDetail(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?): Any? {
         val context = ArtifactQueryContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.query(context)
     }
 

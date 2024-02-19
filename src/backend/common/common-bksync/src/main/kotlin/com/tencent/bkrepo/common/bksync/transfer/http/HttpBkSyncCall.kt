@@ -46,7 +46,7 @@ import kotlin.system.measureNanoTime
  * bksync http实现
  * */
 @Suppress("UnstableApiUsage")
-class HttpBkSyncCall(
+open class HttpBkSyncCall(
     // http客户端
     private val client: OkHttpClient,
     // 重复率阈值，只有大于该阈值时才会使用增量上传
@@ -366,7 +366,7 @@ class HttpBkSyncCall(
     /**
      * 普通上传
      * */
-    private fun commonUpload(context: UploadContext) {
+    open fun commonUpload(context: UploadContext) {
         val request = context.request
         with(request) {
             logger.info("Start use generic upload.")

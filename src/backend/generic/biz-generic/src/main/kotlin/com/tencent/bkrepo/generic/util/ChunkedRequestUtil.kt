@@ -25,19 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.generic.util
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_UUID
+import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
+import javax.servlet.http.HttpServletResponse
 
-/**
- * 项目仓库指标统计任务配置项
- */
-@ConfigurationProperties("job.project-repo-metrics-stat")
-data class ProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 18 * * ?",
+object ChunkedRequestUtil {
     /**
-     * 是否遍历所有项目记录
+     * 生成chunked upload的响应体
      */
-    var runAllProjects: Boolean = true
-) : MongodbJobProperties()
+    fun uploadResponse(
+        responseProperty: ChunkedResponseProperty,
+        response: HttpServletResponse = HttpContextHolder.getResponse()
+    ) {
+        with(responseProperty) {
+            response.status = status!!.value
+
+            uuid?.let {
+                response.addHeader(CHUNKED_UPLOAD_UUID, uuid)
+            }
+            contentLength?.let {
+                response.addHeader(HttpHeaders.CONTENT_LENGTH, contentLength.toString())
+            }
+            size?.let {
+                response.addHeader(HttpHeaders.RANGE, "0-${size!! - 1}")
+            }
+        }
+    }
+}

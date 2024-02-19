@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,18 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.util
+package com.tencent.bkrepo.common.api.serializer
 
-import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.URL
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import org.springframework.util.unit.DataSize
 
-object HttpUtil {
-
-    fun String.downloadUrlHttpClient(): InputStream? {
-        val url = URL(this)
-        val connection = url.openConnection() as HttpURLConnection
-        connection.requestMethod = "GET"
-        return connection.inputStream
+class DataSizeSerializer : StdSerializer<DataSize>(DataSize::class.java) {
+    override fun serialize(value: DataSize?, gen: JsonGenerator?, provider: SerializerProvider?) {
+        if (gen != null && value != null) {
+            gen.writeString(value.toMegabytes().toString() + "MB")
+        }
     }
 }
