@@ -25,17 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo
+package com.tencent.bkrepo.job.batch.stat
 
-import com.tencent.bkrepo.opdata.pojo.enums.FilterType
-import java.time.LocalDateTime
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
+import com.tencent.bkrepo.job.config.properties.InactiveProjectRepoMetricsStatJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
 
-data class MetricFilterInfo(
-    val startDate: LocalDateTime? = null,
-    val endDate: LocalDateTime? = null,
-    val filterType: FilterType? = null,
-    val filterValue: String? = null,
-    val compareFlag: Boolean = false,
-    val deltaPositive: Int? = null,
-    val active: Boolean? = null
-)
+/**
+ * 非活跃项目仓库指标统计任务
+ */
+@Component
+@EnableConfigurationProperties(InactiveProjectRepoMetricsStatJobProperties::class)
+class InactiveProjectRepoMetricsStatJob(
+    properties: InactiveProjectRepoMetricsStatJobProperties,
+    activeProjectService: ActiveProjectService,
+) : ProjectRepoMetricsStatJob(properties, activeProjectService, false) {
+
+    override fun statProjectCheck(
+        projectId: String,
+        context: ProjectRepoMetricsStatJobContext
+    ): Boolean {
+        if (context.statProjects.isNotEmpty() &&
+            !context.statProjects.contains(projectId)) return true
+        return false
+    }
+}

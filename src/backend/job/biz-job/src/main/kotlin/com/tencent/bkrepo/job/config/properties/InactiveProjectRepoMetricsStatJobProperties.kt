@@ -25,17 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.opdata.pojo.enums.FilterType
-import java.time.LocalDateTime
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-data class MetricFilterInfo(
-    val startDate: LocalDateTime? = null,
-    val endDate: LocalDateTime? = null,
-    val filterType: FilterType? = null,
-    val filterValue: String? = null,
-    val compareFlag: Boolean = false,
-    val deltaPositive: Int? = null,
-    val active: Boolean? = null
-)
+/**
+ * 非活跃项目仓库指标统计任务配置项
+ */
+@ConfigurationProperties("job.inactive-project-repo-metrics-stat")
+data class InactiveProjectRepoMetricsStatJobProperties(
+    override var enabled: Boolean = true,
+    override var cron: String = "0 0 1 * * ?",
+) : MongodbJobProperties()
