@@ -43,7 +43,7 @@ interface OrderedCache<K, V> {
     /**
      * 获取缓存数量
      */
-    fun count(): Int
+    fun count(): Long
 
     /**
      * 获取缓存当前总权重
@@ -61,9 +61,9 @@ interface OrderedCache<K, V> {
     fun setKeyWeightSupplier(supplier: (k: K, v: V) -> Long)
 
     /**
-     * 获取最后一个key
+     * 获取最旧的key
      */
-    fun last(): K?
+    fun eldestKey(): K?
 
     fun addEldestRemovedListener(listener: EldestRemovedListener<K, V>)
 

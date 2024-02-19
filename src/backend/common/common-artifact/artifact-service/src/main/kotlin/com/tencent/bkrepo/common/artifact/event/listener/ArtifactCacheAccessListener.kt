@@ -65,23 +65,30 @@ class ArtifactCacheAccessListener(
      * 记录缓存访问信息
      */
     private fun safeRecordArtifactCacheAccess(resource: ArtifactResource, storageCredentials: StorageCredentials?) {
-        val artifactCacheCleaner = artifactCacheCleanerProvider.ifAvailable ?: return
         try {
             if (resource.node != null && !resource.node.folder) {
-                val cacheEnabled = resource.artifactMap.values.firstOrNull()?.getMetadata(METADATA_KEY_CACHE_ENABLED)
-                if (cacheEnabled == true) {
-                    artifactCacheCleaner.onCacheAccessed(resource.node, storageCredentials?.key)
-                }
+                recordSingleNode(resource, storageCredentials)
             } else if (resource.nodes.isNotEmpty()) {
-                resource.artifactMap.forEach { (name, ais) ->
-                    if (ais.getMetadata(METADATA_KEY_CACHE_ENABLED) == true) {
-                        val node = resource.nodes.firstOrNull { name.endsWith(it.name) }
-                        node?.let { artifactCacheCleaner.onCacheAccessed(it, storageCredentials?.key) }
-                    }
-                }
+                recordMultiNode(resource, storageCredentials)
             }
         } catch (ignore: Exception) {
             logger.warn("failed to record artifact cache access", ignore)
+        }
+    }
+
+    private fun recordSingleNode(resource: ArtifactResource, storageCredentials: StorageCredentials?) {
+        val cacheEnabled = resource.artifactMap.values.firstOrNull()?.getMetadata(METADATA_KEY_CACHE_ENABLED)
+        if (cacheEnabled == true) {
+            artifactCacheCleanerProvider.ifAvailable?.onCacheAccessed(resource.node!!, storageCredentials?.key)
+        }
+    }
+
+    private fun recordMultiNode(resource: ArtifactResource, storageCredentials: StorageCredentials?) {
+        resource.artifactMap.forEach { (name, ais) ->
+            if (ais.getMetadata(METADATA_KEY_CACHE_ENABLED) == true) {
+                val node = resource.nodes.firstOrNull { name.endsWith(it.name) }
+                node?.let { artifactCacheCleanerProvider.ifAvailable?.onCacheAccessed(it, storageCredentials?.key) }
+            }
         }
     }
 

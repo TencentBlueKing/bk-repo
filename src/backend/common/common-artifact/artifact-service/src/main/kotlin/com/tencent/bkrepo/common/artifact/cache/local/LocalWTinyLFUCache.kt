@@ -71,7 +71,7 @@ class LocalWTinyLFUCache(
         }
     }
 
-    override fun count(): Int {
+    override fun count(): Long {
         return mainLRU.count() + edenLRU.count()
     }
 
@@ -96,8 +96,8 @@ class LocalWTinyLFUCache(
         edenLRU.setKeyWeightSupplier(supplier)
     }
 
-    override fun last(): String? {
-        return edenLRU.last() ?: mainLRU.last()
+    override fun eldestKey(): String? {
+        return edenLRU.eldestKey() ?: mainLRU.eldestKey()
     }
 
     override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Any?>) {
@@ -114,7 +114,7 @@ class LocalWTinyLFUCache(
         override fun onEldestRemoved(key: String, value: Any?) {
             if (mainLRU.probationFull()) {
                 // probation满时last一定不为NULL
-                if (admit(mainLRU.last()!!, key)) {
+                if (admit(mainLRU.eldestKey()!!, key)) {
                     mainLRU.put(key, value)
                 } else {
                     parentListener.forEach { it.onEldestRemoved(key, value) }

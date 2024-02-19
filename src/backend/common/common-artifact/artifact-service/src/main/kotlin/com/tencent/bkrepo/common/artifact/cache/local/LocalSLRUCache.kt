@@ -92,12 +92,12 @@ class LocalSLRUCache(
         }
     }
 
-    override fun count(): Int {
-        return protected.size + probation.size
+    override fun count(): Long {
+        return protected.size.toLong() + probation.size.toLong()
     }
 
-    override fun last(): String? {
-        return probation.last() ?: protected.last()
+    override fun eldestKey(): String? {
+        return probation.eldestKey() ?: protected.eldestKey()
     }
 
     override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Any?>) {

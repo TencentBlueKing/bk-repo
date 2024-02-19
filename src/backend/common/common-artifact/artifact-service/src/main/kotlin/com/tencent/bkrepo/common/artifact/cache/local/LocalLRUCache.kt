@@ -80,8 +80,8 @@ class LocalLRUCache(
 
     override fun getCapacity() = capacity
 
-    override fun count() = size
-    override fun last(): String? {
+    override fun count() = size.toLong()
+    override fun eldestKey(): String? {
         val field = LinkedHashMap::class.java.getDeclaredField("head")
         field.isAccessible = true
         return (field.get(this) as? Map.Entry<String, Any?>)?.key
