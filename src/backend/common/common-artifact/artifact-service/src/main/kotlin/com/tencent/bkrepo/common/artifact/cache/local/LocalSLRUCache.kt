@@ -28,126 +28,19 @@
 package com.tencent.bkrepo.common.artifact.cache.local
 
 import com.tencent.bkrepo.common.artifact.cache.EldestRemovedListener
-import com.tencent.bkrepo.common.artifact.cache.OrderedCache
 
 class LocalSLRUCache(
     capacity: Int = 0,
-    private val listeners: MutableList<EldestRemovedListener<String, Any?>> = ArrayList()
-) : OrderedCache<String, Any?> {
+    listeners: MutableList<EldestRemovedListener<String, Any?>> = ArrayList()
+) : SLRUCache<String, Any?>(listeners) {
 
-    private val probation = LocalLRUCache(
+    override val probation = LocalLRUCache(
         (capacity * FACTOR_PROBATION).toInt(),
         mutableListOf(ProbationLRUEldestRemovedListener(listeners))
     )
 
-    private val protected = LocalLRUCache(
+    override val protected = LocalLRUCache(
         (capacity * FACTOR_PROTECTED).toInt(),
         mutableListOf(ProtectedLRUEldestRemovedListener(probation))
     )
-
-    override fun put(key: String, value: Any?): Any? {
-        return when {
-            protected.containsKey(key) -> {
-                protected.put(key, value)
-            }
-
-            probation.containsKey(key) -> {
-                // 晋级到protected lru
-                val oldVal = probation.remove(key)
-                protected[key] = value
-                oldVal
-            }
-
-            else -> {
-                probation[key] = value
-                null
-            }
-        }
-    }
-
-    override fun get(key: String): Any? {
-        if (protected.containsKey(key)) {
-            return protected[key]
-        }
-
-        if (probation.containsKey(key)) {
-            // 晋级到protected lru
-            val oldVal = probation.remove(key)
-            protected[key] = oldVal
-            return oldVal
-        }
-
-        return null
-    }
-
-    override fun containsKey(key: String): Boolean {
-        return protected.containsKey(key) || probation.containsKey(key)
-    }
-
-    override fun remove(key: String): Any? {
-        return when {
-            protected.containsKey(key) -> protected.remove(key)
-            probation.containsKey(key) -> probation.remove(key)
-            else -> null
-        }
-    }
-
-    override fun count(): Long {
-        return protected.size.toLong() + probation.size.toLong()
-    }
-
-    override fun eldestKey(): String? {
-        return probation.eldestKey() ?: protected.eldestKey()
-    }
-
-    override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Any?>) {
-        listeners.add(listener)
-    }
-
-    override fun getEldestRemovedListeners() = listeners
-
-    override fun weight(): Long = protected.weight() + probation.weight()
-
-    override fun setMaxWeight(max: Long) {
-        protected.setMaxWeight((max * FACTOR_PROTECTED).toLong())
-        probation.setMaxWeight((max * FACTOR_PROBATION).toLong())
-    }
-
-    override fun getMaxWeight() = protected.getMaxWeight() + probation.getMaxWeight()
-
-    override fun setCapacity(capacity: Int) {
-        protected.setCapacity((capacity * FACTOR_PROTECTED).toInt())
-        probation.setCapacity((capacity * FACTOR_PROBATION).toInt())
-    }
-
-    override fun getCapacity() = protected.getCapacity() + probation.getCapacity()
-
-    override fun setKeyWeightSupplier(supplier: (k: String, v: Any?) -> Long) {
-        protected.setKeyWeightSupplier(supplier)
-        probation.setKeyWeightSupplier(supplier)
-    }
-
-    fun probationFull() = probation.getCapacity() > 0L && probation.size >= probation.getCapacity()
-            || probation.getMaxWeight() > 0L && probation.weight() >= probation.getMaxWeight()
-
-    private class ProtectedLRUEldestRemovedListener(
-        private val probationLru: LocalLRUCache
-    ) : EldestRemovedListener<String, Any?> {
-        override fun onEldestRemoved(key: String, value: Any?) {
-            probationLru[key] = value
-        }
-    }
-
-    private class ProbationLRUEldestRemovedListener(
-        private val parentListeners: List<EldestRemovedListener<String, Any?>>,
-    ) : EldestRemovedListener<String, Any?> {
-        override fun onEldestRemoved(key: String, value: Any?) {
-            parentListeners.forEach { it.onEldestRemoved(key, value) }
-        }
-    }
-
-    companion object {
-        private const val FACTOR_PROBATION = 0.2
-        private const val FACTOR_PROTECTED = 0.8
-    }
 }

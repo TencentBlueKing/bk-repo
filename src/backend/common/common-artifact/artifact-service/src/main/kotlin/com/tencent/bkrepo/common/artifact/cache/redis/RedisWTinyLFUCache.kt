@@ -25,21 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.local
+package com.tencent.bkrepo.common.artifact.cache.redis
 
 import com.tencent.bkrepo.common.artifact.cache.Counter
 import com.tencent.bkrepo.common.artifact.cache.EldestRemovedListener
+import com.tencent.bkrepo.common.artifact.cache.local.WTinyLFUCache
+import org.springframework.data.redis.core.RedisTemplate
 
-/**
- * 通过W-TinyLFU算法进行缓存淘汰
- * 非线程安全，仅用于单元测试与本地测试
- */
-class LocalWTinyLFUCache(
+class RedisWTinyLFUCache(
+    cacheName: String,
+    redisTemplate: RedisTemplate<String, String>,
     capacity: Int,
     counter: Counter,
     listeners: MutableList<EldestRemovedListener<String, Any?>> = ArrayList()
 ) : WTinyLFUCache<String, Any?>(counter, listeners) {
-    override val mainLRU = LocalSLRUCache((capacity * FACTOR_MAIN).toInt(), listeners)
-    private val edenListener = EdenLRUEldestRemovedListener(mainLRU, counter, listeners)
-    override val windowLRU = LocalLRUCache((capacity * FACTOR_WINDOW).toInt(), mutableListOf(edenListener))
+    override val mainLRU = RedisSLRUCache(
+        "$cacheName:main",
+        redisTemplate,
+        (capacity * FACTOR_MAIN).toInt(),
+        listeners
+    )
+
+    override val windowLRU = RedisLRUCache(
+        "$cacheName:windows",
+        redisTemplate,
+        (capacity * FACTOR_WINDOW).toInt(),
+        mutableListOf(EdenLRUEldestRemovedListener(mainLRU, counter, listeners))
+    )
 }

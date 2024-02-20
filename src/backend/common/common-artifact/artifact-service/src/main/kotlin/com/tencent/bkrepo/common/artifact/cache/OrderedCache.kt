@@ -65,6 +65,12 @@ interface OrderedCache<K, V> {
      */
     fun eldestKey(): K?
 
+    /**
+     * 缓存是否已满
+     */
+    fun full(): Boolean =
+        getCapacity() > 0L && count() >= getCapacity() || getMaxWeight() > 0L && weight() >= getMaxWeight()
+
     fun addEldestRemovedListener(listener: EldestRemovedListener<K, V>)
 
     fun getEldestRemovedListeners(): List<EldestRemovedListener<K, V>>
