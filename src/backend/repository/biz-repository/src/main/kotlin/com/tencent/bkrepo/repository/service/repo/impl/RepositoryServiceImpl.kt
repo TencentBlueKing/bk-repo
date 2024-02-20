@@ -75,6 +75,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.repository.service.packages.PackageService
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
@@ -84,7 +85,9 @@ import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
 import java.time.Duration
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Conditional
+import org.springframework.context.annotation.Lazy
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -117,6 +120,10 @@ class RepositoryServiceImpl(
     private val servicePermissionClient: ServicePermissionClient,
     private val projectMetricsRepository: ProjectMetricsRepository,
 ) : RepositoryService {
+
+    @Autowired
+    @Lazy
+    lateinit var packageService: PackageService
 
     init {
         Companion.repositoryProperties = repositoryProperties
@@ -336,24 +343,12 @@ class RepositoryServiceImpl(
     override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {
         repoDeleteRequest.apply {
             val repository = checkRepository(projectId, name)
-            if (repoDeleteRequest.forced) {
-                nodeService.deleteByPath(projectId, name, ROOT, operator)
-            } else {
-                val artifactInfo = DefaultArtifactInfo(projectId, name, ROOT)
-                nodeService.countFileNode(artifactInfo).takeIf { it == 0L } ?: throw ErrorCodeException(
-                    ArtifactMessageCode.REPOSITORY_CONTAINS_FILE,
-                )
-                nodeService.deleteByPath(projectId, name, ROOT, operator)
-            }
-
+            clearRepo(projectId, name, repository.type.supportPackage, forced, operator)
             // 为避免仓库被删除后节点无法被自动清理的问题，对仓库实行假删除
-            if (!repository.id.isNullOrBlank()) {
-                repositoryDao.updateFirst(
-                    Query(Criteria.where(ID).isEqualTo(repository.id)),
-                    Update().set(TRepository::deleted.name, LocalDateTime.now()),
-                )
-            }
-
+            repositoryDao.updateFirst(
+                Query(Criteria.where(ID).isEqualTo(repository.id!!)),
+                Update().set(TRepository::deleted.name, LocalDateTime.now())
+            )
             // 删除关联的库
             if (repository.category == RepositoryCategory.COMPOSITE) {
                 val configuration = repository.configuration.readJsonString<CompositeConfiguration>()
@@ -383,6 +378,34 @@ class RepositoryServiceImpl(
             subNodeWithoutFolderCount = repoMetrics?.num ?: 0,
             size = repoMetrics?.size ?: 0,
         )
+    }
+
+    /**
+     * 删除仓库内容
+     */
+    protected fun clearRepo(
+        projectId: String,
+        repoName: String,
+        supportPackage: Boolean,
+        forced: Boolean,
+        operator: String
+    ) {
+        if (forced) {
+            logger.info("Force clear repository [$projectId/$repoName] by [$operator]")
+            if (supportPackage) {
+                packageService.deleteAllPackage(projectId, repoName)
+            }
+        } else {
+            // 当仓库类型支持包管理，仓库下没有包时视为空仓库，删除仓库下所有节点
+            val isEmpty = if (supportPackage) {
+                packageService.getPackageCount(projectId, repoName) == 0L
+            } else {
+                val artifactInfo = DefaultArtifactInfo(projectId, repoName, ROOT)
+                nodeService.countFileNode(artifactInfo) == 0L
+            }
+            if (!isEmpty) throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_ARTIFACT)
+        }
+        nodeService.deleteByPath(projectId, repoName, ROOT, operator)
     }
 
     /**

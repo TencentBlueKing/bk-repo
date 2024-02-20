@@ -58,4 +58,15 @@ interface ProjectUsageStatisticsService {
      * @param end 结束时间，不包含
      */
     fun delete(start: Long? = null, end: Long)
+
+    /**
+     * 查询一段时间内的使用量总和
+     *
+     * @param start 统计的起始时间,inclusive
+     * @param end 统计的结束时间,exclusive
+     */
+    fun sum(
+        start: Long,
+        end: Long = System.currentTimeMillis()
+    ): Map<String, ProjectUsageStatistics>
 }

@@ -24,8 +24,9 @@
                 <bk-tag-input
                     class="w480"
                     v-model="permissionForm.users"
-                    :placeholder="$t('enterPlaceHolder')"
+                    :placeholder="$t('enterPlaceHolder') + $t('parseTip')"
                     trigger="focus"
+                    :paste-fn="parseFn"
                     :has-delete-icon="true"
                     allow-create>
                 </bk-tag-input>
@@ -142,7 +143,6 @@
                         body: body
                     }).then(() => {
                         this.reset()
-                        this.$emit('refresh')
                     })
                 } else {
                     const body = {
@@ -157,7 +157,6 @@
                         body: body
                     }).then(() => {
                         this.reset()
-                        this.$emit('refresh')
                     })
                 }
             },
@@ -173,6 +172,17 @@
                 this.type = 'create'
                 this.$refs.pathConfig.replicaTaskObjects = []
                 this.$refs.permissionForm.clearError()
+                this.$emit('refresh')
+            },
+            parseFn (data) {
+                if (data !== '') {
+                    const users = data.toString().split(',')
+                    for (let i = 0; i < users.length; i++) {
+                        users[i] = users[i].toString().trim()
+                        this.permissionForm.users.push(users[i])
+                    }
+                    this.permissionForm.user = Array.from(new Set(this.permissionForm.users))
+                }
             }
         }
     }

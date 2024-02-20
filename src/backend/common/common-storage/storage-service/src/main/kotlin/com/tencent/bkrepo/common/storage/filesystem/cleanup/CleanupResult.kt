@@ -37,6 +37,14 @@ data class CleanupResult(
     var cleanupFolder: Long = 0,
     var cleanupSize: Long = 0,
     var errorCount: Long = 0,
+    /**
+     * 根目录下除了tempPath与stagingPath子目录外被访问的文件数量
+     */
+    var rootDirNotDeletedFile: Long = 0,
+    /**
+     * 根目录下除了tempPath与stagingPath子目录外被访问的文件大小
+     */
+    var rootDirNotDeletedSize: Long = 0,
 ) {
 
     fun merge(vararg others: CleanupResult): CleanupResult {

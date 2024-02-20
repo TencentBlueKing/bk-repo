@@ -40,7 +40,7 @@
             width="500"
             height-num="301"
             :title="editRoleConfig.id ? $t('editUserGroupTitle') : $t('addUserGroupTitle')"
-            @cancel="editRoleConfig.show = false">
+            @cancel="cancel">
             <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm">
                 <bk-form-item :label="$t('roleName')" :required="true" property="name" error-display-type="normal">
                     <bk-input v-model.trim="editRoleConfig.name" maxlength="32" show-word-limit></bk-input>
@@ -51,15 +51,16 @@
                 <bk-form-item :label="$t('user')" property="users" error-display-type="normal">
                     <bk-tag-input
                         v-model="editRoleConfig.users"
-                        :placeholder="$t('enterPlaceHolder')"
+                        :placeholder="$t('enterPlaceHolder') + $t('parseTip')"
                         trigger="focus"
+                        :paste-fn="parseFn"
                         :has-delete-icon="true"
                         allow-create>
                     </bk-tag-input>
                 </bk-form-item>
             </bk-form>
             <template #footer>
-                <bk-button @click="editRoleConfig.show = false">{{ $t('cancel') }}</bk-button>
+                <bk-button @click="cancel">{{ $t('cancel') }}</bk-button>
                 <bk-button class="ml10" theme="primary" @click="confirm">{{ $t('confirm') }}</bk-button>
             </template>
         </canway-dialog>
@@ -212,6 +213,20 @@
                         })
                     }
                 })
+            },
+            parseFn (data) {
+                if (data !== '') {
+                    const users = data.toString().split(',')
+                    for (let i = 0; i < users.length; i++) {
+                        users[i] = users[i].toString().trim()
+                        this.editRoleConfig.users.push(users[i])
+                    }
+                    this.editRoleConfig.user = Array.from(new Set(this.editRoleConfig.users))
+                }
+            },
+            cancel () {
+                this.editRoleConfig.show = false
+                this.getRoleListHandler()
             }
         }
     }

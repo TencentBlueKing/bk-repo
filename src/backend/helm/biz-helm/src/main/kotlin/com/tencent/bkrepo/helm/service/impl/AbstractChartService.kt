@@ -95,6 +95,7 @@ import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -122,6 +123,9 @@ open class AbstractChartService : ArtifactService() {
 
     @Autowired
     lateinit var metadataClient: MetadataClient
+
+    @Autowired
+    lateinit var packageMetadataClient: PackageMetadataClient
 
     @Autowired
     lateinit var repositoryClient: RepositoryClient

@@ -31,14 +31,14 @@
 
 package com.tencent.bkrepo.auth.config
 
+import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.dao.repository.AccountRepository
+import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.condition.BkV3RbacAuthCondition
 import com.tencent.bkrepo.auth.condition.LocalAuthCondition
-import com.tencent.bkrepo.auth.repository.AccountRepository
-import com.tencent.bkrepo.auth.repository.OauthTokenRepository
-import com.tencent.bkrepo.auth.repository.PermissionRepository
-import com.tencent.bkrepo.auth.repository.RoleRepository
-import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
@@ -88,41 +88,37 @@ class AuthServiceConfig {
     @Bean
     @Conditional(LocalAuthCondition::class)
     fun permissionService(
-        userRepository: UserRepository,
         roleRepository: RoleRepository,
         accountRepository: AccountRepository,
-        permissionRepository: PermissionRepository,
-        mongoTemplate: MongoTemplate
+        permissionDao: PermissionDao,
+        userDao: UserDao
     ): PermissionService {
         return PermissionServiceImpl(
-            userRepository,
             roleRepository,
             accountRepository,
-            permissionRepository,
-            mongoTemplate,
+            permissionDao,
+            userDao,
             repositoryClient,
             projectClient
         )
     }
 
-    @Bean
     @Conditional(BkV3RbacAuthCondition::class)
     fun bkiamV3PermissionService(
         bkiamV3Service: BkIamV3Service,
-        userRepository: UserRepository,
+        userDao: UserDao,
         roleRepository: RoleRepository,
         accountRepository: AccountRepository,
-        permissionRepository: PermissionRepository,
-        mongoTemplate: MongoTemplate
+        permissionDao: PermissionDao,
+        repoClient: RepositoryClient
     ): PermissionService {
         return BkIamV3PermissionServiceImpl(
-            userRepository,
+            bkiamV3Service,
+            userDao,
             roleRepository,
             accountRepository,
-            permissionRepository,
-            mongoTemplate,
-            bkiamV3Service,
-            repositoryClient,
+            permissionDao,
+            repoClient,
             projectClient
         )
     }
@@ -130,22 +126,20 @@ class AuthServiceConfig {
     @Bean
     @Conditional(DevopsAuthCondition::class)
     fun bkAuthPermissionService(
-        userRepository: UserRepository,
         roleRepository: RoleRepository,
         accountRepository: AccountRepository,
-        permissionRepository: PermissionRepository,
-        mongoTemplate: MongoTemplate,
+        permissionDao: PermissionDao,
+        userDao: UserDao,
         bkAuthConfig: DevopsAuthConfig,
         bkAuthPipelineService: DevopsPipelineService,
         bkAuthProjectService: DevopsProjectService,
         bkiamV3Service: BkIamV3Service
-        ): PermissionService {
+    ): PermissionService {
         return DevopsPermissionServiceImpl(
-            userRepository,
             roleRepository,
             accountRepository,
-            permissionRepository,
-            mongoTemplate,
+            permissionDao,
+            userDao,
             bkAuthConfig,
             bkAuthPipelineService,
             bkAuthProjectService,
@@ -160,15 +154,13 @@ class AuthServiceConfig {
     fun roleService(
         roleRepository: RoleRepository,
         userService: UserService,
-        userRepository: UserRepository,
-        mongoTemplate: MongoTemplate
-    ) = RoleServiceImpl(roleRepository, userService, userRepository, mongoTemplate)
+        userDao: UserDao
+    ) = RoleServiceImpl(roleRepository, userService, userDao)
 
     @Bean
     @ConditionalOnMissingBean(UserService::class)
     fun userService(
-        userRepository: UserRepository,
         roleRepository: RoleRepository,
-        mongoTemplate: MongoTemplate
-    ) = UserServiceImpl(userRepository, roleRepository, mongoTemplate)
+        userDao: UserDao
+    ) = UserServiceImpl(roleRepository, userDao)
 }

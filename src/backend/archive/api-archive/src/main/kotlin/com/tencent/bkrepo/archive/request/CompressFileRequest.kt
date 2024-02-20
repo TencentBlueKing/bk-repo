@@ -8,6 +8,5 @@ data class CompressFileRequest(
     val baseSha256: String,
     val baseSize: Long,
     val storageCredentialsKey: String?,
-    val sync: Boolean = false,
     val operator: String = SYSTEM_USER,
 )

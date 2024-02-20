@@ -29,6 +29,8 @@ package com.tencent.bkrepo.repository.service.webhook
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
 import com.tencent.bkrepo.common.artifact.constant.LSYNC
@@ -103,14 +105,26 @@ class DevXBkciWebhookListener(
             display = false
         ).toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val req = Request.Builder().url(url).post(body).build()
-        val res = client.newCall(req).execute()
-        if (res.isSuccessful) {
-            logger.info("create remote repo[$projectId/$repoName] success")
-        } else {
-            logger.error(
-                "create remote repo[$projectId/$repoName] failed, " +
-                        "code[${res.code}], msg[${res.body?.string()}]"
-            )
+        client.newCall(req).execute().use { res ->
+            if (res.isSuccessful) {
+                logger.info("create remote repo[$projectId/$repoName] success")
+                return
+            }
+
+            // 输出请求错误日志
+            val msg = res.body?.string()
+            val errorLog = "create remote repo[$projectId/$repoName] failed, code[${res.code}], msg[$msg]"
+            try {
+                val response = msg?.readJsonString<Response<*>>()
+                // 忽略仓库已存在的错误
+                if (response?.code == ArtifactMessageCode.REPOSITORY_EXISTED.getCode()) {
+                    logger.info(errorLog)
+                    return
+                }
+            } catch (ignore: Exception) {
+                // ignore
+            }
+            logger.error(errorLog)
         }
     }
 

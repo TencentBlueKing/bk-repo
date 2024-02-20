@@ -31,15 +31,14 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
-import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_LIST_SUFFIX
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_LIST_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciTagService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
@@ -52,7 +51,7 @@ class OciTagController(private val ociTagService: OciTagService) {
      * 获取blob对应的tag信息
      */
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @RequestMapping("/{projectId}/{repoName}/**$TAGS_LIST_SUFFIX", method = [RequestMethod.GET])
+    @GetMapping(TAGS_LIST_URL)
     fun getTagList(
         artifactInfo: OciTagArtifactInfo,
         @RequestParam n: Int?,

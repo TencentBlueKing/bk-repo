@@ -3,12 +3,15 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
+import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeUncompressedJobProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -31,6 +34,7 @@ class NodeUncompressedJob(
     properties: NodeUncompressedJobProperties,
     val nodeClient: NodeClient,
     val archiveClient: ArchiveClient,
+    val storageService: StorageService,
 ) :
     MongoDbBatchJob<NodeUncompressedJob.CompressFile, NodeContext>(properties) {
     override fun createJobContext(): NodeContext {
@@ -49,6 +53,13 @@ class NodeUncompressedJob(
 
     override fun run(row: CompressFile, collectionName: String, context: NodeContext) {
         with(row) {
+            val storageCredentials = storageCredentialsKey?.let {
+                RepositoryCommonUtils.getStorageCredentials(storageCredentialsKey)
+            }
+            if (!storageService.exist(sha256, storageCredentials)) {
+                logger.warn("Miss file $sha256.")
+                return
+            }
             listNode(sha256, storageCredentialsKey).forEach {
                 val compressedRequest = NodeUnCompressedRequest(
                     projectId = it.projectId,
@@ -92,5 +103,9 @@ class NodeUncompressedJob(
                 .and("deleted").isEqualTo(null),
         )
         return NodeCommonUtils.findNodes(query, storageCredentialsKey)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(NodeUncompressedJob::class.java)
     }
 }

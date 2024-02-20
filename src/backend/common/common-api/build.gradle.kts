@@ -40,4 +40,5 @@ dependencies {
     api("com.fasterxml.jackson.module:jackson-module-parameter-names")
     api("org.apache.commons:commons-compress")
     api("com.google.guava:guava")
+    api("org.springframework.boot:spring-boot-starter-test")
 }

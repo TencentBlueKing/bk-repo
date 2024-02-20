@@ -32,6 +32,8 @@ import com.google.common.cache.CacheLoader
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
@@ -59,13 +61,16 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
+import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
@@ -73,6 +78,9 @@ import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
+import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
+import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.api.ReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
@@ -93,6 +101,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
@@ -139,10 +148,13 @@ class GenericLocalRepository(
     override fun onUpload(context: ArtifactUploadContext) {
         val uploadId = context.request.getHeader(HEADER_UPLOAD_ID)
         val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
+        val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
         if (isBlockUpload(uploadId, sequence)) {
             this.blockUpload(uploadId, sequence!!, context)
             context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(ResponseBuilder.success().toJsonString())
+        } else if (isChunkedUpload(uploadType)) {
+            chunkedUpload(context)
         } else {
             val nodeDetail = storageManager.storeArtifactFile(
                 buildNodeCreateRequest(context),
@@ -163,6 +175,7 @@ class GenericLocalRepository(
             if (remoteClusterIds.isEmpty()) {
                 return
             }
+            // TODO 如果分块上传也进行分发，此处需要修改
             replicaTaskClient.create(ReplicaTaskCreateRequest(
                 name = context.artifactInfo.getArtifactFullPath() +
                     "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
@@ -211,7 +224,8 @@ class GenericLocalRepository(
         val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
         val uploadId = HeaderUtils.getHeader(HEADER_UPLOAD_ID)
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
-        if (!overwrite && !isBlockUpload(uploadId, sequence)) {
+        val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
+        if (!overwrite && !isBlockUpload(uploadId, sequence) && !isChunkedUpload(uploadType)) {
             with(context.artifactInfo) {
                 nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
@@ -556,6 +570,116 @@ class GenericLocalRepository(
         }
         return metadata
     }
+
+
+    /**
+     * 是否使用分块追加上传
+     */
+    private fun isChunkedUpload(uploadType: String?): Boolean {
+        return !uploadType.isNullOrEmpty() && uploadType == CHUNKED_UPLOAD
+    }
+
+    private fun chunkedUpload(context: ArtifactUploadContext) {
+        logger.info("chunked upload method ${context.request.method} ")
+        val responseProperty = when (context.request.method) {
+            HttpMethod.PATCH.name -> patchUpload(context)
+            HttpMethod.PUT.name -> putUpload(context)
+            else -> null
+        } ?: return
+        uploadResponse(responseProperty, context.response)
+    }
+
+    private fun patchUpload(context: ArtifactUploadContext): ChunkedResponseProperty? {
+        require(context.artifactInfo is GenericChunkedArtifactInfo)
+        with(context.artifactInfo as GenericChunkedArtifactInfo) {
+            val range = context.request.getHeader(CONTENT_RANGE)
+            val length = context.request.contentLength
+            logger.info(
+                "The file with range $range and length $length in repo $projectId|$repoName " +
+                    "is being uploaded with uuid: $uuid"
+            )
+
+            val lengthOfAppendFile = storageService.findLengthOfAppendFile(
+                uuid!!, context.repositoryDetail.storageCredentials
+            )
+            logger.info("current length of append file is $lengthOfAppendFile")
+            val (patchLen, status) = when (ChunkedUploadUtils.chunkedRequestCheck(
+                lengthOfAppendFile = lengthOfAppendFile,
+                range = range,
+                contentLength = length
+            )) {
+                ChunkedUploadUtils.RangeStatus.ILLEGAL_RANGE -> {
+                    Pair(length.toLong(), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                }
+                ChunkedUploadUtils.RangeStatus.READY_TO_APPEND -> {
+                    val patchLen = storageService.append(
+                        appendId = uuid!!,
+                        artifactFile = context.getArtifactFile(),
+                        storageCredentials = context.repositoryDetail.storageCredentials
+                    )
+                    logger.info(
+                        "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
+                            "has been uploaded, size of append file is $patchLen and uuid: $uuid"
+                    )
+                    Pair(patchLen, HttpStatus.ACCEPTED)
+                }
+                else -> {
+                    logger.info(
+                        "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
+                            "already appended, size of append file is $lengthOfAppendFile and uuid: $uuid")
+                    Pair(lengthOfAppendFile, HttpStatus.ACCEPTED)
+                }
+            }
+            return ChunkedResponseProperty(
+                status = status,
+                size = patchLen,
+                uuid = uuid!!
+            )
+        }
+    }
+
+    /**
+     * blob PUT上传的逻辑处理
+     * 1 blob POST with PUT 上传的put模块处理
+     * 2 blob POST PATCH with PUT 上传的put模块处理
+     */
+    private fun putUpload(context: ArtifactUploadContext): ChunkedResponseProperty {
+        require(context.artifactInfo is GenericChunkedArtifactInfo)
+        with(context.artifactInfo as GenericChunkedArtifactInfo) {
+            storageService.append(
+                appendId = uuid!!,
+                artifactFile = context.getArtifactFile(),
+                storageCredentials = context.repositoryDetail.storageCredentials
+            )
+
+            // 当传递了 md5和size 以后，分块文件合并时不计算 sha256 与 md5,只校验 size 是否一致
+            val originalFileInfo = if (sha256 != null && md5 != null) {
+                FileInfo(sha256!!, md5!!, size!!)
+            } else {
+                null
+            }
+            val fileInfo = storageService.finishAppend(
+                uuid!!, context.repositoryDetail.storageCredentials, originalFileInfo
+            )
+            logger.info(
+                "The file with sha256 $sha256 in repo $projectId|$repoName " +
+                    "has been uploaded with uuid: $uuid"
+            )
+            val property = ChunkedResponseProperty(
+                status = HttpStatus.CREATED,
+                uuid = uuid,
+                contentLength = 0
+            )
+            val nodeRequest = buildNodeCreateRequest(context).copy(
+                sha256 = fileInfo.sha256,
+                md5 = fileInfo.md5,
+                size = fileInfo.size
+            )
+            nodeClient.createNode(nodeRequest)
+            return property
+        }
+    }
+
 
     companion object {
         private val logger = LoggerFactory.getLogger(GenericLocalRepository::class.java)
