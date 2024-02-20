@@ -40,12 +40,17 @@ class RedisLRUCache(
     private val cacheName: String,
     private val redisTemplate: RedisTemplate<String, String>,
     private var capacity: Int = 0,
-    private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
-) : OrderedCache<String, Long> {
+    private val listeners: MutableList<EldestRemovedListener<String, Any?>> = ArrayList(),
+) : OrderedCache<String, Any?> {
     /**
-     * 记录当前缓存的总大小
+     * 记录当前缓存的总权重
      */
     private val totalWeightKey = "$cacheName:total_weight"
+
+    /**
+     * 记录每个key权重
+     */
+    private val weightKey = "$cacheName:weight"
 
     /**
      * 缓存LRU队列，score为缓存写入时刻的时间戳
@@ -57,34 +62,36 @@ class RedisLRUCache(
      */
     private val hashKey = "$cacheName:hash"
 
-    private val putScript = RedisScript.of(SCRIPT_PUT, Long::class.java)
-    private val getScript = RedisScript.of(SCRIPT_GET, Long::class.java)
-    private val removeScript = RedisScript.of(SCRIPT_REM, Long::class.java)
+    private val putScript = RedisScript.of(SCRIPT_PUT, Any::class.java)
+    private val getScript = RedisScript.of(SCRIPT_GET, Any::class.java)
+    private val removeScript = RedisScript.of(SCRIPT_REM, Any::class.java)
 
     private var maxWeight: Long = 0L
-    private var weightSupplier: ((k: String, v: Long) -> Long) = { _, v -> v }
+    private var weightSupplier: ((k: String, v: Any?) -> Long) = { _, _ -> 0 }
 
-    override fun put(key: String, value: Long?): Long? {
-        require(value != null)
-        val oldVal = redisTemplate.execute(putScript, listOf(zsetKey, hashKey, totalWeightKey), score(), key, value)
+    override fun put(key: String, value: Any?): Any? {
+        val keys = listOf(zsetKey, hashKey, totalWeightKey, weightKey)
+        val weight = weightSupplier.invoke(key, value)
+        val oldVal = redisTemplate.execute(putScript, keys, score(), key, value, weight)
         checkAndEvictEldest()
         return oldVal
     }
 
-    override fun get(key: String): Long? {
+    override fun get(key: String): Any? {
         return redisTemplate.execute(getScript, listOf(zsetKey, hashKey), score(), key)
     }
 
     override fun containsKey(key: String): Boolean {
-        return redisTemplate.opsForHash<String, Long>().hasKey(hashKey, key) ?: false
+        return redisTemplate.opsForHash<String, Any?>().hasKey(hashKey, key) ?: false
     }
 
-    override fun remove(key: String): Long? {
-        return redisTemplate.execute(removeScript, listOf(zsetKey, hashKey, totalWeightKey), key)
+    override fun remove(key: String): Any? {
+        val keys = listOf(zsetKey, hashKey, totalWeightKey, weightKey)
+        return redisTemplate.execute(removeScript, keys, key)
     }
 
     override fun count(): Long {
-        return redisTemplate.opsForHash<String, Long>().size(hashKey) ?: 0L
+        return redisTemplate.opsForHash<String, Any?>().size(hashKey) ?: 0L
     }
 
     override fun weight(): Long {
@@ -103,7 +110,7 @@ class RedisLRUCache(
 
     override fun getCapacity(): Int = capacity
 
-    override fun setKeyWeightSupplier(supplier: (k: String, v: Long) -> Long) {
+    override fun setKeyWeightSupplier(supplier: (k: String, v: Any?) -> Long) {
         this.weightSupplier = supplier
     }
 
@@ -111,17 +118,17 @@ class RedisLRUCache(
         return redisTemplate.opsForZSet().range(zsetKey, 0L, 0L)?.firstOrNull()
     }
 
-    override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Long>) {
+    override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Any?>) {
         this.listeners.add(listener)
     }
 
-    override fun getEldestRemovedListeners(): List<EldestRemovedListener<String, Long>> {
+    override fun getEldestRemovedListeners(): List<EldestRemovedListener<String, Any?>> {
         return listeners
     }
 
     private fun checkAndEvictEldest() {
         val opsForValue = redisTemplate.opsForValue()
-        val opsForHash = redisTemplate.opsForHash<String, Long>()
+        val opsForHash = redisTemplate.opsForHash<String, Any?>()
         while ((opsForValue.get(totalWeightKey)?.toLong() ?: 0L) > maxWeight ||
             (opsForHash.size(hashKey) ?: 0L) > capacity
         ) {
@@ -136,10 +143,11 @@ class RedisLRUCache(
     companion object {
         private const val SCRIPT_PUT = """
             redis.call('ZADD', KEYS[1], ARGV[1], ARGV[2])
-            local oldVal = redis.call('HGET', KEYS[2], ARGV[2])
-            if (oldVal != nil) then
-              redis.call('DECRBY', KEYS[3], oldVal)
+            local oldWeight = redis.call('HGET', KEYS[4], ARGV[2])
+            if (oldWeight != nil) then
+              redis.call('DECRBY', KEYS[3], oldWeight)
             end
+            redis.call('HSET', KEYS[4], ARGV[2], ARGV[4])
             redis.call('HSET', KEYS[2], ARGV[2], ARGV[3])
             redis.call('INCRBY', KEYS[3], ARGV[3])
             return oldVal
@@ -151,12 +159,13 @@ class RedisLRUCache(
         """
 
         private const val SCRIPT_REM = """
-            local oldVal = redis.call('HGET', KEYS[2], ARGV[1])
-            if oldVal == nil then
+            local oldWeight = redis.call('HGET', KEYS[4], ARGV[1])
+            if oldWeight == nil then
               return nil
             end
-            redis.call('DECRBY', KEYS[3], oldVal)
+            redis.call('DECRBY', KEYS[3], oldWeight)
             redis.call('HDEL', KEYS[2], ARGV[1])
+            redis.call('HDEL', KEYS[4], ARGV[1])
             redis.call('ZREM', KEYS[1], ARGV[1])
             return oldVal
         """
