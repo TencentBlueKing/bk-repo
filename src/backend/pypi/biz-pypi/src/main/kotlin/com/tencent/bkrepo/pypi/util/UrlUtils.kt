@@ -33,7 +33,7 @@ package com.tencent.bkrepo.pypi.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 
 object UrlUtils {
     fun getRedirectUrl(domain: String, requestPath: String): String {
