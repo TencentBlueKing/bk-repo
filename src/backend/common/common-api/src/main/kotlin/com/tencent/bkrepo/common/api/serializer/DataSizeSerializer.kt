@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,27 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.artifact.model
+package com.tencent.bkrepo.common.api.serializer
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import org.springframework.util.unit.DataSize
 
-@ApiModel("数据迁移结果")
-data class MigrateDataCreateNode(
-    @ApiModelProperty("创建者")
-    val createdBy: String = "system",
-    @ApiModelProperty("迁移包数量")
-    val packagesNum: Int,
-    @ApiModelProperty("总的文件数量")
-    val filesNum: Int,
-    @ApiModelProperty("执行时间")
-    val elapseTimeSeconds: Long,
-    @ApiModelProperty("错误数据")
-    val errorData: String?,
-    @ApiModelProperty("所属项目id")
-    val projectId: String,
-    @ApiModelProperty("所属仓库名称")
-    val repoName: String,
-    @ApiModelProperty("迁移结果描述")
-    val description: String
-)
+class DataSizeSerializer : StdSerializer<DataSize>(DataSize::class.java) {
+    override fun serialize(value: DataSize?, gen: JsonGenerator?, provider: SerializerProvider?) {
+        if (gen != null && value != null) {
+            gen.writeString(value.toMegabytes().toString() + "MB")
+        }
+    }
+}

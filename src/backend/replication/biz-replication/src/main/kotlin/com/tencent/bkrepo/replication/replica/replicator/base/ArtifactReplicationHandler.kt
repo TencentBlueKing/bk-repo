@@ -319,8 +319,9 @@ abstract class ArtifactReplicationHandler(
                 .add(HttpHeaders.CONTENT_RANGE, "0-${0 + fileInfo.size - 1}")
                 .add(REPOSITORY_INFO, "${context.localProjectId}|${context.localRepoName}")
                 .add(SHA256, fileInfo.sha256)
-                .add(HttpHeaders.CONTENT_LENGTH, "$size")
+                .add(HttpHeaders.CONTENT_LENGTH, fileInfo.size.toString())
                 .add(CHUNKED_UPLOAD, CHUNKED_UPLOAD)
+                .add(SIZE, fileInfo.size.toString())
                 .build()
             val property = RequestProperty(
                 requestBody = patchBody,

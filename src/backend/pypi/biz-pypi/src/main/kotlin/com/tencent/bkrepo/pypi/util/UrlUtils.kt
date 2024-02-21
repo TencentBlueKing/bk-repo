@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,16 +31,12 @@
 
 package com.tencent.bkrepo.pypi.util
 
-import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.URL
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 
-object HttpUtil {
-
-    fun String.downloadUrlHttpClient(): InputStream? {
-        val url = URL(this)
-        val connection = url.openConnection() as HttpURLConnection
-        connection.requestMethod = "GET"
-        return connection.inputStream
+object UrlUtils {
+    fun getRedirectUrl(domain: String, requestPath: String): String {
+        return UrlFormatter.format(domain, requestPath).ensureSuffix(StringPool.SLASH)
     }
 }

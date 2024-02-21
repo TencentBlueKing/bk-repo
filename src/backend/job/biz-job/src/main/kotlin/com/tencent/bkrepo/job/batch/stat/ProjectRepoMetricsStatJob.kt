@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.job.batch.stat
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.job.CREATED_DATE
@@ -40,16 +40,12 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
-import com.tencent.bkrepo.job.batch.utils.TimeUtils
-import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobProperties
+import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -58,17 +54,17 @@ import kotlin.reflect.KClass
 /**
  * 项目仓库指标统计任务
  */
-@Component
-@EnableConfigurationProperties(ProjectRepoMetricsStatJobProperties::class)
-class ProjectRepoMetricsStatJob(
-    private val properties: ProjectRepoMetricsStatJobProperties,
+open class ProjectRepoMetricsStatJob(
+    properties: MongodbJobProperties,
     private val activeProjectService: ActiveProjectService,
+    private val active: Boolean = true,
 ) : DefaultContextMongoDbJob<ProjectRepoMetricsStatJob.Repository>(properties) {
+
     override fun collectionNames(): List<String> {
         return listOf(COLLECTION_REPOSITORY_NAME)
     }
 
-    override fun buildQuery(): Query = Query()
+    override fun buildQuery(): Query = Query(Criteria.where(DELETED_DATE).`is`(null))
 
     override fun mapToEntity(row: Map<String, Any?>): Repository {
         return Repository(row)
@@ -78,12 +74,15 @@ class ProjectRepoMetricsStatJob(
         return Repository::class
     }
 
+    open fun statProjectCheck(
+        projectId: String,
+        context: ProjectRepoMetricsStatJobContext
+    ): Boolean = true
+
     override fun run(row: Repository, collectionName: String, context: JobContext) {
         require(context is ProjectRepoMetricsStatJobContext)
         with(row) {
-            if (deleted != null) return
-            if (context.activeProjects.isNotEmpty() && !properties.runAllProjects &&
-                !context.activeProjects.contains(row.projectId)) return
+            if (!statProjectCheck(projectId, context)) return
             val query = Query(
                 Criteria.where(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(name)
                     .and(PATH).isEqualTo(PathUtils.ROOT).and(DELETED_DATE).isEqualTo(null)
@@ -116,40 +115,31 @@ class ProjectRepoMetricsStatJob(
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
         super.onRunCollectionFinished(collectionName, context)
         require(context is ProjectRepoMetricsStatJobContext)
-        logger.info("start to insert project's metrics ")
-        val projectMetrics = ArrayList<TProjectMetrics>(context.metrics.size)
+        logger.info("start to insert [active: ${this.active}] project's metrics")
         for (entry in context.metrics) {
-            projectMetrics.add(entry.value.toDO(context.statDate))
+            storeMetrics(context.statDate, entry.value.toDO(active, context.statDate))
         }
-        storeMetrics(context.statDate, projectMetrics)
         context.metrics.clear()
-        projectMetrics.clear()
-        logger.info("stat project metrics done")
+        logger.info("stat [active: ${this.active}] project metrics done")
     }
 
     override fun createJobContext(): ProjectRepoMetricsStatJobContext{
         return ProjectRepoMetricsStatJobContext(
             statDate = LocalDate.now().atStartOfDay(),
-            activeProjects = if (properties.runAllProjects) {
-                emptySet()
-            } else {
-                activeProjectService.getActiveProjects()
-            },
+            statProjects = activeProjectService.getActiveProjects()
         )
     }
 
 
-
     private fun storeMetrics(
         statDate: LocalDateTime,
-        projectMetrics: List<TProjectMetrics>
+        projectMetric: TProjectMetrics
     ) {
         // insert project repo metrics
-        val criteria = Criteria.where(CREATED_DATE).isEqualTo(statDate)
+        val criteria = Criteria.where(CREATED_DATE).isEqualTo(statDate).and(PROJECT).`is`(projectMetric.projectId)
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
-        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, COLLECTION_NAME_PROJECT_METRICS)
-            .insert(projectMetrics)
-            .execute()
+        logger.info("stat project: [${projectMetric.projectId}], size: [${projectMetric.capSize}]")
+        mongoTemplate.insert(projectMetric, COLLECTION_NAME_PROJECT_METRICS)
     }
 
     data class Repository(
@@ -157,14 +147,12 @@ class ProjectRepoMetricsStatJob(
         var name: String,
         var type: String,
         var credentialsKey: String = "default",
-        val deleted: LocalDateTime? = null
     ) {
         constructor(map: Map<String, Any?>) : this(
             map[Repository::projectId.name].toString(),
             map[Repository::name.name].toString(),
             map[Repository::type.name].toString(),
             map[Repository::credentialsKey.name]?.toString() ?: "default",
-            map[Repository::deleted.name]?.let { TimeUtils.parseMongoDateTimeStr(it.toString()) }
         )
     }
 

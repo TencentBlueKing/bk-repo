@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.pypi.artifact.repository
 
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -38,12 +40,13 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.pypi.FLUSH_CACHE_EXPIRE
 import com.tencent.bkrepo.pypi.REMOTE_HTML_CACHE_FULL_PATH
 import com.tencent.bkrepo.pypi.XML_RPC_URI
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
+import com.tencent.bkrepo.pypi.constants.PypiQueryType
+import com.tencent.bkrepo.pypi.constants.QUERY_TYPE
 import com.tencent.bkrepo.pypi.exception.PypiRemoteSearchException
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -83,18 +86,11 @@ class PypiRemoteRepository : RemoteRepository() {
     }
 
     override fun query(context: ArtifactQueryContext): Any? {
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "text/html"
-        if (context.artifactInfo.getArtifactFullPath() == "/") {
-            val cacheHtml = getCacheHtml(context) ?: "Can not cache remote html"
-            response.setContentLength(cacheHtml.length)
-            response.writer.print(cacheHtml)
-        } else {
-            val responseStr = remoteRequest(context) ?: ""
-            response.setContentLength(responseStr.length)
-            response.writer.print(responseStr)
+        return when (context.getAttribute<PypiQueryType>(QUERY_TYPE)) {
+            PypiQueryType.PACKAGE_INDEX -> getCacheHtml(context) ?: "Can not cache remote html"
+            PypiQueryType.VERSION_INDEX -> remoteRequest(context) ?: ""
+            else -> throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
         }
-        return null
     }
 
     fun remoteRequest(context: ArtifactQueryContext): String? {
