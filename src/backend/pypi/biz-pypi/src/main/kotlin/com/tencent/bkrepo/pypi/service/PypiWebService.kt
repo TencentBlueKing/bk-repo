@@ -35,14 +35,16 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.pypi.constants.PypiQueryType
+import com.tencent.bkrepo.pypi.constants.QUERY_TYPE
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -55,26 +57,24 @@ import java.time.LocalDateTime
 class PypiWebService(
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient
-) {
+) : ArtifactService() {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun deletePackage(pypiArtifactInfo: PypiArtifactInfo, packageKey: String) {
         val context = ArtifactRemoveContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun delete(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?) {
         val context = ArtifactRemoveContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun artifactDetail(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?): Any? {
         val context = ArtifactQueryContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+        context.putAttribute(QUERY_TYPE, PypiQueryType.VERSION_DETAIL)
         return repository.query(context)
     }
 

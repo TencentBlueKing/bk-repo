@@ -37,4 +37,5 @@ data class MetricFilterInfo(
     val filterValue: String? = null,
     val compareFlag: Boolean = false,
     val deltaPositive: Int? = null,
+    val active: Boolean? = null
 )

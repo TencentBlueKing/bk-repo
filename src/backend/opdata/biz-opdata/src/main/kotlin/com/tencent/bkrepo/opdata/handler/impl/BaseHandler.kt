@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.opdata.handler.impl
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.opdata.constant.ACTIVE
 import com.tencent.bkrepo.opdata.constant.DELTA_POSITIVE
 import com.tencent.bkrepo.opdata.constant.DOCKER_TYPES
 import com.tencent.bkrepo.opdata.constant.DURATION
@@ -55,7 +56,8 @@ import java.time.format.DateTimeFormatter
  *       "startDate":"2023-11-10",
  *       "endDate":"2023-11-14",
  *       "duration":1,
- *       "deltaPositive: 1"  0表示不变的；1 表示增加的；2 表示减少的
+ *       "deltaPositive: 1"  0表示不变的；1 表示增加的；2 表示减少的,
+ *       "active": true"  true表示活跃项目、false 表示非活跃项目、 null表示所有项目
  *       }
  */
 open class BaseHandler(
@@ -68,14 +70,16 @@ open class BaseHandler(
             date = metricFilterInfo.endDate!!,
             target = target.target,
             filterType = metricFilterInfo.filterType,
-            filterValue = metricFilterInfo.filterValue
+            filterValue = metricFilterInfo.filterValue,
+            active = metricFilterInfo.active
         )
         if (!metricFilterInfo.compareFlag) return latestMetricsResult
         val olderMetricsResult = getMetricsResult(
             date = metricFilterInfo.startDate!!,
             target = target.target,
             filterType = metricFilterInfo.filterType,
-            filterValue = metricFilterInfo.filterValue
+            filterValue = metricFilterInfo.filterValue,
+            active = metricFilterInfo.active
         )
         val deltaValue = findDeltaValue(olderMetricsResult, latestMetricsResult)
         return if (metricFilterInfo.deltaPositive == null) {
@@ -94,10 +98,14 @@ open class BaseHandler(
         target: Metrics,
         filterType: FilterType?,
         filterValue: String?,
+        active: Boolean? = null
     ): HashMap<String, Long> {
-        val projectMetrics = MetricsCacheUtil.getProjectMetrics(
+        var projectMetrics = MetricsCacheUtil.getProjectMetrics(
             date.format(DateTimeFormatter.ISO_DATE_TIME)
         )
+        active?.let {
+            projectMetrics = projectMetrics.filter { it.active == active }
+        }
 
         return when (filterType) {
             FilterType.REPO_TYPE -> {
@@ -150,6 +158,7 @@ open class BaseHandler(
         val endDateStr =  reqData?.get(END_DATE) as? String
         val duration =  reqData?.get(DURATION)?.toString()?.toLongOrNull()
         val deltaPositive =  reqData?.get(DELTA_POSITIVE)?.toString()?.toIntOrNull()
+        val active = reqData?.get(ACTIVE)?.toString()?.toBoolean()
 
         val endDate = if (endDateStr.isNullOrEmpty()) {
             statDateModel.getShedLockInfo()
@@ -168,7 +177,8 @@ open class BaseHandler(
             startDate = startDate,
             endDate = endDate,
             compareFlag = !startDateStr.isNullOrEmpty() || duration != null,
-            deltaPositive = deltaPositive
+            deltaPositive = deltaPositive,
+            active = active
         )
     }
 

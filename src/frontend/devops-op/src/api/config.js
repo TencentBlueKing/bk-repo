@@ -14,3 +14,15 @@ export function updateConfig(values, appName = '', profile = '') {
     data
   })
 }
+
+export function getConfig(key, appName = '', profile = '') {
+  return request({
+    url: `${PREFIX}`,
+    method: 'get',
+    params: {
+      appName: appName,
+      profile: profile,
+      key: key
+    }
+  })
+}

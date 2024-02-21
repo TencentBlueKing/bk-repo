@@ -67,6 +67,7 @@ object OciResponseUtils {
     fun getResponseURI(request: HttpServletRequest, enableHttps: Boolean, domain: String): URI {
         val hostHeaders = request.getHeaders(HOST)
         var host = LOCAL_HOST
+        var port: Int? = null
         if (hostHeaders != null) {
             val headers = hostHeaders.toList()
             val parts = (headers[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
@@ -74,9 +75,13 @@ object OciResponseUtils {
         }
         // domain为ip,port组合
         if (domain.split(":").size > 1) {
-            host = domain
+            host = domain.substringBeforeLast(":")
+            port = Integer.valueOf(domain.substringAfterLast(":"))
         }
         val builder = UriBuilder.fromPath(OCI_API_PREFIX).host(host).scheme(getProtocol(request, enableHttps))
+        port?.let {
+            builder.port(port)
+        }
         return builder.build()
     }
 

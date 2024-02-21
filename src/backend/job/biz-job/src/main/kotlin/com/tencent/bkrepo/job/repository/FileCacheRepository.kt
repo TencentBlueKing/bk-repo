@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,23 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.pojo
+package com.tencent.bkrepo.job.repository
 
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.job.pojo.TFileCache
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-data class PypiMigrateResponse<T>(
-    @ApiModelProperty("描述")
-    val description: String,
-    @ApiModelProperty("总的包数量")
-    val totalCount: Int = 0,
-    @ApiModelProperty("迁移成功数量")
-    val successCount: Int = 0,
-    @ApiModelProperty("迁移失败数量")
-    val failCount: Int = 0,
-    @ApiModelProperty("耗时 单位s")
-    val elapseTimeSeconds: Long = 0,
-    @ApiModelProperty("迁移失败数据")
-    val failSet: Set<T?> = emptySet(),
-    @ApiModelProperty("记录写入时间")
-    val taskFinishedTime: String = ""
-)
+@Repository
+interface FileCacheRepository : MongoRepository<TFileCache, String> {
+    fun findAllBy(): List<TFileCache>
+
+    fun findByRepoNameAndProjectIdAndDaysAndSize(
+        repoName: String, projectId: String,days: Int, size: Long ): TFileCache?
+}

@@ -58,6 +58,8 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Optional
 import java.util.concurrent.TimeUnit
@@ -266,10 +268,19 @@ class ProjectMetricsService (
             oneDayBeforeMetrics = oneDayBeforeMetrics,
             oneWeekBeforeMetrics = oneWeekBeforeMetrics,
             oneMonthBeforeMetrics = oneMonthBeforeMetrics,
-            currentProjectUsageStatistics = projectUsageStatisticsService.sumRecentDays(1L),
-            oneWeekBeforeProjectUsageStatistics = projectUsageStatisticsService.sumRecentDays(7L),
-            oneMonthBeforeProjectUsageStatistics = projectUsageStatisticsService.sumRecentDays(30L),
+            currentProjectUsageStatistics = sumRecentDaysUsage(createdDate, 1L),
+            oneWeekBeforeProjectUsageStatistics = sumRecentDaysUsage(createdDate, 7L),
+            oneMonthBeforeProjectUsageStatistics = sumRecentDaysUsage(createdDate, 30L),
         )
+    }
+
+    private fun sumRecentDaysUsage(createDate: LocalDateTime, days: Long): Map<String, ProjectUsageStatistics> {
+        val start = createDate.minusDays(days - 1).toLocalDate().atStartOfDay()
+            .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val end = createDate.toLocalDate().atStartOfDay()
+            .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // 默认查询时不会包含end，此处需要包含end这个时间点的数据，因此加1
+        return projectUsageStatisticsService.sum(start, end + 1L)
     }
 
     private fun getMetricsResult(

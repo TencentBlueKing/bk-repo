@@ -52,7 +52,7 @@ open class ProjectUsageStatisticsServiceImpl(
         throw UnsupportedOperationException()
     }
 
-    override fun sumRecentDays(days: Long): Map<String, ProjectUsageStatistics> {
+    override fun sum(start: Long, end: Long): Map<String, ProjectUsageStatistics> {
         throw UnsupportedOperationException()
     }
 }
