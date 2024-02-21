@@ -132,13 +132,12 @@ class FileReferenceCleanupJob(
      * @return true表示存在节点，false表示不存在
      */
     private fun existNode(sha256: String, key: String?): Boolean {
-        // 1. 通过布隆过滤器，快速判断节点是否存在。（大部分判断应该在这里终止，即大部分引用是正确的）
-        if (!bf.mightContain(sha256)) {
-            return false
-        }
-        // 2. 真实判断存储实例的节点是否存在。（引用不正确的情况或者布隆过滤器的误报）
+        /*
+        * 1. 通过布隆过滤器，快速判断节点是否存在。（大部分判断应该在这里终止，即大部分引用是正确的）
+        * 2. 真实判断存储实例的节点是否存在。（引用不正确的情况或者布隆过滤器的误报）
+        * */
         val query = Query(where(Node::sha256).isEqualTo(sha256))
-        return NodeCommonUtils.findNodes(query, key).isNotEmpty()
+        return bf.mightContain(sha256) && NodeCommonUtils.findNodes(query, key).isNotEmpty()
     }
 
     private fun buildBloomFilter(): BloomFilter<CharSequence> {
