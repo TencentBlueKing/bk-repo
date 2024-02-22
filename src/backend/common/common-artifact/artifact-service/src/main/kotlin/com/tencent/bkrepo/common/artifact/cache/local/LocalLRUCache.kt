@@ -30,24 +30,27 @@ package com.tencent.bkrepo.common.artifact.cache.local
 import com.tencent.bkrepo.common.artifact.cache.EldestRemovedListener
 import com.tencent.bkrepo.common.artifact.cache.OrderedCache
 
-/**
- * 线程不安全
- */
 class LocalLRUCache(
     private var capacity: Int = 0,
-    private val listeners: MutableList<EldestRemovedListener<String, Any?>> = ArrayList(),
-) : LinkedHashMap<String, Any?>((capacity / 0.75f).toInt() + 1, 0.75f, true), OrderedCache<String, Any?> {
+    private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
+) : LinkedHashMap<String, Long>((capacity / 0.75f).toInt() + 1, 0.75f, true), OrderedCache<String, Long> {
 
     private var maxWeight: Long = 0L
     private var totalWeight: Long = 0L
-    private var weightSupplier: ((k: String, v: Any?) -> Long) = { _, _ ->  0 }
+    private var weightSupplier: ((k: String, v: Long) -> Long) = { _, _ -> 0 }
 
-    override fun put(key: String, value: Any?): Any? {
+    @Synchronized
+    override fun put(key: String, value: Long): Long? {
         totalWeight += weightSupplier.invoke(key, value)
         return super.put(key, value)
     }
 
-    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Any?>): Boolean {
+    @Synchronized
+    override fun get(key: String): Long? {
+        return super.get(key)
+    }
+
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Long>): Boolean {
         val shouldRemove = shouldRemove()
         if (shouldRemove) {
             totalWeight -= weightSupplier.invoke(eldest.key, eldest.value)
@@ -56,11 +59,12 @@ class LocalLRUCache(
         return shouldRemove
     }
 
-    override fun remove(key: String): Any? {
+    @Synchronized
+    override fun remove(key: String): Long? {
         return super.remove(key)?.also { totalWeight -= weightSupplier.invoke(key, it) }
     }
 
-    override fun setKeyWeightSupplier(supplier: (k: String, v: Any?) -> Long) {
+    override fun setKeyWeightSupplier(supplier: (k: String, v: Long) -> Long) {
         weightSupplier = supplier
     }
 
@@ -87,7 +91,7 @@ class LocalLRUCache(
         return (field.get(this) as? Map.Entry<String, Any?>)?.key
     }
 
-    override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Any?>) {
+    override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Long>) {
         listeners.add(listener)
     }
 

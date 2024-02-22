@@ -31,5 +31,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("artifact.cache.eviction")
 data class ArtifactCacheEvictionProperties(
-    var enabled: Boolean = false
-)
+    var enabled: Boolean = false,
+    var cacheType: String = CACHE_TYPE_LOCAL
+) {
+    companion object {
+        const val CACHE_TYPE_LOCAL = "LOCAL"
+        const val CACHE_TYPE_REDIS = "REDIS"
+    }
+}

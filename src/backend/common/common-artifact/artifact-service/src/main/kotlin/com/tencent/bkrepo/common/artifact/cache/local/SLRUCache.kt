@@ -38,7 +38,7 @@ abstract class SLRUCache<K, V>(
 
     protected abstract val protected: OrderedCache<K, V>
 
-    override fun put(key: K, value: V?): V? {
+    override fun put(key: K, value: V): V? {
         return when {
             protected.containsKey(key) -> {
                 protected.put(key, value)
@@ -69,7 +69,7 @@ abstract class SLRUCache<K, V>(
 
         if (probation.containsKey(key)) {
             // 晋级到protected lru
-            val oldVal = probation.remove(key)
+            val oldVal = probation.remove(key)!!
             protected.put(key, oldVal)
             return oldVal
         }
@@ -127,7 +127,7 @@ abstract class SLRUCache<K, V>(
     protected class ProtectedLRUEldestRemovedListener<K, V>(
         private val probationLru: OrderedCache<K, V>
     ) : EldestRemovedListener<K, V> {
-        override fun onEldestRemoved(key: K, value: V?) {
+        override fun onEldestRemoved(key: K, value: V) {
             probationLru.put(key, value)
         }
     }
@@ -135,7 +135,7 @@ abstract class SLRUCache<K, V>(
     protected class ProbationLRUEldestRemovedListener<K, V>(
         private val parentListeners: List<EldestRemovedListener<K, V>>,
     ) : EldestRemovedListener<K, V> {
-        override fun onEldestRemoved(key: K, value: V?) {
+        override fun onEldestRemoved(key: K, value: V) {
             parentListeners.forEach { it.onEldestRemoved(key, value) }
         }
     }

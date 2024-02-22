@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.artifact.cache
 
 interface OrderedCache<K, V> {
-    fun put(key: K, value: V?): V?
+    fun put(key: K, value: V): V?
     fun get(key: K): V?
     fun containsKey(key: K): Boolean
 
@@ -77,5 +77,5 @@ interface OrderedCache<K, V> {
 }
 
 interface EldestRemovedListener<K, V> {
-    fun onEldestRemoved(key: K, value: V?)
+    fun onEldestRemoved(key: K, value: V)
 }

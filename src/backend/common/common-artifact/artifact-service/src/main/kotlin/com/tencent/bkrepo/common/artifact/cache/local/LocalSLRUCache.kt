@@ -31,8 +31,8 @@ import com.tencent.bkrepo.common.artifact.cache.EldestRemovedListener
 
 class LocalSLRUCache(
     capacity: Int = 0,
-    listeners: MutableList<EldestRemovedListener<String, Any?>> = ArrayList()
-) : SLRUCache<String, Any?>(listeners) {
+    listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList()
+) : SLRUCache<String, Long>(listeners) {
 
     override val probation = LocalLRUCache(
         (capacity * FACTOR_PROBATION).toInt(),
@@ -43,4 +43,19 @@ class LocalSLRUCache(
         (capacity * FACTOR_PROTECTED).toInt(),
         mutableListOf(ProtectedLRUEldestRemovedListener(probation))
     )
+
+    @Synchronized
+    override fun put(key: String, value: Long): Long? {
+        return super.put(key, value)
+    }
+
+    @Synchronized
+    override fun get(key: String): Long? {
+        return super.get(key)
+    }
+
+    @Synchronized
+    override fun remove(key: String): Long? {
+        return super.remove(key)
+    }
 }

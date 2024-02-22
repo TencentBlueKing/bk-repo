@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 open class DefaultArtifactCacheCleaner(
-    private val cacheFactory: OrderedCachedFactory<String, Any?>,
+    private val cacheFactory: OrderedCachedFactory<String, Long>,
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
     private val storageService: CacheStorageService,
@@ -54,7 +54,7 @@ open class DefaultArtifactCacheCleaner(
     private val artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
 ) : ArtifactCacheCleaner {
 
-    private val storageCacheMap = ConcurrentHashMap<String, OrderedCache<String, Any?>>()
+    private val storageCacheMap = ConcurrentHashMap<String, OrderedCache<String, Long>>()
 
     @Async
     override fun onCacheAccessed(projectId: String, repoName: String, fullPath: String) {
@@ -78,7 +78,6 @@ open class DefaultArtifactCacheCleaner(
         getCache(storageKey).remove(sha256)
     }
 
-    @Synchronized
     open fun onCacheAccessed(storageKey: String, sha256: String, size: Long) {
         if (!artifactCacheEvictionProperties.enabled || sha256 == FAKE_SHA256) {
             return
@@ -101,7 +100,7 @@ open class DefaultArtifactCacheCleaner(
         }
     }
 
-    private fun refreshCacheProperties(cache: OrderedCache<String, Any?>, credentials: StorageCredentials) {
+    private fun refreshCacheProperties(cache: OrderedCache<String, Long>, credentials: StorageCredentials) {
         cache.setMaxWeight(credentials.cache.maxSize)
         cache.getEldestRemovedListeners().forEach {
             if (it is StorageEldestRemovedListener) {
@@ -110,7 +109,7 @@ open class DefaultArtifactCacheCleaner(
         }
     }
 
-    private fun getCache(storageKey: String): OrderedCache<String, Any?> {
+    private fun getCache(storageKey: String): OrderedCache<String, Long> {
         return storageCacheMap.getOrPut(storageKey) {
             val credentials = getStorageCredentials(storageKey)
             val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
@@ -135,8 +134,8 @@ open class DefaultArtifactCacheCleaner(
         private var storageCredentials: StorageCredentials,
         private val fileLocator: FileLocator,
         private val storageService: CacheStorageService,
-    ) : EldestRemovedListener<String, Any?> {
-        override fun onEldestRemoved(key: String, value: Any?) {
+    ) : EldestRemovedListener<String, Long> {
+        override fun onEldestRemoved(key: String, value: Long) {
             val path = fileLocator.locate(key)
             storageService.deleteCacheFile(path, key, storageCredentials)
         }

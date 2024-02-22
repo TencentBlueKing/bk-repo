@@ -40,17 +40,12 @@ class RedisLRUCache(
     private val cacheName: String,
     private val redisTemplate: RedisTemplate<String, String>,
     private var capacity: Int = 0,
-    private val listeners: MutableList<EldestRemovedListener<String, Any?>> = ArrayList(),
-) : OrderedCache<String, Any?> {
+    private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
+) : OrderedCache<String, Long> {
     /**
      * 记录当前缓存的总权重
      */
     private val totalWeightKey = "$cacheName:total_weight"
-
-    /**
-     * 记录每个key权重
-     */
-    private val weightKey = "$cacheName:weight"
 
     /**
      * 缓存LRU队列，score为缓存写入时刻的时间戳
@@ -62,36 +57,35 @@ class RedisLRUCache(
      */
     private val hashKey = "$cacheName:hash"
 
-    private val putScript = RedisScript.of(SCRIPT_PUT, Any::class.java)
-    private val getScript = RedisScript.of(SCRIPT_GET, Any::class.java)
-    private val removeScript = RedisScript.of(SCRIPT_REM, Any::class.java)
+    private val putScript = RedisScript.of(SCRIPT_PUT, Long::class.java)
+    private val getScript = RedisScript.of(SCRIPT_GET, Long::class.java)
+    private val removeScript = RedisScript.of(SCRIPT_REM, Long::class.java)
 
     private var maxWeight: Long = 0L
-    private var weightSupplier: ((k: String, v: Any?) -> Long) = { _, _ -> 0 }
 
-    override fun put(key: String, value: Any?): Any? {
-        val keys = listOf(zsetKey, hashKey, totalWeightKey, weightKey)
-        val weight = weightSupplier.invoke(key, value)
-        val oldVal = redisTemplate.execute(putScript, keys, score(), key, value, weight)
+    override fun put(key: String, value: Long): Long? {
+        val keys = listOf(zsetKey, hashKey, totalWeightKey)
+        val args = listOf(score(), key, value)
+        val oldVal = redisTemplate.execute(putScript, keys, args)
         checkAndEvictEldest()
         return oldVal
     }
 
-    override fun get(key: String): Any? {
+    override fun get(key: String): Long? {
         return redisTemplate.execute(getScript, listOf(zsetKey, hashKey), score(), key)
     }
 
     override fun containsKey(key: String): Boolean {
-        return redisTemplate.opsForHash<String, Any?>().hasKey(hashKey, key) ?: false
+        return redisTemplate.opsForHash<String, Long>().hasKey(hashKey, key)
     }
 
-    override fun remove(key: String): Any? {
-        val keys = listOf(zsetKey, hashKey, totalWeightKey, weightKey)
+    override fun remove(key: String): Long? {
+        val keys = listOf(zsetKey, hashKey, totalWeightKey)
         return redisTemplate.execute(removeScript, keys, key)
     }
 
     override fun count(): Long {
-        return redisTemplate.opsForHash<String, Any?>().size(hashKey) ?: 0L
+        return redisTemplate.opsForHash<String, Long>().size(hashKey)
     }
 
     override fun weight(): Long {
@@ -105,33 +99,30 @@ class RedisLRUCache(
     override fun getMaxWeight(): Long = maxWeight
 
     override fun setCapacity(capacity: Int) {
-        this.capacity = capacity
+        throw UnsupportedOperationException()
     }
 
     override fun getCapacity(): Int = capacity
 
-    override fun setKeyWeightSupplier(supplier: (k: String, v: Any?) -> Long) {
-        this.weightSupplier = supplier
+    override fun setKeyWeightSupplier(supplier: (k: String, v: Long) -> Long) {
+        throw UnsupportedOperationException()
     }
 
     override fun eldestKey(): String? {
         return redisTemplate.opsForZSet().range(zsetKey, 0L, 0L)?.firstOrNull()
     }
 
-    override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Any?>) {
+    override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Long>) {
         this.listeners.add(listener)
     }
 
-    override fun getEldestRemovedListeners(): List<EldestRemovedListener<String, Any?>> {
+    override fun getEldestRemovedListeners(): List<EldestRemovedListener<String, Long>> {
         return listeners
     }
 
     private fun checkAndEvictEldest() {
         val opsForValue = redisTemplate.opsForValue()
-        val opsForHash = redisTemplate.opsForHash<String, Any?>()
-        while ((opsForValue.get(totalWeightKey)?.toLong() ?: 0L) > maxWeight ||
-            (opsForHash.size(hashKey) ?: 0L) > capacity
-        ) {
+        while ((opsForValue.get(totalWeightKey)?.toLong() ?: 0L) > maxWeight) {
             val eldestKey = eldestKey()
             val value = eldestKey?.let { remove(it) }
             value?.let { listeners.forEach { it.onEldestRemoved(eldestKey, value) } }
@@ -141,33 +132,49 @@ class RedisLRUCache(
     private fun score() = System.currentTimeMillis().toDouble()
 
     companion object {
+        const val FACTOR_PROBATION = 0.2
+        const val FACTOR_PROTECTED = 0.8
+
         private const val SCRIPT_PUT = """
-            redis.call('ZADD', KEYS[1], ARGV[1], ARGV[2])
-            local oldWeight = redis.call('HGET', KEYS[4], ARGV[2])
+            local z = KEYS[1]
+            local h = KEYS[2]
+            local w = KEYS[3]
+            local s = ARGV[1]
+            local k = ARGV[2]
+            local v = ARGV[3]
+            
+            redis.call('ZADD', z, s, k)
+            local oldWeight = redis.call('HGET', h, k)
             if (oldWeight != nil) then
-              redis.call('DECRBY', KEYS[3], oldWeight)
+              redis.call('DECRBY', w, oldWeight)
             end
-            redis.call('HSET', KEYS[4], ARGV[2], ARGV[4])
-            redis.call('HSET', KEYS[2], ARGV[2], ARGV[3])
-            redis.call('INCRBY', KEYS[3], ARGV[3])
-            return oldVal
+            redis.call('HSET', h, k, v)
+            redis.call('INCRBY', w, v)
+            return oldWeight
         """
 
         private const val SCRIPT_GET = """
-            redis.call('ZADD', KEYS[1], ARGV[1], ARGV[2])
-            return redis.call('HGET', KEYS[2], ARGV[2])
+            local z = KEYS[1]
+            local h = KEYS[2]
+            local s = ARGV[1]
+            local k = ARGV[2]
+            redis.call('ZADD', z, s, k)
+            return redis.call('HGET', h, k)
         """
 
         private const val SCRIPT_REM = """
-            local oldWeight = redis.call('HGET', KEYS[4], ARGV[1])
+            local z = KEYS[1]
+            local h = KEYS[2]
+            local w = KEYS[3]
+            local k = ARGV[1]
+            local oldWeight = redis.call('HGET', h, k)
             if oldWeight == nil then
               return nil
             end
-            redis.call('DECRBY', KEYS[3], oldWeight)
-            redis.call('HDEL', KEYS[2], ARGV[1])
-            redis.call('HDEL', KEYS[4], ARGV[1])
-            redis.call('ZREM', KEYS[1], ARGV[1])
-            return oldVal
+            redis.call('DECRBY', w, oldWeight)
+            redis.call('HDEL', h, k)
+            redis.call('ZREM', z, k)
+            return oldWeight
         """
     }
 }

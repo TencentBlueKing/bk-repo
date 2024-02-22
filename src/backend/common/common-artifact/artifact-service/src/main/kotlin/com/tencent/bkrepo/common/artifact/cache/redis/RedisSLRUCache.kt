@@ -28,27 +28,292 @@
 package com.tencent.bkrepo.common.artifact.cache.redis
 
 import com.tencent.bkrepo.common.artifact.cache.EldestRemovedListener
-import com.tencent.bkrepo.common.artifact.cache.local.SLRUCache
+import com.tencent.bkrepo.common.artifact.cache.OrderedCache
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.script.RedisScript
 
+/**
+ * 基于Redis实现的SLRU，缓存满后将异步清理
+ */
 class RedisSLRUCache(
     cacheName: String,
-    redisTemplate: RedisTemplate<String, String>,
-    capacity: Int = 0,
-    listeners: MutableList<EldestRemovedListener<String, Any?>> = ArrayList(),
-) : SLRUCache<String, Any?>(listeners) {
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val capacity: Int = 0,
+    private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
+) : OrderedCache<String, Long> {
 
-    override val probation = RedisLRUCache(
-        "$cacheName:probation",
-        redisTemplate,
-        (capacity * FACTOR_PROBATION).toInt(),
-        mutableListOf(ProbationLRUEldestRemovedListener(listeners))
-    )
+    /**
+     * 记录当前缓存的总权重
+     */
+    private val totalWeightKey = "$cacheName:slru:total_weight"
+    private val protectedTotalWeightKey = "$cacheName:slru:total_weight_protected"
+    private val probationTotalWeightKey = "$cacheName:slru:total_weight_probation"
 
-    override val protected = RedisLRUCache(
-        "$cacheName:protected",
-        redisTemplate,
-        (capacity * FACTOR_PROTECTED).toInt(),
-        mutableListOf(ProtectedLRUEldestRemovedListener(probation))
-    )
+    /**
+     * 缓存LRU队列，score为缓存写入时刻的时间戳
+     */
+    private val protectedLruKey = "$cacheName:slru:protected_lru"
+    private val probationLruKey = "$cacheName:slru:probation_lru"
+
+    /**
+     * 存放缓存实际值
+     */
+    private val protectedHashKey = "$cacheName:slru:protected_values"
+    private val probationHashKey = "$cacheName:slru:probation_values"
+
+    private val putScript = RedisScript.of(SCRIPT_PUT, Long::class.java)
+    private val evictProtectedScript = RedisScript.of(SCRIPT_EVICT_PROTECTED, String::class.java)
+    private val evictProbationScript = RedisScript.of(SCRIPT_EVICT_PROBATION, List::class.java)
+    private val getScript = RedisScript.of(SCRIPT_GET, Long::class.java)
+    private val removeScript = RedisScript.of(SCRIPT_REMOVE, Long::class.java)
+
+    private var maxWeight: Long = 0L
+    private var protectedMaxWeight: Long = 0L
+    private var probationMaxWeight: Long = 0L
+
+    override fun put(key: String, value: Long): Long? {
+        val keys = listOf(
+            protectedLruKey, protectedHashKey, protectedTotalWeightKey,
+            probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
+        )
+        val score = System.currentTimeMillis().toDouble()
+        val oldVal = redisTemplate.execute(putScript, keys, score, key, value)
+        checkAndEvictEldest()
+        return oldVal
+    }
+
+    override fun get(key: String): Long? {
+        val keys = listOf(
+            protectedLruKey, protectedHashKey, protectedTotalWeightKey,
+            probationLruKey, probationHashKey, probationTotalWeightKey
+        )
+        return redisTemplate.execute(getScript, keys, System.currentTimeMillis().toDouble(), key)
+    }
+
+    override fun containsKey(key: String): Boolean {
+        val ops = redisTemplate.opsForHash<String, Long>()
+        return ops.hasKey(protectedHashKey, key) || ops.hasKey(probationHashKey, key)
+    }
+
+    override fun remove(key: String): Long? {
+        val keys = listOf(
+            protectedLruKey, protectedHashKey, protectedTotalWeightKey,
+            probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
+        )
+        return redisTemplate.execute(removeScript, keys, key)
+    }
+
+    override fun count(): Long {
+        val ops = redisTemplate.opsForHash<String, Long>()
+        return ops.size(protectedHashKey) + ops.size(probationHashKey)
+    }
+
+    override fun weight(): Long {
+        return redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L
+    }
+
+    @Synchronized
+    override fun setMaxWeight(max: Long) {
+        this.maxWeight = max
+        this.protectedMaxWeight = (max * RedisLRUCache.FACTOR_PROTECTED).toLong()
+        this.probationMaxWeight = (max * RedisLRUCache.FACTOR_PROBATION).toLong()
+    }
+
+    override fun getMaxWeight(): Long {
+        return maxWeight
+    }
+
+    override fun setCapacity(capacity: Int) {
+        throw UnsupportedOperationException()
+    }
+
+    override fun getCapacity(): Int {
+        return capacity
+    }
+
+    override fun eldestKey(): String? {
+        return redisTemplate.opsForZSet().range(probationLruKey, 0L, 0L)?.firstOrNull()
+            ?: redisTemplate.opsForZSet().range(protectedLruKey, 0L, 0L)?.firstOrNull()
+    }
+
+    override fun getEldestRemovedListeners(): List<EldestRemovedListener<String, Long>> {
+        return listeners
+    }
+
+    @Synchronized
+    override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Long>) {
+        listeners.add(listener)
+    }
+
+    override fun setKeyWeightSupplier(supplier: (k: String, v: Long) -> Long) {
+        throw UnsupportedOperationException()
+    }
+
+    private fun checkAndEvictEldest() {
+        while ((redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight) {
+            evictProtected()
+            evictProbation()
+        }
+    }
+
+    private fun evictProtected() {
+        if ((redisTemplate.opsForValue().get(protectedTotalWeightKey)?.toLong() ?: 0L) > protectedMaxWeight) {
+            val keys = listOf(
+                protectedLruKey, protectedHashKey, protectedTotalWeightKey,
+                probationLruKey, probationHashKey, probationTotalWeightKey
+            )
+            redisTemplate.execute(evictProtectedScript, keys, System.currentTimeMillis().toDouble())
+        }
+    }
+
+    private fun evictProbation() {
+        if ((redisTemplate.opsForValue().get(probationTotalWeightKey)?.toLong() ?: 0L) > probationMaxWeight) {
+            val keys = listOf(probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey)
+            redisTemplate.execute(evictProbationScript, keys)?.let { evicted ->
+                require(evicted.size == 2)
+                listeners.forEach { it.onEldestRemoved(evicted[0].toString(), evicted[1].toString().toLong()) }
+            }
+        }
+    }
+
+    companion object {
+        private const val SCRIPT_PUT = """
+            local z1 = KEYS[1]
+            local h1 = KEYS[2]
+            local w1 = KEYS[3]
+            local z2 = KEYS[4]
+            local h2 = KEYS[5]
+            local w2 = KEYS[6]
+            local w = KEYS[7]
+            local s = ARGV[1]
+            local k = ARGV[2]
+            local v = ARGV[3]
+            
+            if (redis.call('HEXISTS', h1, k)) then
+              redis.call('ZADD', z1, s, k)
+              redis.call('HSET', h1, k, v)
+              return v
+            end
+            
+            if (redis.call('HEXISTS', h2, k)) then
+              redis.call('ZREM', z2, k)
+              redis.call('HDEL', h2, k)
+              redis.call('DECRBY', w2, v)
+              redis.call('ZADD', z1, k)
+              redis.call('HSET', h1, k, v)
+              redis.call('INCRBY', w1, v)
+              return v
+            end
+            
+            redis.call('ZADD', z2, s, k)
+            redis.call('HSET', h2, k, v)
+            redis.call('INCRBY', w2, v)
+            redis.call('INCRBY', w, v)
+            return nil
+        """
+
+        private const val SCRIPT_EVICT_PROTECTED = """
+            local z1 = KEYS[1]
+            local h1 = KEYS[2]
+            local w1 = KEYS[3]
+            local z2 = KEYS[4]
+            local h2 = KEYS[5]
+            local w2 = KEYS[6]
+            local s = ARGV[1]
+            local keys = redis.call('ZRANGE', z1, 0, 0)
+            if (keys[0] != nil) then
+              local k = keys[0]
+              redis.call('ZREM', z1, k)
+              local oldWeight = redis.call('HGET', h1, k)
+              redis.call('HDEL', h1, k)
+              redis.call('DECRBY', w1, oldWeight)
+              redis.call('ZADD', z2, k, s)
+              redis.call('HSET', h2, k, oldWeight)
+              redis.call('INCRBY', w2, oldWeight)
+            end
+        """
+
+        private const val SCRIPT_EVICT_PROBATION = """
+            local z2 = KEYS[1]
+            local h2 = KEYS[2]
+            local w2 = KEYS[3]
+            local w = KEYS[4]
+            local keys = redis.call('ZRANGE', z2, 0, 0)
+            if (keys[0] != nil) then
+              local k = keys[0]
+              redis.call('ZREM', z2, k)
+              local oldWeight = redis.call('HGET', h2, k)
+              redis.call('HDEL', h2, k)
+              redis.call('DECRBY', w2, oldWeight)
+              redis.call('DECRBY', w, oldWeight)
+              local result = {}
+              result[0] = k
+              result[1] = oldWeight
+              return result
+            end
+            return nil
+        """
+
+        private const val SCRIPT_GET = """
+            local z1 = KEYS[1]
+            local h1 = KEYS[2]
+            local w1 = KEYS[3]
+            local z2 = KEYS[4]
+            local h2 = KEYS[5]
+            local w2 = KEYS[6]
+            local s = ARGV[1]
+            local k = ARGV[2]
+            
+            local v = redis.call('HGET', h1, k)
+            if (v != nil) then
+              redis.call('ZADD', z1, s, k)
+              return v
+            end
+            
+            v = redis.call('HGET', h2, k)
+            if (v != nil) then
+              redis.call('ZREM', z2, k)
+              redis.call('HDEL', h2, k)
+              redis.call('DECRBY', w2, v)
+              
+              redis.call('ZADD', z1, s, k)
+              redis.call('HSET', h1, k, v)
+              redis.call('INCRBY', w1, v)
+              return v
+            end
+            
+            return nil
+        """
+
+        private const val SCRIPT_REMOVE = """
+            local z1 = KEYS[1]
+            local h1 = KEYS[2]
+            local w1 = KEYS[3]
+            local z2 = KEYS[4]
+            local h2 = KEYS[5]
+            local w2 = KEYS[6]
+            local w = KEYS[7]
+            local k = ARGV[1]
+        
+            local oldWeight = redis.call('HGET', h1, k)
+            if (oldWeight != nil) then
+              redis.call('ZREM', z1, k)
+              redis.call('HDEL', h1, k)
+              redis.call('DECRBY', w1, oldWeight)
+              redis.call('DECRBY', w, oldWeight)
+              return oldWeight
+            end
+            
+            oldWeight = redis.call('HGET', h2, k)
+            if (oldWeight != nil) then
+              redis.call('ZREM', z2, k)
+              redis.call('HDEL', h2, k)
+              redis.call('DECRBY', w2, oldWeight)
+              redis.call('DECRBY', w, oldWeight)
+              return oldWeight
+            end
+            
+            return nil
+        """
+    }
 }

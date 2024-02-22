@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.common.artifact.cache
 
-import com.tencent.bkrepo.common.artifact.cache.local.LocalCountMinSketchCounter
-import com.tencent.bkrepo.common.artifact.cache.local.LocalWTinyLFUCache
+import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheEvictionProperties.Companion.CACHE_TYPE_LOCAL
+import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheEvictionProperties.Companion.CACHE_TYPE_REDIS
+import com.tencent.bkrepo.common.artifact.cache.local.LocalSLRUCache
+import com.tencent.bkrepo.common.artifact.cache.redis.RedisSLRUCache
+import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
@@ -36,16 +39,22 @@ import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.redis.core.RedisTemplate
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ArtifactCacheEvictionProperties::class)
+@AutoConfigureAfter(StorageAutoConfiguration::class)
 class ArtifactCacheConfiguration {
     @Bean
+    @ConditionalOnBean(OrderedCachedFactory::class, CacheStorageService::class)
     fun storageCacheCleaner(
-        cacheFactory: OrderedCachedFactory<String, Any?>,
+        cacheFactory: OrderedCachedFactory<String, Long>,
         nodeClient: NodeClient,
         repositoryClient: RepositoryClient,
         storageService: CacheStorageService,
@@ -67,13 +76,30 @@ class ArtifactCacheConfiguration {
     }
 
     @Bean
-    fun cacheFactory(): OrderedCachedFactory<String, Any?> {
-        return object : OrderedCachedFactory<String, Any?> {
-            override fun create(cacheProperties: CacheProperties): OrderedCache<String, Any?> {
-                return LocalWTinyLFUCache(0, LocalCountMinSketchCounter()).apply {
+    @ConditionalOnProperty(prefix = "artifact.cache.eviction", name = ["cacheType"], havingValue = CACHE_TYPE_LOCAL)
+    fun localCacheFactory(): OrderedCachedFactory<String, Long> {
+        return object : OrderedCachedFactory<String, Long> {
+            override fun create(cacheProperties: CacheProperties): OrderedCache<String, Long> {
+                return LocalSLRUCache(0).apply {
                     setMaxWeight(cacheProperties.maxSize)
                     setKeyWeightSupplier { _, v -> v.toString().toLong() }
                 }
+            }
+        }
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "artifact.cache.eviction", name = ["cacheType"], havingValue = CACHE_TYPE_REDIS)
+    @ConditionalOnBean(RedisTemplate::class)
+    fun redisCacheFactory(
+        redisTemplate: RedisTemplate<String, String>
+    ): OrderedCachedFactory<String, Long> {
+        return object : OrderedCachedFactory<String, Long> {
+            override fun create(cacheProperties: CacheProperties): OrderedCache<String, Long> {
+                val cacheName = cacheProperties.path.replace("/", "__")
+                val cache = RedisSLRUCache(cacheName, redisTemplate, 0)
+                cache.setMaxWeight(cacheProperties.maxSize)
+                return cache
             }
         }
     }
