@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
@@ -63,6 +64,7 @@ open class NodeDeleteSupport(
     val nodeDao: NodeDao = nodeBaseService.nodeDao
     val quotaService: QuotaService = nodeBaseService.quotaService
     val routerControllerClient: RouterControllerClient = nodeBaseService.routerControllerClient
+    val routerControllerProperties: RouterControllerProperties = nodeBaseService.routerControllerProperties
 
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
         with(deleteRequest) {
@@ -199,7 +201,9 @@ open class NodeDeleteSupport(
             deletedSize = nodeBaseService.aggregateComputeSize(criteria.and(TNode::deleted).isEqualTo(deleteTime))
             quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             fullPaths?.forEach {
-                routerControllerClient.removeNodes(projectId, repoName, it)
+                if (routerControllerProperties.enabled) {
+                    routerControllerClient.removeNodes(projectId, repoName, it)
+                }
                 publishEvent(buildDeletedEvent(projectId, repoName, it, operator))
             }
         } catch (exception: DuplicateKeyException) {
@@ -211,6 +215,7 @@ open class NodeDeleteSupport(
         )
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
+
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeDeleteSupport::class.java)

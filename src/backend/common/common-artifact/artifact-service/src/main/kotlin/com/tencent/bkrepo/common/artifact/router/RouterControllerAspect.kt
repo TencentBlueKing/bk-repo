@@ -37,6 +37,7 @@ import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpMethod
 import org.springframework.scheduling.annotation.Scheduled
 
@@ -46,6 +47,7 @@ import org.springframework.scheduling.annotation.Scheduled
  * 只有GET方法的下载制品构件请求才会转发，策略每3s更新一次。
  * */
 @Aspect
+@ConditionalOnProperty("router.controller.enabled", havingValue = "true")
 open class RouterControllerAspect(
     private val properties: RouterControllerProperties,
     private val routerControllerClient: RouterControllerClient,

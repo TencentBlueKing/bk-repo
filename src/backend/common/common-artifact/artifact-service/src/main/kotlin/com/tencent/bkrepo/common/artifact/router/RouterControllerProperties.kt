@@ -31,6 +31,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("router.controller")
 data class RouterControllerProperties(
+    var enabled: Boolean = false,
     /**
      * 支持路由转发的服务名
      * */

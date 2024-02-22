@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -104,7 +105,8 @@ abstract class NodeBaseService(
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
     open val servicePermissionClient: ServicePermissionClient,
-    open val routerControllerClient: RouterControllerClient
+    open val routerControllerClient: RouterControllerClient,
+    open val routerControllerProperties: RouterControllerProperties
 ) : NodeService {
 
     @Autowired
