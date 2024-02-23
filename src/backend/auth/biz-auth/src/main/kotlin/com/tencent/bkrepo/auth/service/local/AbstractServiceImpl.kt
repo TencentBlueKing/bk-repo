@@ -87,7 +87,7 @@ open class AbstractServiceImpl constructor(
         userIdList.forEach {
             userDao.findFirstByUserId(it) ?: run {
                 if (it != ANONYMOUS_USER) {
-                    var user = TUser(
+                    val user = TUser(
                         userId = it,
                         name = it,
                         pwd = randomPassWord()
@@ -216,7 +216,7 @@ open class AbstractServiceImpl constructor(
 
     fun addUserToRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
         logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
-        checkUserExistBatch(userIdList)
+        checkOrCreateUser(userIdList)
         checkRoleExist(roleId)
         userDao.addRoleToUsers(userIdList, roleId)
         return true
