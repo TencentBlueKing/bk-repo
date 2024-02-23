@@ -162,7 +162,6 @@ open class ServiceBaseTest {
         whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull(), any()))
             .then {}
         whenever(resourcePermissionListener.handle(any<ProjectCreatedEvent>())).then {}
-//        whenever(routerControllerClient.)
     }
 
     fun initRepoForUnitTest(

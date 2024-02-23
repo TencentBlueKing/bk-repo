@@ -37,5 +37,5 @@ enum class RouterControllerMessageCode(private val key: String) : MessageCode {
 
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key
-    override fun getModuleCode() = 25
+    override fun getModuleCode() = 5
 }
