@@ -1,15 +1,17 @@
 package com.tencent.bkrepo.archive.job
 
 import com.tencent.bkrepo.archive.job.archive.DiskHealthObserver
+import com.tencent.bkrepo.common.api.concurrent.ComparableFutureTask
+import com.tencent.bkrepo.common.api.concurrent.PriorityCallableTask
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.StorageUtils
 import org.slf4j.LoggerFactory
+import org.springframework.core.Ordered
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -24,7 +26,8 @@ class FileStorageFileProvider(
     private val highWaterMark: Long,
     private val lowWaterMark: Long,
     private val executor: Executor,
-) : FileProvider, DiskHealthObserver {
+    private val checkInterval: Long = CHECK_INTERVAL,
+) : PriorityFileProvider, DiskHealthObserver {
 
     /**
      * 下载器的状态，true表示活跃，false表示不活跃，即暂时下载
@@ -35,7 +38,7 @@ class FileStorageFileProvider(
 
     init {
         require(lowWaterMark < highWaterMark)
-        Flux.interval(Duration.ofMillis(CHECK_INTERVAL))
+        Flux.interval(Duration.ofMillis(checkInterval))
             .map {
                 val diskFreeInBytes = fileDir.toFile().usableSpace
                 val threshold = if (status.get()) lowWaterMark else highWaterMark
@@ -57,22 +60,46 @@ class FileStorageFileProvider(
             }
     }
 
-    override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials): Mono<File> {
+    override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials, priority: Int): Mono<File> {
         val filePath = fileDir.resolve(sha256)
         if (Files.exists(filePath)) {
             return Mono.just(filePath.toFile())
         }
-        return Mono.fromCallable {
-            logger.info("Downloading $sha256 on ${storageCredentials.key}")
-            if (!Files.exists(filePath)) {
-                download(sha256, range, storageCredentials, filePath)
+        return Mono.create {
+            val task = PriorityCallableTask<File>(priority) {
+                try {
+                    val file = doDownload(sha256, storageCredentials, filePath, range)
+                    it.success(file)
+                    file
+                } catch (e: Exception) {
+                    it.error(e)
+                    throw e
+                }
             }
-            val file = filePath.toFile()
-            if (range != Range.FULL_RANGE) {
-                check(range.length == file.length())
-            }
-            file
-        }.publishOn(Schedulers.fromExecutor(executor))
+            val futureTask = ComparableFutureTask(task)
+            executor.execute(futureTask)
+        }
+    }
+
+    private fun doDownload(
+        sha256: String,
+        storageCredentials: StorageCredentials,
+        filePath: Path,
+        range: Range,
+    ): File {
+        logger.info("Downloading $sha256 on ${storageCredentials.key}")
+        if (!Files.exists(filePath)) {
+            download(sha256, range, storageCredentials, filePath)
+        }
+        val file = filePath.toFile()
+        if (range != Range.FULL_RANGE) {
+            check(range.length == file.length())
+        }
+        return file
+    }
+
+    override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials): Mono<File> {
+        return get(sha256, range, storageCredentials, Ordered.LOWEST_PRECEDENCE)
     }
 
     private fun download(sha256: String, range: Range, storageCredentials: StorageCredentials, filePath: Path) {
