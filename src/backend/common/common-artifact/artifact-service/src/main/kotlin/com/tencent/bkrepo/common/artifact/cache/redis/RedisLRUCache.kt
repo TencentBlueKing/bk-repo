@@ -65,7 +65,7 @@ class RedisLRUCache(
 
     override fun put(key: String, value: Long): Long? {
         val keys = listOf(zsetKey, hashKey, totalWeightKey)
-        val args = listOf(score(), key, value)
+        val args = listOf(score(), key, value.toString())
         val oldVal = redisTemplate.execute(putScript, keys, args)
         checkAndEvictEldest()
         return oldVal
@@ -129,7 +129,7 @@ class RedisLRUCache(
         }
     }
 
-    private fun score() = System.currentTimeMillis().toDouble()
+    private fun score() = System.currentTimeMillis().toString()
 
     companion object {
         const val FACTOR_PROBATION = 0.2
@@ -145,7 +145,7 @@ class RedisLRUCache(
             
             redis.call('ZADD', z, s, k)
             local oldWeight = redis.call('HGET', h, k)
-            if (oldWeight != nil) then
+            if oldWeight then
               redis.call('DECRBY', w, oldWeight)
             end
             redis.call('HSET', h, k, v)

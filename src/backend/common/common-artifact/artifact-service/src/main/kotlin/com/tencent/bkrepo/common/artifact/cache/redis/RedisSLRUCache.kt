@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.artifact.cache.redis
 
 import com.tencent.bkrepo.common.artifact.cache.EldestRemovedListener
 import com.tencent.bkrepo.common.artifact.cache.OrderedCache
+import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.RedisScript
 
@@ -61,23 +62,23 @@ class RedisSLRUCache(
     private val protectedHashKey = "$cacheName:slru:protected_values"
     private val probationHashKey = "$cacheName:slru:probation_values"
 
-    private val putScript = RedisScript.of(SCRIPT_PUT, Long::class.java)
+    private val putScript = RedisScript.of(SCRIPT_PUT, String::class.java)
     private val evictProtectedScript = RedisScript.of(SCRIPT_EVICT_PROTECTED, String::class.java)
     private val evictProbationScript = RedisScript.of(SCRIPT_EVICT_PROBATION, List::class.java)
-    private val getScript = RedisScript.of(SCRIPT_GET, Long::class.java)
-    private val removeScript = RedisScript.of(SCRIPT_REMOVE, Long::class.java)
+    private val getScript = RedisScript.of(SCRIPT_GET, String::class.java)
+    private val removeScript = RedisScript.of(SCRIPT_REMOVE, String::class.java)
 
     private var maxWeight: Long = 0L
     private var protectedMaxWeight: Long = 0L
     private var probationMaxWeight: Long = 0L
 
     override fun put(key: String, value: Long): Long? {
+        logger.info("put [$key] to cache, size[$value]")
         val keys = listOf(
             protectedLruKey, protectedHashKey, protectedTotalWeightKey,
             probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
         )
-        val score = System.currentTimeMillis().toDouble()
-        val oldVal = redisTemplate.execute(putScript, keys, score, key, value)
+        val oldVal = redisTemplate.execute(putScript, keys, score(), key, value.toString())?.toLong()
         checkAndEvictEldest()
         return oldVal
     }
@@ -87,7 +88,7 @@ class RedisSLRUCache(
             protectedLruKey, protectedHashKey, protectedTotalWeightKey,
             probationLruKey, probationHashKey, probationTotalWeightKey
         )
-        return redisTemplate.execute(getScript, keys, System.currentTimeMillis().toDouble(), key)
+        return redisTemplate.execute(getScript, keys, score(), key)?.toLong()
     }
 
     override fun containsKey(key: String): Boolean {
@@ -100,7 +101,7 @@ class RedisSLRUCache(
             protectedLruKey, protectedHashKey, protectedTotalWeightKey,
             probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
         )
-        return redisTemplate.execute(removeScript, keys, key)
+        return redisTemplate.execute(removeScript, keys, key)?.toLong()
     }
 
     override fun count(): Long {
@@ -150,9 +151,14 @@ class RedisSLRUCache(
     }
 
     private fun checkAndEvictEldest() {
+        var count = 0
         while ((redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight) {
+            count++
             evictProtected()
             evictProbation()
+        }
+        if (count > 0) {
+            logger.info("$count key was evicted")
         }
     }
 
@@ -162,7 +168,7 @@ class RedisSLRUCache(
                 protectedLruKey, protectedHashKey, protectedTotalWeightKey,
                 probationLruKey, probationHashKey, probationTotalWeightKey
             )
-            redisTemplate.execute(evictProtectedScript, keys, System.currentTimeMillis().toDouble())
+            redisTemplate.execute(evictProtectedScript, keys, score())
         }
     }
 
@@ -171,12 +177,17 @@ class RedisSLRUCache(
             val keys = listOf(probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey)
             redisTemplate.execute(evictProbationScript, keys)?.let { evicted ->
                 require(evicted.size == 2)
+                logger.info("$evicted was evicted")
                 listeners.forEach { it.onEldestRemoved(evicted[0].toString(), evicted[1].toString().toLong()) }
             }
         }
     }
 
+    private fun score() = System.currentTimeMillis().toString()
+
     companion object {
+        private val logger = LoggerFactory.getLogger(RedisSLRUCache::class.java)
+
         private const val SCRIPT_PUT = """
             local z1 = KEYS[1]
             local h1 = KEYS[2]
@@ -189,17 +200,17 @@ class RedisSLRUCache(
             local k = ARGV[2]
             local v = ARGV[3]
             
-            if (redis.call('HEXISTS', h1, k)) then
+            if (redis.call('HEXISTS', h1, k) == 1) then
               redis.call('ZADD', z1, s, k)
               redis.call('HSET', h1, k, v)
               return v
             end
             
-            if (redis.call('HEXISTS', h2, k)) then
+            if (redis.call('HEXISTS', h2, k) == 1) then
               redis.call('ZREM', z2, k)
               redis.call('HDEL', h2, k)
               redis.call('DECRBY', w2, v)
-              redis.call('ZADD', z1, k)
+              redis.call('ZADD', z1, s, k)
               redis.call('HSET', h1, k, v)
               redis.call('INCRBY', w1, v)
               return v
@@ -221,13 +232,13 @@ class RedisSLRUCache(
             local w2 = KEYS[6]
             local s = ARGV[1]
             local keys = redis.call('ZRANGE', z1, 0, 0)
-            if (keys[0] != nil) then
-              local k = keys[0]
+            if keys[1] then
+              local k = keys[1]
               redis.call('ZREM', z1, k)
               local oldWeight = redis.call('HGET', h1, k)
               redis.call('HDEL', h1, k)
               redis.call('DECRBY', w1, oldWeight)
-              redis.call('ZADD', z2, k, s)
+              redis.call('ZADD', z2, s, k)
               redis.call('HSET', h2, k, oldWeight)
               redis.call('INCRBY', w2, oldWeight)
             end
@@ -239,17 +250,14 @@ class RedisSLRUCache(
             local w2 = KEYS[3]
             local w = KEYS[4]
             local keys = redis.call('ZRANGE', z2, 0, 0)
-            if (keys[0] != nil) then
-              local k = keys[0]
+            if keys[1] then
+              local k = keys[1]
               redis.call('ZREM', z2, k)
               local oldWeight = redis.call('HGET', h2, k)
               redis.call('HDEL', h2, k)
               redis.call('DECRBY', w2, oldWeight)
               redis.call('DECRBY', w, oldWeight)
-              local result = {}
-              result[0] = k
-              result[1] = oldWeight
-              return result
+              return {k, oldWeight}
             end
             return nil
         """
@@ -265,13 +273,13 @@ class RedisSLRUCache(
             local k = ARGV[2]
             
             local v = redis.call('HGET', h1, k)
-            if (v != nil) then
+            if v then
               redis.call('ZADD', z1, s, k)
               return v
             end
             
             v = redis.call('HGET', h2, k)
-            if (v != nil) then
+            if v then
               redis.call('ZREM', z2, k)
               redis.call('HDEL', h2, k)
               redis.call('DECRBY', w2, v)
@@ -296,7 +304,7 @@ class RedisSLRUCache(
             local k = ARGV[1]
         
             local oldWeight = redis.call('HGET', h1, k)
-            if (oldWeight != nil) then
+            if oldWeight then
               redis.call('ZREM', z1, k)
               redis.call('HDEL', h1, k)
               redis.call('DECRBY', w1, oldWeight)
@@ -305,7 +313,7 @@ class RedisSLRUCache(
             end
             
             oldWeight = redis.call('HGET', h2, k)
-            if (oldWeight != nil) then
+            if oldWeight then
               redis.call('ZREM', z2, k)
               redis.call('HDEL', h2, k)
               redis.call('DECRBY', w2, oldWeight)
