@@ -1,17 +1,22 @@
 package com.tencent.bkrepo.archive.job
 
+import com.tencent.bkrepo.archive.job.archive.DiskHealthObserver
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.StorageUtils
 import org.slf4j.LoggerFactory
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.util.concurrent.Executor
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.system.measureNanoTime
 
 class FileStorageFileProvider(
@@ -19,7 +24,38 @@ class FileStorageFileProvider(
     private val highWaterMark: Long,
     private val lowWaterMark: Long,
     private val executor: Executor,
-) : FileProvider {
+) : FileProvider, DiskHealthObserver {
+
+    /**
+     * 下载器的状态，true表示活跃，false表示不活跃，即暂时下载
+     * */
+    private var status = AtomicBoolean(true)
+    private val lock = ReentrantLock()
+    private val available = lock.newCondition()
+
+    init {
+        require(lowWaterMark < highWaterMark)
+        Flux.interval(Duration.ofMillis(CHECK_INTERVAL))
+            .map {
+                val diskFreeInBytes = fileDir.toFile().usableSpace
+                val threshold = if (status.get()) lowWaterMark else highWaterMark
+                val result = diskFreeInBytes < threshold
+                if (result) {
+                    logger.info(
+                        "Free disk space below threshold. Available: " +
+                            "$diskFreeInBytes bytes (threshold: $threshold).",
+                    )
+                }
+                result
+            }
+            .subscribe {
+                if (it) {
+                    this.unHealthy()
+                } else {
+                    this.healthy()
+                }
+            }
+    }
 
     override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials): Mono<File> {
         val filePath = fileDir.resolve(sha256)
@@ -51,21 +87,39 @@ class FileStorageFileProvider(
     }
 
     private fun checkDiskSpace() {
-        var diskFreeInBytes = fileDir.toFile().usableSpace
-        val msg = "Free disk space below threshold.Available: %s bytes (threshold: %s)."
-        if (diskFreeInBytes < lowWaterMark) {
-            logger.info("Free disk below low water mark. ${msg.format(diskFreeInBytes, lowWaterMark)}")
-            while (diskFreeInBytes < highWaterMark) {
-                logger.info(msg.format(diskFreeInBytes, highWaterMark))
-                Thread.sleep(CHECK_INTERVAL)
-                diskFreeInBytes = fileDir.toFile().usableSpace
+        if (!status.get()) {
+            lock.lock()
+            try {
+                logger.info("Pause download")
+                available.await()
+                logger.info("Continue download")
+            } finally {
+                lock.unlock()
             }
+        }
+    }
+
+    override fun healthy() {
+        if (status.compareAndSet(false, true)) {
+            lock.lock()
+            try {
+                available.signalAll()
+            } finally {
+                lock.unlock()
+            }
+            logger.info("FileProvider change to active.")
+        }
+    }
+
+    override fun unHealthy() {
+        if (status.compareAndSet(true, false)) {
+            logger.info("FileProvider change to inactive.")
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(FileStorageFileProvider::class.java)
         private const val RETRY_TIMES = 3
-        private const val CHECK_INTERVAL = 10 * 60000L
+        private const val CHECK_INTERVAL = 60000L
     }
 }
