@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
@@ -92,7 +93,8 @@ import org.springframework.test.context.TestPropertySource
     ProxyChannelDao::class,
     HttpAuthProperties::class,
     SpringContextUtils::class,
-    NodeDao::class
+    NodeDao::class,
+    RouterControllerProperties::class
 )
 @ComponentScan("com.tencent.bkrepo.repository.service")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
@@ -127,6 +129,7 @@ open class ServiceBaseTest {
 
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
+
 
     fun initMock() {
         val tracer = mockk<OtelTracer>()
