@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.evication
 
-interface OrderedCache<K, V> {
+interface StorageCacheEvictStrategy<K, V> {
     fun put(key: K, value: V): V?
     fun get(key: K): V?
     fun containsKey(key: K): Boolean

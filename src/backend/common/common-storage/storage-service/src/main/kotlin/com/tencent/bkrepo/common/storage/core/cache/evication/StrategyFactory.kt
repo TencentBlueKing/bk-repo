@@ -30,9 +30,9 @@ package com.tencent.bkrepo.common.storage.core.cache.evication
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 
 /**
- * 缓存工厂类，用于为不同存储分别创建缓存
+ * 缓存驱逐策略工厂类，用于为不同存储分别创建缓存
  */
-interface OrderedCachedFactory<K, V> {
+interface StrategyFactory<K, V> {
     /**
      * 创建缓存
      *
@@ -40,5 +40,5 @@ interface OrderedCachedFactory<K, V> {
      *
      * @return 缓存
      */
-    fun create(cacheProperties: CacheProperties): OrderedCache<K, V>
+    fun create(cacheProperties: CacheProperties): StorageCacheEvictStrategy<K, V>
 }

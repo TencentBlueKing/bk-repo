@@ -25,28 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication
+package com.tencent.bkrepo.common.storage.core.cache.evication.local
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
 
-/**
- * 缓存清理器，用于记录缓存访问情况，在缓存达到限制大小时清理存储层缓存
- */
-interface StorageCacheCleaner {
-    /**
-     *  缓存被访问时的回调，用于缓存清理决策
-     *
-     *  @param credentials 缓存所在存储
-     *  @param sha256 缓存文件sha256
-     *  @param size 缓存文件大小
-     */
-    fun onCacheAccessed(credentials: StorageCredentials, sha256: String, size: Long)
+class LocalSLRUCacheEvictStrategy(
+    capacity: Int = 0,
+    listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList()
+) : SLRUCacheEvictStrategy<String, Long>(listeners) {
 
-    /**
-     * 存储层缓存被删除时调用
-     *
-     * @param credentials 缓存所在的存储
-     * @param sha256 被删除的缓存文件的sha256
-     */
-    fun onCacheDeleted(credentials: StorageCredentials, sha256: String)
+    override val probation = LocalLRUCacheEvictStrategy(
+        (capacity * FACTOR_PROBATION).toInt(),
+        mutableListOf(ProbationLRUEldestRemovedListener(listeners))
+    )
+
+    override val protected = LocalLRUCacheEvictStrategy(
+        (capacity * FACTOR_PROTECTED).toInt(),
+        mutableListOf(ProtectedLRUEldestRemovedListener(probation))
+    )
+
+    @Synchronized
+    override fun put(key: String, value: Long): Long? {
+        return super.put(key, value)
+    }
+
+    @Synchronized
+    override fun get(key: String): Long? {
+        return super.get(key)
+    }
+
+    @Synchronized
+    override fun remove(key: String): Long? {
+        return super.remove(key)
+    }
 }

@@ -37,14 +37,14 @@ import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import java.util.concurrent.ConcurrentHashMap
 
-open class DefaultStorageCacheCleaner(
-    private val cacheFactory: OrderedCachedFactory<String, Long>,
+open class DefaultStorageCacheEvictor(
+    private val cacheFactory: StrategyFactory<String, Long>,
     private val storageService: CacheStorageService,
     private val fileLocator: FileLocator,
     private val storageCacheEvictionProperties: StorageCacheEvictionProperties,
-) : StorageCacheCleaner {
+) : StorageCacheEvictor {
 
-    private val storageCacheMap = ConcurrentHashMap<String, OrderedCache<String, Long>>()
+    private val storageCacheMap = ConcurrentHashMap<String, StorageCacheEvictStrategy<String, Long>>()
 
     @Async
     override fun onCacheDeleted(credentials: StorageCredentials, sha256: String) {
@@ -71,7 +71,7 @@ open class DefaultStorageCacheCleaner(
         }
     }
 
-    private fun getCache(credentials: StorageCredentials): OrderedCache<String, Long> {
+    private fun getCache(credentials: StorageCredentials): StorageCacheEvictStrategy<String, Long> {
         val cache = storageCacheMap.getOrPut(credentials.cache.path) {
             val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
             cacheFactory.create(credentials.cache).apply { addEldestRemovedListener(listener) }
@@ -80,7 +80,7 @@ open class DefaultStorageCacheCleaner(
         return cache
     }
 
-    private fun refreshCacheProperties(cache: OrderedCache<String, Long>, credentials: StorageCredentials) {
+    private fun refreshCacheProperties(cache: StorageCacheEvictStrategy<String, Long>, credentials: StorageCredentials) {
         cache.setMaxWeight(credentials.cache.maxSize)
         cache.getEldestRemovedListeners().forEach {
             if (it is StorageEldestRemovedListener) {
@@ -106,6 +106,6 @@ open class DefaultStorageCacheCleaner(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DefaultStorageCacheCleaner::class.java)
+        private val logger = LoggerFactory.getLogger(DefaultStorageCacheEvictor::class.java)
     }
 }

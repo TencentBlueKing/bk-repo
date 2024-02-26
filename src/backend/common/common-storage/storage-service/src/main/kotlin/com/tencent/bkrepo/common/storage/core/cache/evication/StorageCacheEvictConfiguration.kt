@@ -32,8 +32,8 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictionProperties.Companion.CACHE_TYPE_LOCAL
 import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictionProperties.Companion.CACHE_TYPE_REDIS
-import com.tencent.bkrepo.common.storage.core.cache.evication.local.LocalSLRUCache
-import com.tencent.bkrepo.common.storage.core.cache.evication.redis.RedisSLRUCache
+import com.tencent.bkrepo.common.storage.core.cache.evication.local.LocalSLRUCacheEvictStrategy
+import com.tencent.bkrepo.common.storage.core.cache.evication.redis.RedisSLRUCacheEvictStrategy
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -47,13 +47,13 @@ class StorageCacheEvictConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "storage.cache.eviction", name = ["enabled"])
     fun storageCacheCleaner(
-        cacheFactory: OrderedCachedFactory<String, Long>,
+        cacheFactory: StrategyFactory<String, Long>,
         storageService: CacheStorageService,
         fileLocator: FileLocator,
         storageProperties: StorageProperties,
         storageCacheEvictionProperties: StorageCacheEvictionProperties,
-    ): StorageCacheCleaner {
-        return DefaultStorageCacheCleaner(
+    ): StorageCacheEvictor {
+        return DefaultStorageCacheEvictor(
             cacheFactory,
             storageService,
             fileLocator,
@@ -63,10 +63,10 @@ class StorageCacheEvictConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "storage.cache.eviction", name = ["cacheType"], havingValue = CACHE_TYPE_LOCAL)
-    fun localCacheFactory(): OrderedCachedFactory<String, Long> {
-        return object : OrderedCachedFactory<String, Long> {
-            override fun create(cacheProperties: CacheProperties): OrderedCache<String, Long> {
-                return LocalSLRUCache(0).apply {
+    fun localCacheFactory(): StrategyFactory<String, Long> {
+        return object : StrategyFactory<String, Long> {
+            override fun create(cacheProperties: CacheProperties): StorageCacheEvictStrategy<String, Long> {
+                return LocalSLRUCacheEvictStrategy(0).apply {
                     setMaxWeight(cacheProperties.maxSize)
                     setKeyWeightSupplier { _, v -> v.toString().toLong() }
                 }
@@ -78,11 +78,11 @@ class StorageCacheEvictConfiguration {
     @ConditionalOnProperty(prefix = "storage.cache.eviction", name = ["cacheType"], havingValue = CACHE_TYPE_REDIS)
     fun redisCacheFactory(
         redisTemplate: RedisTemplate<String, String>
-    ): OrderedCachedFactory<String, Long> {
-        return object : OrderedCachedFactory<String, Long> {
-            override fun create(cacheProperties: CacheProperties): OrderedCache<String, Long> {
+    ): StrategyFactory<String, Long> {
+        return object : StrategyFactory<String, Long> {
+            override fun create(cacheProperties: CacheProperties): StorageCacheEvictStrategy<String, Long> {
                 val cacheName = cacheProperties.path.replace("/", "__")
-                val cache = RedisSLRUCache(cacheName, redisTemplate, 0)
+                val cache = RedisSLRUCacheEvictStrategy(cacheName, redisTemplate, 0)
                 cache.setMaxWeight(cacheProperties.maxSize)
                 return cache
             }

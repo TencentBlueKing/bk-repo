@@ -34,7 +34,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheCleaner
+import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictor
 import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictionProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.slf4j.LoggerFactory
@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component
 @Component
 class ArtifactCacheAccessListener(
     private val storageCacheEvictionProperties: StorageCacheEvictionProperties,
-    private val storageCacheCleanerProvider: ObjectProvider<StorageCacheCleaner>,
+    private val storageCacheEvictorProvider: ObjectProvider<StorageCacheEvictor>,
     private val storageProperties: StorageProperties,
 ) {
     @EventListener(ArtifactUploadedEvent::class)
@@ -83,7 +83,7 @@ class ArtifactCacheAccessListener(
         if (cacheEnabled == true) {
             val credentials = storageCredentials ?: storageProperties.defaultStorageCredentials()
             val node = resource.node!!
-            storageCacheCleanerProvider.ifAvailable?.onCacheAccessed(credentials, node.sha256!!, node.size)
+            storageCacheEvictorProvider.ifAvailable?.onCacheAccessed(credentials, node.sha256!!, node.size)
         }
     }
 
@@ -93,7 +93,7 @@ class ArtifactCacheAccessListener(
                 val credentials = storageCredentials ?: storageProperties.defaultStorageCredentials()
                 val node = resource.nodes.firstOrNull { name.endsWith(it.name) }
                 node?.let {
-                    storageCacheCleanerProvider.ifAvailable?.onCacheAccessed(credentials, it.sha256!!, it.size)
+                    storageCacheEvictorProvider.ifAvailable?.onCacheAccessed(credentials, it.sha256!!, it.size)
                 }
             }
         }
@@ -106,8 +106,8 @@ class ArtifactCacheAccessListener(
             }
             val repo = ArtifactContextHolder.getRepoDetail() ?: return
             val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
-            val artifactCacheCleaner = storageCacheCleanerProvider.ifAvailable
-            artifactCacheCleaner?.onCacheAccessed(credentials, artifactFile.getFileSha256(), artifactFile.getSize())
+            val storageCacheEvictor = storageCacheEvictorProvider.ifAvailable
+            storageCacheEvictor?.onCacheAccessed(credentials, artifactFile.getFileSha256(), artifactFile.getSize())
         } catch (ignore: Exception) {
             logger.warn("failed to record artifact cache access", ignore)
         }

@@ -29,30 +29,33 @@ package com.tencent.bkrepo.common.storage.core.cache.evication.redis
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
-import com.tencent.bkrepo.common.storage.core.cache.evication.OrderedCache
+import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictStrategy
+import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.RedisScript
-import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.Executors
+import java.util.concurrent.Semaphore
 
 /**
  * 基于Redis实现的分布式LRU缓存
  * 为了避免阻塞提高性能，缓存满时将会异步执行LRU策略进行缓存清理，此时依然可以继续存放数据，可能会出现缓存大小超过限制的情况
  */
-class RedisLRUCache(
+class RedisLRUCacheEvictStrategy(
     private val cacheName: String,
     private val redisTemplate: RedisTemplate<String, String>,
     private var capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
-) : OrderedCache<String, Long> {
+) : StorageCacheEvictStrategy<String, Long> {
 
-    private val evictExecutor = ThreadPoolExecutor(
-        1, 1, 0L, TimeUnit.MILLISECONDS,
-        LinkedBlockingDeque(1000),
-        ThreadFactoryBuilder().setNameFormat("storage-cache-evict-redis-lru-%d").build(),
-        ThreadPoolExecutor.CallerRunsPolicy()
+    private val evictExecutor = Executors.newSingleThreadExecutor(
+        ThreadFactoryBuilder().setNameFormat("storage-cache-evict-redis-lru-%d").build()
     )
+
+    /**
+     * 用于通知淘汰线程开始淘汰缓存的信号量
+     */
+    private val evictSemaphore = Semaphore(0)
+
 
     /**
      * 记录当前缓存的总权重
@@ -75,11 +78,27 @@ class RedisLRUCache(
 
     private var maxWeight: Long = 0L
 
+    init {
+        evictExecutor.execute {
+            while (true) {
+                evictSemaphore.acquire()
+                try {
+                    evict()
+                } catch (e: Exception) {
+                    logger.error("evict failed", e)
+                }
+                evictSemaphore.drainPermits()
+            }
+        }
+    }
+
     override fun put(key: String, value: Long): Long? {
         val keys = listOf(zsetKey, hashKey, totalWeightKey)
         val args = listOf(score(), key, value.toString())
         val oldVal = redisTemplate.execute(putScript, keys, args)
-        checkAndEvictEldest()
+        if (shouldEvict()) {
+            evictSemaphore.release()
+        }
         return oldVal
     }
 
@@ -132,16 +151,11 @@ class RedisLRUCache(
         return listeners
     }
 
-    private fun checkAndEvictEldest() {
-        if (!shouldEvict()) {
-            return
-        }
-        evictExecutor.execute {
-            while (shouldEvict()) {
-                val eldestKey = eldestKey()
-                val value = eldestKey?.let { remove(it) }
-                value?.let { listeners.forEach { it.onEldestRemoved(eldestKey, value) } }
-            }
+    private fun evict() {
+        while (shouldEvict()) {
+            val eldestKey = eldestKey()
+            val value = eldestKey?.let { remove(it) }
+            value?.let { listeners.forEach { it.onEldestRemoved(eldestKey, value) } }
         }
     }
 
@@ -150,8 +164,7 @@ class RedisLRUCache(
     private fun score() = System.currentTimeMillis().toString()
 
     companion object {
-        const val FACTOR_PROBATION = 0.2
-        const val FACTOR_PROTECTED = 0.8
+        private val logger = LoggerFactory.getLogger(RedisLRUCacheEvictStrategy::class.java)
 
         private const val SCRIPT_PUT = """
             local z = KEYS[1]

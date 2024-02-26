@@ -28,12 +28,12 @@
 package com.tencent.bkrepo.common.storage.core.cache.evication.local
 
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
-import com.tencent.bkrepo.common.storage.core.cache.evication.OrderedCache
+import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictStrategy
 
-class LocalLRUCache(
+class LocalLRUCacheEvictStrategy(
     private var capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
-) : LinkedHashMap<String, Long>((capacity / 0.75f).toInt() + 1, 0.75f, true), OrderedCache<String, Long> {
+) : LinkedHashMap<String, Long>((capacity / 0.75f).toInt() + 1, 0.75f, true), StorageCacheEvictStrategy<String, Long> {
 
     private var maxWeight: Long = 0L
     private var totalWeight: Long = 0L
