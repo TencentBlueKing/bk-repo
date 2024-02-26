@@ -332,7 +332,7 @@ open class AbstractChartService : ArtifactService() {
             result.records.forEach {
                 try {
                     ChartParserUtil.addIndexEntries(indexYamlMetadata, createChartMetadata(it, artifactInfo))
-                } catch (ex: HelmFileNotFoundException) {
+                } catch (ex: Exception) {
                     logger.warn(
                         "generate indexFile for chart [${it[NODE_FULL_PATH]}] in " +
                             "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
