@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.replication.replica.type.event
 
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.manager.LocalDataManager

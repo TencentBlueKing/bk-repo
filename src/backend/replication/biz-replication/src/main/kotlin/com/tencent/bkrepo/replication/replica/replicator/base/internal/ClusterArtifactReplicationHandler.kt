@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
+import com.tencent.bkrepo.common.artifact.util.http.StreamRequestBody
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.replication.config.ReplicationProperties
@@ -50,7 +51,6 @@ import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.replica.base.process.ProgressListener
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.replicator.base.ArtifactReplicationHandler
-import com.tencent.bkrepo.replication.util.StreamRequestBody
 import io.netty.channel.ChannelProgressiveFuture
 import io.netty.channel.ChannelProgressiveFutureListener
 import okhttp3.MultipartBody

@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
 import com.tencent.bkrepo.common.artifact.repository.ArtifactContextConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.ArtifactResolverConfiguration
+import com.tencent.bkrepo.common.artifact.router.ArtifactRouterControllerConfiguration
 import com.tencent.bkrepo.common.artifact.view.ArtifactViewModelConfiguration
 import com.tencent.bkrepo.common.artifact.view.ViewModelProperties
 import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxMetricsExportAutoConfiguration
@@ -69,6 +70,7 @@ import org.springframework.context.annotation.PropertySource
     ArtifactHealthConfiguration::class,
     ArtifactDownloadInterceptorConfiguration::class,
     ArtifactClusterConfiguration::class,
-    CnsConfiguration::class
+    CnsConfiguration::class,
+    ArtifactRouterControllerConfiguration::class,
 )
 class ArtifactAutoConfiguration
