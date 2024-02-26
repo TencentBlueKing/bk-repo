@@ -27,11 +27,16 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.evication.redis
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
 import com.tencent.bkrepo.common.storage.core.cache.evication.OrderedCache
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.RedisScript
+import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
+import java.util.concurrent.TimeUnit
 
 /**
  * 基于Redis实现的SLRU，缓存满后将异步清理
@@ -42,6 +47,13 @@ class RedisSLRUCache(
     private val capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
 ) : OrderedCache<String, Long> {
+
+    private val evictExecutor = ThreadPoolExecutor(
+        1, 1, 0L, TimeUnit.MILLISECONDS,
+        LinkedBlockingDeque(1000),
+        ThreadFactoryBuilder().setNameFormat("storage-cache-evict-redis-slru-%d").build(),
+        CallerRunsPolicy()
+    )
 
     /**
      * 记录当前缓存的总权重
@@ -151,16 +163,24 @@ class RedisSLRUCache(
     }
 
     private fun checkAndEvictEldest() {
-        var count = 0
-        while ((redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight) {
-            count++
-            evictProtected()
-            evictProbation()
+        if (!shouldEvict()) {
+            return
         }
-        if (count > 0) {
-            logger.info("$count key was evicted")
+
+        evictExecutor.execute {
+            var count = 0
+            while (shouldEvict()) {
+                count++
+                evictProtected()
+                evictProbation()
+            }
+            if (count > 0) {
+                logger.info("$count key was evicted")
+            }
         }
     }
+
+    private fun shouldEvict() = (redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight
 
     private fun evictProtected() {
         if ((redisTemplate.opsForValue().get(protectedTotalWeightKey)?.toLong() ?: 0L) > protectedMaxWeight) {

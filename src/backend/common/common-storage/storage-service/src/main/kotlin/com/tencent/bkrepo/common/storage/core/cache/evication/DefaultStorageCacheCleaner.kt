@@ -54,6 +54,7 @@ open class DefaultStorageCacheCleaner(
         }
     }
 
+    @Async
     override fun onCacheAccessed(credentials: StorageCredentials, sha256: String, size: Long) {
         if (!storageCacheEvictionProperties.enabled) {
             return

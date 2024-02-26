@@ -27,10 +27,14 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.evication.redis
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
 import com.tencent.bkrepo.common.storage.core.cache.evication.OrderedCache
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.RedisScript
+import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * 基于Redis实现的分布式LRU缓存
@@ -42,6 +46,14 @@ class RedisLRUCache(
     private var capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
 ) : OrderedCache<String, Long> {
+
+    private val evictExecutor = ThreadPoolExecutor(
+        1, 1, 0L, TimeUnit.MILLISECONDS,
+        LinkedBlockingDeque(1000),
+        ThreadFactoryBuilder().setNameFormat("storage-cache-evict-redis-lru-%d").build(),
+        ThreadPoolExecutor.CallerRunsPolicy()
+    )
+
     /**
      * 记录当前缓存的总权重
      */
@@ -121,13 +133,19 @@ class RedisLRUCache(
     }
 
     private fun checkAndEvictEldest() {
-        val opsForValue = redisTemplate.opsForValue()
-        while ((opsForValue.get(totalWeightKey)?.toLong() ?: 0L) > maxWeight) {
-            val eldestKey = eldestKey()
-            val value = eldestKey?.let { remove(it) }
-            value?.let { listeners.forEach { it.onEldestRemoved(eldestKey, value) } }
+        if (!shouldEvict()) {
+            return
+        }
+        evictExecutor.execute {
+            while (shouldEvict()) {
+                val eldestKey = eldestKey()
+                val value = eldestKey?.let { remove(it) }
+                value?.let { listeners.forEach { it.onEldestRemoved(eldestKey, value) } }
+            }
         }
     }
+
+    private fun shouldEvict() = (redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight
 
     private fun score() = System.currentTimeMillis().toString()
 
