@@ -36,10 +36,10 @@ class SessionChunkedFutureListener(private val session: DownloadSession) : Chunk
     override fun done(future: Future<File>?, getInputStreamTime: Long) {
         session.latencyTime = getInputStreamTime
         if (future == null || future.isCancelled) {
-            logger.info("Session[${session.id}] current latency $getInputStreamTime ms with no future")
+            logger.debug("Session[${session.id}] current latency $getInputStreamTime ms with no future")
             return
         }
-        logger.info("Session[${session.id}] finish read file[${future.get()}], current latency $getInputStreamTime ms")
+        logger.debug("Session[${session.id}] finish read file[${future.get()}], current latency $getInputStreamTime ms")
     }
 
     companion object {

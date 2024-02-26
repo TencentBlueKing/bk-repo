@@ -2,7 +2,7 @@ package com.tencent.bkrepo.archive.metrics
 
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.CompressStatus
-import com.tencent.bkrepo.archive.job.archive.ArchiveJob
+import com.tencent.bkrepo.archive.job.compress.BDZipManager
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import io.micrometer.core.instrument.Counter
@@ -17,36 +17,44 @@ import org.springframework.stereotype.Component
  * */
 @Component
 class ArchiveMetrics(
-    val archiveJob: ArchiveJob,
     val archiveFileRepository: ArchiveFileRepository,
     val compressFileRepository: CompressFileRepository,
+    val bdZipManager: BDZipManager,
 ) : MeterBinder {
     lateinit var registry: MeterRegistry
 
     override fun bindTo(registry: MeterRegistry) {
         this.registry = registry
         // 下载量，队列
-        Gauge.builder(FILE_DOWNLOAD_ACTIVE_COUNT, archiveJob.httpDownloadPool) { it.activeCount.toDouble() }
+        Gauge.builder(FILE_DOWNLOAD_ACTIVE_COUNT, bdZipManager.fileDownloadThreadPool) { it.activeCount.toDouble() }
             .description(FILE_DOWNLOAD_ACTIVE_COUNT_DESC)
             .register(registry)
-        Gauge.builder(FILE_DOWNLOAD_QUEUE_SIZE, archiveJob.httpDownloadPool) { it.queue.size.toDouble() }
+        Gauge.builder(FILE_DOWNLOAD_QUEUE_SIZE, bdZipManager.fileDownloadThreadPool) { it.queue.size.toDouble() }
             .description(FILE_DOWNLOAD_QUEUE_SIZE_DESC)
             .register(registry)
 
         // 压缩量，队列
-        Gauge.builder(FILE_COMPRESS_ACTIVE_COUNT, archiveJob.compressPool) { it.activeCount.toDouble() }
+        Gauge.builder(FILE_COMPRESS_ACTIVE_COUNT, bdZipManager.diffThreadPool) { it.activeCount.toDouble() }
             .description(FILE_COMPRESS_ACTIVE_COUNT_DESC)
             .register(registry)
-        Gauge.builder(FILE_COMPRESS_QUEUE_SIZE, archiveJob.compressPool) { it.queue.size.toDouble() }
+        Gauge.builder(FILE_COMPRESS_QUEUE_SIZE, bdZipManager.diffThreadPool) { it.queue.size.toDouble() }
             .description(FILE_COMPRESS_QUEUE_SIZE_DESC)
             .register(registry)
 
-        // 上传量，队列
-        Gauge.builder(FILE_UPLOAD_ACTIVE_COUNT, archiveJob.httpUploadPool) { it.activeCount.toDouble() }
-            .description(FILE_UPLOAD_ACTIVE_COUNT_DESC)
+        // 签名量，队列
+        Gauge.builder(FILE_SING_ACTIVE_COUNT, bdZipManager.signThreadPool) { it.activeCount.toDouble() }
+            .description(FILE_SING_ACTIVE_COUNT_DESC)
             .register(registry)
-        Gauge.builder(FILE_UPLOAD_QUEUE_SIZE, archiveJob.httpUploadPool) { it.queue.size.toDouble() }
-            .description(FILE_UPLOAD_QUEUE_SIZE_DESC)
+        Gauge.builder(FILE_SING_QUEUE_SIZE, bdZipManager.signThreadPool) { it.queue.size.toDouble() }
+            .description(FILE_SIGN_QUEUE_SIZE_DESC)
+            .register(registry)
+
+        // 解压量，队列
+        Gauge.builder(FILE_PATCH_ACTIVE_COUNT, bdZipManager.patchThreadPool) { it.activeCount.toDouble() }
+            .description(FILE_PATCH_ACTIVE_COUNT_DESC)
+            .register(registry)
+        Gauge.builder(FILE_PATCH_QUEUE_SIZE, bdZipManager.patchThreadPool) { it.queue.size.toDouble() }
+            .description(FILE_PATCH_QUEUE_SIZE_DESC)
             .register(registry)
 
         // 归档文件状态
@@ -84,6 +92,8 @@ class ArchiveMetrics(
 
             Action.UNCOMPRESSED -> Counter.builder(FILE_UNCOMPRESSED_COUNTER)
                 .description(FILE_UNCOMPRESSED_COUNTER_DESC)
+
+            else -> throw IllegalArgumentException("Action $action not support.")
         }
         return builder.tag(TAG_CREDENTIALS_KEY, credentialsKey)
             .register(registry)
@@ -108,6 +118,12 @@ class ArchiveMetrics(
 
             Action.UNCOMPRESSED -> Counter.builder(FILE_UNCOMPRESSED_SIZE_COUNTER)
                 .description(FILE_UNCOMPRESSED_SIZE_COUNTER_DESC)
+
+            Action.STORAGE_FREE -> Counter.builder(STORAGE_FREE_SIZE_COUNTER)
+                .description(STORAGE_FREE_SIZE_COUNTER_DESC)
+
+            Action.STORAGE_ALLOCATE -> Counter.builder(STORAGE_ALLOCATE_SIZE_COUNTER)
+                .description(STORAGE_ALLOCATE_SIZE_COUNTER_DESC)
         }
         require(tags.size % 2 == 0)
         for (i in 0 until tags.lastIndex) {
@@ -137,6 +153,8 @@ class ArchiveMetrics(
 
             Action.UNCOMPRESSED -> Timer.builder(FILE_UNCOMPRESSED_TIME)
                 .description(FILE_UNCOMPRESSED_TIME_DESC)
+
+            else -> throw IllegalArgumentException("Action $action not support.")
         }
         return builder.tag(TAG_CREDENTIALS_KEY, credentialsKey)
             .register(registry)
@@ -150,6 +168,8 @@ class ArchiveMetrics(
         RESTORED,
         COMPRESSED,
         UNCOMPRESSED,
+        STORAGE_FREE,
+        STORAGE_ALLOCATE,
     }
 
     companion object {
@@ -177,6 +197,14 @@ class ArchiveMetrics(
         private const val FILE_COMPRESS_ACTIVE_COUNT_DESC = "文件压缩实时数量"
         private const val FILE_COMPRESS_QUEUE_SIZE = "file.compress.queue.size"
         private const val FILE_COMPRESS_QUEUE_SIZE_DESC = "文件压缩队列大小"
+        private const val FILE_SING_ACTIVE_COUNT = "file.sign.active.count"
+        private const val FILE_SING_ACTIVE_COUNT_DESC = "文件签名实时数量"
+        private const val FILE_SING_QUEUE_SIZE = "file.sign.queue.size"
+        private const val FILE_SIGN_QUEUE_SIZE_DESC = "文件签名队列大小"
+        private const val FILE_PATCH_ACTIVE_COUNT = "file.patch.active.count"
+        private const val FILE_PATCH_ACTIVE_COUNT_DESC = "文件解压实时数量"
+        private const val FILE_PATCH_QUEUE_SIZE = "file.patch.queue.size"
+        private const val FILE_PATCH_QUEUE_SIZE_DESC = "文件解压队列大小"
         private const val ARCHIVE_FILE_STATUS_COUNTER = "file.archive.status.count"
         private const val ARCHIVE_FILE_STATUS_COUNTER_DESC = "归档文件状态统计"
         private const val COMPRESS_FILE_STATUS_COUNTER = "file.compress.status.count"
@@ -193,6 +221,10 @@ class ArchiveMetrics(
         private const val FILE_UNCOMPRESSED_SIZE_COUNTER_DESC = "文件解压大小"
         private const val FILE_UNCOMPRESSED_TIME = "file.uncompress.time"
         private const val FILE_UNCOMPRESSED_TIME_DESC = "文件解压耗时"
+        private const val STORAGE_FREE_SIZE_COUNTER = "storage.free.size.count"
+        private const val STORAGE_FREE_SIZE_COUNTER_DESC = "存储释放大小"
+        private const val STORAGE_ALLOCATE_SIZE_COUNTER = "storage.allocate.size.count"
+        private const val STORAGE_ALLOCATE_SIZE_COUNTER_DESC = "存储新增大小"
         private const val TAG_CREDENTIALS_KEY = "credentialsKey"
         private const val TAG_STATUS = "status"
     }

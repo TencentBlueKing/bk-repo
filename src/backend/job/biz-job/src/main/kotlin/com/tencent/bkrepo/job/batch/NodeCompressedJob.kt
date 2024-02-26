@@ -11,6 +11,7 @@ import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeCompressedJobProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -53,6 +54,14 @@ class NodeCompressedJob(
 
     override fun run(row: CompressFile, collectionName: String, context: NodeContext) {
         with(row) {
+            val storageCredentials = storageCredentialsKey?.let {
+                RepositoryCommonUtils.getStorageCredentials(storageCredentialsKey)
+            }
+            val bdFileName = "$sha256.bd"
+            if (!storageService.exist(bdFileName, storageCredentials)) {
+                logger.warn("Miss file $bdFileName.")
+                return
+            }
             listNode(sha256, storageCredentialsKey).forEach {
                 val compressedRequest = NodeCompressedRequest(
                     projectId = it.projectId,
@@ -61,9 +70,6 @@ class NodeCompressedJob(
                     operator = lastModifiedBy,
                 )
                 nodeClient.compressedNode(compressedRequest)
-            }
-            val storageCredentials = storageCredentialsKey?.let {
-                RepositoryCommonUtils.getStorageCredentials(storageCredentialsKey)
             }
             storageService.delete(sha256, storageCredentials)
             val request = CompleteCompressRequest(sha256, storageCredentialsKey, lastModifiedBy)
@@ -100,5 +106,9 @@ class NodeCompressedJob(
                 .and("deleted").isEqualTo(null),
         )
         return NodeCommonUtils.findNodes(query, storageCredentialsKey)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(NodeCompressedJob::class.java)
     }
 }

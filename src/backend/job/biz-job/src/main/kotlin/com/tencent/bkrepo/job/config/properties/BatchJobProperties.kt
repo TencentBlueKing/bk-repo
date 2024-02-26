@@ -34,6 +34,10 @@ open class BatchJobProperties(
      * 是否开启任务
      * */
     open var enabled: Boolean = true,
+    /**
+     * 任务亲和节点列表，未配置时将可以调度到任意节点，配置后只能调度到亲和的节点
+     */
+    open var affinityNodeIps: Set<String> = emptySet(),
 
     /**
      * cron表达式

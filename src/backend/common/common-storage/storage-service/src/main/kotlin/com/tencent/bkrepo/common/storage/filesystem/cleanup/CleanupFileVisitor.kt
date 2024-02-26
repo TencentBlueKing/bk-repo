@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -62,13 +63,16 @@ class CleanupFileVisitor(
     @Throws(IOException::class)
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         val size = attributes.size()
+        val isTempFile = isTempFile(filePath)
+        var deleted = false
         try {
             if (fileExpireResolver.isExpired(filePath.toFile()) && !isNFSTempFile(filePath)) {
-                if (isTempFile(filePath) || existInStorage(filePath)) {
+                if (isTempFile || existInStorage(filePath)) {
                     rateLimiter.acquire()
                     Files.delete(filePath)
                     result.cleanupFile += 1
                     result.cleanupSize += size
+                    deleted = true
                     logger.info("Clean up file[$filePath], size[$size], summary: $result")
                 }
             }
@@ -78,6 +82,11 @@ class CleanupFileVisitor(
         } finally {
             result.totalFile += 1
             result.totalSize += size
+            if(!isTempFile && !deleted) {
+                // 仅统计非temp目录下未被清理的文件
+                result.rootDirNotDeletedFile += 1
+                result.rootDirNotDeletedSize += size
+            }
         }
         return FileVisitResult.CONTINUE
     }
@@ -97,16 +106,24 @@ class CleanupFileVisitor(
         }
         // 由于支持删除上传路径，所以这里即使是空目录，也需要判断过期时间。
         if (fileExpireResolver.isExpired(dirPath.toFile())) {
-            Files.newDirectoryStream(dirPath).use {
-                if (!it.iterator().hasNext()) {
-                    Files.delete(dirPath)
-                    logger.info("Clean up folder[$dirPath].")
-                    result.cleanupFolder += 1
-                }
-            }
+            deleteEmptyFolder(dirPath)
         }
         result.totalFolder += 1
         return FileVisitResult.CONTINUE
+    }
+
+    private fun deleteEmptyFolder(dirPath: Path) {
+        Files.newDirectoryStream(dirPath).use {
+            if (!it.iterator().hasNext()) {
+                try {
+                    Files.delete(dirPath)
+                    logger.info("Clean up folder[$dirPath].")
+                    result.cleanupFolder += 1
+                }  catch (ignore: DirectoryNotEmptyException) {
+                    logger.warn("Directory [$dirPath] is not empty!")
+                }
+            }
+        }
     }
 
     override fun needWalk(): Boolean {

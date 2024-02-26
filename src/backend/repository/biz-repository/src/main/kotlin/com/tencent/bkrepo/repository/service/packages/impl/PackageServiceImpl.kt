@@ -304,6 +304,16 @@ class PackageServiceImpl(
         logger.info("Delete package version[$projectId/$repoName/$packageKey-$versionName] success")
     }
 
+    override fun deleteAllPackage(projectId: String, repoName: String) {
+        val query = PackageQueryHelper.packageListQuery(projectId, repoName, null)
+        var pageNumber = 1
+        do {
+            val packageList = packageDao.find(query.with(Pages.ofRequest(pageNumber, 1000)))
+            packageList.forEach { deletePackage(it.projectId, it.repoName, it.key) }
+            pageNumber++
+        } while (packageList.isNotEmpty())
+    }
+
     override fun updatePackage(request: PackageUpdateRequest, realIpAddress: String?) {
         val projectId = request.projectId
         val repoName = request.repoName

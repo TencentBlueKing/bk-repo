@@ -30,13 +30,13 @@ package com.tencent.bkrepo.replication.replica.base.interceptor
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.util.HttpUtils
 import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.Interceptor
 import okhttp3.Request
@@ -107,7 +107,7 @@ class RetryInterceptor : Interceptor {
         val rangeStr = getContentRangeFromHeader(request)
         logger.info("range info is $rangeStr and size is $size")
         if (rangeStr.isNullOrEmpty()) return request
-        val (start, end) = HttpUtils.getRangeInfo(rangeStr)
+        val (start, end) = ChunkedUploadUtils.getRangeInfo(rangeStr)
         val range = Range(start, end, size)
         val retryBody = StreamRequestBody(
             localDataManager.loadInputStreamByRange(sha256, range, projectId, repoName),
@@ -144,14 +144,14 @@ class RetryInterceptor : Interceptor {
      * 从请求头中获取对于当前请求体大小信息
      */
     private fun getSizeFromHeader(request: Request): Long? {
-        return request.header(CONTENT_LENGTH)?.toLong()
+        return request.header(CONTENT_LENGTH)?.toLongOrNull()
     }
 
     /**
      * 从请求头中获取对于文件大小信息
      */
     private fun getFileLengthFromHeader(request: Request): Long? {
-        return request.header(SIZE)?.toLong()
+        return request.header(SIZE)?.toLongOrNull()
     }
 
     companion object {

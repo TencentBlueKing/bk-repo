@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.storage.core.operation
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import java.nio.file.Path
 
 /**
  * 文件清理操作
@@ -42,5 +43,5 @@ interface CleanupOperation {
     /**
      * 清理temp目录文件，包括分块上传产生和追加上传产生的脏数据
      */
-    fun cleanUp(storageCredentials: StorageCredentials? = null): CleanupResult
+    fun cleanUp(storageCredentials: StorageCredentials? = null): Map<Path, CleanupResult>
 }

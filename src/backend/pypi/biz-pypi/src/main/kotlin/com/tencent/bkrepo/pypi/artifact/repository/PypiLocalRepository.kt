@@ -27,28 +27,19 @@
 
 package com.tencent.bkrepo.pypi.artifact.repository
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
-import com.tencent.bkrepo.common.artifact.repository.migration.PackageMigrateDetail
-import com.tencent.bkrepo.common.artifact.repository.migration.VersionMigrateErrorDetail
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -58,26 +49,17 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.pypi.artifact.PypiProperties
-import com.tencent.bkrepo.pypi.artifact.model.MigrateDataCreateNode
-import com.tencent.bkrepo.pypi.artifact.model.MigrateDataInfo
-import com.tencent.bkrepo.pypi.artifact.model.TMigrateData
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
-import com.tencent.bkrepo.pypi.exception.PypiMigrateReject
+import com.tencent.bkrepo.pypi.constants.PypiQueryType
+import com.tencent.bkrepo.pypi.constants.QUERY_TYPE
 import com.tencent.bkrepo.pypi.exception.PypiSimpleNotFoundException
 import com.tencent.bkrepo.pypi.pojo.Basic
 import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
-import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
-import com.tencent.bkrepo.pypi.util.ArtifactFileUtils
-import com.tencent.bkrepo.pypi.util.HttpUtil.downloadUrlHttpClient
-import com.tencent.bkrepo.pypi.util.JsoupUtil.htmlHrefs
-import com.tencent.bkrepo.pypi.util.JsoupUtil.sumTasks
 import com.tencent.bkrepo.pypi.util.PypiVersionUtils.toPypiPackagePojo
 import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
-import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -87,30 +69,13 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import org.jsoup.nodes.Element
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
-import java.net.UnknownServiceException
-import java.time.Duration
-import java.time.Instant
-import java.time.format.DateTimeFormatter
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 @Component
 class PypiLocalRepository(
-    private val mongoTemplate: MongoTemplate,
-    private val migrateDataRepository: MigrateDataRepository,
-    private val stageClient: StageClient,
-    private val pypiProperties: PypiProperties
+    private val stageClient: StageClient
 ) : LocalRepository() {
 
     /**
@@ -287,18 +252,18 @@ class PypiLocalRepository(
      * 2，pypi simple html页面
      */
     override fun query(context: ArtifactQueryContext): Any? {
-        val servletPath = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
-        return if (servletPath.startsWith("/ext/version/detail")) {
-            // 请求版本详情
-            getVersionDetail(context)
-        } else {
-            getSimpleHtml(context.artifactInfo)
+        return when (val queryType = context.getAttribute<PypiQueryType>(QUERY_TYPE)) {
+            PypiQueryType.PACKAGE_INDEX,
+            PypiQueryType.VERSION_INDEX -> getSimpleHtml(context.artifactInfo, queryType)
+            PypiQueryType.VERSION_DETAIL -> getVersionDetail(context)
+            null -> throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
         }
     }
 
-    fun getVersionDetail(context: ArtifactQueryContext): Any? {
+    fun getVersionDetail(context: ArtifactQueryContext): PypiArtifactVersionData? {
         val packageKey = context.request.getParameter("packageKey")
         val version = context.request.getParameter("version")
+        logger.info("Get version detail. packageKey[$packageKey], version[$version]")
         val name = PackageKeys.resolvePypi(packageKey)
         val trueVersion = packageClient.findVersionByName(
             context.projectId,
@@ -332,32 +297,11 @@ class PypiLocalRepository(
         }
     }
 
-    /**
-     * 本地调试删除 pypi.domain 配置
-     */
-    fun getRedirectUrl(path: String): String {
-        val domain = pypiProperties.domain
-        return UrlFormatter.format(domain, path).ensureSuffix(StringPool.SLASH)
-    }
-
-    /**
-     *
-     */
-    fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
-        val path = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
-        if (!path.endsWith("/")) {
-            val response = HttpContextHolder.getResponse()
-            response.sendRedirect(getRedirectUrl(path))
-            return null
-        }
+    fun getSimpleHtml(artifactInfo: ArtifactInfo, type: PypiQueryType): String? {
+        logger.info("Get simple html. artifactInfo[${artifactInfo.getArtifactFullPath()}]")
         with(artifactInfo) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                ?: throw PypiSimpleNotFoundException(getArtifactFullPath())
-            if (!node.folder) {
-                return null
-            }
             // 请求不带包名，返回包名列表.
-            if (getArtifactFullPath() == "/") {
+            if (type == PypiQueryType.PACKAGE_INDEX) {
                 val nodeList = nodeClient.listNode(
                     projectId, repoName, getArtifactFullPath(), includeFolder = true, deep = true
                 ).data
@@ -440,255 +384,6 @@ class PypiLocalRepository(
         return builder.toString()
     }
 
-    @org.springframework.beans.factory.annotation.Value("\${migrate.url:''}")
-    private val migrateUrl: String = StringPool.EMPTY
-
-    @org.springframework.beans.factory.annotation.Value("\${limitPackages:10}")
-    private val limitPackages: Int = DEFAULT_COUNT
-
-    private val failSet = mutableSetOf<String>()
-
-    fun migrateResult(context: ArtifactMigrateContext): PypiMigrateResponse<String> {
-        with(context.artifactInfo) {
-            val migrateDataInfo = findMigrateResult(projectId, repoName)
-            migrateDataInfo?.let {
-                return PypiMigrateResponse(
-                    it.description,
-                    it.filesNum,
-                    it.filesNum - it.errorData.size,
-                    it.errorData.size,
-                    it.elapseTimeSeconds,
-                    it.errorData as Set<String>,
-                    it.createdDate
-                )
-            }
-            return PypiMigrateResponse("未找到数据迁移记录，如果已经调用迁移接口{migrate/url},请稍后查询")
-        }
-    }
-
-    fun findMigrateResult(projectId: String, repoName: String): MigrateDataInfo? {
-        val criteria = Criteria.where(TMigrateData::projectId.name).`is`(projectId)
-            .and(TMigrateData::repoName.name)
-            .`is`(repoName)
-        val sort = org.springframework.data.domain.Sort.by(
-            org.springframework.data.domain.Sort.Direction.DESC,
-            TMigrateData::lastModifiedDate.name
-        )
-        val query = Query.query(criteria).with(sort).limit(0)
-        return mongoTemplate.findOne(query, TMigrateData::class.java)?.let { convert(it) }
-    }
-
-    fun migrateData(context: ArtifactMigrateContext): PypiMigrateResponse<String> {
-        val job = GlobalScope.launch {
-            migrate(context)
-        }
-        job.start()
-        return migrateResult(context)
-    }
-
-    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
-        val verifiedUrl = beforeMigrate()
-        val packageMigrateDetailList = mutableListOf<PackageMigrateDetail>()
-        var totalCount: Int
-        val cpuCore = cpuCore()
-        val threadPool = ThreadPoolExecutor(
-            cpuCore, cpuCore.shl(doubleNum), threadAliveTime, TimeUnit.SECONDS,
-            LinkedBlockingQueue(),
-            ThreadFactoryBuilder().setNameFormat("pypiRepo-migrate-thread-%d").build(),
-            PypiMigrateReject()
-        )
-
-        // 获取所有的包,开始计时
-        val start = Instant.now()
-        verifiedUrl.htmlHrefs(limitPackages).let { simpleHrefs ->
-            totalCount = migrateUrl.sumTasks(simpleHrefs)
-            for (e in simpleHrefs) {
-                // 每一个包所包含的文件列表
-                migratePackage(e, verifiedUrl, threadPool, context)
-            }
-        }
-        threadPool.shutdown()
-        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {
-            logger.info("migrate thread pool running!")
-        }
-        val end = Instant.now()
-        val elapseTimeSeconds = Duration.between(start, end)
-        insertMigrateData(
-            context,
-            failSet,
-            limitPackages,
-            totalCount,
-            elapseTimeSeconds.seconds
-        )
-        return MigrateDetail(
-            context.projectId,
-            context.repoName,
-            packageMigrateDetailList,
-            elapseTimeSeconds,
-            null
-        )
-    }
-
-    private fun migratePackage(
-        element: Element,
-        verifiedUrl: String,
-        threadPool: ThreadPoolExecutor,
-        context: ArtifactMigrateContext
-    ): PackageMigrateDetail? {
-        // 每一个包所包含的文件列表
-        element.text()?.let { packageName ->
-            val packageMigrateDetail = PackageMigrateDetail(
-                packageName,
-                mutableSetOf(),
-                mutableSetOf()
-            )
-            "$verifiedUrl/$packageName".htmlHrefs().let { fileNodes ->
-                for (fileNode in fileNodes) {
-                    threadPool.submit {
-                        migrateUpload(context, fileNode, verifiedUrl, packageName, packageMigrateDetail)
-                    }
-                }
-            }
-            return packageMigrateDetail
-        }
-        return null
-    }
-
-    private fun insertMigrateData(
-        context: ArtifactMigrateContext,
-        collect: Set<String>,
-        packagesName: Int,
-        filesNum: Int,
-        elapseTimeSeconds: Long
-    ) {
-        val dataCreateRequest = MigrateDataCreateNode(
-            projectId = context.artifactInfo.projectId,
-            repoName = context.artifactInfo.repoName,
-            errorData = jacksonObjectMapper().writeValueAsString(collect),
-            packagesNum = packagesName,
-            filesNum = filesNum,
-            elapseTimeSeconds = elapseTimeSeconds,
-            description = "最近一次任务 {$migrateUrl} 迁移结果如下，请注意检查迁移完成时间"
-        )
-        create(dataCreateRequest)
-    }
-
-    @Transactional(rollbackFor = [Throwable::class])
-    fun create(dataCreateRequest: MigrateDataCreateNode) {
-        with(dataCreateRequest) {
-            val errorData = TMigrateData(
-                projectId = projectId,
-                repoName = repoName,
-                errorData = errorData,
-                createdBy = createdBy,
-                createdDate = java.time.LocalDateTime.now(),
-                lastModifiedBy = createdBy,
-                lastModifiedDate = java.time.LocalDateTime.now(),
-                packagesNum = packagesNum,
-                filesNum = filesNum,
-                elapseTimeSeconds = elapseTimeSeconds,
-                description = description
-            )
-            migrateDataRepository.insert(errorData)
-                .also { logger.info("Create migration error data [$dataCreateRequest] success.") }
-        }
-    }
-
-    fun migrateUpload(
-        context: ArtifactMigrateContext,
-        fileNode: Element,
-        verifiedUrl: String,
-        packageName: String,
-        packageMigrateDetail: PackageMigrateDetail
-    ) {
-        val filename = fileNode.text()
-        val hrefValue = fileNode.attributes()["href"]
-        // 获取文件流
-        try {
-            "$verifiedUrl/$packageName/$hrefValue".downloadUrlHttpClient()?.use { inputStream ->
-                val artifactFile = ArtifactFileFactory.build(inputStream)
-                val pypiInfo = ArtifactFileUtils.getPypiInfo(filename, artifactFile)
-                val isExists = checkExists(context, pypiInfo, packageName, filename)
-                if (isExists == null) {
-                    packageMigrateDetail.failureVersionDetailList.add(
-                        VersionMigrateErrorDetail(
-                            pypiInfo.version,
-                            "查询该版本在仓库中是否存在失败，不处理"
-                        )
-                    )
-                } else if (isExists == true) {
-                    packageMigrateDetail.failureVersionDetailList.add(
-                        VersionMigrateErrorDetail(
-                            pypiInfo.version,
-                            "改版本在仓库中已存在，不处理"
-                        )
-                    )
-                } else {
-                    val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename, pypiInfo)
-                    store(nodeCreateRequest, artifactFile, context.storageCredentials)
-                    packageMigrateDetail.successVersionList.add(pypiInfo.version)
-                }
-            }
-        } catch (unknownServiceException: UnknownServiceException) {
-            logger.error(unknownServiceException.message)
-            failSet.add("$verifiedUrl/$packageName/${fileNode.attributes()["href"]}")
-        }
-    }
-
-    /**
-     * 读取到的远程节点在本地仓库是否存在
-     */
-    fun checkExists(
-        context: ArtifactMigrateContext,
-        pypiInfo: PypiInfo,
-        packageName: String,
-        filename: String
-    ): Boolean? {
-        with(context.repositoryDetail) {
-            // 文件fullPath
-            val path = "/$packageName/${pypiInfo.version}/$filename"
-            return nodeClient.checkExist(projectId, name, path).data
-        }
-    }
-
-    fun createMigrateNode(
-        context: ArtifactMigrateContext,
-        artifactFile: ArtifactFile,
-        packageName: String,
-        filename: String,
-        pypiInfo: PypiInfo
-    ): NodeCreateRequest {
-        val metadata = context.request.parameterMaps().map { MetadataModel(key = it.key, value = it.value) }
-        // 文件fullPath
-        val path = "/$packageName/${pypiInfo.version}/$filename"
-        return NodeCreateRequest(
-            projectId = context.projectId,
-            repoName = context.repoName,
-            folder = false,
-            overwrite = true,
-            fullPath = path,
-            size = artifactFile.getSize(),
-            sha256 = artifactFile.getFileSha256(),
-            md5 = artifactFile.getFileMd5(),
-            operator = context.userId,
-            nodeMetadata = metadata
-        )
-    }
-
-    /**
-     * 检验地址格式
-     */
-    fun beforeMigrate(): String {
-        return migrateUrl.removeSuffix("/")
-    }
-
-    /**
-     * 获取CPU核心数
-     */
-    fun cpuCore(): Int {
-        return Runtime.getRuntime().availableProcessors()
-    }
-
     fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?) {
         storageManager.storeArtifactFile(node, artifactFile, storageCredentials)
         artifactFile.delete()
@@ -728,26 +423,7 @@ class PypiLocalRepository(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(PypiLocalRepository::class.java)
-        fun convert(tMigrateData: TMigrateData): MigrateDataInfo {
-            return tMigrateData.let {
-                MigrateDataInfo(
-                    errorData = jacksonObjectMapper().readValue(it.errorData, Set::class.java),
-                    projectId = it.projectId,
-                    repoName = it.repoName,
-                    createdBy = it.createdBy,
-                    createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                    packagesNum = it.packagesNum,
-                    filesNum = it.filesNum,
-                    elapseTimeSeconds = it.elapseTimeSeconds,
-                    description = it.description
-                )
-            }
-        }
-
         const val pageLimitCurrent = 0
         const val pageLimitSize = 10
-        const val threadAliveTime = 15L
-        const val doubleNum = 1
-        const val DEFAULT_COUNT = 10
     }
 }

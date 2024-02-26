@@ -29,7 +29,7 @@ class CompressJob(
         return ReactiveDaoUtils.query(query, TCompressFile::class.java)
     }
 
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.DAYS)
     fun compress() {
         val subscriber = CompressSubscriber(compressService)
         listFiles().subscribe(subscriber)

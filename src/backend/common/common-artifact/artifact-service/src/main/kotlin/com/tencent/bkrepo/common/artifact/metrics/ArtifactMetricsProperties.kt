@@ -48,5 +48,9 @@ data class ArtifactMetricsProperties(
     /**
      * 直方图le的最大值
      */
-    var maxLe: Double = DataSize.ofMegabytes(100).toBytes().toDouble()
+    var maxLe: Double = DataSize.ofMegabytes(100).toBytes().toDouble(),
+    /**
+     * 是否开启缓存使用情况统计
+     */
+    var enableArtifactCacheMetrics: Boolean = false,
 )

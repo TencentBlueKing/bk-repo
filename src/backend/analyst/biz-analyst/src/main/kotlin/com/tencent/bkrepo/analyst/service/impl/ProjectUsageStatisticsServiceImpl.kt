@@ -51,4 +51,8 @@ open class ProjectUsageStatisticsServiceImpl(
     override fun delete(start: Long?, end: Long) {
         throw UnsupportedOperationException()
     }
+
+    override fun sum(start: Long, end: Long): Map<String, ProjectUsageStatistics> {
+        throw UnsupportedOperationException()
+    }
 }

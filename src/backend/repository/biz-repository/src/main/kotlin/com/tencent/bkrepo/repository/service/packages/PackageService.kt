@@ -191,6 +191,14 @@ interface PackageService {
     )
 
     /**
+     * 删除所有包
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     */
+    fun deleteAllPackage(projectId: String, repoName: String)
+
+    /**
      * 更新包
      *
      * @param request 包更新请求

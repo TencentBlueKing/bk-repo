@@ -77,6 +77,7 @@ const val START_DATE = "startDate"
 const val END_DATE = "endDate"
 const val DURATION = "duration"
 const val DELTA_POSITIVE = "deltaPositive"
+const val ACTIVE = "active"
 
 
 const val B_0 = "0"

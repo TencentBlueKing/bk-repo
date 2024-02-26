@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
@@ -207,10 +208,10 @@ class SystemGcJob(
                 }
             }
         }
-        return if (gcable) {
-            if (sampleNode != null) {
-                gcNodes.remove(sampleNode)
-            }
+        if (sampleNode != null) {
+            gcNodes.remove(sampleNode)
+        }
+        return if (gcable && gcNodes.size > 0) {
             Pair(gcNodes, newest)
         } else {
             null
@@ -298,9 +299,15 @@ class SystemGcJob(
                 storageCredentialsKey = storageCredentials?.key,
             )
             return try {
-                archiveClient.compress(compressedRequest)
-                1
+                retry(RETRY_TIMES, ignoreExceptions = listOf(RemoteErrorCodeException::class.java)) {
+                    archiveClient.compress(compressedRequest)
+                    1
+                }
             } catch (ignore: RemoteErrorCodeException) {
+                0
+            } catch (e: Exception) {
+                // 发送请求失败
+                logger.error("Sending request failed", e)
                 0
             }
         }
@@ -338,5 +345,6 @@ class SystemGcJob(
         private const val SIZE_RATIO = 0.5
         private val HAMMING_DISTANCE_INSTANCE = HammingDistance()
         private const val MIN_SAMPLING_GROUP_SIZE = 5
+        private const val RETRY_TIMES = 3
     }
 }
