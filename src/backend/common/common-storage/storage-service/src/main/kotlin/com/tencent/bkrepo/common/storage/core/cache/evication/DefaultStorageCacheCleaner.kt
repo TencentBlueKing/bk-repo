@@ -31,30 +31,31 @@ import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileCleanedEvent
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import java.util.concurrent.ConcurrentHashMap
 
-open class DefaultArtifactCacheCleaner(
+open class DefaultStorageCacheCleaner(
     private val cacheFactory: OrderedCachedFactory<String, Long>,
     private val storageService: CacheStorageService,
     private val fileLocator: FileLocator,
-    private val artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
-) : ArtifactCacheCleaner {
+    private val storageCacheEvictionProperties: StorageCacheEvictionProperties,
+) : StorageCacheCleaner {
 
     private val storageCacheMap = ConcurrentHashMap<String, OrderedCache<String, Long>>()
 
     @Async
     override fun onCacheDeleted(credentials: StorageCredentials, sha256: String) {
-        if (artifactCacheEvictionProperties.enabled) {
+        if (storageCacheEvictionProperties.enabled) {
             logger.info("remove cache of [$sha256], storage[${credentials.key}]")
             getCache(credentials).remove(sha256)
         }
     }
 
     override fun onCacheAccessed(credentials: StorageCredentials, sha256: String, size: Long) {
-        if (!artifactCacheEvictionProperties.enabled) {
+        if (!storageCacheEvictionProperties.enabled) {
             return
         }
         logger.info("cache file accessed, sha256[$sha256], storage[${credentials.key}], size[$size]")
@@ -64,7 +65,7 @@ open class DefaultArtifactCacheCleaner(
     @Async
     @EventListener(FileCleanedEvent::class)
     open fun onFileCleaned(event: FileCleanedEvent) {
-        if (event.rootPath == event.credentials.cache.path) {
+        if (event.rootPath.toPath() == event.credentials.cache.path.toPath()) {
             onCacheDeleted(event.credentials, event.sha256)
         }
     }
@@ -104,6 +105,6 @@ open class DefaultArtifactCacheCleaner(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DefaultArtifactCacheCleaner::class.java)
+        private val logger = LoggerFactory.getLogger(DefaultStorageCacheCleaner::class.java)
     }
 }

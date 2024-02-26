@@ -27,15 +27,26 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.evication
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
-@ConfigurationProperties("artifact.cache.eviction")
-data class ArtifactCacheEvictionProperties(
-    var enabled: Boolean = false,
-    var cacheType: String = CACHE_TYPE_LOCAL
-) {
-    companion object {
-        const val CACHE_TYPE_LOCAL = "LOCAL"
-        const val CACHE_TYPE_REDIS = "REDIS"
-    }
+/**
+ * 缓存清理器，用于记录缓存访问情况，在缓存达到限制大小时清理存储层缓存
+ */
+interface StorageCacheCleaner {
+    /**
+     *  缓存被访问时的回调，用于缓存清理决策
+     *
+     *  @param credentials 缓存所在存储
+     *  @param sha256 缓存文件sha256
+     *  @param size 缓存文件大小
+     */
+    fun onCacheAccessed(credentials: StorageCredentials, sha256: String, size: Long)
+
+    /**
+     * 存储层缓存被删除时调用
+     *
+     * @param credentials 缓存所在的存储
+     * @param sha256 被删除的缓存文件的sha256
+     */
+    fun onCacheDeleted(credentials: StorageCredentials, sha256: String)
 }

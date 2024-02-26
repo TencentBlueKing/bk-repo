@@ -30,45 +30,39 @@ package com.tencent.bkrepo.common.storage.core.cache.evication
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
-import com.tencent.bkrepo.common.storage.core.cache.evication.ArtifactCacheEvictionProperties.Companion.CACHE_TYPE_LOCAL
-import com.tencent.bkrepo.common.storage.core.cache.evication.ArtifactCacheEvictionProperties.Companion.CACHE_TYPE_REDIS
+import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictionProperties.Companion.CACHE_TYPE_LOCAL
+import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictionProperties.Companion.CACHE_TYPE_REDIS
 import com.tencent.bkrepo.common.storage.core.cache.evication.local.LocalSLRUCache
 import com.tencent.bkrepo.common.storage.core.cache.evication.redis.RedisSLRUCache
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.core.RedisTemplate
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ArtifactCacheEvictionProperties::class)
-@ConditionalOnProperty(prefix = "artifact.cache.eviction", name = ["enabled"])
-class ArtifactCacheConfiguration {
+@ConditionalOnClass(RedisTemplate::class)
+class StorageCacheEvictConfiguration {
     @Bean
+    @ConditionalOnProperty(prefix = "storage.cache.eviction", name = ["enabled"])
     fun storageCacheCleaner(
         cacheFactory: OrderedCachedFactory<String, Long>,
         storageService: CacheStorageService,
         fileLocator: FileLocator,
         storageProperties: StorageProperties,
-        artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
-    ): ArtifactCacheCleaner {
-        return DefaultArtifactCacheCleaner(
+        storageCacheEvictionProperties: StorageCacheEvictionProperties,
+    ): StorageCacheCleaner {
+        return DefaultStorageCacheCleaner(
             cacheFactory,
             storageService,
             fileLocator,
-            artifactCacheEvictionProperties
+            storageCacheEvictionProperties
         )
     }
 
     @Bean
-    @ConditionalOnProperty(
-        prefix = "artifact.cache.eviction",
-        name = ["cacheType"],
-        havingValue = CACHE_TYPE_LOCAL,
-        matchIfMissing = true
-    )
+    @ConditionalOnProperty(prefix = "storage.cache.eviction", name = ["cacheType"], havingValue = CACHE_TYPE_LOCAL)
     fun localCacheFactory(): OrderedCachedFactory<String, Long> {
         return object : OrderedCachedFactory<String, Long> {
             override fun create(cacheProperties: CacheProperties): OrderedCache<String, Long> {
@@ -81,8 +75,7 @@ class ArtifactCacheConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "artifact.cache.eviction", name = ["cacheType"], havingValue = CACHE_TYPE_REDIS)
-    @ConditionalOnClass(RedisTemplate::class)
+    @ConditionalOnProperty(prefix = "storage.cache.eviction", name = ["cacheType"], havingValue = CACHE_TYPE_REDIS)
     fun redisCacheFactory(
         redisTemplate: RedisTemplate<String, String>
     ): OrderedCachedFactory<String, Long> {
