@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -102,6 +103,7 @@ class GenericController(
 
     @Permission(ResourceType.NODE, PermissionAction.READ)
     @GetMapping(GENERIC_MAPPING_URI)
+    @Router
     fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
         downloadService.download(artifactInfo)
     }

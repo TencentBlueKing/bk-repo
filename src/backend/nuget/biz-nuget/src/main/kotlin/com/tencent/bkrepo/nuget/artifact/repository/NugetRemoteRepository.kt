@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON_WITHOU
 import com.tencent.bkrepo.common.api.constant.StringPool.UTF_8
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -43,7 +44,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
 import com.tencent.bkrepo.nuget.constant.CACHE_CONTEXT

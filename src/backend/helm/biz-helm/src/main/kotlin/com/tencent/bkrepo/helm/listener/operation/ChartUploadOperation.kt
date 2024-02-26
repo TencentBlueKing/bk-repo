@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.helm.listener.operation
 
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata

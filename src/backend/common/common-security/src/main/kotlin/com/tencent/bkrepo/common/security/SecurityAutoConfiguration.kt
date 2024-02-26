@@ -46,7 +46,9 @@ import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
+import com.tencent.bkrepo.common.security.manager.proxy.ProxyPermissionManager
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
+import com.tencent.bkrepo.common.security.proxy.ProxyAuthConfiguration
 import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -61,13 +63,14 @@ import org.springframework.context.annotation.Import
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
+@Suppress("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration
 @ConditionalOnWebApplication
 @Import(
     SecurityExceptionHandler::class,
-    AuthenticationManager::class,
     PermissionConfiguration::class,
     HttpAuthConfiguration::class,
+    ProxyAuthConfiguration::class,
     ServiceAuthConfiguration::class,
     ActuatorAuthConfiguration::class,
     CryptoConfiguration::class
@@ -76,6 +79,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 class SecurityAutoConfiguration {
 
     @Bean
+    @Suppress("LongParameterList")
     fun permissionManager(
         repositoryClient: RepositoryClient,
         permissionResource: ServicePermissionClient,
@@ -137,5 +141,31 @@ class SecurityAutoConfiguration {
     @ConditionalOnMissingBean
     fun devXAccessInterceptor(properties: DevXProperties): DevXAccessInterceptor {
         return DevXAccessInterceptor(properties)
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun proxyPermissionManager(
+        repositoryClient: RepositoryClient,
+        permissionResource: ServicePermissionClient,
+        externalPermissionResource: ServiceExternalPermissionClient,
+        userResource: ServiceUserClient,
+        nodeClient: NodeClient,
+        httpAuthProperties: HttpAuthProperties
+    ): ProxyPermissionManager {
+        return ProxyPermissionManager(
+            repositoryClient = repositoryClient,
+            permissionResource = permissionResource,
+            externalPermissionResource = externalPermissionResource,
+            userResource = userResource,
+            nodeClient = nodeClient,
+            httpAuthProperties = httpAuthProperties
+        )
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun defaultAuthenticationManager(): AuthenticationManager {
+        return AuthenticationManager()
     }
 }

@@ -36,6 +36,7 @@ import com.google.common.util.concurrent.RateLimiter
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.concurrent.ComparableFutureTask
 import com.tencent.bkrepo.common.api.concurrent.PriorityCallable
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.stream.ChunkedFuture
 import com.tencent.bkrepo.common.api.stream.ChunkedFutureInputStream
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
@@ -76,7 +77,6 @@ import com.tencent.bkrepo.common.storage.innercos.response.handler.PutObjectResp
 import com.tencent.bkrepo.common.storage.innercos.response.handler.SlowLogHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.UploadPartResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.VoidResponseHandler
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.common.storage.util.createNewOutputStream
 import okhttp3.Request

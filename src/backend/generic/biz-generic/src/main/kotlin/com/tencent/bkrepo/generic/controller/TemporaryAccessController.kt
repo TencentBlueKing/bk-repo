@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -91,6 +92,7 @@ class TemporaryAccessController(
         }
     }
 
+    @Router
     @GetMapping("/download/$GENERIC_MAPPING_URI")
     fun downloadByToken(
         artifactInfo: GenericArtifactInfo,

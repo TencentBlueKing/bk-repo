@@ -3,9 +3,9 @@ package com.tencent.bkrepo.nuget.util
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UTF_8
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.nuget.constant.INDEX
 import com.tencent.bkrepo.nuget.constant.NugetProperties

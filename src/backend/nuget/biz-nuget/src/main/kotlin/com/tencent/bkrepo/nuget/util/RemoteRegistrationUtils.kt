@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.nuget.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationCatalogEntry
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
