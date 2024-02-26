@@ -8,6 +8,8 @@ import com.tencent.bkrepo.common.storage.util.StorageUtils
 import com.tencent.bkrepo.common.storage.util.createFile
 import io.mockk.every
 import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.core.Ordered
@@ -19,6 +21,12 @@ import java.util.concurrent.PriorityBlockingQueue
 
 class FileStorageFileProviderTest {
     private val tempDir = System.getProperty("java.io.tmpdir")
+
+    @AfterEach
+    fun afterEach() {
+        unmockkObject(StorageUtils.Companion)
+    }
+
     private val fp = FileStorageFileProvider(
         Paths.get(tempDir),
         highWaterMark = Long.MAX_VALUE,
