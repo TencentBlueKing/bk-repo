@@ -25,20 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache
+package com.tencent.bkrepo.common.storage.core.cache.evication
 
-import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheEvictionProperties.Companion.CACHE_TYPE_LOCAL
-import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheEvictionProperties.Companion.CACHE_TYPE_REDIS
-import com.tencent.bkrepo.common.artifact.cache.local.LocalSLRUCache
-import com.tencent.bkrepo.common.artifact.cache.redis.RedisSLRUCache
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
+import com.tencent.bkrepo.common.storage.core.cache.evication.ArtifactCacheEvictionProperties.Companion.CACHE_TYPE_LOCAL
+import com.tencent.bkrepo.common.storage.core.cache.evication.ArtifactCacheEvictionProperties.Companion.CACHE_TYPE_REDIS
+import com.tencent.bkrepo.common.storage.core.cache.evication.local.LocalSLRUCache
+import com.tencent.bkrepo.common.storage.core.cache.evication.redis.RedisSLRUCache
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -55,22 +52,15 @@ class ArtifactCacheConfiguration {
     @ConditionalOnBean(OrderedCachedFactory::class, CacheStorageService::class)
     fun storageCacheCleaner(
         cacheFactory: OrderedCachedFactory<String, Long>,
-        nodeClient: NodeClient,
-        repositoryClient: RepositoryClient,
         storageService: CacheStorageService,
         fileLocator: FileLocator,
-        storageCredentialsClient: StorageCredentialsClient,
         storageProperties: StorageProperties,
         artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
     ): ArtifactCacheCleaner {
         return DefaultArtifactCacheCleaner(
             cacheFactory,
-            nodeClient,
-            repositoryClient,
             storageService,
             fileLocator,
-            storageCredentialsClient,
-            storageProperties,
             artifactCacheEvictionProperties
         )
     }

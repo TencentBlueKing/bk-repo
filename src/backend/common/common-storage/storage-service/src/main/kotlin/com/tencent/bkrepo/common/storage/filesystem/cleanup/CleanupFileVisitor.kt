@@ -33,7 +33,9 @@ import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileCleanedEvent
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import java.io.IOException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
@@ -53,6 +55,7 @@ class CleanupFileVisitor(
     private val fileLocator: FileLocator,
     private val credentials: StorageCredentials,
     private val fileExpireResolver: FileExpireResolver,
+    private val publisher: ApplicationEventPublisher,
 ) : ArtifactFileVisitor() {
 
     val result = CleanupResult()
@@ -72,6 +75,7 @@ class CleanupFileVisitor(
                     result.cleanupFile += 1
                     result.cleanupSize += size
                     deleted = true
+                    onFileCleaned(filePath)
                     logger.info("Clean up file[$filePath], size[$size], summary: $result")
                 }
             }
@@ -160,6 +164,16 @@ class CleanupFileVisitor(
      * */
     private fun isNFSTempFile(filePath: Path): Boolean {
         return filePath.fileName.toString().startsWith(NFS_TEMP_FILE_PREFIX)
+    }
+
+    private fun onFileCleaned(filePath: Path) {
+        val event = FileCleanedEvent(
+            credentials = credentials,
+            rootPath = rootPath.toString(),
+            fullPath = filePath.toString(),
+            sha256 = filePath.fileName.toString()
+        )
+        publisher.publishEvent(event)
     }
 
     companion object {

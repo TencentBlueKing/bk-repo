@@ -25,57 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache
+package com.tencent.bkrepo.common.storage.core.cache.evication
 
-interface OrderedCache<K, V> {
-    fun put(key: K, value: V): V?
-    fun get(key: K): V?
-    fun containsKey(key: K): Boolean
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
+/**
+ * 缓存清理器，用于记录缓存访问情况，在缓存达到限制大小时清理存储层缓存
+ */
+interface ArtifactCacheCleaner {
     /**
-     * 移除缓存，需要调用该方法移除缓存，其他手段移除缓存可能导致weight统计异常
+     *  缓存被访问时的回调，用于缓存清理决策
      *
-     * @param key key
-     * @return 缓存值，不存在时返回NULL
+     *  @param credentials 缓存所在存储
+     *  @param sha256 缓存文件sha256
+     *  @param size 缓存文件大小
      */
-    fun remove(key: K): V?
+    fun onCacheAccessed(credentials: StorageCredentials, sha256: String, size: Long)
 
     /**
-     * 获取缓存数量
+     * 存储层缓存被删除时调用
+     *
+     * @param credentials 缓存所在的存储
+     * @param sha256 被删除的缓存文件的sha256
      */
-    fun count(): Long
-
-    /**
-     * 获取缓存当前总权重
-     */
-    fun weight(): Long
-
-    fun setMaxWeight(max: Long)
-
-    fun getMaxWeight(): Long
-
-    fun setCapacity(capacity: Int)
-
-    fun getCapacity(): Int
-
-    fun setKeyWeightSupplier(supplier: (k: K, v: V) -> Long)
-
-    /**
-     * 获取最旧的key
-     */
-    fun eldestKey(): K?
-
-    /**
-     * 缓存是否已满
-     */
-    fun full(): Boolean =
-        getCapacity() > 0L && count() >= getCapacity() || getMaxWeight() > 0L && weight() >= getMaxWeight()
-
-    fun addEldestRemovedListener(listener: EldestRemovedListener<K, V>)
-
-    fun getEldestRemovedListeners(): List<EldestRemovedListener<K, V>>
-}
-
-interface EldestRemovedListener<K, V> {
-    fun onEldestRemoved(key: K, value: V)
+    fun onCacheDeleted(credentials: StorageCredentials, sha256: String)
 }

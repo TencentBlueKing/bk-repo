@@ -25,37 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.local
+package com.tencent.bkrepo.common.storage.core.cache.evication
 
-import com.tencent.bkrepo.common.artifact.cache.EldestRemovedListener
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-class LocalSLRUCache(
-    capacity: Int = 0,
-    listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList()
-) : SLRUCache<String, Long>(listeners) {
-
-    override val probation = LocalLRUCache(
-        (capacity * FACTOR_PROBATION).toInt(),
-        mutableListOf(ProbationLRUEldestRemovedListener(listeners))
-    )
-
-    override val protected = LocalLRUCache(
-        (capacity * FACTOR_PROTECTED).toInt(),
-        mutableListOf(ProtectedLRUEldestRemovedListener(probation))
-    )
-
-    @Synchronized
-    override fun put(key: String, value: Long): Long? {
-        return super.put(key, value)
-    }
-
-    @Synchronized
-    override fun get(key: String): Long? {
-        return super.get(key)
-    }
-
-    @Synchronized
-    override fun remove(key: String): Long? {
-        return super.remove(key)
+@ConfigurationProperties("artifact.cache.eviction")
+data class ArtifactCacheEvictionProperties(
+    var enabled: Boolean = false,
+    var cacheType: String = CACHE_TYPE_LOCAL
+) {
+    companion object {
+        const val CACHE_TYPE_LOCAL = "LOCAL"
+        const val CACHE_TYPE_REDIS = "REDIS"
     }
 }

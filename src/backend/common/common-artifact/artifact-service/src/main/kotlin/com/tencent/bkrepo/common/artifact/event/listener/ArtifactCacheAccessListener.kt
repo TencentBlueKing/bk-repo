@@ -28,13 +28,14 @@
 package com.tencent.bkrepo.common.artifact.event.listener
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheCleaner
-import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheEvictionProperties
+import com.tencent.bkrepo.common.storage.core.cache.evication.ArtifactCacheCleaner
+import com.tencent.bkrepo.common.storage.core.cache.evication.ArtifactCacheEvictionProperties
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
@@ -44,7 +45,8 @@ import org.springframework.stereotype.Component
 @Component
 class ArtifactCacheAccessListener(
     private val artifactCacheEvictionProperties: ArtifactCacheEvictionProperties,
-    private val artifactCacheCleanerProvider: ObjectProvider<ArtifactCacheCleaner>
+    private val artifactCacheCleanerProvider: ObjectProvider<ArtifactCacheCleaner>,
+    private val storageProperties: StorageProperties,
 ) {
     @EventListener(ArtifactUploadedEvent::class)
     fun listen(event: ArtifactUploadedEvent) {
@@ -79,15 +81,20 @@ class ArtifactCacheAccessListener(
     private fun recordSingleNode(resource: ArtifactResource, storageCredentials: StorageCredentials?) {
         val cacheEnabled = resource.artifactMap.values.firstOrNull()?.getMetadata(METADATA_KEY_CACHE_ENABLED)
         if (cacheEnabled == true) {
-            artifactCacheCleanerProvider.ifAvailable?.onCacheAccessed(resource.node!!, storageCredentials?.key)
+            val credentials = storageCredentials ?: storageProperties.defaultStorageCredentials()
+            val node = resource.node!!
+            artifactCacheCleanerProvider.ifAvailable?.onCacheAccessed(credentials, node.sha256!!, node.size)
         }
     }
 
     private fun recordMultiNode(resource: ArtifactResource, storageCredentials: StorageCredentials?) {
         resource.artifactMap.forEach { (name, ais) ->
             if (ais.getMetadata(METADATA_KEY_CACHE_ENABLED) == true) {
+                val credentials = storageCredentials ?: storageProperties.defaultStorageCredentials()
                 val node = resource.nodes.firstOrNull { name.endsWith(it.name) }
-                node?.let { artifactCacheCleanerProvider.ifAvailable?.onCacheAccessed(it, storageCredentials?.key) }
+                node?.let {
+                    artifactCacheCleanerProvider.ifAvailable?.onCacheAccessed(credentials, it.sha256!!, it.size)
+                }
             }
         }
     }
@@ -97,9 +104,10 @@ class ArtifactCacheAccessListener(
             if (artifactFile.isInMemory() || artifactFile.isInLocalDisk() || artifactFile.isFallback()) {
                 return
             }
-            val artifact = ArtifactContextHolder.getArtifactInfo() ?: return
+            val repo = ArtifactContextHolder.getRepoDetail() ?: return
+            val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
             val artifactCacheCleaner = artifactCacheCleanerProvider.ifAvailable
-            artifactCacheCleaner?.onCacheAccessed(artifact.projectId, artifact.repoName, artifact.getArtifactFullPath())
+            artifactCacheCleaner?.onCacheAccessed(credentials, artifactFile.getFileSha256(), artifactFile.getSize())
         } catch (ignore: Exception) {
             logger.warn("failed to record artifact cache access", ignore)
         }

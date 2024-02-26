@@ -25,17 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache
+package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
-@ConfigurationProperties("artifact.cache.eviction")
-data class ArtifactCacheEvictionProperties(
-    var enabled: Boolean = false,
-    var cacheType: String = CACHE_TYPE_LOCAL
-) {
-    companion object {
-        const val CACHE_TYPE_LOCAL = "LOCAL"
-        const val CACHE_TYPE_REDIS = "REDIS"
-    }
-}
+/**
+ * 文件清理事件
+ */
+data class FileCleanedEvent(
+    /**
+     * 存储凭据
+     */
+    val credentials: StorageCredentials,
+    /**
+     * 正在清理的目录
+     */
+    val rootPath: String,
+    /**
+     * 被清理的文件完整路径
+     */
+    val fullPath: String,
+    /**
+     * 被清理文件的sha256
+     */
+    val sha256: String,
+)

@@ -25,36 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache
+package com.tencent.bkrepo.common.storage.core.cache.evication
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.storage.config.CacheProperties
 
 /**
- * 缓存清理器，用于记录缓存访问情况，在缓存达到限制大小时清理存储层缓存
+ * 缓存工厂类，用于为不同存储分别创建缓存
  */
-interface ArtifactCacheCleaner {
+interface OrderedCachedFactory<K, V> {
     /**
-     * 缓存被访问时的回调，用于缓存清理决策
+     * 创建缓存
      *
-     * @param projectId 被访问制品所属项目
-     * @param repoName 被访问制品所属仓库
-     * @param fullPath 被访问的制品
-     */
-    fun onCacheAccessed(projectId: String, repoName: String, fullPath: String)
-
-    /**
-     * 缓存被访问时的回调，用于缓存清理决策
+     * @param cacheProperties 缓存配置
      *
-     * @param node 被访问的制品
-     * @param storageKey 制品所在存储
+     * @return 缓存
      */
-    fun onCacheAccessed(node: NodeDetail, storageKey: String?)
-
-    /**
-     * 存储层缓存被删除时调用
-     *
-     * @param storageKey 缓存所在的存储
-     * @param sha256 被删除的缓存文件的sha256
-     */
-    fun onCacheDeleted(storageKey: String, sha256: String)
+    fun create(cacheProperties: CacheProperties): OrderedCache<K, V>
 }

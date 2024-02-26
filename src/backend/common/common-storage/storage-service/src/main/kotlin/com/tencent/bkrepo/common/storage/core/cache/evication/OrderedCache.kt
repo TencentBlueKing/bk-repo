@@ -25,20 +25,57 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache
+package com.tencent.bkrepo.common.storage.core.cache.evication
 
-import com.tencent.bkrepo.common.storage.config.CacheProperties
+interface OrderedCache<K, V> {
+    fun put(key: K, value: V): V?
+    fun get(key: K): V?
+    fun containsKey(key: K): Boolean
 
-/**
- * 缓存工厂类，用于为不同存储分别创建缓存
- */
-interface OrderedCachedFactory<K, V> {
     /**
-     * 创建缓存
+     * 移除缓存，需要调用该方法移除缓存，其他手段移除缓存可能导致weight统计异常
      *
-     * @param cacheProperties 缓存配置
-     *
-     * @return 缓存
+     * @param key key
+     * @return 缓存值，不存在时返回NULL
      */
-    fun create(cacheProperties: CacheProperties): OrderedCache<K, V>
+    fun remove(key: K): V?
+
+    /**
+     * 获取缓存数量
+     */
+    fun count(): Long
+
+    /**
+     * 获取缓存当前总权重
+     */
+    fun weight(): Long
+
+    fun setMaxWeight(max: Long)
+
+    fun getMaxWeight(): Long
+
+    fun setCapacity(capacity: Int)
+
+    fun getCapacity(): Int
+
+    fun setKeyWeightSupplier(supplier: (k: K, v: V) -> Long)
+
+    /**
+     * 获取最旧的key
+     */
+    fun eldestKey(): K?
+
+    /**
+     * 缓存是否已满
+     */
+    fun full(): Boolean =
+        getCapacity() > 0L && count() >= getCapacity() || getMaxWeight() > 0L && weight() >= getMaxWeight()
+
+    fun addEldestRemovedListener(listener: EldestRemovedListener<K, V>)
+
+    fun getEldestRemovedListeners(): List<EldestRemovedListener<K, V>>
+}
+
+interface EldestRemovedListener<K, V> {
+    fun onEldestRemoved(key: K, value: V)
 }

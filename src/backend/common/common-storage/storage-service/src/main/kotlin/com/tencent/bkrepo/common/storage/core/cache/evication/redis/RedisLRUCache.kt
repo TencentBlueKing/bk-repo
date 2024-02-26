@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.redis
+package com.tencent.bkrepo.common.storage.core.cache.evication.redis
 
-import com.tencent.bkrepo.common.artifact.cache.EldestRemovedListener
-import com.tencent.bkrepo.common.artifact.cache.OrderedCache
+import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
+import com.tencent.bkrepo.common.storage.core.cache.evication.OrderedCache
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.RedisScript
 

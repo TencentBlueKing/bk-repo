@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.common.artifact
 
-import com.tencent.bkrepo.common.artifact.cache.ArtifactCacheConfiguration
 import com.tencent.bkrepo.common.artifact.cluster.ArtifactClusterConfiguration
 import com.tencent.bkrepo.common.artifact.cns.CnsConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
@@ -70,7 +69,6 @@ import org.springframework.context.annotation.PropertySource
     ArtifactHealthConfiguration::class,
     ArtifactDownloadInterceptorConfiguration::class,
     ArtifactClusterConfiguration::class,
-    CnsConfiguration::class,
-    ArtifactCacheConfiguration::class,
+    CnsConfiguration::class
 )
 class ArtifactAutoConfiguration

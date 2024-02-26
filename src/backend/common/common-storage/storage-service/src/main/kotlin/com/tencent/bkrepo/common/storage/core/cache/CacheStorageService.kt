@@ -168,6 +168,7 @@ class CacheStorageService(
             fileLocator,
             credentials,
             resolver,
+            publisher
         )
         getCacheClient(credentials).walk(visitor)
         val result = mutableMapOf<Path, CleanupResult>()

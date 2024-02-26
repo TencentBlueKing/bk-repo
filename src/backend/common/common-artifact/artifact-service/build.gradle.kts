@@ -47,8 +47,6 @@ dependencies {
     api("org.influxdb:influxdb-java")
     api("org.apache.commons:commons-text")
 
-    compileOnly("org.springframework.boot:spring-boot-starter-data-redis")
-
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")
 }
