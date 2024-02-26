@@ -49,3 +49,5 @@
   - [同步执行日志接口](/apidoc/replication/record.md)
 - **审计日志**
   - [审计日志接口](/apidoc/log/log.md)
+- **Proxy**
+  - [Proxy接口](/apidoc/proxy/proxy.md)
