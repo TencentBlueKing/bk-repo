@@ -33,8 +33,8 @@ package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.repository.dao.ProxyChannelDao
 import com.tencent.bkrepo.repository.model.TProxyChannel

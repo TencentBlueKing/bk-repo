@@ -33,21 +33,30 @@ package com.tencent.bkrepo.pypi.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
+import com.tencent.bkrepo.pypi.constants.PypiQueryType
+import com.tencent.bkrepo.pypi.constants.QUERY_TYPE
+import com.tencent.bkrepo.pypi.util.UrlUtils
 import org.springframework.stereotype.Service
 
 @Service
-class PypiService : ArtifactService() {
+class PypiService(
+    private val pypiProperties: PypiProperties
+) : ArtifactService() {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun packages(pypiArtifactInfo: PypiArtifactInfo) {
@@ -57,7 +66,15 @@ class PypiService : ArtifactService() {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun simple(artifactInfo: PypiArtifactInfo): Any? {
+        val urlPath = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
+        if (!urlPath.endsWith(SLASH)) {
+            HttpContextHolder.getResponse().sendRedirect(UrlUtils.getRedirectUrl(pypiProperties.domain, urlPath))
+            return null
+        }
         val context = ArtifactQueryContext()
+        val artifactName = context.artifactInfo.getArtifactName()
+        val queryType = if (artifactName == SLASH) PypiQueryType.PACKAGE_INDEX else PypiQueryType.VERSION_INDEX
+        context.putAttribute(QUERY_TYPE, queryType)
         return repository.query(context)
     }
 

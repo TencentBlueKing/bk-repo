@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
@@ -51,6 +52,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
@@ -69,6 +71,8 @@ class NodeServiceImpl(
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
     override val servicePermissionClient: ServicePermissionClient,
+    override val routerControllerClient: RouterControllerClient,
+    override val routerControllerProperties: RouterControllerProperties
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -79,6 +83,8 @@ class NodeServiceImpl(
     repositoryProperties,
     messageSupplier,
     servicePermissionClient,
+    routerControllerClient,
+    routerControllerProperties
 ) {
 
     override fun computeSize(artifact: ArtifactInfo, estimated: Boolean, before: LocalDateTime): NodeSizeInfo {

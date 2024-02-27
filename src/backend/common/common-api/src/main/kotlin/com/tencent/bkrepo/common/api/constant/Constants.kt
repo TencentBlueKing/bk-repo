@@ -91,6 +91,7 @@ const val MAVEN_SERVICE_NAME = "\${service.prefix:}maven\${service.suffix:}"
 const val ARCHIVE_SERVICE_NAME = "\${service.prefix:}archive\${service.suffix:}"
 const val OPDATA_SERVICE_NAME = "\${service.prefix:}opdata\${service.suffix:}"
 const val GENERIC_SERVICE_NAME = "\${service.prefix:}generic\${service.suffix:}"
+const val ROUTER_CONTROLLER_SERVICE_NAME = "\${service.prefix:}router-controller\${service.suffix:}"
 
 /**
  * 认证相关
@@ -109,6 +110,8 @@ const val TEMPORARY_TOKEN_AUTH_PREFIX = "Temporary "
 const val MS_AUTH_HEADER_UID = "X-BKREPO-MS-UID"
 
 const val MS_REQUEST_SRC_CLUSTER = "X-BKREPO-MS-CLUSTER"
+
+const val PROXY_HEADER_NAME = "X-BKREPO-PROXY-NAME"
 
 /**
  * 验证是否允许下载时，写入request attributes的key
