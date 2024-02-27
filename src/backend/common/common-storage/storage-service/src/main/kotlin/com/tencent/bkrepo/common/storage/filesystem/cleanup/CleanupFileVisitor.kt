@@ -34,7 +34,7 @@ import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileReservedEvent
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import java.io.IOException
@@ -181,7 +181,7 @@ class CleanupFileVisitor(
     }
 
     private fun onFileReserved(filePath: Path) {
-        val event = FileReservedEvent(
+        val event = FileSurvivedEvent(
             credentials = credentials,
             rootPath = rootPath.toString(),
             fullPath = filePath.toString(),

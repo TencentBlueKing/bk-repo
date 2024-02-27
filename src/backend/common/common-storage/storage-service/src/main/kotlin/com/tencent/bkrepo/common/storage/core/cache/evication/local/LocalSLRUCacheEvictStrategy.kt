@@ -50,7 +50,7 @@ class LocalSLRUCacheEvictStrategy(
 
     @Synchronized
     override fun put(key: String, value: Long, score: Double?): Long? {
-        return super.put(key, value)
+        return super.put(key, value, score)
     }
 
     @Synchronized

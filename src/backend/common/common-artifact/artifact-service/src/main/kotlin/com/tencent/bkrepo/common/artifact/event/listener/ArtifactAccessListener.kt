@@ -43,7 +43,7 @@ import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 @Component
-class ArtifactCacheAccessListener(
+class ArtifactAccessListener(
     private val storageCacheEvictionProperties: StorageCacheEvictionProperties,
     private val storageCacheEvictorProvider: ObjectProvider<StorageCacheEvictor>,
     private val storageProperties: StorageProperties,
@@ -114,6 +114,6 @@ class ArtifactCacheAccessListener(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactCacheAccessListener::class.java)
+        private val logger = LoggerFactory.getLogger(ArtifactAccessListener::class.java)
     }
 }

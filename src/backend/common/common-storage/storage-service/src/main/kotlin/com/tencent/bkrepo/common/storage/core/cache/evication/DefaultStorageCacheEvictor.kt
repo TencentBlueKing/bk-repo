@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileReservedEvent
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -57,13 +57,13 @@ open class DefaultStorageCacheEvictor(
         }
     }
 
-
     @Async
     override fun onCacheReserved(credentials: StorageCredentials, sha256: String, size: Long, score: Double) {
         if (storageCacheEvictionProperties.enabled) {
             val strategy = getStrategy(credentials)
             if (!strategy.containsKey(sha256)) {
-                strategy.put(sha256, size)
+                logger.info("file[$sha256] of credential[${credentials.key}] will be put into strategy")
+                strategy.put(sha256, size, score)
             }
         }
     }
@@ -86,15 +86,15 @@ open class DefaultStorageCacheEvictor(
 
     @Async
     @EventListener(FileDeletedEvent::class)
-    open fun onFileCleaned(event: FileDeletedEvent) {
+    open fun onFileDeleted(event: FileDeletedEvent) {
         if (event.rootPath.toPath() == event.credentials.cache.path.toPath()) {
             onCacheDeleted(event.credentials, event.sha256)
         }
     }
 
     @Async
-    @EventListener(FileReservedEvent::class)
-    open fun onFileReserved(event: FileReservedEvent) {
+    @EventListener(FileSurvivedEvent::class)
+    open fun onFileSurvived(event: FileSurvivedEvent) {
         if (event.rootPath.toPath() == event.credentials.cache.path.toPath()) {
             val attributes = Files.readAttributes(event.fullPath.toPath(), BasicFileAttributes::class.java)
             val lastAccessTime = attributes.lastAccessTime().toMillis()

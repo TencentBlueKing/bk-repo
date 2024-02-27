@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 /**
  * 文件未被删除时触发事件
  */
-class FileReservedEvent(
+class FileSurvivedEvent(
     /**
      * 存储凭据
      */
