@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.util.http
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -41,7 +42,7 @@ internal class UrlFormatterTest {
         val path = StringPool.EMPTY
         val params = StringPool.EMPTY
         try {
-            val result = UrlFormatter.buildUrl(url, path, params)
+            UrlFormatter.buildUrl(url, path, params)
         } catch (e: Exception) {
             assertTrue(e.message!!.contains("Url should not be blank"))
         }
@@ -243,7 +244,7 @@ internal class UrlFormatterTest {
     fun addProtocol3() {
         val url = "bkrepo.example.com:test/"
         try {
-            val result = UrlFormatter.addProtocol(url).toString()
+            UrlFormatter.addProtocol(url).toString()
         } catch (e: Exception) {
             assertTrue(e.message!!.contains("Check your input url!"))
         }

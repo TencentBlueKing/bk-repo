@@ -51,5 +51,7 @@ data class GenericProperties(
     /**
      * 分块上传来源判断
      */
-    var chunkedUploadClients: List<String> = listOf("bk-repo")
+    var chunkedUploadClients: List<String> = listOf("bk-repo"),
+    @NestedConfigurationProperty
+    var proxy: ProxyProperties = ProxyProperties()
 )
