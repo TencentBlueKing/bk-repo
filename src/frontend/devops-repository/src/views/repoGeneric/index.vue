@@ -1394,7 +1394,7 @@
         }
     }
     .repo-generic-main {
-        height: calc(100% - 100px);
+        height: calc(100% - 70px);
         .repo-generic-side {
             height: 100%;
             overflow: hidden;
