@@ -30,11 +30,14 @@ package com.tencent.bkrepo.common.storage.core.cache.evication
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileCleanedEvent
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileReservedEvent
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
+import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.ConcurrentHashMap
 
 open class DefaultStorageCacheEvictor(
@@ -50,7 +53,18 @@ open class DefaultStorageCacheEvictor(
     override fun onCacheDeleted(credentials: StorageCredentials, sha256: String) {
         if (storageCacheEvictionProperties.enabled) {
             logger.info("remove cache of [$sha256], storage[${credentials.key}]")
-            getCache(credentials).remove(sha256)
+            getStrategy(credentials).remove(sha256)
+        }
+    }
+
+
+    @Async
+    override fun onCacheReserved(credentials: StorageCredentials, sha256: String, size: Long, score: Double) {
+        if (storageCacheEvictionProperties.enabled) {
+            val strategy = getStrategy(credentials)
+            if (!strategy.containsKey(sha256)) {
+                strategy.put(sha256, size)
+            }
         }
     }
 
@@ -60,18 +74,36 @@ open class DefaultStorageCacheEvictor(
             return
         }
         logger.info("cache file accessed, sha256[$sha256], storage[${credentials.key}], size[$size]")
-        getCache(credentials).put(sha256, size)
+        getStrategy(credentials).put(sha256, size)
+    }
+
+    override fun sync(credentials: StorageCredentials) {
+        if (storageCacheEvictionProperties.enabled) {
+            logger.info("start sync ${credentials.key}")
+            getStrategy(credentials).sync()
+        }
     }
 
     @Async
-    @EventListener(FileCleanedEvent::class)
-    open fun onFileCleaned(event: FileCleanedEvent) {
+    @EventListener(FileDeletedEvent::class)
+    open fun onFileCleaned(event: FileDeletedEvent) {
         if (event.rootPath.toPath() == event.credentials.cache.path.toPath()) {
             onCacheDeleted(event.credentials, event.sha256)
         }
     }
 
-    private fun getCache(credentials: StorageCredentials): StorageCacheEvictStrategy<String, Long> {
+    @Async
+    @EventListener(FileReservedEvent::class)
+    open fun onFileReserved(event: FileReservedEvent) {
+        if (event.rootPath.toPath() == event.credentials.cache.path.toPath()) {
+            val attributes = Files.readAttributes(event.fullPath.toPath(), BasicFileAttributes::class.java)
+            val lastAccessTime = attributes.lastAccessTime().toMillis()
+            val size = attributes.size()
+            onCacheReserved(event.credentials, event.sha256, size, lastAccessTime.toDouble())
+        }
+    }
+
+    private fun getStrategy(credentials: StorageCredentials): StorageCacheEvictStrategy<String, Long> {
         val cache = storageCacheMap.getOrPut(credentials.cache.path) {
             val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
             cacheFactory.create(credentials.cache).apply { addEldestRemovedListener(listener) }
@@ -80,7 +112,10 @@ open class DefaultStorageCacheEvictor(
         return cache
     }
 
-    private fun refreshCacheProperties(cache: StorageCacheEvictStrategy<String, Long>, credentials: StorageCredentials) {
+    private fun refreshCacheProperties(
+        cache: StorageCacheEvictStrategy<String, Long>,
+        credentials: StorageCredentials
+    ) {
         cache.setMaxWeight(credentials.cache.maxSize)
         cache.getEldestRemovedListeners().forEach {
             if (it is StorageEldestRemovedListener) {

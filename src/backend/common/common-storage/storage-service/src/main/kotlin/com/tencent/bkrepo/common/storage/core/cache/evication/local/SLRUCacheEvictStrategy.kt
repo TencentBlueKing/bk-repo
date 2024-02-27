@@ -38,7 +38,7 @@ abstract class SLRUCacheEvictStrategy<K, V>(
 
     protected abstract val protected: StorageCacheEvictStrategy<K, V>
 
-    override fun put(key: K, value: V): V? {
+    override fun put(key: K, value: V, score: Double?): V? {
         return when {
             protected.containsKey(key) -> {
                 protected.put(key, value)
@@ -95,6 +95,11 @@ abstract class SLRUCacheEvictStrategy<K, V>(
 
     override fun eldestKey(): K? {
         return probation.eldestKey() ?: protected.eldestKey()
+    }
+
+    override fun sync() {
+        protected.sync()
+        probation.sync()
     }
 
     override fun addEldestRemovedListener(listener: EldestRemovedListener<K, V>) {

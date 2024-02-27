@@ -30,9 +30,12 @@ package com.tencent.bkrepo.common.storage.core.cache.evication.redis
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
 import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictStrategy
+import com.tencent.bkrepo.common.storage.util.existReal
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.ScanOptions
 import org.springframework.data.redis.core.script.RedisScript
+import java.nio.file.Path
 import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 
@@ -42,6 +45,7 @@ import java.util.concurrent.Semaphore
  */
 class RedisLRUCacheEvictStrategy(
     private val cacheName: String,
+    private val cacheDir: Path,
     private val redisTemplate: RedisTemplate<String, String>,
     private var capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
@@ -92,9 +96,9 @@ class RedisLRUCacheEvictStrategy(
         }
     }
 
-    override fun put(key: String, value: Long): Long? {
+    override fun put(key: String, value: Long, score: Double?): Long? {
         val keys = listOf(zsetKey, hashKey, totalWeightKey)
-        val args = listOf(score(), key, value.toString())
+        val args = listOf(score(score), key, value.toString())
         val oldVal = redisTemplate.execute(putScript, keys, args)
         if (shouldEvict()) {
             evictSemaphore.release()
@@ -143,6 +147,17 @@ class RedisLRUCacheEvictStrategy(
         return redisTemplate.opsForZSet().range(zsetKey, 0L, 0L)?.firstOrNull()
     }
 
+    override fun sync() {
+        redisTemplate.opsForHash<String, Long>().scan(hashKey, ScanOptions.scanOptions().build()).use {
+            while (it.hasNext()) {
+                val key = it.next().key
+                if (!cacheDir.resolve(key).existReal()) {
+                    remove(key)
+                }
+            }
+        }
+    }
+
     override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Long>) {
         this.listeners.add(listener)
     }
@@ -161,7 +176,7 @@ class RedisLRUCacheEvictStrategy(
 
     private fun shouldEvict() = (redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight
 
-    private fun score() = System.currentTimeMillis().toString()
+    private fun score(score: Double? = null) = score?.toString() ?: System.currentTimeMillis().toString()
 
     companion object {
         private val logger = LoggerFactory.getLogger(RedisLRUCacheEvictStrategy::class.java)

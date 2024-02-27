@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvicti
 import com.tencent.bkrepo.common.storage.core.cache.evication.local.LocalSLRUCacheEvictStrategy
 import com.tencent.bkrepo.common.storage.core.cache.evication.redis.RedisSLRUCacheEvictStrategy
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
@@ -66,7 +67,7 @@ class StorageCacheEvictConfiguration {
     fun localCacheFactory(): StrategyFactory<String, Long> {
         return object : StrategyFactory<String, Long> {
             override fun create(cacheProperties: CacheProperties): StorageCacheEvictStrategy<String, Long> {
-                return LocalSLRUCacheEvictStrategy(0).apply {
+                return LocalSLRUCacheEvictStrategy(0, cacheProperties.path.toPath()).apply {
                     setMaxWeight(cacheProperties.maxSize)
                     setKeyWeightSupplier { _, v -> v.toString().toLong() }
                 }
@@ -82,7 +83,8 @@ class StorageCacheEvictConfiguration {
         return object : StrategyFactory<String, Long> {
             override fun create(cacheProperties: CacheProperties): StorageCacheEvictStrategy<String, Long> {
                 val cacheName = cacheProperties.path.replace("/", "__")
-                val cache = RedisSLRUCacheEvictStrategy(cacheName, redisTemplate, 0)
+                val cachePath = cacheProperties.path.toPath()
+                val cache = RedisSLRUCacheEvictStrategy(cacheName, cachePath, redisTemplate, 0)
                 cache.setMaxWeight(cacheProperties.maxSize)
                 return cache
             }

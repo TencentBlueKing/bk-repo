@@ -29,9 +29,12 @@ package com.tencent.bkrepo.common.storage.core.cache.evication.local
 
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
 import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictStrategy
+import com.tencent.bkrepo.common.storage.util.existReal
+import java.nio.file.Path
 
 class LocalLRUCacheEvictStrategy(
     private var capacity: Int = 0,
+    private val cacheDir: Path,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
 ) : LinkedHashMap<String, Long>((capacity / 0.75f).toInt() + 1, 0.75f, true), StorageCacheEvictStrategy<String, Long> {
 
@@ -40,7 +43,7 @@ class LocalLRUCacheEvictStrategy(
     private var weightSupplier: ((k: String, v: Long) -> Long) = { _, _ -> 0 }
 
     @Synchronized
-    override fun put(key: String, value: Long): Long? {
+    override fun put(key: String, value: Long, score: Double?): Long? {
         totalWeight += weightSupplier.invoke(key, value)
         return super.put(key, value)
     }
@@ -89,6 +92,14 @@ class LocalLRUCacheEvictStrategy(
         val field = LinkedHashMap::class.java.getDeclaredField("head")
         field.isAccessible = true
         return (field.get(this) as? Map.Entry<String, Any?>)?.key
+    }
+
+    override fun sync() {
+        keys.forEach {
+            if (!cacheDir.resolve(it).existReal()) {
+                remove(it)
+            }
+        }
     }
 
     override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Long>) {

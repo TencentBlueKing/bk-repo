@@ -28,7 +28,14 @@
 package com.tencent.bkrepo.common.storage.core.cache.evication
 
 interface StorageCacheEvictStrategy<K, V> {
-    fun put(key: K, value: V): V?
+    /**
+     * 添加缓存记录
+     *
+     * @param key 缓存key，默认为缓存文件sha256
+     * @param value 缓存值，默认为缓存文件大小
+     * @param score 缓存优先级，用于缓存淘汰决策，默认为当前时间戳
+     */
+    fun put(key: K, value: V, score: Double? = System.currentTimeMillis().toDouble()): V?
     fun get(key: K): V?
     fun containsKey(key: K): Boolean
 
@@ -64,6 +71,11 @@ interface StorageCacheEvictStrategy<K, V> {
      * 获取最旧的key
      */
     fun eldestKey(): K?
+
+    /**
+     * 同步策略中存储的缓存索引条目与实际磁盘缓存条目
+     */
+    fun sync()
 
     /**
      * 缓存是否已满

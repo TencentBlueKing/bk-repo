@@ -30,9 +30,12 @@ package com.tencent.bkrepo.common.storage.core.cache.evication.redis
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
 import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictStrategy
+import com.tencent.bkrepo.common.storage.util.existReal
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.ScanOptions
 import org.springframework.data.redis.core.script.RedisScript
+import java.nio.file.Path
 import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 
@@ -41,6 +44,7 @@ import java.util.concurrent.Semaphore
  */
 class RedisSLRUCacheEvictStrategy(
     cacheName: String,
+    private val cacheDir: Path,
     private val redisTemplate: RedisTemplate<String, String>,
     private val capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
@@ -101,13 +105,13 @@ class RedisSLRUCacheEvictStrategy(
         }
     }
 
-    override fun put(key: String, value: Long): Long? {
+    override fun put(key: String, value: Long, score: Double?): Long? {
         logger.info("put [$key] to cache, size[$value]")
         val keys = listOf(
             protectedLruKey, protectedHashKey, protectedTotalWeightKey,
             probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
         )
-        val oldVal = redisTemplate.execute(putScript, keys, score(), key, value.toString())?.toLong()
+        val oldVal = redisTemplate.execute(putScript, keys, score(score), key, value.toString())?.toLong()
         if (shouldEvict()) {
             evictSemaphore.release()
         }
@@ -168,6 +172,11 @@ class RedisSLRUCacheEvictStrategy(
             ?: redisTemplate.opsForZSet().range(protectedLruKey, 0L, 0L)?.firstOrNull()
     }
 
+    override fun sync() {
+        sync(protectedHashKey)
+        sync(probationHashKey)
+    }
+
     override fun getEldestRemovedListeners(): List<EldestRemovedListener<String, Long>> {
         return listeners
     }
@@ -179,6 +188,19 @@ class RedisSLRUCacheEvictStrategy(
 
     override fun setKeyWeightSupplier(supplier: (k: String, v: Long) -> Long) {
         throw UnsupportedOperationException()
+    }
+
+    private fun sync(hashKey: String) {
+        val options = ScanOptions.scanOptions().build()
+        redisTemplate.opsForHash<String, Long>().scan(hashKey, options).use {
+            while (it.hasNext()) {
+                val key = it.next().key
+                if (!cacheDir.resolve(key).existReal()) {
+                    logger.info("$key cache file was not exists and will be removed")
+                    remove(key)
+                }
+            }
+        }
     }
 
     private fun evict() {
@@ -217,7 +239,7 @@ class RedisSLRUCacheEvictStrategy(
         }
     }
 
-    private fun score() = System.currentTimeMillis().toString()
+    private fun score(score: Double? = null) = score?.toString() ?: System.currentTimeMillis().toString()
 
     companion object {
         private val logger = LoggerFactory.getLogger(RedisSLRUCacheEvictStrategy::class.java)

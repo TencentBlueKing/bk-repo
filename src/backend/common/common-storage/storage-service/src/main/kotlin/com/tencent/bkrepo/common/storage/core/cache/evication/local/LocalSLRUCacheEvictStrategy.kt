@@ -28,24 +28,28 @@
 package com.tencent.bkrepo.common.storage.core.cache.evication.local
 
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
+import java.nio.file.Path
 
 class LocalSLRUCacheEvictStrategy(
     capacity: Int = 0,
+    cacheDir: Path,
     listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList()
 ) : SLRUCacheEvictStrategy<String, Long>(listeners) {
 
     override val probation = LocalLRUCacheEvictStrategy(
         (capacity * FACTOR_PROBATION).toInt(),
+        cacheDir,
         mutableListOf(ProbationLRUEldestRemovedListener(listeners))
     )
 
     override val protected = LocalLRUCacheEvictStrategy(
         (capacity * FACTOR_PROTECTED).toInt(),
+        cacheDir,
         mutableListOf(ProtectedLRUEldestRemovedListener(probation))
     )
 
     @Synchronized
-    override fun put(key: String, value: Long): Long? {
+    override fun put(key: String, value: Long, score: Double?): Long? {
         return super.put(key, value)
     }
 

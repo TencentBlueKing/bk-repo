@@ -25,43 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 缓存清理器，用于记录缓存访问情况，在缓存达到限制大小时清理存储层缓存
- */
-interface StorageCacheEvictor {
-    /**
-     *  缓存被访问时的回调，用于缓存清理决策
-     *
-     *  @param credentials 缓存所在存储
-     *  @param sha256 缓存文件sha256
-     *  @param size 缓存文件大小
-     */
-    fun onCacheAccessed(credentials: StorageCredentials, sha256: String, size: Long)
-
-    /**
-     * 存储层缓存被删除时调用
-     *
-     * @param credentials 缓存所在的存储
-     * @param sha256 被删除的缓存文件的sha256
-
-     */
-    fun onCacheDeleted(credentials: StorageCredentials, sha256: String)
-
-    /**
-     * 缓存未被删除时调用，用于将不包含在缓存清理器内的条目添加到清理器内
-     * @param credentials 缓存所在的存储
-     * @param sha256 被删除的缓存文件的sha256
-     * @param size 文件大小
-     * @param score 缓存优先级，用于缓存淘汰决策
-     */
-    fun onCacheReserved(credentials: StorageCredentials, sha256: String, size: Long, score: Double)
-
-    /**
-     * 同步缓存清理器内维护的索引与实际缓存文件条目
-     */
-    fun sync(credentials: StorageCredentials)
-}
+@ConfigurationProperties("job.storage-cache-evictor-sync")
+class StorageCacheEvictorSyncJobProperties(
+    override var enabled: Boolean = false,
+    override var cron: String = "0 0 6 * * ?",
+) : BatchJobProperties()

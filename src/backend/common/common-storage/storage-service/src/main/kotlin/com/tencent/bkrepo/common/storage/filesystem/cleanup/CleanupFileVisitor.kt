@@ -33,7 +33,8 @@ import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileCleanedEvent
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileReservedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import java.io.IOException
@@ -89,6 +90,9 @@ class CleanupFileVisitor(
                 // 仅统计非temp目录下未被清理的文件
                 result.rootDirNotDeletedFile += 1
                 result.rootDirNotDeletedSize += size
+            }
+            if(!deleted) {
+                onFileReserved(filePath)
             }
         }
         return FileVisitResult.CONTINUE
@@ -167,7 +171,17 @@ class CleanupFileVisitor(
     }
 
     private fun onFileCleaned(filePath: Path) {
-        val event = FileCleanedEvent(
+        val event = FileDeletedEvent(
+            credentials = credentials,
+            rootPath = rootPath.toString(),
+            fullPath = filePath.toString(),
+            sha256 = filePath.fileName.toString()
+        )
+        publisher.publishEvent(event)
+    }
+
+    private fun onFileReserved(filePath: Path) {
+        val event = FileReservedEvent(
             credentials = credentials,
             rootPath = rootPath.toString(),
             fullPath = filePath.toString(),
