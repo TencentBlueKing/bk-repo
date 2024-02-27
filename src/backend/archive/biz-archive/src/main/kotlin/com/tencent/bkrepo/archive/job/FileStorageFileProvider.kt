@@ -93,7 +93,8 @@ class FileStorageFileProvider(
         }
         val file = filePath.toFile()
         if (range != Range.FULL_RANGE) {
-            check(range.length == file.length())
+            val length = file.length()
+            check(range.length == length) { "File[$filePath] broken,require ${range.length},but actual $length." }
         }
         return file
     }
