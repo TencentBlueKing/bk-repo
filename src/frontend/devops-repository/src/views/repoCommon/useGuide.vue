@@ -76,7 +76,7 @@
                     basicOption.push({ name: 'push', label: this.$t('push') })
                 }
                 if (this.repoType === 'nuget' && this.storeType !== 'virtual' && !this.whetherSoftware) {
-                    basicOption.push({ name: 'delete', label: this.$t('deleteArtifact') })
+                    basicOption.push({ name: 'delete', label: this.$t('delete') })
                 }
                 return basicOption
             },
