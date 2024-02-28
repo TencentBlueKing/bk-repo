@@ -28,20 +28,28 @@
 package com.tencent.bkrepo.proxy.security
 
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
 import org.springframework.web.servlet.HandlerMapping
 
 /**
- * 校验上传的项目是否和Proxy所属项目一致
+ * 校验项目是否和Proxy所属项目一致
  */
 @Aspect
 class ProxyProjectPermissionAspect {
+
+    private val proxyRepositoryClient: ProxyRepositoryClient by lazy {
+        ProxyFeignClientFactory.create("repository")
+    }
 
     @Around(
         "@within(org.springframework.web.bind.annotation.RestController) " +
@@ -49,12 +57,23 @@ class ProxyProjectPermissionAspect {
     )
     fun checkProject(point: ProceedingJoinPoint): Any? {
         val request = HttpContextHolder.getRequest()
+        val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
+        require(uriAttribute is Map<*, *>)
+        val projectId = uriAttribute[PROJECT_ID]?.toString()
+        val repoName = uriAttribute[REPO_NAME]?.toString()
+        val proxyProjectId = ProxyEnv.getProjectId()
         if (request.method.equals(HttpMethod.PUT.name, true)) {
-            val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
-            require(uriAttribute is Map<*, *>)
-            val projectId = uriAttribute[PROJECT_ID]?.toString()
-            val proxyProjectId = ProxyEnv.getProjectId()
             if (!projectId.isNullOrBlank() && projectId != proxyProjectId) {
+                throw PermissionException()
+            }
+        }
+        if (request.method.equals(HttpMethod.GET.name, true)) {
+            if (projectId.isNullOrBlank() || repoName.isNullOrBlank()) {
+                throw IllegalArgumentException("$projectId/$repoName")
+            }
+            val repoDetail = proxyRepositoryClient.getRepoDetail(projectId, repoName).data
+                ?: throw RepoNotFoundException("$projectId/$repoName")
+            if (!repoDetail.public && projectId != proxyProjectId) {
                 throw PermissionException()
             }
         }
