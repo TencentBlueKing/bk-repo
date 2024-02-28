@@ -30,5 +30,5 @@
  */
 
 dependencies {
-    implementation(project(":proxy:biz-proxy"))
+    implementation(project(":biz-proxy"))
 }
