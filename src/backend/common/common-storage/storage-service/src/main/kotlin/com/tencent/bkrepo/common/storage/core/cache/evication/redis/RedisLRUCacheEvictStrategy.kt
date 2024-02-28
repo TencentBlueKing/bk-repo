@@ -174,7 +174,8 @@ class RedisLRUCacheEvictStrategy(
         }
     }
 
-    private fun shouldEvict() = (redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight
+    private fun shouldEvict() =
+        maxWeight > 0 && (redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight
 
     private fun score(score: Double? = null) = score?.toString() ?: System.currentTimeMillis().toString()
 

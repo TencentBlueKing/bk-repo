@@ -194,7 +194,7 @@ class CacheStorageService(
     }
 
     /**
-     * 删除缓存文件
+     * 删除缓存文件，需要检查文件是否已经在最终存储中存在，避免将未上传成功的制品删除导致数据丢失
      */
     fun deleteCacheFile(
         path: String,

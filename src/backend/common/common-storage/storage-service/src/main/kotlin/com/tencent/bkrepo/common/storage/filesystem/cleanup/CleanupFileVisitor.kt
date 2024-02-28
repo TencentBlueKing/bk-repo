@@ -92,7 +92,7 @@ class CleanupFileVisitor(
                 result.rootDirNotDeletedSize += size
             }
             if(!deleted) {
-                onFileReserved(filePath)
+                onFileSurvived(filePath)
             }
         }
         return FileVisitResult.CONTINUE
@@ -180,7 +180,7 @@ class CleanupFileVisitor(
         publisher.publishEvent(event)
     }
 
-    private fun onFileReserved(filePath: Path) {
+    private fun onFileSurvived(filePath: Path) {
         val event = FileSurvivedEvent(
             credentials = credentials,
             rootPath = rootPath.toString(),

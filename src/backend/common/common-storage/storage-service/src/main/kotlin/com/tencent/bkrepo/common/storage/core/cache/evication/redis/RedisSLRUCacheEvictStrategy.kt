@@ -40,10 +40,14 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 
 /**
- * 基于Redis实现的SLRU，缓存满后将异步清理
+ * 基于Redis实现的SLRU，缓存满后将异步清理，缓存实际大小会超过设置的最大值
+ * key缓存为文件sha256，value为文件大小
+ *
+ * 为了应对突发稀疏流量，分为probation于protected两块区域，缓存第一次访问时会被放入probation，再次访问会晋升到protected
+ * protected区域被淘汰时进入probation区域，probation的缓存被淘汰时候移除缓存
  */
 class RedisSLRUCacheEvictStrategy(
-    cacheName: String,
+    private val cacheName: String,
     private val cacheDir: Path,
     private val redisTemplate: RedisTemplate<String, String>,
     private val capacity: Int = 0,
@@ -66,19 +70,35 @@ class RedisSLRUCacheEvictStrategy(
      * 记录当前缓存的总权重
      */
     private val totalWeightKey = "$cacheName:slru:total_weight"
+
+    /**
+     * 存在于保护区的缓存总权重
+     */
     private val protectedTotalWeightKey = "$cacheName:slru:total_weight_protected"
+
+    /**
+     * 存在于淘汰区的缓存总权重
+     */
     private val probationTotalWeightKey = "$cacheName:slru:total_weight_probation"
 
     /**
-     * 缓存LRU队列，score为缓存写入时刻的时间戳
+     * 保护区缓存LRU队列，score为缓存写入时刻的时间戳
      */
     private val protectedLruKey = "$cacheName:slru:protected_lru"
+
+    /**
+     * 淘汰区缓存LRU队列，score为缓存写入时刻的时间戳
+     */
     private val probationLruKey = "$cacheName:slru:probation_lru"
 
     /**
-     * 存放缓存实际值
+     * 存放保护区缓存实际值
      */
     private val protectedHashKey = "$cacheName:slru:protected_values"
+
+    /**
+     * 存放淘汰区缓存实际值
+     */
     private val probationHashKey = "$cacheName:slru:probation_values"
 
     private val putScript = RedisScript.of(SCRIPT_PUT, String::class.java)
@@ -87,11 +107,15 @@ class RedisSLRUCacheEvictStrategy(
     private val getScript = RedisScript.of(SCRIPT_GET, String::class.java)
     private val removeScript = RedisScript.of(SCRIPT_REMOVE, String::class.java)
 
+    /**
+     * 缓存允许存放的最大权重
+     */
     private var maxWeight: Long = 0L
     private var protectedMaxWeight: Long = 0L
     private var probationMaxWeight: Long = 0L
 
     init {
+        // 无限循环执行缓存清理，缓存满时通过信号量通知开始淘汰
         evictExecutor.execute {
             while (true) {
                 evictSemaphore.acquire()
@@ -112,6 +136,7 @@ class RedisSLRUCacheEvictStrategy(
             probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
         )
         val oldVal = redisTemplate.execute(putScript, keys, score(score), key, value.toString())?.toLong()
+        // 检查缓存是否已满，满了之后会触发缓存淘汰
         if (shouldEvict()) {
             evictSemaphore.release()
         }
@@ -210,13 +235,18 @@ class RedisSLRUCacheEvictStrategy(
             count++
             evictProtected()
             evictProbation()
+            if (count > MAX_EVICT_COUNT) {
+                logger.info("$cacheName exceed max evict count[$MAX_EVICT_COUNT]")
+                break
+            }
         }
         if (count > 0) {
             logger.info("$count key was evicted")
         }
     }
 
-    private fun shouldEvict() = (redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight
+    private fun shouldEvict() =
+        maxWeight > 0 && (redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight
 
     private fun evictProtected() {
         if ((redisTemplate.opsForValue().get(protectedTotalWeightKey)?.toLong() ?: 0L) > protectedMaxWeight) {
@@ -244,8 +274,27 @@ class RedisSLRUCacheEvictStrategy(
     companion object {
         private val logger = LoggerFactory.getLogger(RedisSLRUCacheEvictStrategy::class.java)
 
+        /**
+         * probation区域权重占比
+         */
         private const val FACTOR_PROBATION = 0.2
+
+        /**
+         * protected区域权重占比
+         */
         private const val FACTOR_PROTECTED = 0.8
+
+        /**
+         * 一次淘汰中最多淘汰的缓存条目数
+         */
+        private const val MAX_EVICT_COUNT = 1000
+
+        /**
+         * put操作，分以下三种情况
+         * 1. 缓存已存在于protected时，仅更新lru队列排序
+         * 2. 缓存已存在于probation时，晋升缓存到protected
+         * 3. 都不存在时添加缓存到probation
+         */
         private const val SCRIPT_PUT = """
             local z1 = KEYS[1]
             local h1 = KEYS[2]
@@ -281,6 +330,9 @@ class RedisSLRUCacheEvictStrategy(
             return nil
         """
 
+        /**
+         * 对protected区域执行淘汰，会将被淘汰的缓存移入probation，同时修改对应区域总权重
+         */
         private const val SCRIPT_EVICT_PROTECTED = """
             local z1 = KEYS[1]
             local h1 = KEYS[2]
@@ -302,6 +354,9 @@ class RedisSLRUCacheEvictStrategy(
             end
         """
 
+        /**
+         * 对probation区域执行淘汰
+         */
         private const val SCRIPT_EVICT_PROBATION = """
             local z2 = KEYS[1]
             local h2 = KEYS[2]
@@ -320,6 +375,9 @@ class RedisSLRUCacheEvictStrategy(
             return nil
         """
 
+        /**
+         * 分别尝试从protected和probation区域获取缓存，同时改变对应lru队列排序
+         */
         private const val SCRIPT_GET = """
             local z1 = KEYS[1]
             local h1 = KEYS[2]
@@ -351,6 +409,9 @@ class RedisSLRUCacheEvictStrategy(
             return nil
         """
 
+        /**
+         * 移除缓存，减少对应区域权重与总权重
+         */
         private const val SCRIPT_REMOVE = """
             local z1 = KEYS[1]
             local h1 = KEYS[2]

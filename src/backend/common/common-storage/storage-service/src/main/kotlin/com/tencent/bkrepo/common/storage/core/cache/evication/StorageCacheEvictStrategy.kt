@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.evication
 
+/**
+ * 存储缓存淘汰策略，维护一份硬盘缓存文件的索引，根据特定策略对索引进行淘汰同时删除硬盘上的缓存文件
+ */
 interface StorageCacheEvictStrategy<K, V> {
     /**
      * 添加缓存记录
@@ -36,7 +39,19 @@ interface StorageCacheEvictStrategy<K, V> {
      * @param score 缓存优先级，用于缓存淘汰决策，默认为当前时间戳
      */
     fun put(key: K, value: V, score: Double? = System.currentTimeMillis().toDouble()): V?
+
+    /**
+     * 获取缓存值
+     *
+     * @param key 缓存key
+     */
     fun get(key: K): V?
+
+    /**
+     * 维护的索引中是否包含缓存
+     *
+     * @param key 缓存key
+     */
     fun containsKey(key: K): Boolean
 
     /**
@@ -57,14 +72,39 @@ interface StorageCacheEvictStrategy<K, V> {
      */
     fun weight(): Long
 
+    /**
+     * 设置缓存最大权重，超过权重后开始执行缓存淘汰直到小于最大权重，为0时表示无限制
+     *
+     * @param max 最大权重值
+     */
     fun setMaxWeight(max: Long)
 
+    /**
+     * 获取最大权重
+     *
+     * @return 最大权重
+     */
     fun getMaxWeight(): Long
 
+    /**
+     * 设置缓存容量，为0时表示无限制
+     *
+     * @param capacity 缓存容量
+     */
     fun setCapacity(capacity: Int)
 
+    /**
+     * 获取缓存容量
+     *
+     * @return 缓存容量
+     */
     fun getCapacity(): Int
 
+    /**
+     * 设置缓存条目权重计算方式
+     *
+     * @param supplier 用于计算缓存条目权重
+     */
     fun setKeyWeightSupplier(supplier: (k: K, v: V) -> Long)
 
     /**
@@ -83,11 +123,30 @@ interface StorageCacheEvictStrategy<K, V> {
     fun full(): Boolean =
         getCapacity() > 0L && count() >= getCapacity() || getMaxWeight() > 0L && weight() >= getMaxWeight()
 
+    /**
+     * 添加缓存淘汰监听器
+     *
+     * @param listener 缓存淘汰监听器
+     */
     fun addEldestRemovedListener(listener: EldestRemovedListener<K, V>)
 
+    /**
+     * 获取缓存淘汰监听器
+     *
+     * @return 所有缓存淘汰监听器
+     */
     fun getEldestRemovedListeners(): List<EldestRemovedListener<K, V>>
 }
 
+/**
+ * 缓存淘汰回调
+ */
 interface EldestRemovedListener<K, V> {
+    /**
+     * 缓存淘汰回调
+     *
+     * @param key 被淘汰的缓存key
+     * @param value 被淘汰的缓存value
+     */
     fun onEldestRemoved(key: K, value: V)
 }
