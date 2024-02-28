@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.type.edge
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
@@ -44,7 +45,6 @@ import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.UrlUtils
 import com.tencent.bkrepo.common.storage.innercos.http.toMediaTypeOrNull
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaRecordClient
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.resolve.file
 
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
@@ -36,7 +37,6 @@ import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput

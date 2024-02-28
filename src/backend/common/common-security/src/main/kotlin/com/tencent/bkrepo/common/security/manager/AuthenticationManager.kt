@@ -29,29 +29,35 @@ package com.tencent.bkrepo.common.security.manager
 
 import com.tencent.bkrepo.auth.api.ServiceAccountClient
 import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import org.springframework.stereotype.Component
+import org.springframework.beans.factory.annotation.Autowired
 
-/**
- * 认证管理器
- */
-@Component
-class AuthenticationManager(
-    private val serviceUserClient: ServiceUserClient,
-    private val serviceAccountClient: ServiceAccountClient,
-    private val serviceOauthAuthorizationClient: ServiceOauthAuthorizationClient
-) {
+@Suppress("SpringJavaInjectionPointsAutowiringInspection")
+open class AuthenticationManager {
+    @Autowired
+    private lateinit var serviceUserClient: ServiceUserClient
+
+    @Autowired
+    private lateinit var serviceAccountClient: ServiceAccountClient
+
+    @Autowired
+    private lateinit var serviceOauthAuthorizationClient: ServiceOauthAuthorizationClient
+
+    @Autowired
+    private lateinit var serviceTemporaryTokenClient: ServiceTemporaryTokenClient
 
     /**
      * 校验普通用户类型账户
      * @throws AuthenticationException 校验失败
      */
-    fun checkUserAccount(uid: String, token: String): String {
+    open fun checkUserAccount(uid: String, token: String): String {
         val response = serviceUserClient.checkToken(uid, token)
         return if (response.data == true) uid else throw AuthenticationException("Authorization value check failed")
     }
@@ -60,7 +66,7 @@ class AuthenticationManager(
      * 校验平台账户
      * @throws AuthenticationException 校验失败
      */
-    fun checkPlatformAccount(accessKey: String, secretKey: String): String {
+    open fun checkPlatformAccount(accessKey: String, secretKey: String): String {
         val response = serviceAccountClient.checkAccountCredential(
             accesskey = accessKey,
             secretkey = secretKey,
@@ -72,7 +78,7 @@ class AuthenticationManager(
     /**
      * 校验Oauth Token
      */
-    fun checkOauthToken(accessToken: String): String {
+    open fun checkOauthToken(accessToken: String): String {
         val response = serviceOauthAuthorizationClient.validateToken(accessToken)
         return response.data ?: throw AuthenticationException("Access token check failed.")
     }
@@ -80,7 +86,7 @@ class AuthenticationManager(
     /**
      * 普通用户类型账户
      */
-    fun createUserAccount(userId: String) {
+    open fun createUserAccount(userId: String) {
         val request = CreateUserRequest(userId = userId, name = userId)
         serviceUserClient.createUser(request)
     }
@@ -89,7 +95,7 @@ class AuthenticationManager(
      * 根据用户id[userId]查询用户信息
      * 当用户不存在时返回`null`
      */
-    fun findUserAccount(userId: String): UserInfo? {
+    open fun findUserAccount(userId: String): UserInfo? {
         return serviceUserClient.userInfoById(userId).data
     }
     /**
@@ -107,15 +113,18 @@ class AuthenticationManager(
         return serviceUserClient.userTokenById(userId).data
     }
 
-    fun findOauthToken(accessToken: String): OauthToken? {
+    open fun findOauthToken(accessToken: String): OauthToken? {
         return serviceOauthAuthorizationClient.getToken(accessToken).data
     }
 
     /**
      * 根据appId和ak查找sk
      * */
-    fun findSecretKey(appId: String, accessKey: String): String? {
+    open fun findSecretKey(appId: String, accessKey: String): String? {
         return serviceAccountClient.findSecretKey(appId, accessKey).data
     }
 
+    open fun getTokenInfo(token: String): TemporaryTokenInfo? {
+        return serviceTemporaryTokenClient.getTokenInfo(token).data
+    }
 }

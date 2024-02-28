@@ -60,6 +60,7 @@ object StringPool {
     const val UTF_8 = "UTF-8"
     const val BYTES = "bytes"
     const val NO_CACHE = "no-cache"
+    const val URL_REGEX = "(\\w+):\\/\\/([^/:]+)(:\\d*)?([^# ]*)"
 
     private val alphabet: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
 

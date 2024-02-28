@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.job
 
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.kotlin.adapter.util.CompletableFutureKotlin
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -42,7 +43,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
 import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.file.FileReferenceService

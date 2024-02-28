@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.common.api.util
 
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.CharPool.QUESTION
@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.HTTP
 import com.tencent.bkrepo.common.api.constant.StringPool.HTTPS
-import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.common.api.constant.retry
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
