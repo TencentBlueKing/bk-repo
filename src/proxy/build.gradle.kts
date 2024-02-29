@@ -44,6 +44,7 @@ allprojects {
         mavenLocal()
         maven("https://oss.sonatype.org/content/repositories/snapshots/")
         mavenCentral()
+        maven(url = "https://repo.spring.io/milestone")
     }
 
     apply(plugin = "com.tencent.devops.boot")
