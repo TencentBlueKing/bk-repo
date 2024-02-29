@@ -43,7 +43,9 @@ class DistributedFixedWindowRateLimiter(
     override fun tryAcquire(): Boolean {
         try {
             val redisScript = DefaultRedisScript(LuaScript.fixWindowRateLimiterScript, Long::class.java)
-            val result = redisTemplate.execute(redisScript, listOf(key), limit.toString(), permits.toString(), unit.toSeconds(1).toString())
+            val result = redisTemplate.execute(
+                redisScript, listOf(key), limit.toString(), permits.toString(), unit.toSeconds(1).toString()
+            )
             return result == 1L
         } catch (e: Exception) {
             throw AcquireLockFailedException("distributed lock acquire failed: $e")

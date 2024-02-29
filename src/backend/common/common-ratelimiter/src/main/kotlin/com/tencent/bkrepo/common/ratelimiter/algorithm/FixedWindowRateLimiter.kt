@@ -52,20 +52,19 @@ class FixedWindowRateLimiter(
             return true
         }
         try {
-            if (lock.tryLock(TRY_LOCK_TIMEOUT, TimeUnit.MILLISECONDS)) {
-                try {
-                    if (stopWatch.elapsed(TimeUnit.MILLISECONDS) > unit.toMillis(1)) {
-                        currentValue.set(0)
-                        stopWatch.reset()
-                    }
-                    // TODO 需要考虑统计流量大小
-                    updateValue = currentValue.addAndGet(permits)
-                    return updateValue <= limit
-                } finally {
-                    lock.unlock()
-                }
-            } else {
+            if (!lock.tryLock(TRY_LOCK_TIMEOUT, TimeUnit.MILLISECONDS)) {
                 throw AcquireLockFailedException("tryLock wait too long: $TRY_LOCK_TIMEOUT ms")
+            }
+            try {
+                if (stopWatch.elapsed(TimeUnit.MILLISECONDS) > unit.toMillis(1)) {
+                    currentValue.set(0)
+                    stopWatch.reset()
+                }
+                // TODO 需要考虑统计流量大小
+                updateValue = currentValue.addAndGet(permits)
+                return updateValue <= limit
+            } finally {
+                lock.unlock()
             }
         } catch (e: InterruptedException) {
             throw AcquireLockFailedException("tryLock is interrupted by lock timeout: $e")

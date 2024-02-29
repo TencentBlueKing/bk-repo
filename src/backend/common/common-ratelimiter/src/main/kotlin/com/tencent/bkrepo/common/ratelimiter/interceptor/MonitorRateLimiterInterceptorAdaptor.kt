@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.ratelimiter.interceptor
 
-import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 
 class MonitorRateLimiterInterceptorAdaptor: RateLimiterInterceptorAdapter() {

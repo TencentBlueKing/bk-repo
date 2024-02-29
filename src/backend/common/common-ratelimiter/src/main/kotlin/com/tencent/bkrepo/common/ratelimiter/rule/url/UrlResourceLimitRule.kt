@@ -94,7 +94,11 @@ class UrlResourceLimitRule(
             logger.warn("config url $urlPath is empty!")
             return null
         }
+        return findResourceLimit(pathDirs)
+    }
 
+
+    private fun findResourceLimit(pathDirs: List<String>): ResourceLimit? {
         var p = root
         var currentLimit: ResourceLimit? = null
         if (p.getResourceLimit() != null) {
@@ -113,7 +117,6 @@ class UrlResourceLimitRule(
                     }
                 }
             }
-
             if (matchedNode != null) {
                 p = matchedNode!!
                 if (matchedNode!!.getResourceLimit() != null) {

@@ -56,7 +56,9 @@ class RateLimitHandlerInterceptor(
         }
     }
 
-    override fun afterCompletion(request: HttpServletRequest, response: HttpServletResponse, handler: Any, ex: Exception?) {
+    override fun afterCompletion(
+        request: HttpServletRequest, response: HttpServletResponse, handler: Any, ex: Exception?
+    ) {
         super.afterCompletion(request, response, handler, ex)
     }
 }
