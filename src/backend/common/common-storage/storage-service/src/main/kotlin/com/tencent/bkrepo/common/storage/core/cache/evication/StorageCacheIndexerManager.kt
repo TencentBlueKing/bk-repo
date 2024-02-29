@@ -40,27 +40,44 @@ import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.ConcurrentHashMap
 
-open class DefaultStorageCacheEvictor(
-    private val cacheFactory: StrategyFactory<String, Long>,
+/**
+ * 磁盘缓存索引管理器，用于记录缓存访问情况，在缓存达到限制大小时淘汰存储层缓存文件
+ */
+open class StorageCacheIndexerManager(
+    private val cacheFactory: StorageCacheIndexerFactory<String, Long>,
     private val storageService: CacheStorageService,
     private val fileLocator: FileLocator,
-    private val storageCacheEvictionProperties: StorageCacheEvictionProperties,
-) : StorageCacheEvictor {
+    private val storageCacheIndexProperties: StorageCacheIndexProperties,
+) {
 
-    private val storageCacheMap = ConcurrentHashMap<String, StorageCacheEvictStrategy<String, Long>>()
+    private val storageCacheMap = ConcurrentHashMap<String, StorageCacheIndexer<String, Long>>()
 
+    /**
+     * 存储层缓存文件被删除时回调，同时删除淘汰策略内维护的缓存索引
+     *
+     * @param credentials 缓存所在的存储
+     * @param sha256 被删除的缓存文件的sha256
+     */
     @Async
-    override fun onCacheDeleted(credentials: StorageCredentials, sha256: String) {
-        if (storageCacheEvictionProperties.enabled) {
+    open fun onCacheDeleted(credentials: StorageCredentials, sha256: String) {
+        if (storageCacheIndexProperties.enabled) {
             logger.info("remove cache of [$sha256], storage[${credentials.key}]")
-            getOrCreateStrategy(credentials).remove(sha256)
+            getOrCreateIndexer(credentials).remove(sha256)
         }
     }
 
+    /**
+     * 缓存文件在清理任务中存活时调用，用于添加缺失的缓存索引到淘汰策略淘汰内
+     *
+     * @param credentials 缓存文件所在的存储
+     * @param sha256 被删除的缓存文件的sha256
+     * @param size 缓存文件大小
+     * @param score 缓存索引优先级，用于缓存淘汰决策
+     */
     @Async
-    override fun onCacheReserved(credentials: StorageCredentials, sha256: String, size: Long, score: Double) {
-        if (storageCacheEvictionProperties.enabled) {
-            val strategy = getOrCreateStrategy(credentials)
+    open fun onCacheReserved(credentials: StorageCredentials, sha256: String, size: Long, score: Double) {
+        if (storageCacheIndexProperties.enabled) {
+            val strategy = getOrCreateIndexer(credentials)
             if (!strategy.containsKey(sha256)) {
                 logger.info("file[$sha256] of credential[${credentials.key}] will be put into strategy")
                 strategy.put(sha256, size, score)
@@ -68,19 +85,29 @@ open class DefaultStorageCacheEvictor(
         }
     }
 
+    /**
+     *  缓存文件被访问时的回调，记录访问信息，用于缓存淘汰决策
+     *
+     *  @param credentials 缓存文件所在存储
+     *  @param sha256 缓存文件sha256
+     *  @param size 缓存文件大小
+     */
     @Async
-    override fun onCacheAccessed(credentials: StorageCredentials, sha256: String, size: Long) {
-        if (!storageCacheEvictionProperties.enabled) {
+    open fun onCacheAccessed(credentials: StorageCredentials, sha256: String, size: Long) {
+        if (!storageCacheIndexProperties.enabled) {
             return
         }
         logger.info("cache file accessed, sha256[$sha256], storage[${credentials.key}], size[$size]")
-        getOrCreateStrategy(credentials).put(sha256, size)
+        getOrCreateIndexer(credentials).put(sha256, size)
     }
 
-    override fun sync(credentials: StorageCredentials) {
-        if (storageCacheEvictionProperties.enabled) {
+    /**
+     * 同步淘汰策略内维护的索引与实际缓存文件
+     */
+    open fun sync(credentials: StorageCredentials) {
+        if (storageCacheIndexProperties.enabled) {
             logger.info("start sync ${credentials.key}")
-            getOrCreateStrategy(credentials).sync()
+            getOrCreateIndexer(credentials).sync()
         }
     }
 
@@ -103,7 +130,7 @@ open class DefaultStorageCacheEvictor(
         }
     }
 
-    private fun getOrCreateStrategy(credentials: StorageCredentials): StorageCacheEvictStrategy<String, Long> {
+    private fun getOrCreateIndexer(credentials: StorageCredentials): StorageCacheIndexer<String, Long> {
         val cache = storageCacheMap.getOrPut(credentials.cache.path) {
             val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
             cacheFactory.create(credentials.cache).apply { addEldestRemovedListener(listener) }
@@ -114,7 +141,7 @@ open class DefaultStorageCacheEvictor(
     }
 
     private fun refreshCacheProperties(
-        cache: StorageCacheEvictStrategy<String, Long>,
+        cache: StorageCacheIndexer<String, Long>,
         credentials: StorageCredentials
     ) {
         cache.setMaxWeight(credentials.cache.maxSize)
@@ -145,6 +172,6 @@ open class DefaultStorageCacheEvictor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DefaultStorageCacheEvictor::class.java)
+        private val logger = LoggerFactory.getLogger(StorageCacheIndexerManager::class.java)
     }
 }

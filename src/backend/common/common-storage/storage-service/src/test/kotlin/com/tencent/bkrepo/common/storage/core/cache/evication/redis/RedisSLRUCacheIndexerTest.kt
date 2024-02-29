@@ -22,16 +22,16 @@ import java.util.concurrent.ConcurrentHashMap
 @Import(TestRedisConfiguration::class)
 @ImportAutoConfiguration(TestRedisConfiguration::class, RedisAutoConfiguration::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RedisSLRUCacheEvictStrategyTest {
+class RedisSLRUCacheIndexerTest {
 
     @Autowired
     private lateinit var redisTemplate: RedisTemplate<String, String>
 
-    private lateinit var slru: RedisSLRUCacheEvictStrategy
+    private lateinit var slru: RedisSLRUCacheIndexer
 
     @BeforeAll
     fun before() {
-        slru = createStrategy().apply {
+        slru = createIndexer().apply {
             setMaxWeight(0)
         }
     }
@@ -154,10 +154,10 @@ class RedisSLRUCacheEvictStrategyTest {
         cacheFile.delete()
     }
 
-    private fun createStrategy(
+    private fun createIndexer(
         cacheName: String = CACHE_NAME, cacheDir: Path = CACHE_DIR
-    ): RedisSLRUCacheEvictStrategy {
-        return RedisSLRUCacheEvictStrategy(cacheName, cacheDir, redisTemplate, 0)
+    ): RedisSLRUCacheIndexer {
+        return RedisSLRUCacheIndexer(cacheName, cacheDir, redisTemplate, 0)
     }
 
     /**
@@ -179,7 +179,7 @@ class RedisSLRUCacheEvictStrategyTest {
     private fun probationValuesKey(cacheName: String = CACHE_NAME) = "$cacheName:slru:probation_values"
 
     companion object {
-        private val logger = LoggerFactory.getLogger(RedisSLRUCacheEvictStrategyTest::class.java)
+        private val logger = LoggerFactory.getLogger(RedisSLRUCacheIndexerTest::class.java)
         private const val CACHE_NAME = "test"
         private val CACHE_DIR = System.getProperty("java.io.tmpdir").toPath().resolve("storage-cache-evict-test")
     }

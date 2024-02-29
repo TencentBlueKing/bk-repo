@@ -30,11 +30,11 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictor
+import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.StorageCacheEvictorSyncJobProperties
+import com.tencent.bkrepo.job.config.properties.StorageCacheIndexSyncJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
@@ -42,16 +42,16 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 
 /**
- * 缓存驱逐器中维护缓存条目信息可能与实际磁盘中缓存的文件条目不一致，需要定时同步
+ * 缓存索引器中维护缓存条目信息可能与实际磁盘中缓存的文件条目不一致，需要定时同步
  */
 @Component
-@EnableConfigurationProperties(StorageCacheEvictorSyncJobProperties::class)
-class StorageCacheEvictorSyncJob(
-    properties: StorageCacheEvictorSyncJobProperties,
+@EnableConfigurationProperties(StorageCacheIndexSyncJobProperties::class)
+class StorageCacheIndexSyncJob(
+    properties: StorageCacheIndexSyncJobProperties,
     private val storageProperties: StorageProperties,
     private val clusterProperties: ClusterProperties,
     private val mongoTemplate: MongoTemplate,
-    private val storageCacheEvictor: StorageCacheEvictor
+    private val indexerManager: StorageCacheIndexerManager
 ) : DefaultContextJob(properties) {
 
     private data class TStorageCredentials(
@@ -63,11 +63,11 @@ class StorageCacheEvictorSyncJob(
     override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
 
     override fun doStart0(jobContext: JobContext) {
-        storageCacheEvictor.sync(storageProperties.defaultStorageCredentials())
+        indexerManager.sync(storageProperties.defaultStorageCredentials())
 
         mongoTemplate.find(Query(), TStorageCredentials::class.java, "storage_credentials")
             .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }
             .map { it.credentials.readJsonString<StorageCredentials>().apply { key = it.id } }
-            .forEach { storageCacheEvictor.sync(it) }
+            .forEach { indexerManager.sync(it) }
     }
 }

@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.storage.core.cache.evication.redis
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictStrategy
+import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexer
 import com.tencent.bkrepo.common.storage.util.existReal
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
@@ -41,18 +41,18 @@ import java.util.concurrent.Semaphore
 
 /**
  * 基于Redis实现的SLRU，缓存满后将异步清理，缓存实际大小会超过设置的最大值
- * key缓存为文件sha256，value为文件大小
+ * 为了减少redis内存占用，固定key为缓存文件sha256，value为缓存文件大小
  *
- * 为了应对突发稀疏流量，分为probation于protected两块区域，缓存第一次访问时会被放入probation，再次访问会晋升到protected
+ * SLRU策略为了应对突发稀疏流量，分为probation于protected两块区域，缓存第一次访问时会被放入probation，再次访问会晋升到protected
  * protected区域被淘汰时进入probation区域，probation的缓存被淘汰时候移除缓存
  */
-class RedisSLRUCacheEvictStrategy(
+class RedisSLRUCacheIndexer(
     private val cacheName: String,
     private val cacheDir: Path,
     private val redisTemplate: RedisTemplate<String, String>,
     private val capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
-) : StorageCacheEvictStrategy<String, Long> {
+) : StorageCacheIndexer<String, Long> {
 
     /**
      * 用于执行缓存淘汰的线程池
@@ -272,7 +272,7 @@ class RedisSLRUCacheEvictStrategy(
     private fun score(score: Double? = null) = score?.toString() ?: System.currentTimeMillis().toString()
 
     companion object {
-        private val logger = LoggerFactory.getLogger(RedisSLRUCacheEvictStrategy::class.java)
+        private val logger = LoggerFactory.getLogger(RedisSLRUCacheIndexer::class.java)
 
         /**
          * probation区域权重占比

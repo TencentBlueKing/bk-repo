@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.storage.core.cache.evication.redis
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictStrategy
+import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexer
 import com.tencent.bkrepo.common.storage.util.existReal
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
@@ -43,13 +43,13 @@ import java.util.concurrent.Semaphore
  * 基于Redis实现的分布式LRU缓存
  * 为了避免阻塞提高性能，缓存满时将会异步执行LRU策略进行缓存清理，此时依然可以继续存放数据，可能会出现缓存大小超过限制的情况
  */
-class RedisLRUCacheEvictStrategy(
+class RedisLRUCacheIndexer(
     private val cacheName: String,
     private val cacheDir: Path,
     private val redisTemplate: RedisTemplate<String, String>,
     private var capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
-) : StorageCacheEvictStrategy<String, Long> {
+) : StorageCacheIndexer<String, Long> {
 
     private val evictExecutor = Executors.newSingleThreadExecutor(
         ThreadFactoryBuilder().setNameFormat("storage-cache-evict-redis-lru-%d").build()
@@ -180,7 +180,7 @@ class RedisLRUCacheEvictStrategy(
     private fun score(score: Double? = null) = score?.toString() ?: System.currentTimeMillis().toString()
 
     companion object {
-        private val logger = LoggerFactory.getLogger(RedisLRUCacheEvictStrategy::class.java)
+        private val logger = LoggerFactory.getLogger(RedisLRUCacheIndexer::class.java)
 
         private const val SCRIPT_PUT = """
             local z = KEYS[1]

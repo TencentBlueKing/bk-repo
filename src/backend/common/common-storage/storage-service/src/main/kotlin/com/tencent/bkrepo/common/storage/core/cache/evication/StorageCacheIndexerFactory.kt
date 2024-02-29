@@ -25,12 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.storage.core.cache.evication
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.storage.config.CacheProperties
 
-@ConfigurationProperties("job.storage-cache-evictor-sync")
-class StorageCacheEvictorSyncJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = "0 0 6 * * ?",
-) : BatchJobProperties()
+/**
+ * 缓存索引器工厂类
+ */
+interface StorageCacheIndexerFactory<K, V> {
+    /**
+     * 创建缓存索引器
+     *
+     * @param cacheProperties 缓存配置
+     *
+     * @return 缓存索引器
+     */
+    fun create(cacheProperties: CacheProperties): StorageCacheIndexer<K, V>
+}

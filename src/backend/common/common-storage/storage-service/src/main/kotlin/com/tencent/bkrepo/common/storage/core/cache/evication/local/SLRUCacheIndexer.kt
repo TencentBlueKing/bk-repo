@@ -28,15 +28,15 @@
 package com.tencent.bkrepo.common.storage.core.cache.evication.local
 
 import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheEvictStrategy
+import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexer
 
-abstract class SLRUCacheEvictStrategy<K, V>(
+abstract class SLRUCacheIndexer<K, V>(
     private val listeners: MutableList<EldestRemovedListener<K, V>> = ArrayList()
-) : StorageCacheEvictStrategy<K, V> {
+) : StorageCacheIndexer<K, V> {
 
-    protected abstract val probation: StorageCacheEvictStrategy<K, V>
+    protected abstract val probation: StorageCacheIndexer<K, V>
 
-    protected abstract val protected: StorageCacheEvictStrategy<K, V>
+    protected abstract val protected: StorageCacheIndexer<K, V>
 
     override fun put(key: K, value: V, score: Double?): V? {
         return when {
@@ -130,7 +130,7 @@ abstract class SLRUCacheEvictStrategy<K, V>(
     }
 
     protected class ProtectedLRUEldestRemovedListener<K, V>(
-        private val probationLru: StorageCacheEvictStrategy<K, V>
+        private val probationLru: StorageCacheIndexer<K, V>
     ) : EldestRemovedListener<K, V> {
         override fun onEldestRemoved(key: K, value: V) {
             probationLru.put(key, value)

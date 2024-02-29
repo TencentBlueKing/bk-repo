@@ -25,41 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication.local
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
-import java.nio.file.Path
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-class LocalSLRUCacheEvictStrategy(
-    capacity: Int = 0,
-    cacheDir: Path,
-    listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList()
-) : SLRUCacheEvictStrategy<String, Long>(listeners) {
-
-    override val probation = LocalLRUCacheEvictStrategy(
-        (capacity * FACTOR_PROBATION).toInt(),
-        cacheDir,
-        mutableListOf(ProbationLRUEldestRemovedListener(listeners))
-    )
-
-    override val protected = LocalLRUCacheEvictStrategy(
-        (capacity * FACTOR_PROTECTED).toInt(),
-        cacheDir,
-        mutableListOf(ProtectedLRUEldestRemovedListener(probation))
-    )
-
-    @Synchronized
-    override fun put(key: String, value: Long, score: Double?): Long? {
-        return super.put(key, value, score)
-    }
-
-    @Synchronized
-    override fun get(key: String): Long? {
-        return super.get(key)
-    }
-
-    @Synchronized
-    override fun remove(key: String): Long? {
-        return super.remove(key)
-    }
-}
+@ConfigurationProperties("job.storage-cache-index-sync")
+class StorageCacheIndexSyncJobProperties(
+    override var enabled: Boolean = false,
+    override var cron: String = "0 0 6 * * ?",
+) : BatchJobProperties()

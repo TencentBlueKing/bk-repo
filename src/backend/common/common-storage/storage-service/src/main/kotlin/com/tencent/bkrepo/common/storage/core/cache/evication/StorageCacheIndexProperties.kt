@@ -29,13 +29,16 @@ package com.tencent.bkrepo.common.storage.core.cache.evication
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties("storage.cache.eviction")
-data class StorageCacheEvictionProperties(
+/**
+ * 存储层缓存文件索引配置
+ */
+@ConfigurationProperties("storage.cache.index")
+data class StorageCacheIndexProperties(
     var enabled: Boolean = false,
-    var cacheType: String = CACHE_TYPE_LOCAL
+    var type: String = CACHE_TYPE_LOCAL_SLRU
 ) {
     companion object {
-        const val CACHE_TYPE_LOCAL = "LOCAL"
-        const val CACHE_TYPE_REDIS = "REDIS"
+        const val CACHE_TYPE_LOCAL_SLRU = "LOCAL_SLRU"
+        const val CACHE_TYPE_REDIS_SLRU = "REDIS_SLRU"
     }
 }
