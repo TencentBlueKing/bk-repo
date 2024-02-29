@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.opdata.model
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.storage.innercos.retry
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.replication.constant.SHA256
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

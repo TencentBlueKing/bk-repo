@@ -84,5 +84,10 @@ data class CryptoProperties(
         "0DPw+UtKG8FBDE9hml85AvxQin54758czPnaUUkAn9WJ3ipHYUGShU1VFdKbLLW8" +
         "d5mQq2Gt9bQ808Pb7Q+snd/HvN/jafj6VayKvdtxqkziQZtR66mzjyfD0Oxe48KU" +
         "KkOxDLBsCdS+2FTFubm8Ji6nLcHBjaOO1wf03H6dQiEGkw50aE7qkNashpZ3+5Qz" +
-        "PQIDAQAB"
+        "PQIDAQAB",
+
+    // Key长度 16/24/32Bytes
+    var aesKey: String = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    // IV长度 16Bytes
+    var aesIv: String = "aaaaaaaaaaaaaaaa"
 )

@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEv
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import java.io.IOException
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -113,16 +114,24 @@ class CleanupFileVisitor(
         }
         // 由于支持删除上传路径，所以这里即使是空目录，也需要判断过期时间。
         if (fileExpireResolver.isExpired(dirPath.toFile())) {
-            Files.newDirectoryStream(dirPath).use {
-                if (!it.iterator().hasNext()) {
-                    Files.delete(dirPath)
-                    logger.info("Clean up folder[$dirPath].")
-                    result.cleanupFolder += 1
-                }
-            }
+            deleteEmptyFolder(dirPath)
         }
         result.totalFolder += 1
         return FileVisitResult.CONTINUE
+    }
+
+    private fun deleteEmptyFolder(dirPath: Path) {
+        Files.newDirectoryStream(dirPath).use {
+            if (!it.iterator().hasNext()) {
+                try {
+                    Files.delete(dirPath)
+                    logger.info("Clean up folder[$dirPath].")
+                    result.cleanupFolder += 1
+                }  catch (ignore: DirectoryNotEmptyException) {
+                    logger.warn("Directory [$dirPath] is not empty!")
+                }
+            }
+        }
     }
 
     override fun needWalk(): Boolean {

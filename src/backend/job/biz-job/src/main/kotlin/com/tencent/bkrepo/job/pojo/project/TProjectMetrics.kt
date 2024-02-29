@@ -34,5 +34,6 @@ data class TProjectMetrics(
     var nodeNum: Long,
     var capSize: Long,
     val repoMetrics: List<TRepoMetrics>,
-    val createdDate: LocalDateTime? = LocalDateTime.now()
+    val createdDate: LocalDateTime? = LocalDateTime.now(),
+    val active: Boolean = true
 )

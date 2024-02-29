@@ -8,6 +8,31 @@ export function convertFileSize(size, unit = 'B') {
   }
 }
 
+export function formatFileSize(size, unit = 'GB') {
+  const arrays = ['B', 'KB', 'MB', 'GB', 'TB']
+  let index
+  for (let i = arrays.length - 1; i < arrays.length && i > -1; i--) {
+    if (size.indexOf(arrays[i]) !== -1) {
+      index = i
+      break
+    }
+  }
+  const sizeIndex = size.indexOf(arrays[index])
+  const unitIndex = arrays.findIndex(i => i === unit)
+  let temp = Number(size.substr(0, sizeIndex))
+  if (unitIndex - index > 0) {
+    for (let i = 0; i < unitIndex - index; i++) {
+      temp = temp / 1024
+    }
+  }
+  if (unitIndex - index < 0) {
+    for (let i = 0; i < index - unitIndex; i++) {
+      temp = temp * 1024
+    }
+  }
+  return temp
+}
+
 function preZero(num) {
   num = Number(num)
   if (num < 10) {

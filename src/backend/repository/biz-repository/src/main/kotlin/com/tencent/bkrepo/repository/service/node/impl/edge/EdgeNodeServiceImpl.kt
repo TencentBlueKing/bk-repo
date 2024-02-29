@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.service.node.impl.edge
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -60,6 +61,7 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
@@ -79,6 +81,8 @@ class EdgeNodeServiceImpl(
     override val messageSupplier: MessageSupplier,
     override val servicePermissionClient: ServicePermissionClient,
     override val clusterProperties: ClusterProperties,
+    override val routerControllerClient: RouterControllerClient,
+    override val routerControllerProperties: RouterControllerProperties
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -88,7 +92,9 @@ class EdgeNodeServiceImpl(
     quotaService,
     repositoryProperties,
     messageSupplier,
+    routerControllerClient,
     servicePermissionClient,
+    routerControllerProperties,
     clusterProperties,
 ) {
     override fun computeSize(artifact: ArtifactInfo, estimated: Boolean, before: LocalDateTime): NodeSizeInfo {
