@@ -20,11 +20,13 @@ import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
+import org.springframework.core.Ordered
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
+import java.util.concurrent.PriorityBlockingQueue
 
 /**
  * bd压缩管理器，负责文件压缩与解压
@@ -45,6 +47,7 @@ class BDZipManager(
     val fileDownloadThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
         archiveProperties.compress.ioThreads,
         ThreadFactoryBuilder().setNameFormat("bd-io-%d").build(),
+        PriorityBlockingQueue(),
     )
     val diffThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
         archiveProperties.compress.diffThreads,
@@ -180,9 +183,14 @@ class BDZipManager(
             }
             val workDir = Paths.get(workDir.toString(), UNCOMPRESS_DIR, sha256)
             val bdFileName = sha256.plus(BD_FILE_SUFFIX)
-            val bdFile = fileProvider.get(bdFileName, Range.full(compressedSize), credentials)
+            val bdFile = fileProvider.get(
+                bdFileName,
+                Range.full(compressedSize),
+                credentials,
+                Ordered.HIGHEST_PRECEDENCE,
+            )
             val baseRange = if (baseSize == null) Range.FULL_RANGE else Range.full(baseSize)
-            val baseFile = fileProvider.get(baseSha256, baseRange, credentials)
+            val baseFile = fileProvider.get(baseSha256, baseRange, credentials, Ordered.HIGHEST_PRECEDENCE)
             val begin = System.nanoTime()
             bdUncompressor.patch(bdFile, baseFile, sha256, workDir)
                 .doOnSuccess {
