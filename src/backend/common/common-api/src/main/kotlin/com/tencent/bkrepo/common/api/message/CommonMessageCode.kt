@@ -60,6 +60,9 @@ enum class CommonMessageCode(private val key: String) : MessageCode {
     OPERATION_CROSS_CLUSTER_NOT_ALLOWED("operation.cross-cluster.not-allowed"),
     MEDIA_TYPE_UNACCEPTABLE("system.media-type.unacceptable"),
     TOO_MANY_REQUESTS("too.many.requests"),
+    INVALID_CONFIG("system.config.invalid"),
+    ACQUIRE_LOCK_FAILED("acquire.lock.failed"),
+    RATE_LIMITER_OVERLOAD("rate.limiter.overload")
     ;
 
     override fun getBusinessCode() = ordinal + 1
