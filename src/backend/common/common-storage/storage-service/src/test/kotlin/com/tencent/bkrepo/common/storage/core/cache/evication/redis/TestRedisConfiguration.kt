@@ -34,9 +34,8 @@ import javax.annotation.PreDestroy
 
 
 @TestConfiguration
-class TestRedisConfiguration(
-) {
-    private val redisServer = RedisServer(6379)
+class TestRedisConfiguration {
+    private val redisServer = RedisServer.builder().port(6379).setting("maxheap 500m").build()
 
     @PostConstruct
     fun postConstruct() {

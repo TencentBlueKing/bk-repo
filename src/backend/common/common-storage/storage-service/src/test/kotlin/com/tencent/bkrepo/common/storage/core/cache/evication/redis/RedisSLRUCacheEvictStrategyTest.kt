@@ -137,10 +137,6 @@ class RedisSLRUCacheEvictStrategyTest {
         )
     }
 
-    fun testHitRate() {
-
-    }
-
     @Test
     fun testSync() {
         val cacheFile = File(CACHE_DIR.toString(), "test")

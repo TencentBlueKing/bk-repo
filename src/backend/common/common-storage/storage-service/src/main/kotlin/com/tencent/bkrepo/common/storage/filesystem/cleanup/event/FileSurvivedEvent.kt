@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
 /**
- * 文件未被删除时触发事件
+ * 文件未被清理任务删除时触发事件
  */
 class FileSurvivedEvent(
     /**

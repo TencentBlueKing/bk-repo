@@ -53,14 +53,14 @@ open class DefaultStorageCacheEvictor(
     override fun onCacheDeleted(credentials: StorageCredentials, sha256: String) {
         if (storageCacheEvictionProperties.enabled) {
             logger.info("remove cache of [$sha256], storage[${credentials.key}]")
-            getStrategy(credentials).remove(sha256)
+            getOrCreateStrategy(credentials).remove(sha256)
         }
     }
 
     @Async
     override fun onCacheReserved(credentials: StorageCredentials, sha256: String, size: Long, score: Double) {
         if (storageCacheEvictionProperties.enabled) {
-            val strategy = getStrategy(credentials)
+            val strategy = getOrCreateStrategy(credentials)
             if (!strategy.containsKey(sha256)) {
                 logger.info("file[$sha256] of credential[${credentials.key}] will be put into strategy")
                 strategy.put(sha256, size, score)
@@ -74,13 +74,13 @@ open class DefaultStorageCacheEvictor(
             return
         }
         logger.info("cache file accessed, sha256[$sha256], storage[${credentials.key}], size[$size]")
-        getStrategy(credentials).put(sha256, size)
+        getOrCreateStrategy(credentials).put(sha256, size)
     }
 
     override fun sync(credentials: StorageCredentials) {
         if (storageCacheEvictionProperties.enabled) {
             logger.info("start sync ${credentials.key}")
-            getStrategy(credentials).sync()
+            getOrCreateStrategy(credentials).sync()
         }
     }
 
@@ -103,11 +103,12 @@ open class DefaultStorageCacheEvictor(
         }
     }
 
-    private fun getStrategy(credentials: StorageCredentials): StorageCacheEvictStrategy<String, Long> {
+    private fun getOrCreateStrategy(credentials: StorageCredentials): StorageCacheEvictStrategy<String, Long> {
         val cache = storageCacheMap.getOrPut(credentials.cache.path) {
             val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
             cacheFactory.create(credentials.cache).apply { addEldestRemovedListener(listener) }
         }
+        // 获取策略时检查是否需要更新缓存淘汰策略配置
         refreshCacheProperties(cache, credentials)
         return cache
     }
@@ -124,6 +125,9 @@ open class DefaultStorageCacheEvictor(
         }
     }
 
+    /**
+     * 缓存淘汰监听器，缓存索引被淘汰时同时删除硬盘上的缓存文件
+     */
     private class StorageEldestRemovedListener(
         @Volatile
         private var storageCredentials: StorageCredentials,

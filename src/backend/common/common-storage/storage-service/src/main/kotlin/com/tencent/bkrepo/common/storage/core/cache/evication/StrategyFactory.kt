@@ -30,15 +30,15 @@ package com.tencent.bkrepo.common.storage.core.cache.evication
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 
 /**
- * 缓存驱逐策略工厂类，用于为不同存储分别创建缓存
+ * 缓存驱逐策略工厂类，用于为不同存储分别创建缓存淘汰策略
  */
 interface StrategyFactory<K, V> {
     /**
-     * 创建缓存
+     * 创建缓存淘汰策略
      *
      * @param cacheProperties 缓存配置
      *
-     * @return 缓存
+     * @return 缓存淘汰策略
      */
     fun create(cacheProperties: CacheProperties): StorageCacheEvictStrategy<K, V>
 }
