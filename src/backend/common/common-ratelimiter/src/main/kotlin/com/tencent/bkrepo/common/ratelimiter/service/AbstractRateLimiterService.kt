@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.MonitorRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
+import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import org.slf4j.Logger
@@ -54,12 +55,15 @@ import javax.servlet.http.HttpServletRequest
 abstract class AbstractRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
+    private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
 ): RateLimiterService {
-    private val counters: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
+
+    //TODO 需要考虑请求过多导致缓存过大
+    private val rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
     private val interceptorChain: RateLimiterInterceptorChain =
-        RateLimiterInterceptorChain(mutableListOf(MonitorRateLimiterInterceptorAdaptor()))
+        RateLimiterInterceptorChain(mutableListOf(MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics)))
 
     var rateLimitRule: RateLimitRule? = null
 
@@ -104,7 +108,7 @@ abstract class AbstractRateLimiterService(
             exception = newException
             throw newException
         } finally {
-            interceptorChain.doAfterLimitCheck(resourceLimit, pass, exception)
+            interceptorChain.doAfterLimitCheck(resource, resourceLimit, pass, exception, applyPermits)
         }
 
     }
@@ -165,10 +169,10 @@ abstract class AbstractRateLimiterService(
         resource: String, resourceLimit: ResourceLimit, permits: Long = 1
     ): RateLimiter {
         val limitKey = generateKey(resource, resourceLimit)
-        var rateLimiter = counters[limitKey]
+        var rateLimiter = rateLimiterCache[limitKey]
         if (rateLimiter == null) {
             val newRateLimiter = createAlgorithmOfRateLimiter(resource, resourceLimit, permits)
-            rateLimiter = counters.putIfAbsent(limitKey, newRateLimiter)
+            rateLimiter = rateLimiterCache.putIfAbsent(limitKey, newRateLimiter)
             if (rateLimiter == null) {
                 rateLimiter = newRateLimiter
             }

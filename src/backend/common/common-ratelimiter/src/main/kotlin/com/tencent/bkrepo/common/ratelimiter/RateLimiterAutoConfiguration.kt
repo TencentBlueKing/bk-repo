@@ -29,8 +29,10 @@ package com.tencent.bkrepo.common.ratelimiter
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimitHandlerInterceptor
+import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.UsageRateLimiterService
+import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -46,15 +48,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 @ConditionalOnWebApplication
 class RateLimiterAutoConfiguration {
 
+    @Bean
+    fun rateLimiterMetrics(registry: MeterRegistry): RateLimiterMetrics {
+        return RateLimiterMetrics(registry)
+    }
 
     @Bean
     @ConditionalOnProperty(value = ["rate.limiter.enabled"])
     fun urlRateLimiterService(
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
         redisTemplate: RedisTemplate<String, String>? = null
     ): UrlRateLimiterService {
-        return UrlRateLimiterService(taskScheduler, rateLimiterProperties, redisTemplate)
+        return UrlRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)
     }
 
     @Bean
@@ -62,9 +69,10 @@ class RateLimiterAutoConfiguration {
     fun usageRateLimiterService(
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
         redisTemplate: RedisTemplate<String, String>? = null
     ): UsageRateLimiterService {
-        return UsageRateLimiterService(taskScheduler, rateLimiterProperties, redisTemplate)
+        return UsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)
     }
 
     @Bean

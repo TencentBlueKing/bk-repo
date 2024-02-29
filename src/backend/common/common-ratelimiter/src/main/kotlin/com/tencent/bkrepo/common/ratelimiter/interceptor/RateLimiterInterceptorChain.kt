@@ -39,9 +39,12 @@ class RateLimiterInterceptorChain(
         }
     }
 
-    fun doAfterLimitCheck(resourceLimit: ResourceLimit?, result: Boolean, e: Exception?) {
+    fun doAfterLimitCheck(
+        resource: String, resourceLimit: ResourceLimit?,
+        result: Boolean, e: Exception?, applyPermits: Long
+    ) {
         this.interceptors.forEach {
-            it.afterLimitCheck(resourceLimit, result, e)
+            it.afterLimitCheck(resource, resourceLimit, result, e, applyPermits)
         }
     }
 

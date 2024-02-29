@@ -31,6 +31,7 @@ package com.tencent.bkrepo.common.ratelimiter.service.usage
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
+import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import org.springframework.data.redis.core.RedisTemplate
@@ -41,8 +42,9 @@ import javax.servlet.http.HttpServletRequest
 class UsageRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
+    private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): AbstractRateLimiterService(taskScheduler, rateLimiterProperties, redisTemplate)  {
+): AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)  {
 
     override fun buildResource(request: HttpServletRequest): String {
         val (projectId, repoName) = getRepoInfo(request)

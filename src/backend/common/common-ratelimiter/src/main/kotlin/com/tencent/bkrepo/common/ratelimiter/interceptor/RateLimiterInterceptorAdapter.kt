@@ -32,5 +32,8 @@ import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 abstract class RateLimiterInterceptorAdapter: RateLimiterInterceptor {
     override fun beforeLimitCheck(resource: String) = Unit
 
-    override fun afterLimitCheck(resourceLimit: ResourceLimit?, result: Boolean, e: Exception?) = Unit
+    override fun afterLimitCheck(
+        resource: String, resourceLimit: ResourceLimit?,
+        result: Boolean, e: Exception?, applyPermits: Long
+    ) = Unit
 }
