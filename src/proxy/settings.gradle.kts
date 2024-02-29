@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-rootProject.name = "bk-repo-backend"
+rootProject.name = "bk-repo-proxy"
 
 pluginManagement {
     repositories {
@@ -44,49 +44,7 @@ pluginManagement {
         }
     }
 }
-
-fun File.directories() = listFiles()?.filter { it.isDirectory && it.name != "build" }?.toList() ?: emptyList()
-
-fun includeAll(module: String) {
-    include(module)
-    val name = module.replace(":", "/")
-    file("$rootDir/$name/").directories().forEach {
-        include("$module:${it.name}")
-    }
-}
-
-include(":boot-assembly")
-includeAll(":auth")
-includeAll(":common")
-includeAll(":common:common-storage")
-includeAll(":common:common-query")
-includeAll(":common:common-artifact")
-includeAll(":common:common-notify")
-includeAll(":common:common-operate")
-includeAll(":composer")
-includeAll(":generic")
-includeAll(":helm")
-includeAll(":maven")
-includeAll(":npm")
-includeAll(":nuget")
-includeAll(":opdata")
-includeAll(":pypi")
-includeAll(":replication")
-includeAll(":repository")
-includeAll(":rpm")
-includeAll(":git")
-includeAll(":oci")
-includeAll(":webhook")
-includeAll(":job")
-includeAll(":analyst")
-includeAll(":analysis-executor")
-includeAll(":common:common-checker")
-includeAll(":conan")
-includeAll(":fs")
-includeAll(":config")
-includeAll(":lfs")
-includeAll(":ddc")
-includeAll(":svn")
-includeAll(":archive")
-includeAll(":s3")
-includeAll(":router-controller")
+//
+include(":api-proxy")
+include(":biz-proxy")
+include(":boot-proxy")

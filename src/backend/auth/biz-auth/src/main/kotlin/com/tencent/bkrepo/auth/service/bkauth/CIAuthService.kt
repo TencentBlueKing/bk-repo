@@ -219,7 +219,7 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
         return try {
             val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/users/$user"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
-                .header(DEVOPS_GATEWAY_TAG, DEVOPS_PROD_V3).header(DEVOPS_UID, user).get().build()
+                .header(DEVOPS_UID, user).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
             logger.debug("getProjectListByUser, requestUrl: [$url], result : [${apiResponse.content}]")
@@ -237,7 +237,5 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
         const val DEVOPS_BK_TOKEN = "X-DEVOPS-BK-TOKEN"
         const val DEVOPS_UID = "X-DEVOPS-UID"
         const val DEVOPS_PROJECT_ID = "X-DEVOPS-PROJECT-ID"
-        const val DEVOPS_GATEWAY_TAG = "x-gateway-tag"
-        const val DEVOPS_PROD_V3 = "prod-v3"
     }
 }
