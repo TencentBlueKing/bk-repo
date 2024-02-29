@@ -82,7 +82,6 @@ class ProxySyncFileVisitor(
         val storageKey = if (syncFile.length() == 0L) null else syncFile.readText()
 
         val sha256 = file.canonicalPath.split(File.separator).last()
-//        val url = "$gateway:25903/proxy/replica/blob/push"
         val url = "$gateway/replication/proxy/replica/blob/push"
         logger.info("start sync file[${file.canonicalPath}]")
         val inputStream = if (rate > 0) {

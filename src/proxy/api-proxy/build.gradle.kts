@@ -30,6 +30,6 @@
  */
 
 dependencies {
-    api(project(":auth:api-auth"))
-    api(project(":generic:api-generic"))
+    api("com.tencent.bk.repo:api-auth")
+    api("com.tencent.bk.repo:api-generic")
 }
