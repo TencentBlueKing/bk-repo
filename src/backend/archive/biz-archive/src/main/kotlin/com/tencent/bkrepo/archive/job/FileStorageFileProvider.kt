@@ -9,7 +9,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.StorageUtils
 import org.slf4j.LoggerFactory
-import org.springframework.core.Ordered
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.io.File
@@ -18,6 +17,7 @@ import java.nio.file.Path
 import java.time.Duration
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.system.measureNanoTime
 
@@ -35,6 +35,8 @@ class FileStorageFileProvider(
     private var status = AtomicBoolean(true)
     private val lock = ReentrantLock()
     private val available = lock.newCondition()
+    private val seqRange = IntRange(Int.MIN_VALUE + 1, Int.MAX_VALUE - 1)
+    private val seq = AtomicInteger(seqRange.first)
 
     init {
         require(lowWaterMark < highWaterMark)
@@ -61,13 +63,25 @@ class FileStorageFileProvider(
     }
 
     override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials, priority: Int): Mono<File> {
+        if (priority == seqRange.last) {
+            error("The maximum seq[$priority] has been reached.")
+        }
+        logger.info("Prepare[$priority] download $sha256 on ${storageCredentials.key}")
         val filePath = fileDir.resolve(sha256)
         if (Files.exists(filePath)) {
+            if (seqRange.contains(priority)) {
+                seq.decrementAndGet()
+            }
             return Mono.just(filePath.toFile())
         }
         return Mono.create {
             val task = PriorityCallableTask<File>(priority) {
                 try {
+                    logger.info("Start run task[$priority].")
+                    // 回收序列号
+                    if (seqRange.contains(priority)) {
+                        seq.decrementAndGet()
+                    }
                     val file = doDownload(sha256, storageCredentials, filePath, range)
                     it.success(file)
                     file
@@ -100,7 +114,7 @@ class FileStorageFileProvider(
     }
 
     override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials): Mono<File> {
-        return get(sha256, range, storageCredentials, Ordered.LOWEST_PRECEDENCE)
+        return get(sha256, range, storageCredentials, seq.getAndIncrement())
     }
 
     private fun download(sha256: String, range: Range, storageCredentials: StorageCredentials, filePath: Path) {
