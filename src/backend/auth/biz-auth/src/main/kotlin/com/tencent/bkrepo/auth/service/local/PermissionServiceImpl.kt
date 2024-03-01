@@ -196,13 +196,13 @@ open class PermissionServiceImpl constructor(
             // check user admin permission
             if (user.admin || checkProjectAdmin(request)) return true
             val roles = user.roles
-            if (resourceType == NODE.name || resourceType == REPO.name) {
+            if (isRepoOrNodePermission(resourceType)) {
                 // check role repo admin
-                if (checkRepoAdmin(request, user.roles)) return true
+                if (checkRepoAdmin(request, roles)) return true
                 // check repo read action
-                if (checkRepoReadAction(request, user.roles)) return true
+                if (checkRepoReadAction(request, roles)) return true
                 //  check project user
-                val isProjectUser = isUserLocalProjectUser(user.roles, request.projectId!!)
+                val isProjectUser = isUserLocalProjectUser(roles, request.projectId!!)
                 if (checkProjecReadAction(request, isProjectUser)) return true
                 // check node action
                 if (isNodeNeedLocalCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
@@ -211,6 +211,10 @@ open class PermissionServiceImpl constructor(
             }
         }
         return false
+    }
+
+    private fun isRepoOrNodePermission(resourceType: String): Boolean {
+        return resourceType == NODE.name || resourceType == REPO.name
     }
 
     private fun checkRepoReadAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
