@@ -33,14 +33,17 @@ package com.tencent.bkrepo.helm.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.helm.api.HelmClient
 import com.tencent.bkrepo.helm.listener.base.RemoteEventJobExecutor
+import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
 import com.tencent.bkrepo.helm.service.ChartManipulationService
+import com.tencent.bkrepo.helm.service.FixToolService
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.web.bind.annotation.RestController
@@ -48,7 +51,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class HelmIndexController(
     private val remoteEventJobExecutor: RemoteEventJobExecutor,
-    private val chartManipulationService: ChartManipulationService
+    private val chartManipulationService: ChartManipulationService,
+    private val fixToolService: FixToolService
     ) : HelmClient {
 
     /**
@@ -81,6 +85,12 @@ class HelmIndexController(
         )
         HttpContextHolder.getRequestOrNull()?.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
         chartManipulationService.deleteVersion(SYSTEM_USER, artifactInfo)
+        return ResponseBuilder.success()
+    }
+
+    override fun metadataRefresh(projectId: String, repoName: String): Response<Void> {
+        val artifactInfo = HelmArtifactInfo(projectId, repoName, PathUtils.ROOT)
+        fixToolService.metaDataRegenerate(SYSTEM_USER, artifactInfo)
         return ResponseBuilder.success()
     }
 }
