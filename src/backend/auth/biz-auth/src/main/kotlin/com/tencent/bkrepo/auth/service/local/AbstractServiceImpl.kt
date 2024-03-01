@@ -238,7 +238,7 @@ open class AbstractServiceImpl constructor(
     ): Permission {
         return Permission(
             id = permissionId,
-            resourceType = ResourceType.PROJECT.toString(),
+            resourceType = ResourceType.PROJECT.name,
             projectId = projectId,
             permName = permissionName,
             users = userList,
