@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication
+package com.tencent.bkrepo.common.storage.core.cache.indexer
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

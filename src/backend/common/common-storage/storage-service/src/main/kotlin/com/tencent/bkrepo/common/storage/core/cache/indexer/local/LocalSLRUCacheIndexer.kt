@@ -25,20 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication
+package com.tencent.bkrepo.common.storage.core.cache.indexer.local
 
-import com.tencent.bkrepo.common.storage.config.CacheProperties
+import com.tencent.bkrepo.common.storage.core.cache.indexer.EldestRemovedListener
+import java.nio.file.Path
 
-/**
- * 缓存索引器工厂类
- */
-interface StorageCacheIndexerFactory<K, V> {
-    /**
-     * 创建缓存索引器
-     *
-     * @param cacheProperties 缓存配置
-     *
-     * @return 缓存索引器
-     */
-    fun create(cacheProperties: CacheProperties): StorageCacheIndexer<K, V>
+class LocalSLRUCacheIndexer(
+    capacity: Int = 0,
+    cacheDir: Path,
+    listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList()
+) : SLRUCacheIndexer<String, Long>(listeners) {
+
+    override val probation = LocalLRUCacheIndexer(
+        (capacity * FACTOR_PROBATION).toInt(),
+        cacheDir,
+        mutableListOf(ProbationLRUEldestRemovedListener(listeners))
+    )
+
+    override val protected = LocalLRUCacheIndexer(
+        (capacity * FACTOR_PROTECTED).toInt(),
+        cacheDir,
+        mutableListOf(ProtectedLRUEldestRemovedListener(probation))
+    )
+
+    @Synchronized
+    override fun put(key: String, value: Long, score: Double?): Long? {
+        return super.put(key, value, score)
+    }
+
+    @Synchronized
+    override fun get(key: String): Long? {
+        return super.get(key)
+    }
+
+    @Synchronized
+    override fun remove(key: String): Long? {
+        return super.remove(key)
+    }
 }

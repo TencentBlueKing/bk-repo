@@ -25,41 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication.local
+package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
-import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
-import java.nio.file.Path
+import org.springframework.boot.test.context.TestConfiguration
+import redis.embedded.RedisServer
+import javax.annotation.PostConstruct
+import javax.annotation.PreDestroy
 
-class LocalSLRUCacheIndexer(
-    capacity: Int = 0,
-    cacheDir: Path,
-    listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList()
-) : SLRUCacheIndexer<String, Long>(listeners) {
 
-    override val probation = LocalLRUCacheIndexer(
-        (capacity * FACTOR_PROBATION).toInt(),
-        cacheDir,
-        mutableListOf(ProbationLRUEldestRemovedListener(listeners))
-    )
+@TestConfiguration
+class TestRedisConfiguration {
+    private val redisServer = RedisServer.builder().build()
 
-    override val protected = LocalLRUCacheIndexer(
-        (capacity * FACTOR_PROTECTED).toInt(),
-        cacheDir,
-        mutableListOf(ProtectedLRUEldestRemovedListener(probation))
-    )
-
-    @Synchronized
-    override fun put(key: String, value: Long, score: Double?): Long? {
-        return super.put(key, value, score)
+    @PostConstruct
+    fun postConstruct() {
+        redisServer.start()
     }
 
-    @Synchronized
-    override fun get(key: String): Long? {
-        return super.get(key)
-    }
-
-    @Synchronized
-    override fun remove(key: String): Long? {
-        return super.remove(key)
+    @PreDestroy
+    fun preDestroy() {
+        redisServer.stop()
     }
 }

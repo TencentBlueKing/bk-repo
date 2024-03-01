@@ -34,8 +34,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexProperties
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexerManager
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider

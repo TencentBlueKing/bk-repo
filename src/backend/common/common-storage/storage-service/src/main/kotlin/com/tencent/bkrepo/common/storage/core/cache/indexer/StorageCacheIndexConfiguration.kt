@@ -25,15 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication
+package com.tencent.bkrepo.common.storage.core.cache.indexer
 
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexProperties.Companion.CACHE_TYPE_LOCAL_SLRU
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_SLRU
-import com.tencent.bkrepo.common.storage.core.cache.evication.local.LocalSLRUCacheIndexer
-import com.tencent.bkrepo.common.storage.core.cache.evication.redis.RedisSLRUCacheIndexer
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_LOCAL_SLRU
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_SLRU
+import com.tencent.bkrepo.common.storage.core.cache.indexer.local.LocalSLRUCacheIndexer
+import com.tencent.bkrepo.common.storage.core.cache.indexer.redis.RedisSLRUCacheIndexer
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass

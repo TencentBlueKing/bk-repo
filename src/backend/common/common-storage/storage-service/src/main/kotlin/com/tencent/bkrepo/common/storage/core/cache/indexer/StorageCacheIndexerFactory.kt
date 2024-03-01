@@ -25,26 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication.redis
+package com.tencent.bkrepo.common.storage.core.cache.indexer
 
-import org.springframework.boot.test.context.TestConfiguration
-import redis.embedded.RedisServer
-import javax.annotation.PostConstruct
-import javax.annotation.PreDestroy
+import com.tencent.bkrepo.common.storage.config.CacheProperties
 
-
-@TestConfiguration
-class TestRedisConfiguration {
-    private val redisServer = RedisServer.builder().setting("maxheap 10m").build()
-
-    @PostConstruct
-    fun postConstruct() {
-        redisServer.stop()
-        redisServer.start()
-    }
-
-    @PreDestroy
-    fun preDestroy() {
-        redisServer.stop()
-    }
+/**
+ * 缓存索引器工厂类
+ */
+interface StorageCacheIndexerFactory<K, V> {
+    /**
+     * 创建缓存索引器
+     *
+     * @param cacheProperties 缓存配置
+     *
+     * @return 缓存索引器
+     */
+    fun create(cacheProperties: CacheProperties): StorageCacheIndexer<K, V>
 }

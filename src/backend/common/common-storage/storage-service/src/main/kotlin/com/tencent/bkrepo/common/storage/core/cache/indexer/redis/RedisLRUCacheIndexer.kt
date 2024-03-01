@@ -25,11 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication.redis
+package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexer
+import com.tencent.bkrepo.common.storage.core.cache.indexer.EldestRemovedListener
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer
 import com.tencent.bkrepo.common.storage.util.existReal
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate

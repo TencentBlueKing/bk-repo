@@ -30,7 +30,7 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexerManager
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -47,7 +47,7 @@ import java.time.Duration
 @Component
 @EnableConfigurationProperties(StorageCacheIndexSyncJobProperties::class)
 class StorageCacheIndexSyncJob(
-    properties: StorageCacheIndexSyncJobProperties,
+    private val properties: StorageCacheIndexSyncJobProperties,
     private val storageProperties: StorageProperties,
     private val clusterProperties: ClusterProperties,
     private val mongoTemplate: MongoTemplate,
@@ -67,6 +67,7 @@ class StorageCacheIndexSyncJob(
 
         mongoTemplate.find(Query(), TStorageCredentials::class.java, "storage_credentials")
             .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }
+            .filter { it.id !in properties.ignoredStorageCredentialsKeys }
             .map { it.credentials.readJsonString<StorageCredentials>().apply { key = it.id } }
             .forEach { indexerManager.sync(it) }
     }

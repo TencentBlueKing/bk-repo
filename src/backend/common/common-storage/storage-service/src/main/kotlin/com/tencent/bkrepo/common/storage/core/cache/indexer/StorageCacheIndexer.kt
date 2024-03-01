@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication
+package com.tencent.bkrepo.common.storage.core.cache.indexer
 
 /**
- * 存储缓存淘汰策略，维护一份硬盘缓存文件的索引，根据特定策略对索引进行淘汰同时删除硬盘上的缓存文件
+ * 存储缓存索引管理器，维护一份硬盘缓存文件的索引，根据特定策略对索引进行淘汰同时删除硬盘上的缓存文件
  */
 interface StorageCacheIndexer<K, V> {
     /**

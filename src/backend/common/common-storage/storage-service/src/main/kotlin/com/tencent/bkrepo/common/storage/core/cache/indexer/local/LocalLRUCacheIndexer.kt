@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.evication.local
+package com.tencent.bkrepo.common.storage.core.cache.indexer.local
 
-import com.tencent.bkrepo.common.storage.core.cache.evication.EldestRemovedListener
-import com.tencent.bkrepo.common.storage.core.cache.evication.StorageCacheIndexer
+import com.tencent.bkrepo.common.storage.core.cache.indexer.EldestRemovedListener
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer
 import com.tencent.bkrepo.common.storage.util.existReal
 import java.nio.file.Path
 
