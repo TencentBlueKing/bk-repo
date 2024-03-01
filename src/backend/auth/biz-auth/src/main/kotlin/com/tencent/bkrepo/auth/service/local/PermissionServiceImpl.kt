@@ -194,27 +194,24 @@ open class PermissionServiceImpl constructor(
             // check user locked
             if (user.locked) return false
             // check user admin permission
-            if (user.admin) return true
-            // check role project admin
-            if (checkProjectAdmin(request)) return true
-            // read action, check role project user
-            if (checkProjectUser(request, user.roles) && action == READ.name) return true
+            if (user.admin || checkProjectAdmin(request)) return true
+            //  check role project user
+            if (checkProjectUser(request, user.roles) ) return true
             // check role repo admin
             if (checkRepoAdmin(request, user.roles)) return true
             // check repo read action
-            if (resourceType == REPO.name && action == READ.name &&
-                checkRepoReadAction(projectId!!, repoName!!, uid, user.roles)
-            ) return true
+            if (checkRepoReadAction(request, user.roles)) return true
             // check repo action
-            if (resourceType == NODE.name) {
-                return checkNodeAction(request, user.roles)
-            }
+            if (checkNodeAction(request, user.roles)) return true
         }
         return false
     }
 
-    private fun checkRepoReadAction(projectId: String, repoName: String, userId: String, roles: List<String>): Boolean {
-        return permissionDao.listPermissionInRepo(projectId, repoName, userId, roles).isNotEmpty()
+    private fun checkRepoReadAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
+        with(request) {
+            return resourceType == REPO.name && action == READ.name &&
+                    permissionDao.listPermissionInRepo(projectId!!, repoName!!, uid, roles).isNotEmpty()
+        }
     }
 
     private fun checkProjectAdmin(request: CheckPermissionRequest): Boolean {
@@ -224,7 +221,7 @@ open class PermissionServiceImpl constructor(
 
     private fun checkProjectUser(request: CheckPermissionRequest, roles: List<String>): Boolean {
         if (request.projectId == null || roles.isEmpty()) return false
-        return isUserLocalProjectUser(roles, request.projectId!!) && request.action == READ.name
+        return  request.action == READ.name && isUserLocalProjectUser(roles, request.projectId!!)
     }
 
     private fun checkRepoAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
@@ -248,6 +245,7 @@ open class PermissionServiceImpl constructor(
 
     private fun checkNodeAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
         with(request) {
+            if (resourceType != NODE.name) return false
             val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
             result.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
