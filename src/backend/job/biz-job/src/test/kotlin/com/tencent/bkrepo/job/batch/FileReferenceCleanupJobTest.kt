@@ -28,13 +28,21 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
+import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
+import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -68,6 +76,10 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @MockBean
     lateinit var archiveClient: ArchiveClient
+
+    @MockBean
+    lateinit var repositoryClient: RepositoryClient
+
     @MockBean
     lateinit var jobSnapshotRepository: JobSnapshotRepository
 
@@ -77,19 +89,49 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     @Autowired
     lateinit var fileReferenceCleanupJob: FileReferenceCleanupJob
 
+    @Autowired
+    lateinit var nodeCommonUtils: NodeCommonUtils
+
+    @Autowired
+    lateinit var repositoryCommonUtils: RepositoryCommonUtils
+
+    @Autowired
+    lateinit var fileReferenceCleanupJobProperties: FileReferenceCleanupJobProperties
+
     @BeforeEach
     fun beforeEach() {
         val tracer = mockk<OtelTracer>()
         mockkObject(SpringContextUtils.Companion)
         every { SpringContextUtils.getBean<Tracer>() } returns tracer
         every { tracer.currentSpan() } returns null
+        every { SpringContextUtils.publishEvent(any()) } returns Unit
         Mockito.`when`(storageService.exist(anyString(), any())).thenReturn(true)
         val credentials = InnerCosCredentials()
         Mockito.`when`(storageCredentialsClient.findByKey(anyString())).thenReturn(
             ResponseBuilder.success(credentials),
         )
-        mockkObject(SpringContextUtils)
-        every { SpringContextUtils.publishEvent(any()) } returns Unit
+        Mockito.`when`(repositoryClient.getRepoDetail(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                RepositoryDetail(
+                    projectId = "ut-project",
+                    name = "ut-repo",
+                    storageCredentials = InnerCosCredentials(key = "0"),
+                    type = RepositoryType.NONE,
+                    category = RepositoryCategory.LOCAL,
+                    public = false,
+                    description = "",
+                    configuration = LocalConfiguration(),
+                    createdBy = "",
+                    createdDate = "",
+                    lastModifiedBy = "",
+                    lastModifiedDate = "",
+                    oldCredentialsKey = null,
+                    quota = 0,
+                    used = 0,
+                ),
+            ),
+        )
+        fileReferenceCleanupJobProperties.expectedNodes = 50_000
     }
 
     @AfterEach
@@ -97,6 +139,8 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         fileReferenceCleanupJob.collectionNames().forEach {
             mongoTemplate.remove(Query(), it)
         }
+        mongoTemplate.remove(Query(), "node_0")
+        mongoTemplate.remove(Query(), "shed_lock")
     }
 
     @DisplayName("测试正常运行")
@@ -130,6 +174,34 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         }
         fileReferenceCleanupJob.start()
         Assertions.assertEquals(num, deleted.get())
+    }
+
+    @DisplayName("测试错误引用数据清理")
+    @Test
+    fun errorRefTest() {
+        val num = 1000
+        insertMany(num, fileReferenceCleanupJob.collectionNames().first())
+        // 新增一个节点，制造引用错误
+        val doc = Document(
+            mutableMapOf(
+                "sha256" to "0",
+                "folder" to false,
+                "projectId" to "ut-project",
+                "repoName" to "ut-repo",
+                "size" to 1L,
+                "fullPath" to "/test",
+            ) as Map<String, Any>?,
+        )
+        mongoTemplate.insert(
+            doc,
+            "node_0",
+        )
+        val deleted = AtomicInteger()
+        Mockito.`when`(storageService.delete(anyString(), any())).then {
+            deleted.incrementAndGet()
+        }
+        fileReferenceCleanupJob.start()
+        Assertions.assertEquals(num - 1, deleted.get())
     }
 
     private fun insertMany(num: Int, collectionName: String) {

@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.google.common.hash.BloomFilter
+import com.google.common.hash.Funnels
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
@@ -36,10 +38,12 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.COUNT
 import com.tencent.bkrepo.job.CREDENTIALS
+import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.FileJobContext
+import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
@@ -50,6 +54,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
@@ -59,14 +64,23 @@ import kotlin.reflect.KClass
  */
 @Component
 @EnableConfigurationProperties(FileReferenceCleanupJobProperties::class)
+@Suppress("UnstableApiUsage")
 class FileReferenceCleanupJob(
     private val storageService: StorageService,
     private val storageCredentialsClient: StorageCredentialsClient,
-    properties: FileReferenceCleanupJobProperties,
+    private val properties: FileReferenceCleanupJobProperties,
     private val archiveClient: ArchiveClient,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
+    /**
+     * 节点的布隆过滤器，用于快速判断sha256的节点是否存在
+     * 因跟踪节点的删除不方便，且布隆过滤器没有重置功能，所以这里每次任务开始前都会新建一个布隆过滤器，
+     * 如果设置的预期节点很多，可能会导致较多的gc甚至oom。
+     * */
+    private lateinit var bf: BloomFilter<CharSequence>
+
     override fun start(): Boolean {
+        bf = buildBloomFilter()
         return super.start()
     }
 
@@ -95,7 +109,8 @@ class FileReferenceCleanupJob(
         val storageCredentials = credentialsKey?.let { getCredentials(credentialsKey) }
         try {
             if (sha256.isNotBlank() && storageService.exist(sha256, storageCredentials)) {
-                if (existNode(sha256)) {
+                if (existNode(sha256, credentialsKey)) {
+                    logger.warn("Dirty sha256[$sha256] exists on $credentialsKey")
                     return
                 }
                 storageService.delete(sha256, storageCredentials)
@@ -114,17 +129,34 @@ class FileReferenceCleanupJob(
 
     /**
      * 检查Node表中是否还存在对应sha256的node
+     * @return true表示存在节点，false表示不存在
      */
-    private fun existNode(sha256: String): Boolean {
-        (0 until SHARDING_COUNT).forEach {
-            val query = Query(where(Node::sha256).isEqualTo(sha256))
-            val exist = mongoTemplate.findOne(query, Node::class.java, COLLECTION_NODE_PREFIX + it) != null
-            if (exist) {
-                logger.info("sha256[$sha256] still has existed node in collection[$it]")
-                return true
+    private fun existNode(sha256: String, key: String?): Boolean {
+        /*
+        * 1. 通过布隆过滤器，快速判断节点是否存在。（大部分判断应该在这里终止，即大部分引用是正确的）
+        * 2. 真实判断存储实例的节点是否存在。（引用不正确的情况或者布隆过滤器的误报）
+        * */
+        val query = Query(where(Node::sha256).isEqualTo(sha256))
+        return bf.mightContain(sha256) && NodeCommonUtils.findNodes(query, key).isNotEmpty()
+    }
+
+    private fun buildBloomFilter(): BloomFilter<CharSequence> {
+        logger.info("Start build bloom filter.")
+        val bf = BloomFilter.create(
+            Funnels.stringFunnel(StandardCharsets.UTF_8),
+            properties.expectedNodes,
+            properties.fpp,
+        )
+        val query = Query(Criteria.where(FOLDER).isEqualTo(false))
+        query.fields().include(SHA256)
+        NodeCommonUtils.forEachNode(query) {
+            val sha256 = it[SHA256]?.toString()
+            if (sha256 != null) {
+                bf.put(sha256)
             }
         }
-        return false
+        logger.info("Build bloom filter successful，count: ${bf.approximateElementCount()},fpp: ${bf.expectedFpp()}")
+        return bf
     }
 
     private fun getCredentials(key: String): StorageCredentials? {
@@ -152,7 +184,6 @@ class FileReferenceCleanupJob(
     companion object {
         private val logger = LoggerHolder.jobLogger
         private const val COLLECTION_NAME_PREFIX = "file_reference_"
-        private const val COLLECTION_NODE_PREFIX = "node_"
         private const val COMPRESS_FILE_COLLECTION = "compress_file"
         private const val ARCHIVE_FILE_COLLECTION = "archive_file"
         private const val STORAGE_CREDENTIALS = "storageCredentialsKey"
@@ -166,7 +197,7 @@ class FileReferenceCleanupJob(
 
     data class Node(
         val id: String,
-        val sha256: String?,
+        val sha256: String,
     )
 
     override fun mapToEntity(row: Map<String, Any?>): FileReferenceData {
