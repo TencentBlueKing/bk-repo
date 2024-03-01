@@ -38,8 +38,9 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
-class UsageRateLimiterService(
+open class UsageRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
@@ -78,18 +79,20 @@ class UsageRateLimiterService(
         return Pair(projectId, repoName)
     }
 
-    override fun applyPermits(request: HttpServletRequest): Long {
-        return request.contentLengthLong
+    override fun applyPermits(request: HttpServletRequest, response: HttpServletResponse?): Long {
+        return when (request.method) {
+            in UPLOAD_REQUEST_METHOD -> request.contentLengthLong
+            else -> 0
+        }
     }
 
-    override fun refreshRateLimitRule() {
-        if (!rateLimiterProperties.enabled) return
-        val usageRules = UrlRateLimitRule()
-        val usageRuleConfigs = rateLimiterProperties.rules.filter {
-            it.limitDimension in listOf(LimitDimension.USAGE, LimitDimension.USAGE_TEMPLATE)
-        }
-        if (usageRuleConfigs.isEmpty()) return
-        usageRules.addRateLimitRules(usageRuleConfigs)
-        rateLimitRule = usageRules
+    override fun getLimitDimensions(): List<LimitDimension> {
+        return listOf(
+            LimitDimension.UPLOAD_USAGE, LimitDimension.UPLOAD_USAGE_TEMPLATE,
+        )
+    }
+
+    override fun ignoreRequest(request: HttpServletRequest): Boolean {
+        return request.method !in UPLOAD_REQUEST_METHOD
     }
 }

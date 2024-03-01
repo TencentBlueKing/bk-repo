@@ -25,42 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.service.url
+package com.tencent.bkrepo.common.ratelimiter.service.usage
 
-
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
+import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
-import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class UrlRateLimiterService(
+class DownloadUsageRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
-
-
-    override fun buildResource(request: HttpServletRequest): String {
-        return request.requestURI
-    }
-
-    override fun buildResourceTemplate(request: HttpServletRequest): List<String> {
-        return listOf(request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as String)
-    }
+): UsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun applyPermits(request: HttpServletRequest, response: HttpServletResponse?): Long {
-        return 1
+       if (response == null) {
+           throw AcquireLockFailedException("response is null")
+       }
+       return response.getHeader(CONTENT_LENGTH)?.toLongOrNull() ?: 0
     }
 
     override fun getLimitDimensions(): List<LimitDimension> {
         return listOf(
-            LimitDimension.URL_TEMPLATE, LimitDimension.URL,
+            LimitDimension.DOWNLOAD_USAGE, LimitDimension.DOWNLOAD_USAGE_TEMPLATE,
         )
+    }
+
+    override fun ignoreRequest(request: HttpServletRequest): Boolean {
+        return request.method !in DOWNLOAD_REQUEST_METHOD
     }
 }

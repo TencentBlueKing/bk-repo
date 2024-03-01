@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimitHandlerInterceptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.UsageRateLimiterService
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -76,15 +77,31 @@ class RateLimiterAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(value = ["rate.limiter.enabled"])
+    fun downloadUsageRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>? = null
+    ): DownloadUsageRateLimiterService {
+        return DownloadUsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)
+    }
+
+
+
+    @Bean
     @ConditionalOnWebApplication
     @ConditionalOnProperty(value = ["rate.limiter.enabled"])
     fun rateLimitHandlerInterceptorRegister(
         urlRateLimiterService: UrlRateLimiterService,
-        usageRateLimiterService: UsageRateLimiterService
+        usageRateLimiterService: UsageRateLimiterService,
+        downloadUsageRateLimiterService: DownloadUsageRateLimiterService
     ): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
-                registry.addInterceptor(RateLimitHandlerInterceptor(urlRateLimiterService, usageRateLimiterService))
+                registry.addInterceptor(RateLimitHandlerInterceptor(
+                    urlRateLimiterService, usageRateLimiterService, downloadUsageRateLimiterService
+                ))
                     .excludePathPatterns("/service/**", "/replica/**")
             }
         }

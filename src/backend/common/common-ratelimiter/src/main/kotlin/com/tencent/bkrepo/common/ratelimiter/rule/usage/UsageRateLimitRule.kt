@@ -58,8 +58,8 @@ class UsageRateLimitRule: RateLimitRule {
             return
         }
         when (resourceLimit.limitDimension) {
-            LimitDimension.USAGE -> usageLimitRules[resourceLimit.resource] = resourceLimit
-            LimitDimension.USAGE_TEMPLATE -> usageTemplateLimitRules[resourceLimit.resource] = resourceLimit
+            LimitDimension.UPLOAD_USAGE -> usageLimitRules[resourceLimit.resource] = resourceLimit
+            LimitDimension.UPLOAD_USAGE_TEMPLATE -> usageTemplateLimitRules[resourceLimit.resource] = resourceLimit
             else -> return
         }
     }

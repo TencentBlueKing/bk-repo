@@ -31,14 +31,17 @@ import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedExceptio
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.UsageRateLimiterService
 import org.springframework.web.servlet.HandlerInterceptor
+import org.springframework.web.servlet.ModelAndView
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class RateLimitHandlerInterceptor(
     private val urlRateLimiterService: UrlRateLimiterService,
-    private val usageRateLimiterService: UsageRateLimiterService
+    private val usageRateLimiterService: UsageRateLimiterService,
+    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
 ): HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         return try {
@@ -52,13 +55,22 @@ class RateLimitHandlerInterceptor(
         } catch (e: InvalidResourceException) {
             super.preHandle(request, response, handler)
         } catch (e: Exception) {
-            false
+            throw e
         }
     }
 
-    override fun afterCompletion(
-        request: HttpServletRequest, response: HttpServletResponse, handler: Any, ex: Exception?
-    ) {
-        super.afterCompletion(request, response, handler, ex)
+    override fun postHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any, modelAndView: ModelAndView?) {
+        try {
+            downloadUsageRateLimiterService.limit(request, response)
+            super.preHandle(request, response, handler)
+        } catch (e: OverloadException) {
+            throw e
+        } catch (e: AcquireLockFailedException) {
+            super.postHandle(request, response, handler, modelAndView)
+        } catch (e: InvalidResourceException) {
+            super.postHandle(request, response, handler, modelAndView)
+        } catch (e: Exception) {
+            throw e
+        }
     }
 }
