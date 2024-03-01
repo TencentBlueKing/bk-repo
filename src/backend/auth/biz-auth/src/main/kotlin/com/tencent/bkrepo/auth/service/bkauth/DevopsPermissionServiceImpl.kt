@@ -41,6 +41,7 @@ import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -172,9 +174,15 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     private fun checkRepoNotInDevops(request: CheckPermissionRequest): Boolean {
+        logger.debug("check repo not in devops request [$request]")
         with(request) {
+            val user = userDao.findFirstByUserId(uid) ?: run {
+                throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+            }
+            val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action) ||
+                    super.isUserLocalProjectUser(user.roles, projectId!!)
             if (resourceType == NODE.name && super.isNodeNeedLocalCheck(projectId!!, repoName!!)) {
-                return super.checkPermission(request)
+                return super.checkNodeAction(request, user.roles, isDevopsProjectMember)
             } else {
                 return super.checkPermission(request) || isDevopsProjectMember(uid, projectId!!, action)
             }

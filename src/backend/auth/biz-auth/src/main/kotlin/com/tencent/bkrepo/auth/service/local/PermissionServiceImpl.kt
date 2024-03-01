@@ -185,7 +185,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-        logger.debug("check permission  request : [$request] ")
+        logger.debug("check permission request : [$request] ")
         with(request) {
             if (uid == ANONYMOUS_USER) return false
             val user = userDao.findFirstByUserId(uid) ?: run {
@@ -195,14 +195,20 @@ open class PermissionServiceImpl constructor(
             if (user.locked) return false
             // check user admin permission
             if (user.admin || checkProjectAdmin(request)) return true
-            //  check role project user
-            if (checkProjectUser(request, user.roles) ) return true
-            // check role repo admin
-            if (checkRepoAdmin(request, user.roles)) return true
-            // check repo read action
-            if (checkRepoReadAction(request, user.roles)) return true
-            // check repo action
-            if (checkNodeAction(request, user.roles)) return true
+            val roles = user.roles
+            if (resourceType == NODE.name || resourceType == REPO.name) {
+                // check role repo admin
+                if (checkRepoAdmin(request, user.roles)) return true
+                // check repo read action
+                if (checkRepoReadAction(request, user.roles)) return true
+                //  check project user
+                val isProjectUser = isUserLocalProjectUser(user.roles, request.projectId!!)
+                if (checkProjecReadAction(request, isProjectUser)) return true
+                // check node action
+                if (isNodeNeedLocalCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
+                    return true
+                }
+            }
         }
         return false
     }
@@ -219,9 +225,8 @@ open class PermissionServiceImpl constructor(
         return isUserLocalProjectAdmin(request.uid, request.projectId!!)
     }
 
-    private fun checkProjectUser(request: CheckPermissionRequest, roles: List<String>): Boolean {
-        if (request.projectId == null || roles.isEmpty()) return false
-        return  request.action == READ.name && isUserLocalProjectUser(roles, request.projectId!!)
+    private fun checkProjecReadAction(request: CheckPermissionRequest, isProjectUser: Boolean): Boolean {
+        return request.projectId != null && request.action == READ.name && isProjectUser
     }
 
     private fun checkRepoAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
@@ -243,7 +248,7 @@ open class PermissionServiceImpl constructor(
         return false
     }
 
-    private fun checkNodeAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
+    fun checkNodeAction(request: CheckPermissionRequest, roles: List<String>, isProjectUser: Boolean): Boolean {
         with(request) {
             if (resourceType != NODE.name) return false
             val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
@@ -258,7 +263,7 @@ open class PermissionServiceImpl constructor(
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
             }
         }
-        return true
+        return isProjectUser
     }
 
     fun isNodeNeedLocalCheck(projectId: String, repoName: String): Boolean {
@@ -424,7 +429,7 @@ open class PermissionServiceImpl constructor(
         return excludePath.distinct().filter { !filterPath.contains(it) }
     }
 
-    private fun isUserLocalProjectUser(roleIds: List<String>, projectId: String): Boolean {
+    fun isUserLocalProjectUser(roleIds: List<String>, projectId: String): Boolean {
         return roleRepository.findAllById(roleIds)
             .any { role -> role.projectId == projectId && role.roleId == PROJECT_VIEWER_ID }
     }
