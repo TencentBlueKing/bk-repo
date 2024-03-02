@@ -48,7 +48,7 @@ import java.nio.file.Path
 @Import(TestRedisConfiguration::class)
 @ImportAutoConfiguration(TestRedisConfiguration::class, RedisAutoConfiguration::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-abstract class RedisCacheIndexerTest<T: StorageCacheIndexer<String, Long>>() {
+abstract class RedisCacheIndexerTest<T: StorageCacheIndexer<String, Long>> {
 
     @Autowired
     protected lateinit var redisTemplate: RedisTemplate<String, String>
