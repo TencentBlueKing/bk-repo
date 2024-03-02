@@ -40,7 +40,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 
 /**
- * 基于Redis实现的SLRU，缓存满后将异步清理，缓存实际大小会超过设置的最大值
+ * 基于Redis实现的SLRU，用于存放存储层缓存文件索引，缓存满后将异步清理，缓存实际大小会超过设置的最大值
  * 为了减少redis内存占用，固定key为缓存文件sha256，value为缓存文件大小
  *
  * SLRU策略为了应对突发稀疏流量，分为probation于protected两块区域，缓存第一次访问时会被放入probation，再次访问会晋升到protected
@@ -157,6 +157,7 @@ class RedisSLRUCacheIndexer(
     }
 
     override fun remove(key: String): Long? {
+        logger.info("remove [$key] from $cacheName")
         val keys = listOf(
             protectedLruKey, protectedHashKey, protectedTotalWeightKey,
             probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
@@ -229,7 +230,7 @@ class RedisSLRUCacheIndexer(
     }
 
     private fun evict() {
-        logger.info("start evict")
+        logger.info("start evict $cacheName")
         var count = 0
         while (shouldEvict()) {
             count++

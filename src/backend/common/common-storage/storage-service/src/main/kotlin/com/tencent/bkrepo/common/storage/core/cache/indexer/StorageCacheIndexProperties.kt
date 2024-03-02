@@ -35,10 +35,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("storage.cache.index")
 data class StorageCacheIndexProperties(
     var enabled: Boolean = false,
-    var type: String = CACHE_TYPE_LOCAL_SLRU
+    var type: String = CACHE_TYPE_REDIS_SLRU
 ) {
     companion object {
-        const val CACHE_TYPE_LOCAL_SLRU = "LOCAL_SLRU"
+        const val CACHE_TYPE_REDIS_LRU = "REDIS_LRU"
         const val CACHE_TYPE_REDIS_SLRU = "REDIS_SLRU"
     }
 }

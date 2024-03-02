@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexSyncJobProperties
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
@@ -51,7 +52,7 @@ class StorageCacheIndexSyncJob(
     private val storageProperties: StorageProperties,
     private val clusterProperties: ClusterProperties,
     private val mongoTemplate: MongoTemplate,
-    private val indexerManager: StorageCacheIndexerManager
+    private val indexerManager: ObjectProvider<StorageCacheIndexerManager>
 ) : DefaultContextJob(properties) {
 
     private data class TStorageCredentials(
@@ -63,12 +64,12 @@ class StorageCacheIndexSyncJob(
     override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
 
     override fun doStart0(jobContext: JobContext) {
-        indexerManager.sync(storageProperties.defaultStorageCredentials())
+        indexerManager.ifAvailable?.sync(storageProperties.defaultStorageCredentials())
 
         mongoTemplate.find(Query(), TStorageCredentials::class.java, "storage_credentials")
             .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }
             .filter { it.id !in properties.ignoredStorageCredentialsKeys }
             .map { it.credentials.readJsonString<StorageCredentials>().apply { key = it.id } }
-            .forEach { indexerManager.sync(it) }
+            .forEach { indexerManager.ifAvailable?.sync(it) }
     }
 }

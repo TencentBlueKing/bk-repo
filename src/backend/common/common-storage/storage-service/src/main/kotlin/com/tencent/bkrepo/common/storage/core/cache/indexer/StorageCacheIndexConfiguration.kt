@@ -30,9 +30,9 @@ package com.tencent.bkrepo.common.storage.core.cache.indexer
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
-import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_LOCAL_SLRU
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_LRU
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_SLRU
-import com.tencent.bkrepo.common.storage.core.cache.indexer.local.LocalSLRUCacheIndexer
+import com.tencent.bkrepo.common.storage.core.cache.indexer.redis.RedisLRUCacheIndexer
 import com.tencent.bkrepo.common.storage.core.cache.indexer.redis.RedisSLRUCacheIndexer
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.util.toPath
@@ -63,21 +63,24 @@ class StorageCacheIndexConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "storage.cache.index", name = ["type"], havingValue = CACHE_TYPE_LOCAL_SLRU)
-    fun localCacheFactory(): StorageCacheIndexerFactory<String, Long> {
+    @ConditionalOnProperty(prefix = "storage.cache.index", name = ["type"], havingValue = CACHE_TYPE_REDIS_LRU)
+    fun redisLruCacheFactory(
+        redisTemplate: RedisTemplate<String, String>
+    ): StorageCacheIndexerFactory<String, Long> {
         return object : StorageCacheIndexerFactory<String, Long> {
             override fun create(cacheProperties: CacheProperties): StorageCacheIndexer<String, Long> {
-                return LocalSLRUCacheIndexer(0, cacheProperties.path.toPath()).apply {
-                    setMaxWeight(cacheProperties.maxSize)
-                    setKeyWeightSupplier { _, v -> v.toString().toLong() }
-                }
+                val cacheName = cacheProperties.path.replace("/", "__")
+                val cachePath = cacheProperties.path.toPath()
+                val cache = RedisLRUCacheIndexer(cacheName, cachePath, redisTemplate, 0)
+                cache.setMaxWeight(cacheProperties.maxSize)
+                return cache
             }
         }
     }
 
     @Bean
     @ConditionalOnProperty(prefix = "storage.cache.index", name = ["type"], havingValue = CACHE_TYPE_REDIS_SLRU)
-    fun redisCacheFactory(
+    fun redisSlruCacheFactory(
         redisTemplate: RedisTemplate<String, String>
     ): StorageCacheIndexerFactory<String, Long> {
         return object : StorageCacheIndexerFactory<String, Long> {
