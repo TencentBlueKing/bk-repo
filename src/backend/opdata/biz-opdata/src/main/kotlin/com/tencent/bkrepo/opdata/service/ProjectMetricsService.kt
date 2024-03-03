@@ -39,10 +39,12 @@ import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.job.api.JobClient
+import com.tencent.bkrepo.opdata.config.OpProperties
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.extension.UsageComputerExtension
 import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import com.tencent.bkrepo.opdata.pojo.ProjectBill
 import com.tencent.bkrepo.opdata.pojo.ProjectBillStatement
 import com.tencent.bkrepo.opdata.pojo.ProjectBillStatementRequest
 import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
@@ -52,6 +54,7 @@ import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
+import com.tencent.bkrepo.opdata.util.MetricsHandlerThreadPoolExecutor
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_BG_NAME
@@ -61,6 +64,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_PRODUCT_ID
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
+import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -68,6 +72,9 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Optional
+import java.util.concurrent.Callable
+import java.util.concurrent.Future
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -77,7 +84,8 @@ class ProjectMetricsService (
     private val projectClient: ProjectClient,
     private val jobClient: JobClient,
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
-    private val pluginManager: PluginManager
+    private val pluginManager: PluginManager,
+    private val opProperties: OpProperties
     ){
 
     private val projectInfoCache: LoadingCache<String, Optional<ProjectInfo>> = CacheBuilder.newBuilder()
@@ -203,15 +211,41 @@ class ProjectMetricsService (
             limitSize = billStatementRequest.limitSize,
             currentMetrics = projectMetrics,
         )
-        return projects.map { projectId ->
-            convertToProjectBillStatement(
-                projectId = projectId,
-                totalCost = getBillStatement(billStatementRequest, projectId),
-                startDate = startDate,
-                endDate = endDate,
-                list = projectUsages,
-            )
+        val futureList = mutableListOf<Future<ProjectBill>>()
+        val semaphore = Semaphore(opProperties.threadNum)
+        try {
+            projects.forEach {
+                semaphore.acquire()
+                futureList.add(
+                    MetricsHandlerThreadPoolExecutor.instance.submit(
+                    Callable {
+                        ProjectBill(
+                            projectId = it,
+                            totalCost = getBillStatement(billStatementRequest, it),
+                        )
+                    }
+                ))
+            }
+        } catch (ignore: Exception) {
+        }  finally {
+            semaphore.release()
         }
+        val result = mutableListOf<ProjectBillStatement>()
+        futureList.forEach {
+            try {
+                val bill = it.get()
+                result.add(convertToProjectBillStatement(
+                    projectId = bill.projectId,
+                    totalCost = bill.totalCost,
+                    startDate = startDate,
+                    endDate = endDate,
+                    list = projectUsages,
+                ))
+            } catch (e: Exception) {
+                logger.warn("get bill result error : $e")
+            }
+        }
+        return result
     }
 
     private fun convertToProjectBillStatement(
@@ -555,6 +589,8 @@ class ProjectMetricsService (
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ProjectMetricsService::class.java)
+
         private const val DEFAULT_PROJECT_CACHE_SIZE = 100_000L
         private const val FIXED_DELAY = 30L
         private const val INIT_DELAY = 3L

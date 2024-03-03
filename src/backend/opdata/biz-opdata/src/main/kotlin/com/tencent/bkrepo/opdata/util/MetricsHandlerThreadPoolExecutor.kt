@@ -25,17 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.util
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
-@ConfigurationProperties("op.security")
-data class OpProperties(
-    var adminUsername: String = "",
-    var adminPassword: String = "",
+object MetricsHandlerThreadPoolExecutor {
     /**
-     * bkbase调用制品库接口拉取数据时使用的token
+     * 线程池实例
      */
-    var bkBaseToken: String = "",
-    var threadNum: Int = 16,
-)
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
+
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("project-metrics-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors()
+        return ThreadPoolExecutor(
+            corePoolSize, corePoolSize*2, 30, TimeUnit.SECONDS,
+            LinkedBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        )
+    }
+}

@@ -25,17 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.pojo
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties("op.security")
-data class OpProperties(
-    var adminUsername: String = "",
-    var adminPassword: String = "",
-    /**
-     * bkbase调用制品库接口拉取数据时使用的token
-     */
-    var bkBaseToken: String = "",
-    var threadNum: Int = 16,
+data class ProjectBill(
+    val projectId: String,
+    val totalCost: Double,
 )
