@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.job.api.JobClient
-import com.tencent.bkrepo.opdata.config.OpProperties
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.extension.UsageComputerExtension
 import com.tencent.bkrepo.opdata.model.StatDateModel
@@ -74,7 +73,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Optional
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
-import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -85,7 +83,6 @@ class ProjectMetricsService (
     private val jobClient: JobClient,
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
     private val pluginManager: PluginManager,
-    private val opProperties: OpProperties
     ){
 
     private val projectInfoCache: LoadingCache<String, Optional<ProjectInfo>> = CacheBuilder.newBuilder()
@@ -212,23 +209,20 @@ class ProjectMetricsService (
             currentMetrics = projectMetrics,
         )
         val futureList = mutableListOf<Future<ProjectBill>>()
-        val semaphore = Semaphore(opProperties.threadNum)
         try {
             projects.forEach {
-                semaphore.acquire()
                 futureList.add(
                     MetricsHandlerThreadPoolExecutor.instance.submit(
                     Callable {
+                        val totalCost = getBillStatement(billStatementRequest, it)
                         ProjectBill(
                             projectId = it,
-                            totalCost = getBillStatement(billStatementRequest, it),
+                            totalCost = totalCost
                         )
                     }
                 ))
             }
         } catch (ignore: Exception) {
-        }  finally {
-            semaphore.release()
         }
         val result = mutableListOf<ProjectBillStatement>()
         futureList.forEach {
@@ -281,19 +275,13 @@ class ProjectMetricsService (
         ).toLocalDate().atStartOfDay()
         val durationDays = LocalDateTimeUtil.between(startDate, endDate).toDays()
         var date = startDate
-        var projectMetrics: List<TProjectMetrics>
+        val projectMetrics = projectMetricsRepository.findAllByProjectIdAndCreatedDateBetween(
+            projectId = projectId, start = startDate, end = endDate
+        )
         var bill: Double = 0.0
         while (!date.isAfter(endDate)) {
-            projectMetrics = MetricsCacheUtil.getProjectMetrics(
-                date.format(DateTimeFormatter.ISO_DATE_TIME)
-            )
-            val pM = getMetricsResult(
-                type = null,
-                limitSize = billStatementRequest.limitSize,
-                currentMetrics = projectMetrics,
-                projectId = projectId,
-            )
-            val usage = pM.firstOrNull()?.capSize ?: 0L
+            val projectMetric = projectMetrics.firstOrNull { it.createdDate == date }
+            val usage = projectMetric?.capSize?.div(billStatementRequest.limitSize) ?: 0L
             pluginManager.applyExtension<UsageComputerExtension> {
                 bill += billComputerExpression(usage.toDouble(), durationDays.toDouble())
             }
@@ -430,12 +418,9 @@ class ProjectMetricsService (
         currentProjectUsageStatistics: Map<String, ProjectUsageStatistics>? = null,
         oneWeekBeforeProjectUsageStatistics: Map<String, ProjectUsageStatistics>? = null,
         oneMonthBeforeProjectUsageStatistics: Map<String, ProjectUsageStatistics>? = null,
-        projectId: String? = null
     ): List<ProjectMetrics> {
         val result = mutableListOf<ProjectMetrics>()
         for (current in currentMetrics) {
-            if (!projectId.isNullOrEmpty() && current.projectId != projectId)
-                continue
             val projectInfo = getProjectMetrics(
                 current = current,
                 type = type,

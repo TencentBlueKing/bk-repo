@@ -36,6 +36,5 @@ data class OpProperties(
     /**
      * bkbase调用制品库接口拉取数据时使用的token
      */
-    var bkBaseToken: String = "",
-    var threadNum: Int = 16,
+    var bkBaseToken: String = ""
 )
