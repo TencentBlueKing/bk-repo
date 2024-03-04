@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.indexer
 
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -131,9 +132,11 @@ open class StorageCacheIndexerManager(
     }
 
     private fun getOrCreateIndexer(credentials: StorageCredentials): StorageCacheIndexer<String, Long> {
-        val cache = storageCacheMap.getOrPut(credentials.cache.path) {
+        val credentialsKey = credentials.key ?: DEFAULT_STORAGE_KEY
+        val cacheName = "$credentialsKey:${credentials.cache.path.replace("/", "__")}"
+        val cache = storageCacheMap.getOrPut(cacheName) {
             val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
-            cacheFactory.create(credentials.cache).apply { addEldestRemovedListener(listener) }
+            cacheFactory.create(cacheName, credentials.cache).apply { addEldestRemovedListener(listener) }
         }
         // 获取策略时检查是否需要更新缓存淘汰策略配置
         refreshCacheProperties(cache, credentials)

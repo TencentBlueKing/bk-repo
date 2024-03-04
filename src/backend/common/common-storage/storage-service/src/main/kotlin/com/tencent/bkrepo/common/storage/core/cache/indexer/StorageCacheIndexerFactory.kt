@@ -36,9 +36,10 @@ interface StorageCacheIndexerFactory<K, V> {
     /**
      * 创建缓存索引器
      *
+     * @param name 缓存名
      * @param cacheProperties 缓存配置
      *
      * @return 缓存索引器
      */
-    fun create(cacheProperties: CacheProperties): StorageCacheIndexer<K, V>
+    fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<K, V>
 }

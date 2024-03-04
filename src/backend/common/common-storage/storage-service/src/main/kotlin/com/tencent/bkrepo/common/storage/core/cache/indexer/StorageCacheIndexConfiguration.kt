@@ -68,10 +68,9 @@ class StorageCacheIndexConfiguration {
         redisTemplate: RedisTemplate<String, String>
     ): StorageCacheIndexerFactory<String, Long> {
         return object : StorageCacheIndexerFactory<String, Long> {
-            override fun create(cacheProperties: CacheProperties): StorageCacheIndexer<String, Long> {
-                val cacheName = cacheProperties.path.replace("/", "__")
+            override fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<String, Long> {
                 val cachePath = cacheProperties.path.toPath()
-                val cache = RedisLRUCacheIndexer(cacheName, cachePath, redisTemplate, 0)
+                val cache = RedisLRUCacheIndexer(name, cachePath, redisTemplate, 0)
                 cache.setMaxWeight(cacheProperties.maxSize)
                 return cache
             }
@@ -84,10 +83,9 @@ class StorageCacheIndexConfiguration {
         redisTemplate: RedisTemplate<String, String>
     ): StorageCacheIndexerFactory<String, Long> {
         return object : StorageCacheIndexerFactory<String, Long> {
-            override fun create(cacheProperties: CacheProperties): StorageCacheIndexer<String, Long> {
-                val cacheName = cacheProperties.path.replace("/", "__")
+            override fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<String, Long> {
                 val cachePath = cacheProperties.path.toPath()
-                val cache = RedisSLRUCacheIndexer(cacheName, cachePath, redisTemplate, 0)
+                val cache = RedisSLRUCacheIndexer(name, cachePath, redisTemplate, 0)
                 cache.setMaxWeight(cacheProperties.maxSize)
                 return cache
             }
