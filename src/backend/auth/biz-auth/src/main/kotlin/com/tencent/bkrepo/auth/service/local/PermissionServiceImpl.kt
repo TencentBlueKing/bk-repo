@@ -271,7 +271,7 @@ open class PermissionServiceImpl constructor(
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
             }
         }
-        return true
+        return false
     }
 
     fun isNodeNeedLocalCheck(projectId: String, repoName: String): Boolean {
