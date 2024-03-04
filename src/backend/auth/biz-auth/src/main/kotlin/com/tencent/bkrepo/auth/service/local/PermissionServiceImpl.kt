@@ -75,7 +75,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import java.time.LocalDateTime
 
 open class PermissionServiceImpl constructor(
-    private val userRepository: UserRepository,
+    val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     private val account: AccountRepository,
     private val permissionRepository: PermissionRepository,
@@ -212,7 +212,7 @@ open class PermissionServiceImpl constructor(
         if (checkRepoAdmin(request, user.roles)) return true
         // check repo action
         if (request.resourceType == NODE.name) {
-            return checkNodeAction(request, user.roles)
+            return checkNodeAction(request, user.roles, false)
         }
         return false
     }
@@ -250,7 +250,7 @@ open class PermissionServiceImpl constructor(
         return false
     }
 
-    private fun checkNodeAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
+    fun checkNodeAction(request: CheckPermissionRequest, roles: List<String>, defaultResult: Boolean): Boolean {
         with(request) {
             val query = PermissionQueryHelper.buildPermissionCheck(
                 projectId, repoName, uid, resourceType, roles
@@ -271,7 +271,7 @@ open class PermissionServiceImpl constructor(
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
             }
         }
-        return false
+        return defaultResult
     }
 
     fun isNodeNeedLocalCheck(projectId: String, repoName: String): Boolean {
