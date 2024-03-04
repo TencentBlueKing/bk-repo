@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.utils.UrlUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
 class UrlResourceLimitRule(
@@ -108,25 +109,36 @@ class UrlResourceLimitRule(
             val children = p.getEdges()
             var matchedNode= children[path]
             if (matchedNode == null) {
-                children.entries.forEach {  entry ->
-                    val n = entry.value
-                    if (n.isPattern) {
-                        if (Pattern.matches(n.pathDir, path)) {
-                            matchedNode = n
-                        }
-                    }
+                val child = findInChildren(children, path)
+                if (child != null) {
+                    matchedNode = child
                 }
             }
-            if (matchedNode != null) {
-                p = matchedNode!!
-                if (matchedNode!!.getResourceLimit() != null) {
-                    currentLimit = matchedNode!!.getResourceLimit()
-                }
-            } else {
+            if (matchedNode == null) {
                 break
+            }
+            p = matchedNode
+            if (matchedNode.getResourceLimit() != null) {
+                currentLimit = matchedNode.getResourceLimit()
             }
         }
         return currentLimit
+    }
+
+    private fun findInChildren(
+        children: ConcurrentHashMap<String, UrlNode>,
+        path: String,
+
+    ): UrlNode? {
+        children.entries.forEach {  entry ->
+            val n = entry.value
+            if (n.isPattern) {
+                if (Pattern.matches(n.pathDir, path)) {
+                    return n
+                }
+            }
+        }
+        return null
     }
 
     private fun isUrlTemplateVariable(pathDir: String): Boolean {
