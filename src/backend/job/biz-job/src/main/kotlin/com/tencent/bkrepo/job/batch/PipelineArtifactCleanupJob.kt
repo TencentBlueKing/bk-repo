@@ -35,9 +35,9 @@ import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.PipelineArtifactCleanupJobProperties
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCleanRequest
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort

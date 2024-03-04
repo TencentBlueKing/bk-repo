@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.generic.artifact.findRemoteMetadata
 import com.tencent.bkrepo.generic.artifact.updateParentMetadata
 import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 
 /**

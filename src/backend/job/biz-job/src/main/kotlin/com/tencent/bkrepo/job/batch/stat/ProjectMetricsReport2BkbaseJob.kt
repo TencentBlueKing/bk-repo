@@ -41,7 +41,7 @@ import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ProjectMetricsReport2BkbaseJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import com.tencent.bkrepo.job.pojo.project.TRepoMetrics
-import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query

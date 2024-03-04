@@ -71,8 +71,8 @@ import com.tencent.bkrepo.ddc.utils.NODE_METADATA_KEY_BLOB_ID
 import com.tencent.bkrepo.ddc.utils.NODE_METADATA_KEY_CONTENT_ID
 import com.tencent.bkrepo.ddc.utils.isAttachment
 import com.tencent.bkrepo.ddc.utils.isBinaryAttachment
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream

@@ -33,6 +33,8 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCleanRequest
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -43,8 +45,6 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ArtifactCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.client.discovery.DiscoveryClient
@@ -179,7 +179,8 @@ class ArtifactCleanupJob(
                     repoName = repoName,
                     path = PathUtils.toPath(it),
                     date = cleanupDate,
-                    operator = SYSTEM_USER)))
+                    operator = SYSTEM_USER
+                )))
             } catch (e: NullPointerException) {
                 logger.warn("Request of clean nodes $it in repo $projectId|$repoName is timeout!")
             }

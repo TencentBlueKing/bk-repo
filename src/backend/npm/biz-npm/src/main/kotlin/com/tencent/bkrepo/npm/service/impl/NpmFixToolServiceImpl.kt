@@ -39,8 +39,8 @@ import com.tencent.bkrepo.npm.service.NpmFixToolService
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

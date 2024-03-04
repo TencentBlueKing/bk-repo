@@ -40,7 +40,7 @@ import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.util.ManifestParser
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Component

@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.repository.service.packages.impl
 
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
-import com.tencent.bkrepo.repository.dao.PackageDao
-import com.tencent.bkrepo.repository.model.TPackage
+import com.tencent.bkrepo.common.metadata.dao.PackageDao
+import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.repository.pojo.software.CountResult
-import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
+import com.tencent.bkrepo.common.metadata.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.repository.service.packages.PackageStatisticsService
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria

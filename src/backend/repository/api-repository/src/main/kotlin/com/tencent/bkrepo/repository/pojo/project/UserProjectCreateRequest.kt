@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.repository.pojo.project
 
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

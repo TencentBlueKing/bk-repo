@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.s3.utils
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.s3.constant.S3HttpHeaders.X_AMZ_META_MTIME
 import java.time.Instant
 import java.time.LocalDateTime

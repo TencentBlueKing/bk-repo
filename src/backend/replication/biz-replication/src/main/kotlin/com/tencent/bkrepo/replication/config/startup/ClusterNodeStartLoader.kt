@@ -34,13 +34,13 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.UrlUtils
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType.PING
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType.REPORT
 import com.tencent.bkrepo.replication.service.ClusterNodeService
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner

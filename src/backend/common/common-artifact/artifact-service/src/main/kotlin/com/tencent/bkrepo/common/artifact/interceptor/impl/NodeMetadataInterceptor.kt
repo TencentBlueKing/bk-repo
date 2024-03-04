@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.interceptor.impl
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 
 class NodeMetadataInterceptor(rules: Map<String, Any>) : MetadataInterceptor<NodeDetail>(rules) {
     override fun artifactMetadata(artifact: NodeDetail): Map<String, Any> {

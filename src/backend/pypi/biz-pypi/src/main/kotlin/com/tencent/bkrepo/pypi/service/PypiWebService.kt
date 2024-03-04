@@ -47,8 +47,8 @@ import com.tencent.bkrepo.pypi.constants.PypiQueryType
 import com.tencent.bkrepo.pypi.constants.QUERY_TYPE
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime

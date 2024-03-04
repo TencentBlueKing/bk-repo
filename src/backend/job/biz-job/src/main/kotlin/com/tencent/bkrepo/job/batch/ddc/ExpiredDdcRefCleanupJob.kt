@@ -30,9 +30,9 @@ package com.tencent.bkrepo.job.batch.ddc
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
 import org.bson.types.Binary
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria

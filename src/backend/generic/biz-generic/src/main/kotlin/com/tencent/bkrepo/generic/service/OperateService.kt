@@ -33,7 +33,7 @@ package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.generic.pojo.FileInfo
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import org.springframework.stereotype.Service
 
 /**

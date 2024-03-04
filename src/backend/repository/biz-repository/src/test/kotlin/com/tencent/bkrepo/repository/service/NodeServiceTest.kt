@@ -38,21 +38,21 @@ import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.metadata.config.MetadataProperties
+import com.tencent.bkrepo.common.metadata.dao.FileReferenceDao
+import com.tencent.bkrepo.common.metadata.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.FileReferenceDao
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.ProjectService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -81,7 +81,7 @@ class NodeServiceTest @Autowired constructor(
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
-    private val repositoryProperties: RepositoryProperties
+    private val metadataProperties: MetadataProperties
 ) : ServiceBaseTest() {
 
     private val option = NodeListOption(includeFolder = false, deep = false)
@@ -97,7 +97,7 @@ class NodeServiceTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
-        repositoryProperties.nodeCreateTimeout = 5000
+        metadataProperties.nodeCreateTimeout = 5000
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
 
@@ -789,7 +789,7 @@ class NodeServiceTest @Autowired constructor(
     @DisplayName("测试创建文件超时")
     fun testCreateFileNodeTimeout() {
         // 新创建的文件回滚
-        repositoryProperties.nodeCreateTimeout = 0
+        metadataProperties.nodeCreateTimeout = 0
         val fullPath = "/1/2/3.txt"
         assertThrows<ErrorCodeException> {
             val request = createRequest(fullPath, folder = false, size = 100)
@@ -801,14 +801,14 @@ class NodeServiceTest @Autowired constructor(
         assertEquals(false, nodeService.checkExist(node("/1")))
 
         // 存在旧文件，使用覆盖创建的文件回滚
-        repositoryProperties.nodeCreateTimeout = 5000
+        metadataProperties.nodeCreateTimeout = 5000
         // 创建旧文件数据
         val request1 = createRequest(fullPath, folder = false, size = 10)
         nodeService.createNode(request1)
         assertEquals(true, nodeService.checkExist(node(fullPath)))
 
         assertThrows<ErrorCodeException> {
-            repositoryProperties.nodeCreateTimeout = 0
+            metadataProperties.nodeCreateTimeout = 0
             // 覆盖创建
             val request2 = createRequest(fullPath, folder = false, size = 100, override = true)
             nodeService.createNode(request2)
@@ -823,7 +823,7 @@ class NodeServiceTest @Autowired constructor(
     @DisplayName("测试创建目录超时")
     fun testCreateDirTimeout() {
         // 新创建的目录回滚
-        repositoryProperties.nodeCreateTimeout = 0
+        metadataProperties.nodeCreateTimeout = 0
         val fullPath = "/1/2/3"
         assertThrows<ErrorCodeException> {
             val request = createRequest(fullPath, folder = true)

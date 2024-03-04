@@ -34,20 +34,20 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.metadata.dao.FileReferenceDao
+import com.tencent.bkrepo.common.metadata.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.StorageCredentialsDao
+import com.tencent.bkrepo.common.metadata.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.UT_REGION
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.dao.FileReferenceDao
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.repository.StorageCredentialsRepository
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -57,6 +57,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
+import org.springframework.data.mongodb.core.query.Query
 import java.time.Duration
 
 @Import(NodeDao::class, FileReferenceDao::class)
@@ -64,14 +65,14 @@ import java.time.Duration
 @DataMongoTest
 internal class StorageCredentialServiceTest @Autowired constructor(
     private val storageCredentialService: StorageCredentialService,
-    private val storageCredentialsRepository: StorageCredentialsRepository,
+    private val storageCredentialsDao: StorageCredentialsDao,
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService
 ) : ServiceBaseTest() {
 
     @BeforeEach
     fun beforeEach() {
-        storageCredentialsRepository.deleteAll()
+        storageCredentialsDao.remove(Query())
     }
 
     @Test

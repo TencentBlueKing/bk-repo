@@ -45,13 +45,13 @@ import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.webhook.BkCiDevXEnabledPayload
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType

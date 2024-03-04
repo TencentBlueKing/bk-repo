@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.share
 
-import com.tencent.bkrepo.repository.pojo.UserRequest
+import com.tencent.bkrepo.common.metadata.pojo.UserRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

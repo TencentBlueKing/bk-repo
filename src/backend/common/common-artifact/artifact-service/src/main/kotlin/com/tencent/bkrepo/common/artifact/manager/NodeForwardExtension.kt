@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.manager
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.devops.plugin.api.ExtensionPoint
 
 interface NodeForwardExtension : ExtensionPoint {

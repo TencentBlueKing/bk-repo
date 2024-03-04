@@ -36,14 +36,14 @@ import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
-import com.tencent.bkrepo.repository.pojo.project.ProjectListViewItem
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectListViewItem
 import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
 import com.tencent.bkrepo.repository.service.file.ListViewService
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 

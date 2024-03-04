@@ -30,7 +30,6 @@ package com.tencent.bkrepo.common.artifact.interceptor
 import com.tencent.bkrepo.common.api.constant.DOWNLOAD_SOURCE
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
-import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
 import com.tencent.bkrepo.common.artifact.interceptor.impl.FilenameInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.IpSegmentInterceptor
@@ -42,7 +41,8 @@ import com.tencent.bkrepo.common.artifact.interceptor.impl.PackageMetadataInterc
 import com.tencent.bkrepo.common.artifact.interceptor.impl.WebInterceptor
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.constant.FORBID_STATUS
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
 

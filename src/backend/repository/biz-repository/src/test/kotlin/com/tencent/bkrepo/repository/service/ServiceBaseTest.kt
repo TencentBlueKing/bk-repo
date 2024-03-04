@@ -50,23 +50,27 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.common.metadata.config.MetadataProperties
+import com.tencent.bkrepo.common.metadata.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.ProjectDao
+import com.tencent.bkrepo.common.metadata.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.ResourcePermissionListener
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.dao.ProxyChannelDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.listener.ResourcePermissionListener
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.dao.ProxyChannelDao
+import com.tencent.bkrepo.common.operate.service.config.OperateProperties
+import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
+import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import io.mockk.every
 import io.mockk.mockk
@@ -88,15 +92,19 @@ import org.springframework.test.context.TestPropertySource
     ClusterProperties::class,
     StorageProperties::class,
     RepositoryProperties::class,
+    MetadataProperties::class,
     ProjectDao::class,
     RepositoryDao::class,
     ProxyChannelDao::class,
     HttpAuthProperties::class,
     SpringContextUtils::class,
     NodeDao::class,
-    RouterControllerProperties::class
+    RouterControllerProperties::class,
+    OperateLogServiceImpl::class,
+    OperateProperties::class,
+    OperateLogDao::class
 )
-@ComponentScan("com.tencent.bkrepo.repository.service")
+@ComponentScan(basePackages = ["com.tencent.bkrepo.repository.service", "com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
 open class ServiceBaseTest {
 

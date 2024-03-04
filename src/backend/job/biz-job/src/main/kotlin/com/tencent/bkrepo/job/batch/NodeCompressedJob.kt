@@ -10,7 +10,7 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeCompressedJobProperties
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCompressedRequest
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import org.springframework.boot.context.properties.EnableConfigurationProperties

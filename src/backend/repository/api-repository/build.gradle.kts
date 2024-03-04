@@ -36,4 +36,5 @@ dependencies {
     api(project(":common:common-storage:storage-api"))
     api(project(":common:common-operate:operate-api"))
     compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
+    api(project(":common:common-metadata:metadata-api"))
 }

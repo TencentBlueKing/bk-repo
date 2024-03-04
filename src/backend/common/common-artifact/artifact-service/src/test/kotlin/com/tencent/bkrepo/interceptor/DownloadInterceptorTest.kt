@@ -28,15 +28,15 @@
 package com.tencent.bkrepo.interceptor
 
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType.PACKAGE_FORBID
-import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
 import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptorFactory
 import com.tencent.bkrepo.common.artifact.interceptor.impl.FilenameInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.NodeMetadataInterceptor
 import com.tencent.bkrepo.common.artifact.interceptor.impl.WebInterceptor
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.constant.FORBID_STATUS
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

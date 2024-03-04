@@ -38,13 +38,12 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import java.time.LocalDateTime
@@ -54,7 +53,6 @@ import java.util.concurrent.TimeUnit
 
 class ArtifactDownloadListener(
     private val artifactClient: ArtifactClient,
-    private val nodeClient: NodeClient,
     private val operateLogService: OperateLogService,
     private val artifactEventProperties: ArtifactEventProperties
 ) {
