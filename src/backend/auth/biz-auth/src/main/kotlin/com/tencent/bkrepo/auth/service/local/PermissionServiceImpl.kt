@@ -251,6 +251,7 @@ open class PermissionServiceImpl constructor(
     }
 
     fun checkNodeAction(request: CheckPermissionRequest, roles: List<String>, defaultResult: Boolean): Boolean {
+        logger.debug("checkNodeAction  request : [$request] ")
         with(request) {
             val query = PermissionQueryHelper.buildPermissionCheck(
                 projectId, repoName, uid, resourceType, roles
