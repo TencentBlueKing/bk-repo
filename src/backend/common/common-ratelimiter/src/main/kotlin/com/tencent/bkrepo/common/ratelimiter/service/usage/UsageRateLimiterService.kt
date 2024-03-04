@@ -32,7 +32,8 @@ import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
-import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.usage.UsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
@@ -79,7 +80,7 @@ open class UsageRateLimiterService(
         return Pair(projectId, repoName)
     }
 
-    override fun applyPermits(request: HttpServletRequest, response: HttpServletResponse?): Long {
+    override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
         return when (request.method) {
             in UPLOAD_REQUEST_METHOD -> request.contentLengthLong
             else -> 0
@@ -90,6 +91,10 @@ open class UsageRateLimiterService(
         return listOf(
             LimitDimension.UPLOAD_USAGE, LimitDimension.UPLOAD_USAGE_TEMPLATE,
         )
+    }
+
+    override fun getRateLimitRuleClass(): Class<out RateLimitRule> {
+        return UsageRateLimitRule::class.java
     }
 
     override fun ignoreRequest(request: HttpServletRequest): Boolean {

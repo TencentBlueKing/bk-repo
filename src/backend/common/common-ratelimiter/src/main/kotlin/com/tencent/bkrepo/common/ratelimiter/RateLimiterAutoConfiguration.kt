@@ -100,7 +100,7 @@ class RateLimiterAutoConfiguration {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
                 registry.addInterceptor(RateLimitHandlerInterceptor(
-                    urlRateLimiterService, usageRateLimiterService, downloadUsageRateLimiterService
+                    urlRateLimiterService, usageRateLimiterService
                 ))
                     .excludePathPatterns("/service/**", "/replica/**")
             }

@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils.isClientBroken
+import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -62,12 +63,14 @@ import javax.servlet.http.HttpServletResponse
  * ArtifactResourceWriter默认实现
  */
 open class DefaultArtifactResourceWriter(
-    private val storageProperties: StorageProperties
-) : AbstractArtifactResourceHandler(storageProperties) {
+    private val storageProperties: StorageProperties,
+    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
+) : AbstractArtifactResourceHandler(storageProperties, downloadUsageRateLimiterService) {
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
         responseRateLimitCheck()
+        downloadRateLimitCheck(resource)
         return if (resource.containsMultiArtifact()) {
             writeMultiArtifact(resource)
         } else {

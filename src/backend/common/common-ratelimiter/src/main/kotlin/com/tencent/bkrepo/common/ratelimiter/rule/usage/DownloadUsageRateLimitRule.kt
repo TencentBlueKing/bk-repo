@@ -32,41 +32,17 @@ import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import java.util.concurrent.ConcurrentHashMap
 
-open class UsageRateLimitRule: RateLimitRule {
-
-    @Volatile
-    var usageLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
-    @Volatile
-    var usageTemplateLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
-
-    override fun getRateLimitRule(resource: String, extraResource: List<String>): ResourceLimit? {
-        if (resource.isBlank()) return null
-        var ruleLimit = usageLimitRules[resource]
-        if (ruleLimit == null && extraResource.isNotEmpty()) {
-            for (res in extraResource) {
-                ruleLimit = usageTemplateLimitRules[res]
-                if (ruleLimit != null) {
-                    break
-                }
-            }
-        }
-        return ruleLimit
-    }
+class DownloadUsageRateLimitRule: UsageRateLimitRule() {
 
     override fun addRateLimitRule(resourceLimit: ResourceLimit) {
         if (resourceLimit.resource.isBlank()) {
             return
         }
         when (resourceLimit.limitDimension) {
-            LimitDimension.UPLOAD_USAGE -> usageLimitRules[resourceLimit.resource] = resourceLimit
-            LimitDimension.UPLOAD_USAGE_TEMPLATE -> usageTemplateLimitRules[resourceLimit.resource] = resourceLimit
+            LimitDimension.DOWNLOAD_USAGE -> usageLimitRules[resourceLimit.resource] = resourceLimit
+            LimitDimension.DOWNLOAD_USAGE_TEMPLATE -> usageTemplateLimitRules[resourceLimit.resource] = resourceLimit
             else -> return
         }
     }
 
-    override fun addRateLimitRules(resourceLimit: List<ResourceLimit>) {
-        resourceLimit.forEach {
-            addRateLimitRule(it)
-        }
-    }
 }

@@ -27,15 +27,15 @@
 
 package com.tencent.bkrepo.common.ratelimiter.service.usage
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
+import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRule
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 class DownloadUsageRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
@@ -44,11 +44,11 @@ class DownloadUsageRateLimiterService(
     private val redisTemplate: RedisTemplate<String, String>? = null,
 ): UsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
-    override fun applyPermits(request: HttpServletRequest, response: HttpServletResponse?): Long {
-       if (response == null) {
-           throw AcquireLockFailedException("response is null")
+    override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
+       if (applyPermits == null) {
+           throw AcquireLockFailedException("response content is null")
        }
-       return response.getHeader(CONTENT_LENGTH)?.toLongOrNull() ?: 0
+       return applyPermits
     }
 
     override fun getLimitDimensions(): List<LimitDimension> {
@@ -59,5 +59,9 @@ class DownloadUsageRateLimiterService(
 
     override fun ignoreRequest(request: HttpServletRequest): Boolean {
         return request.method !in DOWNLOAD_REQUEST_METHOD
+    }
+
+    override fun getRateLimitRuleClass(): Class<out RateLimitRule> {
+        return DownloadUsageRateLimitRule::class.java
     }
 }

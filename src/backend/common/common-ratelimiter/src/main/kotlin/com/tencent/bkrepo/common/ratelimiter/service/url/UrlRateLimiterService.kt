@@ -31,6 +31,8 @@ package com.tencent.bkrepo.common.ratelimiter.service.url
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
+import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
@@ -54,7 +56,7 @@ class UrlRateLimiterService(
         return listOf(request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as String)
     }
 
-    override fun applyPermits(request: HttpServletRequest, response: HttpServletResponse?): Long {
+    override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
         return 1
     }
 
@@ -62,5 +64,9 @@ class UrlRateLimiterService(
         return listOf(
             LimitDimension.URL_TEMPLATE, LimitDimension.URL,
         )
+    }
+
+    override fun getRateLimitRuleClass(): Class<out RateLimitRule> {
+        return UrlRateLimitRule::class.java
     }
 }

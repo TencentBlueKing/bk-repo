@@ -35,6 +35,9 @@ import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
+import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
+import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
@@ -46,7 +49,8 @@ import javax.servlet.http.HttpServletResponse
 
 
 abstract class AbstractArtifactResourceHandler(
-    private val storageProperties: StorageProperties
+    private val storageProperties: StorageProperties,
+    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
 ) : ArtifactResourceWriter {
     /**
      * 获取动态buffer size
@@ -80,6 +84,19 @@ abstract class AbstractArtifactResourceHandler(
             throw TooManyRequestsException(
                 "The circuit breaker is activated when too many download requests are made to the service!"
             )
+        }
+    }
+
+    /**
+     * 当仓库配置下载限速小于等于最低限速时则直接将请求断开, 避免占用过多连接
+     */
+    protected fun downloadRateLimitCheck(resource: ArtifactResource) {
+        try {
+            val applyPermits = resource.getSingleStream().range.length
+            downloadUsageRateLimiterService.limit(HttpContextHolder.getRequest(), applyPermits)
+        } catch (e: OverloadException) {
+            throw e
+        } catch (ignore: Exception) {
         }
     }
 

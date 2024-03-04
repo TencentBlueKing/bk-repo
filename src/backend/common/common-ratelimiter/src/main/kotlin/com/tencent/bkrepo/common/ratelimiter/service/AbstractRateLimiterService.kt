@@ -47,6 +47,8 @@ import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.usage.UsageRateLimitRule
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
@@ -75,11 +77,11 @@ abstract class AbstractRateLimiterService(
         taskScheduler.scheduleWithFixedDelay(this::refreshRateLimitRule, rateLimiterProperties.refreshDuration * 1000)
     }
 
-    override fun limit(request: HttpServletRequest, response: HttpServletResponse?) {
+    override fun limit(request: HttpServletRequest, applyPermits: Long?) {
         if (ignoreRequest(request)) return
         val resource = buildResource(request)
         interceptorChain.doBeforeLimitCheck(resource)
-        val applyPermits = applyPermits(request, response)
+        val applyPermits = applyPermits(request, applyPermits)
         var resourceLimit: ResourceLimit? = null
         var pass = false
         var exception: Exception? = null
@@ -136,9 +138,11 @@ abstract class AbstractRateLimiterService(
 
     abstract fun buildResourceTemplate(request: HttpServletRequest): List<String>
 
-    abstract fun applyPermits(request: HttpServletRequest, response: HttpServletResponse?): Long
+    abstract fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long
 
     abstract fun getLimitDimensions(): List<LimitDimension>
+
+    abstract fun getRateLimitRuleClass(): Class<out RateLimitRule>
 
     open fun ignoreRequest(request: HttpServletRequest): Boolean {
         return false
@@ -178,7 +182,12 @@ abstract class AbstractRateLimiterService(
 
     private fun refreshRateLimitRule() {
         if (!rateLimiterProperties.enabled) return
-        val usageRules = UrlRateLimitRule()
+        val usageRules = when (getRateLimitRuleClass()) {
+            UrlRateLimitRule::class.java -> UrlRateLimitRule()
+            UsageRateLimitRule::class.java -> UsageRateLimitRule()
+            DownloadUsageRateLimitRule::class.java -> DownloadUsageRateLimitRule()
+            else -> return
+        }
         val usageRuleConfigs = rateLimiterProperties.rules.filter {
             it.limitDimension in getLimitDimensions()
         }
