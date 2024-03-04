@@ -115,19 +115,25 @@ open class StorageCacheIndexerManager(
     @Async
     @EventListener(FileDeletedEvent::class)
     open fun onFileDeleted(event: FileDeletedEvent) {
-        if (event.rootPath.toPath() == event.credentials.cache.path.toPath()) {
-            onCacheDeleted(event.credentials, event.sha256)
+        with(event) {
+            val filename = fullPath.toPath().fileName.toString()
+            if (rootPath.toPath() == credentials.cache.path.toPath() && filename.length == SHA256_STR_LENGTH) {
+                onCacheDeleted(credentials, sha256)
+            }
         }
     }
 
     @Async
     @EventListener(FileSurvivedEvent::class)
     open fun onFileSurvived(event: FileSurvivedEvent) {
-        if (event.rootPath.toPath() == event.credentials.cache.path.toPath()) {
-            val attributes = Files.readAttributes(event.fullPath.toPath(), BasicFileAttributes::class.java)
-            val lastAccessTime = attributes.lastAccessTime().toMillis()
-            val size = attributes.size()
-            onCacheReserved(event.credentials, event.sha256, size, lastAccessTime.toDouble())
+        with(event) {
+            val filename = fullPath.toPath().toString()
+            if (rootPath.toPath() == credentials.cache.path.toPath() && filename.length == SHA256_STR_LENGTH) {
+                val attributes = Files.readAttributes(fullPath.toPath(), BasicFileAttributes::class.java)
+                val lastAccessTime = attributes.lastAccessTime().toMillis()
+                val size = attributes.size()
+                onCacheReserved(credentials, sha256, size, lastAccessTime.toDouble())
+            }
         }
     }
 
@@ -175,6 +181,7 @@ open class StorageCacheIndexerManager(
     }
 
     companion object {
+        private const val SHA256_STR_LENGTH = 64
         private val logger = LoggerFactory.getLogger(StorageCacheIndexerManager::class.java)
     }
 }
