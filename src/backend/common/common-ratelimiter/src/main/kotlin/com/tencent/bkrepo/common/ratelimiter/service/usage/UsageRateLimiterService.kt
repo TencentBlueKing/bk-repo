@@ -39,7 +39,6 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 open class UsageRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,

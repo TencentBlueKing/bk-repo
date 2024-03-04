@@ -56,7 +56,6 @@ import org.springframework.http.HttpMethod
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 abstract class AbstractRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
@@ -98,8 +97,12 @@ abstract class AbstractRateLimiterService(
             val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit, applyPermits)
             pass = rateLimiter.tryAcquire()
             if (!pass) {
-                throw OverloadException("$resource has exceeded max rate limit:" +
-                                            " ${resourceLimit.limit} /${resourceLimit.unit}")
+                val msg = "$resource has exceeded max rate limit: ${resourceLimit.limit} /${resourceLimit.unit}"
+                if (rateLimiterProperties.dryRun) {
+                    logger.warn(msg)
+                } else {
+                    throw OverloadException(msg)
+                }
             }
         } catch (e: OverloadException) {
             pass = false

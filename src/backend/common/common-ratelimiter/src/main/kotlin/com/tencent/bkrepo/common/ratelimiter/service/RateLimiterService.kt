@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 interface RateLimiterService {
 

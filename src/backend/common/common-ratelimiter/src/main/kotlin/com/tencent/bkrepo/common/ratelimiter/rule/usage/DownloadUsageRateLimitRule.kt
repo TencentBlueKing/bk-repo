@@ -28,9 +28,7 @@
 package com.tencent.bkrepo.common.ratelimiter.rule.usage
 
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
-import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
-import java.util.concurrent.ConcurrentHashMap
 
 class DownloadUsageRateLimitRule: UsageRateLimitRule() {
 
