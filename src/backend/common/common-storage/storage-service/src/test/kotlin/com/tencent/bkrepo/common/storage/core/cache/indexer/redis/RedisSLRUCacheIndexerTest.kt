@@ -122,16 +122,16 @@ class RedisSLRUCacheIndexerTest : RedisCacheIndexerTest<RedisSLRUCacheIndexer>()
         redisTemplate.delete(protectedValuesKey(cacheName))
         redisTemplate.delete(probationValuesKey(cacheName))
 
-        redisTemplate.delete("$cacheName:slru:total_weight")
-        redisTemplate.delete("$cacheName:slru:total_weight_protected")
-        redisTemplate.delete("$cacheName:slru:total_weight_probation")
+        redisTemplate.delete("{$cacheName}:slru:total_weight")
+        redisTemplate.delete("{$cacheName}:slru:total_weight_protected")
+        redisTemplate.delete("{$cacheName}:slru:total_weight_probation")
 
-        redisTemplate.delete("$cacheName:slru:protected_lru")
-        redisTemplate.delete("$cacheName:slru:probation_lru")
+        redisTemplate.delete("{$cacheName}:slru:protected_lru")
+        redisTemplate.delete("{$cacheName}:slru:probation_lru")
     }
 
-    private fun protectedValuesKey(cacheName: String = CACHE_NAME) = "$cacheName:slru:protected_values"
-    private fun probationValuesKey(cacheName: String = CACHE_NAME) = "$cacheName:slru:probation_values"
+    private fun protectedValuesKey(cacheName: String = CACHE_NAME) = "{$cacheName}:slru:protected_values"
+    private fun probationValuesKey(cacheName: String = CACHE_NAME) = "{$cacheName}:slru:probation_values"
 
     companion object {
         private val logger = LoggerFactory.getLogger(RedisSLRUCacheIndexerTest::class.java)

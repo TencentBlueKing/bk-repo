@@ -13,7 +13,7 @@ class RedisLRUCacheIndexerTest : RedisCacheIndexerTest<RedisLRUCacheIndexer>() {
     fun testLru() {
         // 初始化
         val cacheName = CACHE_NAME
-        val valuesKey = "$cacheName:values"
+        val valuesKey = "{$cacheName}:values"
         val opsForHash = redisTemplate.opsForHash<String, Long>()
         val removedKeys = ConcurrentHashMap<String, String>()
         cacheIndexer.setMaxWeight(500)
@@ -62,9 +62,9 @@ class RedisLRUCacheIndexerTest : RedisCacheIndexerTest<RedisLRUCacheIndexer>() {
      * 清理redis数据
      */
     override fun clean(cacheName: String) {
-        redisTemplate.delete("$cacheName:total_weight")
-        redisTemplate.delete("$cacheName:lru")
-        redisTemplate.delete("$cacheName:values")
+        redisTemplate.delete("{$cacheName}:total_weight")
+        redisTemplate.delete("{$cacheName}:lru")
+        redisTemplate.delete("{$cacheName}:values")
     }
 
     companion object {

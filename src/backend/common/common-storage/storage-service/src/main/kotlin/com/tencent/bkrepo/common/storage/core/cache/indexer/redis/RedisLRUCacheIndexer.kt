@@ -62,21 +62,22 @@ class RedisLRUCacheIndexer(
      */
     private val evictSemaphore = Semaphore(0)
 
+    // 需要增加hash tag后缀以支持Redis集群模式
 
     /**
      * 记录当前缓存的总权重
      */
-    private val totalWeightKey = "$cacheName:total_weight"
+    private val totalWeightKey = "{$cacheName}:total_weight"
 
     /**
      * 缓存LRU队列，score为缓存写入时刻的时间戳
      */
-    private val lruKey = "$cacheName:lru"
+    private val lruKey = "{$cacheName}:lru"
 
     /**
      * 存放缓存实际值
      */
-    private val valuesKey = "$cacheName:values"
+    private val valuesKey = "{$cacheName}:values"
 
     private val putScript = RedisScript.of(SCRIPT_PUT, String::class.java)
     private val getScript = RedisScript.of(SCRIPT_GET, String::class.java)

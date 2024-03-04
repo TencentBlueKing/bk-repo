@@ -66,40 +66,42 @@ class RedisSLRUCacheIndexer(
      */
     private val evictSemaphore = Semaphore(0)
 
+    // 需要增加hash tag后缀以支持Redis集群模式
+
     /**
      * 记录当前缓存的总权重
      */
-    private val totalWeightKey = "$cacheName:slru:total_weight"
+    private val totalWeightKey = "{$cacheName}:slru:total_weight"
 
     /**
      * 存在于保护区的缓存总权重
      */
-    private val protectedTotalWeightKey = "$cacheName:slru:total_weight_protected"
+    private val protectedTotalWeightKey = "{$cacheName}:slru:total_weight_protected"
 
     /**
      * 存在于淘汰区的缓存总权重
      */
-    private val probationTotalWeightKey = "$cacheName:slru:total_weight_probation"
+    private val probationTotalWeightKey = "{$cacheName}:slru:total_weight_probation"
 
     /**
      * 保护区缓存LRU队列，score为缓存写入时刻的时间戳
      */
-    private val protectedLruKey = "$cacheName:slru:protected_lru"
+    private val protectedLruKey = "{$cacheName}:slru:protected_lru"
 
     /**
      * 淘汰区缓存LRU队列，score为缓存写入时刻的时间戳
      */
-    private val probationLruKey = "$cacheName:slru:probation_lru"
+    private val probationLruKey = "{$cacheName}:slru:probation_lru"
 
     /**
      * 存放保护区缓存实际值
      */
-    private val protectedHashKey = "$cacheName:slru:protected_values"
+    private val protectedHashKey = "{$cacheName}:slru:protected_values"
 
     /**
      * 存放淘汰区缓存实际值
      */
-    private val probationHashKey = "$cacheName:slru:probation_values"
+    private val probationHashKey = "{$cacheName}:slru:probation_values"
 
     private val putScript = RedisScript.of(SCRIPT_PUT, String::class.java)
     private val evictProtectedScript = RedisScript.of(SCRIPT_EVICT_PROTECTED, String::class.java)
