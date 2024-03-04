@@ -276,7 +276,7 @@ class ProjectMetricsService (
         val durationDays = LocalDateTimeUtil.between(startDate, endDate).toDays()
         var date = startDate
         val projectMetrics = projectMetricsRepository.findAllByProjectIdAndCreatedDateBetween(
-            projectId = projectId, start = startDate, end = endDate
+            projectId = projectId, start = startDate.minusDays(1), end = endDate.plusDays(1)
         )
         var bill: Double = 0.0
         while (!date.isAfter(endDate)) {
