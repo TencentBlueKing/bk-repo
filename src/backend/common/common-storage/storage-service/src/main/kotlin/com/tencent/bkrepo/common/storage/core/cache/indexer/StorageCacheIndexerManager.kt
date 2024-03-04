@@ -127,7 +127,7 @@ open class StorageCacheIndexerManager(
     @EventListener(FileSurvivedEvent::class)
     open fun onFileSurvived(event: FileSurvivedEvent) {
         with(event) {
-            val filename = fullPath.toPath().toString()
+            val filename = fullPath.toPath().fileName.toString()
             if (rootPath.toPath() == credentials.cache.path.toPath() && filename.length == SHA256_STR_LENGTH) {
                 val attributes = Files.readAttributes(fullPath.toPath(), BasicFileAttributes::class.java)
                 val lastAccessTime = attributes.lastAccessTime().toMillis()
