@@ -57,9 +57,9 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.util.OciUtils
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption.UPSERT
@@ -77,7 +77,7 @@ class TemporaryScanTokenServiceImpl(
     private val scannerProperties: ScannerProperties,
     private val storageService: StorageService,
     private val storageCredentialsClient: StorageCredentialsClient,
-    private val nodeClient: NodeClient
+    private val nodeSearchService: NodeSearchService
 ) : TemporaryScanTokenService {
     private val baseUrl
         get() = scannerProperties.baseUrl.removeSuffix(SLASH)
@@ -226,7 +226,7 @@ class TemporaryScanTokenServiceImpl(
 
     private fun getNodes(projectId: String, repoName: String, sha256: List<String>): List<Map<String, Any?>> {
         return sha256.toSet().map {
-            val res = nodeClient.queryWithoutCount(
+            val res = nodeSearchService.searchWithoutCount(
                 NodeQueryBuilder()
                     .projectId(projectId)
                     .repoName(repoName)
@@ -236,16 +236,11 @@ class TemporaryScanTokenServiceImpl(
                     .build()
             )
 
-            if (res.isNotOk()) {
-                logger.error("get node of layer[$it] failed, msg[${res.message}]")
-                throw SystemErrorException()
-            }
-
-            if (res.data!!.records.isEmpty()) {
+            if (res.records.isEmpty()) {
                 throw ArtifactDeletedException(it)
             }
 
-            res.data!!.records.first()
+            res.records.first()
         }
     }
 

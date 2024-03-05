@@ -31,21 +31,21 @@ import com.tencent.bkrepo.analyst.pojo.Node
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.analyst.utils.Request
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import org.slf4j.LoggerFactory
 
 /**
  * 文件迭代器
  *
  * @param projectIdIterator 用于提供需要遍历的Node所属的项目
- * @param nodeClient nodeClient
+ * @param nodeSearchService nodeSearchService
  * @param position 当前文件遍历到的位置
  */
 class NodeIterator(
     private val projectIdIterator: Iterator<String>,
-    private val nodeClient: NodeClient,
+    private val nodeSearchService: NodeSearchService,
     override val position: NodeIteratePosition = NodeIteratePosition()
 ) : PageableIterator<Node>(position) {
 
@@ -89,7 +89,7 @@ class NodeIterator(
         val projectIdRule = modifyRule(projectId, rule)
         // 获取下一页需要扫描的文件
         return try {
-            Request.requestNodes(nodeClient, projectIdRule, page, pageSize)
+            Request.requestNodes(nodeSearchService, projectIdRule, page, pageSize)
         } catch (e: Exception) {
             logger.error("iterate node failed, projectId[$projectId], page[$page], pageSize[$pageSize], rule[$rule]", e)
             emptyList()

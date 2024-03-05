@@ -29,25 +29,26 @@ package com.tencent.bkrepo.common.metadata.service.packages.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
-import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
-import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.metadata.dao.PackageDao
+import com.tencent.bkrepo.common.metadata.dao.PackageVersionDao
+import com.tencent.bkrepo.common.metadata.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.model.TPackage
+import com.tencent.bkrepo.common.metadata.model.TPackageVersion
+import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.PackageEventFactory
+import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildCreatedEvent
+import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildUpdatedEvent
+import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
-import com.tencent.bkrepo.common.metadata.dao.PackageDao
-import com.tencent.bkrepo.common.metadata.dao.PackageVersionDao
-import com.tencent.bkrepo.common.metadata.dao.RepositoryDao
-import com.tencent.bkrepo.common.metadata.model.TPackage
-import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -56,12 +57,6 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
-import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
-import com.tencent.bkrepo.common.metadata.util.MetadataUtils
-import com.tencent.bkrepo.common.metadata.util.PackageEventFactory
-import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildCreatedEvent
-import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildUpdatedEvent
-import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Sort
@@ -363,40 +358,6 @@ class PackageServiceImpl(
         )
     }
 
-    override fun downloadVersion(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        versionName: String,
-        realIpAddress: String?
-    ) {
-        val tPackage = findPackageExcludeHistoryVersion(projectId, repoName, packageKey)
-        val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
-        if (tPackageVersion.artifactPath.isNullOrBlank()) {
-            throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "artifactPath is null")
-        }
-        val artifactInfo = DefaultArtifactInfo(projectId, repoName, tPackageVersion.artifactPath!!)
-        val context = ArtifactDownloadContext(artifact = artifactInfo, useDisposition = true)
-        // 拦截package下载
-        val packageVersion = convert(tPackageVersion)!!
-        context.getPackageInterceptors().forEach { it.intercept(projectId, packageVersion) }
-        // context 复制时会从request map中获取对应的artifactInfo， 而artifactInfo设置到map中是在接口url解析时
-        HttpContextHolder.getRequestOrNull()?.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
-        ArtifactContextHolder.getRepository().download(context)
-        publishEvent(
-            PackageEventFactory.buildDownloadEvent(
-                projectId = projectId,
-                repoName = repoName,
-                packageType = tPackage.type,
-                packageKey = packageKey,
-                packageName = tPackage.name,
-                versionName = versionName,
-                createdBy = SecurityUtils.getUserId(),
-                realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
-            )
-        )
-    }
-
     override fun addDownloadRecord(projectId: String, repoName: String, packageKey: String, versionName: String) {
         val tPackage = checkPackage(projectId, repoName, packageKey)
         val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
@@ -516,7 +477,7 @@ class PackageServiceImpl(
             }
         }
 
-        private fun convert(tPackageVersion: TPackageVersion?): PackageVersion? {
+        fun convert(tPackageVersion: TPackageVersion?): PackageVersion? {
             return tPackageVersion?.let {
                 PackageVersion(
                     createdBy = it.createdBy,

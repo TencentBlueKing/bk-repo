@@ -43,7 +43,7 @@ import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 class IpSegmentInterceptor(
     rules: Map<String, Any>,
     private val properties: DownloadInterceptorProperties
-): DownloadInterceptor<Map<String,Any>, NodeDetail>(
+): DownloadInterceptor<Map<String, Any>, NodeDetail>(
     rules
 ) {
     override fun parseRule(): Map<String, Any> {

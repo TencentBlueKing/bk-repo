@@ -7,8 +7,8 @@ import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.ArchivedNodeRestoreJobProperties
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import java.time.Duration
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -30,7 +30,7 @@ import kotlin.reflect.KClass
 class ArchivedNodeRestoreJob(
     private val properties: ArchivedNodeRestoreJobProperties,
     private val archiveClient: ArchiveClient,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
 ) : MongoDbBatchJob<ArchivedNodeRestoreJob.ArchiveFile, NodeContext>(properties) {
 
     override fun createJobContext(): NodeContext {
@@ -60,7 +60,7 @@ class ArchivedNodeRestoreJob(
                     fullPath = fullPath,
                     operator = lastModifiedBy,
                 )
-                nodeClient.restoreNode(request)
+                nodeService.restoreNode(request)
                 context.count.incrementAndGet()
                 context.size.addAndGet(it.size)
                 logger.info("Success to restore node $projectId/$repoName/$fullPath.")

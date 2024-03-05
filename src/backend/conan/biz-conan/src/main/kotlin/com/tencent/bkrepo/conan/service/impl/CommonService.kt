@@ -32,12 +32,17 @@ import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.conan.constant.CONANS_URL_TAG
@@ -65,10 +70,7 @@ import com.tencent.bkrepo.conan.utils.PathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.PathUtils.getRecipeRevisionsFile
 import com.tencent.bkrepo.conan.utils.PathUtils.joinString
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -78,7 +80,7 @@ import java.time.LocalDateTime
 @Component
 class CommonService {
     @Autowired
-    lateinit var nodeClient: NodeClient
+    lateinit var nodeService: NodeService
     @Autowired
     lateinit var storageManager: StorageManager
     @Autowired
@@ -244,7 +246,7 @@ class CommonService {
         val result = mutableMapOf<String, String>()
         val pathList = getPaths(projectId, repoName, path, subFileset)
         pathList.forEach { it ->
-            nodeClient.getNodeDetail(projectId, repoName, it).data?.let {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, it))?.let {
                 when (type) {
                     MD5 -> result[it.name] = it.md5!!
                     else -> result[it.name] = it.fullPath
@@ -259,7 +261,7 @@ class CommonService {
         repoName: String,
         path: String,
     ): NodeDetail {
-        return nodeClient.getNodeDetail(projectId, repoName, path).data
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, path))
             ?: throw ConanRecipeNotFoundException(ConanMessageCode.CONAN_RECIPE_NOT_FOUND, path, "$projectId|$repoName")
     }
 
@@ -269,7 +271,7 @@ class CommonService {
         path: String,
     ): ConanInfo {
         val fullPath = "/$path"
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             ?: throw NodeNotFoundException(path)
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName not found")
@@ -286,10 +288,13 @@ class CommonService {
         subFileset: List<String> = emptyList()
     ): List<String> {
         val fullPath = "/$path"
-        nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             ?: throw NodeNotFoundException(path)
         val subFileMap = mutableMapOf<String, String>()
-        nodeClient.listNode(projectId, repoName, fullPath, includeFolder = false, deep = true).data!!.forEach {
+        nodeService.listNode(
+            ArtifactInfo(projectId, repoName, fullPath),
+            NodeListOption(includeFolder = false, deep = true)
+        ).forEach {
             subFileMap[it.name] = it.fullPath
         }
         if (subFileset.isEmpty()) return subFileMap.values.toList()
@@ -373,7 +378,7 @@ class CommonService {
         if (indexJson.revisions.isEmpty()) {
             // TODO revisions 列表中数据要以time进行比较排序，最新数据放在前面
             val revisionV1Path = joinString(revPath, DEFAULT_REVISION_V1)
-            nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return null
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, revisionV1Path)) ?: return null
             return RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now()))
         } else {
             return indexJson.revisions.first()
@@ -388,7 +393,8 @@ class CommonService {
     ): IndexInfo {
         // TODO 所有加/ 的都需要优化
         val fullPath = "/$revPath"
-        val indexNode = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return IndexInfo(refStr)
+        val indexNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
+            ?: return IndexInfo(refStr)
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName not found")
         storageManager.loadArtifactInputStream(indexNode, repo.storageCredentials)?.use {
@@ -402,9 +408,12 @@ class CommonService {
         repoName: String,
         revPath: String,
     ): List<String> {
-        nodeClient.getNodeDetail(projectId, repoName, revPath).data
-            ?: throw NodeNotFoundException(revPath)
-        return nodeClient.listNode(projectId, repoName, revPath, includeFolder = true, deep = false).data!!.map {
+        val artifactInfo = ArtifactInfo(projectId, repoName, revPath)
+        nodeService.getNodeDetail(artifactInfo) ?: throw NodeNotFoundException(revPath)
+        return nodeService.listNode(
+            ArtifactInfo(projectId, repoName, revPath),
+            NodeListOption(includeFolder = true, deep = false)
+        ).map {
             it.name
         }
     }

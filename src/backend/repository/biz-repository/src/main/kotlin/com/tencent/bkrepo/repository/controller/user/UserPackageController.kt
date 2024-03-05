@@ -35,6 +35,8 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.pojo.software.ProjectPackageOverview
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -42,8 +44,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
-import com.tencent.bkrepo.common.metadata.pojo.software.ProjectPackageOverview
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.repository.service.packages.PackageDownloadService
 import com.tencent.bkrepo.repository.service.packages.PackageStatisticsService
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -62,7 +63,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api")
 class UserPackageController(
     private val packageService: PackageService,
-    private val packageStatisticsService: PackageStatisticsService
+    private val packageStatisticsService: PackageStatisticsService,
+    private val packageDownloadService: PackageDownloadService
 ) {
 
     @ApiOperation("分页查询包")
@@ -156,7 +158,7 @@ class UserPackageController(
         @RequestParam packageKey: String,
         @RequestParam version: String
     ) {
-        packageService.downloadVersion(projectId, repoName, packageKey, version)
+        packageDownloadService.downloadVersion(projectId, repoName, packageKey, version)
     }
 
     @ApiOperation("仓库 包数量 总览")

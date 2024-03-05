@@ -31,28 +31,16 @@
 
 package com.tencent.bkrepo.common.security
 
-import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
-import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.security.actuator.ActuatorAuthConfiguration
 import com.tencent.bkrepo.common.security.crypto.CryptoConfiguration
 import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
 import com.tencent.bkrepo.common.security.http.HttpAuthConfiguration
-import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXAccessInterceptor
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
-import com.tencent.bkrepo.common.security.manager.proxy.ProxyPermissionManager
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.security.proxy.ProxyAuthConfiguration
 import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -77,41 +65,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 )
 @EnableConfigurationProperties(DevXProperties::class)
 class SecurityAutoConfiguration {
-
-    @Bean
-    @Suppress("LongParameterList")
-    fun permissionManager(
-        repositoryClient: RepositoryClient,
-        permissionResource: ServicePermissionClient,
-        externalPermissionResource: ServiceExternalPermissionClient,
-        userResource: ServiceUserClient,
-        nodeClient: NodeClient,
-        clusterProperties: ClusterProperties,
-        httpAuthProperties: HttpAuthProperties
-    ): PermissionManager {
-        return if (clusterProperties.role == ClusterNodeType.EDGE
-            && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
-        ) {
-            EdgePermissionManager(
-                repositoryClient = repositoryClient,
-                permissionResource = permissionResource,
-                externalPermissionResource = externalPermissionResource,
-                userResource = userResource,
-                nodeClient = nodeClient,
-                clusterProperties = clusterProperties,
-                httpAuthProperties = httpAuthProperties
-            )
-        } else {
-            PermissionManager(
-                repositoryClient = repositoryClient,
-                permissionResource = permissionResource,
-                externalPermissionResource = externalPermissionResource,
-                userResource = userResource,
-                nodeClient = nodeClient,
-                httpAuthProperties = httpAuthProperties
-            )
-        }
-    }
 
     @Bean
     @ConditionalOnProperty(value = ["devx.enabled"])
@@ -141,26 +94,6 @@ class SecurityAutoConfiguration {
     @ConditionalOnMissingBean
     fun devXAccessInterceptor(properties: DevXProperties): DevXAccessInterceptor {
         return DevXAccessInterceptor(properties)
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun proxyPermissionManager(
-        repositoryClient: RepositoryClient,
-        permissionResource: ServicePermissionClient,
-        externalPermissionResource: ServiceExternalPermissionClient,
-        userResource: ServiceUserClient,
-        nodeClient: NodeClient,
-        httpAuthProperties: HttpAuthProperties
-    ): ProxyPermissionManager {
-        return ProxyPermissionManager(
-            repositoryClient = repositoryClient,
-            permissionResource = permissionResource,
-            externalPermissionResource = externalPermissionResource,
-            userResource = userResource,
-            nodeClient = nodeClient,
-            httpAuthProperties = httpAuthProperties
-        )
     }
 
     @Bean

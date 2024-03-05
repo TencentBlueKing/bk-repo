@@ -35,10 +35,11 @@ import com.tencent.bk.sdk.iam.dto.callback.response.InstanceInfoDTO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildId
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.splitId
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
-import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -53,7 +54,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BkiamNodeResourceService(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate
     ): BkiamResourceBaseService {
     override fun resourceType(): ResourceType {
@@ -126,9 +127,10 @@ class BkiamNodeResourceService(
             offset = page.offset.toInt()
             limit = page.limit.toInt()
         }
-        val nodePage = nodeClient.listNodePage(
-            projectId, repoName, path, NodeListOption(pageNumber = offset, pageSize = limit, deep = true)
-        ).data!!
+        val nodePage = nodeService.listNodePage(
+            ArtifactInfo(projectId, repoName, path),
+            NodeListOption(pageNumber = offset, pageSize = limit, deep = true)
+        )
         val nodes = nodePage.records.map {
             val entity = InstanceInfoDTO()
             entity.id = buildId(it.id!!, index)

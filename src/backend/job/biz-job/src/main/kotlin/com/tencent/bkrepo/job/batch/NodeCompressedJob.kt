@@ -9,8 +9,8 @@ import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeCompressedJobProperties
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCompressedRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -33,7 +33,7 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(NodeCompressedJobProperties::class)
 class NodeCompressedJob(
     properties: NodeCompressedJobProperties,
-    val nodeClient: NodeClient,
+    val nodeService: NodeService,
     val archiveClient: ArchiveClient,
     val storageService: StorageService,
 ) :
@@ -69,7 +69,7 @@ class NodeCompressedJob(
                     fullPath = it.fullPath,
                     operator = lastModifiedBy,
                 )
-                nodeClient.compressedNode(compressedRequest)
+                nodeService.compressedNode(compressedRequest)
             }
             storageService.delete(sha256, storageCredentials)
             val request = CompleteCompressRequest(sha256, storageCredentialsKey, lastModifiedBy)

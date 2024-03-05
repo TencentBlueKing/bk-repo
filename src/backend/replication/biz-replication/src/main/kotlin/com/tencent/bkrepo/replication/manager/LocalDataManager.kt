@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.manager
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
@@ -34,22 +35,24 @@ import com.tencent.bkrepo.common.artifact.exception.ProjectNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.constant.SIZE
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
-import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.springframework.stereotype.Component
@@ -63,7 +66,8 @@ import java.io.InputStream
 class LocalDataManager(
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
     private val packageClient: PackageClient,
     private val storageService: StorageService
 ) {
@@ -166,14 +170,14 @@ class LocalDataManager(
     fun findDeletedNodeDetail(
         projectId: String, repoName: String, fullPath: String
     ): NodeDetail? {
-        return nodeClient.getDeletedNodeDetail(projectId, repoName, fullPath).data?.firstOrNull()
+        return nodeService.getDeletedNodeDetail(ArtifactInfo(projectId, repoName, fullPath)).firstOrNull()
     }
 
     /**
      * 查找节点
      */
     fun findNode(projectId: String, repoName: String, fullPath: String): NodeDetail? {
-        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
     }
 
     /**
@@ -191,8 +195,8 @@ class LocalDataManager(
             .sha256(sha256)
             .page(1, 1)
             .sortByAsc(NODE_FULL_PATH)
-        val result = nodeClient.queryWithoutCount(queryModel.build()).data
-        if (result == null || result.records.isEmpty()) {
+        val result = nodeSearchService.searchWithoutCount(queryModel.build())
+        if (result.records.isEmpty()) {
             throw NodeNotFoundException(sha256)
         }
         return FileInfo(
@@ -221,14 +225,11 @@ class LocalDataManager(
      * 查询目录下的文件列表
      */
     fun listNode(projectId: String, repoName: String, fullPath: String): List<NodeInfo> {
-        val nodes = nodeClient.listNode(
-            projectId = projectId,
-            repoName = repoName,
-            path = fullPath,
-            includeFolder = true,
-            deep = false
-        ).data
-        if (nodes.isNullOrEmpty()) {
+        val nodes = nodeService.listNode(
+            ArtifactInfo(projectId, repoName, fullPath),
+            NodeListOption(includeFolder = true, deep = false)
+        )
+        if (nodes.isEmpty()) {
             throw NodeNotFoundException("$projectId/$repoName")
         }
         return nodes

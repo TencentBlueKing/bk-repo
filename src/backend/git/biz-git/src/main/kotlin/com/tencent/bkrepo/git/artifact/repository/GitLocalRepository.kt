@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.git.artifact.repository
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
@@ -55,7 +56,7 @@ class GitLocalRepository : LocalRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, artifactInfo.getArtifactFullPath()))
             val responseName = artifactInfo.getResponseName()
             storageManager.loadArtifactInputStream(node, storageCredentials)?.let {
                 return ArtifactResource(it, responseName, node, ArtifactChannel.PROXY, useDisposition)

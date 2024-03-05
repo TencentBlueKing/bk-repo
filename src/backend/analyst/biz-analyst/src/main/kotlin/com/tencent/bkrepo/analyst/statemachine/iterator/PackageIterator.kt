@@ -35,13 +35,13 @@ import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact.Companion.RULE_FIELD_LATEST_VERSION
 import com.tencent.bkrepo.analyst.utils.Request
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
@@ -50,7 +50,7 @@ import kotlin.math.min
  */
 class PackageIterator(
     private val packageClient: PackageClient,
-    private val nodeClient: NodeClient,
+    private val nodeSearchService: NodeSearchService,
     override val position: PackageIteratePosition
 ) : PageableIterator<Node>() {
     override fun nextPageData(page: Int, pageSize: Int): List<Node> {
@@ -235,7 +235,7 @@ class PackageIterator(
             return emptyList()
         }
         val nodeQueryRule = nodeQueryRule(packages)
-        val nodes = Request.requestNodes(nodeClient, nodeQueryRule, DEFAULT_PAGE_NUMBER, position.pageSize)
+        val nodes = Request.requestNodes(nodeSearchService, nodeQueryRule, DEFAULT_PAGE_NUMBER, position.pageSize)
         val packageMap = packages.associateBy { it.fullPath }
         nodes.forEach {
             val pkg = packageMap[it.fullPath]!!

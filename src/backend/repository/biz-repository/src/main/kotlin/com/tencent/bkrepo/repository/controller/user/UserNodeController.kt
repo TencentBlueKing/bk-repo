@@ -45,7 +45,7 @@ import com.tencent.bkrepo.common.metadata.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType

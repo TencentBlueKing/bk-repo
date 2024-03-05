@@ -33,6 +33,7 @@ package com.tencent.bkrepo.npm.service.impl
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
@@ -84,7 +85,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val fullPath = NpmUtils.getTgzPath(name, version, pathWithDash)
         with(artifactInfo) {
             checkRepositoryExist(projectId, repoName)
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
+            val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 throw NpmArtifactNotFoundException("node [$fullPath] don't found.")
             }

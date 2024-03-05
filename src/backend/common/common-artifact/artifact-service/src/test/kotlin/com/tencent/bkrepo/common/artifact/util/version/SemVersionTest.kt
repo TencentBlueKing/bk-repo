@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.util.version
 
+import com.tencent.bkrepo.common.metadata.util.version.SemVersion
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 

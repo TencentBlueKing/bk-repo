@@ -33,8 +33,8 @@ import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.SignFileCleanupJobProperties
 import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -47,7 +47,7 @@ import kotlin.reflect.KClass
 @Component
 @EnableConfigurationProperties(SignFileCleanupJobProperties::class)
 class SignFileCleanupJob(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     val properties: SignFileCleanupJobProperties
 ) : DefaultContextMongoDbJob<SignFileCleanupJob.SignFileData>(properties) {
 
@@ -75,7 +75,7 @@ class SignFileCleanupJob(
                 fullPath = fullPath,
                 operator = SYSTEM_USER
             )
-            nodeClient.deleteNode(deleteReq)
+            nodeService.deleteNode(deleteReq)
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         }
     }

@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
@@ -46,13 +47,21 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodesDeleteRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_REFRESHED_KEY
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_KEY
@@ -97,16 +106,10 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils.buildBlobsFolderPath
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
-import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
@@ -130,7 +133,8 @@ import javax.servlet.http.HttpServletRequest
 
 @Service
 class OciOperationServiceImpl(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
     private val metadataClient: MetadataClient,
     private val packageMetadataClient: PackageMetadataClient,
     private val packageClient: PackageClient,
@@ -258,7 +262,7 @@ class OciOperationServiceImpl(
             fullPath = fullPath,
             operator = userId
         )
-        nodeClient.deleteNode(request)
+        nodeService.deleteNode(request)
     }
 
     /**
@@ -335,9 +339,9 @@ class OciOperationServiceImpl(
             )
         }
         val fullPath = ociArtifactInfo.getArtifactFullPath()
-        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
+        val nodeDetail = nodeService.getNodeDetail(ociArtifactInfo) ?: run {
             val oldDockerFullPath = getDockerNode(ociArtifactInfo) ?: return@run null
-            nodeClient.getNodeDetail(projectId, repoName, oldDockerFullPath).data ?: run {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, oldDockerFullPath)) ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 null
             }
@@ -405,7 +409,7 @@ class OciOperationServiceImpl(
                 md5 = fileInfo.md5,
                 sha256 = fileInfo.sha256
             )
-            nodeClient.createNode(newNodeRequest).data
+            nodeService.createNode(newNodeRequest)
         } else {
             storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
         }
@@ -486,7 +490,7 @@ class OciOperationServiceImpl(
     ): Boolean {
         with(ociArtifactInfo) {
             val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data ?: return false
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, manifestPath).data ?: return false
+            val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, manifestPath)) ?: return false
             val manifest = loadManifest(
                 nodeDetail.sha256!!, nodeDetail.size, repositoryDetail.storageCredentials
             ) ?: return false
@@ -670,8 +674,7 @@ class OciOperationServiceImpl(
             // 并发情况下，版本目录下可能存在着非该版本的blob
             // 覆盖上传时会先删除原有目录，并发情况下可能导致blobs节点不存在
             val nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest) ?: run {
-                nodeClient.getDeletedNodeDetailBySha256(
-                    projectId, repoName, descriptor.sha256).data?.let {
+                nodeService.getDeletedNodeDetailBySha256(projectId, repoName, descriptor.sha256)?.let {
                     NodeProperty(StringPool.EMPTY, it.md5, it.size)
                 } ?: return false
             }
@@ -687,7 +690,7 @@ class OciOperationServiceImpl(
                     md5 = nodeProperty.md5 ?: StringPool.UNKNOWN,
                     userId = userId
                 )
-                nodeClient.createNode(nodeCreateRequest)
+                nodeService.createNode(nodeCreateRequest)
             }
             val metadataMap = metadataClient.listMetadata(projectId, repoName, fullPath).data
             if (metadataMap?.get(BLOB_PATH_VERSION_KEY) != null) {
@@ -804,8 +807,8 @@ class OciOperationServiceImpl(
                     this.path(path, OperationType.PREFIX)
                 }
             }
-        val result = nodeClient.queryWithoutCount(queryModel.build()).data
-        if (result == null || result.records.isEmpty()) {
+        val result = nodeSearchService.searchWithoutCount(queryModel.build())
+        if (result.records.isEmpty()) {
             logger.warn(
                 "Could not find $digestStr " +
                     "in repo $projectId|$repoName"
@@ -988,10 +991,11 @@ class OciOperationServiceImpl(
         repositoryClient.getRepoInfo(projectId, repoName).data
             ?: throw RepoNotFoundException("$projectId|$repoName")
         val blobsFolderPath = buildBlobsFolderPath(pName)
-        val fullPaths = nodeClient.listNode(
-            projectId, repoName, blobsFolderPath, includeFolder = false, deep = false
-        ).data?.map { it.fullPath }
-        if (fullPaths.isNullOrEmpty()) return
+        val fullPaths = nodeService.listNode(
+            ArtifactInfo(projectId, repoName, blobsFolderPath),
+            NodeListOption(includeFolder = false, deep = false)
+        ).map { it.fullPath }
+        if (fullPaths.isEmpty()) return
         logger.info("Blobs of package $pName in folder $blobsFolderPath will be deleted in $projectId|$repoName")
         val request = NodesDeleteRequest(
             projectId = projectId,
@@ -999,7 +1003,7 @@ class OciOperationServiceImpl(
             fullPaths = fullPaths,
             operator = userId
         )
-        nodeClient.deleteNodes(request)
+        nodeService.deleteNodes(request)
     }
 
     /**
@@ -1026,13 +1030,13 @@ class OciOperationServiceImpl(
             reference = pVersion,
             isValidDigest = false
         )
-        val manifestNode = nodeClient.getNodeDetail(
-            repoInfo.projectId, repoInfo.name, manifestPath
-        ).data ?: run {
+        val manifestNode = nodeService.getNodeDetail(
+            ArtifactInfo(repoInfo.projectId, repoInfo.name, manifestPath)
+        ) ?: run {
             val oldDockerFullPath = getDockerNode(ociArtifactInfo) ?: return false
-            nodeClient.getNodeDetail(
-                repoInfo.projectId, repoInfo.name, oldDockerFullPath
-            ).data ?: return false
+            nodeService.getNodeDetail(
+                ArtifactInfo(repoInfo.projectId, repoInfo.name, oldDockerFullPath)
+            ) ?: return false
         }
         val refreshedMetadat = manifestNode.nodeMetadata.firstOrNull { it.key == BLOB_PATH_REFRESHED_KEY}
         if (refreshedMetadat != null) {

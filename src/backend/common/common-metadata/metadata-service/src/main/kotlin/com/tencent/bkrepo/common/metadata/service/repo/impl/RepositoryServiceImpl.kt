@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
-import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptorFactory
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
@@ -235,7 +234,7 @@ class RepositoryServiceImpl(
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
             Preconditions.checkArgument(checkCategory(category, configuration), this::configuration.name)
-            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
+//            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             // 确保项目一定存在
             if (!projectService.checkExist(projectId)) {
                 throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, projectId)
@@ -311,7 +310,7 @@ class RepositoryServiceImpl(
     override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
         repoUpdateRequest.apply {
             Preconditions.checkArgument((description?.length ?: 0) < REPO_DESC_MAX_LENGTH, this::description.name)
-            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
+//            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             val repository = checkRepository(projectId, name)
             quota?.let {
                 Preconditions.checkArgument(it >= (repository.used ?: 0), this::quota.name)
@@ -643,27 +642,28 @@ class RepositoryServiceImpl(
         return nodeService.aggregateComputeSize(criteria)
     }
 
-    /**
-     * 检查下载拦截器配置
-     *
-     */
-    private fun checkInterceptorConfig(configuration: RepositoryConfiguration?): Boolean {
-        val settings = configuration?.settings
-        settings?.let {
-            val interceptors = DownloadInterceptorFactory.buildInterceptors(settings)
-            interceptors.forEach {
-                try {
-                    it.parseRule()
-                } catch (ignore: UnsupportedOperationException) {
-                    return@forEach
-                } catch (exception: Exception) {
-                    return false
-                }
-            }
-        }
-
-        return true
-    }
+    // TODO 解决循环依赖
+//    /**
+//     * 检查下载拦截器配置
+//     *
+//     */
+//    private fun checkInterceptorConfig(configuration: RepositoryConfiguration?): Boolean {
+//        val settings = configuration?.settings
+//        settings?.let {
+//            val interceptors = DownloadInterceptorFactory.buildInterceptors(settings)
+//            interceptors.forEach {
+//                try {
+//                    it.parseRule()
+//                } catch (ignore: UnsupportedOperationException) {
+//                    return@forEach
+//                } catch (exception: Exception) {
+//                    return false
+//                }
+//            }
+//        }
+//
+//        return true
+//    }
 
     /**
      * 检查仓库类型是否一致

@@ -39,6 +39,8 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
@@ -51,8 +53,6 @@ import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -62,7 +62,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class UploadService(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val storageService: StorageService
 ) : ArtifactService() {
 
@@ -83,7 +83,7 @@ class UploadService(
             val overwrite = getBooleanHeader(HEADER_OVERWRITE)
             Preconditions.checkArgument(expires >= 0, "expires")
             // 判断文件是否存在
-            if (!overwrite && nodeClient.checkExist(projectId, repoName, getArtifactFullPath()).data == true) {
+            if (!overwrite && nodeService.checkExist(this)) {
                 logger.warn(
                     "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: " +
                         "artifact already exists."
@@ -116,7 +116,7 @@ class UploadService(
 
         val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials)
         // 保存节点
-        nodeClient.createNode(
+        nodeService.createNode(
             NodeCreateRequest(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,

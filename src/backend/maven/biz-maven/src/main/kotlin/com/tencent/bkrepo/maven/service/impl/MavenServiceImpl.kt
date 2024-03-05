@@ -45,10 +45,11 @@ import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import com.tencent.bkrepo.maven.service.MavenService
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -58,7 +59,7 @@ import java.util.regex.PatternSyntaxException
 
 @Service
 class MavenServiceImpl(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val viewModelService: ViewModelService
 ) : ArtifactService(), MavenService {
 
@@ -88,7 +89,7 @@ class MavenServiceImpl(
     override fun dependency(mavenArtifactInfo: MavenArtifactInfo) {
         // 为了兼容jfrog，当查询到目录时，会展示当前目录下所有子项，而不是直接报错
         with(mavenArtifactInfo) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+            val node = nodeService.getNodeDetail(this)
             val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
             if (node != null) {
                 if (node.folder && !download) {
@@ -114,13 +115,10 @@ class MavenServiceImpl(
         with(artifactInfo) {
             viewModelService.trailingSlash(applicationName)
             // listNodePage 接口没办法满足当前情况
-            val nodeList = nodeClient.listNode(
-                projectId = projectId,
-                repoName = repoName,
-                path = getArtifactFullPath(),
-                includeFolder = true,
-                deep = false
-            ).data
+            val nodeList = nodeService.listNode(
+                artifact = this,
+                option = NodeListOption(includeFolder = true, deep = false)
+            )
             val currentPath = viewModelService.computeCurrentPath(node)
             val headerList = listOf(
                 HeaderItem("Name"),
@@ -129,10 +127,10 @@ class MavenServiceImpl(
                 HeaderItem("Size"),
                 HeaderItem("Sha256")
             )
-            val itemList = nodeList?.map { NodeListViewItem.from(it) }?.sorted()
-            val rowList = itemList?.map {
+            val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
+            val rowList = itemList.map {
                 RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size, it.sha256))
-            } ?: listOf()
+            }
             viewModelService.render(currentPath, headerList, rowList)
         }
     }

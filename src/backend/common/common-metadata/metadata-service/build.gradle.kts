@@ -27,7 +27,13 @@
 
 dependencies {
     api(project(":common:common-metadata:metadata-api"))
-    api(project(":common:common-artifact:artifact-service"))
+    api(project(":common:common-artifact:artifact-api"))
     api(project(":auth:api-auth"))
     api(project(":common:common-query:query-mongo"))
+    api(project(":common:common-mongo"))
+    api(project(":common:common-stream"))
+    api(project(":common:common-security"))
+    api(project(":common:common-storage:storage-service"))
+    api(project(":router-controller:api-router-controller"))
+    api(project(":fs:api-fs-server"))
 }

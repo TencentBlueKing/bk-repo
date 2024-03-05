@@ -30,8 +30,19 @@ package com.tencent.bkrepo.replication.controller.service
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDeleteResult
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -41,22 +52,12 @@ import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDeleteResult
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -72,7 +73,7 @@ import org.springframework.web.bind.annotation.RestController
 class ArtifactReplicaController(
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val packageClient: PackageClient,
     private val metadataClient: MetadataClient,
     private val userResource: ServiceUserClient,
@@ -92,43 +93,47 @@ class ArtifactReplicaController(
         repoName: String,
         fullPath: String
     ): Response<Boolean> {
-        return nodeClient.checkExist(projectId, repoName, fullPath)
+        return ResponseBuilder.success(
+            nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))
+        )
     }
 
     override fun checkNodeExistList(
         request: NodeExistCheckRequest
     ): Response<List<String>> {
-        return nodeClient.listExistFullPath(
+        return ResponseBuilder.success(nodeService.listExistFullPath(
             request.projectId,
             request.repoName,
             request.fullPathList
-        )
+        ))
     }
 
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
-        return nodeClient.createNode(request)
+        return ResponseBuilder.success(nodeService.createNode(request))
     }
 
     override fun replicaNodeRenameRequest(request: NodeRenameRequest): Response<Void> {
-        return nodeClient.renameNode(request)
+        nodeService.renameNode(request)
+        return ResponseBuilder.success()
     }
 
     override fun replicaNodeUpdateRequest(request: NodeUpdateRequest): Response<Void> {
-        return nodeClient.updateNode(request)
+        nodeService.updateNode(request)
+        return ResponseBuilder.success()
     }
 
     override fun replicaNodeCopyRequest(request: NodeMoveCopyRequest): Response<Void> {
-        nodeClient.copyNode(request)
+        nodeService.copyNode(request)
         return ResponseBuilder.success()
     }
 
     override fun replicaNodeMoveRequest(request: NodeMoveCopyRequest): Response<Void> {
-        nodeClient.moveNode(request)
+        nodeService.moveNode(request)
         return ResponseBuilder.success()
     }
 
     override fun replicaNodeDeleteRequest(request: NodeDeleteRequest): Response<NodeDeleteResult> {
-        return nodeClient.deleteNode(request)
+        return ResponseBuilder.success(nodeService.deleteNode(request))
     }
 
     override fun replicaRepoCreateRequest(request: RepoCreateRequest): Response<RepositoryDetail> {

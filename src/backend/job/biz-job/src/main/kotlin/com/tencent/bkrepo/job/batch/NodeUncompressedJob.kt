@@ -9,8 +9,8 @@ import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeUncompressedJobProperties
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUnCompressedRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -32,7 +32,7 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(NodeUncompressedJobProperties::class)
 class NodeUncompressedJob(
     properties: NodeUncompressedJobProperties,
-    val nodeClient: NodeClient,
+    val nodeService: NodeService,
     val archiveClient: ArchiveClient,
     val storageService: StorageService,
 ) :
@@ -67,7 +67,7 @@ class NodeUncompressedJob(
                     fullPath = it.fullPath,
                     operator = lastModifiedBy,
                 )
-                nodeClient.uncompressedNode(compressedRequest)
+                nodeService.uncompressedNode(compressedRequest)
             }
             val request = DeleteCompressRequest(sha256, storageCredentialsKey, lastModifiedBy)
             archiveClient.deleteCompress(request)

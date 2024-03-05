@@ -39,9 +39,9 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
-import com.tencent.bkrepo.repository.api.NodeClient
 import org.apache.commons.compress.archivers.ArchiveEntry
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.ArchiveStreamFactory
@@ -53,7 +53,7 @@ import java.io.InputStream
 
 @Service
 class CompressedFileService(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val storageManager: StorageManager,
     private val artifactResourceWriter: ArtifactResourceWriter
 ) : ArtifactService() {
@@ -111,7 +111,7 @@ class CompressedFileService(
             if (!Regex(COMPRESSED_FILE_TYPE_PATTERN).matches(fileExtension)) {
                 throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_TYPE_UNSUPPORTED, fileExtension)
             }
-            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+            val node = nodeService.getNodeDetail(this)
                 ?: throw NodeNotFoundException(getArtifactFullPath())
             if (node.size > COMPRESSED_FILE_SIZE_LIMIT) {
                 throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_SIZE_TOO_LARGE, COMPRESSED_FILE_SIZE_LIMIT_DESC)

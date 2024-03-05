@@ -34,6 +34,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -110,10 +111,10 @@ class PypiRemoteRepository : RemoteRepository() {
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = REMOTE_HTML_CACHE_FULL_PATH
-        var node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        var node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         loop@for (i in 1..3) {
             cacheRemoteRepoList(context)
-            node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             if (node != null) break@loop
         }
         if (node == null) return "Can not cache remote html"

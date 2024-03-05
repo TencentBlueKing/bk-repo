@@ -26,12 +26,15 @@ import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.bksync.BlockChannel
 import com.tencent.bkrepo.common.bksync.FileBlockChannel
 import com.tencent.bkrepo.common.bksync.transfer.http.BkSyncMetrics
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
@@ -46,11 +49,7 @@ import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.model.TSignFile
 import com.tencent.bkrepo.generic.pojo.bkbase.QueryRequest
 import com.tencent.bkrepo.generic.pojo.bkbase.QueryResponse
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
@@ -80,10 +79,9 @@ import java.util.concurrent.TimeUnit
 class DeltaSyncService(
     genericProperties: GenericProperties,
     val storageManager: StorageManager,
-    val nodeClient: NodeClient,
+    val nodeService: NodeService,
     val signFileDao: SignFileDao,
     val repositoryClient: RepositoryClient,
-    storageProperties: StorageProperties,
     private val redisOperation: RedisOperation,
 ) : ArtifactService() {
 
@@ -128,17 +126,17 @@ class DeltaSyncService(
      * */
     fun patch(oldFilePath: String, deltaFile: ArtifactFile): SseEmitter {
         with(ArtifactContext()) {
-            val node = nodeClient.getNodeDetail(
+            val node = nodeService.getNodeDetail(ArtifactInfo(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = UrlEncoded.decodeString(oldFilePath, 0, oldFilePath.length, Charsets.UTF_8),
-            ).data
+                artifactUri = UrlEncoded.decodeString(oldFilePath, 0, oldFilePath.length, Charsets.UTF_8),
+            ))
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
             val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
             if (!overwrite) {
-                nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data?.let {
+                nodeService.getNodeDetail(artifactInfo)?.let {
                     throw ErrorCodeException(
                         ArtifactMessageCode.NODE_EXISTED,
                         artifactInfo.getArtifactName(),
@@ -327,7 +325,7 @@ class DeltaSyncService(
      * */
     private fun getMd5FromNode(context: ArtifactContext): String {
         with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            val node = nodeService.getNodeDetail(artifactInfo)
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }

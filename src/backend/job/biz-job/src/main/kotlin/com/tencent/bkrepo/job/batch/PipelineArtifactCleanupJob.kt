@@ -30,14 +30,13 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.PipelineArtifactCleanupJobProperties
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCleanRequest
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
@@ -57,7 +56,7 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(PipelineArtifactCleanupJobProperties::class)
 class PipelineArtifactCleanupJob(
     private val properties: PipelineArtifactCleanupJobProperties,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
 ) : DefaultContextMongoDbJob<PipelineArtifactCleanupJob.Node>(properties) {
     override fun collectionNames(): List<String> {
         return (0 until SHARDING_COUNT)
@@ -123,15 +122,15 @@ class PipelineArtifactCleanupJob(
      */
     private fun deleteBeforeBuild(buildNode: Node) {
         try {
-            val result = nodeClient.cleanNodes((NodeCleanRequest(
+            val result = nodeService.deleteBeforeDate(
                 projectId = buildNode.projectId,
                 repoName = buildNode.repoName,
                 path = buildNode.path,
                 date = buildNode.createdDate,
                 operator = SYSTEM_USER
-            ))).data
+            )
             logger.info(
-                "delete ${result?.deletedNumber} node " +
+                "delete ${result.deletedNumber} node " +
                     "in [${buildNode.projectId}/${buildNode.repoName}${buildNode.path}]"
             )
         } catch (e: NullPointerException) {

@@ -41,34 +41,32 @@ import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
-import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.config.MetadataProperties
+import com.tencent.bkrepo.common.metadata.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.OperateLogDao
+import com.tencent.bkrepo.common.metadata.dao.ProjectDao
+import com.tencent.bkrepo.common.metadata.dao.ProxyChannelDao
+import com.tencent.bkrepo.common.metadata.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.ResourcePermissionListener
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.operate.OperateLogServiceImpl
+import com.tencent.bkrepo.common.metadata.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.common.metadata.config.MetadataProperties
-import com.tencent.bkrepo.common.metadata.dao.NodeDao
-import com.tencent.bkrepo.common.metadata.dao.ProjectDao
-import com.tencent.bkrepo.common.metadata.dao.RepositoryDao
-import com.tencent.bkrepo.common.metadata.listener.ResourcePermissionListener
-import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
-import com.tencent.bkrepo.common.metadata.service.repo.ProjectService
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.common.metadata.dao.ProxyChannelDao
-import com.tencent.bkrepo.common.operate.service.config.OperateProperties
-import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
-import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.router.api.RouterControllerClient
@@ -99,9 +97,7 @@ import org.springframework.test.context.TestPropertySource
     HttpAuthProperties::class,
     SpringContextUtils::class,
     NodeDao::class,
-    RouterControllerProperties::class,
     OperateLogServiceImpl::class,
-    OperateProperties::class,
     OperateLogDao::class
 )
 @ComponentScan(basePackages = ["com.tencent.bkrepo.repository.service", "com.tencent.bkrepo.common.metadata"])
@@ -123,7 +119,7 @@ open class ServiceBaseTest {
     @MockBean
     lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockBean(name = "permissionManager")
     lateinit var permissionManager: PermissionManager
 
     @MockBean

@@ -45,16 +45,17 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.beans.factory.annotation.Value
@@ -65,7 +66,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class DownloadService(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val viewModelService: ViewModelService,
 ) : ArtifactService() {
 
@@ -121,11 +122,8 @@ class DownloadService(
             if (fromApp) DownloadInterceptorType.MOBILE else DownloadInterceptorType.WEB
         )
         val context = ArtifactDownloadContext()
-        val nodeDetail = nodeClient.getNodeDetail(
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
-            fullPath = artifactInfo.getArtifactFullPath()
-        ).data ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val nodeDetail = nodeService.getNodeDetail(artifactInfo)
+            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
         context.getInterceptors().forEach { it.intercept(nodeDetail.projectId, nodeDetail) }
         return true
     }
@@ -152,13 +150,10 @@ class DownloadService(
 
     private fun renderListView(node: NodeDetail, artifactInfo: GenericArtifactInfo) {
         viewModelService.trailingSlash(applicationName)
-        val nodeList = nodeClient.listNode(
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
-            path = artifactInfo.getArtifactFullPath(),
-            includeFolder = true,
-            deep = false
-        ).data
+        val nodeList = nodeService.listNode(
+            artifact = artifactInfo,
+            option = NodeListOption(includeFolder = true, deep = false)
+        )
         val currentPath = viewModelService.computeCurrentPath(node)
         val headerList = listOf(
             HeaderItem("Name"),
@@ -167,10 +162,10 @@ class DownloadService(
             HeaderItem("Size"),
             HeaderItem("Sha256")
         )
-        val itemList = nodeList?.map { NodeListViewItem.from(it) }?.sorted()
-        val rowList = itemList?.map {
+        val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
+        val rowList = itemList.map {
             RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size, it.sha256))
-        } ?: listOf()
+        }
         viewModelService.render(currentPath, headerList, rowList)
     }
 }

@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
@@ -62,6 +63,13 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -93,12 +101,6 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.repository.api.PipelineNodeClient
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
-import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
@@ -116,6 +118,7 @@ class GenericLocalRepository(
     private val replicaTaskClient: ReplicaTaskClient,
     private val clusterNodeClient: ClusterNodeClient,
     private val pipelineNodeClient: PipelineNodeClient,
+    private val nodeSearchService: NodeSearchService
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -227,7 +230,7 @@ class GenericLocalRepository(
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
         if (!overwrite && !isBlockUpload(uploadId, sequence) && !isChunkedUpload(uploadType)) {
             with(context.artifactInfo) {
-                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data?.let {
+                nodeService.getNodeDetail(this)?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
                 }
             }
@@ -324,8 +327,10 @@ class GenericLocalRepository(
                     includeMetadata = true,
                     deep = true
                 )
-                val records = nodeClient.listNodePage(folder.projectId, folder.repoName, folder.fullPath, option).data
-                    ?.records.takeUnless { it.isNullOrEmpty() }?.map { NodeDetail(it) } ?: break
+                val records = nodeService.listNodePage(
+                    artifact = ArtifactInfo(folder.projectId, folder.repoName, folder.fullPath),
+                    option = option
+                ).records.takeUnless { it.isEmpty() }?.map { NodeDetail(it) } ?: break
                 records.filterNot { it.folder }.forEach { downloadIntercept(context, it) }
                 totalSize += records.sumOf { it.size }
                 checkFileTotalSize(totalSize)
@@ -353,8 +358,8 @@ class GenericLocalRepository(
                 includeMetadata = true,
                 deep = true
             )
-            val records = nodeClient.listNodePage(projectId, repoName, prefix, option).data?.records
-            if (records.isNullOrEmpty()) {
+            val records = nodeService.listNodePage(ArtifactInfo(projectId, repoName, prefix), option).records
+            if (records.isEmpty()) {
                 break
             }
             nodeDetailList.addAll(
@@ -417,15 +422,15 @@ class GenericLocalRepository(
 
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+            val node = nodeService.getNodeDetail(this)
                 ?: throw NodeNotFoundException(this.getArtifactFullPath())
             if (node.folder) {
-                if (nodeClient.countFileNode(projectId, repoName, getArtifactFullPath()).data!! > 0) {
+                if (nodeService.countFileNode(this) > 0) {
                     throw ErrorCodeException(ArtifactMessageCode.FOLDER_CONTAINS_FILE)
                 }
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, getArtifactFullPath(), context.userId)
-            nodeClient.deleteNode(nodeDeleteRequest)
+            nodeService.deleteNode(nodeDeleteRequest)
         }
     }
 
@@ -443,11 +448,7 @@ class GenericLocalRepository(
 
     override fun query(context: ArtifactQueryContext): Any? {
         val artifactInfo = context.artifactInfo
-        return nodeClient.getNodeDetail(
-            artifactInfo.projectId,
-            artifactInfo.repoName,
-            artifactInfo.getArtifactFullPath()
-        ).data
+        return nodeService.getNodeDetail(artifactInfo)
     }
 
     override fun search(context: ArtifactSearchContext): List<Any> {
@@ -472,7 +473,7 @@ class GenericLocalRepository(
         } else {
             // 强制替换为请求的projectId与repoName避免越权
             val newRule = replaceProjectIdAndRepo(queryModel.rule, context.projectId, context.repoName)
-            nodeClient.queryWithoutCount(queryModel.copy(rule = newRule)).data!!.records.onEach { node ->
+            nodeSearchService.searchWithoutCount(queryModel.copy(rule = newRule)).records.onEach { node ->
                 (node as MutableMap<String, Any?>)[RepositoryInfo::category.name] = RepositoryCategory.LOCAL.name
             }
         }
@@ -675,7 +676,7 @@ class GenericLocalRepository(
                 md5 = fileInfo.md5,
                 size = fileInfo.size
             )
-            nodeClient.createNode(nodeRequest)
+            nodeService.createNode(nodeRequest)
             return property
         }
     }

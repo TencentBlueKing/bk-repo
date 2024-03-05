@@ -31,9 +31,11 @@
 
 package com.tencent.bkrepo.generic.service
 
-import com.tencent.bkrepo.generic.pojo.FileInfo
-import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.generic.pojo.FileInfo
 import org.springframework.stereotype.Service
 
 /**
@@ -41,7 +43,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class OperateService(
-    private val nodeClient: NodeClient
+    private val nodeService: NodeService
 ) {
 
     fun listFile(
@@ -53,11 +55,11 @@ class OperateService(
         deep: Boolean,
         includeMetadata: Boolean,
     ): List<FileInfo> {
-        return nodeClient
-            .listNode(projectId, repoName, path, includeFolder, deep, includeMetadata)
-            .data
-            .orEmpty()
-            .map { toFileInfo(it) }
+        return nodeService
+            .listNode(
+                ArtifactInfo(projectId, repoName, path),
+                NodeListOption(includeFolder = includeFolder, deep = deep, includeMetadata = includeMetadata)
+            ).map { toFileInfo(it) }
     }
 
     companion object {

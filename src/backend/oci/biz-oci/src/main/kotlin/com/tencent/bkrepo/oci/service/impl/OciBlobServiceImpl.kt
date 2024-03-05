@@ -40,7 +40,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_KEY
@@ -56,9 +56,9 @@ import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.ObjectBuildUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -66,7 +66,7 @@ import org.springframework.stereotype.Service
 class OciBlobServiceImpl(
     private val storage: StorageService,
     private val repoClient: RepositoryClient,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val ociOperationService: OciOperationService,
     private val permissionManager: PermissionManager
 ) : OciBlobService {
@@ -155,7 +155,7 @@ class OciBlobServiceImpl(
                 md5 = nodeProperty.md5!!,
                 metadata = metadata
             )
-            nodeClient.createNode(nodeCreateRequest)
+            nodeService.createNode(nodeCreateRequest)
             val blobLocation = OciLocationUtils.blobLocation(ociDigest, this)
             val responseProperty = ResponseProperty(
                 location = blobLocation,

@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.metadata.service.node.impl.edge
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.router.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.config.MetadataProperties
 import com.tencent.bkrepo.common.metadata.dao.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.RepositoryDao

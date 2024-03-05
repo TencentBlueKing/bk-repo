@@ -28,10 +28,10 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.metadata.dao.OperateLogDao
+import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
-import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
-import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER

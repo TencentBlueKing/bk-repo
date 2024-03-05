@@ -27,12 +27,157 @@
 
 package com.tencent.bkrepo.common.metadata
 
+import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
+import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.metadata.aop.LogOperateAspect
 import com.tencent.bkrepo.common.metadata.config.MetadataProperties
+import com.tencent.bkrepo.common.metadata.config.OperateProperties
+import com.tencent.bkrepo.common.metadata.config.ProjectUsageStatisticsProperties
+import com.tencent.bkrepo.common.metadata.dao.OperateLogDao
+import com.tencent.bkrepo.common.metadata.dao.ProjectUsageStatisticsDao
+import com.tencent.bkrepo.common.metadata.interceptor.ProjectUsageStatisticsInterceptor
+import com.tencent.bkrepo.common.metadata.router.ArtifactRouterControllerConfiguration
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
+import com.tencent.bkrepo.common.metadata.security.edge.EdgePermissionManager
+import com.tencent.bkrepo.common.metadata.security.proxy.ProxyPermissionManager
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.operate.CommitEdgeOperateLogServiceImpl
+import com.tencent.bkrepo.common.metadata.service.operate.OperateLogServiceImpl
+import com.tencent.bkrepo.common.metadata.service.operate.ProjectUsageStatisticsServiceImpl
+import com.tencent.bkrepo.common.metadata.service.operate.impl.OperateLogService
+import com.tencent.bkrepo.common.metadata.service.operate.impl.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
+import com.tencent.bkrepo.common.security.manager.PrincipalManager
+import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.repository.api.RepositoryClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
 @ComponentScan("com.tencent.bkrepo.common.metadata")
-@EnableConfigurationProperties(MetadataProperties::class)
-class MetadataAutoConfiguration
+@EnableConfigurationProperties(
+    MetadataProperties::class,
+    OperateProperties::class,
+    ProjectUsageStatisticsProperties::class
+)
+@Import(ArtifactRouterControllerConfiguration::class)
+class MetadataAutoConfiguration {
+
+    @Bean
+    @Suppress("LongParameterList")
+    fun permissionManager(
+        repositoryClient: RepositoryClient,
+        permissionResource: ServicePermissionClient,
+        externalPermissionResource: ServiceExternalPermissionClient,
+        userResource: ServiceUserClient,
+        nodeService: NodeService,
+        clusterProperties: ClusterProperties,
+        httpAuthProperties: HttpAuthProperties,
+        principalManager: PrincipalManager
+    ): PermissionManager {
+        return if (clusterProperties.role == ClusterNodeType.EDGE
+            && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        ) {
+            EdgePermissionManager(
+                repositoryClient = repositoryClient,
+                permissionResource = permissionResource,
+                externalPermissionResource = externalPermissionResource,
+                userResource = userResource,
+                nodeService = nodeService,
+                clusterProperties = clusterProperties,
+                httpAuthProperties = httpAuthProperties,
+                principalManager = principalManager
+            )
+        } else {
+            PermissionManager(
+                repositoryClient = repositoryClient,
+                permissionResource = permissionResource,
+                externalPermissionResource = externalPermissionResource,
+                userResource = userResource,
+                nodeService = nodeService,
+                httpAuthProperties = httpAuthProperties,
+                principalManager = principalManager
+            )
+        }
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun proxyPermissionManager(
+        repositoryClient: RepositoryClient,
+        permissionResource: ServicePermissionClient,
+        externalPermissionResource: ServiceExternalPermissionClient,
+        userResource: ServiceUserClient,
+        nodeService: NodeService,
+        httpAuthProperties: HttpAuthProperties,
+        principalManager: PrincipalManager
+    ): ProxyPermissionManager {
+        return ProxyPermissionManager(
+            repositoryClient = repositoryClient,
+            permissionResource = permissionResource,
+            externalPermissionResource = externalPermissionResource,
+            userResource = userResource,
+            nodeService = nodeService,
+            httpAuthProperties = httpAuthProperties,
+            principalManager = principalManager
+        )
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun operateLogService(
+        operateProperties: OperateProperties,
+        operateLogDao: OperateLogDao,
+        permissionManager: PermissionManager,
+        clusterProperties: ClusterProperties
+    ): OperateLogService {
+        return if (clusterProperties.role == ClusterNodeType.EDGE &&
+            clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        ) {
+            CommitEdgeOperateLogServiceImpl(operateProperties, operateLogDao, permissionManager, clusterProperties)
+        } else {
+            OperateLogServiceImpl(operateProperties, operateLogDao, permissionManager)
+        }
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun projectUsageStatisticsService(
+        properties: ProjectUsageStatisticsProperties,
+        projectUsageStatisticsDao: ProjectUsageStatisticsDao,
+    ): ProjectUsageStatisticsService {
+        return ProjectUsageStatisticsServiceImpl(properties, projectUsageStatisticsDao)
+    }
+
+    @Bean
+    fun operateLogAspect(operateLogService: OperateLogService): LogOperateAspect {
+        return LogOperateAspect(operateLogService)
+    }
+
+    @Bean
+    @ConditionalOnWebApplication
+    @ConditionalOnProperty(value = ["project-usage-statistics.enableReqCountStatistic"])
+    fun projectUsageStatisticsInterceptorRegister(
+        properties: ProjectUsageStatisticsProperties,
+        service: ProjectUsageStatisticsService,
+    ): WebMvcConfigurer {
+        return object : WebMvcConfigurer {
+            override fun addInterceptors(registry: InterceptorRegistry) {
+                // 不统计服务间调用
+                registry.addInterceptor(ProjectUsageStatisticsInterceptor(properties, service))
+                    .excludePathPatterns("/service/**", "/replica/**")
+            }
+        }
+    }
+}

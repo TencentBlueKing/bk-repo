@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.metadata.service.packages.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.util.version.SemVersion
+import com.tencent.bkrepo.common.metadata.util.version.SemVersion
 import com.tencent.bkrepo.common.metadata.dao.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.ClusterResource

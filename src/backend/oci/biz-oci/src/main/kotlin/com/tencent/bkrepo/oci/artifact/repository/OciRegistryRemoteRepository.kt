@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -455,7 +456,8 @@ class OciRegistryRemoteRepository(
     override fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
         with(context) {
             val fullPath = ociOperationService.getNodeFullPath(context.artifactInfo as OciArtifactInfo) ?: return null
-            return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            val artifactInfo = ArtifactInfo(projectId, repoName, fullPath)
+            return nodeService.getNodeDetail(artifactInfo)
         }
     }
 
@@ -518,7 +520,9 @@ class OciRegistryRemoteRepository(
         val fullPath = ociOperationService.getNodeFullPath(ociArtifactInfo)
         // 针对manifest文件获取会通过tag或manifest获取，避免重复创建
         fullPath?.let {
-            val node = nodeClient.getNodeDetail(ociArtifactInfo.projectId, ociArtifactInfo.repoName, fullPath).data
+            val node = nodeService.getNodeDetail(
+                ArtifactInfo(ociArtifactInfo.projectId, ociArtifactInfo.repoName, fullPath)
+            )
             if (node != null && artifactFile.getFileSha256() == node.sha256) return node
         }
         val url = context.getStringAttribute(PROXY_URL)
@@ -531,11 +535,7 @@ class OciRegistryRemoteRepository(
         // 针对manifest文件需要更新metadata
         if (context.artifactInfo is OciManifestArtifactInfo) {
             updateManifestAndBlob(context, nodeDetail!!)
-            nodeDetail = nodeClient.getNodeDetail(
-                projectId = context.artifactInfo.projectId,
-                repoName = context.artifactInfo.repoName,
-                fullPath = context.artifactInfo.getArtifactFullPath()
-            ).data
+            nodeDetail = nodeService.getNodeDetail(context.artifactInfo)
         }
         return nodeDetail
     }

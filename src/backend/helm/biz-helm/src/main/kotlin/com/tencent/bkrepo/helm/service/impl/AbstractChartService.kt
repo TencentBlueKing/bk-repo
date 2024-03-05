@@ -61,6 +61,8 @@ import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
@@ -99,7 +101,6 @@ import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.helm.utils.RemoteDownloadUtil
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
@@ -122,7 +123,10 @@ import java.util.concurrent.ThreadPoolExecutor
 @Suppress("LateinitUsage")
 open class AbstractChartService : ArtifactService() {
     @Autowired
-    lateinit var nodeClient: NodeClient
+    lateinit var nodeService: NodeService
+
+    @Autowired
+    lateinit var nodeSearchService: NodeSearchService
 
     @Autowired
     lateinit var metadataClient: MetadataClient
@@ -190,7 +194,7 @@ open class AbstractChartService : ArtifactService() {
 
     private fun getOriginalIndexNode(projectId: String, repoName: String): NodeDetail? {
         val fullPath = HelmUtils.getIndexCacheYamlFullPath()
-        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
     }
 
     /**
@@ -233,7 +237,7 @@ open class AbstractChartService : ArtifactService() {
     fun getChartYaml(projectId: String, repoName: String, fullPath: String): HelmChartMetadata {
         val repository = repositoryClient.getRepoDetail(projectId, repoName, RepositoryType.HELM.name).data
             ?: throw RepoNotFoundException("Repository[$repoName] does not exist")
-        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         val inputStream = storageManager.loadArtifactInputStream(nodeDetail, repository.storageCredentials)
             ?: throw HelmFileNotFoundException(
                 HelmMessageCode.HELM_FILE_NOT_FOUND, fullPath, "$projectId|$repoName"
@@ -307,10 +311,7 @@ open class AbstractChartService : ArtifactService() {
             if (exist) {
                 lastModifyTime?.let { queryModelBuilder.rule(true, NODE_CREATE_DATE, it, OperationType.AFTER) }
             }
-            val result = nodeClient.queryWithoutCount(queryModelBuilder.build()).data ?: run {
-                logger.warn("don't find node list in repository: [$projectId/$repoName].")
-                return emptyList()
-            }
+            val result = nodeSearchService.searchWithoutCount(queryModelBuilder.build())
             return result.records
         }
     }
@@ -327,8 +328,8 @@ open class AbstractChartService : ArtifactService() {
                 .projectId(artifactInfo.projectId)
                 .repoName(artifactInfo.repoName)
                 .fullPath(TGZ_SUFFIX, OperationType.SUFFIX)
-            val result = nodeClient.queryWithoutCount(queryModelBuilder.build()).data
-            if (result == null || result.records.isEmpty()) break
+            val result = nodeSearchService.searchWithoutCount(queryModelBuilder.build())
+            if (result.records.isEmpty()) break
             result.records.forEach {
                 try {
                     ChartParserUtil.addIndexEntries(indexYamlMetadata, createChartMetadata(it, artifactInfo))
@@ -368,7 +369,7 @@ open class AbstractChartService : ArtifactService() {
      * check node exists
      */
     fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        return nodeClient.checkExist(projectId, repoName, fullPath).data ?: false
+        return nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))
     }
 
     /**

@@ -41,11 +41,11 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
@@ -65,7 +65,7 @@ import java.security.MessageDigest
 @Component
 class FileLoader(
     private val executorProperties: ScannerExecutorProperties,
-    private val nodeClient: NodeClient,
+    private val nodeSearchService: NodeSearchService,
     private val storageService: StorageService,
     private val storageCredentialsClient: StorageCredentialsClient,
 ) {
@@ -174,7 +174,7 @@ class FileLoader(
     }
 
     private fun getNodeSize(projectId: String, repoName: String, sha256: String): Long {
-        val nodes = nodeClient.queryWithoutCount(
+        val nodes = nodeSearchService.searchWithoutCount(
             NodeQueryBuilder()
                 .projectId(projectId)
                 .repoName(repoName)
@@ -183,10 +183,10 @@ class FileLoader(
                 .page(1, 1)
                 .build()
         )
-        if (nodes.isNotOk() || nodes.data!!.records.isEmpty()) {
+        if (nodes.records.isEmpty()) {
             throw SystemErrorException(CommonMessageCode.RESOURCE_NOT_FOUND, sha256)
         }
-        return (nodes.data!!.records[0][NodeDetail::size.name] as Number).toLong()
+        return (nodes.records[0][NodeDetail::size.name] as Number).toLong()
     }
 
     /**

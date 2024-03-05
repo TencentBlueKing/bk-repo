@@ -29,10 +29,10 @@ package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
+import com.tencent.bkrepo.common.metadata.pojo.operate.OpLogListOption
+import com.tencent.bkrepo.common.metadata.pojo.operate.OperateLog
+import com.tencent.bkrepo.common.metadata.pojo.operate.OperateLogResponse
+import com.tencent.bkrepo.common.metadata.service.operate.impl.OperateLogService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation

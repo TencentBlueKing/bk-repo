@@ -41,6 +41,7 @@ import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -51,7 +52,8 @@ import java.time.format.DateTimeFormatter
 @Service
 class NpmFixToolServiceImpl(
 	private val storageManager: StorageManager,
-	private val npmPackageHandler: NpmPackageHandler
+	private val npmPackageHandler: NpmPackageHandler,
+	private val nodeSearchService: NodeSearchService
 ) : NpmFixToolService, AbstractNpmService() {
 
 	@Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -333,7 +335,7 @@ class NpmFixToolServiceImpl(
 			select = mutableListOf(),
 			rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
 		)
-		val queryResult = nodeClient.queryWithoutCount(queryModel).data!!
+		val queryResult = nodeSearchService.searchWithoutCount(queryModel)
 		return queryResult.records.associateBy(
 			{ resolverVersion(packageName, it["fullPath"] as String) },
 			{ resolveNode(it) }
@@ -363,7 +365,7 @@ class NpmFixToolServiceImpl(
 			select = mutableListOf(),
 			rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
 		)
-		return nodeClient.queryWithoutCount(queryModel).data!!
+		return nodeSearchService.searchWithoutCount(queryModel)
 	}
 
 	private fun resolveNode(record: Map<String, Any?>): NodeInfo {

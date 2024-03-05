@@ -30,19 +30,19 @@ package com.tencent.bkrepo.analyst.statemachine.iterator
 import com.tencent.bkrepo.analyst.pojo.Node
 import com.tencent.bkrepo.analyst.pojo.ScanPlan
 import com.tencent.bkrepo.analyst.pojo.ScanTask
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.analyst.utils.Request
 import com.tencent.bkrepo.analyst.utils.RuleUtil
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import org.springframework.stereotype.Component
 
 /**
@@ -50,7 +50,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class IteratorManager(
-    private val nodeClient: NodeClient,
+    private val nodeSearchService: NodeSearchService,
     private val repositoryClient: RepositoryClient,
     private val packageClient: PackageClient
 ) {
@@ -76,9 +76,9 @@ class IteratorManager(
 
         val isPackageScanPlanType = scanTask.scanPlan != null && scanTask.scanPlan!!.type != RepositoryType.GENERIC.name
         return if (isPackageScanPlanType || packageRule(rule)) {
-            PackageIterator(packageClient, nodeClient, PackageIterator.PackageIteratePosition(rule))
+            PackageIterator(packageClient, nodeSearchService, PackageIterator.PackageIteratePosition(rule))
         } else {
-            NodeIterator(projectIdIterator, nodeClient, NodeIterator.NodeIteratePosition(rule))
+            NodeIterator(projectIdIterator, nodeSearchService, NodeIterator.NodeIteratePosition(rule))
         }
     }
 

@@ -209,22 +209,6 @@ interface PackageService {
     fun updateVersion(request: PackageVersionUpdateRequest, realIpAddress: String? = null)
 
     /**
-     * 下载包版本
-     *
-     * @param projectId 项目id
-     * @param repoName 项目id
-     * @param packageKey 包唯一标识
-     * @param versionName 版本名称
-     */
-    fun downloadVersion(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        versionName: String,
-        realIpAddress: String? = null
-    )
-
-    /**
      * 添加包下载记录
      *
      * @param projectId 项目id

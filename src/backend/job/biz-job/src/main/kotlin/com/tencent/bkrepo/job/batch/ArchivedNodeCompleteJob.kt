@@ -5,6 +5,7 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
@@ -13,7 +14,6 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.ArchivedNodeCompleteJobProperties
 import com.tencent.bkrepo.job.config.properties.IdleNodeArchiveJobProperties
-import com.tencent.bkrepo.repository.api.NodeClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -37,7 +37,7 @@ import kotlin.reflect.KClass
 class ArchivedNodeCompleteJob(
     val properties: ArchivedNodeCompleteJobProperties,
     private val archiveClient: ArchiveClient,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val storageService: StorageService,
     private val idleNodeArchiveJobProperties: IdleNodeArchiveJobProperties,
 ) : MongoDbBatchJob<ArchivedNodeRestoreJob.ArchiveFile, NodeContext>(properties) {
@@ -126,7 +126,7 @@ class ArchivedNodeCompleteJob(
             fullPath = fullPath,
             operator = SYSTEM_USER,
         )
-        nodeClient.archiveNode(nodeArchiveRequest)
+        nodeService.archiveNode(nodeArchiveRequest)
         // 删除原存储
         storageService.delete(sha256, storageCredentials)
     }

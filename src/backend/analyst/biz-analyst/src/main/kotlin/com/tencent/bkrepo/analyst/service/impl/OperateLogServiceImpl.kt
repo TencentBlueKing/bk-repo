@@ -29,10 +29,10 @@ package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
+import com.tencent.bkrepo.common.metadata.pojo.operate.OpLogListOption
+import com.tencent.bkrepo.common.metadata.pojo.operate.OperateLog
+import com.tencent.bkrepo.common.metadata.pojo.operate.OperateLogResponse
+import com.tencent.bkrepo.common.metadata.service.operate.impl.OperateLogService
 import com.tencent.bkrepo.repository.api.OperateLogClient
 import org.springframework.scheduling.annotation.Async
 

@@ -42,16 +42,17 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
 import com.tencent.bkrepo.s3.constant.NO_SUCH_ACCESS
@@ -73,7 +74,8 @@ import java.net.URLDecoder
  */
 @Service
 class S3ObjectService(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
     private val metadataClient: MetadataClient
 ) : ArtifactService() {
 
@@ -127,7 +129,7 @@ class S3ObjectService(
 
         val folders = if (delimiter.isNotEmpty()) {
             val folderQueryBuilder = nodeQueryBuilder.newBuilder().excludeFile().select(NodeDetail::fullPath.name)
-            nodeClient.queryWithoutCount(folderQueryBuilder.build()).data!!.records
+            nodeSearchService.searchWithoutCount(folderQueryBuilder.build()).records
                 .map {
                     it[NodeDetail::fullPath.name].toString().removePrefix(SLASH).ensureSuffix(SLASH)
                 }
@@ -140,7 +142,7 @@ class S3ObjectService(
                     excludeFolder()
                 }
             }
-        val data = nodeClient.search(queryBuilder.build()).data!!
+        val data = nodeSearchService.search(queryBuilder.build())
         return ListBucketResult(repoName, data, maxKeys, prefix, folders, delimiter)
     }
 
@@ -159,7 +161,7 @@ class S3ObjectService(
             overwrite = true,
             operator = SecurityUtils.getUserId()
         )
-        var dstNode = nodeClient.copyNode(copyRequest).data!!
+        var dstNode = nodeService.copyNode(copyRequest)
         dstNode = replaceMetadata(dstNode)
         return CopyObjectResult(
             eTag = "\"${dstNode.md5}\"",
@@ -173,7 +175,7 @@ class S3ObjectService(
 
     fun deleteObject(artifactInfo: S3ArtifactInfo) {
         with(artifactInfo) {
-            nodeClient.deleteNode(NodeDeleteRequest(
+            nodeService.deleteNode(NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = getArtifactFullPath(),

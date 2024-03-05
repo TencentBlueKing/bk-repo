@@ -31,8 +31,8 @@ import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -46,7 +46,7 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(DdcBlobCleanupJobProperties::class)
 class DdcBlobCleanupJob(
     private val properties: DdcBlobCleanupJobProperties,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
 ) : DefaultContextMongoDbJob<DdcBlobCleanupJob.Blob>(properties) {
     override fun collectionNames() = listOf(COLLECTION_NAME)
 
@@ -77,7 +77,7 @@ class DdcBlobCleanupJob(
     override fun entityClass() = Blob::class
 
     override fun run(row: Blob, collectionName: String, context: JobContext) {
-        nodeClient.deleteNode(
+        nodeService.deleteNode(
             NodeDeleteRequest(
                 projectId = row.projectId,
                 repoName = row.repoName,

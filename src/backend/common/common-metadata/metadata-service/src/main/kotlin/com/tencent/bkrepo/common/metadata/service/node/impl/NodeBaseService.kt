@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.config.MetadataProperties
 import com.tencent.bkrepo.common.metadata.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.metadata.constant.METADATA_KEY_LINK_PROJECT
@@ -58,7 +57,12 @@ import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUpdateRequest
+import com.tencent.bkrepo.common.metadata.router.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
@@ -66,7 +70,6 @@ import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
@@ -75,9 +78,6 @@ import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
-import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
-import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

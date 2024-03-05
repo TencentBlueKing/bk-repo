@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
-import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
-import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatisticsListOption
+import com.tencent.bkrepo.common.metadata.pojo.operate.ProjectUsageStatistics
+import com.tencent.bkrepo.common.metadata.pojo.operate.ProjectUsageStatisticsListOption
+import com.tencent.bkrepo.common.metadata.service.operate.impl.ProjectUsageStatisticsService
 import com.tencent.bkrepo.repository.api.ProjectUsageStatisticsClient
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.scheduling.annotation.Async

@@ -33,8 +33,8 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ExpiredNodeMarkupJobProperties
 import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
@@ -53,7 +53,7 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(ExpiredNodeMarkupJobProperties::class)
 class ExpiredNodeMarkupJob(
     properties: ExpiredNodeMarkupJobProperties,
-    private val nodeClient: NodeClient
+    private val nodeService: NodeService,
 ) : DefaultContextMongoDbJob<ExpiredNodeMarkupJob.Node>(properties) {
 
     data class Node(
@@ -97,7 +97,7 @@ class ExpiredNodeMarkupJob(
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
         try {
-            nodeClient.deleteNode(NodeDeleteRequest(row.projectId, row.repoName, row.fullPath, SYSTEM_USER))
+            nodeService.deleteNode(NodeDeleteRequest(row.projectId, row.repoName, row.fullPath, SYSTEM_USER))
         } catch (e: Exception) {
             logger.warn("delete expired node[$row] failed: $e")
         }

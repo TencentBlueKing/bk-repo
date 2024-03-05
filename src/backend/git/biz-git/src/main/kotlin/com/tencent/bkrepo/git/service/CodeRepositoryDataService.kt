@@ -6,6 +6,9 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.git.artifact.GitPackFileArtifactInfo
 import com.tencent.bkrepo.git.constant.BLANK
 import com.tencent.bkrepo.git.context.DfsDataReadersHolder
@@ -21,11 +24,6 @@ import com.tencent.bkrepo.git.internal.storage.DfsReadableChannel
 import com.tencent.bkrepo.git.internal.storage.RepositoryDataService
 import com.tencent.bkrepo.git.model.TDfsPackDescription
 import com.tencent.bkrepo.git.repository.DfsPackDescriptionRepository
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
-import java.io.ByteArrayOutputStream
-import java.time.LocalDateTime
 import org.eclipse.jgit.internal.storage.dfs.DfsObjDatabase
 import org.eclipse.jgit.internal.storage.dfs.DfsOutputStream
 import org.eclipse.jgit.internal.storage.dfs.DfsPackDescription
@@ -36,11 +34,13 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
+import java.io.ByteArrayOutputStream
+import java.time.LocalDateTime
 
 @Service
 class CodeRepositoryDataService(
     val storageManager: StorageManager,
-    val nodeClient: NodeClient,
+    val nodeService: NodeService,
     val dfsPackDescriptionRepository: DfsPackDescriptionRepository
 ) : RepositoryDataService {
 
@@ -126,10 +126,8 @@ class CodeRepositoryDataService(
         packArtifactInfo: GitPackFileArtifactInfo
     ): DfsDataReader {
         with(repository) {
-            val node = nodeClient.getNodeDetail(
-                projectId, repoName,
-                packArtifactInfo.getArtifactFullPath()
-            ).data ?: throw NodeNotFoundException(packArtifactInfo.getArtifactFullPath())
+            val node = nodeService.getNodeDetail(packArtifactInfo)
+                ?: throw NodeNotFoundException(packArtifactInfo.getArtifactFullPath())
             val artifactInputStream = storageManager.loadArtifactInputStream(node, storageCredentials)
                 ?: throw IllegalStateException("Stream load failed.")
             artifactInputStream.use {
@@ -213,7 +211,7 @@ class CodeRepositoryDataService(
                     fullPath = packArtifactInfo.getArtifactFullPath(),
                     operator = userId
                 )
-                nodeClient.deleteNode(deleteRequest)
+                nodeService.deleteNode(deleteRequest)
             }
         }
     }

@@ -35,8 +35,8 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 
 object Request {
     private val nodeSelected = listOf(
@@ -62,7 +62,7 @@ object Request {
     /**
      * 请求node数据并解析成[Node]
      */
-    fun requestNodes(nodeClient: NodeClient, rule: Rule, page: Int, pageSize: Int): List<Node> {
+    fun requestNodes(nodeSearchService: NodeSearchService, rule: Rule, page: Int, pageSize: Int): List<Node> {
         // 通常根据projectId,repoName等字段搜索Node，此时如果结果数量较多时用_id排序会有性能问题导致查询超时
         // 使用projectId、repoName、fullPath字段有建立唯一索引，因此使用这些字段进行排序
         val sort = Sort(
@@ -75,7 +75,7 @@ object Request {
             select = nodeSelected,
             rule = rule
         )
-        return request { nodeClient.queryWithoutCount(queryModel) }!!.records.map {
+        return nodeSearchService.searchWithoutCount(queryModel).records.map {
             val projectId = it[NodeDetail::projectId.name]!! as String
             val repoName = it[NodeDetail::repoName.name]!! as String
             val sha256 = it[NodeDetail::sha256.name]!! as String

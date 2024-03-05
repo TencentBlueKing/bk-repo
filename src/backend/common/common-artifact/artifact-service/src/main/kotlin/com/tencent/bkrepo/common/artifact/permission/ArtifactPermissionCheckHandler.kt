@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.artifact.permission
 
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.PermissionCheckHandler
 import com.tencent.bkrepo.common.security.permission.Principal

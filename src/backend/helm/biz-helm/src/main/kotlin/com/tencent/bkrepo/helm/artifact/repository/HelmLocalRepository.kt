@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.helm.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -119,7 +120,7 @@ class HelmLocalRepository(
             val repoName = repositoryDetail.name
             val fullPath = getStringAttribute(FULL_PATH).orEmpty()
             helmOperationService.checkNodePermission(fullPath)
-            val isExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
+            val isExist = nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))
             val isOverwrite = isOverwrite(fullPath, isForce)
             putAttribute(OVERWRITE, isOverwrite)
             if (isExist && !isOverwrite) {
@@ -214,7 +215,7 @@ class HelmLocalRepository(
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = context.getStringAttribute(FULL_PATH)!!
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         if (node == null || node.folder) return null
         return storageService.load(
             node.sha256!!, Range.full(node.size), context.storageCredentials

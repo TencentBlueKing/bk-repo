@@ -33,9 +33,8 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
+import com.tencent.bkrepo.common.metadata.pojo.operate.ProjectUsageStatistics
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
-import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
@@ -55,6 +54,7 @@ import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata.Companion
 import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata.Companion.KEY_DEPT_NAME
 import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata.Companion.KEY_ENABLED
 import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata.Companion.KEY_PRODUCT_ID
+import com.tencent.bkrepo.common.metadata.service.operate.impl.ProjectUsageStatisticsService
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDate
