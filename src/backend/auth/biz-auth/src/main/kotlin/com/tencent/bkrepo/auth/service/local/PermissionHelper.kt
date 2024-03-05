@@ -56,9 +56,9 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 
-open class AbstractServiceImpl constructor(
-    open val userDao: UserDao,
-    private val roleRepository: RoleRepository
+class PermissionHelper constructor(
+    val userDao: UserDao,
+    val roleRepository: RoleRepository
 ) {
 
     fun checkUserExist(userId: String) {
@@ -366,6 +366,6 @@ open class AbstractServiceImpl constructor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(AbstractServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(PermissionHelper::class.java)
     }
 }

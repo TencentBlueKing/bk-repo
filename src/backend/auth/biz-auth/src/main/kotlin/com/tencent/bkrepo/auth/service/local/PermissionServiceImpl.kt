@@ -68,6 +68,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import java.time.LocalDateTime
 
 open class PermissionServiceImpl constructor(
@@ -79,24 +80,16 @@ open class PermissionServiceImpl constructor(
     val projectClient: ProjectClient
 ) : PermissionService, AbstractServiceImpl(userDao, roleRepository) {
 
+    private val permHelper by lazy { PermissionHelper(userDao, roleRepository) }
+
     override fun deletePermission(id: String): Boolean {
         logger.info("delete  permission  repoName: [$id]")
         permissionDao.deleteById(id)
         return true
     }
 
-    override fun listPermission(projectId: String, repoName: String?, resourceType: String?): List<Permission> {
-        logger.debug("list  permission  projectId: [$projectId], repoName: [$repoName]")
-        resourceType?.let {
-            repoName?.let {
-                return permissionDao.listByResourceAndRepo(resourceType, projectId, repoName).map {
-                    PermRequestUtil.convToPermission(it)
-                }
-            }
-            return permissionDao.listByResourceAndProject(resourceType, projectId).map {
-                PermRequestUtil.convToPermission(it)
-            }
-        }
+    override fun listPermission(projectId: String, repoName: String?, resourceType: String): List<Permission> {
+        logger.debug("list  permission  projectId: [$projectId , $repoName, $resourceType]")
         repoName?.let {
             return permissionDao.listByResourceAndRepo(REPO.name, projectId, repoName).map {
                 PermRequestUtil.convToPermission(it)
@@ -108,7 +101,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun listBuiltinPermission(projectId: String, repoName: String): List<Permission> {
-        logger.debug("list  builtin permission  projectId: [$projectId], repoName: [$repoName]")
+        logger.debug("list builtin permission : [$projectId ,$repoName]")
         val repoAdmin = getOnePermission(projectId, repoName, AUTH_BUILTIN_ADMIN, setOf(MANAGE))
         val repoUser = getOnePermission(
             projectId = projectId,
@@ -138,7 +131,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun updateRepoPermission(request: UpdatePermissionRepoRequest): Boolean {
-        logger.info("update repo permission request :  [$request]")
+        logger.info("update repo permission request : [$request]")
         with(request) {
             checkPermissionExist(permissionId)
             return updatePermissionById(permissionId, TPermission::repos.name, repos)
@@ -146,41 +139,42 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun updatePermissionUser(request: UpdatePermissionUserRequest): Boolean {
-        logger.info("update permission user request:[$request]")
         with(request) {
-            // update project admin
-            if (permissionId == PROJECT_MANAGE_ID) {
-                val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
-                val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId)
-                val adminRoleId = createRoleCommon(createAdminRequest)
-                val commonRoleId = createRoleCommon(createUserRequest)
-                val adminUsers = getProjectAdminUser(projectId)
-                val addRoleUserList = userId.filter { !adminUsers.contains(it) }
-                val removeRoleUserList = adminUsers.filter { !userId.contains(it) }
+            logger.info("update permission user request: [$request]")
+            when (permissionId) {
+                PROJECT_MANAGE_ID -> {
+                    val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
+                    val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId)
+                    val adminRoleId = createRoleCommon(createAdminRequest)
+                    val commonRoleId = createRoleCommon(createUserRequest)
+                    val adminUsers = getProjectAdminUser(projectId)
+                    val addRoleUserList = userId.filter { !adminUsers.contains(it) }
+                    val removeRoleUserList = adminUsers.filter { !userId.contains(it) }
 
-                addUserToRoleBatchCommon(addRoleUserList, adminRoleId!!)
-                removeUserFromRoleBatchCommon(removeRoleUserList, adminRoleId)
-                removeUserFromRoleBatchCommon(addRoleUserList, commonRoleId!!)
-                return true
-                //  update project common user
-            } else if (permissionId == PROJECT_VIEWER_ID) {
-                val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
-                val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId)
-                val adminRoleId = createRoleCommon(createAdminRequest)
-                val commonRoleId = createRoleCommon(createUserRequest)
-                val commonUsers = getProjectCommonUser(projectId)
-                val addRoleUserList = userId.filter { !commonUsers.contains(it) }
-                val removeRoleUserList = commonUsers.filter { !userId.contains(it) }
+                    addUserToRoleBatchCommon(addRoleUserList, adminRoleId!!)
+                    removeUserFromRoleBatchCommon(removeRoleUserList, adminRoleId)
+                    removeUserFromRoleBatchCommon(addRoleUserList, commonRoleId!!)
+                    return true
+                }
+                PROJECT_VIEWER_ID -> {
+                    val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
+                    val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId)
+                    val adminRoleId = createRoleCommon(createAdminRequest)
+                    val commonRoleId = createRoleCommon(createUserRequest)
+                    val commonUsers = getProjectCommonUser(projectId)
+                    val addRoleUserList = userId.filter { !commonUsers.contains(it) }
+                    val removeRoleUserList = commonUsers.filter { !userId.contains(it) }
 
-                addUserToRoleBatchCommon(addRoleUserList, commonRoleId!!)
-                removeUserFromRoleBatchCommon(removeRoleUserList, commonRoleId)
-                removeUserFromRoleBatchCommon(addRoleUserList, adminRoleId!!)
-                return true
-            } else {
-                checkPermissionExist(permissionId)
-                return updatePermissionById(permissionId, TPermission::users.name, userId)
+                    addUserToRoleBatchCommon(addRoleUserList, commonRoleId!!)
+                    removeUserFromRoleBatchCommon(removeRoleUserList, commonRoleId)
+                    removeUserFromRoleBatchCommon(addRoleUserList, adminRoleId!!)
+                    return true
+                }
+                else -> {
+                    checkPermissionExist(permissionId)
+                    return updatePermissionById(permissionId, TPermission::users.name, userId)
+                }
             }
-
         }
     }
 
@@ -202,8 +196,8 @@ open class PermissionServiceImpl constructor(
                 // check repo read action
                 if (checkRepoReadAction(request, roles)) return true
                 //  check project user
-                val isProjectUser = isUserLocalProjectUser(roles, request.projectId!!)
-                if (checkProjecReadAction(request, isProjectUser)) return true
+                val isProjectUser = isUserLocalProjectUser(uid, request.projectId!!)
+                if (checkProjectReadAction(request, isProjectUser)) return true
                 // check node action
                 if (isNodeNeedLocalCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
                     return true
@@ -213,10 +207,6 @@ open class PermissionServiceImpl constructor(
         return false
     }
 
-    private fun isRepoOrNodePermission(resourceType: String): Boolean {
-        return resourceType == NODE.name || resourceType == REPO.name
-    }
-
     private fun checkRepoReadAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
         with(request) {
             return resourceType == REPO.name && action == READ.name &&
@@ -224,37 +214,16 @@ open class PermissionServiceImpl constructor(
         }
     }
 
-    private fun checkProjectAdmin(request: CheckPermissionRequest): Boolean {
-        if (request.projectId == null) return false
-        return isUserLocalProjectAdmin(request.uid, request.projectId!!)
-    }
-
-    private fun checkProjecReadAction(request: CheckPermissionRequest, isProjectUser: Boolean): Boolean {
-        return request.projectId != null && request.action == READ.name && isProjectUser
-    }
-
-    private fun checkRepoAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
-        // check role repo admin
-        var queryRoles = emptyList<String>()
-        if (roles.isNotEmpty() && request.projectId != null && request.repoName != null) {
-            queryRoles = roles.filter { !it.isNullOrEmpty() }.toList()
-        }
-        if (queryRoles.isEmpty()) return false
-
-        val result = roleRepository.findByProjectIdAndTypeAndAdminAndRepoNameAndIdIn(
-            projectId = request.projectId!!,
-            type = RoleType.REPO,
-            repoName = request.repoName!!,
-            admin = true,
-            ids = queryRoles
-        )
-        if (result.isNotEmpty()) return true
-        return false
-    }
-
-    fun checkNodeAction(request: CheckPermissionRequest, roles: List<String>, isProjectUser: Boolean): Boolean {
+    fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
         with(request) {
+            var roles = userRoles
             if (resourceType != NODE.name) return false
+            if (roles == null) {
+                val user = userDao.findFirstByUserId(uid) ?: run {
+                    throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+                }
+                roles = user.roles
+            }
             val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
             result.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
@@ -275,33 +244,8 @@ open class PermissionServiceImpl constructor(
         return projectPermission.isNotEmpty()
     }
 
-    private fun checkIncludePatternAction(
-        patternList: List<String>,
-        path: String,
-        actions: List<String>,
-        checkAction: String
-    ): Boolean {
-        patternList.forEach {
-            if (path.startsWith(it) && (actions.contains(MANAGE.name) || actions.contains(checkAction))) return true
-        }
-        return false
-    }
-
-    private fun checkExcludePatternAction(
-        patternList: List<String>,
-        path: String,
-        actions: List<String>,
-        checkAction: String
-    ): Boolean {
-        patternList.forEach {
-            if (path.startsWith(it) && actions.contains(checkAction)) return true
-        }
-        return false
-    }
-
     override fun listPermissionProject(userId: String): List<String> {
         logger.debug("list permission project request : $userId ")
-        if (userId.isEmpty()) return emptyList()
         val user = userDao.findFirstByUserId(userId) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
@@ -355,7 +299,7 @@ open class PermissionServiceImpl constructor(
         val roles = user.roles
 
         // 用户为系统管理员、项目管理员、项目用户
-        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(roles, projectId)) {
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
             return getAllRepoByProjectId(projectId)
         }
 
@@ -387,55 +331,11 @@ open class PermissionServiceImpl constructor(
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
-        if (user.admin || isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
+        if (user.admin || permHelper.isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
         }
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
         return getNoPermissionPathFromConfig(userId, user.roles, projectPermission)
-    }
-
-    private fun getNoPermissionPathFromConfig(
-        userId: String,
-        roles: List<String>,
-        config: List<TPermission>
-    ): List<String> {
-        val excludePath = mutableListOf<String>()
-        val includePath = mutableListOf<String>()
-        config.forEach {
-            if (it.users.contains(userId)) {
-                if (it.excludePattern.isNotEmpty()) {
-                    excludePath.addAll(it.excludePattern)
-                }
-                if (it.includePattern.isNotEmpty()) {
-                    includePath.addAll(it.includePattern)
-                }
-            } else {
-                if (it.includePattern.isNotEmpty()) {
-                    excludePath.addAll(it.includePattern)
-                }
-            }
-
-            val interRole = it.roles.intersect(roles.toSet())
-            if (interRole.isNotEmpty()) {
-                if (it.excludePattern.isNotEmpty()) {
-                    excludePath.addAll(it.excludePattern)
-                }
-                if (it.includePattern.isNotEmpty()) {
-                    includePath.addAll(it.includePattern)
-                }
-            } else {
-                if (it.includePattern.isNotEmpty()) {
-                    excludePath.addAll(it.includePattern)
-                }
-            }
-        }
-        val filterPath = includePath.distinct()
-        return excludePath.distinct().filter { !filterPath.contains(it) }
-    }
-
-    fun isUserLocalProjectUser(roleIds: List<String>, projectId: String): Boolean {
-        return roleRepository.findAllById(roleIds)
-            .any { role -> role.projectId == projectId && role.roleId == PROJECT_VIEWER_ID }
     }
 
     fun getAllRepoByProjectId(projectId: String): List<String> {
@@ -486,11 +386,9 @@ open class PermissionServiceImpl constructor(
 
     private fun getNoAdminRoleRepo(project: String, role: List<String>): List<String> {
         val repoList = mutableListOf<String>()
-        if (role.isNotEmpty()) {
-            permissionDao.listByProjectAndRoles(project, role).forEach {
-                if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
-                    repoList.addAll(it.repos)
-                }
+        permissionDao.listByProjectAndRoles(project, role).forEach {
+            if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
+                repoList.addAll(it.repos)
             }
         }
         return repoList
@@ -563,6 +461,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun updatePermissionDeployInRepo(request: UpdatePermissionDeployInRepoRequest): Boolean {
+        logger.info("update permission deploy in repo, create [$request]")
         checkPermissionExist(request.permissionId)
         return updatePermissionById(request.permissionId, TPermission::includePattern.name, request.path)
                 && updatePermissionById(request.permissionId, TPermission::users.name, request.users)

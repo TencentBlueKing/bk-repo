@@ -186,7 +186,7 @@ class UserServiceImpl constructor(
     }
 
     override fun addUserToRole(userId: String, roleId: String): User? {
-        logger.info("add user to role userId : [$userId], roleId : [$roleId]")
+        logger.info("add user to role userId : [$userId, $roleId]")
         // check user
         checkUserExist(userId)
         // check role
@@ -199,6 +199,7 @@ class UserServiceImpl constructor(
     }
 
     override fun addUserToRoleBatch(idList: List<String>, roleId: String): Boolean {
+        logger.info("delete user to role batch : [$idList, $roleId]")
         return addUserToRoleBatchCommon(idList, roleId)
     }
 
@@ -213,6 +214,7 @@ class UserServiceImpl constructor(
     }
 
     override fun removeUserFromRoleBatch(idList: List<String>, roleId: String): Boolean {
+        logger.info("remove user from role batch : [$idList, $roleId]")
         return removeUserFromRoleBatchCommon(idList, roleId)
     }
 
@@ -274,11 +276,13 @@ class UserServiceImpl constructor(
     }
 
     override fun listUserToken(userId: String): List<TokenResult> {
+        logger.debug("list user token : [$userId]")
         checkUserExist(userId)
         return UserRequestUtil.convTokenResult(userDao.findFirstByUserId(userId)!!.tokens)
     }
 
     override fun listValidToken(userId: String): List<Token> {
+        logger.debug("list valid token : [$userId]")
         checkUserExist(userId)
         return userDao.findFirstByUserId(userId)!!.tokens.filter {
             it.expiredAt == null || it.expiredAt!!.isAfter(LocalDateTime.now())
@@ -353,6 +357,7 @@ class UserServiceImpl constructor(
     }
 
     override fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean {
+        logger.info("update user password : [$userId]")
         val hashOldPwd = DataDigestUtils.md5FromStr(oldPwd)
         val hashNewPwd = DataDigestUtils.md5FromStr(newPwd)
         val user = userDao.getByUserIdAndPassword(userId, hashOldPwd)

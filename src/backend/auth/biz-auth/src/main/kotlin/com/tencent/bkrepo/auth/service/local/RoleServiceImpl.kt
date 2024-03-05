@@ -54,9 +54,9 @@ class RoleServiceImpl constructor(
 ) : RoleService, AbstractServiceImpl(userDao, roleRepository) {
 
     override fun createRole(request: CreateRoleRequest): String? {
+        logger.info("create role : [$request]")
         return createRoleCommon(request)
     }
-
 
     override fun detail(id: String): Role? {
         logger.debug("get role detail : [$id] ")
@@ -76,8 +76,9 @@ class RoleServiceImpl constructor(
         return transfer(result)
     }
 
-    override fun updateRoleInfo(id: String, updateRoleRequest: UpdateRoleRequest): Boolean {
-        with(updateRoleRequest) {
+    override fun updateRoleInfo(id: String, request: UpdateRoleRequest): Boolean {
+        logger.info("update role info: [$id, $request]")
+        with(request) {
             if (name != null || description != null) {
                 val role = roleRepository.findFirstById(id)
                 if (role != null) {
@@ -87,7 +88,7 @@ class RoleServiceImpl constructor(
                 }
             }
 
-            updateRoleRequest.userIds?.map { it }?.let { idList ->
+            request.userIds?.map { it }?.let { idList ->
                 val users = userDao.findAllByRolesIn(listOf(id))
                 userService.removeUserFromRoleBatch(users.map { it.userId }, id)
                 userService.addUserToRoleBatch(idList, id)
@@ -97,6 +98,7 @@ class RoleServiceImpl constructor(
     }
 
     override fun listUserByRoleId(id: String): Set<UserResult> {
+        logger.info("list user by role id ,[$id]")
         val result = mutableSetOf<UserResult>()
         userDao.findAllByRolesIn(listOf(id)).let { users ->
             for (user in users) {
@@ -107,7 +109,7 @@ class RoleServiceImpl constructor(
     }
 
     override fun listRoleByProject(projectId: String, repoName: String?): List<Role> {
-        logger.info("list  role params , projectId : [$projectId], repoName: [$repoName]")
+        logger.info("list role by project ,[$projectId , $repoName]")
         repoName?.let {
             return roleRepository.findByProjectIdAndRepoNameAndType(projectId, repoName, RoleType.REPO)
                 .map { transfer(it) }

@@ -68,7 +68,7 @@ interface PermissionService {
 
     fun createPermission(request: CreatePermissionRequest): Boolean
 
-    fun listPermission(projectId: String, repoName: String?, resourceType: String?): List<Permission>
+    fun listPermission(projectId: String, repoName: String?, resourceType: String): List<Permission>
 
     fun listBuiltinPermission(projectId: String, repoName: String): List<Permission>
 
