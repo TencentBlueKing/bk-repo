@@ -20,6 +20,7 @@ import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Sinks
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -205,13 +206,13 @@ class CompressServiceImpl(
     }
 
     override fun compress(file: TCompressFile) {
-        val result = compressSink.tryEmitNext(file)
-        logger.info("Emit file ${file.sha256} to compress: $result")
+        compressSink.emitNext(file, Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(MAX_EMIT_TIME)))
+        logger.info("Emit file ${file.sha256} to compress")
     }
 
     override fun uncompress(file: TCompressFile) {
-        val result = uncompressSink.tryEmitNext(file)
-        logger.info("Emit file ${file.sha256} to uncompress: $result")
+        uncompressSink.emitNext(file, Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(MAX_EMIT_TIME)))
+        logger.info("Emit file ${file.sha256} to uncompress")
     }
 
     override fun cancel() {
@@ -226,5 +227,6 @@ class CompressServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CompressServiceImpl::class.java)
+        private const val MAX_EMIT_TIME = 3000L // 最大发送提交任务时长，乐观锁
     }
 }
