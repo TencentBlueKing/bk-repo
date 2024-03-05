@@ -50,13 +50,10 @@ class RateLimiterInterceptorChain(
 
     fun addInterceptor(interceptor: RateLimiterInterceptor) {
         this.interceptors.add(interceptor)
-        // TODO 需要添加拦截器order
-//        Collections.sort(this.interceptors, )
     }
 
     fun addInterceptors(interceptors: Collection<RateLimiterInterceptor>) {
         this.interceptors.addAll(interceptors)
-        // TODO 需要添加拦截器order
     }
 
     fun clear() {

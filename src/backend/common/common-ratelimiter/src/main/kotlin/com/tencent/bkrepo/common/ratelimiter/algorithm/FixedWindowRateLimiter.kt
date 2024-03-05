@@ -60,7 +60,6 @@ class FixedWindowRateLimiter(
                     currentValue.set(0)
                     stopWatch.reset()
                 }
-                // TODO 需要考虑统计流量大小
                 updateValue = currentValue.addAndGet(permits)
                 return updateValue <= limit
             } finally {

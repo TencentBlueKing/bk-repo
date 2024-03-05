@@ -38,5 +38,6 @@ data class RateLimiterProperties(
     var dryRun: Boolean = true,
     // 配置规则刷新频率 单位为秒
     var refreshDuration: Long = 10L,
+    var cacheCapacity: Long = 1024L,
     var rules: List<ResourceLimit> = mutableListOf()
 )

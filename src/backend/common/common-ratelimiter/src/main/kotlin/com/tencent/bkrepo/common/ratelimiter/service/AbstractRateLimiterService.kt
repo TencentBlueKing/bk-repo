@@ -64,7 +64,6 @@ abstract class AbstractRateLimiterService(
     private val redisTemplate: RedisTemplate<String, String>? = null,
 ): RateLimiterService {
 
-    //TODO 需要考虑请求过多导致缓存过大
     private val rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
     private val interceptorChain: RateLimiterInterceptorChain =
@@ -197,6 +196,9 @@ abstract class AbstractRateLimiterService(
         if (usageRuleConfigs.isEmpty()) return
         usageRules.addRateLimitRules(usageRuleConfigs)
         rateLimitRule = usageRules
+        if (rateLimiterCache.size > rateLimiterProperties.cacheCapacity) {
+            rateLimiterCache.clear()
+        }
     }
 
     private fun getAlgorithmOfRateLimiter(
