@@ -42,6 +42,7 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
+import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -50,12 +51,14 @@ import org.slf4j.LoggerFactory
 class RoleServiceImpl constructor(
     private val roleRepository: RoleRepository,
     private val userService: UserService,
-    override val userDao: UserDao
-) : RoleService, AbstractServiceImpl(userDao, roleRepository) {
+    private val userDao: UserDao
+) : RoleService {
+
+    private val userHelper by lazy { UserHelper(userDao, roleRepository) }
 
     override fun createRole(request: CreateRoleRequest): String? {
         logger.info("create role : [$request]")
-        return createRoleCommon(request)
+        return userHelper.createRoleCommon(request)
     }
 
     override fun detail(id: String): Role? {

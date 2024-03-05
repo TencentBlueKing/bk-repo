@@ -44,6 +44,7 @@ import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
+import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.request.UserRequestUtil
@@ -63,9 +64,9 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 class UserServiceImpl constructor(
-    roleRepository: RoleRepository,
-    userDao: UserDao
-) : UserService, AbstractServiceImpl(userDao, roleRepository) {
+    private val roleRepository: RoleRepository,
+    private val userDao: UserDao
+) : UserService {
 
     @Autowired
     lateinit var repoClient: RepositoryClient
@@ -75,6 +76,8 @@ class UserServiceImpl constructor(
 
     @Autowired
     lateinit var bkAuthConfig: DevopsAuthConfig
+
+    private val userHelper by lazy { UserHelper(userDao, roleRepository) }
 
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
@@ -104,7 +107,7 @@ class UserServiceImpl constructor(
             createUser(createRequest)
         }
         val hashPwd = if (request.pwd == null) {
-            randomPassWord()
+            userHelper.randomPassWord()
         } else {
             DataDigestUtils.md5FromStr(request.pwd!!)
         }
@@ -181,18 +184,18 @@ class UserServiceImpl constructor(
 
     override fun deleteById(userId: String): Boolean {
         logger.info("delete user userId : [$userId]")
-        checkUserExist(userId)
+        userHelper.checkUserExist(userId)
         return userDao.removeByUserId(userId)
     }
 
     override fun addUserToRole(userId: String, roleId: String): User? {
         logger.info("add user to role userId : [$userId, $roleId]")
         // check user
-        checkUserExist(userId)
+        userHelper.checkUserExist(userId)
         // check role
-        checkRoleExist(roleId)
+        userHelper.checkRoleExist(roleId)
         // check is role bind to role
-        if (!checkUserRoleBind(userId, roleId)) {
+        if (!userHelper.checkUserRoleBind(userId, roleId)) {
             userDao.addUserToRole(userId, roleId)
         }
         return getUserById(userId)
@@ -200,27 +203,27 @@ class UserServiceImpl constructor(
 
     override fun addUserToRoleBatch(idList: List<String>, roleId: String): Boolean {
         logger.info("delete user to role batch : [$idList, $roleId]")
-        return addUserToRoleBatchCommon(idList, roleId)
+        return userHelper.addUserToRoleBatchCommon(idList, roleId)
     }
 
     override fun removeUserFromRole(userId: String, roleId: String): User? {
         logger.info("remove user from role userId : [$userId], roleId : [$roleId]")
         // check user
-        checkUserExist(userId)
+        userHelper.checkUserExist(userId)
         // check role
-        checkRoleExist(roleId)
+        userHelper.checkRoleExist(roleId)
         userDao.removeUserFromRole(userId, roleId)
         return getUserById(userId)
     }
 
     override fun removeUserFromRoleBatch(idList: List<String>, roleId: String): Boolean {
         logger.info("remove user from role batch : [$idList, $roleId]")
-        return removeUserFromRoleBatchCommon(idList, roleId)
+        return userHelper.removeUserFromRoleBatchCommon(idList, roleId)
     }
 
     override fun updateUserById(userId: String, request: UpdateUserRequest): Boolean {
         logger.info("update user userId : [$userId], request : [$request]")
-        checkUserExist(userId)
+        userHelper.checkUserExist(userId)
         return userDao.updateUserById(userId, request)
     }
 
@@ -233,7 +236,7 @@ class UserServiceImpl constructor(
     override fun addUserToken(userId: String, name: String, expiredAt: String?): Token? {
         try {
             logger.info("add user token userId : [$userId] ,token : [$name]")
-            checkUserExist(userId)
+            userHelper.checkUserExist(userId)
 
             val existUserInfo = userDao.findFirstByUserId(userId)
             val existTokens = existUserInfo!!.tokens
@@ -277,13 +280,13 @@ class UserServiceImpl constructor(
 
     override fun listUserToken(userId: String): List<TokenResult> {
         logger.debug("list user token : [$userId]")
-        checkUserExist(userId)
+        userHelper.checkUserExist(userId)
         return UserRequestUtil.convTokenResult(userDao.findFirstByUserId(userId)!!.tokens)
     }
 
     override fun listValidToken(userId: String): List<Token> {
         logger.debug("list valid token : [$userId]")
-        checkUserExist(userId)
+        userHelper.checkUserExist(userId)
         return userDao.findFirstByUserId(userId)!!.tokens.filter {
             it.expiredAt == null || it.expiredAt!!.isAfter(LocalDateTime.now())
         }
@@ -291,7 +294,7 @@ class UserServiceImpl constructor(
 
     override fun removeToken(userId: String, name: String): Boolean {
         logger.info("remove token userId : [$userId] ,name : [$name]")
-        checkUserExist(userId)
+        userHelper.checkUserExist(userId)
         userDao.removeTokenFromUser(userId, name)
         return true
     }
@@ -379,12 +382,12 @@ class UserServiceImpl constructor(
     }
 
     override fun addUserAccount(userId: String, accountId: String): Boolean {
-        checkUserExist(userId)
+        userHelper.checkUserExist(userId)
         return userDao.addUserAccount(userId, accountId)
     }
 
     override fun removeUserAccount(userId: String, accountId: String): Boolean {
-        checkUserExist(userId)
+        userHelper.checkUserExist(userId)
         return userDao.removeUserAccount(userId, accountId)
     }
 

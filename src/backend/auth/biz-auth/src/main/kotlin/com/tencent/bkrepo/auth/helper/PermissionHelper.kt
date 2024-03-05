@@ -29,53 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service.local
+package com.tencent.bkrepo.auth.helper
 
+import com.tencent.bkrepo.auth.constant.AUTH_ADMIN
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
-import com.tencent.bkrepo.auth.model.TRole
-import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.account.ScopeRule
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.Permission
-import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.util.DataDigestUtils
-import com.tencent.bkrepo.auth.util.IDUtil
-import com.tencent.bkrepo.auth.util.RequestUtil
-import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.auth.util.scope.RuleUtil
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 
-open class AbstractServiceImpl constructor(
-    open val userDao: UserDao,
-    private val roleRepository: RoleRepository
+class PermissionHelper constructor(
+    private val userDao: UserDao,
+    private val roleRepository: RoleRepository,
+    private val permissionDao: PermissionDao
 ) {
-
-    fun checkUserExist(userId: String) {
-        userDao.findFirstByUserId(userId) ?: run {
-            logger.warn("user [$userId] not exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
-    }
-
-    fun checkUserRoleBind(userId: String, roleId: String): Boolean {
-        userDao.findFirstByUserIdAndRoles(userId, roleId) ?: run {
-            logger.warn("user [$userId,$roleId]  not exist.")
-            return false
-        }
-        return true
-    }
-
     // check user is existed
     private fun checkUserExistBatch(idList: List<String>) {
         idList.forEach {
@@ -86,27 +65,8 @@ open class AbstractServiceImpl constructor(
         }
     }
 
-    private fun checkOrCreateUser(userIdList: List<String>) {
-        userIdList.forEach {
-            userDao.findFirstByUserId(it) ?: run {
-                if (it != ANONYMOUS_USER) {
-                    val user = TUser(
-                        userId = it,
-                        name = it,
-                        pwd = randomPassWord()
-                    )
-                    userDao.insert(user)
-                }
-            }
-        }
-    }
-
-    fun randomPassWord(): String {
-        return DataDigestUtils.md5FromStr(IDUtil.genRandomId())
-    }
-
     // check role is existed
-    fun checkRoleExist(roleId: String) {
+    private fun checkRoleExist(roleId: String) {
         val role = roleRepository.findFirstById(roleId)
         role ?: run {
             logger.warn("role not  exist.")
@@ -133,36 +93,11 @@ open class AbstractServiceImpl constructor(
         return false
     }
 
-    fun isUserLocalAdmin(userId: String): Boolean {
-        val user = userDao.findFirstByUserId(userId) ?: run {
-            return false
+    fun checkPermissionExist(permissionId: String) {
+        permissionDao.findFirstById(permissionId) ?: run {
+            logger.warn("update permission repos [$permissionId] not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
         }
-        return user.admin
-    }
-
-    fun isUserLocalProjectAdmin(userId: String, projectId: String): Boolean {
-        val roleIdArray = mutableListOf<String>()
-        roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
-            roleIdArray.add(it.id!!)
-        }
-        userDao.findFirstByUserIdAndRolesIn(userId, roleIdArray) ?: run {
-            return false
-        }
-        return true
-    }
-
-    fun isUserLocalProjectUser(userId: String, projectId: String): Boolean {
-        val user = userDao.findFirstByUserId(userId) ?: run {
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
-        val roles = user.roles
-        return roleRepository.findAllById(roles)
-            .any { role -> role.projectId == projectId && role.roleId == PROJECT_VIEWER_ID }
-    }
-
-    fun filterRepos(repos: List<String>, originRepoNames: List<String>): List<String> {
-        (repos as MutableList).retainAll(originRepoNames)
-        return repos
     }
 
     fun checkPlatformProject(projectId: String?, scopeDesc: List<ScopeRule>?): Boolean {
@@ -209,50 +144,6 @@ open class AbstractServiceImpl constructor(
         return userDao.findAllByRolesIn(roleIdArray).map { it.userId }.distinct()
     }
 
-    fun createRoleCommon(request: CreateRoleRequest): String? {
-        logger.info("create role request:[$request] ")
-        val role: TRole? = if (request.type == RoleType.REPO) {
-            roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(
-                request.roleId!!,
-                request.projectId,
-                request.repoName!!
-            )
-        } else {
-            roleRepository.findFirstByProjectIdAndTypeAndName(
-                projectId = request.projectId,
-                type = RoleType.PROJECT,
-                name = request.name
-            )
-        }
-
-        role?.let {
-            logger.warn("create role [${request.roleId} , ${request.projectId} ] is exist.")
-            return role.id
-        }
-
-        val roleId = when (request.type) {
-            RoleType.REPO -> request.roleId!!
-            RoleType.PROJECT -> findUsableProjectTypeRoleId(request.roleId, request.projectId)
-        }
-
-        val result = roleRepository.insert(RoleRequestUtil.conv2TRole(roleId, request))
-        return result.id
-    }
-
-    fun addProjectUserAdmin(projectId: String, idList: List<String>) {
-        val createRoleRequest = RequestUtil.buildProjectAdminRequest(projectId)
-        val roleId = createRoleCommon(createRoleRequest)
-        addUserToRoleBatchCommon(idList, roleId!!)
-    }
-
-    fun addUserToRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
-        logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
-        checkOrCreateUser(userIdList)
-        checkRoleExist(roleId)
-        userDao.addRoleToUsers(userIdList, roleId)
-        return true
-    }
-
     fun removeUserFromRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
         logger.info("remove user from role batch userId : [$userIdList], roleId : [$roleId]")
         checkUserExistBatch(userIdList)
@@ -284,21 +175,8 @@ open class AbstractServiceImpl constructor(
         return resourceType == ResourceType.NODE.name || resourceType == ResourceType.REPO.name
     }
 
-    fun checkProjectAdmin(request: CheckPermissionRequest): Boolean {
-        if (request.projectId == null) return false
-        return isUserLocalProjectAdmin(request.uid, request.projectId!!)
-    }
-
     fun checkProjectReadAction(request: CheckPermissionRequest, isProjectUser: Boolean): Boolean {
         return request.projectId != null && request.action == PermissionAction.READ.name && isProjectUser
-    }
-
-    private fun findUsableProjectTypeRoleId(roleId: String?, projectId: String): String {
-        var tempRoleId = roleId ?: "${projectId}_role_${IDUtil.shortUUID()}"
-        while (true) {
-            val role = roleRepository.findFirstByRoleIdAndProjectId(tempRoleId, projectId)
-            if (role == null) return tempRoleId else tempRoleId = "${projectId}_role_${IDUtil.shortUUID()}"
-        }
     }
 
     fun getNoPermissionPathFromConfig(
@@ -340,6 +218,88 @@ open class AbstractServiceImpl constructor(
         return excludePath.distinct().filter { !filterPath.contains(it) }
     }
 
+    fun checkRepoReadAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
+        with(request) {
+            return resourceType == ResourceType.REPO.name && action == PermissionAction.READ.name &&
+                    permissionDao.listPermissionInRepo(projectId!!, repoName!!, uid, roles).isNotEmpty()
+        }
+    }
+
+    fun getOnePermission(
+        projectId: String,
+        repoName: String,
+        permName: String,
+        actions: Set<PermissionAction>
+    ): TPermission {
+        permissionDao.findOneByPermName(projectId, repoName, permName, ResourceType.REPO.name) ?: run {
+            val request = TPermission(
+                projectId = projectId,
+                repos = listOf(repoName),
+                permName = permName,
+                actions = actions.map { it.name },
+                resourceType = ResourceType.REPO.name,
+                createAt = LocalDateTime.now(),
+                updateAt = LocalDateTime.now(),
+                createBy = AUTH_ADMIN,
+                updatedBy = AUTH_ADMIN
+            )
+            logger.info("permission not exist, create [$request]")
+            permissionDao.insert(request)
+        }
+        return permissionDao.findOneByPermName(projectId, repoName, permName, ResourceType.REPO.name)!!
+    }
+
+    fun getNoAdminUserProject(userId: String): List<String> {
+        val projectList = mutableListOf<String>()
+        permissionDao.listByUserId(userId).forEach {
+            if (it.actions.isNotEmpty() && it.projectId != null) {
+                projectList.add(it.projectId!!)
+            }
+        }
+        return projectList
+    }
+
+    fun getNoAdminRoleRepo(project: String, role: List<String>): List<String> {
+        val repoList = mutableListOf<String>()
+        permissionDao.listByProjectAndRoles(project, role).forEach {
+            if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
+                repoList.addAll(it.repos)
+            }
+        }
+        return repoList
+    }
+
+    fun getNoAdminUserRepo(projectId: String, userId: String): List<String> {
+        val repoList = mutableListOf<String>()
+        permissionDao.listByProjectIdAndUsers(projectId, userId).forEach {
+            if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
+                repoList.addAll(it.repos)
+            }
+        }
+        return repoList
+    }
+
+    fun getUserCommonRoleProject(roles: List<String>): List<String> {
+        val projectList = mutableListOf<String>()
+        roleRepository.findByIdIn(roles).forEach {
+            if (it.projectId.isNotEmpty() && it.roleId == PROJECT_VIEWER_ID) {
+                projectList.add(it.projectId)
+            }
+        }
+        return projectList
+    }
+
+    fun getNoAdminRoleProject(roles: List<String>): List<String> {
+        val projectList = mutableListOf<String>()
+        if (roles.isNotEmpty()) {
+            permissionDao.listByRole(roles).forEach {
+                if (it.actions.isNotEmpty() && it.projectId != null) {
+                    projectList.add(it.projectId!!)
+                }
+            }
+        }
+        return projectList
+    }
 
     fun checkIncludePatternAction(
         patternList: List<String>,
@@ -348,7 +308,9 @@ open class AbstractServiceImpl constructor(
         checkAction: String
     ): Boolean {
         patternList.forEach {
-            if (path.startsWith(it) && (actions.contains(PermissionAction.MANAGE.name) || actions.contains(checkAction))) return true
+            if (path.startsWith(it) && (actions.contains(PermissionAction.MANAGE.name)
+                        || actions.contains(checkAction))
+            ) return true
         }
         return false
     }
@@ -365,7 +327,63 @@ open class AbstractServiceImpl constructor(
         return false
     }
 
+    fun updatePermissionById(id: String, key: String, value: Any): Boolean {
+        return permissionDao.updateById(id, key, value)
+    }
+    fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
+        with(request) {
+            var roles = userRoles
+            if (resourceType != ResourceType.NODE.name) return false
+            if (roles == null) {
+                val user = userDao.findFirstByUserId(uid) ?: run {
+                    throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+                }
+                roles = user.roles
+            }
+            val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
+            result.forEach {
+                if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
+
+                if (checkExcludePatternAction(it.excludePattern, path!!, it.actions, action)) return false
+            }
+
+            val noPermissionResult = permissionDao.listNoPermission(projectId!!, repoName!!, uid, resourceType, roles)
+            noPermissionResult.forEach {
+                if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
+            }
+        }
+        return isProjectUser
+    }
+
+    fun isUserLocalProjectAdmin(userId: String, projectId: String?): Boolean {
+        if (projectId == null) return false
+        val roleIdArray = mutableListOf<String>()
+        roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
+            roleIdArray.add(it.id!!)
+        }
+        userDao.findFirstByUserIdAndRolesIn(userId, roleIdArray) ?: run {
+            return false
+        }
+        return true
+    }
+
+    fun isUserLocalAdmin(userId: String): Boolean {
+        val user = userDao.findFirstByUserId(userId) ?: run {
+            return false
+        }
+        return user.admin
+    }
+
+    fun isUserLocalProjectUser(userId: String, projectId: String): Boolean {
+        val user = userDao.findFirstByUserId(userId) ?: run {
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+        val roles = user.roles
+        return roleRepository.findAllById(roles)
+            .any { role -> role.projectId == projectId && role.roleId == PROJECT_VIEWER_ID }
+    }
+
     companion object {
-        private val logger = LoggerFactory.getLogger(AbstractServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(PermissionHelper::class.java)
     }
 }
