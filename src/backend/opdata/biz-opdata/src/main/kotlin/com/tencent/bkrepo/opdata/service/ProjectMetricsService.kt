@@ -190,7 +190,7 @@ class ProjectMetricsService (
             ProjectBillStatement::startDate.name,
             ProjectBillStatement::endDate.name,
             )
-        val fileName = "大于${billStatementRequest.limitSize/TO_GIGABYTE}GB的项目明细"
+        val fileName = "项目账单明细"
         EasyExcelUtils.download(records, fileName, ProjectBillStatement::class.java, includeColumns)
     }
 
@@ -201,22 +201,21 @@ class ProjectMetricsService (
         val endDate = LocalDateTime.parse(
             billStatementRequest.endDate, DateTimeFormatter.ISO_DATE_TIME
         ).toLocalDate().atStartOfDay()
-        val projects = getActiveProjects()
         val projectMetrics = MetricsCacheUtil.getProjectMetrics(endDate.format(DateTimeFormatter.ISO_DATE_TIME))
         val projectUsages = getMetricsResult(
             type = null,
-            limitSize = billStatementRequest.limitSize,
+            limitSize = 0,
             currentMetrics = projectMetrics,
         )
         val futureList = mutableListOf<Future<ProjectBill>>()
         try {
-            projects.forEach {
+            projectUsages.forEach {
                 futureList.add(
                     MetricsHandlerThreadPoolExecutor.instance.submit(
                     Callable {
-                        val totalCost = getBillStatement(billStatementRequest, it)
+                        val totalCost = getBillStatement(billStatementRequest, it.projectId)
                         ProjectBill(
-                            projectId = it,
+                            projectId = it.projectId,
                             totalCost = totalCost
                         )
                     }
