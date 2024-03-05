@@ -177,6 +177,52 @@ class BDZipManagerTest @Autowired constructor(
         }
     }
 
+    @Test
+    fun cascadeUncompress() {
+        val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
+        var artifactFile1 = createTempArtifactFile(data1)
+        storageService.store(artifactFile1.getFileSha256(), artifactFile1, null)
+        var needUncompress: TCompressFile? = null
+        repeat(5) {
+            val data2 = data1.copyOfRange(it + 1, data1.size)
+            val artifactFile2 = createTempArtifactFile(data2)
+            val file = TCompressFile(
+                createdBy = "ut",
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = "ut",
+                lastModifiedDate = LocalDateTime.now(),
+                sha256 = artifactFile1.getFileSha256(),
+                baseSha256 = artifactFile2.getFileSha256(),
+                uncompressedSize = artifactFile1.getSize(),
+                storageCredentialsKey = null,
+                status = CompressStatus.CREATED,
+                chainLength = 1,
+            )
+            if (needUncompress == null) {
+                needUncompress = file
+            }
+            compressFileRepository.save(file)
+            storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
+            bdZipManager.compress(file)
+            Thread.sleep(1000)
+            storageService.delete(artifactFile1.getFileSha256(), null)
+            artifactFile1 = artifactFile2
+        }
+        Assertions.assertNotNull(needUncompress)
+        needUncompress!!.status = CompressStatus.WAIT_TO_UNCOMPRESS
+        compressFileRepository.save(needUncompress!!)
+        bdZipManager.uncompress(needUncompress!!)
+        Thread.sleep(1000)
+        val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(needUncompress!!.sha256, null)
+        Assertions.assertEquals(CompressStatus.UNCOMPRESSED, cf!!.status)
+        with(cf) {
+            Assertions.assertTrue(storageService.exist(sha256, null))
+            Assertions.assertFalse(storageService.exist(sha256.plus(".bd"), null))
+            val load = storageService.load(sha256, Range.full(uncompressedSize), null)
+            Assertions.assertEquals(sha256, load!!.sha256())
+        }
+    }
+
     private fun createCompressFile(): TCompressFile {
         val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
         val data2 = data1.copyOfRange(Random.nextInt(1, 10), data1.size)

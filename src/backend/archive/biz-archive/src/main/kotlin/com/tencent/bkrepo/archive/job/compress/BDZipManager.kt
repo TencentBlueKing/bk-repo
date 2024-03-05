@@ -26,6 +26,7 @@ import reactor.core.publisher.Mono
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
+import java.util.Stack
 import java.util.concurrent.PriorityBlockingQueue
 
 /**
@@ -93,7 +94,26 @@ class BDZipManager(
 
     fun uncompress(file: TCompressFile) {
         try {
-            uncompress0(file)
+            val fileStack = Stack<TCompressFile>()
+            fileStack.push(file)
+            var rootFile = compressFileRepository.findBySha256AndStorageCredentialsKeyAndStatusIn(
+                file.baseSha256,
+                file.storageCredentialsKey,
+                setOf(CompressStatus.COMPLETED, CompressStatus.COMPRESSED),
+            )
+            // 级联解压
+            while (rootFile != null) {
+                rootFile.status = CompressStatus.WAIT_TO_UNCOMPRESS
+                compressFileRepository.save(rootFile)
+                fileStack.push(rootFile)
+                rootFile = compressFileRepository.findBySha256AndStorageCredentialsKeyAndStatusIn(
+                    rootFile.baseSha256,
+                    rootFile.storageCredentialsKey,
+                    setOf(CompressStatus.COMPLETED, CompressStatus.COMPRESSED),
+                )
+            }
+            logger.info("Uncompress chain len ${fileStack.size}.")
+            uncompress0(fileStack)
         } catch (e: Exception) {
             logger.error("Uncompress file [${file.sha256}] error", e)
         }
@@ -160,12 +180,15 @@ class BDZipManager(
         }
     }
 
-    private fun uncompress0(file: TCompressFile) {
-        with(file) {
+    private fun uncompress0(fileStack: Stack<TCompressFile>) {
+        if (fileStack.empty()) {
+            return
+        }
+        with(fileStack.pop()) {
             logger.info("Start uncompress file [$sha256].")
             // 乐观锁
             val tryLock = compressFileDao.optimisticLock(
-                file,
+                this,
                 TCompressFile::status.name,
                 CompressStatus.WAIT_TO_UNCOMPRESS.name,
                 CompressStatus.UNCOMPRESSING.name,
@@ -174,13 +197,7 @@ class BDZipManager(
                 logger.info("File[$sha256] already start uncompress.")
                 return
             }
-            // 解压
             val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
-            compressFileRepository.findBySha256AndStorageCredentialsKey(baseSha256, storageCredentialsKey)?.let {
-                if (file.status == CompressStatus.COMPLETED || file.status == CompressStatus.COMPRESSED) {
-                    uncompress(it)
-                }
-            }
             val workDir = Paths.get(workDir.toString(), UNCOMPRESS_DIR, sha256)
             val bdFileName = sha256.plus(BD_FILE_SUFFIX)
             val bdFile = fileProvider.get(
@@ -195,19 +212,20 @@ class BDZipManager(
             bdUncompressor.patch(bdFile, baseFile, sha256, workDir)
                 .doOnSuccess {
                     // 更新状态
-                    file.status = CompressStatus.UNCOMPRESSED
+                    this.status = CompressStatus.UNCOMPRESSED
                     storageService.store(sha256, it.toArtifactFile(), credentials)
                     storageService.delete(bdFileName, credentials)
                     logger.info("Success to uncompress file [$sha256] on $storageCredentialsKey")
+                    uncompress0(fileStack)
                 }
                 .doOnError {
                     logger.error("Failed to uncompress file [$sha256] on $storageCredentialsKey", it)
-                    file.status = CompressStatus.UNCOMPRESS_FAILED
+                    this.status = CompressStatus.UNCOMPRESS_FAILED
                 }
                 .doFinally {
                     workDir.toFile().deleteRecursively()
-                    file.lastModifiedDate = LocalDateTime.now()
-                    compressFileRepository.save(file)
+                    this.lastModifiedDate = LocalDateTime.now()
+                    compressFileRepository.save(this)
                     val took = System.nanoTime() - begin
                     val throughput = Throughput(uncompressedSize, took)
                     val event = StorageFileUncompressedEvent(
