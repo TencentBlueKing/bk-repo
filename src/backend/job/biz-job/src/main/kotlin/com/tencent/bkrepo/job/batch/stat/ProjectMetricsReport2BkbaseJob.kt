@@ -88,7 +88,9 @@ class ProjectMetricsReport2BkbaseJob(
             capSize = row[TProjectMetrics::capSize.name].toString().toLongOrNull() ?: 0,
             repoMetrics = row[TProjectMetrics::repoMetrics.name]?.toJsonString()
                 ?.readJsonString<List<TRepoMetrics>>() ?: emptyList(),
-            createdDate = TimeUtils.parseMongoDateTimeStr(row[TProjectMetrics::createdDate.name].toString())
+            createdDate = TimeUtils.parseMongoDateTimeStr(row[TProjectMetrics::createdDate.name].toString()),
+            active = row[TProjectMetrics::active.name].toString().toBoolean(),
+            projectStatus = row[TProjectMetrics::projectStatus.name]?.toString()?.toBoolean()
         )
     }
 
@@ -123,8 +125,8 @@ class ProjectMetricsReport2BkbaseJob(
             deptName = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_DEPT_NAME }?.value as? String,
             centerName = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_CENTER_NAME }?.value as? String,
             productId = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_PRODUCT_ID }?.value as? Int,
-            enabled = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_ENABLED }?.value as? Boolean,
-            active = current.active
+            enabled = current.projectStatus,
+            active = current.active,
         )
     }
 
