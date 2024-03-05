@@ -29,10 +29,12 @@ package com.tencent.bkrepo.common.ratelimiter.service.usage
 
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
+import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.UsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import org.springframework.data.redis.core.RedisTemplate
@@ -98,5 +100,9 @@ open class UsageRateLimiterService(
 
     override fun ignoreRequest(request: HttpServletRequest): Boolean {
         return request.method !in UPLOAD_REQUEST_METHOD
+    }
+
+    override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
+        return KEY_PREFIX+"upload:$resource"
     }
 }

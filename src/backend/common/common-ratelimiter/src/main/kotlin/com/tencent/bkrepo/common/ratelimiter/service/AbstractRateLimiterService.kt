@@ -76,6 +76,9 @@ abstract class AbstractRateLimiterService(
     }
 
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
+        if (!rateLimiterProperties.enabled) {
+            return
+        }
         if (ignoreRequest(request)) return
         val resource = buildResource(request)
         interceptorChain.doBeforeLimitCheck(resource)
@@ -132,9 +135,7 @@ abstract class AbstractRateLimiterService(
         }
     }
 
-    open fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
-        return resource
-    }
+    abstract fun generateKey(resource: String, resourceLimit: ResourceLimit): String
 
     abstract fun buildResource(request: HttpServletRequest): String
 
@@ -170,7 +171,7 @@ abstract class AbstractRateLimiterService(
                     TokenBucketRateLimiter(permitsPerSecond, permits)
                 } else {
                     if (resourceLimit.bucketCapacity == null || resourceLimit.bucketCapacity!! <= 0) {
-                        throw AcquireLockFailedException("Resource limit config for $resource is illegal")
+                        throw AcquireLockFailedException("Resource limit config $resourceLimit is illegal")
                     }
                     val permitsPerSecond = resourceLimit.limit / resourceLimit.unit.toSeconds(1)
                     DistributedTokenBucketRateLimiter(
@@ -207,7 +208,7 @@ abstract class AbstractRateLimiterService(
         val limitKey = generateKey(resource, resourceLimit)
         var rateLimiter = rateLimiterCache[limitKey]
         if (rateLimiter == null) {
-            val newRateLimiter = createAlgorithmOfRateLimiter(resource, resourceLimit, permits)
+            val newRateLimiter = createAlgorithmOfRateLimiter(limitKey, resourceLimit, permits)
             rateLimiter = rateLimiterCache.putIfAbsent(limitKey, newRateLimiter)
             if (rateLimiter == null) {
                 rateLimiter = newRateLimiter

@@ -29,15 +29,10 @@ package com.tencent.bkrepo.common.ratelimiter.enums
 
 /**
  * 限流维度：
- * URL path
- * userId
- * http method
  */
 enum class LimitDimension {
     URL,
     URL_TEMPLATE,
-    USERID,
-    HTTP_METHOD,
     UPLOAD_USAGE,
     UPLOAD_USAGE_TEMPLATE,
     DOWNLOAD_USAGE,

@@ -29,9 +29,11 @@ package com.tencent.bkrepo.common.ratelimiter.service.url
 
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
+import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import org.springframework.data.redis.core.RedisTemplate
@@ -67,5 +69,9 @@ class UrlRateLimiterService(
 
     override fun getRateLimitRuleClass(): Class<out RateLimitRule> {
         return UrlRateLimitRule::class.java
+    }
+
+    override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
+        return KEY_PREFIX +"url:$resource"
     }
 }

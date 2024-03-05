@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.ratelimiter.constant
 
 const val TRY_LOCK_TIMEOUT = 200L
+const val KEY_PREFIX = "rateLimiter:"
 
 const val TAG_STATUS = "status"
 const val TAG_NAME = "name"
