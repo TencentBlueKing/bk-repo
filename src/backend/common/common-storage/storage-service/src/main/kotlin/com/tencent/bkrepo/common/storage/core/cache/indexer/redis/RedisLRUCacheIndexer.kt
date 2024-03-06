@@ -68,25 +68,32 @@ class RedisLRUCacheIndexer(
 
     // 需要增加hash tag后缀以支持Redis集群模式
 
+    private val keyPrefix = if (hashTag == null) {
+        "{$cacheName}"
+    } else {
+        "{$hashTag}:$cacheName"
+    }
+
     /**
      * 部分redis集群用第一个key计算slot，需要指定key用于固定使用单个slot
      */
     private val firstKey = "{${hashTag ?: cacheName}}"
 
+
     /**
      * 记录当前缓存的总权重
      */
-    private val totalWeightKey = "$firstKey:total_weight"
+    private val totalWeightKey = "$keyPrefix:total_weight"
 
     /**
      * 缓存LRU队列，score为缓存写入时刻的时间戳
      */
-    private val lruKey = "$firstKey:lru"
+    private val lruKey = "$keyPrefix:lru"
 
     /**
      * 存放缓存实际值
      */
-    private val valuesKey = "$firstKey:values"
+    private val valuesKey = "$keyPrefix:values"
 
     private val putScript = RedisScript.of(SCRIPT_PUT, String::class.java)
     private val getScript = RedisScript.of(SCRIPT_GET, String::class.java)
