@@ -14,11 +14,11 @@ import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.stereotype.Component
@@ -35,7 +35,7 @@ import java.util.concurrent.PriorityBlockingQueue
 class BDZipManager(
     private val compressFileDao: CompressFileDao,
     private val archiveProperties: ArchiveProperties,
-    private val fileReferenceClient: FileReferenceClient,
+    private val fileReferenceService: FileReferenceService,
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
 ) {
@@ -135,7 +135,7 @@ class BDZipManager(
                         logger.error("Failed to compress file [$sha256].", it)
                     }
                     status = CompressStatus.COMPRESS_FAILED
-                    fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
+                    fileReferenceService.decrement(baseSha256, storageCredentialsKey)
                 }
                 .doFinally {
                     workDir.toFile().deleteRecursively()

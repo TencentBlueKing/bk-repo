@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.security
 
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.security.actuator.ActuatorAuthConfiguration
 import com.tencent.bkrepo.common.security.crypto.CryptoConfiguration
 import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.common.security.http.HttpAuthConfiguration
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXAccessInterceptor
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.security.proxy.ProxyAuthConfiguration
 import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
@@ -100,5 +102,11 @@ class SecurityAutoConfiguration {
     @ConditionalOnMissingBean
     fun defaultAuthenticationManager(): AuthenticationManager {
         return AuthenticationManager()
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun principalManager(serviceUserClient: ServiceUserClient): PrincipalManager {
+        return PrincipalManager(serviceUserClient)
     }
 }
