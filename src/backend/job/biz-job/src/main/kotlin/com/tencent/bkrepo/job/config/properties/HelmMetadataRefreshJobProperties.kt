@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,36 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.lock.service
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.common.redis.RedisLock
-import com.tencent.bkrepo.common.redis.RedisOperation
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-class RedisLockOperation(
-    private val redisOperation: RedisOperation
-) : LockOperation {
-    override fun getLock(lockKey: String): Any {
-        logger.info("Will use redis to lock the key $lockKey")
-        return RedisLock(
-            redisOperation = redisOperation,
-            lockKey = lockKey,
-            expiredTimeInSeconds = EXPIRED_TIME_IN_SECONDS
-        )
-    }
-
-    override fun acquireLock(lockKey: String, lock: Any): Boolean {
-        return (lock as RedisLock).tryLock()
-    }
-
-    override fun close(lockKey: String, lock: Any) {
-        logger.info("Will try to close redis lock for $lockKey")
-        (lock as RedisLock).unlock()
-    }
-
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(RedisLockOperation::class.java)
-        const val EXPIRED_TIME_IN_SECONDS: Long = 60 * 60
-    }
-}
+@ConfigurationProperties(value = "job.helm-metadata-refresh")
+data class HelmMetadataRefreshJobProperties(
+    override var cron: String = "0 0 4/24 * * ?"
+): MongodbJobProperties()

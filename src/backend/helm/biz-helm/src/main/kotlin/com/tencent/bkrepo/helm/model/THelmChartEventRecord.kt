@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,27 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.listener.operation
+package com.tencent.bkrepo.helm.model
 
-import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
-import com.tencent.bkrepo.helm.pojo.chart.ChartPackageDeleteRequest
-import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
-import com.tencent.bkrepo.helm.service.impl.AbstractChartService
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-class ChartPackageDeleteOperation(
-    private val request: ChartOperationRequest,
-    chartService: AbstractChartService
-) : AbstractChartOperation(request, chartService) {
-
-    override fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {
-        logger.info("Prepare to delete metadata list from index's metadata..")
-        val packageRequest = request as ChartPackageDeleteRequest
-        with(packageRequest) {
-            if (!helmIndexYamlMetadata.entries.containsKey(name)) {
-                logger.info("The chart metadata [$name] was not matched in the index file, return.")
-                return
-            }
-            helmIndexYamlMetadata.entries.remove(name)
-        }
-    }
-}
+/**
+ * 记录仓库下有变更记录时间以及对应index.yaml更新时间
+ */
+@Document("helm_chart_event_record")
+@CompoundIndexes(
+    CompoundIndex(name = "project_repo_idx", def = "{'projectId': 1, 'repoName': 1}", unique = true)
+)
+data class THelmChartEventRecord(
+    var projectId: String,
+    var repoName: String,
+    // 仓库内chart有上传或者删除变更时间
+    var eventTime: LocalDateTime,
+    // index文件刷新时间
+    var indexRefreshTime: LocalDateTime? = null
+)

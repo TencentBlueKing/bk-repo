@@ -50,9 +50,10 @@ object EventHandlerThreadPoolExecutor {
      */
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("helm-event-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
         return ThreadPoolExecutor(
-            20, 100, 30, TimeUnit.SECONDS,
-            LinkedBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+            corePoolSize, corePoolSize * 2, 30, TimeUnit.SECONDS,
+            LinkedBlockingQueue(8192), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }
 }
