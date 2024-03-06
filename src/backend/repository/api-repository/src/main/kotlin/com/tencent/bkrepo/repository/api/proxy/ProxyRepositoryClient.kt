@@ -64,4 +64,11 @@ interface ProxyRepositoryClient {
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String
     ): Response<RepositoryInfo?>
+
+    @ApiOperation("查询仓库列表")
+    @GetMapping("/list/{projectId}")
+    fun listRepo(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String
+    ): Response<List<RepositoryInfo>>
 }
