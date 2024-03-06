@@ -151,6 +151,7 @@ class RedisSLRUCacheIndexer(
             firstKey, protectedLruKey, protectedHashKey, protectedTotalWeightKey,
             probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
         )
+        logger.debug("{}", keys)
         val oldVal = redisTemplate.execute(putScript, keys, score(score), key, value.toString())?.toLong()
         // 检查缓存是否已满，满了之后会触发缓存淘汰
         if (shouldEvict()) {
