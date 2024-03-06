@@ -65,12 +65,14 @@ class StorageCacheIndexConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "storage.cache.index", name = ["type"], havingValue = CACHE_TYPE_REDIS_LRU)
     fun redisLruCacheFactory(
+        storageCacheIndexProperties: StorageCacheIndexProperties,
         redisTemplate: RedisTemplate<String, String>
     ): StorageCacheIndexerFactory<String, Long> {
         return object : StorageCacheIndexerFactory<String, Long> {
             override fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<String, Long> {
                 val cachePath = cacheProperties.path.toPath()
-                val cache = RedisLRUCacheIndexer(name, cachePath, redisTemplate, 0)
+                val hashTag = storageCacheIndexProperties.hashTag
+                val cache = RedisLRUCacheIndexer(name, cachePath, redisTemplate, 0, hashTag = hashTag)
                 cache.setMaxWeight(cacheProperties.maxSize)
                 return cache
             }
@@ -80,12 +82,14 @@ class StorageCacheIndexConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "storage.cache.index", name = ["type"], havingValue = CACHE_TYPE_REDIS_SLRU)
     fun redisSlruCacheFactory(
+        storageCacheIndexProperties: StorageCacheIndexProperties,
         redisTemplate: RedisTemplate<String, String>
     ): StorageCacheIndexerFactory<String, Long> {
         return object : StorageCacheIndexerFactory<String, Long> {
             override fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<String, Long> {
                 val cachePath = cacheProperties.path.toPath()
-                val cache = RedisSLRUCacheIndexer(name, cachePath, redisTemplate, 0)
+                val hashTag = storageCacheIndexProperties.hashTag
+                val cache = RedisSLRUCacheIndexer(name, cachePath, redisTemplate, 0, hashTag = hashTag)
                 cache.setMaxWeight(cacheProperties.maxSize)
                 return cache
             }

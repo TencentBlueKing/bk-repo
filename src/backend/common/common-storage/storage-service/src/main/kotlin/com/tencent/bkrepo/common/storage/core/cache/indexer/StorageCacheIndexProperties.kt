@@ -35,10 +35,24 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("storage.cache.index")
 data class StorageCacheIndexProperties(
     var enabled: Boolean = false,
-    var type: String = CACHE_TYPE_REDIS_SLRU
+    /**
+     * 索引器类型
+     */
+    var type: String = CACHE_TYPE_REDIS_SLRU,
+    /**
+     * 使用基于Redis实现的索引器时作为hashTag
+     */
+    var hashTag: String? = null
 ) {
     companion object {
+        /**
+         * 基于Redis实现的LRU
+         */
         const val CACHE_TYPE_REDIS_LRU = "REDIS_LRU"
+
+        /**
+         * 基于Redis实现的SLRU
+         */
         const val CACHE_TYPE_REDIS_SLRU = "REDIS_SLRU"
     }
 }

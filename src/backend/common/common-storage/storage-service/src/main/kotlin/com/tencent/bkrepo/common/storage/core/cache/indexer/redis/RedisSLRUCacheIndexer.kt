@@ -52,6 +52,10 @@ class RedisSLRUCacheIndexer(
     private val redisTemplate: RedisTemplate<String, String>,
     private val capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
+    /**
+     * 作为hash tag使用，未设置时使用cacheName作为hash tag
+     */
+    private val hashTag: String? = null
 ) : StorageCacheIndexer<String, Long> {
 
     /**
@@ -69,39 +73,44 @@ class RedisSLRUCacheIndexer(
     // 需要增加hash tag后缀以支持Redis集群模式
 
     /**
+     * 部分redis集群用第一个key计算slot，需要指定key用于固定使用单个slot
+     */
+    private val firstKey = "{${hashTag ?: cacheName}}"
+
+    /**
      * 记录当前缓存的总权重
      */
-    private val totalWeightKey = "{$cacheName}:slru:total_weight"
+    private val totalWeightKey = "${firstKey}:slru:total_weight"
 
     /**
      * 存在于保护区的缓存总权重
      */
-    private val protectedTotalWeightKey = "{$cacheName}:slru:total_weight_protected"
+    private val protectedTotalWeightKey = "${firstKey}:slru:total_weight_protected"
 
     /**
      * 存在于淘汰区的缓存总权重
      */
-    private val probationTotalWeightKey = "{$cacheName}:slru:total_weight_probation"
+    private val probationTotalWeightKey = "${firstKey}:slru:total_weight_probation"
 
     /**
      * 保护区缓存LRU队列，score为缓存写入时刻的时间戳
      */
-    private val protectedLruKey = "{$cacheName}:slru:protected_lru"
+    private val protectedLruKey = "${firstKey}:slru:protected_lru"
 
     /**
      * 淘汰区缓存LRU队列，score为缓存写入时刻的时间戳
      */
-    private val probationLruKey = "{$cacheName}:slru:probation_lru"
+    private val probationLruKey = "${firstKey}:slru:probation_lru"
 
     /**
      * 存放保护区缓存实际值
      */
-    private val protectedHashKey = "{$cacheName}:slru:protected_values"
+    private val protectedHashKey = "${firstKey}:slru:protected_values"
 
     /**
      * 存放淘汰区缓存实际值
      */
-    private val probationHashKey = "{$cacheName}:slru:probation_values"
+    private val probationHashKey = "${firstKey}:slru:probation_values"
 
     private val putScript = RedisScript.of(SCRIPT_PUT, String::class.java)
     private val evictProtectedScript = RedisScript.of(SCRIPT_EVICT_PROTECTED, String::class.java)
@@ -134,7 +143,7 @@ class RedisSLRUCacheIndexer(
     override fun put(key: String, value: Long, score: Double?): Long? {
         logger.info("put [$key] to cache, size[$value]")
         val keys = listOf(
-            protectedLruKey, protectedHashKey, protectedTotalWeightKey,
+            firstKey, protectedLruKey, protectedHashKey, protectedTotalWeightKey,
             probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
         )
         val oldVal = redisTemplate.execute(putScript, keys, score(score), key, value.toString())?.toLong()
@@ -147,7 +156,7 @@ class RedisSLRUCacheIndexer(
 
     override fun get(key: String): Long? {
         val keys = listOf(
-            protectedLruKey, protectedHashKey, protectedTotalWeightKey,
+            firstKey, protectedLruKey, protectedHashKey, protectedTotalWeightKey,
             probationLruKey, probationHashKey, probationTotalWeightKey
         )
         return redisTemplate.execute(getScript, keys, score(), key)?.toLong()
@@ -161,7 +170,7 @@ class RedisSLRUCacheIndexer(
     override fun remove(key: String): Long? {
         logger.info("remove [$key] from $cacheName")
         val keys = listOf(
-            protectedLruKey, protectedHashKey, protectedTotalWeightKey,
+            firstKey, protectedLruKey, protectedHashKey, protectedTotalWeightKey,
             probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey
         )
         return redisTemplate.execute(removeScript, keys, key)?.toLong()
@@ -254,7 +263,7 @@ class RedisSLRUCacheIndexer(
     private fun evictProtected() {
         if ((redisTemplate.opsForValue().get(protectedTotalWeightKey)?.toLong() ?: 0L) > protectedMaxWeight) {
             val keys = listOf(
-                protectedLruKey, protectedHashKey, protectedTotalWeightKey,
+                firstKey, protectedLruKey, protectedHashKey, protectedTotalWeightKey,
                 probationLruKey, probationHashKey, probationTotalWeightKey
             )
             redisTemplate.execute(evictProtectedScript, keys, score())
@@ -263,7 +272,7 @@ class RedisSLRUCacheIndexer(
 
     private fun evictProbation() {
         if ((redisTemplate.opsForValue().get(probationTotalWeightKey)?.toLong() ?: 0L) > probationMaxWeight) {
-            val keys = listOf(probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey)
+            val keys = listOf(firstKey, probationLruKey, probationHashKey, probationTotalWeightKey, totalWeightKey)
             redisTemplate.execute(evictProbationScript, keys)?.let { evicted ->
                 require(evicted.size == 2)
                 logger.info("$evicted was evicted")
@@ -299,13 +308,13 @@ class RedisSLRUCacheIndexer(
          * 3. 都不存在时添加缓存到probation
          */
         private const val SCRIPT_PUT = """
-            local z1 = KEYS[1]
-            local h1 = KEYS[2]
-            local w1 = KEYS[3]
-            local z2 = KEYS[4]
-            local h2 = KEYS[5]
-            local w2 = KEYS[6]
-            local w = KEYS[7]
+            local z1 = KEYS[2]
+            local h1 = KEYS[3]
+            local w1 = KEYS[4]
+            local z2 = KEYS[5]
+            local h2 = KEYS[6]
+            local w2 = KEYS[7]
+            local w = KEYS[8]
             local s = ARGV[1]
             local k = ARGV[2]
             local v = ARGV[3]
@@ -337,16 +346,16 @@ class RedisSLRUCacheIndexer(
          * 对protected区域执行淘汰，会将被淘汰的缓存移入probation，同时修改对应区域总权重
          */
         private const val SCRIPT_EVICT_PROTECTED = """
-            local z1 = KEYS[1]
-            local h1 = KEYS[2]
-            local w1 = KEYS[3]
-            local z2 = KEYS[4]
-            local h2 = KEYS[5]
-            local w2 = KEYS[6]
+            local z1 = KEYS[2]
+            local h1 = KEYS[3]
+            local w1 = KEYS[4]
+            local z2 = KEYS[5]
+            local h2 = KEYS[6]
+            local w2 = KEYS[7]
             local s = ARGV[1]
-            local keys = redis.call('ZRANGE', z1, 0, 0)
-            if keys[1] then
-              local k = keys[1]
+            local zKeys = redis.call('ZRANGE', z1, 0, 0)
+            if zKeys[1] then
+              local k = zKeys[1]
               redis.call('ZREM', z1, k)
               local oldWeight = redis.call('HGET', h1, k)
               redis.call('HDEL', h1, k)
@@ -361,13 +370,13 @@ class RedisSLRUCacheIndexer(
          * 对probation区域执行淘汰
          */
         private const val SCRIPT_EVICT_PROBATION = """
-            local z2 = KEYS[1]
-            local h2 = KEYS[2]
-            local w2 = KEYS[3]
-            local w = KEYS[4]
-            local keys = redis.call('ZRANGE', z2, 0, 0)
-            if keys[1] then
-              local k = keys[1]
+            local z2 = KEYS[2]
+            local h2 = KEYS[3]
+            local w2 = KEYS[4]
+            local w = KEYS[5]
+            local zKeys = redis.call('ZRANGE', z2, 0, 0)
+            if zKeys[1] then
+              local k = zKeys[1]
               redis.call('ZREM', z2, k)
               local oldWeight = redis.call('HGET', h2, k)
               redis.call('HDEL', h2, k)
@@ -382,12 +391,12 @@ class RedisSLRUCacheIndexer(
          * 分别尝试从protected和probation区域获取缓存，同时改变对应lru队列排序
          */
         private const val SCRIPT_GET = """
-            local z1 = KEYS[1]
-            local h1 = KEYS[2]
-            local w1 = KEYS[3]
-            local z2 = KEYS[4]
-            local h2 = KEYS[5]
-            local w2 = KEYS[6]
+            local z1 = KEYS[2]
+            local h1 = KEYS[3]
+            local w1 = KEYS[4]
+            local z2 = KEYS[5]
+            local h2 = KEYS[6]
+            local w2 = KEYS[7]
             local s = ARGV[1]
             local k = ARGV[2]
             
@@ -416,13 +425,13 @@ class RedisSLRUCacheIndexer(
          * 移除缓存，减少对应区域权重与总权重
          */
         private const val SCRIPT_REMOVE = """
-            local z1 = KEYS[1]
-            local h1 = KEYS[2]
-            local w1 = KEYS[3]
-            local z2 = KEYS[4]
-            local h2 = KEYS[5]
-            local w2 = KEYS[6]
-            local w = KEYS[7]
+            local z1 = KEYS[2]
+            local h1 = KEYS[3]
+            local w1 = KEYS[4]
+            local z2 = KEYS[5]
+            local h2 = KEYS[6]
+            local w2 = KEYS[7]
+            local w = KEYS[8]
             local k = ARGV[1]
         
             local oldWeight = redis.call('HGET', h1, k)

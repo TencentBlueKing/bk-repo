@@ -51,6 +51,10 @@ class RedisLRUCacheIndexer(
     private val redisTemplate: RedisTemplate<String, String>,
     private var capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
+    /**
+     * 作为hash tag使用
+     */
+    private val hashTag: String? = null
 ) : StorageCacheIndexer<String, Long> {
 
     private val evictExecutor = Executors.newSingleThreadExecutor(
@@ -65,19 +69,24 @@ class RedisLRUCacheIndexer(
     // 需要增加hash tag后缀以支持Redis集群模式
 
     /**
+     * 部分redis集群用第一个key计算slot，需要指定key用于固定使用单个slot
+     */
+    private val firstKey = "{${hashTag ?: cacheName}}"
+
+    /**
      * 记录当前缓存的总权重
      */
-    private val totalWeightKey = "{$cacheName}:total_weight"
+    private val totalWeightKey = "$firstKey:total_weight"
 
     /**
      * 缓存LRU队列，score为缓存写入时刻的时间戳
      */
-    private val lruKey = "{$cacheName}:lru"
+    private val lruKey = "$firstKey:lru"
 
     /**
      * 存放缓存实际值
      */
-    private val valuesKey = "{$cacheName}:values"
+    private val valuesKey = "$firstKey:values"
 
     private val putScript = RedisScript.of(SCRIPT_PUT, String::class.java)
     private val getScript = RedisScript.of(SCRIPT_GET, String::class.java)
@@ -101,7 +110,7 @@ class RedisLRUCacheIndexer(
 
     override fun put(key: String, value: Long, score: Double?): Long? {
         logger.info("put $key into $cacheName")
-        val keys = listOf(lruKey, valuesKey, totalWeightKey)
+        val keys = listOf(firstKey, lruKey, valuesKey, totalWeightKey)
         val oldVal = redisTemplate.execute(putScript, keys, score(score), key, value.toString())
         if (shouldEvict()) {
             evictSemaphore.release()
@@ -110,7 +119,7 @@ class RedisLRUCacheIndexer(
     }
 
     override fun get(key: String): Long? {
-        return redisTemplate.execute(getScript, listOf(lruKey, valuesKey), score(), key)?.toLong()
+        return redisTemplate.execute(getScript, listOf(firstKey, lruKey, valuesKey), score(), key)?.toLong()
     }
 
     override fun containsKey(key: String): Boolean {
@@ -119,7 +128,7 @@ class RedisLRUCacheIndexer(
 
     override fun remove(key: String): Long? {
         logger.info("remove [$key] from $cacheName")
-        val keys = listOf(lruKey, valuesKey, totalWeightKey)
+        val keys = listOf(firstKey, lruKey, valuesKey, totalWeightKey)
         return redisTemplate.execute(removeScript, keys, key)?.toLong()
     }
 
@@ -205,9 +214,9 @@ class RedisLRUCacheIndexer(
         private const val MAX_EVICT_COUNT = 1000
 
         private const val SCRIPT_PUT = """
-            local z = KEYS[1]
-            local h = KEYS[2]
-            local w = KEYS[3]
+            local z = KEYS[2]
+            local h = KEYS[3]
+            local w = KEYS[4]
             local s = ARGV[1]
             local k = ARGV[2]
             local v = ARGV[3]
@@ -223,8 +232,8 @@ class RedisLRUCacheIndexer(
         """
 
         private const val SCRIPT_GET = """
-            local z = KEYS[1]
-            local h = KEYS[2]
+            local z = KEYS[2]
+            local h = KEYS[3]
             local s = ARGV[1]
             local k = ARGV[2]
             redis.call('ZADD', z, s, k)
@@ -232,9 +241,9 @@ class RedisLRUCacheIndexer(
         """
 
         private const val SCRIPT_REM = """
-            local z = KEYS[1]
-            local h = KEYS[2]
-            local w = KEYS[3]
+            local z = KEYS[2]
+            local h = KEYS[3]
+            local w = KEYS[4]
             local k = ARGV[1]
             local oldWeight = redis.call('HGET', h, k)
             if oldWeight == nil then
