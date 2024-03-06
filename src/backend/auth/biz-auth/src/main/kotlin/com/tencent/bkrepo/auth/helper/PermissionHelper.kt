@@ -301,7 +301,7 @@ class PermissionHelper constructor(
         return projectList
     }
 
-    fun checkIncludePatternAction(
+    private fun checkIncludePatternAction(
         patternList: List<String>,
         path: String,
         actions: List<String>,
@@ -315,7 +315,7 @@ class PermissionHelper constructor(
         return false
     }
 
-    fun checkExcludePatternAction(
+    private fun checkExcludePatternAction(
         patternList: List<String>,
         path: String,
         actions: List<String>,

@@ -68,40 +68,37 @@ class RoleServiceImpl constructor(
     }
 
     override fun detail(rid: String, projectId: String): Role? {
-        logger.debug("get  role  detail rid : [$rid] , projectId : [$projectId] ")
+        logger.debug("get  role  detail rid : [$rid,$projectId]")
         val result = roleRepository.findFirstByRoleIdAndProjectId(rid, projectId) ?: return null
         return transfer(result)
     }
 
     override fun detail(rid: String, projectId: String, repoName: String): Role? {
-        logger.debug("get  role  detail rid : [$rid] , projectId : [$projectId], repoName: [$repoName]")
+        logger.debug("get  role  detail rid : [$rid,$projectId,$repoName]")
         val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
         return transfer(result)
     }
 
     override fun updateRoleInfo(id: String, request: UpdateRoleRequest): Boolean {
         logger.info("update role info: [$id, $request]")
+        val role = roleRepository.findFirstById(id) ?: return false
         with(request) {
             if (name != null || description != null) {
-                val role = roleRepository.findFirstById(id)
-                if (role != null) {
-                    name?.let { role.name = name }
-                    description?.let { role.description = description }
-                    roleRepository.save(role)
-                }
+                name?.let { role.name = name }
+                description?.let { role.description = description }
+                roleRepository.save(role)
             }
-
             request.userIds?.map { it }?.let { idList ->
                 val users = userDao.findAllByRolesIn(listOf(id))
                 userService.removeUserFromRoleBatch(users.map { it.userId }, id)
                 userService.addUserToRoleBatch(idList, id)
             }
-            return true
         }
+        return true
     }
 
     override fun listUserByRoleId(id: String): Set<UserResult> {
-        logger.info("list user by role id ,[$id]")
+        logger.debug("list user by role id [$id]")
         val result = mutableSetOf<UserResult>()
         userDao.findAllByRolesIn(listOf(id)).let { users ->
             for (user in users) {
@@ -112,7 +109,7 @@ class RoleServiceImpl constructor(
     }
 
     override fun listRoleByProject(projectId: String, repoName: String?): List<Role> {
-        logger.info("list role by project ,[$projectId , $repoName]")
+        logger.debug("list role by project ,[$projectId , $repoName]")
         repoName?.let {
             return roleRepository.findByProjectIdAndRepoNameAndType(projectId, repoName, RoleType.REPO)
                 .map { transfer(it) }
@@ -129,7 +126,7 @@ class RoleServiceImpl constructor(
         logger.info("delete  role  id : [$id]")
         val role = roleRepository.findFirstById(id)
         if (role == null) {
-            logger.warn("delete role [$id ] not exist.")
+            logger.warn("delete role [$id] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         } else {
             val users = listUserByRoleId(role.id!!)
