@@ -46,8 +46,4 @@ class ProxyRepositoryController(
     override fun getRepoInfo(projectId: String, repoName: String): Response<RepositoryInfo?> {
         return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, null))
     }
-
-    override fun listRepo(projectId: String): Response<List<RepositoryInfo>> {
-        return ResponseBuilder.success(repositoryService.listRepo(projectId))
-    }
 }
