@@ -36,5 +36,6 @@ data class CleanupRules(
     // bg默认清理时间
     var cleanupType: String = "retentionDays",
     // bg默认清理时间
-    var cleanupValue: String = ""
+    var cleanupValue: String = "",
+    var enable: Boolean = false
 )

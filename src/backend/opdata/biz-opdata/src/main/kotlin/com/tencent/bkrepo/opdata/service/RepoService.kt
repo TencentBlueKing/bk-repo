@@ -46,7 +46,13 @@ class RepoService(
     fun batchUpdateCleanupStrategy(rule: CleanupRules) {
         rule.specialRepoRules.forEach { (repoStr, value) ->
             val (projectId, repoName) = repoStr.split(StringPool.SLASH)
-            updateRepo(projectId, repoName, rule.cleanupType, value)
+            updateRepo(
+                projectId = projectId,
+                repoName = repoName,
+                cleanupType = rule.cleanupType,
+                cleanupValue = value,
+                enable = rule.enable,
+            )
         }
 
         var offset = 0L
@@ -74,12 +80,25 @@ class RepoService(
                 val key = bgRule.keys.first()
                 val value = rule.bgRepoRules[key] ?: rule.cleanupValue
                 val (_, repoName) = key.split(StringPool.SLASH)
-                updateRepo(projectInfo.name, repoName, rule.cleanupType, value, rule.specialRepoRules)
+                updateRepo(
+                    projectId = projectInfo.name,
+                    repoName = repoName,
+                    cleanupType = rule.cleanupType,
+                    cleanupValue = value,
+                    enable = rule.enable,
+                    specialRepoRules = rule.specialRepoRules
+                )
                 return
             }
         }
-        updateRepo(projectInfo.name, rule.defaultRepoName, rule.cleanupType,
-                   rule.cleanupValue, rule.specialRepoRules)
+        updateRepo(
+            projectId = projectInfo.name,
+            repoName = rule.defaultRepoName,
+            cleanupType = rule.cleanupType,
+            cleanupValue = rule.cleanupValue,
+            enable = rule.enable,
+            specialRepoRules = rule.specialRepoRules
+        )
     }
 
 
@@ -88,6 +107,7 @@ class RepoService(
         repoName: String?,
         cleanupType: String,
         cleanupValue: String,
+        enable: Boolean,
         specialRepoRules: Map<String, String> = emptyMap()
     ) {
         if (repoName.isNullOrEmpty() || cleanupValue.isEmpty() || cleanupType.isEmpty()) return
@@ -97,7 +117,7 @@ class RepoService(
         val cleanupStrategy = CleanupStrategy(
             cleanupType = cleanupType,
             cleanupValue = cleanupValue,
-            enable = true
+            enable = enable
         )
         configuration.settings["cleanupStrategy"] = cleanupStrategy
         val request = RepoUpdateRequest(
