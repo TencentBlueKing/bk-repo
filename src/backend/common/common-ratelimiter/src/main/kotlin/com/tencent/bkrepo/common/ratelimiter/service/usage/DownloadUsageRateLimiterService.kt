@@ -55,7 +55,7 @@ class DownloadUsageRateLimiterService(
 
     override fun getLimitDimensions(): List<LimitDimension> {
         return listOf(
-            LimitDimension.DOWNLOAD_USAGE, LimitDimension.DOWNLOAD_USAGE_TEMPLATE,
+            LimitDimension.DOWNLOAD_USAGE, LimitDimension.REPO_DOWNLOAD_USAGE_TEMPLATE,
         )
     }
 

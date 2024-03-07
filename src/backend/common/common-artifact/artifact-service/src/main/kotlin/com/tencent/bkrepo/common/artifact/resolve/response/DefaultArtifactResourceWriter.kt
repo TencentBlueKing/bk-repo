@@ -64,7 +64,7 @@ import javax.servlet.http.HttpServletResponse
  */
 open class DefaultArtifactResourceWriter(
     private val storageProperties: StorageProperties,
-    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
+    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService ?= null,
 ) : AbstractArtifactResourceHandler(storageProperties, downloadUsageRateLimiterService) {
 
     @Throws(ArtifactResponseException::class)

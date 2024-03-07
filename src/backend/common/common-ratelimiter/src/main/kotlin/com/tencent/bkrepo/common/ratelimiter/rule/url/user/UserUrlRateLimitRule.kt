@@ -25,22 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.rule.usage
+package com.tencent.bkrepo.common.ratelimiter.rule.url.user
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
+import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
+import java.util.concurrent.ConcurrentHashMap
 
-class DownloadUsageRateLimitRule: UsageRateLimitRule() {
+class UserUrlRateLimitRule: RateLimitRule {
+    private val userLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
+    private val userUrlLimitRules: ConcurrentHashMap<String, UserUrlResourceLimitRule> = ConcurrentHashMap()
+    private val userUrlTemplateLimitRules: ConcurrentHashMap<String, UserUrlResourceLimitRule> = ConcurrentHashMap()
+
+    override fun getRateLimitRule(resource: String, extraResource: List<String>): ResourceLimit? {
+        if (resource.isBlank()) return null
+        var ruleLimit = userLimitRules[resource]
+        if (ruleLimit == null && userLimitRules.containsKey(StringPool.POUND)) {
+            ruleLimit = userLimitRules[StringPool.POUND]
+        }
+
+//        if (ruleLimit == null && extraResource.isNotEmpty()) {
+//            ruleLimit = userUrlLimitRules[resource].getUrlResourceLimit()
+//        }
+        return ruleLimit
+    }
 
     override fun addRateLimitRule(resourceLimit: ResourceLimit) {
         if (resourceLimit.resource.isBlank()) {
             return
         }
         when (resourceLimit.limitDimension) {
-            LimitDimension.DOWNLOAD_USAGE ->
-                usageLimitRules[resourceLimit.resource] = resourceLimit
+            LimitDimension.USER -> userLimitRules[resourceLimit.resource] = resourceLimit
+//            LimitDimension.USER_URL -> {
+//                userUrlLimitRules[res]
+//            }
+//            LimitDimension.USER_URL_TEMPLATE -> urlTemplateLimitRules.addUrlResourceLimit(resourceLimit)
             else -> return
         }
     }
 
+    override fun addRateLimitRules(resourceLimit: List<ResourceLimit>) {
+        resourceLimit.forEach {
+            addRateLimitRule(it)
+        }
+    }
 }

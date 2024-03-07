@@ -34,17 +34,14 @@ import java.util.concurrent.ConcurrentHashMap
 
 open class UsageRateLimitRule: RateLimitRule {
 
-    @Volatile
-    var usageLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
-    @Volatile
-    var usageTemplateLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
+    val usageLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
 
     override fun getRateLimitRule(resource: String, extraResource: List<String>): ResourceLimit? {
         if (resource.isBlank()) return null
         var ruleLimit = usageLimitRules[resource]
         if (ruleLimit == null && extraResource.isNotEmpty()) {
             for (res in extraResource) {
-                ruleLimit = usageTemplateLimitRules[res]
+                ruleLimit = usageLimitRules[res]
                 if (ruleLimit != null) {
                     break
                 }
@@ -59,7 +56,6 @@ open class UsageRateLimitRule: RateLimitRule {
         }
         when (resourceLimit.limitDimension) {
             LimitDimension.UPLOAD_USAGE -> usageLimitRules[resourceLimit.resource] = resourceLimit
-            LimitDimension.UPLOAD_USAGE_TEMPLATE -> usageTemplateLimitRules[resourceLimit.resource] = resourceLimit
             else -> return
         }
     }

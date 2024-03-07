@@ -54,7 +54,7 @@ import javax.servlet.http.HttpServletResponse
  */
 class S3ArtifactResourceWriter (
     storageProperties: StorageProperties,
-    downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
+    downloadUsageRateLimiterService: DownloadUsageRateLimiterService? = null,
     ) : AbstractArtifactResourceHandler(storageProperties, downloadUsageRateLimiterService) {
 
     @Throws(ArtifactResponseException::class)

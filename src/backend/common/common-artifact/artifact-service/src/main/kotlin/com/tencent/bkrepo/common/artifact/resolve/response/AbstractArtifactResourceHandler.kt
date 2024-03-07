@@ -50,7 +50,7 @@ import javax.servlet.http.HttpServletResponse
 
 abstract class AbstractArtifactResourceHandler(
     private val storageProperties: StorageProperties,
-    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
+    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService ?= null,
 ) : ArtifactResourceWriter {
     /**
      * 获取动态buffer size
@@ -93,7 +93,7 @@ abstract class AbstractArtifactResourceHandler(
     protected fun downloadRateLimitCheck(resource: ArtifactResource) {
         try {
             val applyPermits = resource.getSingleStream().range.length
-            downloadUsageRateLimiterService.limit(HttpContextHolder.getRequest(), applyPermits)
+            downloadUsageRateLimiterService?.limit(HttpContextHolder.getRequest(), applyPermits)
         } catch (e: OverloadException) {
             throw e
         } catch (ignore: Exception) {

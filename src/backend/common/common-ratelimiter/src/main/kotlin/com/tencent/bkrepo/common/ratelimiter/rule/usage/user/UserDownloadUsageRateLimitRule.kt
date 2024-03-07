@@ -25,19 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.enums
+package com.tencent.bkrepo.common.ratelimiter.rule.usage.user
 
-/**
- * 限流维度：
- */
-enum class LimitDimension {
-    URL,   // 针对指定URL限流
-    URL_TEMPLATE, // 针对某类接口进行限流，不指定特定参数
-    UPLOAD_USAGE, // 针对仓库上传总大小进行限流
-    DOWNLOAD_USAGE,   // 针对仓库下载总大小进行限流
-    USER,  // 针对指定用户所有请求进行限流
-    USER_URL,  // 针对指定用户指定请求进行限流
-    USER_URL_TEMPLATE,  // 针对指定用户某一类请求进行限流
-    USER_UPLOAD_USAGE,  // 针对指定用户上传总大小进行限流
-    USER_DOWNLOAD_USAGE,  // 针对指定用户下载总大小进行限流
+import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
+import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.rule.usage.UsageRateLimitRule
+
+class UserDownloadUsageRateLimitRule: UsageRateLimitRule() {
+
+    override fun addRateLimitRule(resourceLimit: ResourceLimit) {
+        if (resourceLimit.resource.isBlank()) {
+            return
+        }
+        when (resourceLimit.limitDimension) {
+            LimitDimension.USER_DOWNLOAD_USAGE ->
+                usageLimitRules[resourceLimit.resource] = resourceLimit
+            else -> return
+        }
+    }
+
 }

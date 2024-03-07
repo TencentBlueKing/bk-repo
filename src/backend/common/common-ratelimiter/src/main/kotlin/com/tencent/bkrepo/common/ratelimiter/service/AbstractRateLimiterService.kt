@@ -183,6 +183,7 @@ abstract class AbstractRateLimiterService(
         }
     }
 
+    //TODO 配置异常需要处理
     private fun refreshRateLimitRule() {
         if (!rateLimiterProperties.enabled) return
         val usageRules = when (getRateLimitRuleClass()) {

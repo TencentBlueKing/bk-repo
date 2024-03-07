@@ -33,10 +33,8 @@ import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 
 class UrlRateLimitRule: RateLimitRule {
 
-    @Volatile
-    private var urlLimitRules: UrlResourceLimitRule = UrlResourceLimitRule()
-    @Volatile
-    private var urlTemplateLimitRules: UrlResourceLimitRule = UrlResourceLimitRule()
+    private val urlLimitRules: UrlResourceLimitRule = UrlResourceLimitRule()
+    private val urlTemplateLimitRules: UrlResourceLimitRule = UrlResourceLimitRule()
 
     override fun getRateLimitRule(resource: String, extraResource: List<String>): ResourceLimit? {
         if (resource.isBlank()) return null

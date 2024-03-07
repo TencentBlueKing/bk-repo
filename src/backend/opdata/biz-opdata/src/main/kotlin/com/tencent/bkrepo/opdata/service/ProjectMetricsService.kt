@@ -450,8 +450,8 @@ class ProjectMetricsService (
 
     companion object {
         private const val DEFAULT_PROJECT_CACHE_SIZE = 100_000L
-        private const val FIXED_DELAY = 30L
-        private const val INIT_DELAY = 3L
+        private const val FIXED_DELAY = 300L
+        private const val INIT_DELAY = 300L
         private const val DOWNLOAD_ACTIVE_PROJECTS = "downloadActiveProjects"
         private const val ACTIVE_PROJECTS = "activeProjects"
         private const val UPLOAD_ACTIVE_PROJECTS = "uploadActiveProjects"

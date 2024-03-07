@@ -36,11 +36,11 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
-class UrlResourceLimitRule(
+open class UrlResourceLimitRule(
     private val root: UrlNode = UrlNode("/")
 ) {
 
-    fun addUrlResourceLimit(resourceLimit: ResourceLimit) {
+    open fun addUrlResourceLimit(resourceLimit: ResourceLimit) {
         if (resourceLimit.limitDimension != LimitDimension.URL
             && resourceLimit.limitDimension != LimitDimension.URL_TEMPLATE) {
             return
@@ -49,7 +49,13 @@ class UrlResourceLimitRule(
         if (!urlPath.startsWith("/")) {
             throw InvalidResourceException(urlPath)
         }
+        addUrlNode(urlPath, resourceLimit)
+    }
 
+    fun addUrlNode(
+        urlPath: String,
+        resourceLimit: ResourceLimit
+    ) {
         if (urlPath == "/") {
             root.setResourceLimit(resourceLimit)
             return
@@ -83,23 +89,23 @@ class UrlResourceLimitRule(
         }
     }
 
-    fun getUrlResourceLimit(urlPath: String): ResourceLimit? {
-        if (urlPath.isBlank()) {
+    open fun getUrlResourceLimit(resource: String): ResourceLimit? {
+        if (resource.isBlank()) {
             return null
         }
-        if (urlPath == "/") {
+        if (resource == "/") {
             return root.getResourceLimit()
         }
-        val pathDirs = UrlUtils.tokenizeUrlPath(urlPath)
+        val pathDirs = UrlUtils.tokenizeUrlPath(resource)
         if (pathDirs.isNullOrEmpty()) {
-            logger.warn("config url $urlPath is empty!")
+            logger.warn("config url $resource is empty!")
             return null
         }
         return findResourceLimit(pathDirs)
     }
 
 
-    private fun findResourceLimit(pathDirs: List<String>): ResourceLimit? {
+    fun findResourceLimit(pathDirs: List<String>): ResourceLimit? {
         var p = root
         var currentLimit: ResourceLimit? = null
         if (p.getResourceLimit() != null) {

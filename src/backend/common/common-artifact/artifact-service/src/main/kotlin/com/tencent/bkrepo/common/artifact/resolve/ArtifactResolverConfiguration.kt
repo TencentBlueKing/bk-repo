@@ -87,7 +87,7 @@ class ArtifactResolverConfiguration {
     @ConditionalOnMissingBean(ArtifactResourceWriter::class)
     fun artifactResourceWriter(
         storageProperties: StorageProperties,
-        downloadUsageRateLimiterService: DownloadUsageRateLimiterService
+        downloadUsageRateLimiterService: DownloadUsageRateLimiterService? = null
     ): ArtifactResourceWriter {
         return DefaultArtifactResourceWriter(storageProperties, downloadUsageRateLimiterService)
     }

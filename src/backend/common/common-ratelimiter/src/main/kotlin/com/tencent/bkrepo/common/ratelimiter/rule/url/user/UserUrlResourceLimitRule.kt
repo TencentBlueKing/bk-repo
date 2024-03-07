@@ -1,0 +1,91 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package com.tencent.bkrepo.common.ratelimiter.rule.url.user
+
+import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
+import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
+import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlNode
+import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlResourceLimitRule
+import com.tencent.bkrepo.common.ratelimiter.utils.UrlUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+class UserUrlResourceLimitRule(
+    private val root: UrlNode = UrlNode("/"),
+    private var user: String = StringPool.POUND
+): UrlResourceLimitRule(root) {
+
+    override fun addUrlResourceLimit(resourceLimit: ResourceLimit) {
+        if (resourceLimit.limitDimension !in userLimitDimensionList) {
+            return
+        }
+        val (userId, urlPath) = getUserAndUrl(resourceLimit.resource)
+        if (!urlPath.startsWith("/") || user.isBlank()) {
+            throw InvalidResourceException(urlPath)
+        }
+        user = userId
+        addUrlNode(urlPath, resourceLimit)
+    }
+
+    override fun getUrlResourceLimit(resource: String): ResourceLimit? {
+        if (resource.isBlank()) {
+            return null
+        }
+        val (userId, urlPath) = getUserAndUrl(resource)
+        if (userId != user) {
+            return null
+        }
+        if (urlPath == "/") {
+            return root.getResourceLimit()
+        }
+        val pathDirs = UrlUtils.tokenizeUrlPath(urlPath)
+        if (pathDirs.isNullOrEmpty()) {
+            logger.warn("config url $urlPath is empty!")
+            return null
+        }
+        return findResourceLimit(pathDirs)
+    }
+
+    private fun getUserAndUrl(resource: String): Pair<String, String> {
+        val index = resource.indexOfFirst { it == CharPool.COLON }
+        if (index == -1) {
+            throw InvalidResourceException(resource)
+        }
+        return Pair(resource.substring(0, index), resource.substring(index))
+    }
+
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(UserUrlResourceLimitRule::class.java)
+        private val userLimitDimensionList = listOf(
+            LimitDimension.USER, LimitDimension.USER_URL, LimitDimension.USER_URL_TEMPLATE
+        )
+    }
+}
