@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job.archive
+package com.tencent.bkrepo.archive.job
 
 /**
  * 磁盘健康观察者

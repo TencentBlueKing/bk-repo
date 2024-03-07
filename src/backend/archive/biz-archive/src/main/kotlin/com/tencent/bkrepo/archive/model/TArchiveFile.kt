@@ -24,8 +24,10 @@ class TArchiveFile(
     lastModifiedDate: LocalDateTime,
     val sha256: String,
     val size: Long,
+    var compressedSize: Long = -1,
     val storageCredentialsKey: String?,
     var status: ArchiveStatus,
+    var compression: String,
 ) : AbstractEntity(
     id,
     createdBy,

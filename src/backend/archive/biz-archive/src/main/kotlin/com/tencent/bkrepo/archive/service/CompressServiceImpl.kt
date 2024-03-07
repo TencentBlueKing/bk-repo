@@ -4,6 +4,7 @@ import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.constant.ArchiveMessageCode
 import com.tencent.bkrepo.archive.constant.MAX_CHAIN_LENGTH
+import com.tencent.bkrepo.archive.constant.MAX_EMIT_TIME
 import com.tencent.bkrepo.archive.job.compress.BDZipManager
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.pojo.CompressFile
@@ -227,6 +228,5 @@ class CompressServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CompressServiceImpl::class.java)
-        private const val MAX_EMIT_TIME = 3000L // 最大发送提交任务时长，乐观锁
     }
 }

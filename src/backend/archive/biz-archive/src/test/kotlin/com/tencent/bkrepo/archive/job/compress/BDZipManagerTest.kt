@@ -142,6 +142,47 @@ class BDZipManagerTest @Autowired constructor(
     }
 
     @Test
+    fun uncompressFailedByBaseFileErrorTest() {
+        val compressFile = createCompressFile()
+        storageService.delete(compressFile.sha256, null)
+        compressFile.status = CompressStatus.WAIT_TO_UNCOMPRESS
+        compressFileRepository.save(compressFile)
+        val data = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
+        // 修改基文件内容
+        storageService.delete(compressFile.baseSha256, null)
+        storageService.store(compressFile.baseSha256, createTempArtifactFile(data), null)
+        bdZipManager.uncompress(compressFile)
+        Thread.sleep(1000)
+        val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(compressFile.sha256, null)
+        Assertions.assertEquals(CompressStatus.UNCOMPRESS_FAILED, cf!!.status)
+        with(cf) {
+            Assertions.assertFalse(storageService.exist(sha256, null))
+            Assertions.assertTrue(storageService.exist(sha256.plus(".bd"), null))
+        }
+    }
+
+    @Test
+    fun uncompressFailedByBdFileErrorTest() {
+        val compressFile = createCompressFile()
+        storageService.delete(compressFile.sha256, null)
+        compressFile.status = CompressStatus.WAIT_TO_UNCOMPRESS
+        compressFileRepository.save(compressFile)
+        val data = Random.nextBytes(compressFile.compressedSize.toInt())
+        // 修改压缩文件内容
+        val bdFileName = compressFile.sha256.plus(".bd")
+        storageService.delete(bdFileName, null)
+        storageService.store(bdFileName, createTempArtifactFile(data), null)
+        bdZipManager.uncompress(compressFile)
+        Thread.sleep(1000)
+        val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(compressFile.sha256, null)
+        Assertions.assertEquals(CompressStatus.UNCOMPRESS_FAILED, cf!!.status)
+        with(cf) {
+            Assertions.assertFalse(storageService.exist(sha256, null))
+            Assertions.assertTrue(storageService.exist(sha256.plus(".bd"), null))
+        }
+    }
+
+    @Test
     fun concurrentTest() {
         val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
         val artifactFile1 = createTempArtifactFile(data1)
@@ -239,7 +280,6 @@ class BDZipManagerTest @Autowired constructor(
             storageCredentialsKey = null,
             status = CompressStatus.CREATED,
             chainLength = 1,
-
         )
         storageService.store(artifactFile1.getFileSha256(), artifactFile1, null)
         storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)

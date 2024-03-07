@@ -5,7 +5,7 @@ import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.event.StorageFileCompressedEvent
 import com.tencent.bkrepo.archive.event.StorageFileUncompressedEvent
-import com.tencent.bkrepo.archive.job.FileStorageFileProvider
+import com.tencent.bkrepo.archive.job.PriorityFileProvider
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
@@ -39,39 +39,34 @@ class BDZipManager(
     private val fileReferenceClient: FileReferenceClient,
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
+    private val fileProvider: PriorityFileProvider,
 ) {
-    private val workDir = archiveProperties.workDir.toPath()
+    private val workDir = archiveProperties.gc.path.toPath()
     val signThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
-        archiveProperties.compress.signThreads,
+        archiveProperties.gc.signThreads,
         ThreadFactoryBuilder().setNameFormat("bd-sign-%d").build(),
     )
     val fileDownloadThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
-        archiveProperties.compress.ioThreads,
+        archiveProperties.gc.ioThreads,
         ThreadFactoryBuilder().setNameFormat("bd-io-%d").build(),
         PriorityBlockingQueue(),
     )
     val diffThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
-        archiveProperties.compress.diffThreads,
+        archiveProperties.gc.diffThreads,
         ThreadFactoryBuilder().setNameFormat("bd-diff-%d").build(),
     )
     val patchThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
-        archiveProperties.compress.patchThreads,
+        archiveProperties.gc.patchThreads,
         ThreadFactoryBuilder().setNameFormat("bd-patch-%d").build(),
     )
 
-    private val fileProvider = FileStorageFileProvider(
-        workDir.resolve(DOWNLOAD_DIR),
-        archiveProperties.compress.highWaterMark.toBytes(),
-        archiveProperties.compress.lowWaterMark.toBytes(),
-        fileDownloadThreadPool,
-    )
     private val checksumProvider = ChecksumFileProvider(
         workDir.resolve(SIGN_DIR),
         fileProvider,
-        archiveProperties.compress.signFileCacheTime,
+        archiveProperties.gc.signFileCacheTime,
         signThreadPool,
     )
-    private val bdCompressor = BDCompressor(archiveProperties.compress.ratio, diffThreadPool)
+    private val bdCompressor = BDCompressor(archiveProperties.gc.ratio, diffThreadPool)
     private val bdUncompressor = BDUncompressor(patchThreadPool)
 
     init {

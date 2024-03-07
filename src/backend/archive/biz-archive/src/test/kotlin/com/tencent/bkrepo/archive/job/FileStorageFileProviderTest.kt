@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.core.Ordered
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.time.Duration
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.PriorityBlockingQueue
@@ -36,6 +37,7 @@ class FileStorageFileProviderTest {
             ThreadFactoryBuilder().setNameFormat("ut-%d").build(),
             PriorityBlockingQueue(),
         ),
+        Duration.ofSeconds(60),
     )
 
     @Test
@@ -72,7 +74,7 @@ class FileStorageFileProviderTest {
             highWaterMark = 2,
             lowWaterMark = 1,
             Executors.newFixedThreadPool(3),
-            1000,
+            Duration.ofMillis(1000),
         )
         mockkObject(StorageUtils.Companion)
         every { StorageUtils.downloadUseLocalPath(any(), any(), any(), any()) } answers {

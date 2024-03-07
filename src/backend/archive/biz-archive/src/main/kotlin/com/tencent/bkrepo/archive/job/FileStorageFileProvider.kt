@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.archive.job
 
-import com.tencent.bkrepo.archive.job.archive.DiskHealthObserver
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.concurrent.ComparableFutureTask
 import com.tencent.bkrepo.common.api.concurrent.PriorityCallableTask
@@ -26,7 +25,7 @@ class FileStorageFileProvider(
     private val highWaterMark: Long,
     private val lowWaterMark: Long,
     private val executor: Executor,
-    private val checkInterval: Long = CHECK_INTERVAL,
+    private val checkInterval: Duration,
 ) : PriorityFileProvider, DiskHealthObserver {
 
     /**
@@ -40,7 +39,10 @@ class FileStorageFileProvider(
 
     init {
         require(lowWaterMark < highWaterMark)
-        Flux.interval(Duration.ofMillis(checkInterval))
+        if (!Files.exists(fileDir)) {
+            Files.createDirectories(fileDir)
+        }
+        Flux.interval(checkInterval)
             .map {
                 val diskFreeInBytes = fileDir.toFile().usableSpace
                 val threshold = if (status.get()) lowWaterMark else highWaterMark
@@ -162,6 +164,5 @@ class FileStorageFileProvider(
     companion object {
         private val logger = LoggerFactory.getLogger(FileStorageFileProvider::class.java)
         private const val RETRY_TIMES = 3
-        private const val CHECK_INTERVAL = 60000L
     }
 }

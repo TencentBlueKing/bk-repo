@@ -3,7 +3,6 @@ package com.tencent.bkrepo.archive.config
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
-import org.springframework.util.unit.DataSize
 
 /**
  * 归档服务配置
@@ -26,25 +25,10 @@ data class ArchiveProperties(
      * */
     var tier: String = "Standard",
 
+    /**
+     * 单次最大查询数量
+     * */
     var queryLimit: Int = 1000,
-
-    /**
-     * 磁盘可用空间阈值
-     * */
-    var threshold: DataSize = DataSize.ofMegabytes(10),
-    /**
-     * io thread num
-     * */
-    var ioThreads: Int = Runtime.getRuntime().availableProcessors(),
-    /**
-     * compress thread num
-     * */
-    var compressThreads: Int = 2,
-
-    /**
-     * xz memory limit
-     * */
-    var xzMemoryLimit: DataSize = DataSize.ofGigabytes(1),
 
     /**
      * 恢复数量限制
@@ -53,6 +37,18 @@ data class ArchiveProperties(
 
     /**
      * gc 压缩相关配置
+     * */
+    @NestedConfigurationProperty
+    val gc: GcProperties = GcProperties(),
+
+    /**
+     * 文件下载配置
+     * */
+    @NestedConfigurationProperty
+    val download: DownloadProperties = DownloadProperties(),
+
+    /**
+     * 归档压缩配置
      * */
     @NestedConfigurationProperty
     val compress: CompressProperties = CompressProperties(),

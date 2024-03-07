@@ -5,6 +5,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import reactor.core.publisher.Mono
 import java.io.File
 
-interface FileProvider {
+fun interface FileProvider {
     fun get(sha256: String, range: Range, storageCredentials: StorageCredentials): Mono<File>
 }
