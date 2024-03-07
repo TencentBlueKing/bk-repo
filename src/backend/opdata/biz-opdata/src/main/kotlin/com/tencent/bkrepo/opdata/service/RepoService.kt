@@ -44,9 +44,9 @@ class RepoService(
 ) {
 
     fun batchUpdateCleanupStrategy(rule: CleanupRules) {
-        rule.specialRepoRules.forEach { (repoStr, rDays) ->
+        rule.specialRepoRules.forEach { (repoStr, value) ->
             val (projectId, repoName) = repoStr.split(StringPool.SLASH)
-            updateRepo(projectId, repoName, rDays)
+            updateRepo(projectId, repoName, rule.cleanupType, value)
         }
 
         var offset = 0L
@@ -72,27 +72,31 @@ class RepoService(
             val bgRule = rule.bgRepoRules.filterKeys { it.startsWith("$bgId/") }
             if (bgRule.isNotEmpty()) {
                 val key = bgRule.keys.first()
-                val value = rule.bgRepoRules[key] ?: rule.defaultDays
+                val value = rule.bgRepoRules[key] ?: rule.cleanupValue
                 val (_, repoName) = key.split(StringPool.SLASH)
-                updateRepo(projectInfo.name, repoName, value)
+                updateRepo(projectInfo.name, repoName, rule.cleanupType, value, rule.specialRepoRules)
                 return
             }
         }
-        updateRepo(projectInfo.name, rule.defaultRepoName, rule.defaultDays)
+        updateRepo(projectInfo.name, rule.defaultRepoName, rule.cleanupType,
+                   rule.cleanupValue, rule.specialRepoRules)
     }
 
 
     private fun updateRepo(
         projectId: String,
         repoName: String?,
-        cleanupValue: Long,
+        cleanupType: String,
+        cleanupValue: String,
+        specialRepoRules: Map<String, String> = emptyMap()
     ) {
-        if (repoName.isNullOrEmpty()) return
+        if (repoName.isNullOrEmpty() || cleanupValue.isEmpty() || cleanupType.isEmpty()) return
+        if (specialRepoRules.containsKey("$projectId/$repoName")) return
         val repoInfo = repoClient.getRepoInfo(projectId, repoName).data ?: return
         val configuration = repoInfo.configuration
         val cleanupStrategy = CleanupStrategy(
-            cleanupType = "retentionDays",
-            cleanupValue = cleanupValue.toString(),
+            cleanupType = cleanupType,
+            cleanupValue = cleanupValue,
             enable = true
         )
         configuration.settings["cleanupStrategy"] = cleanupStrategy
