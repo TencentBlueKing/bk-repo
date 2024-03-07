@@ -53,6 +53,10 @@ abstract class AbstractArtifactResourceHandler(
      * @param totalSize 数据总大小
      */
     protected fun getBufferSize(totalSize: Long): Int {
+        if (totalSize == 0L) {
+            // buffer size 不能为0，否则会导致流io空转。
+            return 1
+        }
         val bufferSize = storageProperties.response.bufferSize.toBytes().toInt()
         require(totalSize > 0 && bufferSize > 0)
         return totalSize.coerceAtMost(bufferSize.toLong()).toInt()
