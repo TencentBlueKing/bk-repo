@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.batch
 
 import com.google.common.hash.BloomFilter
 import com.google.common.hash.Funnels
+import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
@@ -108,17 +109,24 @@ class FileReferenceCleanupJob(
         val id = row.id
         val storageCredentials = credentialsKey?.let { getCredentials(credentialsKey) }
         try {
-            if (sha256.isNotBlank() && storageService.exist(sha256, storageCredentials)) {
-                if (existNode(sha256, credentialsKey)) {
-                    logger.warn("Dirty sha256[$sha256] exists on $credentialsKey")
-                    return
-                }
+            /*
+            * 我们认为大部分的情况下，引用计数应该是正确的，并且为了确保文件没有被节点或者压缩root等资源引用
+            * 我们需要进行强制判断，同时文件丢失的情况，我们认为也是小概率事件，因此我们选择先进行文件是否可以
+            * 被删除的判断，再来决定资源的删除问题。
+            * */
+            if (existNode(sha256, credentialsKey) || isGcBase(sha256, credentialsKey)) {
+                logger.warn("Reject deletion, sha256[$sha256] on $credentialsKey is referenced.")
+                return
+            }
+            var successToDeleted = cleanupRelatedResources(sha256, credentialsKey)
+            if (storageService.exist(sha256, storageCredentials)) {
                 storageService.delete(sha256, storageCredentials)
-            } else {
+                successToDeleted = true
+            }
+            if (!successToDeleted) {
                 context.fileMissing.incrementAndGet()
                 logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
             }
-            cleanupRelatedResources(sha256, credentialsKey)
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
             throw JobExecuteException("Failed to delete file[$sha256] on [$storageCredentials].", e)
@@ -165,18 +173,36 @@ class FileReferenceCleanupJob(
         }
     }
 
-    private fun cleanupRelatedResources(sha256: String, credentialsKey: String?) {
+    /**
+     * 清理文件相关资源，如归档和压缩资源
+     * */
+    private fun cleanupRelatedResources(sha256: String, credentialsKey: String?): Boolean {
         val criteria = Criteria.where(SHA256).isEqualTo(sha256)
             .and(STORAGE_CREDENTIALS).isEqualTo(credentialsKey)
         val query = Query(criteria)
+        var findAndDelete = false
         mongoTemplate.findOne(query, Node::class.java, COMPRESS_FILE_COLLECTION)?.let {
             val deleteCompressFileRequest = DeleteCompressRequest(sha256, credentialsKey, SYSTEM_USER)
             archiveClient.deleteCompress(deleteCompressFileRequest)
+            findAndDelete = true
         }
         mongoTemplate.findOne(query, Node::class.java, ARCHIVE_FILE_COLLECTION)?.let {
             val deleteArchiveFileRequest = ArchiveFileRequest(sha256, credentialsKey, SYSTEM_USER)
             archiveClient.delete(deleteArchiveFileRequest)
+            findAndDelete = true
         }
+        return findAndDelete
+    }
+
+    /**
+     * 是否是gc链中的base
+     * */
+    private fun isGcBase(sha256: String, credentialsKey: String?): Boolean {
+        val criteria = Criteria.where(BASE_SHA256).isEqualTo(sha256)
+            .and(STORAGE_CREDENTIALS).isEqualTo(credentialsKey)
+            .and(STATUS).ne(CompressStatus.COMPRESS_FAILED)
+        val query = Query(criteria)
+        return mongoTemplate.findOne(query, Node::class.java, COMPRESS_FILE_COLLECTION) != null
     }
 
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()
@@ -187,6 +213,8 @@ class FileReferenceCleanupJob(
         private const val COMPRESS_FILE_COLLECTION = "compress_file"
         private const val ARCHIVE_FILE_COLLECTION = "archive_file"
         private const val STORAGE_CREDENTIALS = "storageCredentialsKey"
+        private const val BASE_SHA256 = "baseSha256"
+        private const val STATUS = "status"
     }
 
     data class FileReferenceData(private val map: Map<String, Any?>) {
