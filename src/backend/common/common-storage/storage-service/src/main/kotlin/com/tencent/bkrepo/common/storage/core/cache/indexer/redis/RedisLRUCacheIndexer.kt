@@ -27,17 +27,12 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.cache.indexer.EldestRemovedListener
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer
-import com.tencent.bkrepo.common.storage.util.existReal
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.data.redis.core.ScanOptions
 import org.springframework.data.redis.core.script.RedisScript
 import java.nio.file.Path
-import java.util.concurrent.Executors
-import java.util.concurrent.Semaphore
 
 /**
  * 基于Redis实现LRU，存放存储层缓存文件索引
@@ -46,40 +41,16 @@ import java.util.concurrent.Semaphore
  * 为了避免阻塞提高性能，缓存满时将会异步执行LRU策略进行缓存清理，此时依然可以继续存放数据，可能会出现缓存大小超过限制的情况
  */
 class RedisLRUCacheIndexer(
-    private val cacheName: String,
-    private val cacheDir: Path,
-    private val redisTemplate: RedisTemplate<String, String>,
+    cacheName: String,
+    cacheDir: Path,
+    redisTemplate: RedisTemplate<String, String>,
     private var capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
     /**
      * 作为hash tag使用
      */
-    private val hashTag: String? = null
-) : StorageCacheIndexer<String, Long> {
-
-    private val evictExecutor = Executors.newSingleThreadExecutor(
-        ThreadFactoryBuilder().setNameFormat("storage-cache-evict-redis-lru-%d").build()
-    )
-
-    /**
-     * 用于通知淘汰线程开始淘汰缓存的信号量
-     */
-    private val evictSemaphore = Semaphore(0)
-
-    // 需要增加hash tag后缀以支持Redis集群模式
-
-    private val keyPrefix = if (hashTag == null) {
-        "{$cacheName}"
-    } else {
-        "{$hashTag}:$cacheName"
-    }
-
-    /**
-     * 部分redis集群用第一个key计算slot，需要指定key用于固定使用单个slot
-     */
-    private val firstKey = "{${hashTag ?: cacheName}}"
-
-
+    hashTag: String? = null
+) : RedisCacheIndexer(cacheName, cacheDir, redisTemplate, hashTag), StorageCacheIndexer<String, Long> {
     /**
      * 记录当前缓存的总权重
      */
@@ -98,23 +69,13 @@ class RedisLRUCacheIndexer(
     private val putScript = RedisScript.of(SCRIPT_PUT, String::class.java)
     private val getScript = RedisScript.of(SCRIPT_GET, String::class.java)
     private val removeScript = RedisScript.of(SCRIPT_REM, String::class.java)
+    private val containsScript = RedisScript.of(SCRIPT_CONTAINS, Long::class.java)
+    private val sizeScript = RedisScript.of(SCRIPT_SIZE, Long::class.java)
+    private val eldestScript = RedisScript.of(SCRIPT_ELDEST, String::class.java)
 
     private var maxWeight: Long = 0L
 
-    init {
-        evictExecutor.execute {
-            while (true) {
-                evictSemaphore.acquire()
-                try {
-                    evict()
-                } catch (e: Exception) {
-                    logger.error("evict failed", e)
-                }
-                evictSemaphore.drainPermits()
-            }
-        }
-    }
-
+    @Suppress("UNNECESSARY_SAFE_CALL")
     override fun put(key: String, value: Long, score: Double?): Long? {
         logger.info("put $key into $cacheName")
         val keys = listOf(firstKey, lruKey, valuesKey, totalWeightKey)
@@ -125,14 +86,16 @@ class RedisLRUCacheIndexer(
         return oldVal?.toLong()
     }
 
+    @Suppress("UNNECESSARY_SAFE_CALL")
     override fun get(key: String): Long? {
         return redisTemplate.execute(getScript, listOf(firstKey, lruKey, valuesKey), score(), key)?.toLong()
     }
 
     override fun containsKey(key: String): Boolean {
-        return redisTemplate.opsForHash<String, Long>().hasKey(valuesKey, key)
+        return redisTemplate.execute(containsScript, listOf(firstKey, valuesKey), key) == 1L
     }
 
+    @Suppress("UNNECESSARY_SAFE_CALL")
     override fun remove(key: String): Long? {
         logger.info("remove [$key] from $cacheName")
         val keys = listOf(firstKey, lruKey, valuesKey, totalWeightKey)
@@ -140,11 +103,12 @@ class RedisLRUCacheIndexer(
     }
 
     override fun count(): Long {
-        return redisTemplate.opsForHash<String, Long>().size(valuesKey)
+        return redisTemplate.execute(sizeScript, listOf(firstKey, valuesKey))
     }
 
+    @Suppress("UNNECESSARY_SAFE_CALL")
     override fun weight(): Long {
-        return redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L
+        return redisTemplate.execute(simpleGetScript, listOf(firstKey, totalWeightKey))?.toLong() ?: 0L
     }
 
     override fun setMaxWeight(max: Long) {
@@ -164,19 +128,11 @@ class RedisLRUCacheIndexer(
     }
 
     override fun eldestKey(): String? {
-        return redisTemplate.opsForZSet().range(lruKey, 0L, 0L)?.firstOrNull()
+        return redisTemplate.execute(eldestScript, listOf(firstKey, lruKey))
     }
 
     override fun sync() {
-        redisTemplate.opsForHash<String, Long>().scan(valuesKey, ScanOptions.scanOptions().build()).use {
-            while (it.hasNext()) {
-                val key = it.next().key
-                if (!cacheDir.resolve(key).existReal()) {
-                    logger.info("$key not exists in storage cache and will be removed")
-                    remove(key)
-                }
-            }
-        }
+        sync(valuesKey)
     }
 
     override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Long>) {
@@ -187,38 +143,20 @@ class RedisLRUCacheIndexer(
         return listeners
     }
 
-    private fun evict() {
-        var count = 0
-        logger.info("start evict $cacheName")
-        while (shouldEvict()) {
-            val eldestKey = eldestKey()
-            val value = eldestKey?.let { remove(it) }
-            value?.let { listeners.forEach { it.onEldestRemoved(eldestKey, value) } }
-            count++
-
-            if (count > MAX_EVICT_COUNT) {
-                logger.info("$cacheName exceed max evict count[$MAX_EVICT_COUNT]")
-                break
-            }
-        }
-
-        if (count > 0) {
-            logger.info("$count key was evicted")
-        }
+    override fun evictEldest() {
+        val eldestKey = eldestKey()
+        val value = eldestKey?.let { remove(it) }
+        value?.let { listeners.forEach { it.onEldestRemoved(eldestKey, value) } }
     }
 
-    private fun shouldEvict() =
-        maxWeight > 0 && (redisTemplate.opsForValue().get(totalWeightKey)?.toLong() ?: 0L) > maxWeight
-
-    private fun score(score: Double? = null) = score?.toString() ?: System.currentTimeMillis().toString()
+    @Suppress("UNNECESSARY_SAFE_CALL")
+    override fun shouldEvict(): Boolean {
+        val weight = redisTemplate.execute(simpleGetScript, listOf(firstKey, totalWeightKey))?.toLong() ?: 0L
+        return maxWeight in 1 until weight
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(RedisLRUCacheIndexer::class.java)
-
-        /**
-         * 一次淘汰中最多淘汰的缓存条目数
-         */
-        private const val MAX_EVICT_COUNT = 1000
 
         private const val SCRIPT_PUT = """
             local z = KEYS[2]
@@ -261,5 +199,9 @@ class RedisLRUCacheIndexer(
             redis.call('ZREM', z, k)
             return oldWeight
         """
+
+        private const val SCRIPT_CONTAINS = "return redis.call('HEXISTS', KEYS[2], ARGV[1]) == 1 or 0"
+        private const val SCRIPT_SIZE = "return redis.call('HLEN', KEYS[2])"
+        private const val SCRIPT_ELDEST = "return redis.call('ZRANGE', KEYS[2], 0, 0)[1]"
     }
 }

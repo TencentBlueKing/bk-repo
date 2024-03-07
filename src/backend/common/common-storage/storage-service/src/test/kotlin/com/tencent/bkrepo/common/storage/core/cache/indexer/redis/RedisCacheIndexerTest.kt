@@ -72,7 +72,10 @@ abstract class RedisCacheIndexerTest<T: StorageCacheIndexer<String, Long>> {
         val key = "test"
         val value = 1000L
         // put
+        Assertions.assertEquals(cacheIndexer.eldestKey(), null)
         cacheIndexer.put(key, value)
+        Assertions.assertEquals(cacheIndexer.eldestKey(), key)
+        Assertions.assertEquals(value, cacheIndexer.put(key, value))
         cacheIndexer.put("${key}2", value, (System.currentTimeMillis() - 100000L).toDouble())
         Assertions.assertEquals(cacheIndexer.eldestKey(), "${key}2")
 
@@ -81,6 +84,7 @@ abstract class RedisCacheIndexerTest<T: StorageCacheIndexer<String, Long>> {
 
         // contains
         Assertions.assertTrue(cacheIndexer.containsKey(key))
+        Assertions.assertFalse(cacheIndexer.containsKey("${key}3"))
 
         // remove
         Assertions.assertEquals(value, cacheIndexer.remove(key))
