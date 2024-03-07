@@ -122,7 +122,7 @@ abstract class RedisCacheIndexer(
         }
     }
 
-    open protected fun score(score: Double? = null) = score?.toString() ?: System.currentTimeMillis().toString()
+    protected open fun score(score: Double? = null) = score?.toString() ?: System.currentTimeMillis().toString()
 
     protected abstract fun evictEldest()
     protected abstract fun shouldEvict(): Boolean
