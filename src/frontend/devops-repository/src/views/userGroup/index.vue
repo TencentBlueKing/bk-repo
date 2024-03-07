@@ -22,7 +22,8 @@
                 <template #default="{ row }">{{row.description || '/'}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('user')" show-overflow-tooltip>
-                <template #default="{ row }">{{row.users || '/'}}</template>
+                <template #default="{ row }">
+                    <span class="hover-btn" @click="showSetting(row.users, row.id)">{{row.users || '/'}}</span></template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
@@ -64,6 +65,31 @@
                 <bk-button class="ml10" theme="primary" @click="confirm">{{ $t('confirm') }}</bk-button>
             </template>
         </canway-dialog>
+        <bk-sideslider :is-show.sync="defaultSettings.isShow" :title="defaultSettings.title" :quick-close="true" :width="800">
+            <div slot="content">
+                <div class="ml10 mr10 mt10 flex-between-center">
+                    <div>
+                        <bk-input v-model="defaultSettings.newUser" class="w250" />
+                        <bk-button icon="plus" theme="primary" @click="addNewUsers">{{ $t('add') }}</bk-button>
+                    </div>
+                    <bk-input v-model="defaultSettings.search" :placeholder="$t('search')" class="w250" @change="filterUsers" />
+                </div>
+                <div v-show="defaultSettings.users.length" class="mt10 user-list">
+                    <div class="pl10 pr10 user-item flex-between-center" v-for="(user, index) in defaultSettings.users" :key="index">
+                        <div class="flex-align-center">
+                            <span class="user-name text-overflow" :title="user">{{ user }}</span>
+                        </div>
+                        <Icon class="ml10 hover-btn" size="24" name="icon-delete" @click.native="deleteUser(index)" />
+                    </div>
+                </div>
+            </div>
+            <div slot="footer">
+                <bk-button style="margin-left: 24px;" theme="primary" @click="updateUsers()">
+                    {{ $t('confirm') }}
+                </bk-button>
+                <bk-button style="margin-left: 4px;" theme="default" @click="closeSetting()">{{ $t('cancel') }}</bk-button>
+            </div>
+        </bk-sideslider>
     </div>
 </template>
 <script>
@@ -95,6 +121,15 @@
                             trigger: 'blur'
                         }
                     ]
+                },
+                defaultSettings: {
+                    isShow: false,
+                    title: this.$t('user'),
+                    users: [],
+                    id: '',
+                    newUser: '',
+                    search: '',
+                    originUsers: []
                 }
             }
         },
@@ -227,6 +262,65 @@
             cancel () {
                 this.editRoleConfig.show = false
                 this.getRoleListHandler()
+            },
+            showSetting (users, id) {
+                this.defaultSettings.isShow = true
+                this.defaultSettings.users = users
+                this.defaultSettings.originUsers = users
+                this.defaultSettings.id = id
+            },
+            addNewUsers () {
+                const temp = []
+                let has = false
+                for (let i = 0; i < this.defaultSettings.users.length; i++) {
+                    temp.push(this.defaultSettings.users[i])
+                    if (this.defaultSettings.users[i] === this.defaultSettings.newUser) {
+                        has = true
+                        break
+                    }
+                }
+                if (!has) {
+                    temp.push(this.defaultSettings.newUser)
+                    this.defaultSettings.users = temp
+                    this.defaultSettings.originUsers = temp
+                }
+                this.defaultSettings.newUser = ''
+            },
+            filterUsers () {
+                this.defaultSettings.users = this.defaultSettings.originUsers
+                if (this.defaultSettings.search !== '') {
+                    this.defaultSettings.users = this.defaultSettings.users.filter(user => user.toLowerCase().includes(this.defaultSettings.search.toLowerCase()))
+                }
+            },
+            updateUsers () {
+                this.editRole({
+                    id: this.defaultSettings.id,
+                    body: {
+                        userIds: this.defaultSettings.originUsers
+                    }
+                }).then(_ => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: this.$t('editUserGroupTitle') + this.$t('space') + this.$t('success')
+                    })
+                    this.defaultSettings.users = []
+                    this.defaultSettings.isShow = false
+                    this.getRoleListHandler()
+                })
+            },
+            deleteUser (index) {
+                const temp = []
+                for (let i = 0; i < this.defaultSettings.users.length; i++) {
+                    if (i !== index) {
+                        temp.push(this.defaultSettings.users[i])
+                    }
+                }
+                this.defaultSettings.users = temp
+                this.defaultSettings.originUsers = temp
+            },
+            closeSetting () {
+                this.defaultSettings.users = []
+                this.defaultSettings.isShow = false
             }
         }
     }
@@ -249,6 +343,22 @@
     .create-user {
         flex: 1;
         justify-content: flex-end;
+    }
+    .user-list {
+        display: grid;
+        grid-template: auto / repeat(4, 1fr);
+        gap: 10px;
+        .user-item {
+            margin-left: 10px;
+            margin-right: 10px;
+            height: 32px;
+            border: 1px solid var(--borderWeightColor);
+            background-color: var(--bgLighterColor);
+            .user-name {
+                max-width: 80px;
+                margin-left: 5px;
+            }
+        }
     }
 }
 </style>
