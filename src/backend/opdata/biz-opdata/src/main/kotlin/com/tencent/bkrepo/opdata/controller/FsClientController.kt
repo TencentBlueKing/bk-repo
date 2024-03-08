@@ -65,8 +65,7 @@ class FsClientController(
             request.pageSize,
             request.online,
             request.ip,
-            request.version,
-            request.heartbeatTime
+            request.version
         )
     }
 }

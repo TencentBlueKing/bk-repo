@@ -14,8 +14,7 @@ export function queryFileSystemClient(body) {
       repoName: body.repoName === '' ? null : body.repoName,
       online: body.online === '' ? null : body.online,
       ip: body.ip === '' ? null : body.ip,
-      version: body.version === '' ? null : body.version,
-      heartbeatTime: body.heartbeatTime === '' ? null : body.heartbeatTime
+      version: body.version === '' ? null : body.version
     }
   })
 }

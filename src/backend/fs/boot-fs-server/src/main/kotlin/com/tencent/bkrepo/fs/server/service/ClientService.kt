@@ -45,16 +45,28 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 class ClientService(
     private val clientRepository: ClientRepository
 ) {
 
     suspend fun createClient(request: ClientCreateRequest): ClientDetail {
-        return insertClient(request).convert()
+        with(request) {
+            val ip = ReactiveRequestContextHolder.getClientAddress()
+            val query = Query(
+                Criteria.where(TClient::projectId.name).isEqualTo(projectId)
+                    .and(TClient::repoName.name).isEqualTo(repoName)
+                    .and(TClient::mountPoint.name).isEqualTo(mountPoint)
+                    .and(TClient::ip.name).isEqualTo(ip)
+            )
+            val client = clientRepository.findOne(query)
+            return if (client == null) {
+                insertClient(request)
+            } else {
+                updateClient(request, client)
+            }.convert()
+        }
     }
 
     suspend fun removeClient(projectId: String, repoName: String, clientId: String) {
@@ -90,11 +102,6 @@ class ClientService(
         request.online?.let { criteria.and(TClient::online.name).isEqualTo(request.online) }
         request.ip?.let { criteria.and(TClient::ip.name).isEqualTo(request.ip) }
         request.version?.let { criteria.and(TClient::version.name).isEqualTo(request.version) }
-        request.heartbeatTime?.let {
-            val target = LocalDate.parse(request.heartbeatTime,
-                DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay()
-            criteria.and(TClient::heartbeatTime.name).gt(target).lt(target.plusDays(1))
-        }
         val query = Query(criteria)
         val count = clientRepository.count(query)
         val data = clientRepository.find(query.with(pageRequest))
@@ -115,6 +122,18 @@ class ClientService(
             heartbeatTime = LocalDateTime.now()
         )
         return clientRepository.save(client)
+    }
+
+    private suspend fun updateClient(request: ClientCreateRequest, client: TClient): TClient {
+        val newClient = client.copy(
+            userId = ReactiveSecurityUtils.getUser(),
+            version = request.version,
+            os = request.os,
+            arch = request.arch,
+            online = true,
+            heartbeatTime = LocalDateTime.now()
+        )
+        return clientRepository.save(newClient)
     }
 
     private fun TClient.convert(): ClientDetail {

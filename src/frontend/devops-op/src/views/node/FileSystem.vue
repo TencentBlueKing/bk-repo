@@ -51,9 +51,6 @@
       <el-form-item style="margin-left: 15px" label="版本" prop="version">
         <el-input v-model="clientQuery.version" type="text" size="small" width="50" placeholder="请输入版本号" />
       </el-form-item>
-      <el-form-item style="margin-left: 15px" label="心跳时间" prop="heartbeatTime">
-        <el-date-picker v-model="clientQuery.heartbeatTime" value-format="yyyy-MM-dd" type="date" placeholder="选择日期" />
-      </el-form-item>
       <el-form-item>
         <el-button
           size="mini"
@@ -114,8 +111,7 @@ export default {
         pageNumber: 1,
         online: '',
         ip: '',
-        version: '',
-        heartbeatTime: ''
+        version: ''
       },
       clients: [],
       options: [{
@@ -179,7 +175,6 @@ export default {
       query.online = this.clientQuery.online
       query.ip = this.clientQuery.ip
       query.version = this.clientQuery.version
-      query.heartbeatTime = this.clientQuery.heartbeatTime
       this.$router.push({ path: '/nodes/FileSystem', query: query })
     },
     onRouteUpdate(route) {
@@ -192,7 +187,16 @@ export default {
       clientQuery.ip = query.ip ? query.ip : ''
       clientQuery.version = query.version ? query.version : ''
       this.$nextTick(() => {
-        this.doQueryClients(clientQuery)
+        this.queryClients(clientQuery)
+      })
+    },
+    queryClients(clientQuery) {
+      this.$refs['form'].validate((valid) => {
+        if (valid) {
+          this.doQueryClients(clientQuery)
+        } else {
+          return false
+        }
       })
     },
     doQueryClients(clientQuery) {

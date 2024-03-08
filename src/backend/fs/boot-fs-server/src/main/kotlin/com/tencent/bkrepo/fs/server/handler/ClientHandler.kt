@@ -71,8 +71,7 @@ class ClientHandler(
             pageSize = request.queryParamOrNull(ClientListRequest::pageSize.name)?.toInt() ?: DEFAULT_PAGE_SIZE,
             online = request.queryParamOrNull(ClientListRequest::online.name)?.toBoolean(),
             ip = request.queryParamOrNull(ClientListRequest::ip.name),
-            version = request.queryParamOrNull(ClientListRequest::version.name),
-            heartbeatTime = request.queryParamOrNull(ClientListRequest::heartbeatTime.name)
+            version = request.queryParamOrNull(ClientListRequest::version.name)
         )
         return ReactiveResponseBuilder.success(clientService.listClients(listRequest))
     }
