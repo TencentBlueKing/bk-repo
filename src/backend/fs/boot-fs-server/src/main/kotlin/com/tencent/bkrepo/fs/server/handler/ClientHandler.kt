@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
 import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
+import com.tencent.bkrepo.fs.server.pojo.DailyClientListRequest
 import com.tencent.bkrepo.fs.server.service.ClientService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import kotlinx.coroutines.reactor.awaitSingle
@@ -74,5 +75,18 @@ class ClientHandler(
             version = request.queryParamOrNull(ClientListRequest::version.name)
         )
         return ReactiveResponseBuilder.success(clientService.listClients(listRequest))
+    }
+
+    suspend fun listDailyClients(request: ServerRequest): ServerResponse {
+        val listRequest = DailyClientListRequest(
+            projectId = request.queryParamOrNull(DailyClientListRequest::projectId.name),
+            repoName = request.queryParamOrNull(DailyClientListRequest::repoName.name),
+            ip = request.queryParamOrNull(DailyClientListRequest::ip.name),
+            version = request.queryParamOrNull(DailyClientListRequest::version.name),
+            heartbeatTime = request.queryParamOrNull(DailyClientListRequest::heartbeatTime.name),
+            pageNumber = request.queryParamOrNull(DailyClientListRequest::pageNumber.name)?.toInt() ?: DEFAULT_PAGE_NUMBER,
+            pageSize = request.queryParamOrNull(DailyClientListRequest::pageSize.name)?.toInt() ?: DEFAULT_PAGE_SIZE
+        )
+        return ReactiveResponseBuilder.success(clientService.listDailyClients(listRequest))
     }
 }

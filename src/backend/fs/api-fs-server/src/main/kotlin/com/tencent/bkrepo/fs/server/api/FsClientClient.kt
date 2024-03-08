@@ -50,4 +50,15 @@ interface FsClientClient {
         @RequestParam ip: String?,
         @RequestParam version: String?,
     ): Response<Page<ClientDetail>>
+
+    @GetMapping("/daily/list")
+    fun listDailyClients(
+        @RequestParam projectId: String?,
+        @RequestParam repoName: String?,
+        @RequestParam pageNumber: Int?,
+        @RequestParam pageSize: Int?,
+        @RequestParam ip: String?,
+        @RequestParam version: String?,
+        @RequestParam heartbeatTime: String?
+    ): Response<Page<ClientDetail>>
 }
