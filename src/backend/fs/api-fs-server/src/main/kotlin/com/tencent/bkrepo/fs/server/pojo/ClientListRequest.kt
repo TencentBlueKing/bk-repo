@@ -29,6 +29,7 @@ package com.tencent.bkrepo.fs.server.pojo
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import java.time.LocalDateTime
 
 /**
  * 客户端列表请求
@@ -39,6 +40,8 @@ data class ClientListRequest(
     val online:Boolean?,
     val ip: String?,
     val version: String?,
+    // 处理某天的，时间传入yyyy-MM-dd
+    val heartbeatTime: String?,
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
     val pageSize: Int = DEFAULT_PAGE_SIZE
 )

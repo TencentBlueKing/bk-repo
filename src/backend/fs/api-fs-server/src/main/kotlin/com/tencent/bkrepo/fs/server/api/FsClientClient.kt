@@ -49,5 +49,6 @@ interface FsClientClient {
         @RequestParam online: Boolean?,
         @RequestParam ip: String?,
         @RequestParam version: String?,
+        @RequestParam heartbeatTime: String?
     ): Response<Page<ClientDetail>>
 }
