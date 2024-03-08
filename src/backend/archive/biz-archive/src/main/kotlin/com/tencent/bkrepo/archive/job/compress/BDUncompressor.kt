@@ -13,6 +13,8 @@ class BDUncompressor(
     private val executor: Executor,
 ) {
 
+    private val scheduler = Schedulers.fromExecutor(executor)
+
     /**
      * 根据源文件和签名文件，压缩成新的bd文件
      * */
@@ -28,14 +30,14 @@ class BDUncompressor(
                 val start = System.nanoTime()
                 val file = BDUtils.patch(bdFile, baseFile, workDir)
                 val nanos = System.nanoTime() - start
-                val throughput = Throughput(nanos, file.length())
+                val throughput = Throughput(file.length(), nanos)
                 logger.info("Success to bd uncompress $sha256,$throughput.")
                 file
             } finally {
                 bdFile.delete()
                 baseFile.delete()
             }
-        }.publishOn(Schedulers.fromExecutor(executor))
+        }.publishOn(scheduler)
     }
 
     companion object {

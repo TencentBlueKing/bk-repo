@@ -54,6 +54,12 @@ class BDZipManager(
         archiveProperties.compress.diffThreads,
         ThreadFactoryBuilder().setNameFormat("bd-diff-%d").build(),
     )
+
+    val bigCompressPool = ArchiveUtils.newFixedAndCachedThreadPool(
+        archiveProperties.compress.bigFileCompressPoolSize,
+        ThreadFactoryBuilder().setNameFormat("bd-bigfile-diff-%d").build(),
+    )
+
     val patchThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
         archiveProperties.compress.patchThreads,
         ThreadFactoryBuilder().setNameFormat("bd-patch-%d").build(),
@@ -71,7 +77,12 @@ class BDZipManager(
         archiveProperties.compress.signFileCacheTime,
         signThreadPool,
     )
-    private val bdCompressor = BDCompressor(archiveProperties.compress.ratio, diffThreadPool)
+    private val bdCompressor = BDCompressor(
+        archiveProperties.compress.ratio,
+        diffThreadPool,
+        bigCompressPool,
+        archiveProperties.compress.bigChecksumFileThreshold.toBytes(),
+    )
     private val bdUncompressor = BDUncompressor(patchThreadPool)
 
     init {
