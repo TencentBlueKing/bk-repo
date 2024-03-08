@@ -30,6 +30,7 @@ package com.tencent.bkrepo.repository.service.node.impl
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.constant.PROXY_HEADER_NAME
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
@@ -40,10 +41,12 @@ import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
@@ -74,6 +77,7 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
@@ -101,6 +105,8 @@ abstract class NodeBaseService(
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
     open val servicePermissionClient: ServicePermissionClient,
+    open val routerControllerClient: RouterControllerClient,
+    open val routerControllerProperties: RouterControllerProperties
 ) : NodeService {
 
     @Autowired
@@ -271,8 +277,18 @@ abstract class NodeBaseService(
             }
             if (isGenericRepo(repo)) {
                 publishEvent(buildCreatedEvent(node))
+                createRouter(this)
             }
             reportNode2Bkbase(node)
+        }
+    }
+
+    /**
+     * 创建下载转发路由
+     */
+    private fun createRouter(node: TNode) {
+        HeaderUtils.getHeader(PROXY_HEADER_NAME)?.let {
+            routerControllerClient.addNode(node.projectId, node.repoName, node.fullPath, it)
         }
     }
 

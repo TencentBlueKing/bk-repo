@@ -48,10 +48,14 @@ data class ConfigItem(
             return
         }
 
-        if (value is String || value is Number || value is Boolean) {
+        if (isBaseType() || value is ArrayList<*>) {
             return
         }
 
         throw BadRequestException(OpDataMessageCode.ConfigValueTypeInvalid)
+    }
+
+    fun isBaseType():Boolean {
+        return value is String || value is Number || value is Boolean
     }
 }

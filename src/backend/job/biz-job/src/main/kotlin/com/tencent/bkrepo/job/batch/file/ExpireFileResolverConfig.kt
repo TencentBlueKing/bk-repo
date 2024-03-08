@@ -2,6 +2,7 @@ package com.tencent.bkrepo.job.batch.file
 
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
 import com.tencent.bkrepo.job.config.properties.ExpiredCacheFileCleanupJobProperties
+import com.tencent.bkrepo.job.service.FileCacheService
 import com.tencent.bkrepo.repository.api.NodeClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
@@ -20,11 +21,13 @@ class ExpireFileResolverConfig {
     fun fileExpireResolver(
         expiredCacheFileCleanupJobProperties: ExpiredCacheFileCleanupJobProperties,
         scheduler: ThreadPoolTaskScheduler,
+        fileCacheService: FileCacheService
     ): FileExpireResolver {
         return BasedRepositoryFileExpireResolver(
             nodeClient,
             expiredCacheFileCleanupJobProperties.repoConfig,
             scheduler,
+            fileCacheService
         )
     }
 }

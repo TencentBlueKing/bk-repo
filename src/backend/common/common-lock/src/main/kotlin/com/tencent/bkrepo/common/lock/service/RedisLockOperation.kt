@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.lock.service
 
-import com.tencent.bkrepo.common.lock.service.LockOperation.Companion.EXPIRED_TIME_IN_SECONDS
 import com.tencent.bkrepo.common.redis.RedisLock
 import com.tencent.bkrepo.common.redis.RedisOperation
 import org.slf4j.Logger
@@ -56,5 +55,6 @@ class RedisLockOperation(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(RedisLockOperation::class.java)
+        const val EXPIRED_TIME_IN_SECONDS: Long = 60 * 60
     }
 }

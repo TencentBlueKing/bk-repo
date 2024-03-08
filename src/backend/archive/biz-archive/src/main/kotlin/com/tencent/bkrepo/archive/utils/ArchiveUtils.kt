@@ -16,6 +16,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.util.concurrent.BlockingQueue
 
 @Component
 class ArchiveUtils(
@@ -79,13 +80,17 @@ class ArchiveUtils(
             }
         }
 
-        fun newFixedAndCachedThreadPool(threads: Int, threadFactory: ThreadFactory): ThreadPoolExecutor {
+        fun newFixedAndCachedThreadPool(
+            threads: Int,
+            threadFactory: ThreadFactory,
+            queue: BlockingQueue<Runnable> = ArrayBlockingQueue(DEFAULT_BUFFER_SIZE),
+        ): ThreadPoolExecutor {
             return ThreadPoolExecutor(
                 threads,
                 threads,
                 60,
                 TimeUnit.SECONDS,
-                ArrayBlockingQueue(DEFAULT_BUFFER_SIZE),
+                queue,
                 threadFactory,
                 ThreadPoolExecutor.CallerRunsPolicy(),
             )

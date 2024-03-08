@@ -39,6 +39,8 @@ import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_IND
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_INSTALL_URL
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_PROV_INSTALL_URL
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -48,8 +50,17 @@ import java.time.LocalDateTime
 @Suppress("MVCPathVariableInspection")
 @RestController
 class ChartRepositoryController(
-    private val chartRepositoryService: ChartRepositoryService
+    private val chartRepositoryService: ChartRepositoryService,
 ) {
+    @GetMapping(HelmArtifactInfo.CHARTS_LIST, produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun allChartsList(
+        @ArtifactPathVariable
+        artifactInfo: HelmArtifactInfo,
+        @RequestParam startTime: LocalDateTime?
+    ): ResponseEntity<Any> {
+        return chartRepositoryService.allChartsList(artifactInfo, startTime)
+    }
+
     /**
      * query index.yaml
      */

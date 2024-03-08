@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.api.util.AuthenticationUtil
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
@@ -56,7 +57,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.oci.constant.CATALOG_REQUEST
 import com.tencent.bkrepo.oci.constant.DOCKER_DISTRIBUTION_MANIFEST_V2
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK

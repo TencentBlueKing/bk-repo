@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.service.feign
 
 import com.google.common.hash.Hashing
+import com.tencent.bkrepo.common.api.constant.B3_TRACE
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.MS_REQUEST_SRC_CLUSTER
@@ -37,6 +38,7 @@ import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.HttpSigner
@@ -117,6 +119,7 @@ object FeignClientFactory {
             if (!srcClusterName.isNullOrBlank()) {
                 it.header(MS_REQUEST_SRC_CLUSTER, srcClusterName)
             }
+            it.header(B3_TRACE, TraceHeaderUtils.buildB3Header())
             if (cluster.appId != null) {
                 // 内部集群请求签名
                 require(cluster.accessKey != null)
@@ -156,7 +159,7 @@ object FeignClientFactory {
         return Client.Default(sslContextFactory, hostnameVerifier)
     }
 
-    private fun normalizeUrl(url: String, serviceName: String?): String {
+    fun normalizeUrl(url: String, serviceName: String?): String {
         val normalizeUrl = UrlUtils.extractDomain(url)
         return if (serviceName.isNullOrBlank()) {
             normalizeUrl.ensureSuffix("/$REPLICATION_SERVICE_NAME")
@@ -168,5 +171,5 @@ object FeignClientFactory {
     private const val TIME_OUT_SECONDS = 60L
     private const val REPLICATION_SERVICE_NAME = "replication"
     private val clientCacheMap = mutableMapOf<Class<*>, MutableMap<ClusterInfo, Any>>()
-    private val options = Request.Options(TIME_OUT_SECONDS, TimeUnit.SECONDS, TIME_OUT_SECONDS, TimeUnit.SECONDS, true)
+    val options = Request.Options(TIME_OUT_SECONDS, TimeUnit.SECONDS, TIME_OUT_SECONDS, TimeUnit.SECONDS, true)
 }

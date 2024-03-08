@@ -261,7 +261,7 @@ open class PermissionManager(
     /**
      * 查询仓库信息
      */
-    private fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
+    open fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
         return repositoryClient.getRepoInfo(projectId, repoName).data ?: throw RepoNotFoundException(repoName)
     }
 
@@ -335,7 +335,7 @@ open class PermissionManager(
     /**
      * 获取当前项目、仓库的自定义外部权限
      */
-    private fun getExternalPermission(projectId: String, repoName: String?): ExternalPermission? {
+    open fun getExternalPermission(projectId: String, repoName: String?): ExternalPermission? {
         val externalPermissionList = externalPermissionCache.get(SYSTEM_USER)
         val platformId = SecurityUtils.getPlatformId()
         val ext = externalPermissionList.firstOrNull { p ->
