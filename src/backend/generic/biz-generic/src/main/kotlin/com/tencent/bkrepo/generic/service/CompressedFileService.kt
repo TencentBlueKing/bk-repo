@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
@@ -43,6 +44,7 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
 import com.tencent.bkrepo.repository.api.NodeClient
 import org.apache.commons.compress.archivers.ArchiveEntry
+import org.apache.commons.compress.archivers.ArchiveException
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.ArchiveStreamFactory
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
@@ -122,7 +124,11 @@ class CompressedFileService(
             if (fileExtension == GZ_FILE_TYPE || fileExtension == TGZ_FILE_TYPE) {
                 inputStream = GzipCompressorInputStream(inputStream)
             }
-            return ArchiveStreamFactory().createArchiveInputStream(BufferedInputStream(inputStream))
+            return try {
+                ArchiveStreamFactory().createArchiveInputStream(BufferedInputStream(inputStream))
+            } catch (e: ArchiveException) {
+                throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_TYPE_UNSUPPORTED, StringPool.UNKNOWN)
+            }
         }
     }
 
