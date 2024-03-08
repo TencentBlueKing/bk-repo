@@ -43,7 +43,7 @@ import java.nio.file.Paths
 /**
  * 本地文件存储客户端
  */
-class FileSystemClient(private val root: String) {
+class FileSystemClient(val root: String) {
 
     constructor(path: Path) : this(path.toString())
 
