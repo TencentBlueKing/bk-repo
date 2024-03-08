@@ -32,10 +32,12 @@ data class CleanupRules(
     var specialRepoRules: Map<String, String> = emptyMap(),
     // bg下仓库标准保留周期
     var bgRepoRules: Map<String, String> = emptyMap(),
+    // 默认仓库名
     var defaultRepoName: String = "",
-    // bg默认清理时间
+    // bg默认清理策略
     var cleanupType: String = "retentionDays",
     // bg默认清理时间
     var cleanupValue: String = "",
+    // 清理策略是否开启
     var enable: Boolean = false
 )
