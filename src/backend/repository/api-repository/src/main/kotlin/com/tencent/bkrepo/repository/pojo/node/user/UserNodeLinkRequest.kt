@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.repository.pojo.node.user
 
-import com.tencent.bkrepo.repository.pojo.UserRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeRequest
+import com.tencent.bkrepo.common.metadata.pojo.UserRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

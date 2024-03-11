@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.pojo.node
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils.UNIX_SEPARATOR
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 

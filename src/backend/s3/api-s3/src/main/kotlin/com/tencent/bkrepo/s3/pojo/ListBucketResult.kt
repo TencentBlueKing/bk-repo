@@ -33,7 +33,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.hash.md5
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 
 @JacksonXmlRootElement(localName = "ListBucketResult", namespace = "http://s3.amazonaws.com/doc/2006-03-01/")
 data class ListBucketResult(

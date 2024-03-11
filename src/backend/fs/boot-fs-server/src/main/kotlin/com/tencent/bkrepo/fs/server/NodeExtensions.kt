@@ -29,7 +29,7 @@ package com.tencent.bkrepo.fs.server
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.fs.server.model.Node
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.LocalDateTime

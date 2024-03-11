@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
 import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import feign.RequestInterceptor
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean

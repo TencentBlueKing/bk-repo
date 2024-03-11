@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
 import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.payload.builder.EventPayloadBuilder
 import com.tencent.bkrepo.webhook.pojo.payload.project.ProjectCreatedEventPayload

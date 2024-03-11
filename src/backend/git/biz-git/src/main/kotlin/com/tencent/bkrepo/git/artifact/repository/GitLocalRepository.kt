@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.git.artifact.repository
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
@@ -43,7 +44,7 @@ import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
 import com.tencent.bkrepo.git.constant.GitMessageCode
 import com.tencent.bkrepo.git.internal.CodeRepositoryResolver
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.treewalk.TreeWalk
@@ -55,7 +56,7 @@ class GitLocalRepository : LocalRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, artifactInfo.getArtifactFullPath()))
             val responseName = artifactInfo.getResponseName()
             storageManager.loadArtifactInputStream(node, storageCredentials)?.let {
                 return ArtifactResource(it, responseName, node, ArtifactChannel.PROXY, useDisposition)

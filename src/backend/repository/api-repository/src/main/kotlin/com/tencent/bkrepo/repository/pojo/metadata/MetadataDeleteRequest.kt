@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.repository.pojo.metadata
 
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.ServiceRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRequest
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.pojo.ServiceRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

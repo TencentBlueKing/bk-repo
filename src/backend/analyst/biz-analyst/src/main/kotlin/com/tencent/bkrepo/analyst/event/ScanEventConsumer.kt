@@ -50,8 +50,8 @@ import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor

@@ -7,12 +7,12 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
-import com.tencent.bkrepo.repository.dao.PackageDao
-import com.tencent.bkrepo.repository.model.TPackage
+import com.tencent.bkrepo.common.metadata.dao.PackageDao
+import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
+import com.tencent.bkrepo.common.metadata.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.repository.pojo.software.SoftwarePackageSearchPojo
-import com.tencent.bkrepo.repository.search.software.packages.SoftwarePackageSearchInterpreter
+import com.tencent.bkrepo.common.metadata.search.software.packages.SoftwarePackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.packages.SoftwarePackageService
 import com.tencent.bkrepo.repository.service.repo.SoftwareRepositoryService
 import org.springframework.data.mongodb.core.aggregation.Aggregation

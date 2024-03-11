@@ -34,6 +34,7 @@ package com.tencent.bkrepo.npm.service.impl
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -44,7 +45,6 @@ import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.properties.NpmProperties
 import com.tencent.bkrepo.npm.utils.NpmUtils
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -58,7 +58,7 @@ import java.io.InputStream
 open class AbstractNpmService {
 
 	@Autowired
-	lateinit var nodeClient: NodeClient
+	lateinit var nodeService: NodeService
 
 	@Autowired
 	lateinit var repositoryClient: RepositoryClient

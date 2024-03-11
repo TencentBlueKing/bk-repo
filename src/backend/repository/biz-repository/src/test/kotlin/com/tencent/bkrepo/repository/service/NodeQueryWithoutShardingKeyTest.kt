@@ -27,19 +27,19 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.metadata.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
-import com.tencent.bkrepo.repository.dao.FileReferenceDao
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.dao.FileReferenceDao
+import com.tencent.bkrepo.common.metadata.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName

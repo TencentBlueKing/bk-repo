@@ -31,11 +31,11 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterFsNodeClient
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import com.tencent.bkrepo.common.metadata.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeSetLengthRequest
 import com.tencent.bkrepo.repository.service.fs.impl.FsServiceImpl
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service

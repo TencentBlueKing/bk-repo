@@ -35,16 +35,16 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import com.tencent.bkrepo.common.metadata.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeSetLengthRequest
 import com.tencent.bkrepo.repository.service.fs.FsService
-import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
-import com.tencent.bkrepo.repository.util.MetadataUtils
-import com.tencent.bkrepo.repository.util.NodeEventFactory
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.NodeEventFactory
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
@@ -75,7 +75,7 @@ class FsServiceImpl(
         }
     }
 
-    open fun buildTNode(request: NodeCreateRequest): TNode {
+    fun buildTNode(request: NodeCreateRequest): TNode {
         with(request) {
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             return TNode(

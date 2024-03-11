@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.common.security.actuator
 
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.CorsEndpointProperties
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointProperties
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementPortType
@@ -47,7 +47,6 @@ import org.springframework.boot.actuate.endpoint.web.servlet.WebMvcEndpointHandl
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
-import java.util.ArrayList
 
 @Configuration
 class ActuatorAuthConfiguration {
@@ -83,8 +82,8 @@ class ActuatorAuthConfiguration {
     @Bean
     fun actuatorAuthInterceptor(
         authenticationManager: AuthenticationManager,
-        permissionManager: PermissionManager
+        principalManager: PrincipalManager
     ): ActuatorAuthInterceptor {
-        return ActuatorAuthInterceptor(authenticationManager, permissionManager)
+        return ActuatorAuthInterceptor(authenticationManager, principalManager)
     }
 }

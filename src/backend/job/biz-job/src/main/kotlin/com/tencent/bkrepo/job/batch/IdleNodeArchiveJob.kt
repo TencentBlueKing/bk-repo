@@ -2,6 +2,8 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -10,11 +12,6 @@ import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.IdleNodeArchiveJobProperties
-import com.tencent.bkrepo.repository.api.FileReferenceClient
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import java.time.Duration
-import java.time.LocalDateTime
-import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -22,6 +19,9 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.Duration
+import java.time.LocalDateTime
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
@@ -37,7 +37,7 @@ import kotlin.reflect.KClass
 class IdleNodeArchiveJob(
     private val properties: IdleNodeArchiveJobProperties,
     private val archiveClient: ArchiveClient,
-    private val fileReferenceClient: FileReferenceClient,
+    private val fileReferenceService: FileReferenceService,
 ) : MongoDbBatchJob<IdleNodeArchiveJob.Node, NodeContext>(properties) {
     private var lastCutoffTime: LocalDateTime? = null
     private var tempCutoffTime: LocalDateTime? = null
@@ -118,7 +118,7 @@ class IdleNodeArchiveJob(
         }
         val af = archiveClient.get(sha256, credentialsKey).data
         if (af == null) {
-            val count = fileReferenceClient.count(sha256, credentialsKey).data
+            val count = fileReferenceService.count(sha256, credentialsKey)
             // 归档任务不存在
             if (count == 1L) {
                 // 快速归档

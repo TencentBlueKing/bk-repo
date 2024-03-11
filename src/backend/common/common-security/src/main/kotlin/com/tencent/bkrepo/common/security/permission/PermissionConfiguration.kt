@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.security.permission
 
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -46,7 +46,7 @@ class PermissionConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun permissionCheckHandler(permissionManager: PermissionManager): PermissionCheckHandler {
-        return DefaultPermissionCheckHandler(permissionManager)
+    fun permissionCheckHandler(principalManager: PrincipalManager): PermissionCheckHandler {
+        return DefaultPermissionCheckHandler(principalManager)
     }
 }

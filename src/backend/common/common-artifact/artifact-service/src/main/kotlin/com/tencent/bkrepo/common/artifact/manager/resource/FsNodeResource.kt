@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.api.FsNodeClient
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 
 /**
  * 文件节点

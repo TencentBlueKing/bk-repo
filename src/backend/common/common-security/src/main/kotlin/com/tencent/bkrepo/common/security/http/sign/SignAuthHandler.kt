@@ -43,7 +43,7 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_BODY
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest

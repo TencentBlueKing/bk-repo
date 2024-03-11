@@ -29,10 +29,10 @@ package com.tencent.bkrepo.repository.api.proxy
 
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUpdateAccessDateRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam

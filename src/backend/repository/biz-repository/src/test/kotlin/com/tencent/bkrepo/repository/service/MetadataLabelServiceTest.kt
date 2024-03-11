@@ -29,7 +29,7 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
+import com.tencent.bkrepo.common.metadata.constant.SCAN_STATUS
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.dao.repository.MetadataLabelRepository
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelRequest

@@ -44,8 +44,8 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -143,7 +143,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     open fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
         with(context) {
-            return nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            return nodeService.getNodeDetail(artifactInfo)
         }
     }
 

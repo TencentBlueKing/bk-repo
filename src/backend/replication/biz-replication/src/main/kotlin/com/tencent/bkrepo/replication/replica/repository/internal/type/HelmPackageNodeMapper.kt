@@ -27,16 +27,15 @@
 
 package com.tencent.bkrepo.replication.replica.repository.internal.type
 
-import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Component
 
 @Component
 class HelmPackageNodeMapper(
-    private val nodeClient: NodeClient
+    private val nodeService: NodeService
     ): PackageNodeMapper {
 
     override fun type() = RepositoryType.HELM
@@ -55,9 +54,9 @@ class HelmPackageNodeMapper(
             CHART_PACKAGE_FILE_PATH.format(name, version),
             PROVENANCE_FILE_PATH.format(name, version)
         )
-        return nodeClient.listExistFullPath(
+        return nodeService.listExistFullPath(
             packageSummary.projectId, packageSummary.repoName, chartNodeList
-        ).data ?: throw NodeNotFoundException(chartNodeList.toString())
+        )
     }
 
     companion object {

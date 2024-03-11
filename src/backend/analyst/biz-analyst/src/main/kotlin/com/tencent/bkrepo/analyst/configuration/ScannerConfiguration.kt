@@ -34,8 +34,8 @@ import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
 import com.tencent.bkrepo.analyst.service.impl.ProjectUsageStatisticsServiceImpl
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.metadata.service.operate.impl.OperateLogService
+import com.tencent.bkrepo.common.metadata.service.operate.impl.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import com.tencent.bkrepo.repository.api.OperateLogClient
 import com.tencent.bkrepo.repository.api.ProjectUsageStatisticsClient

@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.fs.server.model
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 
 data class Node(
     val createdBy: String,

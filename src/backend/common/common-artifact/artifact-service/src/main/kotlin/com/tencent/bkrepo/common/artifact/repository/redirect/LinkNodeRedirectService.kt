@@ -31,14 +31,14 @@ import com.tencent.bkrepo.common.api.constant.ACCESS_FROM_API
 import com.tencent.bkrepo.common.api.constant.HEADER_ACCESS_FROM
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
-import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
-import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.constant.METADATA_KEY_LINK_FULL_PATH
+import com.tencent.bkrepo.common.metadata.constant.METADATA_KEY_LINK_PROJECT
+import com.tencent.bkrepo.common.metadata.constant.METADATA_KEY_LINK_REPO
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
 

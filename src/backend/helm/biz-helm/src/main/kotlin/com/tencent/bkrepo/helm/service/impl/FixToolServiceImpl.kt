@@ -69,7 +69,7 @@ import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -175,7 +175,7 @@ class FixToolServiceImpl(
 
     private fun helmIndexYamlMetadata(projectId: String, repoName: String): HelmIndexYamlMetadata {
         val nodeDetail =
-            nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) ?: run {
                 logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
                 throw HelmFileNotFoundException(
                     HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
@@ -221,7 +221,9 @@ class FixToolServiceImpl(
         try {
             // 查询索引文件
             val nodeDetail =
-                nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
+                nodeService.getNodeDetail(
+                    ArtifactInfo(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())
+                ) ?: run {
                     logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
                     throw HelmFileNotFoundException(
                         HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
@@ -372,7 +374,7 @@ class FixToolServiceImpl(
             select = mutableListOf(),
             rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
-        return nodeClient.queryWithoutCount(queryModel).data!!
+        return nodeSearchService.searchWithoutCount(queryModel)
     }
 
     private fun resolveNode(record: Map<String, Any?>): NodeInfo {

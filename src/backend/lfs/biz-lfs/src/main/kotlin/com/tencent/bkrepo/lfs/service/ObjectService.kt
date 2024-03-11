@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -48,7 +49,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -67,7 +69,6 @@ import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
 import com.tencent.bkrepo.lfs.pojo.LfsObject
 import com.tencent.bkrepo.lfs.utils.OidUtils
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.Headers.Companion.toHeaders
@@ -77,7 +78,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class ObjectService(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val temporaryTokenClient: ServiceTemporaryTokenClient,
     private val repositoryClient: RepositoryClient,
     private val permissionManager: PermissionManager,
@@ -116,7 +117,7 @@ class ObjectService(
                     getArtifactFullPath()
                 )
             }
-            nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data ?: return
+            nodeService.getNodeDetail(lfsArtifactInfo) ?: return
         }
         val context = ArtifactUploadContext(file)
         repository.upload(context)
@@ -277,7 +278,7 @@ class ObjectService(
 
     private fun checkObjectExist(repo: RepositoryDetail, oid: String): Boolean {
         val realPath = OidUtils.convertToFullPath(oid)
-        val node = nodeClient.getNodeDetail(repo.projectId, repo.name, realPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(repo.projectId, repo.name, realPath))
         return node != null
     }
 

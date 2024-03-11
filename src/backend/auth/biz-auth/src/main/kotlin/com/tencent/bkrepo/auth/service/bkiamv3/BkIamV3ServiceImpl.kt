@@ -68,9 +68,10 @@ import com.tencent.bkrepo.auth.util.IamGroupUtils
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -102,7 +103,7 @@ class BkIamV3ServiceImpl(
 
     @Autowired
     @Lazy
-    private lateinit var nodeClient: NodeClient
+    private lateinit var nodeService: NodeService
 
 
     @Autowired
@@ -300,7 +301,7 @@ class BkIamV3ServiceImpl(
 
     override fun convertNodeResourceId(projectId: String, repoName: String, fullPath: String): String? {
         val index = HashShardingUtils.shardingSequenceFor(projectId, 256).toString()
-        val nodeId = nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.nodeInfo?.id ?: return null
+        val nodeId = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))?.nodeInfo?.id ?: return null
         return buildId(nodeId, index)
     }
 

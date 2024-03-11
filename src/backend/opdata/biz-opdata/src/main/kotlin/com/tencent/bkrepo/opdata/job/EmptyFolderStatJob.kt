@@ -39,7 +39,7 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
 import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.job.pojo.EmptyFolderMetric
 import com.tencent.bkrepo.opdata.job.pojo.JobContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate

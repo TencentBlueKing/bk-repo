@@ -34,7 +34,7 @@ package com.tencent.bkrepo.repository.pojo.packages
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.query.model.Sort.Direction
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

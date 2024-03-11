@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.nuget.pojo.user
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiModelProperty
 

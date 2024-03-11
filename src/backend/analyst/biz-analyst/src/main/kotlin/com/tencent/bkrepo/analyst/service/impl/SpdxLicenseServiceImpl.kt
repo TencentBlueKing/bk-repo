@@ -27,24 +27,25 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.analyst.dao.SpdxLicenseDao
 import com.tencent.bkrepo.analyst.exception.LicenseNotFoundException
 import com.tencent.bkrepo.analyst.model.TSpdxLicense
 import com.tencent.bkrepo.analyst.pojo.license.SpdxLicenseInfo
 import com.tencent.bkrepo.analyst.pojo.license.SpdxLicenseJsonInfo
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -59,7 +60,7 @@ import java.time.format.DateTimeFormatter
 @Service
 class SpdxLicenseServiceImpl(
     private val licenseDao: SpdxLicenseDao,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val repositoryClient: RepositoryClient,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val storageService: StorageService
@@ -82,7 +83,7 @@ class SpdxLicenseServiceImpl(
         val repo = repositoryClient.getRepoInfo(projectId, repoName).data
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, repoName)
         val storageCredentials = repo.storageCredentialsKey?.let { storageCredentialsClient.findByKey(it).data }
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, repoName, fullPath)
         storageService.load(node.sha256!!, Range.full(node.size), storageCredentials)?.use {
             importLicense(it.readJsonString<SpdxLicenseJsonInfo>())

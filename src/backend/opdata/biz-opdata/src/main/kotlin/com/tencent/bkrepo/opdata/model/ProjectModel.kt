@@ -33,7 +33,7 @@ package com.tencent.bkrepo.opdata.model
 
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT
 import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria

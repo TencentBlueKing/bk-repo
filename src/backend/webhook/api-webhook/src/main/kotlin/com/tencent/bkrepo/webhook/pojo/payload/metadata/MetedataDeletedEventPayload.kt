@@ -29,7 +29,7 @@ package com.tencent.bkrepo.webhook.pojo.payload.metadata
 
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 
 data class MetedataDeletedEventPayload(
     override val user: UserInfo,

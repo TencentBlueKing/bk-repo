@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.service.packages
 
-import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
+import com.tencent.bkrepo.common.metadata.pojo.software.ProjectPackageOverview
 
 interface PackageStatisticsService {
 

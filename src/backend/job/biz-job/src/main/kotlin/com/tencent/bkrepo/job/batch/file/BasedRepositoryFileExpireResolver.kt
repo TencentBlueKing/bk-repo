@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.job.batch.file
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
@@ -10,7 +10,6 @@ import com.tencent.bkrepo.job.LAST_ACCESS_DATE
 import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.pojo.TFileCache
 import com.tencent.bkrepo.job.service.FileCacheService
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
@@ -22,7 +21,7 @@ import java.time.LocalDateTime
  * 基于仓库配置判断文件是否过期
  * */
 class BasedRepositoryFileExpireResolver(
-    private val nodeClient: NodeClient,
+    private val nodeSearchService: NodeSearchService,
     private val expireConfig: RepositoryExpireConfig,
     taskScheduler: ThreadPoolTaskScheduler,
     private val fileCacheService: FileCacheService,
@@ -51,7 +50,7 @@ class BasedRepositoryFileExpireResolver(
             val projectId = it.projectId
             val repoName = it.repoName
             val pages = getNodes(it)
-            pages.data?.records?.forEach { ret ->
+            pages.records.forEach { ret ->
                 // 获取每个的sha256
                 val sha256 = ret[SHA256].toString()
                 val fullPath = ret[FULL_PATH].toString()
@@ -68,7 +67,7 @@ class BasedRepositoryFileExpireResolver(
             val projectId = it.projectId
             val repoName = it.repoName
             val pages = getNodes(it)
-            pages.data?.records?.forEach { ret ->
+            pages.records.forEach { ret ->
                 // 获取每个的sha256
                 val sha256 = ret[SHA256].toString()
                 val fullPath = ret[FULL_PATH].toString()
@@ -90,7 +89,7 @@ class BasedRepositoryFileExpireResolver(
         )
     }
 
-    private fun getNodes(tFileCache: TFileCache): Response<Page<Map<String, Any?>>> {
+    private fun getNodes(tFileCache: TFileCache): Page<Map<String, Any?>> {
         val queryModel = NodeQueryBuilder()
             .projectId(tFileCache.projectId)
             .repoName(tFileCache.repoName)
@@ -104,7 +103,7 @@ class BasedRepositoryFileExpireResolver(
         }
         val rule = Rule.NestedRule(fullPathRuleList.toMutableList(), Rule.NestedRule.RelationType.OR)
         (queryModel.rule as Rule.NestedRule).rules.add(rule)
-        return nodeClient.queryWithoutCount(queryModel)
+        return nodeSearchService.searchWithoutCount(queryModel)
     }
 
     companion object {

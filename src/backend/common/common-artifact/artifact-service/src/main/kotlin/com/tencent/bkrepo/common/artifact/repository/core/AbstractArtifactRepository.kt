@@ -54,6 +54,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -61,7 +62,6 @@ import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -80,7 +80,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
-    lateinit var nodeClient: NodeClient
+    lateinit var nodeService: NodeService
 
     @Autowired
     lateinit var repositoryClient: RepositoryClient

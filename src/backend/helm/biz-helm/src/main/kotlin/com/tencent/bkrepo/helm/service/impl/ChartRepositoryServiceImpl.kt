@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.api.util.readYamlString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -145,8 +146,8 @@ class ChartRepositoryServiceImpl(
                     select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_FULL_PATH, NODE_METADATA),
                     rule = rule
                 )
-                val nodeList: List<Map<String, Any?>>? = nodeClient.queryWithoutCount(queryModel).data?.records
-                if (nodeList.isNullOrEmpty()) HttpStatus.NOT_FOUND else HttpStatus.OK
+                val nodeList: List<Map<String, Any?>> = nodeSearchService.searchWithoutCount(queryModel).records
+                if (nodeList.isEmpty()) HttpStatus.NOT_FOUND else HttpStatus.OK
             } else {
                 HttpStatus.NOT_FOUND
             }
@@ -163,7 +164,7 @@ class ChartRepositoryServiceImpl(
         with(artifactInfo) {
             val name = PackageKeys.resolveHelm(packageKey)
             val fullPath = String.format("/%s-%s.tgz", name, version)
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
+            val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, fullPath, "$projectId|$repoName")
             }

@@ -38,8 +38,8 @@ import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.pojo.MavenMetadataSearchPojo
 import com.tencent.bkrepo.maven.pojo.metadata.MavenMetadataRequest
 import com.tencent.bkrepo.maven.service.MavenMetadataService
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 import java.time.ZoneId

@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -50,8 +50,8 @@ import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.urlEncode
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders

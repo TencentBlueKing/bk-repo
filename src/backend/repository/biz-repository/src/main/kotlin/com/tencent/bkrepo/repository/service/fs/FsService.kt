@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.repository.service.fs
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeSetLengthRequest
 
 interface FsService {
     fun createNode(createRequest: NodeCreateRequest): NodeDetail

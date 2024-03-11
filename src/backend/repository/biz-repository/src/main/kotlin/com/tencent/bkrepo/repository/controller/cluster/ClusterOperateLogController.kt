@@ -29,8 +29,8 @@ package com.tencent.bkrepo.repository.controller.cluster
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
+import com.tencent.bkrepo.common.metadata.pojo.operate.OperateLog
+import com.tencent.bkrepo.common.metadata.service.operate.impl.OperateLogService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.cluster.ClusterOperateLogClient

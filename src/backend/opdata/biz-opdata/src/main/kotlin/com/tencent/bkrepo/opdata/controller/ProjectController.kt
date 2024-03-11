@@ -30,10 +30,10 @@ package com.tencent.bkrepo.opdata.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
-import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
-import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatisticsListOption
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.pojo.operate.ProjectUsageStatistics
+import com.tencent.bkrepo.common.metadata.pojo.operate.ProjectUsageStatisticsListOption
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.operate.impl.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils

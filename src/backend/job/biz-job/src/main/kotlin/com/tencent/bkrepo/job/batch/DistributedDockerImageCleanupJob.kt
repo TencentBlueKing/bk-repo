@@ -28,13 +28,13 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
-import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.TYPE
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.DistributedDockerImageCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
+import com.tencent.bkrepo.common.metadata.constant.SCAN_STATUS
 import com.tencent.bkrepo.oci.api.OciClient
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.find

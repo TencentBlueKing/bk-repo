@@ -37,7 +37,6 @@ dependencies {
     implementation(project(":oci:api-oci"))
     implementation(project(":replication:api-replication"))
     implementation(project(":archive:api-archive"))
-    implementation(project(":common:common-operate:operate-service"))
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("io.micrometer:micrometer-registry-prometheus")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

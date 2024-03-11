@@ -36,22 +36,17 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.net.MalformedURLException
-import java.net.URL
 
 /**
  * 公共远程仓库
  */
 @Component
-class CommonRemoteRepository(
-    private val packageService: PackageService
-) : RemoteRepository() {
+class CommonRemoteRepository : RemoteRepository() {
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
         logger.info("Will prepare to create remote download url...")
         val type = context.repositoryDetail.type
@@ -92,18 +87,6 @@ class CommonRemoteRepository(
 
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
-    }
-
-    /**
-     * 如果fullPath已经是完整的url，则直接使用，否则进行拼接
-     */
-    private fun checkUrl(fullPath: String): Boolean {
-        return try {
-            URL(fullPath)
-            true
-        } catch (e: MalformedURLException) {
-            false
-        }
     }
 
     companion object {

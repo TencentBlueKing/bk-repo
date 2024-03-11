@@ -29,7 +29,7 @@ package com.tencent.bkrepo.repository.api
 
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient

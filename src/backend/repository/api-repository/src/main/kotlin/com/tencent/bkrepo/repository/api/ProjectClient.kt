@@ -34,10 +34,10 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
-import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectRangeQueryRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam

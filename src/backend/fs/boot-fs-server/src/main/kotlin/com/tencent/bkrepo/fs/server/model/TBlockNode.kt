@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingDocument
 import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingKey
 import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_IDX
 import com.tencent.bkrepo.fs.server.model.TBlockNode.Companion.BLOCK_IDX_DEF
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.common.metadata.constant.SHARDING_COUNT
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime

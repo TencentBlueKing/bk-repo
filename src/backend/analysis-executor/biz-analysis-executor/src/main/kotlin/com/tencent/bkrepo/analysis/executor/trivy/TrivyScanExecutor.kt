@@ -53,9 +53,9 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode.SYSTEM_ERROR
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
@@ -72,7 +72,7 @@ class TrivyScanExecutor @Autowired constructor(
     private val scannerExecutorProperties: ScannerExecutorProperties,
     private val repositoryClient: RepositoryClient,
     private val storageService: StorageService,
-    private val nodeClient: NodeClient
+    private val nodeSearchService: NodeSearchService,
 ) : CommonScanExecutor() {
 
     private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
@@ -193,16 +193,9 @@ class TrivyScanExecutor @Autowired constructor(
             .sort(Sort.Direction.DESC, "lastModifiedDate", "createdDate")
             .select("fullPath", "size", "sha256", "md5")
             .build()
-        val nodeRes = nodeClient.queryWithoutCount(queryModel)
-        if (nodeRes.isNotOk()) {
-            logger.error(
-                "Get node info failed: code[${nodeRes.code}], message[${nodeRes.message}]," +
-                    " projectId[$projectId], repoName[$repo]"
-            )
-            throw SystemErrorException(SYSTEM_ERROR, nodeRes.message ?: "")
-        }
+        val nodeRes = nodeSearchService.searchWithoutCount(queryModel)
         // 获取最新的trivy.db
-        val newestDB = nodeRes.data!!.records.firstOrNull()
+        val newestDB = nodeRes.records.firstOrNull()
         if (newestDB == null) {
             logger.error("Get trivy.db file failed")
             throw SystemErrorException(SYSTEM_ERROR, "Get trivy.db file failed")

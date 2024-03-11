@@ -37,7 +37,7 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
 import com.tencent.bkrepo.replication.replica.base.interceptor.progress.ProgressInterceptor
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import org.slf4j.LoggerFactory

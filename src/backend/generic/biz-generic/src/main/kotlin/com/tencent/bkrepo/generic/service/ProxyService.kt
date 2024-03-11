@@ -44,7 +44,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.security.PermissionManager
 import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties

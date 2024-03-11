@@ -34,7 +34,7 @@ import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.InstanceInfoDTO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectRangeQueryRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 

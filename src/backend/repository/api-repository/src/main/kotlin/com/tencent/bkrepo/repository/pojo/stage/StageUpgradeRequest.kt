@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.stage
 
-import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import com.tencent.bkrepo.common.metadata.pojo.ServiceRequest
 
 data class StageUpgradeRequest(
     val projectId: String,

@@ -38,15 +38,15 @@ import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.dao.FileReferenceDao
-import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.FileReferenceDao
+import com.tencent.bkrepo.common.metadata.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -63,7 +63,7 @@ import org.springframework.context.annotation.Import
 @DataMongoTest
 @Import(
     FileReferenceDao::class,
-    NodeDao::class
+    NodeDao::class,
 )
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FileReferenceServiceTest @Autowired constructor(

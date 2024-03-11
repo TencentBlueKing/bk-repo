@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.composer.pojo
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 
 data class ArtifactVersionDetail(
     val basic: Basic,

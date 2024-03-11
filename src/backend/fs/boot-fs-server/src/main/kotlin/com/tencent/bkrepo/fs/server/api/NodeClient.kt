@@ -34,8 +34,8 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.Composite
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.Node
 import com.tencent.bkrepo.fs.server.toNode
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import kotlinx.coroutines.reactor.awaitSingle

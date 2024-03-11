@@ -29,7 +29,7 @@ package com.tencent.bkrepo.analyst.pojo.request
 
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

@@ -32,11 +32,11 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.oci.listener.pool.EventHandlerThreadPoolExecutor
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.service.OciOperationService
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -46,7 +46,7 @@ import java.util.concurrent.ThreadPoolExecutor
 
 @Component
 class EventExecutor(
-    open val nodeClient: NodeClient,
+    open val nodeService: NodeService,
     open val repositoryClient: RepositoryClient,
     open val ociOperationService: OciOperationService
 ) {
@@ -87,7 +87,7 @@ class EventExecutor(
             val ociArtifactInfo = OciManifestArtifactInfo(
                 projectId, repoName, packageName, "", version, false
             )
-            val nodeInfo = nodeClient.getNodeDetail(projectId, repoName, ociArtifactInfo.getArtifactFullPath()).data
+            val nodeInfo = nodeService.getNodeDetail(ociArtifactInfo)
                 ?: throw NodeNotFoundException(
                     "${ociArtifactInfo.getArtifactFullPath()} not found in repo in $projectId|$repoName"
                 )

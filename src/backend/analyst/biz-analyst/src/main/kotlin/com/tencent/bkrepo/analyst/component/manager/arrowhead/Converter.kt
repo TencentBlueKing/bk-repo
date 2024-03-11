@@ -42,7 +42,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.License
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.levelOf
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import java.time.LocalDateTime
 
 object Converter {

@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.artifact.manager
 import com.tencent.bkrepo.common.artifact.manager.resource.NodeResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 
 /**
  * 节点资源工厂，负责生成具体的节点资源

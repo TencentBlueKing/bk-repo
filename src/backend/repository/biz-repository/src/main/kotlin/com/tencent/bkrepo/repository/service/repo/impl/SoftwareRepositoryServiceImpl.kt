@@ -6,8 +6,8 @@ import com.tencent.bkrepo.common.artifact.constant.PUBLIC_PROXY_PROJECT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.common.metadata.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.repo.SoftwareRepositoryService
 import org.springframework.data.domain.Sort
@@ -59,7 +59,7 @@ class SoftwareRepositoryServiceImpl(
         val publicCriteria = where(TRepository::public).`is`(true)
         val systemCriteria = where(TRepository::configuration).regex("\\\"system\\\"( )?:( )?true")
         val criteria = where(TRepository::deleted).isEqualTo(null)
-        if (projectId != null && projectId.isNotBlank()) {
+        if (!projectId.isNullOrBlank()) {
             criteria.and(TRepository::projectId).`is`(projectId)
         } else {
             criteria.and(TRepository::projectId).ne(PUBLIC_PROXY_PROJECT)
