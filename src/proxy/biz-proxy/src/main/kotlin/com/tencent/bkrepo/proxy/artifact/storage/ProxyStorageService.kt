@@ -100,6 +100,7 @@ class ProxyStorageService : AbstractStorageService() {
         val syncFileName = filename.plus(".sync")
         val syncFileExist = fileStorage.exist(path, syncFileName, proxyCredentials)
         if (syncFileExist) {
+            val tmpSyncFileName = syncFileName.plus(".tmp")
             val keys = fileStorage.load(path, syncFileName, Range.FULL_RANGE, proxyCredentials)?.use {
                 it.readText().lines().toMutableSet()
             }
@@ -107,8 +108,8 @@ class ProxyStorageService : AbstractStorageService() {
             val content = keys.orEmpty().joinToString(System.lineSeparator())
             val inputStream = IOUtils.toInputStream(content, Charset.defaultCharset())
             val size = content.length.toLong()
-            fileStorage.delete(path, syncFileName, proxyCredentials)
-            fileStorage.store(path, syncFileName, inputStream, size, proxyCredentials)
+            fileStorage.store(path, tmpSyncFileName, inputStream, size, proxyCredentials)
+            fileStorage.move(path, tmpSyncFileName, path, syncFileName, proxyCredentials, proxyCredentials)
         } else {
             val inputStream = IOUtils.toInputStream(credentials.key.toString(), Charset.defaultCharset())
             val size = credentials.key.toString().length.toLong()

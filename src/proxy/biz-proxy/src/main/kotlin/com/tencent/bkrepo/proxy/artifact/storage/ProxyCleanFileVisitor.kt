@@ -33,8 +33,10 @@ import com.tencent.bkrepo.repository.api.proxy.ProxyFileReferenceClient
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.FileVisitResult
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.concurrent.TimeUnit
 
 /**
  * 不同步时，清理本地存储的文件遍历器
@@ -66,6 +68,12 @@ class ProxyCleanFileVisitor(
      * 当文件索引为0时，删除本地存储
      */
     private fun cleanFile(dataFile: File, syncFile: File) {
+        val attrs = Files.readAttributes(dataFile.toPath(), BasicFileAttributes::class.java)
+        val creationTime = attrs.creationTime().toMillis()
+        // 防止刚存储，未创建文件引用时被误删
+        if (System.currentTimeMillis() - creationTime < TimeUnit.MINUTES.toMillis(1)) {
+            return
+        }
         val sha256 = dataFile.name
         val credentialKeys = ProxyStorageUtils.readStorageCredentialKeys(syncFile)
         try {
