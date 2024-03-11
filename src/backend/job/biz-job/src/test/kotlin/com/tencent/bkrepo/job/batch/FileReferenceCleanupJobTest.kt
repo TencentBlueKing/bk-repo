@@ -40,6 +40,7 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -97,6 +98,9 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @Autowired
     lateinit var fileReferenceCleanupJobProperties: FileReferenceCleanupJobProperties
+
+    @MockBean
+    lateinit var fileReferenceClient: FileReferenceClient
 
     @BeforeEach
     fun beforeEach() {

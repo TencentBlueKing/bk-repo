@@ -47,6 +47,7 @@ import com.tencent.bkrepo.job.batch.context.FileJobContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -71,6 +72,7 @@ class FileReferenceCleanupJob(
     private val storageCredentialsClient: StorageCredentialsClient,
     private val properties: FileReferenceCleanupJobProperties,
     private val archiveClient: ArchiveClient,
+    private val fileReferenceClient: FileReferenceClient,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
     /**
@@ -80,12 +82,8 @@ class FileReferenceCleanupJob(
      * */
     private lateinit var bf: BloomFilter<CharSequence>
 
-    override fun start(): Boolean {
-        bf = buildBloomFilter()
-        return super.start()
-    }
-
     override fun createJobContext(): FileJobContext {
+        bf = buildBloomFilter()
         return FileJobContext()
     }
 
@@ -115,7 +113,15 @@ class FileReferenceCleanupJob(
             * 被删除的判断，再来决定资源的删除问题。
             * */
             if (existNode(sha256, credentialsKey) || isGcBase(sha256, credentialsKey)) {
-                logger.warn("Reject deletion, sha256[$sha256] on $credentialsKey is referenced.")
+                logger.warn("Deletion refused, file[$sha256] on [$credentialsKey] has references.")
+                if (!properties.dryRun) {
+                    // 存在节点，则表明引用至少需要为1。
+                    fileReferenceClient.increment(sha256, credentialsKey)
+                }
+                return
+            }
+            if (properties.dryRun) {
+                logger.info("Mock delete $sha256 on $credentialsKey.")
                 return
             }
             var successToDeleted = cleanupRelatedResources(sha256, credentialsKey)
@@ -163,7 +169,9 @@ class FileReferenceCleanupJob(
                 bf.put(sha256)
             }
         }
-        logger.info("Build bloom filter successful，count: ${bf.approximateElementCount()},fpp: ${bf.expectedFpp()}")
+        val count = "${bf.approximateElementCount()}/${properties.expectedNodes}"
+        val fpp = bf.expectedFpp()
+        logger.info("Build bloom filter successful,count: $count,fpp: $fpp")
         return bf
     }
 
