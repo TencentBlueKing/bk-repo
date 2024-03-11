@@ -552,14 +552,16 @@
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
-                        v.nodeMetadata.forEach(item => {
-                            metadataLabelList.forEach(ele => {
-                                if (ele.labelKey === item.key) {
-                                    item.display = ele.display
-                                }
+                        if (v.nodeMetadata) {
+                            v.nodeMetadata.forEach(item => {
+                                metadataLabelList.forEach(ele => {
+                                    if (ele.labelKey === item.key) {
+                                        item.display = ele.display
+                                    }
+                                })
                             })
-                        })
-
+                        }
+                        
                         return {
                             metadata: {},
                             clusterNames: v.clusterNames || [],
