@@ -80,11 +80,11 @@ class FileReferenceCleanupJob(
     private lateinit var bf: BloomFilter<CharSequence>
 
     override fun start(): Boolean {
-        bf = buildBloomFilter()
         return super.start()
     }
 
     override fun createJobContext(): FileJobContext {
+        bf = buildBloomFilter()
         return FileJobContext()
     }
 
@@ -113,13 +113,13 @@ class FileReferenceCleanupJob(
                     logger.warn("Dirty sha256[$sha256] exists on $credentialsKey")
                     return
                 }
-                storageService.delete(sha256, storageCredentials)
+//                storageService.delete(sha256, storageCredentials)
             } else {
                 context.fileMissing.incrementAndGet()
                 logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
             }
-            cleanupRelatedResources(sha256, credentialsKey)
-            mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
+/*            cleanupRelatedResources(sha256, credentialsKey)
+            mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)*/
         } catch (e: Exception) {
             throw JobExecuteException("Failed to delete file[$sha256] on [$storageCredentials].", e)
         }
@@ -141,7 +141,7 @@ class FileReferenceCleanupJob(
     }
 
     private fun buildBloomFilter(): BloomFilter<CharSequence> {
-        logger.info("Start build bloom filter.")
+        logger.info("Start build bloom filter,cap: ${properties.expectedNodes}.")
         val bf = BloomFilter.create(
             Funnels.stringFunnel(StandardCharsets.UTF_8),
             properties.expectedNodes,
@@ -155,7 +155,7 @@ class FileReferenceCleanupJob(
                 bf.put(sha256)
             }
         }
-        logger.info("Build bloom filter successful，count: ${bf.approximateElementCount()},fpp: ${bf.expectedFpp()}")
+        logger.info("Build bloom filter successful, count: ${bf.approximateElementCount()},fpp: ${bf.expectedFpp()}")
         return bf
     }
 
