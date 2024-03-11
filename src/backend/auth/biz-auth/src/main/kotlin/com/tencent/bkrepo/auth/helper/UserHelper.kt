@@ -29,32 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service.local
+package com.tencent.bkrepo.auth.helper
 
-import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+
 import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.model.TUser
-import com.tencent.bkrepo.auth.pojo.account.ScopeRule
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
-import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
-import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
-import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
-import com.tencent.bkrepo.auth.util.scope.RuleUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
-import java.time.LocalDateTime
 
-open class AbstractServiceImpl constructor(
-    open val userDao: UserDao,
+class UserHelper constructor(
+    private val userDao: UserDao,
     private val roleRepository: RoleRepository
 ) {
 
@@ -77,7 +70,7 @@ open class AbstractServiceImpl constructor(
     private fun checkUserExistBatch(idList: List<String>) {
         idList.forEach {
             userDao.findFirstByUserId(it) ?: run {
-                logger.warn(" user not  exist.")
+                logger.warn("user not  exist.")
                 throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
             }
         }
@@ -111,73 +104,6 @@ open class AbstractServiceImpl constructor(
         }
     }
 
-    fun isUserLocalAdmin(userId: String): Boolean {
-        val user = userDao.findFirstByUserId(userId) ?: run {
-            return false
-        }
-        return user.admin
-    }
-
-    fun isUserLocalProjectAdmin(userId: String, projectId: String): Boolean {
-        val roleIdArray = mutableListOf<String>()
-        roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
-            roleIdArray.add(it.id!!)
-        }
-        userDao.findFirstByUserIdAndRolesIn(userId, roleIdArray) ?: run {
-            return false
-        }
-        return true
-    }
-
-    fun filterRepos(repos: List<String>, originRepoNames: List<String>): List<String> {
-        (repos as MutableList).retainAll(originRepoNames)
-        return repos
-    }
-
-    fun checkPlatformProject(projectId: String?, scopeDesc: List<ScopeRule>?): Boolean {
-        if (scopeDesc == null || projectId == null) return false
-
-        scopeDesc.forEach {
-            when (it.field) {
-                ResourceType.PROJECT.name -> {
-                    if (RuleUtil.check(it, projectId, ResourceType.PROJECT)) return true
-                }
-                else -> return false
-            }
-        }
-        return false
-    }
-
-    fun checkPlatformEndPoint(endpoint: String?, scopeDesc: List<ScopeRule>?): Boolean {
-        if (scopeDesc == null || endpoint == null) return false
-
-        scopeDesc.forEach {
-            when (it.field) {
-                ResourceType.ENDPOINT.name -> {
-                    if (RuleUtil.check(it, endpoint, ResourceType.ENDPOINT)) return true
-                }
-                else -> return false
-            }
-        }
-        return false
-    }
-
-    fun getProjectAdminUser(projectId: String): List<String> {
-        val roleIdArray = mutableListOf<String>()
-        roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
-            roleIdArray.add(it.id!!)
-        }
-        return userDao.findAllByRolesIn(roleIdArray).map { it.userId }.distinct()
-    }
-
-    // 获取此项目一般用户
-    fun getProjectCommonUser(projectId: String): List<String> {
-        val roleIdArray = mutableListOf<String>()
-        val role = roleRepository.findFirstByRoleIdAndProjectId(PROJECT_VIEWER_ID, projectId)
-        if (role != null) role.id?.let { roleIdArray.add(it) }
-        return userDao.findAllByRolesIn(roleIdArray).map { it.userId }.distinct()
-    }
-
     fun createRoleCommon(request: CreateRoleRequest): String? {
         logger.info("create role request:[$request] ")
         val role: TRole? = if (request.type == RoleType.REPO) {
@@ -208,12 +134,6 @@ open class AbstractServiceImpl constructor(
         return result.id
     }
 
-    fun addProjectUserAdmin(projectId: String, idList: List<String>) {
-        val createRoleRequest = RequestUtil.buildProjectAdminRequest(projectId)
-        val roleId = createRoleCommon(createRoleRequest)
-        addUserToRoleBatchCommon(idList, roleId!!)
-    }
-
     fun addUserToRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
         logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
         checkOrCreateUser(userIdList)
@@ -230,26 +150,6 @@ open class AbstractServiceImpl constructor(
         return true
     }
 
-    fun buildBuiltInPermission(
-        permissionId: String,
-        projectId: String,
-        permissionName: String,
-        userList: List<String>
-    ): Permission {
-        return Permission(
-            id = permissionId,
-            resourceType = ResourceType.PROJECT.toString(),
-            projectId = projectId,
-            permName = permissionName,
-            users = userList,
-            createBy = SecurityUtils.getUserId(),
-            updatedBy = SecurityUtils.getUserId(),
-            createAt = LocalDateTime.now(),
-            updateAt = LocalDateTime.now()
-        )
-    }
-
-
     private fun findUsableProjectTypeRoleId(roleId: String?, projectId: String): String {
         var tempRoleId = roleId ?: "${projectId}_role_${IDUtil.shortUUID()}"
         while (true) {
@@ -259,6 +159,6 @@ open class AbstractServiceImpl constructor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(AbstractServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(UserHelper::class.java)
     }
 }
