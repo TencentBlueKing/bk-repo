@@ -62,7 +62,7 @@ abstract class SubtaskPushDispatcher<T : ExecutionCluster>(
         logger.info("dispatch subtask[${subtask.taskId}] with ${executionCluster.name}")
         if (!dispatch(subtask)) {
             // 分发失败，放回队列中
-            logger.warn("dispatch subtask failed, ${subtask.trace()}")
+            logger.error("dispatch subtask failed, ${subtask.trace()}")
             subtaskStateMachine.sendEvent(
                 SubScanTaskStatus.PULLED.name,
                 Event(SubtaskEvent.RETRY.name, RetryContext(subtask))

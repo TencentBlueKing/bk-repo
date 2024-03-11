@@ -91,10 +91,6 @@ class KubernetesDispatcher(
             }
         }
 
-        if (retryTimes == 0) {
-            logger.error("subtask[${subtask.taskId}] dispatch failed after $MAX_RETRY_TIMES times retry")
-        }
-
         return result
     }
 
@@ -208,11 +204,11 @@ class KubernetesDispatcher(
         // 处理job名称冲突的情况
         if (e.code == HttpStatus.CONFLICT.value) {
             val cleaned = cleanJob(jobName(subtask))
-            logger.warn("subtask[${subtask.taskId}] job already exists, cleaned[$cleaned]")
+            logger.warn("${subtask.trace()} job already exists, cleaned[$cleaned]")
             return cleaned
         }
 
-        logger.error("subtask[${subtask.taskId}] dispatch failed\n, ${e.string()}")
+        logger.error("${subtask.trace()} dispatch failed\n, ${e.string()}")
         return false
     }
 
@@ -225,7 +221,7 @@ class KubernetesDispatcher(
                 namespace,
                 null,
                 null,
-                null,
+                0,
                 null,
                 "Foreground",
                 null
