@@ -32,6 +32,8 @@
 dependencies {
     implementation(project(":common:common-api"))
     implementation(project(":common:common-operate:operate-annotation"))
+    api(project(":common:common-artifact:artifact-service"))
+    implementation(project(":common:common-artifact:artifact-api"))
     api("com.alibaba:easyexcel:3.1.1")
     compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
     testImplementation(project(":common:common-operate:operate-service"))

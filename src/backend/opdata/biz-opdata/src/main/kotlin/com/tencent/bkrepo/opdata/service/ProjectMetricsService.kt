@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.opdata.service
 
+import cn.hutool.core.date.LocalDateTimeUtil
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
@@ -39,8 +40,12 @@ import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
+import com.tencent.bkrepo.opdata.extension.UsageComputerExtension
 import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import com.tencent.bkrepo.opdata.pojo.ProjectBill
+import com.tencent.bkrepo.opdata.pojo.ProjectBillStatement
+import com.tencent.bkrepo.opdata.pojo.ProjectBillStatementRequest
 import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
@@ -48,6 +53,7 @@ import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
+import com.tencent.bkrepo.opdata.util.MetricsHandlerThreadPoolExecutor
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_BG_NAME
@@ -55,6 +61,9 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_DEPT_NAME
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_ENABLED
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_PRODUCT_ID
+import com.tencent.devops.plugin.api.PluginManager
+import com.tencent.devops.plugin.api.applyExtension
+import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -62,6 +71,8 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Optional
+import java.util.concurrent.Callable
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -71,6 +82,7 @@ class ProjectMetricsService (
     private val projectClient: ProjectClient,
     private val jobClient: JobClient,
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
+    private val pluginManager: PluginManager,
     ){
 
     private val projectInfoCache: LoadingCache<String, Optional<ProjectInfo>> = CacheBuilder.newBuilder()
@@ -163,6 +175,118 @@ class ProjectMetricsService (
             )
         val fileName = "大于${metricsRequest.limitSize/TO_GIGABYTE}GB的项目信息"
         EasyExcelUtils.download(records, fileName, ProjectMetrics::class.java, includeColumns)
+    }
+
+    fun downloadBillStatement(billStatementRequest: ProjectBillStatementRequest) {
+        val records = getProjectBillStatement(billStatementRequest)
+        // 导出
+        val includeColumns = mutableSetOf(
+            ProjectBillStatement::projectId.name,
+            ProjectBillStatement::enabled.name,
+            ProjectBillStatement::capSize.name,
+            ProjectBillStatement::pipelineCapSize.name,
+            ProjectBillStatement::customCapSize.name,
+            ProjectBillStatement::totalCost.name,
+            ProjectBillStatement::startDate.name,
+            ProjectBillStatement::endDate.name,
+            )
+        val fileName = "项目账单明细"
+        EasyExcelUtils.download(records, fileName, ProjectBillStatement::class.java, includeColumns)
+    }
+
+    private fun getProjectBillStatement(billStatementRequest: ProjectBillStatementRequest): List<ProjectBillStatement> {
+        val startDate = LocalDateTime.parse(
+            billStatementRequest.startDate, DateTimeFormatter.ISO_DATE_TIME
+        ).toLocalDate().atStartOfDay()
+        val endDate = LocalDateTime.parse(
+            billStatementRequest.endDate, DateTimeFormatter.ISO_DATE_TIME
+        ).toLocalDate().atStartOfDay()
+        val projectMetrics = MetricsCacheUtil.getProjectMetrics(endDate.format(DateTimeFormatter.ISO_DATE_TIME))
+        val projectUsages = getMetricsResult(
+            type = null,
+            limitSize = 0,
+            currentMetrics = projectMetrics,
+        )
+        val futureList = mutableListOf<Future<ProjectBill>>()
+        try {
+            projectUsages.forEach {
+                futureList.add(
+                    MetricsHandlerThreadPoolExecutor.instance.submit(
+                    Callable {
+                        val totalCost = getBillStatement(billStatementRequest, it.projectId)
+                        ProjectBill(
+                            projectId = it.projectId,
+                            totalCost = totalCost
+                        )
+                    }
+                ))
+            }
+        } catch (ignore: Exception) {
+        }
+        val result = mutableListOf<ProjectBillStatement>()
+        futureList.forEach {
+            try {
+                val bill = it.get()
+                result.add(convertToProjectBillStatement(
+                    projectId = bill.projectId,
+                    totalCost = bill.totalCost,
+                    startDate = startDate,
+                    endDate = endDate,
+                    list = projectUsages,
+                ))
+            } catch (e: Exception) {
+                logger.warn("get bill result error : $e")
+            }
+        }
+        return result
+    }
+
+    private fun convertToProjectBillStatement(
+        projectId: String,
+        totalCost: Double,
+        startDate: LocalDateTime,
+        endDate: LocalDateTime,
+        list: List<ProjectMetrics>
+    ): ProjectBillStatement {
+        val currentProjectMetric = list.firstOrNull { it.projectId == projectId }
+        return ProjectBillStatement(
+            projectId = projectId,
+            enabled = currentProjectMetric?.enabled,
+            capSize = currentProjectMetric?.capSize ?: 0,
+            pipelineCapSize = currentProjectMetric?.pipelineCapSize ?: 0,
+            customCapSize = currentProjectMetric?.customCapSize ?: 0,
+            totalCost = totalCost,
+            startDate = startDate,
+            endDate = endDate
+        )
+    }
+
+
+    private fun getBillStatement(
+        billStatementRequest: ProjectBillStatementRequest,
+        projectId: String,
+    ): Double {
+        val startDate = LocalDateTime.parse(
+            billStatementRequest.startDate, DateTimeFormatter.ISO_DATE_TIME
+        ).toLocalDate().atStartOfDay()
+        val endDate = LocalDateTime.parse(
+            billStatementRequest.endDate, DateTimeFormatter.ISO_DATE_TIME
+        ).toLocalDate().atStartOfDay()
+        val durationDays = LocalDateTimeUtil.between(startDate, endDate.plusDays(1)).toDays()
+        var date = startDate
+        val projectMetrics = projectMetricsRepository.findAllByProjectIdAndCreatedDateBetween(
+            projectId = projectId, start = startDate.minusDays(1), end = endDate.plusDays(1)
+        )
+        var bill: Double = 0.0
+        while (!date.isAfter(endDate)) {
+            val projectMetric = projectMetrics.firstOrNull { it.createdDate == date }
+            val usage = projectMetric?.capSize?.div(billStatementRequest.limitSize) ?: 0L
+            pluginManager.applyExtension<UsageComputerExtension> {
+                bill += billComputerExpression(usage.toDouble(), durationDays.toDouble())
+            }
+            date = date.plusDays(1)
+        }
+        return bill
     }
 
 
@@ -295,7 +419,7 @@ class ProjectMetricsService (
         oneMonthBeforeProjectUsageStatistics: Map<String, ProjectUsageStatistics>? = null,
     ): List<ProjectMetrics> {
         val result = mutableListOf<ProjectMetrics>()
-        currentMetrics.forEach { current ->
+        for (current in currentMetrics) {
             val projectInfo = getProjectMetrics(
                 current = current,
                 type = type,
@@ -449,6 +573,8 @@ class ProjectMetricsService (
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ProjectMetricsService::class.java)
+
         private const val DEFAULT_PROJECT_CACHE_SIZE = 100_000L
         private const val FIXED_DELAY = 30L
         private const val INIT_DELAY = 3L
