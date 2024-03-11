@@ -84,7 +84,8 @@ class ClientHandler(
             ip = request.queryParamOrNull(DailyClientListRequest::ip.name),
             version = request.queryParamOrNull(DailyClientListRequest::version.name),
             heartbeatTime = request.queryParamOrNull(DailyClientListRequest::heartbeatTime.name),
-            pageNumber = request.queryParamOrNull(DailyClientListRequest::pageNumber.name)?.toInt() ?: DEFAULT_PAGE_NUMBER,
+            pageNumber = request.queryParamOrNull(
+                DailyClientListRequest::pageNumber.name)?.toInt() ?: DEFAULT_PAGE_NUMBER,
             pageSize = request.queryParamOrNull(DailyClientListRequest::pageSize.name)?.toInt() ?: DEFAULT_PAGE_SIZE
         )
         return ReactiveResponseBuilder.success(clientService.listDailyClients(listRequest))
