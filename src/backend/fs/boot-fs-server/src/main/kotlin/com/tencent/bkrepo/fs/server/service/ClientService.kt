@@ -37,18 +37,24 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.model.TClient
+import com.tencent.bkrepo.fs.server.model.TDailyLatestClient
 import com.tencent.bkrepo.fs.server.pojo.ClientDetail
 import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
+import com.tencent.bkrepo.fs.server.pojo.DailyClientListRequest
 import com.tencent.bkrepo.fs.server.repository.ClientRepository
+import com.tencent.bkrepo.fs.server.repository.DailyLatestClientRepository
 import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class ClientService(
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val dailyLatestClientRepository: DailyLatestClientRepository
 ) {
 
     suspend fun createClient(request: ClientCreateRequest): ClientDetail {
@@ -61,12 +67,33 @@ class ClientService(
                     .and(TClient::ip.name).isEqualTo(ip)
             )
             val client = clientRepository.findOne(query)
+            recordDairyClient(ip, request)
             return if (client == null) {
                 insertClient(request)
             } else {
                 updateClient(request, client)
             }.convert()
         }
+    }
+
+    private suspend fun recordDairyClient(ip: String, request: ClientCreateRequest) {
+        with(request) {
+            val query = Query(
+                Criteria.where(TDailyLatestClient::projectId.name).isEqualTo(projectId)
+                    .and(TDailyLatestClient::repoName.name).isEqualTo(repoName)
+                    .and(TDailyLatestClient::mountPoint.name).isEqualTo(mountPoint)
+                    .and(TDailyLatestClient::ip.name).isEqualTo(ip)
+                    .and(TDailyLatestClient::heartbeatTime.name).gt(LocalDate.now().atStartOfDay())
+                        .lt(LocalDate.now().atStartOfDay().plusDays(1))
+            )
+            val client = dailyLatestClientRepository.findOne(query)
+            if (client == null) {
+                insertDairyClient(request)
+            } else {
+                updateDairyClient(request, client)
+            }
+        }
+
     }
 
     suspend fun removeClient(projectId: String, repoName: String, clientId: String) {
@@ -148,6 +175,67 @@ class ClientService(
             os = os,
             arch = arch,
             online = online,
+            heartbeatTime = heartbeatTime
+        )
+    }
+
+    private suspend fun insertDairyClient(request: ClientCreateRequest): TDailyLatestClient {
+        val client = TDailyLatestClient(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            mountPoint = request.mountPoint,
+            userId = ReactiveSecurityUtils.getUser(),
+            ip = ReactiveRequestContextHolder.getClientAddress(),
+            version = request.version,
+            os = request.os,
+            arch = request.arch,
+            heartbeatTime = LocalDateTime.now()
+        )
+        return dailyLatestClientRepository.save(client)
+    }
+
+    private suspend fun updateDairyClient(request: ClientCreateRequest,
+                                          client: TDailyLatestClient): TDailyLatestClient {
+        val newClient = client.copy(
+            userId = ReactiveSecurityUtils.getUser(),
+            version = request.version,
+            os = request.os,
+            arch = request.arch,
+            heartbeatTime = LocalDateTime.now()
+        )
+        return dailyLatestClientRepository.save(newClient)
+    }
+
+    suspend fun listDailyClients(request: DailyClientListRequest): Page<ClientDetail> {
+        val pageRequest = Pages.ofRequest(request.pageNumber, request.pageSize)
+        val criteria = Criteria()
+        request.projectId?.let { criteria.and(TDailyLatestClient::projectId.name).isEqualTo(request.projectId) }
+        request.repoName?.let { criteria.and(TDailyLatestClient::repoName.name).isEqualTo(request.repoName) }
+        request.ip?.let { criteria.and(TDailyLatestClient::ip.name).isEqualTo(request.ip) }
+        request.version?.let { criteria.and(TDailyLatestClient::version.name).isEqualTo(request.version) }
+        request.heartbeatTime?.let {
+            val target = LocalDate.parse(request.heartbeatTime,
+                DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay()
+            criteria.and(TDailyLatestClient::heartbeatTime.name).gt(target).lt(target.plusDays(1))
+        }
+        val query = Query(criteria)
+        val count = dailyLatestClientRepository.count(query)
+        val data = dailyLatestClientRepository.find(query.with(pageRequest))
+        return Pages.ofResponse(pageRequest, count, data.map { it.convert() })
+    }
+
+    private fun TDailyLatestClient.convert(): ClientDetail {
+        return ClientDetail(
+            id = id!!,
+            projectId = projectId,
+            repoName = repoName,
+            mountPoint = mountPoint,
+            userId = userId,
+            ip = ip,
+            version = version,
+            os = os,
+            arch = arch,
+            online = false,
             heartbeatTime = heartbeatTime
         )
     }
