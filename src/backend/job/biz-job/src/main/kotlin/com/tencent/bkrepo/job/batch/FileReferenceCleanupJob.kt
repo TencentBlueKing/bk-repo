@@ -53,6 +53,7 @@ import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
@@ -116,7 +117,7 @@ class FileReferenceCleanupJob(
                 logger.warn("Deletion refused, file[$sha256] on [$credentialsKey] has references.")
                 if (!properties.dryRun) {
                     // 存在节点，则表明引用至少需要为1。
-                    fileReferenceClient.increment(sha256, credentialsKey)
+                    correctRefCount(sha256, credentialsKey, collectionName)
                 }
                 return
             }
@@ -136,6 +137,20 @@ class FileReferenceCleanupJob(
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
             throw JobExecuteException("Failed to delete file[$sha256] on [$storageCredentials].", e)
+        }
+    }
+
+    private fun correctRefCount(sha256: String, credentialsKey: String?, collectionName: String) {
+        val criteria = Criteria.where(SHA256).isEqualTo(sha256)
+            .and(CREDENTIALS).isEqualTo(credentialsKey)
+            .and(COUNT).isEqualTo(0)
+        val query = Query.query(criteria)
+        val update = Update().set(COUNT, 1L)
+        val result = mongoTemplate.updateFirst(query, update, collectionName)
+        if (result.modifiedCount == 1L) {
+            logger.info("Success to correct reference[$sha256] on [$credentialsKey].")
+        } else {
+            logger.info("Skip correct reference[$sha256].")
         }
     }
 
