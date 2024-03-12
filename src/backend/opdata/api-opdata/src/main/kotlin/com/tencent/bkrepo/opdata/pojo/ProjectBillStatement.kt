@@ -36,24 +36,27 @@ data class ProjectBillStatement(
     @ExcelProperty(value = ["项目ID"], order = 0)
     var projectId: String,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["是否启用"], order = 1)
+    @ExcelProperty(value = ["事业群"], order = 1)
+    var bgName: String?,
+    @ColumnWidth(20)
+    @ExcelProperty(value = ["是否启用"], order = 2)
     var enabled: Boolean?,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["项目用量(GB)"], order = 2)
+    @ExcelProperty(value = ["项目用量(GB)"], order = 3)
     var capSize: Long,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["流水线仓库用量(GB)"], order = 3)
+    @ExcelProperty(value = ["流水线仓库用量(GB)"], order = 4)
     var pipelineCapSize: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["自定义仓库用量(GB)"], order = 4)
+    @ExcelProperty(value = ["自定义仓库用量(GB)"], order = 5)
     var customCapSize: Long = 0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["费用"], order = 5)
+    @ExcelProperty(value = ["费用"], order = 6)
     var totalCost: Double = 0.0,
     @ColumnWidth(20)
-    @ExcelProperty(value = ["计费开始时间"], order = 6)
+    @ExcelProperty(value = ["计费开始时间"], order = 7)
     val startDate: LocalDateTime? = LocalDateTime.now(),
     @ColumnWidth(20)
-    @ExcelProperty(value = ["计费结束时间"], order = 7)
+    @ExcelProperty(value = ["计费结束时间"], order = 8)
     val endDate: LocalDateTime? = LocalDateTime.now(),
 )

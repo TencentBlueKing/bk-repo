@@ -182,6 +182,7 @@ class ProjectMetricsService (
         // 导出
         val includeColumns = mutableSetOf(
             ProjectBillStatement::projectId.name,
+            ProjectBillStatement::bgName.name,
             ProjectBillStatement::enabled.name,
             ProjectBillStatement::capSize.name,
             ProjectBillStatement::pipelineCapSize.name,
@@ -227,13 +228,17 @@ class ProjectMetricsService (
         futureList.forEach {
             try {
                 val bill = it.get()
-                result.add(convertToProjectBillStatement(
+                val projectBill = convertToProjectBillStatement(
+                    bgNames = billStatementRequest.bgNames,
                     projectId = bill.projectId,
                     totalCost = bill.totalCost,
                     startDate = startDate,
                     endDate = endDate,
                     list = projectUsages,
-                ))
+                )
+                if (projectBill != null) {
+                    result.add(projectBill)
+                }
             } catch (e: Exception) {
                 logger.warn("get bill result error : $e")
             }
@@ -243,14 +248,20 @@ class ProjectMetricsService (
 
     private fun convertToProjectBillStatement(
         projectId: String,
+        bgNames: List<String>,
         totalCost: Double,
         startDate: LocalDateTime,
         endDate: LocalDateTime,
         list: List<ProjectMetrics>
-    ): ProjectBillStatement {
-        val currentProjectMetric = list.firstOrNull { it.projectId == projectId }
+    ): ProjectBillStatement? {
+
+        val currentProjectMetric = list.firstOrNull { it.projectId == projectId}
+        if (bgNames.isNotEmpty() && !currentProjectMetric?.bgName.isNullOrEmpty() && !bgNames.contains(currentProjectMetric?.bgName))  {
+            return null
+        }
         return ProjectBillStatement(
             projectId = projectId,
+            bgName = currentProjectMetric?.bgName,
             enabled = currentProjectMetric?.enabled,
             capSize = currentProjectMetric?.capSize ?: 0,
             pipelineCapSize = currentProjectMetric?.pipelineCapSize ?: 0,
