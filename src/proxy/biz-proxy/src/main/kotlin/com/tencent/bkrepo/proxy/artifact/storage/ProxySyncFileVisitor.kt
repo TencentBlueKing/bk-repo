@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.proxy.artifact.storage
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.StreamRequestBody
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
@@ -110,6 +112,7 @@ class ProxySyncFileVisitor(
             } else {
                 logger.error("sync file[${file.canonicalPath}] error on storage credential[$storageKey]:" +
                     " ${it.code}, ${it.body?.string()}")
+                throw ErrorCodeException(CommonMessageCode.SERVICE_CALL_ERROR)
             }
         }
     }
