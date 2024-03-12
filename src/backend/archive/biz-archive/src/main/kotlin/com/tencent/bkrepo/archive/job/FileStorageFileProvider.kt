@@ -32,18 +32,17 @@ class FileStorageFileProvider(
     /**
      * 下载器的状态，true表示活跃，false表示不活跃，即暂时下载
      * */
-    private var status = AtomicBoolean(true)
+    private var activeStatus = AtomicBoolean(true)
     private val lock = ReentrantLock()
     private val available = lock.newCondition()
-    private val seqRange = IntRange(Int.MIN_VALUE + 1, Int.MAX_VALUE - 1)
-    private val seq = AtomicInteger(seqRange.first)
+    private val seq = AtomicInteger()
 
     init {
         require(lowWaterMark < highWaterMark)
         Flux.interval(Duration.ofMillis(checkInterval))
             .map {
                 val diskFreeInBytes = fileDir.toFile().usableSpace
-                val threshold = if (status.get()) lowWaterMark else highWaterMark
+                val threshold = if (activeStatus.get()) lowWaterMark else highWaterMark
                 val result = diskFreeInBytes < threshold
                 if (result) {
                     logger.info(
@@ -63,25 +62,15 @@ class FileStorageFileProvider(
     }
 
     override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials, priority: Int): Mono<File> {
-        if (priority == seqRange.last) {
-            error("The maximum seq[$priority] has been reached.")
-        }
         logger.info("Prepare[$priority] download $sha256 on ${storageCredentials.key}")
         val filePath = fileDir.resolve(sha256)
         if (Files.exists(filePath)) {
-            if (seqRange.contains(priority)) {
-                seq.decrementAndGet()
-            }
             return Mono.just(filePath.toFile())
         }
         return Mono.create {
             val task = PriorityCallableTask<File>(priority) {
                 try {
                     logger.info("Start run task[$priority].")
-                    // 回收序列号
-                    if (seqRange.contains(priority)) {
-                        seq.decrementAndGet()
-                    }
                     val file = doDownload(sha256, storageCredentials, filePath, range)
                     it.success(file)
                     file
@@ -129,7 +118,7 @@ class FileStorageFileProvider(
     }
 
     private fun checkDiskSpace() {
-        if (!status.get()) {
+        if (!activeStatus.get()) {
             lock.lock()
             try {
                 logger.info("Pause download")
@@ -142,7 +131,7 @@ class FileStorageFileProvider(
     }
 
     override fun healthy() {
-        if (status.compareAndSet(false, true)) {
+        if (activeStatus.compareAndSet(false, true)) {
             lock.lock()
             try {
                 available.signalAll()
@@ -154,9 +143,13 @@ class FileStorageFileProvider(
     }
 
     override fun unHealthy() {
-        if (status.compareAndSet(true, false)) {
+        if (activeStatus.compareAndSet(true, false)) {
             logger.info("FileProvider change to inactive.")
         }
+    }
+
+    fun isActive(): Boolean {
+        return activeStatus.get()
     }
 
     companion object {

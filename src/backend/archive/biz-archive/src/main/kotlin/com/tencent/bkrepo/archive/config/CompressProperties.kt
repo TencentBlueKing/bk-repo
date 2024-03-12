@@ -14,4 +14,6 @@ data class CompressProperties(
     var highWaterMark: DataSize = DataSize.ofGigabytes(100),
     var bigChecksumFileThreshold: DataSize = DataSize.ofMegabytes(100),
     var bigFileCompressPoolSize: Int = 1,
+    var maxConcurrency: Int = 100,
+    var fetchInterval: Duration = Duration.ofMinutes(1),
 )
