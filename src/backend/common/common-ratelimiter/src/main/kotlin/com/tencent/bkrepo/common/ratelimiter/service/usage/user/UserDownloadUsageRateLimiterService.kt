@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.service.usage
+package com.tencent.bkrepo.common.ratelimiter.service.usage.user
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
@@ -34,28 +34,28 @@ import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedExceptio
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
-import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRateLimitRule
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import javax.servlet.http.HttpServletRequest
 
-class DownloadUsageRateLimiterService(
+class UserDownloadUsageRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): UsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+): UserUsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
-       if (applyPermits == null) {
-           throw AcquireLockFailedException("response content is null")
-       }
-       return applyPermits
+        if (applyPermits == null) {
+            throw AcquireLockFailedException("response content is null")
+        }
+        return applyPermits
     }
 
     override fun getLimitDimensions(): List<LimitDimension> {
         return listOf(
-            LimitDimension.DOWNLOAD_USAGE
+            LimitDimension.USER_DOWNLOAD_USAGE
         )
     }
 
@@ -64,7 +64,7 @@ class DownloadUsageRateLimiterService(
     }
 
     override fun getRateLimitRuleClass(): Class<out RateLimitRule> {
-        return DownloadUsageRateLimitRule::class.java
+        return UserDownloadUsageRateLimitRule::class.java
     }
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {

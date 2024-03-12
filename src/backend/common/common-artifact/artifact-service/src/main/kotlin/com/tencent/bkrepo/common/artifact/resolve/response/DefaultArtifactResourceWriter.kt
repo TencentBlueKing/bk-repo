@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMed
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils.isClientBroken
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -65,7 +66,8 @@ import javax.servlet.http.HttpServletResponse
 open class DefaultArtifactResourceWriter(
     private val storageProperties: StorageProperties,
     private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService ?= null,
-) : AbstractArtifactResourceHandler(storageProperties, downloadUsageRateLimiterService) {
+    private val userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService? = null
+) : AbstractArtifactResourceHandler(storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService) {
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {

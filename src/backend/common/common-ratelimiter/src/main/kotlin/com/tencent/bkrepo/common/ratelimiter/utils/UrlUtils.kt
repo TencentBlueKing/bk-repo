@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.ratelimiter.utils
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import java.net.URI
 import java.net.URISyntaxException
@@ -71,5 +72,13 @@ object UrlUtils {
             return "/"
         }
         return path
+    }
+
+    fun getUserAndUrl(resource: String): Pair<String, String> {
+        val index = resource.indexOfFirst { it == CharPool.COLON }
+        if (index == -1) {
+            throw InvalidResourceException(resource)
+        }
+        return Pair(resource.substring(0, index), resource.substring(index))
     }
 }

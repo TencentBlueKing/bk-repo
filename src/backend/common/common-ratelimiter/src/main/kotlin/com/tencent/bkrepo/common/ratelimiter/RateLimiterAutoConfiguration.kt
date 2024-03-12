@@ -31,10 +31,12 @@ import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimitHandlerInterceptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.UsageRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUsageRateLimiterService
 import io.micrometer.core.instrument.MeterRegistry
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -55,7 +57,6 @@ class RateLimiterAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = ["rate.limiter.enabled"])
     fun urlRateLimiterService(
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
@@ -66,7 +67,6 @@ class RateLimiterAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = ["rate.limiter.enabled"])
     fun usageRateLimiterService(
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
@@ -77,7 +77,6 @@ class RateLimiterAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = ["rate.limiter.enabled"])
     fun downloadUsageRateLimiterService(
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
@@ -87,20 +86,59 @@ class RateLimiterAutoConfiguration {
         return DownloadUsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)
     }
 
+    @Bean
+    fun userDownloadUsageRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>? = null
+    ): UserDownloadUsageRateLimiterService {
+        return UserDownloadUsageRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate
+        )
+    }
 
+    @Bean
+    fun userUsageRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>? = null
+    ): UserUsageRateLimiterService {
+        return UserUsageRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate
+        )
+    }
+
+    @Bean
+    fun userUrlRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>? = null
+    ): UserUrlRateLimiterService {
+        return UserUrlRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate
+        )
+    }
 
     @Bean
     @ConditionalOnWebApplication
-    @ConditionalOnProperty(value = ["rate.limiter.enabled"])
     fun rateLimitHandlerInterceptorRegister(
+        rateLimiterProperties: RateLimiterProperties,
         urlRateLimiterService: UrlRateLimiterService,
         usageRateLimiterService: UsageRateLimiterService,
-        downloadUsageRateLimiterService: DownloadUsageRateLimiterService
+        userUrlRateLimiterService: UserUrlRateLimiterService,
+        userUsageRateLimiterService: UserUsageRateLimiterService
     ): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
                 registry.addInterceptor(RateLimitHandlerInterceptor(
-                    urlRateLimiterService, usageRateLimiterService
+                    rateLimiterProperties = rateLimiterProperties,
+                    urlRateLimiterService = urlRateLimiterService,
+                    usageRateLimiterService = usageRateLimiterService,
+                    userUrlRateLimiterService = userUrlRateLimiterService,
+                    userUsageRateLimiterService = userUsageRateLimiterService,
                 ))
                     .excludePathPatterns("/service/**", "/replica/**")
             }

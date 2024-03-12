@@ -27,23 +27,34 @@
 
 package com.tencent.bkrepo.common.ratelimiter.interceptor
 
+import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.UsageRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUsageRateLimiterService
 import org.springframework.web.servlet.HandlerInterceptor
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class RateLimitHandlerInterceptor(
+    private val rateLimiterProperties: RateLimiterProperties,
     private val urlRateLimiterService: UrlRateLimiterService,
-    private val usageRateLimiterService: UsageRateLimiterService
+    private val usageRateLimiterService: UsageRateLimiterService,
+    private val userUrlRateLimiterService: UserUrlRateLimiterService,
+    private val userUsageRateLimiterService: UserUsageRateLimiterService
 ): HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         return try {
-            urlRateLimiterService.limit(request)
-            usageRateLimiterService.limit(request)
+            if (rateLimiterProperties.enabled) {
+                // TODO 可以优化
+                urlRateLimiterService.limit(request)
+                usageRateLimiterService.limit(request)
+                userUrlRateLimiterService.limit(request)
+                userUsageRateLimiterService.limit(request)
+            }
             super.preHandle(request, response, handler)
         } catch (e: OverloadException) {
             throw e

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.s3.artifact.configuration
 
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.s3.artifact.response.S3ArtifactResourceWriter
 import org.springframework.context.annotation.Bean
@@ -46,8 +47,11 @@ class ResourceWriterConfigurer{
     @Bean
     fun artifactResourceWriter(
         storageProperties: StorageProperties,
-        downloadUsageRateLimiterService: DownloadUsageRateLimiterService
+        downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
+        userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService?= null,
     ): ArtifactResourceWriter {
-        return S3ArtifactResourceWriter(storageProperties, downloadUsageRateLimiterService)
+        return S3ArtifactResourceWriter(
+            storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService
+        )
     }
 }

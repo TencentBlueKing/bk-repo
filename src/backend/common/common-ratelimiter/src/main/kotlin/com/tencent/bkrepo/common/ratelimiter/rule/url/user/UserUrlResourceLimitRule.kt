@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.ratelimiter.rule.url.user
 
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
@@ -35,6 +34,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlNode
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlResourceLimitRule
 import com.tencent.bkrepo.common.ratelimiter.utils.UrlUtils
+import com.tencent.bkrepo.common.ratelimiter.utils.UrlUtils.getUserAndUrl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -72,14 +72,6 @@ class UserUrlResourceLimitRule(
             return null
         }
         return findResourceLimit(pathDirs)
-    }
-
-    private fun getUserAndUrl(resource: String): Pair<String, String> {
-        val index = resource.indexOfFirst { it == CharPool.COLON }
-        if (index == -1) {
-            throw InvalidResourceException(resource)
-        }
-        return Pair(resource.substring(0, index), resource.substring(index))
     }
 
     companion object {

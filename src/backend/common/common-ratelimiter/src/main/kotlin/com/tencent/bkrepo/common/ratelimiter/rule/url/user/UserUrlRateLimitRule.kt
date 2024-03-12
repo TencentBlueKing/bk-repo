@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.utils.UrlUtils
 import java.util.concurrent.ConcurrentHashMap
 
 class UserUrlRateLimitRule: RateLimitRule {
@@ -45,9 +46,18 @@ class UserUrlRateLimitRule: RateLimitRule {
             ruleLimit = userLimitRules[StringPool.POUND]
         }
 
-//        if (ruleLimit == null && extraResource.isNotEmpty()) {
-//            ruleLimit = userUrlLimitRules[resource].getUrlResourceLimit()
-//        }
+        if (ruleLimit == null && extraResource.isNotEmpty()) {
+            ruleLimit = userUrlLimitRules[resource]?.getUrlResourceLimit(extraResource.first())
+            if (ruleLimit == null && userUrlLimitRules.containsKey(StringPool.POUND)) {
+                ruleLimit = userUrlLimitRules[StringPool.POUND]?.getUrlResourceLimit(extraResource.first())
+            }
+            if (ruleLimit == null) {
+                ruleLimit = userUrlTemplateLimitRules[resource]?.getUrlResourceLimit(extraResource.last())
+                if (ruleLimit == null && userUrlTemplateLimitRules.containsKey(StringPool.POUND)) {
+                    ruleLimit = userUrlTemplateLimitRules[StringPool.POUND]?.getUrlResourceLimit(extraResource.last())
+                }
+            }
+        }
         return ruleLimit
     }
 
@@ -57,10 +67,18 @@ class UserUrlRateLimitRule: RateLimitRule {
         }
         when (resourceLimit.limitDimension) {
             LimitDimension.USER -> userLimitRules[resourceLimit.resource] = resourceLimit
-//            LimitDimension.USER_URL -> {
-//                userUrlLimitRules[res]
-//            }
-//            LimitDimension.USER_URL_TEMPLATE -> urlTemplateLimitRules.addUrlResourceLimit(resourceLimit)
+            LimitDimension.USER_URL -> {
+                val (userId, _) = UrlUtils.getUserAndUrl(resourceLimit.resource)
+                val userUrlResourceLimitRule = userUrlLimitRules[userId] ?: UserUrlResourceLimitRule()
+                userUrlResourceLimitRule.addUrlResourceLimit(resourceLimit)
+                userUrlLimitRules.putIfAbsent(userId, userUrlResourceLimitRule)
+            }
+            LimitDimension.USER_URL_TEMPLATE -> {
+                val (userId, _) = UrlUtils.getUserAndUrl(resourceLimit.resource)
+                val userUrlResourceLimitRule = userUrlTemplateLimitRules[userId] ?: UserUrlResourceLimitRule()
+                userUrlResourceLimitRule.addUrlResourceLimit(resourceLimit)
+                userUrlTemplateLimitRules.putIfAbsent(userId, userUrlResourceLimitRule)
+            }
             else -> return
         }
     }

@@ -25,49 +25,59 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.service.usage
+package com.tencent.bkrepo.common.ratelimiter.service.url.user
 
+
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
-import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
-import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 
-class DownloadUsageRateLimiterService(
+class UserUrlRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): UsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+): AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+
+
+    override fun buildResource(request: HttpServletRequest): String {
+        return HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+    }
+
+    override fun buildResourceTemplate(request: HttpServletRequest): List<String> {
+        val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+        val realUrl = request.requestURI
+        val mappingUrl = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as String
+        return listOf("$userId:$realUrl", "$userId:$mappingUrl")
+    }
 
     override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
-       if (applyPermits == null) {
-           throw AcquireLockFailedException("response content is null")
-       }
-       return applyPermits
+        return 1
     }
 
     override fun getLimitDimensions(): List<LimitDimension> {
         return listOf(
-            LimitDimension.DOWNLOAD_USAGE
+            LimitDimension.USER, LimitDimension.USER_URL, LimitDimension.USER_URL_TEMPLATE
         )
     }
 
-    override fun ignoreRequest(request: HttpServletRequest): Boolean {
-        return request.method !in DOWNLOAD_REQUEST_METHOD
-    }
-
     override fun getRateLimitRuleClass(): Class<out RateLimitRule> {
-        return DownloadUsageRateLimitRule::class.java
+        return UserUrlRateLimitRule::class.java
     }
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
-        return KEY_PREFIX +"download:$resource"
+        return KEY_PREFIX +"UserUrl:$resource"
     }
 }

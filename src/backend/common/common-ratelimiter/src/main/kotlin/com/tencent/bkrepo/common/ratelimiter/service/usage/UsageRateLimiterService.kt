@@ -90,7 +90,7 @@ open class UsageRateLimiterService(
 
     override fun getLimitDimensions(): List<LimitDimension> {
         return listOf(
-            LimitDimension.UPLOAD_USAGE, LimitDimension.REPO_UPLOAD_USAGE_TEMPLATE,
+            LimitDimension.UPLOAD_USAGE
         )
     }
 

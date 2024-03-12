@@ -64,7 +64,7 @@ abstract class AbstractRateLimiterService(
     private val redisTemplate: RedisTemplate<String, String>? = null,
 ): RateLimiterService {
 
-    private val rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
+    private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
     private val interceptorChain: RateLimiterInterceptorChain =
         RateLimiterInterceptorChain(mutableListOf(MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics)))
