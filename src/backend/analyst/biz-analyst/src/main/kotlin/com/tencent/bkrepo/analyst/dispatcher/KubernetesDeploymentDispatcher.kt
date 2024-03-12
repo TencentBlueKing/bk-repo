@@ -21,7 +21,8 @@ import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.Companion.RUNNING_STATUS
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
-import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.common.redis.RedisLock
+import com.tencent.bkrepo.common.redis.RedisOperation
 import io.kubernetes.client.custom.IntOrString
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.AppsV1Api
@@ -40,11 +41,16 @@ class KubernetesDeploymentDispatcher(
     private val tokenService: TemporaryScanTokenService,
     private val subScanTaskDao: SubScanTaskDao,
     private val scannerService: ScannerService,
-    private val lockOperation: LockOperation,
+    private val redisOperation: RedisOperation,
 ) : SubtaskPullDispatcher<KubernetesDeploymentExecutionCluster>(executionCluster) {
 
     private val client by lazy { createClient(executionCluster.kubernetesProperties) }
     private val api: AppsV1Api? by lazy { AppsV1Api(client) }
+    private val lock = RedisLock(
+        redisOperation = redisOperation,
+        lockKey = "lock:${executionCluster.name}:${executionCluster.scanner}",
+        expiredTimeInSeconds = 60L
+    )
 
     override fun dispatch() {
         val runningTaskCount = subScanTaskDao.countTaskByStatusIn(RUNNING_STATUS, executionCluster.name).toInt()
@@ -68,7 +74,7 @@ class KubernetesDeploymentDispatcher(
     private fun deleteDeploymentIfNoTask() {
         // 不存在属于该分发器的任务时直接删除对应的Deployment
         if (subScanTaskDao.countTaskByStatusIn(null, executionCluster.name) == 0L) {
-            lockOperation.doWithLock(lockKey()) {
+            lock.withLock {
                 if (subScanTaskDao.countTaskByStatusIn(null, executionCluster.name) == 0L) {
                     val deploymentName = deploymentName()
                     try {
@@ -105,7 +111,7 @@ class KubernetesDeploymentDispatcher(
     }
 
     private fun scale(targetReplicas: Int) {
-        lockOperation.doWithLock(lockKey()) {
+        lock.withLock {
             getDeployment()?.let { doScale(it, targetReplicas) }
         }
     }
@@ -158,7 +164,7 @@ class KubernetesDeploymentDispatcher(
         scanner: StandardScanner,
         targetReplicas: Int
     ): V1Deployment {
-        return lockOperation.doWithLock(lockKey()) {
+        return lock.withLock {
             var deployment = getDeployment()
             if (deployment == null) {
                 deployment = createDeployment(k8sProps, scanner, targetReplicas)
@@ -257,8 +263,6 @@ class KubernetesDeploymentDispatcher(
         maxOf(minOf(runningTaskCount, executionCluster.maxReplicas), executionCluster.minReplicas)
 
     private fun deploymentName() = "bkrepo-analyst-${executionCluster.name}-${executionCluster.scanner}"
-
-    private fun lockKey() = "lock:${executionCluster.name}:${executionCluster.scanner}"
 
     companion object {
         private val logger = LoggerFactory.getLogger(KubernetesDeploymentDispatcher::class.java)

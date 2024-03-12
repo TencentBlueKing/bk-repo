@@ -44,6 +44,7 @@ import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.statemachine.StateMachine
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.BatchV1Api
@@ -61,9 +62,11 @@ class KubernetesDispatcher(
     subtaskStateMachine: StateMachine,
     temporaryScanTokenService: TemporaryScanTokenService,
     executor: ThreadPoolTaskExecutor,
+    redisOperation: RedisOperation,
 ) : SubtaskPushDispatcher<KubernetesJobExecutionCluster>(
     executionCluster,
     scannerProperties,
+    redisOperation,
     scanService,
     subtaskStateMachine,
     temporaryScanTokenService,

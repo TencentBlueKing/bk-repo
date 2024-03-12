@@ -8,11 +8,12 @@ import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.RetryContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.redis.RedisLock
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import java.util.concurrent.Semaphore
 
 /**
  * 推类型分析任务分发器，主动将任务或任务id推到目标集群
@@ -20,41 +21,45 @@ import java.util.concurrent.Semaphore
 abstract class SubtaskPushDispatcher<T : ExecutionCluster>(
     executionCluster: T,
     protected val scannerProperties: ScannerProperties,
+    protected val redisOperation: RedisOperation,
     private val scanService: ScanService,
     private val subtaskStateMachine: StateMachine,
     private val temporaryScanTokenService: TemporaryScanTokenService,
     private val executor: ThreadPoolTaskExecutor,
 ) : AbsSubtaskDispatcher<T>(executionCluster) {
+
+    private val lock = RedisLock(
+        redisOperation = redisOperation,
+        lockKey = "scanner:dispatcher:lock:${executionCluster.name}",
+        expiredTimeInSeconds = DEFAULT_LOCK_SECONDS
+    )
+
     override fun dispatch() {
         if (scanService.peek(executionCluster.name) == null) {
             logger.info("cluster [${executionCluster.name}] has no subtask to dispatch")
             return
         }
-        // 不加锁，允许少量超过执行器的资源限制
         val availableCount = availableCount()
         logger.info("cluster [${executionCluster.name}] can execute $availableCount subtasks, starting to dispatch")
+        if (availableCount == 0) {
+            return
+        }
 
-        // 通过信号量限制可同时提交的任务数量
-        val permit = Semaphore(DEFAULT_PERMITS)
-        var dispatchedTaskCount = 0
-        for (i in 0 until availableCount) {
-            permit.acquire()
-            try {
+        try {
+            if (!lock.tryLock()) {
+                logger.info("other process is dispatching to cluster[${executionCluster.name}], skip dispatching")
+                return
+            }
+            var dispatchedTaskCount = 0
+            for (i in 0 until availableCount) {
                 val subtask = scanService.pull(executionCluster.name) ?: break
                 dispatchedTaskCount++
-                executor.execute {
-                    try {
-                        doDispatch(subtask)
-                    } finally {
-                        permit.release()
-                    }
-                }
-            } catch (e: Exception) {
-                permit.release()
-                throw e
+                executor.execute { doDispatch(subtask) }
             }
+            logger.info("[$dispatchedTaskCount] subtask was dispatched to cluster[${executionCluster.name}]")
+        } finally {
+            lock.unlock()
         }
-        logger.info("[$dispatchedTaskCount] subtask was dispatched to cluster[${executionCluster.name}]")
     }
 
     private fun doDispatch(subtask: SubScanTask) {
@@ -86,10 +91,6 @@ abstract class SubtaskPushDispatcher<T : ExecutionCluster>(
 
     companion object {
         private val logger = LoggerFactory.getLogger(SubtaskPushDispatcher::class.java)
-
-        /**
-         * 默认允许并发提交的任务数
-         */
-        private const val DEFAULT_PERMITS = 8
+        private const val DEFAULT_LOCK_SECONDS = 10L * 60L
     }
 }
