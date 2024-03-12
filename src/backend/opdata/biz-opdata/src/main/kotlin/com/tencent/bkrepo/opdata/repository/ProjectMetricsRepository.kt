@@ -50,4 +50,7 @@ interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>{
     fun findAllByCreatedDate(
         createdDate: LocalDateTime = LocalDate.now().minusDays(1).atStartOfDay()
     ): List<TProjectMetrics>
+    fun findAllByProjectIdAndCreatedDateBetween(
+        projectId: String, start: LocalDateTime, end: LocalDateTime
+    ): List<TProjectMetrics>
 }

@@ -99,7 +99,7 @@ class PermissionController @Autowired constructor(
     @GetMapping("/list")
     fun listPermission(@RequestParam projectId: String,
                        @RequestParam repoName: String?,
-                       @RequestParam resourceType: String?
+                       @RequestParam resourceType: String
     ): Response<List<Permission>> {
         preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(permissionService.listPermission(projectId, repoName, resourceType))

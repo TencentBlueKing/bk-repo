@@ -25,11 +25,14 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.test.context.TestPropertySource
 import java.time.LocalDateTime
+import kotlin.concurrent.thread
 import kotlin.random.Random
 
 @DataMongoTest
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
+@TestPropertySource(locations = ["classpath:compress.properties"])
 class BDZipManagerTest @Autowired constructor(
     private val storageService: StorageService,
     private val bdZipManager: BDZipManager,
@@ -135,6 +138,42 @@ class BDZipManagerTest @Autowired constructor(
         with(cf) {
             Assertions.assertFalse(storageService.exist(sha256, null))
             Assertions.assertTrue(storageService.exist(sha256.plus(".bd"), null))
+        }
+    }
+
+    @Test
+    fun concurrentTest() {
+        val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
+        val artifactFile1 = createTempArtifactFile(data1)
+        val baseSha256 = artifactFile1.getFileSha256()
+        storageService.store(baseSha256, artifactFile1, null)
+        val fileList = mutableListOf<TCompressFile>()
+        repeat(5) {
+            val data2 = data1.copyOfRange(it + 1, data1.size)
+            val artifactFile2 = createTempArtifactFile(data2)
+            val file = TCompressFile(
+                createdBy = "ut",
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = "ut",
+                lastModifiedDate = LocalDateTime.now(),
+                sha256 = artifactFile2.getFileSha256(),
+                baseSha256 = baseSha256,
+                uncompressedSize = artifactFile2.getSize(),
+                storageCredentialsKey = null,
+                status = CompressStatus.CREATED,
+                chainLength = 1,
+
+            )
+            storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
+            compressFileRepository.save(file)
+            fileList.add(file)
+        }
+        fileList.forEach {
+            thread { bdZipManager.compress(it) }
+        }
+        Thread.sleep(2000)
+        fileList.forEach {
+            Assertions.assertEquals(CompressStatus.COMPRESSED, it.status)
         }
     }
 

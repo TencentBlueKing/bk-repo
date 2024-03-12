@@ -242,7 +242,7 @@
             createRepo () {
                 this.$refs.createRepo.showDialogHandler()
             },
-            toPackageList ({ projectId, repoType, name }) {
+            toPackageList ({ projectId, repoType, name, category }) {
                 this.$router.push({
                     name: (repoType === 'generic' || repoType === 'ddc') ? 'repoGeneric' : 'commonList',
                     params: {
@@ -252,6 +252,7 @@
                     query: {
                         repoName: name,
                         path: '/default',
+                        storeType: category?.toLowerCase() || '',
                         ...this.$route.query,
                         c: this.pagination.current,
                         l: this.pagination.limit

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.stat
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.NAME
 import com.tencent.bkrepo.job.PATH
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
@@ -42,6 +43,7 @@ import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -139,8 +141,26 @@ open class ProjectRepoMetricsStatJob(
         val criteria = Criteria.where(CREATED_DATE).isEqualTo(statDate).and(PROJECT).`is`(projectMetric.projectId)
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
         logger.info("stat project: [${projectMetric.projectId}], size: [${projectMetric.capSize}]")
+        projectMetric.projectStatus = getProjectEnableStatus(projectMetric.projectId)
         mongoTemplate.insert(projectMetric, COLLECTION_NAME_PROJECT_METRICS)
     }
+
+    private fun getProjectEnableStatus(projectId: String): Boolean? {
+        val query = Query.query(Criteria.where(NAME).isEqualTo(projectId))
+        val project = mongoTemplate.find(query, Project::class.java, COLLECTION_NAME_PROJECT)
+            .firstOrNull() ?: return null
+        return project.metadata.firstOrNull() { it.key == "enabled" }?.value as Boolean?
+    }
+
+    data class Project(var name: String, var metadata: List<ProjectMetadata> = emptyList()) {
+        constructor(map: Map<String, Any?>) : this(
+            map[Project::name.name].toString(),
+            (map[Project::metadata.name] as? List<Map<String, Any>>)?.map {
+                ProjectMetadata(it[ProjectMetadata::key.name].toString(), it[ProjectMetadata::value.name]!!)
+            } ?: emptyList(),
+        )
+    }
+
 
     data class Repository(
         var projectId: String,
@@ -180,5 +200,6 @@ open class ProjectRepoMetricsStatJob(
         private const val COLLECTION_REPOSITORY_NAME = "repository"
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
+        private const val COLLECTION_NAME_PROJECT = "project"
     }
 }

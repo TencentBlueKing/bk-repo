@@ -327,7 +327,7 @@
 
 ### 权限列表
 
-- API: GET /auth/api/permission/list?projectId=ops&repoName=repo
+- API: GET /auth/api/permission/list?projectId=ops&repoName=repo&resourceType=REPO
 - API 名称: list_permission
 - 功能说明：
 	- 中文：权限列表
@@ -340,10 +340,11 @@
 
 - input 字段说明
 
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|projectId|string|否|无|项目ID|the project id|
-|repoName|string|否|无|仓库名称|the repo name|
+|字段|类型| 是否必须 | 默认值  | 说明   | Description       |
+|---|---|------|------|------|-------------------|
+|projectId|string| 是    | 无    | 项目ID | the project id    |
+|repoName|string| 否    | null | 仓库名称 | the repo name     |
+|resourceType|string| 是    | 无    | 资源类型 | the resource tyep |
 
 - output:
 ```

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,27 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.listener.operation
+package com.tencent.bkrepo.opdata.controller
 
-import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
-import com.tencent.bkrepo.helm.pojo.chart.ChartPackageDeleteRequest
-import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
-import com.tencent.bkrepo.helm.service.impl.AbstractChartService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.opdata.pojo.CleanupRules
+import com.tencent.bkrepo.opdata.service.RepoService
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-class ChartPackageDeleteOperation(
-    private val request: ChartOperationRequest,
-    chartService: AbstractChartService
-) : AbstractChartOperation(request, chartService) {
-
-    override fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {
-        logger.info("Prepare to delete metadata list from index's metadata..")
-        val packageRequest = request as ChartPackageDeleteRequest
-        with(packageRequest) {
-            if (!helmIndexYamlMetadata.entries.containsKey(name)) {
-                logger.info("The chart metadata [$name] was not matched in the index file, return.")
-                return
-            }
-            helmIndexYamlMetadata.entries.remove(name)
-        }
+@RestController
+@RequestMapping("/api/repo")
+class RepoController(
+    private val repoService: RepoService,
+) {
+    /**
+     * 批量更新
+     */
+    @PostMapping("/batch/update/cleanup/strategy")
+    @Principal(PrincipalType.ADMIN)
+    fun batchUpdateCleanupStrategy(@RequestBody rule: CleanupRules): Response<Void> {
+        repoService.batchUpdateCleanupStrategy(rule)
+        return ResponseBuilder.success()
     }
 }
