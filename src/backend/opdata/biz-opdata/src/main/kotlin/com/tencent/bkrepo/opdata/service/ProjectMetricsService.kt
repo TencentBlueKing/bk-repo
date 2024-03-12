@@ -256,7 +256,11 @@ class ProjectMetricsService (
     ): ProjectBillStatement? {
 
         val currentProjectMetric = list.firstOrNull { it.projectId == projectId}
-        if (bgNames.isNotEmpty() && !currentProjectMetric?.bgName.isNullOrEmpty() && !bgNames.contains(currentProjectMetric?.bgName))  {
+        if (
+            bgNames.isNotEmpty() &&
+            !currentProjectMetric?.bgName.isNullOrEmpty() &&
+            !bgNames.contains(currentProjectMetric?.bgName)
+        )  {
             return null
         }
         return ProjectBillStatement(
