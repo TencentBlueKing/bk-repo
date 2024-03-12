@@ -295,6 +295,15 @@
                     if (this.repoType === 'docker') {
                         this.selectedHistory = res.history[0] || {}
                     }
+                    // rpm仓库因为版本详情页的使用指引，需要获取当前版本详情的fullPath，用于替换使用指引的变量值
+                    if (this.repoType === 'rpm') {
+                        this.$router.replace({
+                            query: {
+                                ...this.$route.query,
+                                packageFullPath: this.detail?.basic?.fullPath
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
