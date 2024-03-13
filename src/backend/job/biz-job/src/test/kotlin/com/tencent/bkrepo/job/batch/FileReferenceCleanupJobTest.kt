@@ -40,6 +40,7 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -63,6 +64,9 @@ import org.springframework.data.mongodb.core.query.Query
 import java.util.concurrent.atomic.AtomicInteger
 import org.springframework.cloud.sleuth.Tracer
 import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
+import org.springframework.data.mongodb.core.findOne
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.isEqualTo
 
 @DisplayName("文件引用清理Job测试")
 @DataMongoTest
@@ -97,6 +101,9 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @Autowired
     lateinit var fileReferenceCleanupJobProperties: FileReferenceCleanupJobProperties
+
+    @MockBean
+    lateinit var fileReferenceClient: FileReferenceClient
 
     @BeforeEach
     fun beforeEach() {
@@ -180,7 +187,8 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     @Test
     fun errorRefTest() {
         val num = 1000
-        insertMany(num, fileReferenceCleanupJob.collectionNames().first())
+        val collectionName = fileReferenceCleanupJob.collectionNames().first()
+        insertMany(num, collectionName)
         // 新增一个节点，制造引用错误
         val doc = Document(
             mutableMapOf(
@@ -202,6 +210,9 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         }
         fileReferenceCleanupJob.start()
         Assertions.assertEquals(num - 1, deleted.get())
+        val query = Query.query(Criteria.where("sha256").isEqualTo("0"))
+        val find = mongoTemplate.findOne<Map<String, Any?>>(query, collectionName)
+        Assertions.assertEquals(1L, find?.get("count"))
     }
 
     private fun insertMany(num: Int, collectionName: String) {
