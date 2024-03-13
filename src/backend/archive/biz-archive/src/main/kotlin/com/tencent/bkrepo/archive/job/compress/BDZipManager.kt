@@ -32,8 +32,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
 import java.util.Stack
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -94,7 +94,7 @@ class BDZipManager(
     private val bdUncompressor = BDUncompressor(patchThreadPool)
     private val prioritySeq = AtomicInteger(Int.MIN_VALUE)
     val runningTasks = AtomicInteger()
-    val taskQueue = ArrayBlockingQueue<TCompressFile>(DEFAULT_BUFFER_SIZE)
+    val taskQueue = LinkedBlockingDeque<TCompressFile>()
 
     init {
         val dirs = listOf(DOWNLOAD_DIR, SIGN_DIR, COMPRESS_DIR, UNCOMPRESS_DIR)
@@ -136,7 +136,7 @@ class BDZipManager(
     fun uncompress(file: TCompressFile) {
         try {
             if (serverIsBusy()) {
-                taskQueue.offer(file)
+                taskQueue.offerFirst(file)
             } else {
                 val fileStack = Stack<TCompressFile>()
                 fileStack.push(file)
