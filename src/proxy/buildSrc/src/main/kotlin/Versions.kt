@@ -32,7 +32,7 @@ object Release {
 
 object Versions {
     const val DevopsBoot = "0.0.6"
-    const val BkRepo = "1.1.0-RELEASE"
+    const val BkRepo = "1.1.1-SNAPSHOT"
     const val OKhttp = "4.9.0"
     const val Polaris = "1.5.2"
     const val CommonsText = "1.9"
