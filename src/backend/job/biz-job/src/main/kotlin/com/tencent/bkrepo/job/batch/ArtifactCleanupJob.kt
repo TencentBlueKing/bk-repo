@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
@@ -92,11 +93,12 @@ class ArtifactCleanupJob(
         return Query()
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(14)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
 
     override fun run(row: RepoData, collectionName: String, context: JobContext) {
         try {
+            if (ignoreProjectOrRepoCheck(row.projectId)) return
             val config = row.configuration.readJsonString<RepositoryConfiguration>()
             val cleanupStrategyMap = config.getSetting<Map<String, Any>>(CLEAN_UP_STRATEGY) ?: return
             val cleanupStrategy = toCleanupStrategy(cleanupStrategyMap) ?: return
@@ -127,6 +129,13 @@ class ArtifactCleanupJob(
                     "repo ${row.projectId}|${row.name}, error: ${e.message}", e
             )
         }
+    }
+
+    /**
+     * 判断项目或者仓库是否不需要进行目录统计
+     */
+    private fun ignoreProjectOrRepoCheck(projectId: String): Boolean {
+        return IGNORE_PROJECT_PREFIX_LIST.firstOrNull { projectId.startsWith(it) } != null
     }
 
     private fun toCleanupStrategy(map: Map<String, Any>): CleanupStrategy? {

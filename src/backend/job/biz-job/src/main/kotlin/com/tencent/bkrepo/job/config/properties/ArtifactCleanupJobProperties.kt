@@ -36,5 +36,5 @@ data class ArtifactCleanupJobProperties(
     var projectList: List<String> = listOf(),
     // 如配置仓库，则只清理该仓库下的仓库
     var repoList: List<String> = listOf(),
-    override var cron: String = "0 0 5 * * ?"
+    override var cron: String = "0 0 0 * * ?"
 ): MongodbJobProperties()
