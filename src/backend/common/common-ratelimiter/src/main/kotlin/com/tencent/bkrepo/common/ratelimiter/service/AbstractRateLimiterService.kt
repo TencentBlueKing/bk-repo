@@ -47,13 +47,17 @@ import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.UsageRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRateLimitRule
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpMethod
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
@@ -70,6 +74,8 @@ abstract class AbstractRateLimiterService(
         RateLimiterInterceptorChain(mutableListOf(MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics)))
 
     var rateLimitRule: RateLimitRule? = null
+
+    var currentRuleHashCode: Int? = null
 
     init {
         taskScheduler.scheduleWithFixedDelay(this::refreshRateLimitRule, rateLimiterProperties.refreshDuration * 1000)
@@ -186,21 +192,32 @@ abstract class AbstractRateLimiterService(
     //TODO 配置异常需要处理
     private fun refreshRateLimitRule() {
         if (!rateLimiterProperties.enabled) return
+        val usageRuleConfigs = rateLimiterProperties.rules.filter {
+            it.limitDimension in getLimitDimensions()
+        }
+        // 配置规则变更后需要清理缓存的限流算法实现
+        val newRuleHashCode = usageRuleConfigs.hashCode()
+        if (currentRuleHashCode == newRuleHashCode) {
+            if (rateLimiterCache.size > rateLimiterProperties.cacheCapacity) {
+                rateLimiterCache.clear()
+            }
+            return
+        }
         val usageRules = when (getRateLimitRuleClass()) {
             UrlRateLimitRule::class.java -> UrlRateLimitRule()
             UsageRateLimitRule::class.java -> UsageRateLimitRule()
             DownloadUsageRateLimitRule::class.java -> DownloadUsageRateLimitRule()
+            UserDownloadUsageRateLimitRule::class.java -> UserDownloadUsageRateLimitRule()
+            UserUploadUsageRateLimitRule::class.java -> UserUploadUsageRateLimitRule()
+            UserUrlRateLimitRule::class.java -> UserUrlRateLimitRule()
             else -> return
         }
-        val usageRuleConfigs = rateLimiterProperties.rules.filter {
-            it.limitDimension in getLimitDimensions()
-        }
-        if (usageRuleConfigs.isEmpty()) return
         usageRules.addRateLimitRules(usageRuleConfigs)
         rateLimitRule = usageRules
-        if (rateLimiterCache.size > rateLimiterProperties.cacheCapacity) {
+        if (rateLimiterCache.size > rateLimiterProperties.cacheCapacity || currentRuleHashCode != newRuleHashCode) {
             rateLimiterCache.clear()
         }
+        currentRuleHashCode = newRuleHashCode
     }
 
     private fun getAlgorithmOfRateLimiter(
@@ -224,4 +241,9 @@ abstract class AbstractRateLimiterService(
         val DOWNLOAD_REQUEST_METHOD = listOf(HttpMethod.GET.name, HttpMethod.HEAD.name)
 
     }
+}
+
+
+fun main() {
+    println(Date(1710236799010))
 }

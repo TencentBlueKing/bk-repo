@@ -35,7 +35,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class RateLimiterProperties(
     var enabled: Boolean = false,
     var scope: WorkScope = WorkScope.LOCAL,
-    var dryRun: Boolean = true,
+    var dryRun: Boolean = false,
     // 配置规则刷新频率 单位为秒
     var refreshDuration: Long = 10L,
     var cacheCapacity: Long = 1024L,
