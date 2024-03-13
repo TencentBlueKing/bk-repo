@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,19 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.storage.core.cache.indexer
 
-import com.tencent.bkrepo.job.batch.file.RepositoryExpireConfig
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
+import com.tencent.bkrepo.common.storage.config.CacheProperties
 
-@ConfigurationProperties("job.expired-cache-file-cleanup")
-class ExpiredCacheFileCleanupJobProperties(
-    override var cron: String = "0 0 4 * * ?",
-    @NestedConfigurationProperty
-    var repoConfig: RepositoryExpireConfig = RepositoryExpireConfig(),
+/**
+ * 缓存索引器工厂类
+ */
+interface StorageCacheIndexerFactory<K, V> {
     /**
-     * 忽略的存储凭据，这些存储的缓存将不执行清理
+     * 创建缓存索引器
+     *
+     * @param name 缓存名
+     * @param cacheProperties 缓存配置
+     *
+     * @return 缓存索引器
      */
-    var ignoredStorageCredentialsKeys: Set<String> = emptySet()
-) : MongodbJobProperties()
+    fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<K, V>
+}

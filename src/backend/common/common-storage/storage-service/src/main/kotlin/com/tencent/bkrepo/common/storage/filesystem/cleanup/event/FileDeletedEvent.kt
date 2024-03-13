@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,19 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
 
-import com.tencent.bkrepo.job.batch.file.RepositoryExpireConfig
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
-@ConfigurationProperties("job.expired-cache-file-cleanup")
-class ExpiredCacheFileCleanupJobProperties(
-    override var cron: String = "0 0 4 * * ?",
-    @NestedConfigurationProperty
-    var repoConfig: RepositoryExpireConfig = RepositoryExpireConfig(),
+/**
+ * 文件清理事件
+ */
+data class FileDeletedEvent(
     /**
-     * 忽略的存储凭据，这些存储的缓存将不执行清理
+     * 存储凭据
      */
-    var ignoredStorageCredentialsKeys: Set<String> = emptySet()
-) : MongodbJobProperties()
+    val credentials: StorageCredentials,
+    /**
+     * 正在清理的目录
+     */
+    val rootPath: String,
+    /**
+     * 被清理的文件完整路径
+     */
+    val fullPath: String,
+    /**
+     * 被清理文件的sha256
+     */
+    val sha256: String,
+)

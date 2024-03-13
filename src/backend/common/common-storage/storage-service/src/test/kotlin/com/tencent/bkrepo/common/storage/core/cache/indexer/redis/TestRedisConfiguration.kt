@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,19 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
-import com.tencent.bkrepo.job.batch.file.RepositoryExpireConfig
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
+import org.springframework.boot.test.context.TestConfiguration
+import redis.embedded.RedisServer
+import javax.annotation.PostConstruct
+import javax.annotation.PreDestroy
 
-@ConfigurationProperties("job.expired-cache-file-cleanup")
-class ExpiredCacheFileCleanupJobProperties(
-    override var cron: String = "0 0 4 * * ?",
-    @NestedConfigurationProperty
-    var repoConfig: RepositoryExpireConfig = RepositoryExpireConfig(),
-    /**
-     * 忽略的存储凭据，这些存储的缓存将不执行清理
-     */
-    var ignoredStorageCredentialsKeys: Set<String> = emptySet()
-) : MongodbJobProperties()
+
+@TestConfiguration
+class TestRedisConfiguration {
+    private val redisServer = RedisServer.builder().build()
+
+    @PostConstruct
+    fun postConstruct() {
+        redisServer.start()
+    }
+
+    @PreDestroy
+    fun preDestroy() {
+        redisServer.stop()
+    }
+}

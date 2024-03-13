@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicBoolean
@@ -61,6 +62,9 @@ abstract class AbstractStorageSupport : StorageService {
 
     @Autowired
     protected lateinit var monitorHelper: StorageHealthMonitorHelper
+
+    @Autowired
+    protected lateinit var publisher: ApplicationEventPublisher
 
     /**
      * 根据[storageCredentials]获取实际存储凭证，当storageCredentials为`null`则使用默认存储
