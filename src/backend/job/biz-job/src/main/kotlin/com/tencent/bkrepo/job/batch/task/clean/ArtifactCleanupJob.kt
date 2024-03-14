@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
@@ -61,7 +60,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestTemplate
 import java.time.Duration
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
@@ -193,33 +191,12 @@ class ArtifactCleanupJob(
                     date = cleanupDate,
                     operator = SYSTEM_USER)))
             } catch (e: NullPointerException) {
-                waitCleanNodeFinish(projectId, repoName, it)
+                logger.warn("Request of clean nodes $it in repo $projectId|$repoName is timeout!," +
+                                " will sleep ${properties.sleepSeconds} seconds")
+                Thread.sleep(properties.sleepSeconds * 1000)
             }
         }
     }
-
-    private fun waitCleanNodeFinish(
-        projectId: String,
-        repoName: String,
-        folder: String
-    ) {
-        val date = LocalDate.now().minusDays(1).atStartOfDay()
-        val criteria = Criteria.where(CREATED_DATE).isEqualTo(date).and(PROJECT).`is`(projectId)
-        val query = Query(criteria)
-        val result = mongoTemplate.find(query, Map::class.java, COLLECTION_NAME_PROJECT_METRICS)
-        val waitTime = if (result.isNullOrEmpty()) {
-            60
-        } else {
-            when (result.first()["result"]?.toString()?.toLongOrNull()) {
-                in 0..10000 -> 60
-                in 10001..1000000 -> 120
-                else -> 60
-            }
-        }
-        logger.warn("Request of clean nodes $folder in repo $projectId|$repoName is timeout!, wait $waitTime seconds")
-        Thread.sleep(waitTime * 1000L)
-    }
-
 
     private fun deletePackages(
         projectId: String, repoName: String,
