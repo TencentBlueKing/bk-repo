@@ -47,7 +47,6 @@ import com.tencent.bkrepo.job.batch.context.FileJobContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -73,7 +72,6 @@ class FileReferenceCleanupJob(
     private val storageCredentialsClient: StorageCredentialsClient,
     private val properties: FileReferenceCleanupJobProperties,
     private val archiveClient: ArchiveClient,
-    private val fileReferenceClient: FileReferenceClient,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
     /**
@@ -166,7 +164,11 @@ class FileReferenceCleanupJob(
         * 2. 真实判断存储实例的节点是否存在。（引用不正确的情况或者布隆过滤器的误报）
         * */
         val query = Query(where(Node::sha256).isEqualTo(sha256))
-        return bf.mightContain(sha256) && NodeCommonUtils.findNodes(query, key).isNotEmpty()
+        val mightContain = bf.mightContain(sha256)
+        if (mightContain) {
+            logger.info("Bloom filter might contain $sha256.")
+        }
+        return mightContain && NodeCommonUtils.exist(query, key)
     }
 
     private fun buildBloomFilter(): BloomFilter<CharSequence> {
@@ -178,7 +180,7 @@ class FileReferenceCleanupJob(
         )
         val query = Query(Criteria.where(FOLDER).isEqualTo(false))
         query.fields().include(SHA256)
-        NodeCommonUtils.forEachNode(query) {
+        NodeCommonUtils.forEachNodeByCollectionParallel(query) {
             val sha256 = it[SHA256]?.toString()
             if (sha256 != null) {
                 bf.put(sha256)
