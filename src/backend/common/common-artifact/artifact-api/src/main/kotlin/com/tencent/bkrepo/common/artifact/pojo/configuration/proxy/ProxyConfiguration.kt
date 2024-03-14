@@ -21,6 +21,11 @@ class ProxyConfiguration(
     @ApiModelProperty("访问url", required = false)
     var url: String? = null,
 ) : LocalConfiguration() {
+
+    override fun toString(): String {
+        return url + super.toString()
+    }
+
     companion object {
         const val type = "proxy"
     }
