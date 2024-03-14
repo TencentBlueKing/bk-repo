@@ -27,13 +27,13 @@
 
 package com.tencent.bkrepo.job.config.properties
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
 /**
- * 非活跃项目下目录大小以及文件个数统计
+ * 活跃项目下目录大小以及文件个数统计
  */
-@ConfigurationProperties("job.inactive-project-node-folder-stat")
-class InactiveProjectNodeFolderStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/6 * * ?",
-) : ProjectNodeFolderStatJobProperties()
+open class ProjectNodeFolderStatJobProperties(
+    /**
+     * 可用于将部分表的统计数据使用redis缓存存储临时存储
+     * 避免使用内存进行缓存时导致使用内存过大
+     */
+    var redisCacheCollections: List<String> = emptyList(),
+) : MongodbJobProperties()

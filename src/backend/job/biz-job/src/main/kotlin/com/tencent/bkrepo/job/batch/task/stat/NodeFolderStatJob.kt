@@ -45,7 +45,7 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.buildCacheKey
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import com.tencent.bkrepo.job.config.properties.ProjectNodeFolderStatJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.springframework.data.mongodb.core.BulkOperations.BulkMode
 import org.springframework.data.mongodb.core.query.Criteria
@@ -65,7 +65,7 @@ import kotlin.text.toLongOrNull as toLongOrNull1
  * 目录大小以及文件个数统计
  */
 open class NodeFolderStatJob(
-    properties: MongodbJobProperties,
+    private val properties: ProjectNodeFolderStatJobProperties,
     private val redisTemplate: RedisTemplate<String, String>,
     private val activeProjectService: ActiveProjectService
 ): DefaultContextMongoDbJob<NodeFolderStatJob.Node>(properties) {
@@ -135,7 +135,7 @@ open class NodeFolderStatJob(
         super.onRunCollectionFinished(collectionName, context)
         require(context is NodeFolderJobContext)
         // 如果使用的是redis作为缓存，将内存中的临时记录写入redis
-        updateRedisCache(context, force = true)
+        updateRedisCache(context, force = true, collectionName = collectionName)
         // 当表执行完成后，将属于该表的所有记录写入数据库
         storeCacheToDB(collectionName, context)
         context.projectMap.remove(collectionName)
@@ -160,7 +160,7 @@ open class NodeFolderStatJob(
         context: NodeFolderJobContext
     ) {
         val elapsedTime = measureTimeMillis {
-            if (context.cacheType == REDIS_CACHE_TYPE) {
+            if (context.cacheType == REDIS_CACHE_TYPE && collectionName in properties.redisCacheCollections) {
                 updateRedisCache(
                     collectionName = collectionName,
                     projectId = projectId,
@@ -205,7 +205,7 @@ open class NodeFolderStatJob(
             size = size,
             context = context
         )
-        updateRedisCache(context)
+        updateRedisCache(context, collectionName = collectionName)
     }
 
     /**
@@ -214,8 +214,10 @@ open class NodeFolderStatJob(
     private fun updateRedisCache(
         context: NodeFolderJobContext,
         force: Boolean = false,
+        collectionName: String
     ) {
         if (context.cacheType != REDIS_CACHE_TYPE) return
+        if (collectionName !in properties.redisCacheCollections) return
         if (!force && context.folderCache.size < 50000) return
         if (context.folderCache.isEmpty()) return
 
@@ -268,7 +270,7 @@ open class NodeFolderStatJob(
      * 将缓存中的数据更新到DB中
      */
     private fun storeCacheToDB(collectionName: String, context: NodeFolderJobContext) {
-        if (context.cacheType == REDIS_CACHE_TYPE) {
+        if (context.cacheType == REDIS_CACHE_TYPE && collectionName in properties.redisCacheCollections) {
             storeRedisCacheToDB(collectionName, context)
         } else {
             storeMemoryCacheToDB(collectionName, context)

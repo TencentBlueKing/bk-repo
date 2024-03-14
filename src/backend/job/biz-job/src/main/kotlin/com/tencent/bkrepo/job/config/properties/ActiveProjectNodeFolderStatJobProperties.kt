@@ -33,7 +33,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  * 活跃项目下目录大小以及文件个数统计
  */
 @ConfigurationProperties("job.active-project-node-folder-stat")
-data class ActiveProjectNodeFolderStatJobProperties(
+class ActiveProjectNodeFolderStatJobProperties(
     override var enabled: Boolean = true,
     override var cron: String = "0 0/30 * * * ?",
-) : MongodbJobProperties()
+) : ProjectNodeFolderStatJobProperties()

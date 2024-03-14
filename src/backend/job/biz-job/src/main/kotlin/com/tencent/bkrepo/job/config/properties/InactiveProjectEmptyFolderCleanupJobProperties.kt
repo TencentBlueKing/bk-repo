@@ -33,7 +33,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  * 无变更项目空目录清理任务配置项
  */
 @ConfigurationProperties("job.inactive-project-empty-folder-cleanup")
-data class InactiveProjectEmptyFolderCleanupJobProperties(
+class InactiveProjectEmptyFolderCleanupJobProperties(
     override var enabled: Boolean = true,
     override var cron: String = "0 0 0/6 * * ?",
 ) : MongodbJobProperties()
