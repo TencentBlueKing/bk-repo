@@ -104,7 +104,7 @@ class ArtifactCleanupJob(
             val cleanupStrategy = toCleanupStrategy(cleanupStrategyMap) ?: return
             if (!filterConfig(row.projectId, cleanupStrategy)) return
             logger.info("Will clean the artifacts in repo ${row.projectId}|${row.name} " +
-                            "with config ${row.configuration}")
+                            "with cleanup strategy $cleanupStrategy")
             when (row.type) {
                 RepositoryType.GENERIC.name -> {
                     // 清理generic制品
