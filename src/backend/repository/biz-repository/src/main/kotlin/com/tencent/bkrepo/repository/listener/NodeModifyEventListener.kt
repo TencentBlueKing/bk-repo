@@ -98,7 +98,6 @@ class NodeModifyEventListener(
         EventType.NODE_DELETED,
         EventType.NODE_MOVED,
         EventType.NODE_RENAMED,
-        EventType.NODE_CLEAN,
     )
 
 

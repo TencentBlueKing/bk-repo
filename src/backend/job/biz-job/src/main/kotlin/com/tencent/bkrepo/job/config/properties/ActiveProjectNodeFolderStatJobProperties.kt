@@ -30,10 +30,10 @@ package com.tencent.bkrepo.job.config.properties
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
- * 非活跃项目仓库指标统计任务配置项
+ * 活跃项目下目录大小以及文件个数统计
  */
-@ConfigurationProperties("job.inactive-project-repo-metrics-stat")
-data class InactiveProjectRepoMetricsStatJobProperties(
+@ConfigurationProperties("job.active-project-node-folder-stat")
+data class ActiveProjectNodeFolderStatJobProperties(
     override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/6 * * ?",
+    override var cron: String = "0 0/30 * * * ?",
 ) : MongodbJobProperties()

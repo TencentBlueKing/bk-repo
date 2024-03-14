@@ -25,15 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.batch.task.stat
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
+import com.tencent.bkrepo.job.config.properties.InactiveProjectNodeFolderStatJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.stereotype.Component
 
 /**
- * 非活跃项目仓库指标统计任务配置项
+ * 非活跃项目下目录大小以及文件个数统计
  */
-@ConfigurationProperties("job.inactive-project-repo-metrics-stat")
-data class InactiveProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/6 * * ?",
-) : MongodbJobProperties()
+@Component
+@EnableConfigurationProperties(InactiveProjectNodeFolderStatJobProperties::class)
+class InactiveProjectNodeFolderStatJob(
+    properties: InactiveProjectNodeFolderStatJobProperties,
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val activeProjectService: ActiveProjectService
+): NodeFolderStatJob(properties, redisTemplate, activeProjectService) {
+
+    override fun statProjectCheck(
+        projectId: String,
+        context: NodeFolderJobContext
+    ): Boolean {
+        if (!context.activeProjects.contains(projectId)) return true
+        return false
+    }
+}

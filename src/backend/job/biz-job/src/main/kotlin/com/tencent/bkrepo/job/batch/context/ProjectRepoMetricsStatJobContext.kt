@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.context
 
-import com.tencent.bkrepo.job.batch.stat.ProjectRepoMetricsStatJob
+import com.tencent.bkrepo.job.batch.task.stat.ProjectRepoMetricsStatJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import com.tencent.bkrepo.job.pojo.project.TRepoMetrics

@@ -25,15 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.batch.task.stat
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
+import com.tencent.bkrepo.job.config.properties.ActiveProjectEmptyFolderCleanupJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
+
 
 /**
- * 非活跃项目仓库指标统计任务配置项
+ * 空目录清理job
  */
-@ConfigurationProperties("job.inactive-project-repo-metrics-stat")
-data class InactiveProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/6 * * ?",
-) : MongodbJobProperties()
+@Component
+@EnableConfigurationProperties(ActiveProjectEmptyFolderCleanupJobProperties::class)
+class ActiveProjectEmptyFolderCleanupJob(
+    private val properties: ActiveProjectEmptyFolderCleanupJobProperties,
+    private val activeProjectService: ActiveProjectService
+): EmptyFolderCleanupJob(properties, activeProjectService) {
+
+    override fun statProjectCheck(
+        projectId: String,
+        context: EmptyFolderCleanupJobContext
+    ): Boolean {
+        if (context.activeProjects.contains(projectId)) return true
+        return false
+    }
+}

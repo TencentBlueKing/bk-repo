@@ -25,15 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.batch.context
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
+import com.tencent.bkrepo.job.batch.base.JobContext
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.LongAdder
 
-/**
- * 非活跃项目仓库指标统计任务配置项
- */
-@ConfigurationProperties("job.inactive-project-repo-metrics-stat")
-data class InactiveProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/6 * * ?",
-) : MongodbJobProperties()
+class NodeFolderJobContext(
+    // 缓存类型redis和内存：数据量级大的建议使用redis
+    var cacheType: String = MEMORY_CACHE_TYPE,
+    // 表对应项目记录： 主要用于redis缓存生成key使用
+    var projectMap: ConcurrentHashMap<String, MutableSet<String>> = ConcurrentHashMap(),
+    // 用于内存缓存下存储目录统计信息
+    var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap(),
+    var activeProjects: Set<String> = emptySet()
+) : JobContext() {
+
+    data class FolderMetrics(
+        var nodeNum: LongAdder = LongAdder(),
+        var capSize: LongAdder = LongAdder()
+    )
+}

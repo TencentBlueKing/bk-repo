@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,15 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.batch.task.project
 
+import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 非活跃项目仓库指标统计任务配置项
- */
-@ConfigurationProperties("job.inactive-project-repo-metrics-stat")
-data class InactiveProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/6 * * ?",
+@ConfigurationProperties(value = "job.bkci-project-metadata-sync")
+class BkciProjectMetadataSyncJobProperties(
+    override var enabled: Boolean = false,
+    override var cron: String = "0 0 0 * * ?",
+    var ignoredProjectPrefix: Set<String> = emptySet(),
+    var ciServer: String = "",
+    var ciToken: String = "",
+    /**
+     * 是否路由到bkci灰度集群
+     */
+    var routeToGray: Boolean = false,
 ) : MongodbJobProperties()

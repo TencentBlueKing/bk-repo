@@ -35,5 +35,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("job.active-project-repo-metrics-stat")
 data class ActiveProjectRepoMetricsStatJobProperties(
     override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/6 * * ?",
+    override var cron: String = "0 0/30 * * * ?",
 ) : MongodbJobProperties()
