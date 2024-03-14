@@ -15,7 +15,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
@@ -84,18 +84,12 @@ class NodeCommonUtils(
             batchSize: Int = BATCH_SIZE,
             consumer: Consumer<Map<String, Any?>>,
         ) {
-            val countDownLatch = CountDownLatch(SHARDING_COUNT)
+            val futures = mutableListOf<Future<*>>()
             for (i in 0 until SHARDING_COUNT) {
                 val collection = COLLECTION_NAME_PREFIX.plus(i)
-                workPool.execute {
-                    try {
-                        findByCollection(query, batchSize, collection, consumer)
-                    } finally {
-                        countDownLatch.countDown()
-                    }
-                }
+                futures.add(workPool.submit { findByCollection(query, batchSize, collection, consumer) })
             }
-            countDownLatch.await()
+            futures.forEach { it.get() }
         }
 
         private fun findByCollection(
