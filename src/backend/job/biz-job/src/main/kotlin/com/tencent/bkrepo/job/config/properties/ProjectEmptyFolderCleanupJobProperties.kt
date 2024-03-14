@@ -27,13 +27,15 @@
 
 package com.tencent.bkrepo.job.config.properties
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.artifact.constant.LOG
+import com.tencent.bkrepo.common.artifact.constant.REPORT
 
 /**
- * 有变更记录的项目空目录清理任务配置项
+ * 项目空目录清理任务配置项
  */
-@ConfigurationProperties("job.active-project-empty-folder-cleanup")
-class ActiveProjectEmptyFolderCleanupJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0/30 * * * ?",
-) : ProjectEmptyFolderCleanupJobProperties()
+open class ProjectEmptyFolderCleanupJobProperties(
+    // 特殊仓库统计每周统计一次
+    var specialRepos: List<String> = listOf(REPORT, LOG),
+    // 特殊仓库在每周第几天执行，默认周六
+    var specialDay: Int = 6,
+) : MongodbJobProperties()

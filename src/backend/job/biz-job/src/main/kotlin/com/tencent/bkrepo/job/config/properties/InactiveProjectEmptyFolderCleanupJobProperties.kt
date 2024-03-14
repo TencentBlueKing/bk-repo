@@ -36,4 +36,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class InactiveProjectEmptyFolderCleanupJobProperties(
     override var enabled: Boolean = true,
     override var cron: String = "0 0 0/6 * * ?",
-) : MongodbJobProperties()
+) : ProjectEmptyFolderCleanupJobProperties()

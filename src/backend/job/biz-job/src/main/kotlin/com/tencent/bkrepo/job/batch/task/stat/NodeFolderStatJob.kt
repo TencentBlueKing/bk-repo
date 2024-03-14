@@ -55,7 +55,9 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.redis.core.HashOperations
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ScanOptions
+import java.time.DayOfWeek
 import java.time.Duration
+import java.time.LocalDateTime
 import kotlin.reflect.KClass
 import kotlin.system.measureTimeMillis
 import kotlin.text.toLongOrNull as toLongOrNull1
@@ -93,9 +95,27 @@ open class NodeFolderStatJob(
         context: NodeFolderJobContext
     ): Boolean = true
 
+    // 特殊仓库每周统计一次
+    private fun specialRepoRunCheck(): Boolean {
+        val runDay = if (properties.specialDay < 1 || properties.specialDay > 7) {
+            6
+        } else {
+            properties.specialDay
+        }
+        return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
+    }
+
+    private fun isSpecialRepo(repoName: String): Boolean {
+        return properties.specialRepos.contains(repoName)
+    }
+
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is NodeFolderJobContext)
         if (!statProjectCheck(row.projectId, context)) return
+
+        if (isSpecialRepo(row.repoName) && !specialRepoRunCheck()) {
+            return
+        }
         //只统计非目录类节点；没有根目录这个节点，不需要统计
         if (row.path == PathUtils.ROOT) {
             return

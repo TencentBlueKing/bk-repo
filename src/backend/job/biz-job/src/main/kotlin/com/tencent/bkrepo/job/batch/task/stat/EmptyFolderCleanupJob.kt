@@ -48,13 +48,14 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import com.tencent.bkrepo.job.config.properties.ProjectEmptyFolderCleanupJobProperties
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.reflect.KClass
@@ -64,7 +65,7 @@ import kotlin.reflect.KClass
  * 空目录清理job
  */
 open class EmptyFolderCleanupJob(
-    properties: MongodbJobProperties,
+    private val properties: ProjectEmptyFolderCleanupJobProperties,
     private val activeProjectService: ActiveProjectService,
 ): DefaultContextMongoDbJob<EmptyFolderCleanupJob.Node>(properties) {
 
@@ -87,9 +88,27 @@ open class EmptyFolderCleanupJob(
         context: EmptyFolderCleanupJobContext
     ): Boolean = true
 
+    // 特殊仓库每周统计一次
+    private fun specialRepoRunCheck(): Boolean {
+        val runDay = if (properties.specialDay < 1 || properties.specialDay > 7) {
+            6
+        } else {
+            properties.specialDay
+        }
+        return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
+    }
+
+    private fun isSpecialRepo(repoName: String): Boolean {
+        return properties.specialRepos.contains(repoName)
+    }
+
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         if (!statProjectCheck(row.projectId, context)) return
+        if (isSpecialRepo(row.repoName) && !specialRepoRunCheck()) {
+            return
+        }
+
         // 暂时只清理generic类型仓库下的空目录
         if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
                 row.projectId, row.repoName
