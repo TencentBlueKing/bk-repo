@@ -29,6 +29,7 @@ class ChecksumFileProvider(
     private val executor: Executor,
 ) : FileProvider {
 
+    private val scheduler = Schedulers.fromExecutor(executor)
     private val fileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(cacheTime)
     private val monitorExecutor = Executors.newSingleThreadScheduledExecutor()
 
@@ -77,7 +78,7 @@ class ChecksumFileProvider(
             } finally {
                 file.delete()
             }
-        }.publishOn(Schedulers.fromExecutor(executor))
+        }.publishOn(scheduler)
     }
 
     private fun initSign(

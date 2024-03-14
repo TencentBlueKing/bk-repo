@@ -34,12 +34,13 @@ class ArchiveMetrics(
             .register(registry)
 
         // 压缩量，队列
-        Gauge.builder(FILE_COMPRESS_ACTIVE_COUNT, bdZipManager.diffThreadPool) { it.activeCount.toDouble() }
-            .description(FILE_COMPRESS_ACTIVE_COUNT_DESC)
-            .register(registry)
-        Gauge.builder(FILE_COMPRESS_QUEUE_SIZE, bdZipManager.diffThreadPool) { it.queue.size.toDouble() }
-            .description(FILE_COMPRESS_QUEUE_SIZE_DESC)
-            .register(registry)
+        val bigCompressPool = bdZipManager.bigCompressPool
+        Gauge.builder(FILE_COMPRESS_ACTIVE_COUNT, bdZipManager.diffThreadPool) {
+            it.activeCount.toDouble() + bigCompressPool.activeCount.toDouble()
+        }.description(FILE_COMPRESS_ACTIVE_COUNT_DESC).register(registry)
+        Gauge.builder(FILE_COMPRESS_QUEUE_SIZE, bdZipManager.diffThreadPool) {
+            it.queue.size.toDouble() + bigCompressPool.queue.size.toDouble()
+        }.description(FILE_COMPRESS_QUEUE_SIZE_DESC).register(registry)
 
         // 签名量，队列
         Gauge.builder(FILE_SING_ACTIVE_COUNT, bdZipManager.signThreadPool) { it.activeCount.toDouble() }
@@ -93,7 +94,11 @@ class ArchiveMetrics(
             Action.UNCOMPRESSED -> Counter.builder(FILE_UNCOMPRESSED_COUNTER)
                 .description(FILE_UNCOMPRESSED_COUNTER_DESC)
 
-            else -> throw IllegalArgumentException("Action $action not support.")
+            Action.STORAGE_FREE -> Counter.builder(STORAGE_FREE_COUNTER)
+                .description(STORAGE_FREE_COUNTER_DESC)
+
+            Action.STORAGE_ALLOCATE -> Counter.builder(STORAGE_ALLOCATE_COUNTER)
+                .description(STORAGE_ALLOCATE_COUNTER_DESC)
         }
         return builder.tag(TAG_CREDENTIALS_KEY, credentialsKey)
             .register(registry)
@@ -223,8 +228,12 @@ class ArchiveMetrics(
         private const val FILE_UNCOMPRESSED_TIME_DESC = "文件解压耗时"
         private const val STORAGE_FREE_SIZE_COUNTER = "storage.free.size.count"
         private const val STORAGE_FREE_SIZE_COUNTER_DESC = "存储释放大小"
+        private const val STORAGE_FREE_COUNTER = "storage.free.count"
+        private const val STORAGE_FREE_COUNTER_DESC = "存储释放文件个数"
         private const val STORAGE_ALLOCATE_SIZE_COUNTER = "storage.allocate.size.count"
         private const val STORAGE_ALLOCATE_SIZE_COUNTER_DESC = "存储新增大小"
+        private const val STORAGE_ALLOCATE_COUNTER = "storage.allocate.count"
+        private const val STORAGE_ALLOCATE_COUNTER_DESC = "存储新增文件个数"
         private const val TAG_CREDENTIALS_KEY = "credentialsKey"
         private const val TAG_STATUS = "status"
     }

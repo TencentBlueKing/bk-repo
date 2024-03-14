@@ -2,6 +2,7 @@ package com.tencent.bkrepo.archive.job.compress
 
 import com.tencent.bkrepo.archive.BaseTest
 import com.tencent.bkrepo.archive.CompressStatus
+import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -15,6 +16,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -37,6 +39,7 @@ class BDZipManagerTest @Autowired constructor(
     private val storageService: StorageService,
     private val bdZipManager: BDZipManager,
     private val compressFileRepository: CompressFileRepository,
+    private val archiveProperties: ArchiveProperties,
 ) : BaseTest() {
 
     @MockBean
@@ -51,6 +54,11 @@ class BDZipManagerTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
+    }
+
+    @AfterEach
+    fun afterEach() {
+        compressFileRepository.deleteAll()
     }
 
     @Test
@@ -224,7 +232,7 @@ class BDZipManagerTest @Autowired constructor(
         var artifactFile1 = createTempArtifactFile(data1)
         storageService.store(artifactFile1.getFileSha256(), artifactFile1, null)
         var needUncompress: TCompressFile? = null
-        repeat(5) {
+        repeat(6) {
             val data2 = data1.copyOfRange(it + 1, data1.size)
             val artifactFile2 = createTempArtifactFile(data2)
             val file = TCompressFile(
@@ -264,7 +272,75 @@ class BDZipManagerTest @Autowired constructor(
         }
     }
 
+    @Test
+    fun serverBusyTest() {
+        val fileList = mutableListOf<TCompressFile>()
+        bdZipManager.fileProvider.unHealthy()
+        fileList.add(createTempCompressFile())
+        Assertions.assertEquals(0, bdZipManager.runningTasks.get())
+        Assertions.assertEquals(1, bdZipManager.taskQueue.size)
+        bdZipManager.fileProvider.healthy()
+        repeat(archiveProperties.compress.maxConcurrency) {
+            thread {
+                fileList.add(createTempCompressFile())
+            }
+        }
+        Thread.sleep(200)
+        repeat(3) { fileList.add(createTempCompressFile()) }
+        Assertions.assertTrue(bdZipManager.serverIsBusy())
+        Assertions.assertTrue(bdZipManager.taskQueue.size > 0)
+        // 等待任务完成
+        Thread.sleep(1000)
+        fileList.forEach {
+            val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(it.sha256, it.storageCredentialsKey)
+            Assertions.assertNotNull(cf)
+            Assertions.assertEquals(CompressStatus.COMPRESSED, cf!!.status)
+        }
+    }
+
+    @Test
+    fun fillTaskFromDb() {
+        val fileList = mutableListOf<TCompressFile>()
+        repeat(3) {
+            val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
+            val data2 = data1.copyOfRange(Random.nextInt(1, 10), data1.size)
+            val artifactFile1 = createTempArtifactFile(data1)
+            val artifactFile2 = createTempArtifactFile(data2)
+            val file = TCompressFile(
+                createdBy = "ut",
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = "ut",
+                lastModifiedDate = LocalDateTime.now(),
+                sha256 = artifactFile1.getFileSha256(),
+                baseSha256 = artifactFile2.getFileSha256(),
+                uncompressedSize = artifactFile1.getSize(),
+                storageCredentialsKey = null,
+                status = CompressStatus.CREATED,
+                chainLength = 1,
+
+            )
+            storageService.store(artifactFile1.getFileSha256(), artifactFile1, null)
+            storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
+            compressFileRepository.save(file)
+            fileList.add(file)
+        }
+        // 等待数据从数据库加载
+        Thread.sleep(4000)
+        fileList.forEach {
+            val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(it.sha256, it.storageCredentialsKey)
+            Assertions.assertNotNull(cf)
+            Assertions.assertEquals(CompressStatus.COMPRESSED, cf!!.status)
+        }
+    }
+
     private fun createCompressFile(): TCompressFile {
+        val file = createTempCompressFile()
+        Thread.sleep(1000)
+        Assertions.assertEquals(CompressStatus.COMPRESSED, file.status)
+        return file
+    }
+
+    private fun createTempCompressFile(): TCompressFile {
         val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
         val data2 = data1.copyOfRange(Random.nextInt(1, 10), data1.size)
         val artifactFile1 = createTempArtifactFile(data1)
@@ -285,8 +361,6 @@ class BDZipManagerTest @Autowired constructor(
         storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
         compressFileRepository.save(file)
         bdZipManager.compress(file)
-        Thread.sleep(1000)
-        Assertions.assertEquals(CompressStatus.COMPRESSED, file.status)
         return file
     }
 

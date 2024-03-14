@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.bksync.file.BDUtils
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import org.slf4j.LoggerFactory
 import reactor.core.publisher.Mono
+import reactor.core.scheduler.Scheduler
 import reactor.core.scheduler.Schedulers
 import java.io.File
 import java.nio.file.Path
@@ -12,7 +13,11 @@ import java.util.concurrent.Executor
 class BDCompressor(
     private val ratio: Float,
     private val executor: Executor,
+    private val bigFileCompressPool: Executor,
+    private val bigChecksumFileThreshold: Long,
 ) {
+    private val bigFileScheduler = Schedulers.fromExecutor(bigFileCompressPool)
+    private val scheduler = Schedulers.fromExecutor(executor)
 
     /**
      * 根据源文件和签名文件，压缩成新的bd文件
@@ -41,7 +46,11 @@ class BDCompressor(
             } finally {
                 src.delete()
             }
-        }.publishOn(Schedulers.fromExecutor(executor))
+        }.publishOn(chooseScheduler(checksum.length()))
+    }
+
+    private fun chooseScheduler(size: Long): Scheduler {
+        return if (size > bigChecksumFileThreshold) bigFileScheduler else scheduler
     }
 
     companion object {

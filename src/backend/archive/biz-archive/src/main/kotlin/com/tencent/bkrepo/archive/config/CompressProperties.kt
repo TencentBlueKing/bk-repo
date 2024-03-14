@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.archive.config
 
 import org.springframework.util.unit.DataSize
+import java.time.Duration
 
 data class CompressProperties(
 
