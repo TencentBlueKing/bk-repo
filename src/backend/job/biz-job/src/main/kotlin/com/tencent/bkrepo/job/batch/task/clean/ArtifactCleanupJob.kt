@@ -146,7 +146,7 @@ class ArtifactCleanupJob(
             cleanupValue = map[CleanupStrategy::cleanupValue.name] as? String,
             cleanTargets = map[CleanupStrategy::cleanTargets.name] as? List<String>,
             )
-        if (cleanupStrategy.cleanupValue.isNullOrEmpty() || cleanupStrategy.cleanupValue.isNullOrEmpty())
+        if (cleanupStrategy.cleanupType.isNullOrEmpty() || cleanupStrategy.cleanupValue.isNullOrEmpty())
             return null
         return cleanupStrategy
     }
