@@ -373,6 +373,5 @@ class ArtifactCleanupJob(
         private const val PACKAGE_ID = "packageId"
         private const val CLEAN_UP_STRATEGY = "cleanupStrategy"
         private const val PACKAGE_NAME = "name"
-        private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
     }
 }
