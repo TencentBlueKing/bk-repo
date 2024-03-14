@@ -101,9 +101,6 @@ class ActiveProjectService(
             return ArrayList(criteriaList).apply { add(TOperateLog::type.inValues(types)) }
         }
 
-        // all
-        activeProjects = findDistinct(TOperateLog::projectId.name, Criteria().andOperator(criteriaList))
-
         // download event
         downloadActiveProjects = findDistinct(
             TOperateLog::projectId.name,
@@ -115,6 +112,7 @@ class ActiveProjectService(
             TOperateLog::projectId.name,
             Criteria().andOperator(buildTypesCriteriaList(UPLOAD_EVENTS))
         )
+        activeProjects = downloadActiveProjects.union(uploadActiveProjects).toMutableSet()
 
         // active users
         activeUsers = findDistinct(TOperateLog::userId.name, TOperateLog::userId.ne(""))

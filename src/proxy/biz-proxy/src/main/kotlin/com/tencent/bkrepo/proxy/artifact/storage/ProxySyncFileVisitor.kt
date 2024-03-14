@@ -27,14 +27,16 @@
 
 package com.tencent.bkrepo.proxy.artifact.storage
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.StreamRequestBody
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
+import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.proxy.ProxyRequestInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
-import com.tencent.bkrepo.common.storage.util.delete
-import com.tencent.bkrepo.common.storage.util.existReal
+import com.tencent.bkrepo.replication.api.proxy.ProxyBlobReplicaClient
 import com.tencent.bkrepo.replication.constant.FILE
 import com.tencent.bkrepo.replication.constant.SHA256
 import com.tencent.bkrepo.replication.constant.SIZE
@@ -44,13 +46,8 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.FileVisitResult
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.BasicFileAttributes
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 class ProxySyncFileVisitor(
     private val rate: Long,
@@ -58,6 +55,9 @@ class ProxySyncFileVisitor(
 ) : ArtifactFileVisitor() {
 
     private val httpClient = HttpClientBuilderFactory.create().addInterceptor(ProxyRequestInterceptor()).build()
+    private val proxyBlobReplicaClient: ProxyBlobReplicaClient by lazy {
+        ProxyFeignClientFactory.create("replication")
+    }
 
     override fun needWalk(): Boolean {
         return true
@@ -69,7 +69,7 @@ class ProxySyncFileVisitor(
                 val file = File(filePath.toString().removeSuffix(".sync"))
                 syncFile(filePath, file)
             } else {
-                deleteCacheFile(filePath)
+                ProxyStorageUtils.deleteCacheFile(filePath, cacheExpireDays)
             }
         } catch (e: Exception) {
             logger.error("sync file error: ", e)
@@ -79,11 +79,20 @@ class ProxySyncFileVisitor(
 
     private fun syncFile(filePath: Path, file: File) {
         val syncFile = filePath.toFile()
-        val storageKey = if (syncFile.length() == 0L) null else syncFile.readText()
+        val storageKeys = ProxyStorageUtils.readStorageCredentialKeys(syncFile)
+        storageKeys.forEach { storageKey ->
+            blobPush(file, storageKey)
+        }
+        syncFile.delete()
+    }
 
+    private fun blobPush(file: File, storageKey: String?) {
         val sha256 = file.canonicalPath.split(File.separator).last()
+        if (proxyBlobReplicaClient.check(sha256, storageKey).data == true) {
+            return
+        }
         val url = "$gateway/replication/proxy/replica/blob/push"
-        logger.info("start sync file[${file.canonicalPath}]")
+        logger.info("start sync file[${file.canonicalPath}] on storage credential[$storageKey]")
         val inputStream = if (rate > 0) {
             file.inputStream().rateLimit(rate)
         } else {
@@ -99,29 +108,12 @@ class ProxySyncFileVisitor(
         val request = Request.Builder().url(url).post(requestBody).build()
         httpClient.newCall(request).execute().use {
             if (it.isSuccessful) {
-                logger.info("sync file[${file.canonicalPath}] success")
-                filePath.delete()
+                logger.info("sync file[${file.canonicalPath}] success on storage credential[$storageKey]")
             } else {
-                logger.error("sync file[${file.canonicalPath}] error: ${it.code}, ${it.body?.string()}")
+                logger.error("sync file[${file.canonicalPath}] error on storage credential[$storageKey]:" +
+                    " ${it.code}, ${it.body?.string()}")
+                throw ErrorCodeException(CommonMessageCode.SERVICE_CALL_ERROR)
             }
-        }
-    }
-
-    private fun deleteCacheFile(filePath: Path) {
-        if (filePath.toFile().isDirectory) {
-            return
-        }
-        val syncFilePath = Paths.get(filePath.toString().plus(".sync"))
-        // 还未同步到服务端
-        if (syncFilePath.existReal()) {
-            return
-        }
-        val view = Files.getFileAttributeView(filePath, BasicFileAttributeView::class.java)
-        val attributes = view.readAttributes()
-        val aTime = attributes.lastAccessTime().toInstant()
-        val expireTime = Instant.now().minus(cacheExpireDays.toLong(), ChronoUnit.DAYS)
-        if (aTime.isBefore(expireTime)) {
-            filePath.toFile().deleteOnExit()
         }
     }
 

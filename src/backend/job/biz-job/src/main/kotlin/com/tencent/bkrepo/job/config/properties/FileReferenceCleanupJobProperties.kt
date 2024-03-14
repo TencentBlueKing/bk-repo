@@ -41,4 +41,8 @@ class FileReferenceCleanupJobProperties(
      * 误报率较高，会导致更多的数据库查询，但不影响节点清理的正确性，误报率越低，消耗的内存越大。
      * */
     var fpp: Double = 0.0001,
+    /**
+     * 是否试运行，true则表示不会进行任务数据的删除，false会进行实际删除
+     * */
+    var dryRun: Boolean = false,
 ) : MongodbJobProperties()

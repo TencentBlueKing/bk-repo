@@ -28,15 +28,16 @@
 package com.tencent.bkrepo.proxy.artifact.storage
 
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
+import com.tencent.bkrepo.repository.api.proxy.ProxyFileReferenceClient
 import org.apache.commons.io.IOUtils
 import java.nio.charset.Charset
 import java.util.concurrent.atomic.AtomicBoolean
@@ -45,6 +46,7 @@ class ProxyStorageService : AbstractStorageService() {
 
     /**
      * 多存储一个sha256.sync文件，用来标记对应sha256的文件待同步至服务端
+     * sha256.sync文件中记录credentialsKey
      */
     override fun doStore(
         path: String,
@@ -53,22 +55,24 @@ class ProxyStorageService : AbstractStorageService() {
         credentials: StorageCredentials,
         cancel: AtomicBoolean?
     ) {
+        val proxyCredentials = storageProperties.defaultStorageCredentials()
         when {
             artifactFile.isInMemory() -> {
-                fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
+                fileStorage.store(
+                    path, filename, artifactFile.getInputStream(), artifactFile.getSize(), proxyCredentials
+                )
             }
             artifactFile.isFallback() -> {
-                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
+                fileStorage.store(path, filename, artifactFile.flushToFile(), proxyCredentials)
             }
             else -> {
-                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
+                fileStorage.store(path, filename, artifactFile.flushToFile(), proxyCredentials)
             }
         }
         val syncFilename = filename.ensureSuffix(".sync")
-        val inputStream =
-            credentials.key?.let { IOUtils.toInputStream(it, Charset.defaultCharset()) } ?: EmptyInputStream()
-        val size = credentials.key?.length?.toLong() ?: 0L
-        fileStorage.store(path, syncFilename, inputStream, size, credentials)
+        val inputStream = IOUtils.toInputStream(credentials.key.toString(), Charset.defaultCharset())
+        val size = credentials.key.toString().length.toLong()
+        fileStorage.store(path, syncFilename, inputStream, size, storageProperties.defaultStorageCredentials())
     }
 
     override fun doLoad(
@@ -77,25 +81,63 @@ class ProxyStorageService : AbstractStorageService() {
         range: Range,
         credentials: StorageCredentials
     ): ArtifactInputStream? {
-        return fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
+        return fileStorage.load(path, filename, range, storageProperties.defaultStorageCredentials())
+            ?.artifactStream(range)
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
-        return fileStorage.delete(path, filename, credentials)
+        return fileStorage.delete(path, filename, storageProperties.defaultStorageCredentials())
     }
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
-        return fileStorage.exist(path, filename, credentials)
+        val proxyCredentials = storageProperties.defaultStorageCredentials()
+        val dataFileExist = fileStorage.exist(path, filename, proxyCredentials)
+        if (!dataFileExist) {
+            return false
+        }
+
+        // 数据文件存在，确认对应credentialsKey已记录
+        val syncFileName = filename.plus(".sync")
+        val syncFileExist = fileStorage.exist(path, syncFileName, proxyCredentials)
+        if (syncFileExist) {
+            val tmpSyncFileName = syncFileName.plus(".tmp")
+            val keys = fileStorage.load(path, syncFileName, Range.FULL_RANGE, proxyCredentials)?.use {
+                it.readText().lines().toMutableSet()
+            }
+            keys?.add(credentials.key.toString())
+            val content = keys.orEmpty().joinToString(System.lineSeparator())
+            val inputStream = IOUtils.toInputStream(content, Charset.defaultCharset())
+            val size = content.length.toLong()
+            fileStorage.store(path, tmpSyncFileName, inputStream, size, proxyCredentials)
+            fileStorage.move(path, tmpSyncFileName, path, syncFileName, proxyCredentials, proxyCredentials)
+        } else {
+            val inputStream = IOUtils.toInputStream(credentials.key.toString(), Charset.defaultCharset())
+            val size = credentials.key.toString().length.toLong()
+            fileStorage.store(path, syncFileName, inputStream, size, storageProperties.defaultStorageCredentials())
+        }
+        return true
     }
 
     /**
      * 同步数据到服务端
      */
     fun sync(rate: Long, cacheExpireDays: Int) {
-        val credentials = getCredentialsOrDefault(null)
+        val credentials = storageProperties.defaultStorageCredentials()
         val visitor = ProxySyncFileVisitor(rate, cacheExpireDays)
         require(credentials is FileSystemCredentials)
         FileSystemClient(credentials.path).walk(visitor)
-        return
+    }
+
+    /**
+     * 不同步时，清理已删除文件对应存储
+     */
+    fun clean(
+        proxyFileReferenceClient: ProxyFileReferenceClient,
+        cacheExpireDays: Int
+    ) {
+        val credentials = storageProperties.defaultStorageCredentials()
+        val visitor = ProxyCleanFileVisitor(proxyFileReferenceClient, cacheExpireDays)
+        require(credentials is FileSystemCredentials)
+        FileSystemClient(credentials.path).walk(visitor)
     }
 }

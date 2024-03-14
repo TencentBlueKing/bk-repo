@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.storage.core.cache.indexer
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.storage.config.CacheProperties
 
-@ConfigurationProperties(value = "job.artifact-cleanup")
-data class ArtifactCleanupJobProperties(
-    override var enabled: Boolean = false,
-    // 如配置项目，则只清理该项目下的仓库
-    var projectList: List<String> = listOf(),
-    // 如配置仓库，则只清理该仓库下的仓库
-    var repoList: List<String> = listOf(),
-    override var cron: String = "0 0 0 * * ?"
-): MongodbJobProperties()
+/**
+ * 缓存索引器工厂类
+ */
+interface StorageCacheIndexerFactory<K, V> {
+    /**
+     * 创建缓存索引器
+     *
+     * @param name 缓存名
+     * @param cacheProperties 缓存配置
+     *
+     * @return 缓存索引器
+     */
+    fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<K, V>
+}

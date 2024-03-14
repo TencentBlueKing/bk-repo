@@ -52,7 +52,7 @@ import java.time.LocalDateTime
 @Component
 @EnableConfigurationProperties(ExpiredCacheFileCleanupJobProperties::class)
 class ExpiredCacheFileCleanupJob(
-    properties: ExpiredCacheFileCleanupJobProperties,
+    private val properties: ExpiredCacheFileCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,
     private val storageService: StorageService,
     private val clusterProperties: ClusterProperties,
@@ -78,6 +78,7 @@ class ExpiredCacheFileCleanupJob(
         // cleanup extended storage
         mongoTemplate.find(Query(), TStorageCredentials::class.java, COLLECTION_NAME)
             .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }
+            .filter { it.id !in properties.ignoredStorageCredentialsKeys }
             .map { convert(it) }
             .forEach { cleanupStorage(it) }
     }

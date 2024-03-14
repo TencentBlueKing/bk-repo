@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.storage.core.cache.indexer
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties(value = "job.artifact-cleanup")
-data class ArtifactCleanupJobProperties(
-    override var enabled: Boolean = false,
-    // 如配置项目，则只清理该项目下的仓库
-    var projectList: List<String> = listOf(),
-    // 如配置仓库，则只清理该仓库下的仓库
-    var repoList: List<String> = listOf(),
-    override var cron: String = "0 0 0 * * ?"
-): MongodbJobProperties()
+/**
+ * 存储层缓存文件索引配置
+ */
+@ConfigurationProperties("storage.cache.index")
+data class StorageCacheIndexProperties(
+    var enabled: Boolean = false,
+    /**
+     * 索引器类型
+     */
+    var type: String = CACHE_TYPE_REDIS_SLRU,
+    /**
+     * 使用基于Redis实现的索引器时作为hashTag
+     */
+    var hashTag: String? = null
+) {
+    companion object {
+        /**
+         * 基于Redis实现的LRU
+         */
+        const val CACHE_TYPE_REDIS_LRU = "REDIS_LRU"
+
+        /**
+         * 基于Redis实现的SLRU
+         */
+        const val CACHE_TYPE_REDIS_SLRU = "REDIS_SLRU"
+    }
+}

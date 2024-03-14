@@ -38,9 +38,9 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFileExpireResolver
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFileExpireResolver
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CompositeFileExpireResolver
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -168,6 +168,7 @@ class CacheStorageService(
             fileLocator,
             credentials,
             resolver,
+            publisher
         )
         getCacheClient(credentials).walk(visitor)
         val result = mutableMapOf<Path, CleanupResult>()
@@ -190,6 +191,22 @@ class CacheStorageService(
             throw IllegalStateException("Cache storage is unhealthy: ${monitor.fallBackReason}")
         }
         super.doCheckHealth(credentials)
+    }
+
+    /**
+     * 删除缓存文件，需要检查文件是否已经在最终存储中存在，避免将未上传成功的制品删除导致数据丢失
+     */
+    fun deleteCacheFile(
+        path: String,
+        filename: String,
+        credentials: StorageCredentials,
+    ) {
+        if (doExist(path, filename, credentials)) {
+            logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
+            getCacheClient(credentials).delete(path, filename)
+        } else {
+            logger.info("Cache file[${credentials.cache.path}/$path/$filename] was not in storage")
+        }
     }
 
     /**

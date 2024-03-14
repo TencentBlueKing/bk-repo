@@ -51,8 +51,8 @@ class NodeCommonUtils(
 
         fun forEachNode(query: Query, batchSize: Int = BATCH_SIZE, consumer: Consumer<Map<String, Any?>>) {
             var querySize: Int
-            var lastId = ObjectId(MIN_OBJECT_ID)
             (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.forEach { collection ->
+                var lastId = ObjectId(MIN_OBJECT_ID)
                 do {
                     val newQuery = Query.of(query)
                         .addCriteria(Criteria.where(ID).gt(lastId))

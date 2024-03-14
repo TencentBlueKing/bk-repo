@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,12 +29,12 @@ package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties(value = "job.artifact-cleanup")
-data class ArtifactCleanupJobProperties(
+@ConfigurationProperties("job.storage-cache-index-sync")
+class StorageCacheIndexSyncJobProperties(
     override var enabled: Boolean = false,
-    // 如配置项目，则只清理该项目下的仓库
-    var projectList: List<String> = listOf(),
-    // 如配置仓库，则只清理该仓库下的仓库
-    var repoList: List<String> = listOf(),
-    override var cron: String = "0 0 0 * * ?"
-): MongodbJobProperties()
+    override var cron: String = "0 0 6 * * ?",
+    /**
+     * 忽略的存储凭据，这些存储的缓存将不执行索引同步
+     */
+    var ignoredStorageCredentialsKeys: Set<String> = emptySet()
+) : BatchJobProperties()

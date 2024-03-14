@@ -37,6 +37,8 @@ import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexConfiguration
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.core.simple.SimpleStorageService
@@ -64,8 +66,11 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Configuration(proxyBeanMethods = false)
 @EnableRetry
-@Import(StorageUtils::class)
-@EnableConfigurationProperties(StorageProperties::class)
+@EnableConfigurationProperties(StorageProperties::class, StorageCacheIndexProperties::class)
+@Import(
+    StorageUtils::class,
+    StorageCacheIndexConfiguration::class,
+)
 class StorageAutoConfiguration {
 
     @Bean

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.test.context.TestConfiguration
+import redis.embedded.RedisServer
+import javax.annotation.PostConstruct
+import javax.annotation.PreDestroy
 
-@ConfigurationProperties(value = "job.artifact-cleanup")
-data class ArtifactCleanupJobProperties(
-    override var enabled: Boolean = false,
-    // 如配置项目，则只清理该项目下的仓库
-    var projectList: List<String> = listOf(),
-    // 如配置仓库，则只清理该仓库下的仓库
-    var repoList: List<String> = listOf(),
-    override var cron: String = "0 0 0 * * ?"
-): MongodbJobProperties()
+
+@TestConfiguration
+class TestRedisConfiguration {
+    private val redisServer = RedisServer.builder().build()
+
+    @PostConstruct
+    fun postConstruct() {
+        redisServer.start()
+    }
+
+    @PreDestroy
+    fun preDestroy() {
+        redisServer.stop()
+    }
+}
