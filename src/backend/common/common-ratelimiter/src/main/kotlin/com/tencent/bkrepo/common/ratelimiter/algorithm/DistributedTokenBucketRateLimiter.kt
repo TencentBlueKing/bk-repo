@@ -34,7 +34,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript
 
 class DistributedTokenBucketRateLimiter(
     private val key: String,
-    private val permitsPerSecond: Long,
+    private val permitsPerSecond: Double,
     private val capacity: Long,
     private val redisTemplate: RedisTemplate<String, String>,
     private val permits: Long = 1L,

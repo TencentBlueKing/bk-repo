@@ -148,7 +148,8 @@ open class UrlResourceLimitRule(
     }
 
     private fun isUrlTemplateVariable(pathDir: String): Boolean {
-        return pathDir.startsWith("{") && pathDir.endsWith("}")
+        return pathDir.startsWith("{") && pathDir.endsWith("}") ||
+            pathDir =="*" || pathDir == "**"
     }
 
     private fun getPathDirPatten(pathDir: String): String {

@@ -49,6 +49,7 @@ class UserUrlResourceLimitRule(
         }
         val (userId, urlPath) = getUserAndUrl(resourceLimit.resource)
         if (!urlPath.startsWith("/") || user.isBlank()) {
+            logger.warn("$resourceLimit is invalid")
             throw InvalidResourceException(urlPath)
         }
         user = userId
@@ -59,16 +60,12 @@ class UserUrlResourceLimitRule(
         if (resource.isBlank()) {
             return null
         }
-        val (userId, urlPath) = getUserAndUrl(resource)
-        if (userId != user) {
-            return null
-        }
-        if (urlPath == "/") {
+        if (resource == "/") {
             return root.getResourceLimit()
         }
-        val pathDirs = UrlUtils.tokenizeUrlPath(urlPath)
+        val pathDirs = UrlUtils.tokenizeUrlPath(resource)
         if (pathDirs.isNullOrEmpty()) {
-            logger.warn("config url $urlPath is empty!")
+            logger.warn("config url $resource is empty!")
             return null
         }
         return findResourceLimit(pathDirs)

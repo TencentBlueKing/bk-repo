@@ -61,11 +61,11 @@ open class UsageRateLimiterService(
     override fun buildResourceTemplate(request: HttpServletRequest): List<String> {
         val (projectId, repoName) = getRepoInfo(request)
         val result = mutableListOf<String>()
-        result.add("/*/*/")
         result.add("/$projectId/*/")
         if (!repoName.isNullOrEmpty()) {
             result.add("/*/$repoName/")
         }
+        result.add("/*/*/")
         return result
     }
 

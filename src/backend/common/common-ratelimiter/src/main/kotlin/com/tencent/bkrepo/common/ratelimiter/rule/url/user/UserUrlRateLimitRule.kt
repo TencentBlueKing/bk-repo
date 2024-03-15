@@ -41,21 +41,28 @@ class UserUrlRateLimitRule: RateLimitRule {
 
     override fun getRateLimitRule(resource: String, extraResource: List<String>): ResourceLimit? {
         if (resource.isBlank()) return null
-        var ruleLimit = userLimitRules[resource]
-        if (ruleLimit == null && userLimitRules.containsKey(StringPool.POUND)) {
-            ruleLimit = userLimitRules[StringPool.POUND]
+        val (userId, url) = UrlUtils.getUserAndUrl(resource)
+        var ruleLimit = userUrlLimitRules[userId]?.getUrlResourceLimit(url)
+        if (ruleLimit == null && userUrlLimitRules.containsKey(StringPool.POUND)) {
+            ruleLimit = userUrlLimitRules[StringPool.POUND]?.getUrlResourceLimit(url)
         }
-
-        if (ruleLimit == null && extraResource.isNotEmpty()) {
-            ruleLimit = userUrlLimitRules[resource]?.getUrlResourceLimit(extraResource.first())
-            if (ruleLimit == null && userUrlLimitRules.containsKey(StringPool.POUND)) {
-                ruleLimit = userUrlLimitRules[StringPool.POUND]?.getUrlResourceLimit(extraResource.first())
+        if (ruleLimit == null) {
+            ruleLimit = userUrlTemplateLimitRules[userId]?.getUrlResourceLimit(url)
+            if (ruleLimit == null && userUrlTemplateLimitRules.containsKey(StringPool.POUND)) {
+                ruleLimit = userUrlTemplateLimitRules[StringPool.POUND]?.getUrlResourceLimit(url)
             }
             if (ruleLimit == null) {
-                ruleLimit = userUrlTemplateLimitRules[resource]?.getUrlResourceLimit(extraResource.last())
-                if (ruleLimit == null && userUrlTemplateLimitRules.containsKey(StringPool.POUND)) {
-                    ruleLimit = userUrlTemplateLimitRules[StringPool.POUND]?.getUrlResourceLimit(extraResource.last())
+                ruleLimit = userLimitRules[userId]
+                if (ruleLimit == null && userLimitRules.containsKey(StringPool.POUND)) {
+                    ruleLimit = userLimitRules[StringPool.POUND]
                 }
+            }
+        }
+        if (ruleLimit == null && extraResource.isNotEmpty()) {
+            val (userId, urlMapping) = UrlUtils.getUserAndUrl(extraResource.first())
+            ruleLimit = userUrlTemplateLimitRules[userId]?.getUrlResourceLimit(urlMapping)
+            if (ruleLimit == null && userUrlTemplateLimitRules.containsKey(StringPool.POUND)) {
+                ruleLimit = userUrlTemplateLimitRules[StringPool.POUND]?.getUrlResourceLimit(urlMapping)
             }
         }
         return ruleLimit

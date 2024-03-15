@@ -50,10 +50,10 @@ class RateLimitHandlerInterceptor(
         return try {
             if (rateLimiterProperties.enabled) {
                 // TODO 可以优化
-                urlRateLimiterService.limit(request)
-                usageRateLimiterService.limit(request)
                 userUrlRateLimiterService.limit(request)
                 userUsageRateLimiterService.limit(request)
+                urlRateLimiterService.limit(request)
+                usageRateLimiterService.limit(request)
             }
             super.preHandle(request, response, handler)
         } catch (e: OverloadException) {

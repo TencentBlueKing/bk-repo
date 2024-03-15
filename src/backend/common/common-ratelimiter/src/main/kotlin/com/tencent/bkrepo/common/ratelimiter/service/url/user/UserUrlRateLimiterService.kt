@@ -53,14 +53,15 @@ class UserUrlRateLimiterService(
 
 
     override fun buildResource(request: HttpServletRequest): String {
-        return HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+        val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+        val realUrl = request.requestURI
+        return "$userId:$realUrl"
     }
 
     override fun buildResourceTemplate(request: HttpServletRequest): List<String> {
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        val realUrl = request.requestURI
         val mappingUrl = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as String
-        return listOf("$userId:$realUrl", "$userId:$mappingUrl")
+        return listOf("$userId:$mappingUrl")
     }
 
     override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {

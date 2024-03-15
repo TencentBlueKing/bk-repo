@@ -41,6 +41,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.Ordered
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
@@ -141,6 +142,8 @@ class RateLimiterAutoConfiguration {
                     userUsageRateLimiterService = userUsageRateLimiterService,
                 ))
                     .excludePathPatterns("/service/**", "/replica/**")
+                    .order(Ordered.LOWEST_PRECEDENCE)
+                super.addInterceptors(registry)
             }
         }
     }

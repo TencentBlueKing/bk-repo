@@ -105,6 +105,7 @@ abstract class AbstractRateLimiterService(
             val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit, applyPermits)
             pass = rateLimiter.tryAcquire()
             if (!pass) {
+                logger.warn("resourceLimit for $resource is $resourceLimit")
                 val msg = "$resource has exceeded max rate limit: ${resourceLimit.limit} /${resourceLimit.unit}"
                 if (rateLimiterProperties.dryRun) {
                     logger.warn(msg)
@@ -179,7 +180,7 @@ abstract class AbstractRateLimiterService(
                     if (resourceLimit.bucketCapacity == null || resourceLimit.bucketCapacity!! <= 0) {
                         throw AcquireLockFailedException("Resource limit config $resourceLimit is illegal")
                     }
-                    val permitsPerSecond = resourceLimit.limit / resourceLimit.unit.toSeconds(1)
+                    val permitsPerSecond = resourceLimit.limit / resourceLimit.unit.toSeconds(1).toDouble()
                     DistributedTokenBucketRateLimiter(
                         resource, permitsPerSecond, resourceLimit.bucketCapacity!!, redisTemplate!!, permits
                     )
@@ -214,10 +215,9 @@ abstract class AbstractRateLimiterService(
         }
         usageRules.addRateLimitRules(usageRuleConfigs)
         rateLimitRule = usageRules
-        if (rateLimiterCache.size > rateLimiterProperties.cacheCapacity || currentRuleHashCode != newRuleHashCode) {
-            rateLimiterCache.clear()
-        }
+        rateLimiterCache.clear()
         currentRuleHashCode = newRuleHashCode
+        logger.info("rules in ${this.javaClass.simpleName} for request has been refreshed!")
     }
 
     private fun getAlgorithmOfRateLimiter(
@@ -241,9 +241,4 @@ abstract class AbstractRateLimiterService(
         val DOWNLOAD_REQUEST_METHOD = listOf(HttpMethod.GET.name, HttpMethod.HEAD.name)
 
     }
-}
-
-
-fun main() {
-    println(Date(1710236799010))
 }

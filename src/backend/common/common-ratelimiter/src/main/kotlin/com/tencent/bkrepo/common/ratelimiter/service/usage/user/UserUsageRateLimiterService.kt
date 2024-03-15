@@ -59,12 +59,15 @@ open class UserUsageRateLimiterService(
         val (projectId, repoName) = getRepoInfo(request)
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
         val result = mutableListOf<String>()
-        result.add("*:/*/*/")
-        result.add("$userId:/*/*/")
+        if (!repoName.isNullOrEmpty()) {
+            result.add("$userId:/$projectId/$repoName/")
+        }
         result.add("$userId:/$projectId/*/")
         if (!repoName.isNullOrEmpty()) {
             result.add("$userId:/*/$repoName/")
         }
+        result.add("$userId:/*/*/")
+        result.add("*:/*/*/")
         return result
     }
 

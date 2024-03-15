@@ -79,6 +79,6 @@ object UrlUtils {
         if (index == -1) {
             throw InvalidResourceException(resource)
         }
-        return Pair(resource.substring(0, index), resource.substring(index))
+        return Pair(resource.substring(0, index), resource.substring(index+1))
     }
 }
