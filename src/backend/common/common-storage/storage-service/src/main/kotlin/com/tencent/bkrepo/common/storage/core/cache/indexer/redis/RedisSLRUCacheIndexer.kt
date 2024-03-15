@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
 import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.EldestRemovedListener
+import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.RedisScript
@@ -43,12 +44,13 @@ import java.nio.file.Path
 class RedisSLRUCacheIndexer(
     cacheName: String,
     cacheDir: Path,
+    fileLocator: FileLocator,
     redisTemplate: RedisTemplate<String, String>,
     private val capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
     hashTag: String? = null,
     evict: Boolean = true,
-) : RedisCacheIndexer(cacheName, cacheDir, redisTemplate, hashTag, evict) {
+) : RedisCacheIndexer(cacheName, cacheDir, fileLocator, redisTemplate, hashTag, evict) {
 
     /**
      * 记录当前缓存的总权重

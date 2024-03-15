@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer
+import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.util.existReal
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
@@ -40,6 +41,7 @@ import java.util.concurrent.Semaphore
 abstract class RedisCacheIndexer(
     protected val cacheName: String,
     protected val cacheDir: Path,
+    protected val fileLocator: FileLocator,
     protected val redisTemplate: RedisTemplate<String, String>,
     /**
      * 作为hash tag使用，未设置时使用cacheName作为hash tag
@@ -104,7 +106,9 @@ abstract class RedisCacheIndexer(
             val data = result[1] as List<String>
             for (i in data.indices step 2) {
                 val key = data[i]
-                if (!cacheDir.resolve(key).existReal()) {
+                val dirPath = fileLocator.locate(key).trimStart('/')
+                val cacheFilePath = cacheDir.resolve(dirPath).resolve(key)
+                if (!cacheFilePath.existReal()) {
                     logger.info("$key cache file was not exists and will be removed")
                     remove(key)
                     count++
