@@ -32,12 +32,11 @@ import com.tencent.bkrepo.common.artifact.cache.model.TArtifactAccessRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
@@ -48,28 +47,30 @@ class ArtifactAccessRecorder(
     private val preloadProperties: PreloadProperties,
     private val artifactAccessRecordDao: ArtifactAccessRecordDao
 ) {
+
+    @Async
     fun onArtifactAccess(node: NodeDetail, cacheMiss: Boolean) {
-        if (preloadProperties.onlyRecordCacheMiss && !cacheMiss || node.folder) {
+        if (!preloadProperties.enabled || preloadProperties.onlyRecordCacheMiss && !cacheMiss || node.folder) {
             return
         }
 
         with(node) {
-            val criteria = TArtifactAccessRecord::projectId.isEqualTo(projectId)
-                .and(TArtifactAccessRecord::repoName.name).isEqualTo(repoName)
-                .and(TArtifactAccessRecord::fullPath.name).isEqualTo(fullPath)
-                .and(TArtifactAccessRecord::sha256.name).isEqualTo(sha256)
-            val record = artifactAccessRecordDao.findOne(Query(criteria))
+            val record = artifactAccessRecordDao.find(projectId, repoName, fullPath, sha256!!)
             val now = LocalDateTime.now()
+            val nowTimestamp = now.atZone(ZoneId.systemDefault()).toEpochSecond()
 
             // 短时间内多次访问时只记录一次
-            val accessInterval = record?.accessTimeSequence?.maxOf { it }.let { Duration.between(it, now) }
-            if (accessInterval != null && accessInterval > preloadProperties.minAccessInterval) {
+            val accessInterval = record?.accessTimeSequence
+                ?.maxOf { it }
+                ?.let { Duration.ofMillis(nowTimestamp - it) }
+            if (accessInterval != null && accessInterval < preloadProperties.minAccessInterval) {
                 return
             }
 
-            // try insert
+            val cacheMissCount = if (cacheMiss) 1L else 0L
             if (record == null) {
                 try {
+                    // try insert
                     artifactAccessRecordDao.insert(
                         TArtifactAccessRecord(
                             createdDate = now,
@@ -78,24 +79,19 @@ class ArtifactAccessRecorder(
                             repoName = repoName,
                             fullPath = fullPath,
                             sha256 = sha256!!,
-                            cacheMissCount = if (cacheMiss) 1L else 0L,
+                            cacheMissCount = cacheMissCount,
                             nodeCreateTime = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME),
-                            accessTimeSequence = listOf(now)
+                            accessTimeSequence = listOf(nowTimestamp)
                         )
                     )
                 } catch (e: DuplicateKeyException) {
                     logger.warn("insert access record failed, try to update it", e)
+                    artifactAccessRecordDao.update(projectId, repoName, fullPath, sha256!!, cacheMissCount)
                 }
+            } else {
+                // update
+                artifactAccessRecordDao.update(projectId, repoName, fullPath, sha256!!, cacheMissCount)
             }
-
-            // update
-            val update = Update()
-            update.set(TArtifactAccessRecord::lastModifiedDate.name, now)
-            if (cacheMiss) {
-                update.inc(TArtifactAccessRecord::cacheMissCount.name, 1)
-            }
-            update.push(TArtifactAccessRecord::accessTimeSequence.name, now)
-            artifactAccessRecordDao.updateFirst(Query(criteria), update)
         }
     }
 

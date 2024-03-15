@@ -29,7 +29,42 @@ package com.tencent.bkrepo.common.artifact.cache.dao
 
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactAccessRecord
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Repository
-class ArtifactAccessRecordDao : SimpleMongoDao<TArtifactAccessRecord>()
+class ArtifactAccessRecordDao : SimpleMongoDao<TArtifactAccessRecord>() {
+    fun find(projectId: String, repoName: String, fullPath: String, sha256: String): TArtifactAccessRecord? {
+        return findOne(Query(buildCriteria(projectId, repoName, fullPath, sha256)))
+    }
+
+    fun update(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        sha256: String,
+        cacheMissCount: Long = 1L,
+    ) {
+        val now = LocalDateTime.now()
+        val update = Update()
+        update.set(TArtifactAccessRecord::lastModifiedDate.name, now)
+        if (cacheMissCount > 0) {
+            update.inc(TArtifactAccessRecord::cacheMissCount.name, cacheMissCount)
+        }
+        update.push(TArtifactAccessRecord::accessTimeSequence.name, now.atZone(ZoneId.systemDefault()).toEpochSecond())
+        val query = Query(buildCriteria(projectId, repoName, fullPath, sha256))
+        updateFirst(query, update)
+    }
+
+    private fun buildCriteria(projectId: String, repoName: String, fullPath: String, sha256: String): Criteria {
+        return TArtifactAccessRecord::projectId.isEqualTo(projectId)
+            .and(TArtifactAccessRecord::repoName.name).isEqualTo(repoName)
+            .and(TArtifactAccessRecord::fullPath.name).isEqualTo(fullPath)
+            .and(TArtifactAccessRecord::sha256.name).isEqualTo(sha256)
+    }
+}

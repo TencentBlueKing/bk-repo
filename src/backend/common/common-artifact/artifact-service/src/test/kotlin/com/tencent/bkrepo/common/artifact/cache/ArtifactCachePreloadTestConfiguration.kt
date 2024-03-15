@@ -25,45 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.model
+package com.tencent.bkrepo.common.artifact.cache
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import org.springframework.boot.SpringBootConfiguration
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 
+@SpringBootConfiguration
+@EnableAutoConfiguration
+class ArtifactCachePreloadTestConfiguration
 
-/**
- * 制品访问记录
- */
-@Document("artifact_access_record")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "projectId_repoName_fullPath_sha256_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'sha256': 1}",
-        unique = true,
-        background = true
-    )
-)
-data class TArtifactAccessRecord(
-    val id: String? = null,
-    val createdDate: LocalDateTime,
-    val lastModifiedDate: LocalDateTime,
+const val UT_USER = "system"
+const val UT_PROJECT_ID = "ut-project"
+const val UT_REPO_NAME = "ut-repo"
 
-    val projectId: String,
-    val repoName: String,
-    val fullPath: String,
-    val sha256: String,
-    /**
-     * 访问时cache miss次数
-     */
-    val cacheMissCount: Long,
-    /**
-     * 制品对应的node创建时间
-     */
-    val nodeCreateTime: LocalDateTime,
-    /**
-     * 制品访问时间序列
-     */
-    val accessTimeSequence: List<Long>
-)

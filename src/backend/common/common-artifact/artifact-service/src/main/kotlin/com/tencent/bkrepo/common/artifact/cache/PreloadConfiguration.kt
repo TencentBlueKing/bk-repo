@@ -27,9 +27,23 @@
 
 package com.tencent.bkrepo.common.artifact.cache
 
+import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactAccessRecordDao
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PreloadProperties::class)
-class PreloadConfiguration
+@ConditionalOnProperty("storage.cache.preload.enabled")
+@Import(ArtifactAccessRecordDao::class)
+class PreloadConfiguration {
+    @Bean
+    fun artifactAccessRecorder(
+        preloadProperties: PreloadProperties,
+        artifactAccessRecordDao: ArtifactAccessRecordDao,
+    ): ArtifactAccessRecorder {
+        return ArtifactAccessRecorder(preloadProperties, artifactAccessRecordDao)
+    }
+}
