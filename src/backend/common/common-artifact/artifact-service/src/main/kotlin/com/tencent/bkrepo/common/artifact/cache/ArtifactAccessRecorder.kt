@@ -51,7 +51,8 @@ class ArtifactAccessRecorder(
     @Async
     fun onArtifactAccess(node: NodeDetail, cacheMiss: Boolean) {
         val validNode = !node.folder && node.size > preloadProperties.minSize.toBytes()
-        if (!preloadProperties.enabled || preloadProperties.onlyRecordCacheMiss && !cacheMiss || !validNode) {
+        val shouldNotRecord = preloadProperties.onlyRecordCacheMiss && !cacheMiss
+        if (!preloadProperties.enabled || shouldNotRecord || !validNode) {
             return
         }
 
