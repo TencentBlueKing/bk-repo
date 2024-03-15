@@ -200,7 +200,7 @@
                 }
             },
             changeType () {
-                if (this.cleanupStrategy.cleanupType !== 'retentionDate' && this.cleanupStrategy.cleanupValue instanceof Date) {
+                if (this.cleanupStrategy.cleanupType !== 'retentionDate') {
                     this.cleanupStrategy.cleanupValue = ''
                 }
                 this.clearError()
