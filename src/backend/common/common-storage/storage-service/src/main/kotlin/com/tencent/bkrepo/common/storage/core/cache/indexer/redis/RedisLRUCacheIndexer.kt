@@ -27,8 +27,7 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
-import com.tencent.bkrepo.common.storage.core.cache.indexer.EldestRemovedListener
-import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer
+import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.EldestRemovedListener
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.RedisScript
@@ -49,8 +48,9 @@ class RedisLRUCacheIndexer(
     /**
      * 作为hash tag使用
      */
-    hashTag: String? = null
-) : RedisCacheIndexer(cacheName, cacheDir, redisTemplate, hashTag), StorageCacheIndexer<String, Long> {
+    hashTag: String? = null,
+    evict: Boolean = true,
+) : RedisCacheIndexer(cacheName, cacheDir, redisTemplate, hashTag, evict) {
     /**
      * 记录当前缓存的总权重
      */
@@ -80,7 +80,7 @@ class RedisLRUCacheIndexer(
         logger.info("put $key into $cacheName")
         val keys = listOf(firstKey, lruKey, valuesKey, totalWeightKey)
         val oldVal = redisTemplate.execute(putScript, keys, score(score), key, value.toString())
-        if (shouldEvict()) {
+        if (evict && shouldEvict()) {
             evictSemaphore.release()
         }
         return oldVal?.toLong()
@@ -131,8 +131,8 @@ class RedisLRUCacheIndexer(
         return redisTemplate.execute(eldestScript, listOf(firstKey, lruKey))
     }
 
-    override fun sync() {
-        sync(valuesKey)
+    override fun sync(): Int {
+        return sync(valuesKey)
     }
 
     override fun addEldestRemovedListener(listener: EldestRemovedListener<String, Long>) {

@@ -25,10 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.other
+package com.tencent.bkrepo.job.batch.task.cache
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -64,12 +65,21 @@ class StorageCacheIndexSyncJob(
     override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
 
     override fun doStart0(jobContext: JobContext) {
-        indexerManager.ifAvailable?.sync(storageProperties.defaultStorageCredentials())
-
+        syncAndEvict(storageProperties.defaultStorageCredentials())
         mongoTemplate.find(Query(), TStorageCredentials::class.java, "storage_credentials")
             .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }
             .filter { it.id !in properties.ignoredStorageCredentialsKeys }
             .map { it.credentials.readJsonString<StorageCredentials>().apply { key = it.id } }
-            .forEach { indexerManager.ifAvailable?.sync(it) }
+            .forEach { syncAndEvict(it) }
+    }
+
+    private fun syncAndEvict(credentials: StorageCredentials) {
+        val synced = indexerManager.ifAvailable?.sync(credentials)
+        val evicted = indexerManager.ifAvailable?.evict(credentials, Int.MAX_VALUE)
+        logger.info("credential[default] sync[$synced] evict[$evicted]")
+    }
+
+    companion object {
+        private val logger = LoggerHolder.jobLogger
     }
 }

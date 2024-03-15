@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.indexer
 
-import com.tencent.bkrepo.common.storage.config.CacheProperties
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
 /**
  * 缓存索引器工厂类
@@ -37,9 +37,9 @@ interface StorageCacheIndexerFactory<K, V> {
      * 创建缓存索引器
      *
      * @param name 缓存名
-     * @param cacheProperties 缓存配置
+     * @param credentials 存储配置
      *
      * @return 缓存索引器
      */
-    fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<K, V>
+    fun create(name: String, credentials: StorageCredentials): StorageCacheIndexer<K, V>
 }
