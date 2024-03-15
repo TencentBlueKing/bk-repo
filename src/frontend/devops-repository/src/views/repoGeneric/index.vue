@@ -57,7 +57,7 @@
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
-                        <bk-button class="ml10" v-if="(userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
+                        <bk-button class="ml10" v-if="repoName !== 'pipeline' && (userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
                             key.folder === true
                         ))" @click="clean">
                             {{ $t('clean') }}
@@ -561,7 +561,7 @@
                                 })
                             })
                         }
-                        
+
                         return {
                             metadata: {},
                             clusterNames: v.clusterNames || [],
