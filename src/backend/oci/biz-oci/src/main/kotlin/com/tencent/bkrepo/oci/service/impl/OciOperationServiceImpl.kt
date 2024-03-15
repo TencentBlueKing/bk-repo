@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.oci.service.impl
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.api.util.JsonUtils
@@ -50,7 +49,6 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
@@ -489,12 +487,18 @@ class OciOperationServiceImpl(
         // https://github.com/docker/docker-ce/blob/master/components/engine/distribution/push_v2.go
         // docker 客户端上传manifest时先按照schema2的格式上传，
         // 如失败则按照schema1格式上传，但是非docker客户端不兼容schema1版本manifest
-        val mediaType: String
-        var digestList = listOf<String>()
         // 需要区分 manifest.json 和 list.manifest.json
-        if (nodeDetail.name == OCI_MANIFEST_LIST) {
-            val manifestList = loadManifestList(nodeDetail.sha256!!, nodeDetail.size, storageCredentials)
-            mediaType = manifestList!!.mediaType
+        if (ociArtifactInfo.isFatManifest()) {
+            val mediaType = loadManifestList(nodeDetail.sha256!!, nodeDetail.size, storageCredentials)!!.mediaType
+            // 更新manifest节点元数据
+            updateNodeMetaData(
+                projectId = ociArtifactInfo.projectId,
+                repoName = ociArtifactInfo.repoName,
+                version = ociArtifactInfo.reference,
+                fullPath = nodeDetail.fullPath,
+                mediaType = mediaType,
+                sourceType = sourceType
+            )
             val metadata = mutableMapOf<String, Any>(
                 OLD_DOCKER_VERSION to ociArtifactInfo.reference,
                 SHA256 to nodeDetail.sha256!!,
@@ -514,12 +518,19 @@ class OciOperationServiceImpl(
         } else {
             val manifest = loadManifest(nodeDetail.sha256!!, nodeDetail.size, storageCredentials)
                 ?: throw OciBadRequestException(OciMessageCode.OCI_MANIFEST_SCHEMA1_NOT_SUPPORT)
-            mediaType = if (manifest.mediaType.isNullOrEmpty()) {
-                HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
-            } else {
-                manifest.mediaType!!
-            }
-            digestList = OciUtils.manifestIteratorDigest(manifest)
+            val mediaType =
+                manifest.mediaType?.ifEmpty { null } ?: ociArtifactInfo.mediaType ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            val digestList = OciUtils.manifestIteratorDigest(manifest)
+            // 更新manifest节点元数据
+            updateNodeMetaData(
+                projectId = ociArtifactInfo.projectId,
+                repoName = ociArtifactInfo.repoName,
+                version = ociArtifactInfo.reference,
+                fullPath = nodeDetail.fullPath,
+                mediaType = mediaType,
+                digestList = digestList,
+                sourceType = sourceType
+            )
             if (ociArtifactInfo.packageName.isEmpty()) return
             // 处理manifest中的blob数据
             syncBlobInfo(
@@ -529,16 +540,6 @@ class OciOperationServiceImpl(
                 sourceType = sourceType
             )
         }
-        // 更新manifest节点元数据
-        updateNodeMetaData(
-            projectId = ociArtifactInfo.projectId,
-            repoName = ociArtifactInfo.repoName,
-            version = ociArtifactInfo.reference,
-            fullPath = nodeDetail.fullPath,
-            mediaType = mediaType,
-            digestList = digestList,
-            sourceType = sourceType
-        )
     }
 
 
@@ -672,8 +673,8 @@ class OciOperationServiceImpl(
         )
         // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
         if (existFlag) {
-            val mediaType = manifest.mediaType ?: HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE)
-            ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            val mediaType =
+                manifest.mediaType?.ifEmpty { null } ?: ociArtifactInfo.mediaType ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
             val metadata = mutableMapOf<String, Any>(
                 OLD_DOCKER_VERSION to ociArtifactInfo.reference,
                 SHA256 to nodeDetail.sha256!!,

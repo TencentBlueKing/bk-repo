@@ -51,8 +51,9 @@ object OciLocationUtils {
         return "/$packageName/manifest/"
     }
 
-    fun buildDigestManifestPathWithReference(packageName: String, reference: String): String {
-        return buildDigestManifestPath(packageName, OciDigest(reference))
+    fun buildDigestManifestPathWithReference(packageName: String, reference: String, isFatManifest: Boolean): String {
+        return buildManifestVersionFolderPath(packageName, reference) +
+                if (isFatManifest) OCI_MANIFEST_LIST else OCI_MANIFEST
     }
 
     private fun buildDigestManifestPath(packageName: String, ref: OciDigest): String {

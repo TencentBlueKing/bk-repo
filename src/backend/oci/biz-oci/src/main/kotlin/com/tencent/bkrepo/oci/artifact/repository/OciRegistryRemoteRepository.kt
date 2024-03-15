@@ -430,13 +430,17 @@ class OciRegistryRemoteRepository(
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         logger.info("Remote download response will be processed")
+        val ociArtifactInfo = context.artifactInfo
+        if (ociArtifactInfo is OciManifestArtifactInfo) {
+            ociArtifactInfo.mediaType = response.header(HttpHeaders.CONTENT_TYPE)
+        }
         val artifactFile = createTempFile(response.body!!)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         val node = cacheArtifact(context, artifactFile)
         val artifactResource = ArtifactResource(
             inputStream = artifactStream,
-            artifactName = context.artifactInfo.getResponseName(),
+            artifactName = ociArtifactInfo.getResponseName(),
             node = node,
             channel = ArtifactChannel.PROXY
         )

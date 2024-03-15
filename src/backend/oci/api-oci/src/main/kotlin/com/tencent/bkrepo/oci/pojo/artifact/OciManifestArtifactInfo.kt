@@ -27,9 +27,6 @@
 
 package com.tencent.bkrepo.oci.pojo.artifact
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.constant.DOCKER_DISTRIBUTION_MANIFEST_LIST_V2
 import com.tencent.bkrepo.oci.constant.IMAGE_INDEX_MEDIA_TYPE
 import com.tencent.bkrepo.oci.util.OciLocationUtils
@@ -40,28 +37,28 @@ class OciManifestArtifactInfo(
     packageName: String,
     version: String,
     val reference: String,
-    val isValidDigest: Boolean
+    val isValidDigest: Boolean,
+    var mediaType: String? = null
 ) : OciArtifactInfo(projectId, repoName, packageName, version) {
 
     override fun getArtifactFullPath(): String {
         return if(getArtifactMappingUri().isNullOrEmpty()) {
             if (isValidDigest) {
-                // PUT 请求时取 digest 做为tag名
-                if (HttpContextHolder.getRequest().method.equals("PUT", ignoreCase = true)) {
-                    OciLocationUtils.buildManifestPath(packageName, reference)
-                } else {
-                    OciLocationUtils.buildDigestManifestPathWithReference(packageName, reference)
-                }
+                OciLocationUtils.buildDigestManifestPathWithReference(packageName, reference, isFatManifest())
+            } else if (isFatManifest()) {
+                OciLocationUtils.buildManifestListPath(packageName, reference)
             } else {
-                // 根据 Content-type 区分 manifest.json / list.manifest.json
-                val mediaType = HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE)
-                if (mediaType == DOCKER_DISTRIBUTION_MANIFEST_LIST_V2 || mediaType == IMAGE_INDEX_MEDIA_TYPE) {
-                    OciLocationUtils.buildManifestListPath(packageName, reference)
-                } else {
-                    OciLocationUtils.buildManifestPath(packageName, reference)
-                }
+                OciLocationUtils.buildManifestPath(packageName, reference)
             }
         } else getArtifactMappingUri()!!
+    }
 
+    fun isFatManifest() = FAT_MANIFEST_MEDIA_TYPES.contains(mediaType)
+
+    companion object {
+        private val FAT_MANIFEST_MEDIA_TYPES = listOf(
+            DOCKER_DISTRIBUTION_MANIFEST_LIST_V2,
+            IMAGE_INDEX_MEDIA_TYPE
+        )
     }
 }
