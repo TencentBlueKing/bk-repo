@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
+import org.springframework.util.unit.DataSize
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -47,19 +48,20 @@ class ArtifactAccessRecorderTest @Autowired constructor(
             Assertions.assertEquals(1, record.accessTimeSequence.size)
 
             // test access interval
+            Thread.sleep(1000)
             preloadProperties.minAccessInterval = Duration.ofMinutes(0L)
             recorder.onArtifactAccess(node, true)
             preloadProperties.minAccessInterval = Duration.ofMinutes(5L)
             recorder.onArtifactAccess(node, true)
+            // test only record cache miss
+            recorder.onArtifactAccess(node, false)
+            // test invalid node
+            recorder.onArtifactAccess(node.copy(size = 1L), true)
             record = accessRecordDao.find(projectId, repoName, fullPath, sha256!!)
+
             Assertions.assertNotNull(record)
             Assertions.assertEquals(2, record!!.cacheMissCount)
             Assertions.assertEquals(2, record.accessTimeSequence.size)
-
-            // test only record cache miss
-            recorder.onArtifactAccess(node, false)
-            record = accessRecordDao.find(projectId, repoName, fullPath, sha256!!)
-            Assertions.assertEquals(2, record!!.cacheMissCount)
         }
     }
 
@@ -76,7 +78,7 @@ class ArtifactAccessRecorderTest @Autowired constructor(
             path = path,
             name = name,
             fullPath = "$path/$name",
-            size = 1,
+            size = DataSize.ofGigabytes(2L).toBytes(),
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             sha256 = FAKE_SHA256,

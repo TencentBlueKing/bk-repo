@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.cache
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
 import java.time.Duration
 
 /**
@@ -44,4 +45,8 @@ data class PreloadProperties(
      * 仅记录未命中缓存的记录
      */
     var onlyRecordCacheMiss: Boolean = true,
+    /**
+     * 只记录大小大于该值的文件
+     */
+    var minSize: DataSize = DataSize.ofGigabytes(1L)
 )
