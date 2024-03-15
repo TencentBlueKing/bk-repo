@@ -67,7 +67,9 @@ open class DefaultArtifactResourceWriter(
     private val storageProperties: StorageProperties,
     private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService ?= null,
     private val userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService? = null
-) : AbstractArtifactResourceHandler(storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService) {
+) : AbstractArtifactResourceHandler(
+    storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService)
+{
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {

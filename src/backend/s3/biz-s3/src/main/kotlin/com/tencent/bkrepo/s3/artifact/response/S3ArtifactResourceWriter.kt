@@ -57,7 +57,9 @@ class S3ArtifactResourceWriter (
     storageProperties: StorageProperties,
     downloadUsageRateLimiterService: DownloadUsageRateLimiterService? = null,
     userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService?= null,
-    ) : AbstractArtifactResourceHandler(storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService) {
+    ) : AbstractArtifactResourceHandler(
+    storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService
+) {
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
