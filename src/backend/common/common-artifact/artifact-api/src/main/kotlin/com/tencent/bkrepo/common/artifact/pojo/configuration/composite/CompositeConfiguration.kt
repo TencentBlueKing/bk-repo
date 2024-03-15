@@ -40,6 +40,11 @@ data class CompositeConfiguration(
     @ApiModelProperty("代理配置", required = false)
     val proxy: ProxyConfiguration = ProxyConfiguration()
 ) : LocalConfiguration() {
+
+    override fun toString(): String {
+        return super.toString()
+    }
+
     companion object {
         const val type = "composite"
     }

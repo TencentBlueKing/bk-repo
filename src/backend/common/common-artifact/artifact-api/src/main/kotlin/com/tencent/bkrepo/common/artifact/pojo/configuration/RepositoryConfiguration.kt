@@ -104,4 +104,8 @@ open class RepositoryConfiguration {
     fun getIntegerSetting(key: String): Int? {
         return settings[key]?.toString()?.toInt()
     }
+
+    override fun toString(): String {
+        return settings.toString()
+    }
 }
