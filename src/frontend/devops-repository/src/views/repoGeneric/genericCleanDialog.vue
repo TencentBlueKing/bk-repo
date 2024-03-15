@@ -41,6 +41,7 @@
 <script>
     import { mapActions } from 'vuex'
     import { convertFileSize } from '@repository/utils'
+    import moment from 'moment'
     export default {
         name: 'genericCleanDialog',
         data () {
@@ -126,7 +127,7 @@
                 this.$emit('refresh')
                 this.doing = false
             },
-            resetStatus () {
+            resetStatus (date) {
                 if (this.doing === false && this.isComplete === true) {
                     this.isComplete = false
                     for (let i = 0; i < this.paths.length; i++) {
@@ -135,6 +136,13 @@
                             this.displayPaths[i].isComplete = false
                         }
                     }
+                }
+                if (this.repoName === 'pipeline' && moment().subtract(60, 'days').isBefore(date)) {
+                    this.date = moment().subtract(60, 'days').toDate()
+                    return
+                }
+                if (this.repoName === 'custom' && moment().subtract(30, 'days').isBefore(date)) {
+                    this.date = moment().subtract(30, 'days').toDate()
                 }
             }
         }

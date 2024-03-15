@@ -826,7 +826,7 @@
     "createPermNameTip": "Please enter a name",
     "createPathsTip": "Please add path",
     "createUsersTip": "Please add user",
-    "cleanConfigTip": "Please enter the correct input",
+    "cleanConfigTip": "Please enter the correct input(custom need at least 30 days, pipeline need at least 60 days)",
     "cleanupStrategy": "Cleanup Strategy",
     "retentionDays":"Retention Days",
     "retentionDate":"Retention Date",
