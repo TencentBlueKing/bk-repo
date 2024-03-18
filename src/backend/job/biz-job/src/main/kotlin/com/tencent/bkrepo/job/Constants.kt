@@ -56,6 +56,7 @@ const val FULL_PATH = "fullPath"
 const val PATH = "path"
 const val LAST_MODIFIED_BY = "lastModifiedBy"
 const val NAME = "name"
+const val SIZE = "size"
 
 /**
  * 缓存类型
