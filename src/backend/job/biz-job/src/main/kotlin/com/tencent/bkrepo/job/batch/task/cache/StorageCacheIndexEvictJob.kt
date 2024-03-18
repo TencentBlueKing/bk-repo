@@ -54,7 +54,7 @@ class StorageCacheIndexEvictJob(
 
     override fun doWithCredentials(credentials: StorageCredentials) {
         val evicted = indexerManager.ifAvailable?.evict(credentials, Int.MAX_VALUE)
-        logger.info("credential[default] evict[$evicted]")
+        logger.info("credential[${credentials.key}] evict[$evicted]")
     }
 
     companion object {
