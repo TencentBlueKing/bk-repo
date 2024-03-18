@@ -46,9 +46,9 @@ import org.springframework.data.redis.core.RedisTemplate
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(RedisTemplate::class)
+@ConditionalOnProperty(prefix = "storage.cache.index", name = ["enabled"])
 class StorageCacheIndexConfiguration {
     @Bean
-    @ConditionalOnProperty(prefix = "storage.cache.index", name = ["enabled"])
     fun storageCacheIndexerManager(
         cacheFactory: StorageCacheIndexerFactory<String, Long>,
         storageProperties: StorageProperties,
