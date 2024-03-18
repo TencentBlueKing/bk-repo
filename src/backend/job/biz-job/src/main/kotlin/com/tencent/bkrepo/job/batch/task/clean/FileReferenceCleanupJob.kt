@@ -96,7 +96,7 @@ class FileReferenceCleanupJob(
             .toList()
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: FileJobContext): Query {
         return Query(Criteria.where(COUNT).isEqualTo(0))
     }
 

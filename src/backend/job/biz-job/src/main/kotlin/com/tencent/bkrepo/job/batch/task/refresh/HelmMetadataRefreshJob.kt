@@ -64,7 +64,7 @@ class HelmMetadataRefreshJob(
         return listOf(REPOSITORY_COLLECTION_NAME)
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query(
             Criteria.where(TYPE).`is`(RepositoryType.HELM.name)
                 .and(CATEGORY).ne(RepositoryCategory.REMOTE.name)

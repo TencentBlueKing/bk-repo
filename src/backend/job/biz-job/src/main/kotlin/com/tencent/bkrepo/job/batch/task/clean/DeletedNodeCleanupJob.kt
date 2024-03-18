@@ -98,7 +98,7 @@ class DeletedNodeCleanupJob(
         return (0 until SHARDING_COUNT).map { "$COLLECTION_NODE_PREFIX$it" }.toList()
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         val expireDate = LocalDateTime.now().minusDays(properties.deletedNodeReserveDays)
         return Query(Criteria.where(Node::deleted.name).lt(expireDate))
     }

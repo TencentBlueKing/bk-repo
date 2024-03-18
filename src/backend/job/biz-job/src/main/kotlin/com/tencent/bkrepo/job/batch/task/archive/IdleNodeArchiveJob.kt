@@ -98,7 +98,7 @@ class IdleNodeArchiveJob(
         nodeUseInfoCache.clear()
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: NodeContext): Query {
         val now = LocalDateTime.now()
         val cutoffTime = now.minus(Duration.ofDays(properties.days.toLong()))
         tempCutoffTime = cutoffTime

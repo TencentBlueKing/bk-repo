@@ -60,7 +60,7 @@ class NodeReport2BkbaseJob(
             .toList()
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query(where(Node::folder).isEqualTo(false)).with(Sort.by(Sort.Direction.ASC, Node::id.name))
     }
 

@@ -61,7 +61,7 @@ class ThirdPartyImageReplicationJob(
         return listOf(COLLECTION_NAME)
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query()
     }
 

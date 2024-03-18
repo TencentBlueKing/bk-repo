@@ -67,7 +67,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     /**
      * 需要处理数据的查询语句
      * */
-    abstract fun buildQuery(): Query
+    abstract fun buildQuery(context: Context): Query
 
     /**
      * 处理单条数据函数
@@ -187,7 +187,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
         var sum = 0L
         measureNanoTime {
             do {
-                val query = buildQuery()
+                val query = buildQuery(context)
                     .addCriteria(Criteria.where(ID).gt(lastId))
                     .limit(batchSize)
                     .with(Sort.by(ID).ascending())

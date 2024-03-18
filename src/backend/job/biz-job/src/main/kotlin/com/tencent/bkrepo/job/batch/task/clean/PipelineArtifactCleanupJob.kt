@@ -70,7 +70,7 @@ class PipelineArtifactCleanupJob(
      *
      * 示例 /p-xxxxxx
      */
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query(
             where(Node::folder.name).isEqualTo(true)
                 .orOperator(

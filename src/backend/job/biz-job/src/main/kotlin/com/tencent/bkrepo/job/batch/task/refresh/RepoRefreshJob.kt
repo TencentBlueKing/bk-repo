@@ -65,7 +65,7 @@ class RepoRefreshJob(
         return super.start()
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query(
             Criteria.where(TYPE).`in`(properties.repositorytypes)
                 .and(CATEGORY).`in`(properties.repositoryCategories)

@@ -74,7 +74,7 @@ class ExpiredNodeMarkupJob(
         return collectionNames
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query.query(
             where(Node::expireDate).lt(LocalDateTime.now())
                 .and(Node::deleted).isEqualTo(null)

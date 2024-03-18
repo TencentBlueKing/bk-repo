@@ -77,7 +77,7 @@ class DeletedRepositoryCleanupJob(
         return listOf(COLLECTION_REPOSITORY)
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query(Criteria.where(DELETED_DATE).ne(null))
     }
 

@@ -78,7 +78,7 @@ class ArchivedNodeCompleteJob(
         return listOf("archive_file")
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: NodeContext): Query {
         return Query.query(Criteria.where("status").isEqualTo(ArchiveStatus.ARCHIVED))
     }
 

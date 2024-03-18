@@ -76,10 +76,13 @@ open class NodeFolderStatJob(
         return (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.toList()
     }
 
-    override fun buildQuery(): Query = Query(
-        Criteria.where(DELETED_DATE).`is`(null)
-            .and(FOLDER).`is`(false)
-    )
+    override fun buildQuery(context: JobContext): Query {
+        val criteria = statProjectCriteria(context)
+        return Query(
+            Criteria.where(DELETED_DATE).`is`(null).and(FOLDER).`is`(false)
+                .andOperator(criteria)
+        )
+    }
 
     override fun mapToEntity(row: Map<String, Any?>): Node = Node(row)
 
@@ -90,10 +93,7 @@ open class NodeFolderStatJob(
      */
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
-    open fun statProjectCheck(
-        projectId: String,
-        context: NodeFolderJobContext
-    ): Boolean = true
+    open fun statProjectCriteria(context: JobContext): Criteria { return Criteria() }
 
     // 特殊仓库每周统计一次
     private fun specialRepoRunCheck(): Boolean {
@@ -111,7 +111,6 @@ open class NodeFolderStatJob(
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is NodeFolderJobContext)
-        if (!statProjectCheck(row.projectId, context)) return
 
         if (isSpecialRepo(row.repoName) && !specialRepoRunCheck()) {
             return

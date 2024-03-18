@@ -66,7 +66,7 @@ class ProjectMetricsReport2BkbaseJob(
         return listOf(COLLECTION_NAME_PROJECT_METRICS)
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query(
             where(TProjectMetrics::createdDate).`is`(LocalDate.now().atStartOfDay())
         )

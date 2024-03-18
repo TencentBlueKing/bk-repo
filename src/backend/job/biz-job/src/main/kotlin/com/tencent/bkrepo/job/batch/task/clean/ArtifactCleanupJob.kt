@@ -89,7 +89,7 @@ class ArtifactCleanupJob(
         return listOf(REPOSITORY_COLLECTION_NAME)
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query()
     }
 

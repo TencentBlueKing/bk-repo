@@ -117,7 +117,7 @@ class BkciProjectMetadataSyncJob(
 
     override fun collectionNames() = listOf(COLLECTION_NAME)
 
-    override fun buildQuery() = Query()
+    override fun buildQuery(context: JobContext) = Query()
 
     override fun mapToEntity(row: Map<String, Any?>): Project {
         val metadata = (row[Project::metadata.name] as? List<Map<String, Any>>)?.map {

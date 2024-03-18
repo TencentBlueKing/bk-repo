@@ -65,7 +65,7 @@ class DistributedDockerImageCleanupJob(
         return listOf(PACKAGE_COLLECTION_NAME)
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         return Query(
             Criteria.where(TYPE).`in`(properties.repositoryTypes).
                 and(REPO_NAME).isEqualTo(DISTRIBUTION_IMAGE_REPO)

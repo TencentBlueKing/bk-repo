@@ -74,7 +74,7 @@ class NodeUncompressedJob(
         return listOf("compress_file")
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: NodeContext): Query {
         return Query.query(Criteria.where("status").isEqualTo(CompressStatus.UNCOMPRESSED))
     }
 

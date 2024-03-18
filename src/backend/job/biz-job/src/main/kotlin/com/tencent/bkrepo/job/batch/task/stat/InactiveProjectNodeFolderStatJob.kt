@@ -27,10 +27,13 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.config.properties.InactiveProjectNodeFolderStatJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
 
@@ -45,11 +48,8 @@ class InactiveProjectNodeFolderStatJob(
     private val activeProjectService: ActiveProjectService
 ): NodeFolderStatJob(properties, redisTemplate, activeProjectService) {
 
-    override fun statProjectCheck(
-        projectId: String,
-        context: NodeFolderJobContext
-    ): Boolean {
-        if (!context.activeProjects.contains(projectId)) return true
-        return false
+    override fun statProjectCriteria(context: JobContext): Criteria {
+        require(context is NodeFolderJobContext)
+        return Criteria().and(PROJECT).nin(context.activeProjects)
     }
 }

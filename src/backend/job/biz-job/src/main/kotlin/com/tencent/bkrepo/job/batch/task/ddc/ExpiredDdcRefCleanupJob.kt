@@ -55,7 +55,7 @@ class ExpiredDdcRefCleanupJob(
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         val cutoffTime = LocalDateTime.now().minus(properties.expired)
         val query = Query.query(Criteria.where("lastAccessDate").lt(cutoffTime))
         query.fields().include(ID, Ref::projectId.name, Ref::repoName.name, Ref::bucket.name, Ref::key.name)

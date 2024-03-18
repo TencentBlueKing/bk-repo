@@ -66,7 +66,7 @@ class NodeCopyJob(
             .toList()
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: NodeCopyJobContext): Query {
         return Query(where(NodeCopyData::copyFromCredentialsKey).ne(null))
     }
 

@@ -70,7 +70,7 @@ class ArtifactPushJob(
         return listOf(COLLECTION_NAME)
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         val fromDate = LocalDateTime.now().minusMinutes(1)
         return Query(
             Criteria.where(LAST_MODIFIED_DATE).gt(fromDate)

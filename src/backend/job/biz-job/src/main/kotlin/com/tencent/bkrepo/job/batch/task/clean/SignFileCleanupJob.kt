@@ -62,7 +62,7 @@ class SignFileCleanupJob(
         return listOf(TABLE_NAME)
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         val expiredDate = LocalDateTime.now().minusDays(expiredOfDays)
         return Query(Criteria.where(CREATED_DATE).lt(expiredDate))
     }

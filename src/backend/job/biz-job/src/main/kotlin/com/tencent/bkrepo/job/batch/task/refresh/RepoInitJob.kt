@@ -67,7 +67,7 @@ class RepoInitJob(
         return super.start()
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         val fromDate = LocalDateTime.now().minusMinutes(1)
         return Query(
             Criteria.where(TYPE).`in`(properties.repositorytypes)

@@ -50,7 +50,7 @@ class DdcBlobCleanupJob(
 ) : DefaultContextMongoDbJob<DdcBlobCleanupJob.Blob>(properties) {
     override fun collectionNames() = listOf(COLLECTION_NAME)
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         val referencesCriteria = Criteria().orOperator(
             Blob::references.exists(false),
             Blob::references.size(0)

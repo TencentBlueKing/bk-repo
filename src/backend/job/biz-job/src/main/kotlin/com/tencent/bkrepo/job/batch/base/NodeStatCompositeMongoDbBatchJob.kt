@@ -48,7 +48,7 @@ class NodeStatCompositeMongoDbBatchJob(
         return (0 until SHARDING_COUNT).map { "node_$it" }.toList()
     }
 
-    override fun buildQuery(): Query = Query(
+    override fun buildQuery(context: CompositeJobContext<Node>): Query = Query(
         Criteria.where(DELETED_DATE).`is`(null)
             .and(FOLDER).`is`(false)
     )

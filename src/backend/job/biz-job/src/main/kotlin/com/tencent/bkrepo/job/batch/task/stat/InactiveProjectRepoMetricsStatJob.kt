@@ -27,10 +27,13 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
 import com.tencent.bkrepo.job.config.properties.InactiveProjectRepoMetricsStatJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
 /**
@@ -43,11 +46,8 @@ class InactiveProjectRepoMetricsStatJob(
     activeProjectService: ActiveProjectService,
 ) : ProjectRepoMetricsStatJob(properties, activeProjectService, false) {
 
-    override fun statProjectCheck(
-        projectId: String,
-        context: ProjectRepoMetricsStatJobContext
-    ): Boolean {
-        if (!context.statProjects.contains(projectId)) return true
-        return false
+    override fun statProjectCriteria(context: JobContext): Criteria {
+        require(context is ProjectRepoMetricsStatJobContext)
+        return Criteria().and(PROJECT).nin(context.statProjects)
     }
 }

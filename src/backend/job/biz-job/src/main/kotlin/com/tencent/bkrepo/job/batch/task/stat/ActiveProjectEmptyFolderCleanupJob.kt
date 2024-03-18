@@ -27,10 +27,13 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.config.properties.ActiveProjectEmptyFolderCleanupJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
 
@@ -44,11 +47,8 @@ class ActiveProjectEmptyFolderCleanupJob(
     private val activeProjectService: ActiveProjectService
 ): EmptyFolderCleanupJob(properties, activeProjectService) {
 
-    override fun statProjectCheck(
-        projectId: String,
-        context: EmptyFolderCleanupJobContext
-    ): Boolean {
-        if (context.activeProjects.contains(projectId)) return true
-        return false
+    override fun statProjectCriteria(context: JobContext): Criteria {
+        require(context is EmptyFolderCleanupJobContext)
+        return Criteria().and(PROJECT).`in`(context.activeProjects)
     }
 }

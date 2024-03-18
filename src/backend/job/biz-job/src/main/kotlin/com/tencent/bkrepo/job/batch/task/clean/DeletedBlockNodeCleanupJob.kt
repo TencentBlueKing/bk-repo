@@ -73,7 +73,7 @@ class DeletedBlockNodeCleanupJob(
         return collectionNames
     }
 
-    override fun buildQuery(): Query {
+    override fun buildQuery(context: JobContext): Query {
         val expireDate = LocalDateTime.now().minusDays(properties.deletedNodeReserveDays)
         return Query.query(where(BlockNode::deleted).lt(expireDate))
     }

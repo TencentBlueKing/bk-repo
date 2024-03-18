@@ -66,7 +66,10 @@ open class ProjectRepoMetricsStatJob(
         return listOf(COLLECTION_REPOSITORY_NAME)
     }
 
-    override fun buildQuery(): Query = Query(Criteria.where(DELETED_DATE).`is`(null))
+    override fun buildQuery(context: JobContext): Query {
+        val criteria = statProjectCriteria(context)
+        return Query(Criteria.where(DELETED_DATE).`is`(null).andOperator(criteria))
+    }
 
     override fun mapToEntity(row: Map<String, Any?>): Repository {
         return Repository(row)
@@ -76,15 +79,12 @@ open class ProjectRepoMetricsStatJob(
         return Repository::class
     }
 
-    open fun statProjectCheck(
-        projectId: String,
-        context: ProjectRepoMetricsStatJobContext
-    ): Boolean = true
+    open fun statProjectCriteria(context: JobContext): Criteria { return Criteria() }
+
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {
         require(context is ProjectRepoMetricsStatJobContext)
         with(row) {
-            if (!statProjectCheck(projectId, context)) return
             val query = Query(
                 Criteria.where(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(name)
                     .and(PATH).isEqualTo(PathUtils.ROOT).and(DELETED_DATE).isEqualTo(null)
