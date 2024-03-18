@@ -34,4 +34,6 @@ dependencies {
     api(project(":common:common-artifact:artifact-api"))
     api(project(":common:common-redis"))
     api(project(":common:common-api"))
-    api(project(":common:common-security")) }
+    api(project(":common:common-security"))
+    api("org.redisson:redisson-spring-boot-starter:3.15.6")
+}
