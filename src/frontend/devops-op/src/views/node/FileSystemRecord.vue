@@ -35,21 +35,14 @@
           </template>
         </el-autocomplete>
       </el-form-item>
-      <el-form-item style="margin-left: 15px" label="是否在线" prop="online">
-        <el-select v-model="clientQuery.online" clearable placeholder="请选择">
-          <el-option
-            v-for="item in options"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
-      </el-form-item>
       <el-form-item style="margin-left: 15px" label="IP" prop="ip">
         <el-input v-model="clientQuery.ip" type="text" size="small" width="50" placeholder="请输入ip" />
       </el-form-item>
       <el-form-item style="margin-left: 15px" label="版本" prop="version">
         <el-input v-model="clientQuery.version" type="text" size="small" width="50" placeholder="请输入版本号" />
+      </el-form-item>
+      <el-form-item style="margin-left: 15px" label="日期" prop="startTime">
+        <el-date-picker v-model="clientQuery.startTime" value-format="yyyy-MM-dd" type="date" placeholder="选择日期" />
       </el-form-item>
       <el-form-item>
         <el-button
@@ -68,25 +61,9 @@
       <el-table-column prop="version" label="版本" />
       <el-table-column prop="os" label="操作系统" />
       <el-table-column prop="arch" label="架构" />
-      <el-table-column prop="online" label="是否在线" :filters="[{ text: '是', value: true }, { text: '否', value: false }]" :filter-method="filterFunction">
+      <el-table-column prop="time" label="当天最近一次心跳时间">
         <template slot-scope="scope">
-          {{ scope.row.online ? "是":"否" }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="heartbeatTime" label="心跳时间" width="200">
-        <template slot-scope="scope">
-          <span>{{ formatNormalDate(scope.row.heartbeatTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="record" label="记录">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="primary"
-            @click="showRecord(scope.row)"
-          >
-            查看历史
-          </el-button>
+          <span>{{ formatNormalDate(scope.row.time) }}</span>
         </template>
       </el-table-column>
     </el-table>
@@ -100,19 +77,16 @@
         @current-change="handleCurrentChange"
       />
     </div>
-    <file-system-status-record-dialog :visible.sync="showDialog" :param="param" />
   </div>
 </template>
 <script>
-import { queryFileSystemClient } from '@/api/fileSystem'
+import { queryDailyFileSystemClient } from '@/api/fileSystem'
 import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import { formatNormalDate } from '@/utils/date'
-import FileSystemStatusRecordDialog from '@/views/node/components/FileSystemStatusRecordDialog'
 
 export default {
   name: 'FileSystem',
-  components: { FileSystemStatusRecordDialog },
   data() {
     return {
       loading: false,
@@ -123,21 +97,12 @@ export default {
         projectId: '',
         repoName: '',
         pageNumber: 1,
-        online: '',
         ip: '',
         version: '',
-        mountPoint: ''
+        startTime: '',
+        endTime: ''
       },
-      clients: [],
-      options: [{
-        value: 'true',
-        label: '是'
-      }, {
-        value: 'false',
-        label: '否'
-      }],
-      showDialog: false,
-      param: undefined
+      clients: []
     }
   },
   mounted() {
@@ -189,10 +154,10 @@ export default {
       }
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
-      query.online = this.clientQuery.online
       query.ip = this.clientQuery.ip
       query.version = this.clientQuery.version
-      this.$router.push({ path: '/nodes/FileSystem', query: query })
+      query.startTime = this.clientQuery.startTime
+      this.$router.push({ path: '/nodes/FileSystemRecord', query: query })
     },
     onRouteUpdate(route) {
       const query = route.query
@@ -200,9 +165,11 @@ export default {
       clientQuery.projectId = query.projectId ? query.projectId : ''
       clientQuery.repoName = query.repoName ? query.repoName : ''
       clientQuery.pageNumber = query.page ? Number(query.page) : 1
-      clientQuery.online = query.online ? query.online : ''
       clientQuery.ip = query.ip ? query.ip : ''
       clientQuery.version = query.version ? query.version : ''
+      clientQuery.startTime = query.startTime ? query.startTime : ''
+      clientQuery.endTime = query.startTime ? query.startTime : ''
+      clientQuery.actions = 'working'
       this.$nextTick(() => {
         this.queryClients(clientQuery)
       })
@@ -219,7 +186,7 @@ export default {
     doQueryClients(clientQuery) {
       this.loading = true
       let promise = null
-      promise = queryFileSystemClient(clientQuery)
+      promise = queryDailyFileSystemClient(clientQuery)
       promise.then(res => {
         this.clients = res.data.records
         this.total = res.data.totalRecords
@@ -232,14 +199,6 @@ export default {
     },
     formatNormalDate(data) {
       return formatNormalDate(data)
-    },
-    filterFunction(value, row) {
-      return row.online === value
-    },
-    showRecord(row) {
-      console.log(row)
-      this.param = row
-      this.showDialog = true
     }
   }
 }
