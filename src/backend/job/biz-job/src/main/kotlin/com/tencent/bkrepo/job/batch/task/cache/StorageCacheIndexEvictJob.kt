@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.config.properties.StorageCacheIndexEvictJobProperties
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexSyncJobProperties
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -39,11 +40,11 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 
 /**
- * 缓存索引器中维护缓存条目信息可能与实际磁盘中缓存的文件条目不一致，需要定时同步
+ * 定时执行缓存淘汰，淘汰索引器中缓存的同时会删除对应的缓存文件
  */
 @Component
-@EnableConfigurationProperties(StorageCacheIndexSyncJobProperties::class)
-class StorageCacheIndexSyncJob(
+@EnableConfigurationProperties(StorageCacheIndexEvictJobProperties::class)
+class StorageCacheIndexEvictJob(
     properties: StorageCacheIndexSyncJobProperties,
     storageProperties: StorageProperties,
     clusterProperties: ClusterProperties,
@@ -52,8 +53,8 @@ class StorageCacheIndexSyncJob(
 ) : StorageCacheIndexJob(properties, storageProperties, clusterProperties, mongoTemplate, indexerManager) {
 
     override fun doWithCredentials(credentials: StorageCredentials) {
-        val synced = indexerManager.ifAvailable?.sync(credentials)
-        logger.info("credential[default] sync[$synced]")
+        val evicted = indexerManager.ifAvailable?.evict(credentials, Int.MAX_VALUE)
+        logger.info("credential[default] evict[$evicted]")
     }
 
     companion object {

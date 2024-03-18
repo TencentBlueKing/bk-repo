@@ -27,36 +27,43 @@
 
 package com.tencent.bkrepo.job.batch.task.cache
 
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexSyncJobProperties
 import org.springframework.beans.factory.ObjectProvider
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.stereotype.Component
+import org.springframework.data.mongodb.core.query.Query
+import java.time.Duration
 
-/**
- * 缓存索引器中维护缓存条目信息可能与实际磁盘中缓存的文件条目不一致，需要定时同步
- */
-@Component
-@EnableConfigurationProperties(StorageCacheIndexSyncJobProperties::class)
-class StorageCacheIndexSyncJob(
-    properties: StorageCacheIndexSyncJobProperties,
-    storageProperties: StorageProperties,
-    clusterProperties: ClusterProperties,
-    mongoTemplate: MongoTemplate,
-    indexerManager: ObjectProvider<StorageCacheIndexerManager>
-) : StorageCacheIndexJob(properties, storageProperties, clusterProperties, mongoTemplate, indexerManager) {
+abstract class StorageCacheIndexJob(
+    private val properties: StorageCacheIndexSyncJobProperties,
+    private val storageProperties: StorageProperties,
+    private val clusterProperties: ClusterProperties,
+    private val mongoTemplate: MongoTemplate,
+    protected val indexerManager: ObjectProvider<StorageCacheIndexerManager>
+) : DefaultContextJob(properties) {
 
-    override fun doWithCredentials(credentials: StorageCredentials) {
-        val synced = indexerManager.ifAvailable?.sync(credentials)
-        logger.info("credential[default] sync[$synced]")
+    private data class TStorageCredentials(
+        val id: String,
+        val credentials: String,
+        val region: String? = null
+    )
+
+    override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
+
+    override fun doStart0(jobContext: JobContext) {
+        doWithCredentials(storageProperties.defaultStorageCredentials())
+        mongoTemplate.find(Query(), TStorageCredentials::class.java, "storage_credentials")
+            .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }
+            .filter { it.id !in properties.ignoredStorageCredentialsKeys }
+            .map { it.credentials.readJsonString<StorageCredentials>().apply { key = it.id } }
+            .forEach { doWithCredentials(it) }
     }
 
-    companion object {
-        private val logger = LoggerHolder.jobLogger
-    }
+    abstract fun doWithCredentials(credentials: StorageCredentials)
 }
