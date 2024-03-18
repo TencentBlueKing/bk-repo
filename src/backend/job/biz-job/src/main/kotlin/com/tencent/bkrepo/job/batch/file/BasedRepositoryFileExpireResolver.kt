@@ -16,7 +16,6 @@ import com.tencent.bkrepo.job.SIZE
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.pojo.TFileCache
 import com.tencent.bkrepo.job.service.FileCacheService
-import com.tencent.bkrepo.repository.api.NodeClient
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
