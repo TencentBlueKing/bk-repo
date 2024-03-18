@@ -32,6 +32,7 @@ dependencies {
     implementation(project(":common:common-storage:storage-service"))
     implementation(project(":common:common-stream"))
     implementation(project(":common:common-redis"))
+    implementation(project(":common:common-query:query-mongo"))
     implementation(project(":repository:api-repository"))
     implementation(project(":helm:api-helm"))
     implementation(project(":oci:api-oci"))
