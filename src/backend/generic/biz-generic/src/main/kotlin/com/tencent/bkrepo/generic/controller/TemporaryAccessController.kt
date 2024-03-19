@@ -207,6 +207,17 @@ class TemporaryAccessController(
         return ResponseBuilder.success()
     }
 
+    @GetMapping("/cache/exist/check/$GENERIC_MAPPING_URI")
+    @Principal(PrincipalType.GENERAL)
+    fun cacheExistCheck(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam token: String,
+    ): Response<Boolean> {
+        temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD)
+        return ResponseBuilder.success(temporaryAccessService.cacheExistCheck(artifactInfo))
+    }
+
+
     /**
      * 判断来源是否可信
      */

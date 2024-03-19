@@ -59,6 +59,7 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericChunkedArtifactInfo
@@ -73,6 +74,7 @@ import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
@@ -94,6 +96,8 @@ class TemporaryAccessService(
     private val deltaSyncService: DeltaSyncService,
     private val permissionManager: PermissionManager,
     private val storageService: StorageService,
+    private val nodeClient: NodeClient,
+    private val storageProperties: StorageProperties,
     ) {
 
     /**
@@ -281,6 +285,23 @@ class TemporaryAccessService(
 
     fun reportChunkedMetrics(metrics: ChunkedMetrics) {
         logger.info(metrics.toJsonString().replace(System.lineSeparator(), ""))
+    }
+
+    fun cacheExistCheck(artifactInfo: GenericArtifactInfo): Boolean {
+        with(artifactInfo) {
+            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+
+            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactName())
+            if (nodeDetail.folder) return false
+            val storageCredentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
+            if (!storageCredentials.cache.enabled) return false
+            if (!storageCredentials.cache.loadCacheFirst) return false
+            val lastAccessDate = LocalDateTime.parse(nodeDetail.lastAccessDate, DateTimeFormatter.ISO_DATE_TIME)
+            val expiredDate = LocalDateTime.now().minusHours(storageCredentials.cache.expireDuration.toHours())
+            return lastAccessDate.isAfter(expiredDate)
+        }
     }
 
 

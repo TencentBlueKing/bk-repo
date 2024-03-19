@@ -670,10 +670,15 @@ class GenericLocalRepository(
                 uuid = uuid,
                 contentLength = 0
             )
+            val nodeMetadataList = mutableListOf<MetadataModel>()
+            nodeMetadataList.add(MetadataModel(key = HEADER_UPLOAD_TYPE, value = CHUNKED_UPLOAD))
+            nodeMetadataList.addAll(resolveMetadata(context.request))
+
             val nodeRequest = buildNodeCreateRequest(context).copy(
                 sha256 = fileInfo.sha256,
                 md5 = fileInfo.md5,
-                size = fileInfo.size
+                size = fileInfo.size,
+                nodeMetadata = nodeMetadataList
             )
             nodeClient.createNode(nodeRequest)
             return property
