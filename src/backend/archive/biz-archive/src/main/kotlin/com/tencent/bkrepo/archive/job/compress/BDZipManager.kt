@@ -5,7 +5,9 @@ import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.event.StorageFileCompressedEvent
 import com.tencent.bkrepo.archive.event.StorageFileUncompressedEvent
+import com.tencent.bkrepo.archive.job.BufferedResourceManager
 import com.tencent.bkrepo.archive.job.PriorityFileProvider
+import com.tencent.bkrepo.archive.job.TaskResult
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
@@ -20,20 +22,15 @@ import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
-import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
+import reactor.core.publisher.MonoSink
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
 import java.util.Stack
-import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -48,6 +45,9 @@ class BDZipManager(
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
     private val fileProvider: PriorityFileProvider,
+) : BufferedResourceManager<TCompressFile>(
+    LinkedBlockingQueue(archiveProperties.pendingQueueSize),
+    archiveProperties.gc.maxConcurrency,
 ) {
     private val workDir = archiveProperties.gc.path.toPath()
     val signThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
@@ -65,7 +65,7 @@ class BDZipManager(
     )
 
     val bigCompressPool = ArchiveUtils.newFixedAndCachedThreadPool(
-        archiveProperties.compress.bigFileCompressPoolSize,
+        archiveProperties.gc.bigFileCompressPoolSize,
         ThreadFactoryBuilder().setNameFormat("bd-bigfile-diff-%d").build(),
     )
 
@@ -88,8 +88,6 @@ class BDZipManager(
     )
     private val bdUncompressor = BDUncompressor(patchThreadPool)
     private val prioritySeq = AtomicInteger(Int.MIN_VALUE)
-    val runningTasks = AtomicInteger()
-    val taskQueue = LinkedBlockingDeque<TCompressFile>()
 
     init {
         val dirs = listOf(DOWNLOAD_DIR, SIGN_DIR, COMPRESS_DIR, UNCOMPRESS_DIR)
@@ -99,155 +97,152 @@ class BDZipManager(
                 Files.createDirectories(filePath)
             }
         }
-        Flux.interval(archiveProperties.compress.fetchInterval)
-            .publishOn(Schedulers.fromExecutor(Executors.newSingleThreadExecutor()))
-            .doOnNext {
-                /*
-                * 在本机空闲时，从db获取新的数据。
-                * */
-                if (!serverIsBusy()) {
-                    if (taskQueue.size == 0) {
-                        fillTaskFromDb()
-                    }
-                    while (!serverIsBusy() && taskQueue.size > 0) {
-                        doOnNextTask()
-                    }
-                }
-            }.subscribe()
     }
 
-    fun compress(file: TCompressFile) {
-        try {
-            if (serverIsBusy()) {
-                taskQueue.offer(file)
-            } else {
-                compress0(file)
+    override fun process0(resource: TCompressFile): Mono<TaskResult> {
+        return when (resource.status) {
+            CompressStatus.CREATED -> compress(resource)
+            CompressStatus.WAIT_TO_UNCOMPRESS -> uncompress(resource)
+            else -> error("Not support")
+        }
+    }
+
+    override fun enqueue(resource: TCompressFile): Boolean {
+        if (resource.status == CompressStatus.WAIT_TO_UNCOMPRESS) {
+            // 怎么保证解压的文件一定能入队列
+            val deque = super.queue as LinkedBlockingDeque
+            while (!deque.offerFirst(resource)) {
+                if (deque.peekLast().status == CompressStatus.WAIT_TO_UNCOMPRESS) {
+                    return false
+                }
+                deque.pollLast()
             }
+            return true
+        } else {
+            return super.enqueue(resource)
+        }
+    }
+
+    private fun compress(file: TCompressFile): Mono<TaskResult> {
+        try {
+            return compress0(file)
         } catch (e: Exception) {
             logger.error("Compress file [${file.sha256}] error", e)
         }
+        return Mono.just(TaskResult.FAILED)
     }
 
-    fun uncompress(file: TCompressFile) {
+    private fun uncompress(file: TCompressFile): Mono<TaskResult> {
         try {
-            if (serverIsBusy()) {
-                taskQueue.offerFirst(file)
-            } else {
-                val fileStack = Stack<TCompressFile>()
-                fileStack.push(file)
-                var rootFile = compressFileRepository.findBySha256AndStorageCredentialsKeyAndStatusIn(
-                    file.baseSha256,
-                    file.storageCredentialsKey,
+            val fileStack = Stack<TCompressFile>()
+            fileStack.push(file)
+            var rootFile = compressFileRepository.findBySha256AndStorageCredentialsKeyAndStatusIn(
+                file.baseSha256,
+                file.storageCredentialsKey,
+                setOf(CompressStatus.COMPLETED, CompressStatus.COMPRESSED),
+            )
+            // 级联解压
+            while (rootFile != null) {
+                rootFile.status = CompressStatus.WAIT_TO_UNCOMPRESS
+                compressFileRepository.save(rootFile)
+                fileStack.push(rootFile)
+                rootFile = compressFileRepository.findBySha256AndStorageCredentialsKeyAndStatusIn(
+                    rootFile.baseSha256,
+                    rootFile.storageCredentialsKey,
                     setOf(CompressStatus.COMPLETED, CompressStatus.COMPRESSED),
                 )
-                // 级联解压
-                while (rootFile != null) {
-                    rootFile.status = CompressStatus.WAIT_TO_UNCOMPRESS
-                    compressFileRepository.save(rootFile)
-                    fileStack.push(rootFile)
-                    rootFile = compressFileRepository.findBySha256AndStorageCredentialsKeyAndStatusIn(
-                        rootFile.baseSha256,
-                        rootFile.storageCredentialsKey,
-                        setOf(CompressStatus.COMPLETED, CompressStatus.COMPRESSED),
-                    )
-                }
-                logger.info("Uncompress chain len ${fileStack.size}.")
-                uncompress0(fileStack)
             }
+            logger.info("Uncompress chain len ${fileStack.size}.")
+            return Mono.create { uncompress0(fileStack, it) }
         } catch (e: Exception) {
             logger.error("Uncompress file [${file.sha256}] error", e)
         }
+        return Mono.just(TaskResult.FAILED)
     }
 
-    fun serverIsBusy(): Boolean {
-        val isBusyNow = !fileProvider.isActive() || runningTasks.get() > archiveProperties.compress.maxConcurrency
-        if (isBusyNow) {
-            logger.warn("Server is busy now. downloader: ${fileProvider.isActive()},running: $runningTasks")
+    private fun compress0(file: TCompressFile): Mono<TaskResult> {
+        logger.info("Start compress file [${file.sha256}].")
+        // 乐观锁
+        val tryLock = compressFileDao.optimisticLock(
+            file,
+            TCompressFile::status.name,
+            CompressStatus.CREATED.name,
+            CompressStatus.COMPRESSING.name,
+        )
+        if (!tryLock) {
+            logger.info("File[${file.sha256}] already start compress.")
+            return Mono.just(TaskResult.OK)
         }
-        return isBusyNow
-    }
-
-    private fun compress0(file: TCompressFile) {
-        with(file) {
-            logger.info("Start compress file [$sha256].")
-            // 乐观锁
-            val tryLock = compressFileDao.optimisticLock(
-                file,
-                TCompressFile::status.name,
-                CompressStatus.CREATED.name,
-                CompressStatus.COMPRESSING.name,
-            )
-            if (!tryLock) {
-                logger.info("File[${file.sha256}] already start compress.")
-                return
-            }
-            // 增量存储源文件和基础文件必须不同，不然会导致base文件丢失
-            require(sha256 != baseSha256) { "Incremental storage source file and base file must be different." }
-            // 压缩
-            val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
-            val workDir = Paths.get(workDir.toString(), COMPRESS_DIR, sha256)
-            val srcFile = fileProvider.get(sha256, Range.full(uncompressedSize), credentials)
-            val baseRange = if (baseSize == null) Range.FULL_RANGE else Range.full(baseSize)
-            val checksumFile = checksumProvider.get(baseSha256, baseRange, credentials)
-            val begin = System.nanoTime()
-            runningTasks.incrementAndGet()
-            bdCompressor.compress(srcFile, checksumFile, sha256, baseSha256, workDir)
-                .doOnSuccess {
-                    val newFileName = sha256.plus(BD_FILE_SUFFIX)
-                    storageService.store(newFileName, it.toArtifactFile(), credentials)
-                    file.compressedSize = it.length()
-                    file.status = CompressStatus.COMPRESSED
-                    logger.info("Success to compress file [$sha256] on $storageCredentialsKey.")
-                }
-                .doOnError {
-                    if (it !is TooLowerReuseRateException) {
-                        logger.error("Failed to compress file [$sha256].", it)
+        return Mono.create { sink ->
+            with(file) {
+                // 增量存储源文件和基础文件必须不同，不然会导致base文件丢失
+                require(sha256 != baseSha256) { "Incremental storage source file and base file must be different." }
+                // 压缩
+                val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
+                val workDir = Paths.get(workDir.toString(), COMPRESS_DIR, sha256)
+                val srcFile = fileProvider.get(sha256, Range.full(uncompressedSize), credentials)
+                val baseRange = if (baseSize == null) Range.FULL_RANGE else Range.full(baseSize)
+                val checksumFile = checksumProvider.get(baseSha256, baseRange, credentials)
+                val begin = System.nanoTime()
+                bdCompressor.compress(srcFile, checksumFile, sha256, baseSha256, workDir)
+                    .doOnSuccess {
+                        val newFileName = sha256.plus(BD_FILE_SUFFIX)
+                        storageService.store(newFileName, it.toArtifactFile(), credentials)
+                        file.compressedSize = it.length()
+                        file.status = CompressStatus.COMPRESSED
+                        logger.info("Success to compress file [$sha256] on $storageCredentialsKey.")
                     }
-                    status = CompressStatus.COMPRESS_FAILED
-                    fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
-                }
-                .doFinally {
-                    runningTasks.decrementAndGet()
-                    workDir.toFile().deleteRecursively()
-                    file.lastModifiedDate = LocalDateTime.now()
-                    compressFileRepository.save(file)
-                    // 发送压缩事件
-                    val took = System.nanoTime() - begin
-                    val throughput = Throughput(uncompressedSize, took)
-                    val event = StorageFileCompressedEvent(
-                        sha256 = sha256,
-                        baseSha256 = baseSha256,
-                        uncompressed = uncompressedSize,
-                        compressed = compressedSize,
-                        storageCredentialsKey = storageCredentialsKey,
-                        throughput = throughput,
-                    )
-                    SpringContextUtils.publishEvent(event)
-                    logger.info("Complete compress file [$sha256] on $storageCredentialsKey")
-                    doOnNextTask()
-                }
-                .onErrorResume { Mono.empty() }
-                .subscribe()
+                    .doOnError {
+                        if (it !is TooLowerReuseRateException) {
+                            logger.error("Failed to compress file [$sha256].", it)
+                        }
+                        status = CompressStatus.COMPRESS_FAILED
+                        fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
+                    }
+                    .doFinally {
+                        workDir.toFile().deleteRecursively()
+                        file.lastModifiedDate = LocalDateTime.now()
+                        compressFileRepository.save(file)
+                        // 发送压缩事件
+                        val took = System.nanoTime() - begin
+                        val throughput = Throughput(uncompressedSize, took)
+                        val event = StorageFileCompressedEvent(
+                            sha256 = sha256,
+                            baseSha256 = baseSha256,
+                            uncompressed = uncompressedSize,
+                            compressed = compressedSize,
+                            storageCredentialsKey = storageCredentialsKey,
+                            throughput = throughput,
+                        )
+                        SpringContextUtils.publishEvent(event)
+                        logger.info("Complete compress file [$sha256] on $storageCredentialsKey")
+                        sink.success(TaskResult.OK)
+                    }
+                    .onErrorResume { Mono.empty() }
+                    .subscribe()
+            }
         }
     }
 
-    private fun uncompress0(fileStack: Stack<TCompressFile>) {
+    private fun uncompress0(fileStack: Stack<TCompressFile>, sink: MonoSink<TaskResult>) {
         if (fileStack.empty()) {
-            doOnNextTask()
+            sink.success(TaskResult.OK)
             return
         }
-        with(fileStack.pop()) {
-            logger.info("Start uncompress file [$sha256].")
-            val tryLock = compressFileDao.optimisticLock(
-                this,
-                TCompressFile::status.name,
-                CompressStatus.WAIT_TO_UNCOMPRESS.name,
-                CompressStatus.UNCOMPRESSING.name,
-            )
-            if (!tryLock) {
-                logger.info("File[${this.sha256}] already start uncompress.")
-                return
-            }
+        val file = fileStack.pop()
+        logger.info("Start uncompress file [${file.sha256}].")
+        val tryLock = compressFileDao.optimisticLock(
+            file,
+            TCompressFile::status.name,
+            CompressStatus.WAIT_TO_UNCOMPRESS.name,
+            CompressStatus.UNCOMPRESSING.name,
+        )
+        if (!tryLock) {
+            logger.info("File[${file.sha256}] already start uncompress.")
+            sink.success(TaskResult.OK)
+            return
+        }
+        with(file) {
             val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
             val workDir = Paths.get(workDir.toString(), UNCOMPRESS_DIR, sha256)
             val bdFileName = sha256.plus(BD_FILE_SUFFIX)
@@ -261,7 +256,6 @@ class BDZipManager(
             val baseFile =
                 fileProvider.get(baseSha256, baseRange, credentials, prioritySeq.getAndIncrement())
             val begin = System.nanoTime()
-            runningTasks.incrementAndGet()
             bdUncompressor.patch(bdFile, baseFile, sha256, workDir)
                 .doOnSuccess {
                     // 更新状态
@@ -269,14 +263,12 @@ class BDZipManager(
                     storageService.store(sha256, it.toArtifactFile(), credentials)
                     storageService.delete(bdFileName, credentials)
                     logger.info("Success to uncompress file [$sha256] on $storageCredentialsKey")
-                    uncompress0(fileStack)
                 }
                 .doOnError {
                     logger.error("Failed to uncompress file [$sha256] on $storageCredentialsKey", it)
                     this.status = CompressStatus.UNCOMPRESS_FAILED
                 }
                 .doFinally {
-                    runningTasks.decrementAndGet()
                     workDir.toFile().deleteRecursively()
                     this.lastModifiedDate = LocalDateTime.now()
                     compressFileRepository.save(this)
@@ -291,40 +283,15 @@ class BDZipManager(
                     )
                     SpringContextUtils.publishEvent(event)
                     logger.info("Complete uncompress file [$sha256] on $storageCredentialsKey")
+                    if (status == CompressStatus.UNCOMPRESSED) {
+                        uncompress0(fileStack, sink)
+                    } else {
+                        // 解压失败，解压事件结束
+                        sink.success(TaskResult.OK)
+                    }
                 }
                 .onErrorResume { Mono.empty() }
                 .subscribe()
-        }
-    }
-
-    /**
-     * 从db中按时间逆序获取任务，像工作窃取算法一样，从端尾获取元素。
-     * */
-    private fun fillTaskFromDb() {
-        val wantPull = archiveProperties.compress.maxConcurrency - runningTasks.get()
-        if (wantPull <= 0) {
-            return
-        }
-        logger.info("Start fetch task from db.")
-        val criteria = where(TCompressFile::status).inValues(
-            CompressStatus.CREATED,
-            CompressStatus.WAIT_TO_UNCOMPRESS,
-        )
-        val sort = Sort.by(Sort.Direction.DESC, TCompressFile::lastModifiedDate.name)
-        val query = Query.query(criteria)
-            .limit(wantPull)
-            .with(sort)
-        val files = compressFileDao.find(query)
-        logger.info("Fetch ${files.size} tasks from db.")
-        files.forEach { taskQueue.offer(it) }
-    }
-
-    private fun doOnNextTask() {
-        val poll = taskQueue.poll() ?: return
-        when (poll.status) {
-            CompressStatus.CREATED -> compress(poll)
-            CompressStatus.WAIT_TO_UNCOMPRESS -> uncompress(poll)
-            else -> error("Unexpected file status ${poll.status}.")
         }
     }
 

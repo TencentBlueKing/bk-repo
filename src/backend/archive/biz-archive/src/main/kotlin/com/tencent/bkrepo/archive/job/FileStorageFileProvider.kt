@@ -150,7 +150,7 @@ class FileStorageFileProvider(
         }
     }
 
-    fun isActive(): Boolean {
+    override fun isActive(): Boolean {
         return activeStatus.get()
     }
 

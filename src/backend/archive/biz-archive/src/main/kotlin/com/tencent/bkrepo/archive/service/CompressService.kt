@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.archive.service
 
 import com.tencent.bkrepo.archive.job.Cancellable
-import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.pojo.CompressFile
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
@@ -48,14 +47,4 @@ interface CompressService : Cancellable {
         sha256: String,
         storageCredentialsKey: String?,
     ): CompressFile?
-
-    /**
-     * 压缩文件
-     * */
-    fun compress(file: TCompressFile)
-
-    /**
-     * 解压文件
-     * */
-    fun uncompress(file: TCompressFile)
 }

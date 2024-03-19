@@ -4,8 +4,8 @@ import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.ArchiveMessageCode
-import com.tencent.bkrepo.archive.constant.MAX_EMIT_TIME
 import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
+import com.tencent.bkrepo.archive.job.FileEntityEvent
 import com.tencent.bkrepo.archive.job.archive.ArchiveManager
 import com.tencent.bkrepo.archive.job.archive.EmptyUtils
 import com.tencent.bkrepo.archive.model.TArchiveFile
@@ -14,14 +14,13 @@ import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.RestoreObjectRequest
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Sinks
-import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -36,10 +35,6 @@ class ArchiveServiceImpl(
 
     private val cosClient = CosClient(archiveProperties.cos)
 
-    private val archiveSink = Sinks.many().unicast().onBackpressureBuffer<TArchiveFile>()
-    private val restoreSink = Sinks.many().unicast().onBackpressureBuffer<TArchiveFile>()
-    private val archiveDisposable = archiveSink.asFlux().subscribe(archiveManager::archive)
-    private val restoreDisposable = restoreSink.asFlux().subscribe(archiveManager::restore)
     private var shutdown = AtomicBoolean(false)
 
     override fun archive(request: CreateArchiveFileRequest) {
@@ -69,7 +64,7 @@ class ArchiveServiceImpl(
                     compression = EmptyUtils.NAME,
                 )
                 archiveFileRepository.save(archiveFile)
-                archive(archiveFile)
+                SpringContextUtils.publishEvent(FileEntityEvent(sha256, archiveFile))
             }
             logger.info("Archive file $sha256 in $storageCredentialsKey.")
         }
@@ -116,7 +111,6 @@ class ArchiveServiceImpl(
                 )
                 cosClient.restoreObject(restoreRequest)
                 archiveFileRepository.save(af)
-                restore(af)
                 logger.info("Restore archive file $sha256 in $storageCredentialsKey.")
             }
         }
@@ -149,20 +143,8 @@ class ArchiveServiceImpl(
         }
     }
 
-    override fun archive(file: TArchiveFile) {
-        archiveSink.emitNext(file, Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(MAX_EMIT_TIME)))
-        logger.info("Emit file ${file.sha256} to archive")
-    }
-
-    override fun restore(file: TArchiveFile) {
-        restoreSink.emitNext(file, Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(MAX_EMIT_TIME)))
-        logger.info("Emit file ${file.sha256} to restore")
-    }
-
     override fun cancel() {
         if (shutdown.compareAndSet(false, true)) {
-            archiveDisposable?.dispose()
-            restoreDisposable?.dispose()
             logger.info("Shutdown archive service successful.")
         } else {
             logger.info("Archive service has been shutdown.")

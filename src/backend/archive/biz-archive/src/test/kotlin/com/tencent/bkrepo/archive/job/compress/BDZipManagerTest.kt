@@ -2,7 +2,7 @@ package com.tencent.bkrepo.archive.job.compress
 
 import com.tencent.bkrepo.archive.BaseTest
 import com.tencent.bkrepo.archive.CompressStatus
-import com.tencent.bkrepo.archive.config.ArchiveProperties
+import com.tencent.bkrepo.archive.job.TaskResult
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -39,7 +39,6 @@ class BDZipManagerTest @Autowired constructor(
     private val storageService: StorageService,
     private val bdZipManager: BDZipManager,
     private val compressFileRepository: CompressFileRepository,
-    private val archiveProperties: ArchiveProperties,
 ) : BaseTest() {
 
     @MockBean
@@ -106,8 +105,7 @@ class BDZipManagerTest @Autowired constructor(
         storageService.store(artifactFile1.getFileSha256(), artifactFile1, null)
         storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
         compressFileRepository.save(file)
-        bdZipManager.compress(file)
-        Thread.sleep(1000)
+        bdZipManager.process(file).block()
         val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(artifactFile1.getFileSha256(), null)
         Assertions.assertNotNull(cf)
         Assertions.assertEquals(CompressStatus.COMPRESS_FAILED, cf!!.status)
@@ -120,8 +118,7 @@ class BDZipManagerTest @Autowired constructor(
         storageService.delete(compressFile.sha256, null)
         compressFile.status = CompressStatus.WAIT_TO_UNCOMPRESS
         compressFileRepository.save(compressFile)
-        bdZipManager.uncompress(compressFile)
-        Thread.sleep(1000)
+        bdZipManager.process(compressFile).block()
         val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(compressFile.sha256, null)
         Assertions.assertEquals(CompressStatus.UNCOMPRESSED, cf!!.status)
         with(cf) {
@@ -139,8 +136,7 @@ class BDZipManagerTest @Autowired constructor(
         compressFile.status = CompressStatus.WAIT_TO_UNCOMPRESS
         compressFileRepository.save(compressFile)
         compressFile.compressedSize = 1 // set error
-        bdZipManager.uncompress(compressFile)
-        Thread.sleep(1000)
+        bdZipManager.process(compressFile).block()
         val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(compressFile.sha256, null)
         Assertions.assertEquals(CompressStatus.UNCOMPRESS_FAILED, cf!!.status)
         with(cf) {
@@ -159,8 +155,7 @@ class BDZipManagerTest @Autowired constructor(
         // 修改基文件内容
         storageService.delete(compressFile.baseSha256, null)
         storageService.store(compressFile.baseSha256, createTempArtifactFile(data), null)
-        bdZipManager.uncompress(compressFile)
-        Thread.sleep(1000)
+        bdZipManager.process(compressFile).block()
         val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(compressFile.sha256, null)
         Assertions.assertEquals(CompressStatus.UNCOMPRESS_FAILED, cf!!.status)
         with(cf) {
@@ -180,8 +175,7 @@ class BDZipManagerTest @Autowired constructor(
         val bdFileName = compressFile.sha256.plus(".bd")
         storageService.delete(bdFileName, null)
         storageService.store(bdFileName, createTempArtifactFile(data), null)
-        bdZipManager.uncompress(compressFile)
-        Thread.sleep(1000)
+        bdZipManager.process(compressFile).block()
         val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(compressFile.sha256, null)
         Assertions.assertEquals(CompressStatus.UNCOMPRESS_FAILED, cf!!.status)
         with(cf) {
@@ -217,10 +211,8 @@ class BDZipManagerTest @Autowired constructor(
             compressFileRepository.save(file)
             fileList.add(file)
         }
-        fileList.forEach {
-            thread { bdZipManager.compress(it) }
-        }
-        Thread.sleep(2000)
+        val threads = fileList.map { thread { bdZipManager.process(it).block() } }
+        threads.forEach { it.join() }
         fileList.forEach {
             Assertions.assertEquals(CompressStatus.COMPRESSED, it.status)
         }
@@ -252,16 +244,15 @@ class BDZipManagerTest @Autowired constructor(
             }
             compressFileRepository.save(file)
             storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
-            bdZipManager.compress(file)
-            Thread.sleep(1000)
+            bdZipManager.process(file).block()
             storageService.delete(artifactFile1.getFileSha256(), null)
             artifactFile1 = artifactFile2
         }
         Assertions.assertNotNull(needUncompress)
         needUncompress!!.status = CompressStatus.WAIT_TO_UNCOMPRESS
         compressFileRepository.save(needUncompress!!)
-        bdZipManager.uncompress(needUncompress!!)
-        Thread.sleep(1000)
+        val process = bdZipManager.process(needUncompress!!)
+        Assertions.assertEquals(TaskResult.OK, process.block())
         val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(needUncompress!!.sha256, null)
         Assertions.assertEquals(CompressStatus.UNCOMPRESSED, cf!!.status)
         with(cf) {
@@ -272,70 +263,9 @@ class BDZipManagerTest @Autowired constructor(
         }
     }
 
-    @Test
-    fun serverBusyTest() {
-        val fileList = mutableListOf<TCompressFile>()
-        bdZipManager.fileProvider.unHealthy()
-        fileList.add(createTempCompressFile())
-        Assertions.assertEquals(0, bdZipManager.runningTasks.get())
-        Assertions.assertEquals(1, bdZipManager.taskQueue.size)
-        bdZipManager.fileProvider.healthy()
-        repeat(archiveProperties.compress.maxConcurrency) {
-            thread {
-                fileList.add(createTempCompressFile())
-            }
-        }
-        Thread.sleep(200)
-        repeat(3) { fileList.add(createTempCompressFile()) }
-        Assertions.assertTrue(bdZipManager.serverIsBusy())
-        Assertions.assertTrue(bdZipManager.taskQueue.size > 0)
-        // 等待任务完成
-        Thread.sleep(1000)
-        fileList.forEach {
-            val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(it.sha256, it.storageCredentialsKey)
-            Assertions.assertNotNull(cf)
-            Assertions.assertEquals(CompressStatus.COMPRESSED, cf!!.status)
-        }
-    }
-
-    @Test
-    fun fillTaskFromDb() {
-        val fileList = mutableListOf<TCompressFile>()
-        repeat(3) {
-            val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
-            val data2 = data1.copyOfRange(Random.nextInt(1, 10), data1.size)
-            val artifactFile1 = createTempArtifactFile(data1)
-            val artifactFile2 = createTempArtifactFile(data2)
-            val file = TCompressFile(
-                createdBy = "ut",
-                createdDate = LocalDateTime.now(),
-                lastModifiedBy = "ut",
-                lastModifiedDate = LocalDateTime.now(),
-                sha256 = artifactFile1.getFileSha256(),
-                baseSha256 = artifactFile2.getFileSha256(),
-                uncompressedSize = artifactFile1.getSize(),
-                storageCredentialsKey = null,
-                status = CompressStatus.CREATED,
-                chainLength = 1,
-
-            )
-            storageService.store(artifactFile1.getFileSha256(), artifactFile1, null)
-            storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
-            compressFileRepository.save(file)
-            fileList.add(file)
-        }
-        // 等待数据从数据库加载
-        Thread.sleep(4000)
-        fileList.forEach {
-            val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(it.sha256, it.storageCredentialsKey)
-            Assertions.assertNotNull(cf)
-            Assertions.assertEquals(CompressStatus.COMPRESSED, cf!!.status)
-        }
-    }
-
     private fun createCompressFile(): TCompressFile {
         val file = createTempCompressFile()
-        Thread.sleep(1000)
+        bdZipManager.process(file).block()
         Assertions.assertEquals(CompressStatus.COMPRESSED, file.status)
         return file
     }
@@ -360,7 +290,6 @@ class BDZipManagerTest @Autowired constructor(
         storageService.store(artifactFile1.getFileSha256(), artifactFile1, null)
         storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
         compressFileRepository.save(file)
-        bdZipManager.compress(file)
         return file
     }
 

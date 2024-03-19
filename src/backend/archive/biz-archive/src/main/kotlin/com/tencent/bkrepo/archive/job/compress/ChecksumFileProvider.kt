@@ -66,6 +66,10 @@ class ChecksumFileProvider(
         }
     }
 
+    override fun isActive(): Boolean {
+        return true
+    }
+
     private fun signFile(file: File, checksumFilePath: Path, sha256: String, key: String?): Mono<File> {
         return Mono.fromCallable {
             try {

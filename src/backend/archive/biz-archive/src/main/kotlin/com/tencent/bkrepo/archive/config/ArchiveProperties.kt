@@ -3,6 +3,7 @@ package com.tencent.bkrepo.archive.config
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
+import java.time.Duration
 
 /**
  * 归档服务配置
@@ -34,6 +35,21 @@ data class ArchiveProperties(
      * 恢复数量限制
      * */
     var restoreLimit: Int = 1000,
+
+    /**
+     * 任务拉取时间
+     * */
+    var pullInterval: Duration = Duration.ofMinutes(1),
+
+    /**
+     * 最大同时归档数
+     * */
+    var maxConcurrency: Int = Runtime.getRuntime().availableProcessors(),
+
+    /**
+     * 等待队列长度
+     * */
+    var pendingQueueSize: Int = DEFAULT_BUFFER_SIZE,
 
     /**
      * gc 压缩相关配置

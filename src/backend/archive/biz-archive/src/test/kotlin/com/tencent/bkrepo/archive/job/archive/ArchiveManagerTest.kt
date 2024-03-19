@@ -3,13 +3,16 @@ package com.tencent.bkrepo.archive.job.archive
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.BaseTest
 import com.tencent.bkrepo.archive.config.ArchiveProperties
+import com.tencent.bkrepo.archive.job.FileProvider
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.response.PutObjectResponse
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -25,6 +28,7 @@ import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguratio
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import reactor.core.publisher.Mono
+import java.io.File
 import java.time.LocalDateTime
 import kotlin.random.Random
 
@@ -91,8 +95,7 @@ class ArchiveManagerTest @Autowired constructor(
             compression = EmptyUtils.NAME,
         )
         archiveFileRepository.save(archiveFile)
-        archiveManager.archive(archiveFile)
-        Thread.sleep(1000)
+        archiveManager.archive(archiveFile).block()
         Assertions.assertEquals(ArchiveStatus.ARCHIVE_FAILED, archiveFile!!.status)
         // 默认未进行压缩
         Assertions.assertEquals(-1, archiveFile.compressedSize)
@@ -105,7 +108,7 @@ class ArchiveManagerTest @Autowired constructor(
         val data = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
         val archiveManager = ArchiveManager(
             archiveProperties,
-            { _, _, _ -> Mono.just(createTempArtifactFile(data).getFile()!!) },
+            createFileProvider(data),
             archiveFileDao,
             archiveFileRepository,
             storageService,
@@ -116,8 +119,7 @@ class ArchiveManagerTest @Autowired constructor(
             storageService.delete(sha256, null)
             this.status = ArchiveStatus.WAIT_TO_RESTORE
             archiveFileRepository.save(this)
-            archiveManager.restore(this)
-            Thread.sleep(1000)
+            archiveManager.restore(this).block()
             val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, null)
             Assertions.assertNotNull(af)
             Assertions.assertEquals(ArchiveStatus.RESTORED, af!!.status)
@@ -130,7 +132,7 @@ class ArchiveManagerTest @Autowired constructor(
         val data = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
         val archiveManager = ArchiveManager(
             archiveProperties,
-            { _, _, _ -> Mono.just(createTempArtifactFile(data.copyOfRange(1, data.size)).getFile()!!) },
+            createFileProvider(data.copyOfRange(1, data.size)),
             archiveFileDao,
             archiveFileRepository,
             storageService,
@@ -141,8 +143,7 @@ class ArchiveManagerTest @Autowired constructor(
             storageService.delete(sha256, null)
             this.status = ArchiveStatus.WAIT_TO_RESTORE
             archiveFileRepository.save(this)
-            archiveManager.restore(this)
-            Thread.sleep(1000)
+            archiveManager.restore(this).block()
             val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, null)
             Assertions.assertNotNull(af)
             Assertions.assertEquals(ArchiveStatus.RESTORE_FAILED, af!!.status)
@@ -165,8 +166,7 @@ class ArchiveManagerTest @Autowired constructor(
             compression = EmptyUtils.NAME,
         )
         archiveFileRepository.save(archiveFile)
-        archiveManager.archive(archiveFile)
-        Thread.sleep(1000)
+        archiveManager.archive(archiveFile).block()
         Assertions.assertEquals(ArchiveStatus.ARCHIVED, archiveFile.status)
         return archiveFile
     }
@@ -175,5 +175,13 @@ class ArchiveManagerTest @Autowired constructor(
         val tempFile = createTempFile()
         tempFile.writeBytes(data)
         return FileSystemArtifactFile(tempFile)
+    }
+
+    private fun createFileProvider(data: ByteArray): FileProvider {
+        return object : FileProvider {
+            override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials): Mono<File> {
+                return Mono.just(createTempArtifactFile(data).getFile()!!)
+            }
+        }
     }
 }

@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.archive.service
 
 import com.tencent.bkrepo.archive.job.Cancellable
-import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
@@ -36,7 +35,4 @@ interface ArchiveService : Cancellable {
      * */
 
     fun get(sha256: String, storageCredentialsKey: String?): ArchiveFile?
-
-    fun archive(file: TArchiveFile)
-    fun restore(file: TArchiveFile)
 }
