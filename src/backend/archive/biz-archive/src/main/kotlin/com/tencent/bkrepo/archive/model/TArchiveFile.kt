@@ -27,7 +27,7 @@ class TArchiveFile(
     var compressedSize: Long = -1,
     val storageCredentialsKey: String?,
     var status: ArchiveStatus,
-    var compression: String,
+    var archiver: String,
 ) : AbstractEntity(
     id,
     createdBy,

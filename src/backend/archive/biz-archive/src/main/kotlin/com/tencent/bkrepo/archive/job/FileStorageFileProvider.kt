@@ -1,8 +1,7 @@
 package com.tencent.bkrepo.archive.job
 
 import com.tencent.bkrepo.common.api.constant.retry
-import com.tencent.bkrepo.common.api.concurrent.ComparableFutureTask
-import com.tencent.bkrepo.common.api.concurrent.PriorityCallableTask
+import com.tencent.bkrepo.common.api.concurrent.PriorityRunnableWrapper
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -14,7 +13,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
-import java.util.concurrent.Executor
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
@@ -24,7 +23,7 @@ class FileStorageFileProvider(
     private val fileDir: Path,
     private val highWaterMark: Long,
     private val lowWaterMark: Long,
-    private val executor: Executor,
+    val executor: ThreadPoolExecutor,
     private val checkInterval: Duration,
 ) : PriorityFileProvider, DiskHealthObserver {
 
@@ -70,19 +69,17 @@ class FileStorageFileProvider(
             return Mono.just(filePath.toFile())
         }
         return Mono.create {
-            val task = PriorityCallableTask<File>(priority) {
+            val task = PriorityRunnableWrapper(priority) {
                 try {
                     logger.info("Start run task[$priority].")
                     val file = doDownload(sha256, storageCredentials, filePath, range)
                     it.success(file)
-                    file
                 } catch (e: Exception) {
                     it.error(e)
                     throw e
                 }
             }
-            val futureTask = ComparableFutureTask(task)
-            executor.execute(futureTask)
+            executor.execute(task)
         }
     }
 

@@ -92,10 +92,10 @@ class ArchiveManagerTest @Autowired constructor(
             storageCredentialsKey = null,
             size = artifactFile.getSize(),
             status = ArchiveStatus.CREATED,
-            compression = EmptyUtils.NAME,
+            archiver = EmptyArchiver.NAME,
         )
         archiveFileRepository.save(archiveFile)
-        archiveManager.archive(archiveFile).block()
+        archiveManager.apply(archiveFile).block()
         Assertions.assertEquals(ArchiveStatus.ARCHIVE_FAILED, archiveFile!!.status)
         // 默认未进行压缩
         Assertions.assertEquals(-1, archiveFile.compressedSize)
@@ -119,7 +119,7 @@ class ArchiveManagerTest @Autowired constructor(
             storageService.delete(sha256, null)
             this.status = ArchiveStatus.WAIT_TO_RESTORE
             archiveFileRepository.save(this)
-            archiveManager.restore(this).block()
+            archiveManager.apply(this).block()
             val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, null)
             Assertions.assertNotNull(af)
             Assertions.assertEquals(ArchiveStatus.RESTORED, af!!.status)
@@ -143,7 +143,7 @@ class ArchiveManagerTest @Autowired constructor(
             storageService.delete(sha256, null)
             this.status = ArchiveStatus.WAIT_TO_RESTORE
             archiveFileRepository.save(this)
-            archiveManager.restore(this).block()
+            archiveManager.apply(this).block()
             val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, null)
             Assertions.assertNotNull(af)
             Assertions.assertEquals(ArchiveStatus.RESTORE_FAILED, af!!.status)
@@ -163,10 +163,10 @@ class ArchiveManagerTest @Autowired constructor(
             storageCredentialsKey = null,
             size = artifactFile.getSize(),
             status = ArchiveStatus.CREATED,
-            compression = EmptyUtils.NAME,
+            archiver = EmptyArchiver.NAME,
         )
         archiveFileRepository.save(archiveFile)
-        archiveManager.archive(archiveFile).block()
+        archiveManager.apply(archiveFile).block()
         Assertions.assertEquals(ArchiveStatus.ARCHIVED, archiveFile.status)
         return archiveFile
     }

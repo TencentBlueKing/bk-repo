@@ -12,10 +12,13 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.Executor
 
-class XZUtils(
+/**
+ * xz压缩器，使用xz命令进行压缩，支持多线程压缩，并设置内存阈值
+ * */
+class XZArchiver(
     private val memoryLimit: Long,
     private val executor: Executor,
-) : CompressionUtils {
+) : Archiver {
     private val scheduler = Schedulers.fromExecutor(executor)
     override fun compress(src: Path, target: Path): Mono<File> {
         return Mono.fromCallable {
@@ -57,7 +60,7 @@ class XZUtils(
     override fun name(): String = NAME
 
     companion object {
-        private val logger = LoggerFactory.getLogger(XZUtils::class.java)
+        private val logger = LoggerFactory.getLogger(XZArchiver::class.java)
         const val NAME = "xz"
     }
 }

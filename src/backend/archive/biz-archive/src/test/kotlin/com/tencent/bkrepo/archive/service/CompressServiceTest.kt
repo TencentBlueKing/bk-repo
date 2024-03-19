@@ -80,12 +80,6 @@ class CompressServiceTest @Autowired constructor(
         assertThrows<IllegalArgumentException> { createCompressFile(f1, f1) }
     }
 
-    @Test
-    fun cancelTest() {
-        compressService.cancel()
-        createCompressFile()
-    }
-
     private fun createCompressFile(
         sha256: String = StringPool.randomString(64),
         baseSha256: String = StringPool.randomString(64),

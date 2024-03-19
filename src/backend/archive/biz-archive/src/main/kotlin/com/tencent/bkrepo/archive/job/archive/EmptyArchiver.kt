@@ -5,7 +5,10 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 
-class EmptyUtils : CompressionUtils {
+/**
+ * 空归档器，不进行任何操作，仅移动文件
+ * */
+class EmptyArchiver : Archiver {
     override fun compress(src: Path, target: Path): Mono<File> {
         Files.move(src, target)
         return Mono.just(target.toFile())

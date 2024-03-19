@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.archive.service
 
-import com.tencent.bkrepo.archive.job.Cancellable
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
@@ -8,7 +7,7 @@ import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
 /**
  * 归档服务
  * */
-interface ArchiveService : Cancellable {
+interface ArchiveService {
 
     /**
      * 归档文件

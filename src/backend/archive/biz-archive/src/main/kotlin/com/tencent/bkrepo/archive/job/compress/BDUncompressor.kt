@@ -1,19 +1,19 @@
 package com.tencent.bkrepo.archive.job.compress
 
+import com.tencent.bkrepo.common.api.concurrent.PriorityRunnableWrapper
 import com.tencent.bkrepo.common.bksync.file.BDUtils
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import org.slf4j.LoggerFactory
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.Executor
+import java.util.concurrent.atomic.AtomicInteger
 
 class BDUncompressor(
     private val executor: Executor,
 ) {
-
-    private val scheduler = Schedulers.fromExecutor(executor)
+    private val seq = AtomicInteger(Int.MIN_VALUE)
 
     /**
      * 根据源文件和签名文件，压缩成新的bd文件
@@ -25,19 +25,25 @@ class BDUncompressor(
     }
 
     private fun uncompress(bdFile: File, baseFile: File, sha256: String, workDir: Path): Mono<File> {
-        return Mono.fromCallable {
-            try {
-                val start = System.nanoTime()
-                val file = BDUtils.patch(bdFile, baseFile, workDir)
-                val nanos = System.nanoTime() - start
-                val throughput = Throughput(file.length(), nanos)
-                logger.info("Success to bd uncompress $sha256,$throughput.")
-                file
-            } finally {
-                bdFile.delete()
-                baseFile.delete()
+        return Mono.create {
+            val wrapper = PriorityRunnableWrapper(seq.getAndIncrement()) {
+                try {
+                    val start = System.nanoTime()
+                    val file = BDUtils.patch(bdFile, baseFile, workDir)
+                    val nanos = System.nanoTime() - start
+                    val throughput = Throughput(file.length(), nanos)
+                    logger.info("Success to bd uncompress $sha256,$throughput.")
+                    it.success(file)
+                } catch (e: Exception) {
+                    logger.error("Failed to bd uncompress $sha256", e)
+                    it.error(e)
+                } finally {
+                    bdFile.delete()
+                    baseFile.delete()
+                }
             }
-        }.publishOn(scheduler)
+            executor.execute(wrapper)
+        }
     }
 
     companion object {

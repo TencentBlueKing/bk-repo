@@ -8,12 +8,10 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
 import java.nio.file.Paths
 import java.util.concurrent.PriorityBlockingQueue
 
 @EnableConfigurationProperties(ArchiveProperties::class)
-@Import(ArchiveShutdownConfiguration::class)
 @Configuration
 class ArchiveConfiguration {
 
@@ -27,7 +25,7 @@ class ArchiveConfiguration {
         with(archiveProperties.download) {
             val threadPool = ArchiveUtils.newFixedAndCachedThreadPool(
                 ioThreads,
-                ThreadFactoryBuilder().setNameFormat("storage-io-%d").build(),
+                ThreadFactoryBuilder().setNameFormat("archive-io-%d").build(),
                 PriorityBlockingQueue(),
             )
             return FileStorageFileProvider(

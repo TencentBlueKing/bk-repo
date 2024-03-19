@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.archive.job.compress
 
 import com.tencent.bkrepo.archive.job.FileProvider
+import com.tencent.bkrepo.common.api.concurrent.PriorityRunnableWrapper
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -10,7 +11,6 @@ import org.reactivestreams.Subscriber
 import org.slf4j.LoggerFactory
 import reactor.core.publisher.BaseSubscriber
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -21,6 +21,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 class ChecksumFileProvider(
     private val workDir: Path,
@@ -29,7 +30,7 @@ class ChecksumFileProvider(
     private val executor: Executor,
 ) : FileProvider {
 
-    private val scheduler = Schedulers.fromExecutor(executor)
+    private val seq = AtomicInteger(0)
     private val fileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(cacheTime)
     private val monitorExecutor = Executors.newSingleThreadScheduledExecutor()
 
@@ -71,18 +72,24 @@ class ChecksumFileProvider(
     }
 
     private fun signFile(file: File, checksumFilePath: Path, sha256: String, key: String?): Mono<File> {
-        return Mono.fromCallable {
-            try {
-                Files.newOutputStream(checksumFilePath).use { out ->
-                    val bkSync = BkSync()
-                    val throughput = measureThroughput(file.length()) { bkSync.checksum(file, out) }
-                    logger.info("Success to sign file [$sha256] on $key, $throughput.")
+        return Mono.create {
+            val wrapper = PriorityRunnableWrapper(seq.getAndIncrement()) {
+                try {
+                    Files.newOutputStream(checksumFilePath).use { out ->
+                        val bkSync = BkSync()
+                        val throughput = measureThroughput(file.length()) { bkSync.checksum(file, out) }
+                        logger.info("Success to sign file [$sha256] on $key, $throughput.")
+                    }
+                    it.success(checksumFilePath.toFile())
+                } catch (e: Exception) {
+                    logger.error("Failed to sign $sha256", e)
+                    it.error(e)
+                } finally {
+                    file.delete()
                 }
-                checksumFilePath.toFile()
-            } finally {
-                file.delete()
             }
-        }.publishOn(scheduler)
+            executor.execute(wrapper)
+        }
     }
 
     private fun initSign(

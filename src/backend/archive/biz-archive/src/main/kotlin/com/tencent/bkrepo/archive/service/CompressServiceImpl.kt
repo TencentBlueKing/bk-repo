@@ -21,7 +21,6 @@ import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 压缩服务实现类
@@ -32,8 +31,6 @@ class CompressServiceImpl(
     private val storageService: StorageService,
     private val fileReferenceClient: FileReferenceClient,
 ) : CompressService {
-
-    private var shutdown = AtomicBoolean(false)
 
     override fun compress(request: CompressFileRequest) {
         with(request) {
@@ -194,9 +191,6 @@ class CompressServiceImpl(
                 storageCredentialsKey = storageCredentialsKey,
             )
         }
-    }
-
-    override fun cancel() {
     }
 
     companion object {

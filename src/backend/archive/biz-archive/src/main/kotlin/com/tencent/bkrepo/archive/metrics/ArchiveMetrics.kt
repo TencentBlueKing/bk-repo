@@ -2,6 +2,9 @@ package com.tencent.bkrepo.archive.metrics
 
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.CompressStatus
+import com.tencent.bkrepo.archive.job.FileProvider
+import com.tencent.bkrepo.archive.job.FileStorageFileProvider
+import com.tencent.bkrepo.archive.job.archive.ArchiveManager
 import com.tencent.bkrepo.archive.job.compress.BDZipManager
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
@@ -20,42 +23,37 @@ class ArchiveMetrics(
     val archiveFileRepository: ArchiveFileRepository,
     val compressFileRepository: CompressFileRepository,
     val bdZipManager: BDZipManager,
+    val fileProvider: FileProvider,
+    val archiveManager: ArchiveManager,
 ) : MeterBinder {
     lateinit var registry: MeterRegistry
 
     override fun bindTo(registry: MeterRegistry) {
         this.registry = registry
         // 下载量，队列
-        Gauge.builder(FILE_DOWNLOAD_ACTIVE_COUNT, bdZipManager.fileDownloadThreadPool) { it.activeCount.toDouble() }
+        val fsfp = fileProvider as FileStorageFileProvider
+        Gauge.builder(FILE_DOWNLOAD_ACTIVE_COUNT, fsfp.executor) { it.activeCount.toDouble() }
             .description(FILE_DOWNLOAD_ACTIVE_COUNT_DESC)
             .register(registry)
-        Gauge.builder(FILE_DOWNLOAD_QUEUE_SIZE, bdZipManager.fileDownloadThreadPool) { it.queue.size.toDouble() }
+        Gauge.builder(FILE_DOWNLOAD_QUEUE_SIZE, fsfp.executor) { it.queue.size.toDouble() }
             .description(FILE_DOWNLOAD_QUEUE_SIZE_DESC)
             .register(registry)
 
-        // 压缩量，队列
-        val bigCompressPool = bdZipManager.bigCompressPool
-        Gauge.builder(FILE_COMPRESS_ACTIVE_COUNT, bdZipManager.diffThreadPool) {
-            it.activeCount.toDouble() + bigCompressPool.activeCount.toDouble()
+        // gc量，队列
+        val workThreadPool2 = bdZipManager.bigFileWorkThreadPool
+        Gauge.builder(FILE_COMPRESS_ACTIVE_COUNT, bdZipManager.workThreadPool) {
+            it.activeCount.toDouble() + workThreadPool2.activeCount.toDouble()
         }.description(FILE_COMPRESS_ACTIVE_COUNT_DESC).register(registry)
-        Gauge.builder(FILE_COMPRESS_QUEUE_SIZE, bdZipManager.diffThreadPool) {
-            it.queue.size.toDouble() + bigCompressPool.queue.size.toDouble()
+        Gauge.builder(FILE_COMPRESS_QUEUE_SIZE, bdZipManager.workThreadPool) {
+            it.queue.size.toDouble() + workThreadPool2.queue.size.toDouble()
         }.description(FILE_COMPRESS_QUEUE_SIZE_DESC).register(registry)
 
-        // 签名量，队列
-        Gauge.builder(FILE_SING_ACTIVE_COUNT, bdZipManager.signThreadPool) { it.activeCount.toDouble() }
-            .description(FILE_SING_ACTIVE_COUNT_DESC)
+        // 归档量,队列
+        Gauge.builder(FILE_ARCHIVED_ACTIVE_COUNTER, archiveManager.archiveThreadPool) { it.activeCount.toDouble() }
+            .description(FILE_ARCHIVED_ACTIVE_COUNTER_DESC)
             .register(registry)
-        Gauge.builder(FILE_SING_QUEUE_SIZE, bdZipManager.signThreadPool) { it.queue.size.toDouble() }
-            .description(FILE_SIGN_QUEUE_SIZE_DESC)
-            .register(registry)
-
-        // 解压量，队列
-        Gauge.builder(FILE_PATCH_ACTIVE_COUNT, bdZipManager.patchThreadPool) { it.activeCount.toDouble() }
-            .description(FILE_PATCH_ACTIVE_COUNT_DESC)
-            .register(registry)
-        Gauge.builder(FILE_PATCH_QUEUE_SIZE, bdZipManager.patchThreadPool) { it.queue.size.toDouble() }
-            .description(FILE_PATCH_QUEUE_SIZE_DESC)
+        Gauge.builder(FILE_ARCHIVED_QUEUE_SIZE, archiveManager.archiveThreadPool) { it.queue.size.toDouble() }
+            .description(FILE_ARCHIVED_QUEUE_SIZE_DESC)
             .register(registry)
 
         // 归档文件状态
@@ -186,6 +184,10 @@ class ArchiveMetrics(
         private const val FILE_ARCHIVED_SIZE_COUNTER_DESC = "文件归档大小"
         private const val FILE_RESTORED_SIZE_COUNTER = "file.restored.size.count"
         private const val FILE_RESTORED_SIZE_COUNTER_DESC = "文件恢复大小"
+        private const val FILE_ARCHIVED_ACTIVE_COUNTER = "file.archived.active.count"
+        private const val FILE_ARCHIVED_ACTIVE_COUNTER_DESC = "文件实时归档数量"
+        private const val FILE_ARCHIVED_QUEUE_SIZE = "file.archived.queue.count"
+        private const val FILE_ARCHIVED_QUEUE_SIZE_DESC = "文件归档队列大小"
         private const val FILE_ARCHIVED_TIME = "file.archived.time"
         private const val FILE_ARCHIVED_TIME_DESC = "文件归档耗时"
         private const val FILE_RESTORED_TIME = "file.restored.time"
@@ -194,22 +196,10 @@ class ArchiveMetrics(
         private const val FILE_DOWNLOAD_ACTIVE_COUNT_DESC = "文件下载实时数量"
         private const val FILE_DOWNLOAD_QUEUE_SIZE = "file.download.queue.size"
         private const val FILE_DOWNLOAD_QUEUE_SIZE_DESC = "文件下载队列大小"
-        private const val FILE_UPLOAD_ACTIVE_COUNT = "file.upload.active.count"
-        private const val FILE_UPLOAD_ACTIVE_COUNT_DESC = "文件上传实时数量"
-        private const val FILE_UPLOAD_QUEUE_SIZE = "file.upload.queue.size"
-        private const val FILE_UPLOAD_QUEUE_SIZE_DESC = "文件上传队列大小"
         private const val FILE_COMPRESS_ACTIVE_COUNT = "file.compress.active.count"
         private const val FILE_COMPRESS_ACTIVE_COUNT_DESC = "文件压缩实时数量"
         private const val FILE_COMPRESS_QUEUE_SIZE = "file.compress.queue.size"
         private const val FILE_COMPRESS_QUEUE_SIZE_DESC = "文件压缩队列大小"
-        private const val FILE_SING_ACTIVE_COUNT = "file.sign.active.count"
-        private const val FILE_SING_ACTIVE_COUNT_DESC = "文件签名实时数量"
-        private const val FILE_SING_QUEUE_SIZE = "file.sign.queue.size"
-        private const val FILE_SIGN_QUEUE_SIZE_DESC = "文件签名队列大小"
-        private const val FILE_PATCH_ACTIVE_COUNT = "file.patch.active.count"
-        private const val FILE_PATCH_ACTIVE_COUNT_DESC = "文件解压实时数量"
-        private const val FILE_PATCH_QUEUE_SIZE = "file.patch.queue.size"
-        private const val FILE_PATCH_QUEUE_SIZE_DESC = "文件解压队列大小"
         private const val ARCHIVE_FILE_STATUS_COUNTER = "file.archive.status.count"
         private const val ARCHIVE_FILE_STATUS_COUNTER_DESC = "归档文件状态统计"
         private const val COMPRESS_FILE_STATUS_COUNTER = "file.compress.status.count"

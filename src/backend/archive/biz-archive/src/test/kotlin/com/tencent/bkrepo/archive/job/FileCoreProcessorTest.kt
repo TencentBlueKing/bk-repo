@@ -6,10 +6,8 @@ import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
@@ -22,8 +20,6 @@ import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguratio
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
-import reactor.core.publisher.Mono
-import java.io.File
 import java.time.LocalDateTime
 import kotlin.random.Random
 
@@ -90,19 +86,24 @@ class FileCoreProcessorTest @Autowired constructor(
     }
 
     @Test
-    fun pushOverflow() {
+    fun priorityTest() {
+        val file0 = createTempCompressFile()
+        fileCoreProcessor.listen(FileEntityEvent(file0.sha256, file0))
+        Thread.sleep(1000)
+        Assertions.assertEquals(CompressStatus.COMPRESSED, file0.status)
         val fileList = mutableListOf<TCompressFile>()
-        repeat(3) {
+        repeat(5) {
             val file = createTempCompressFile()
             fileCoreProcessor.listen(FileEntityEvent(file.sha256, file))
             fileList.add(file)
         }
-        Thread.sleep(4000)
-        fileList.forEach {
-            val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(it.sha256, null)
-            Assertions.assertNotNull(cf)
-            Assertions.assertEquals(CompressStatus.COMPRESSED, cf!!.status)
-        }
+        file0.status = CompressStatus.WAIT_TO_UNCOMPRESS
+        compressFileRepository.save(file0)
+        fileCoreProcessor.listen(FileEntityEvent(file0.sha256, file0))
+        Thread.sleep(3000)
+        val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(file0.sha256, null)
+        Assertions.assertEquals(CompressStatus.UNCOMPRESSED, cf!!.status)
+        Assertions.assertTrue(cf!!.lastModifiedDate.isBefore(fileList.last().lastModifiedDate))
     }
 
     private fun createTempCompressFile(): TCompressFile {
@@ -133,13 +134,5 @@ class FileCoreProcessorTest @Autowired constructor(
         val tempFile = createTempFile()
         tempFile.writeBytes(data)
         return FileSystemArtifactFile(tempFile)
-    }
-
-    private fun createFileProvider(data: ByteArray): FileProvider {
-        return object : FileProvider {
-            override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials): Mono<File> {
-                return Mono.just(createTempArtifactFile(data).getFile()!!)
-            }
-        }
     }
 }

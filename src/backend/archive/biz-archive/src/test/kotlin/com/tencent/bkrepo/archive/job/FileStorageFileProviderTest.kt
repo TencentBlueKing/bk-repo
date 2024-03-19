@@ -17,8 +17,10 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Duration
 import java.util.*
-import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 class FileStorageFileProviderTest {
     private val tempDir = System.getProperty("java.io.tmpdir")
@@ -73,7 +75,7 @@ class FileStorageFileProviderTest {
             tempPath,
             highWaterMark = 2,
             lowWaterMark = 1,
-            Executors.newFixedThreadPool(3),
+            ThreadPoolExecutor(3, 3, 0L, TimeUnit.SECONDS, LinkedBlockingQueue()),
             Duration.ofMillis(1000),
         )
         mockkObject(StorageUtils.Companion)

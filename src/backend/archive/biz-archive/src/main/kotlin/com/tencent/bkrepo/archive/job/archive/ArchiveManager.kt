@@ -6,8 +6,6 @@ import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.DEEP_ARCHIVE
 import com.tencent.bkrepo.archive.event.FileArchivedEvent
 import com.tencent.bkrepo.archive.event.FileRestoredEvent
-import com.tencent.bkrepo.archive.extensions.key
-import com.tencent.bkrepo.archive.job.BufferedResourceManager
 import com.tencent.bkrepo.archive.job.FileProvider
 import com.tencent.bkrepo.archive.job.TaskResult
 import com.tencent.bkrepo.archive.model.TArchiveFile
@@ -27,11 +25,12 @@ import org.apache.tika.Tika
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
-import java.util.concurrent.LinkedBlockingDeque
+import java.util.function.Function
 
 @Component
 class ArchiveManager(
@@ -40,10 +39,7 @@ class ArchiveManager(
     private val archiveFileDao: ArchiveFileDao,
     private val archiveFileRepository: ArchiveFileRepository,
     private val storageService: StorageService,
-) : BufferedResourceManager<TArchiveFile>(
-    LinkedBlockingDeque(archiveProperties.pendingQueueSize),
-    archiveProperties.maxConcurrency,
-) {
+) : Function<TArchiveFile, Mono<TaskResult>> {
 
     var cosClient: CosClient = CosClient(archiveProperties.cos)
     private val tika = Tika()
@@ -51,10 +47,15 @@ class ArchiveManager(
         archiveProperties.compress.compressThreads,
         ThreadFactoryBuilder().setNameFormat("archive-compress-%d").build(),
     )
-    private val xzCompressor = XZUtils(archiveProperties.compress.xzMemoryLimit.toBytes(), compressPool)
-    private val emptyCompressor = EmptyUtils()
+    private val xzArchiver = XZArchiver(archiveProperties.compress.xzMemoryLimit.toBytes(), compressPool)
+    private val emptyArchiver = EmptyArchiver()
     private val compressedPath: Path = Paths.get(archiveProperties.workDir, "compressed")
     private val uncompressedPath: Path = Paths.get(archiveProperties.workDir, "uncompressed")
+    val archiveThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
+        archiveProperties.compress.compressThreads,
+        ThreadFactoryBuilder().setNameFormat("archive-worker-%d").build(),
+    )
+    private val scheduler = Schedulers.fromExecutor(archiveThreadPool)
 
     init {
         if (!Files.exists(compressedPath)) {
@@ -65,30 +66,15 @@ class ArchiveManager(
         }
     }
 
-    override fun process0(resource: TArchiveFile): Mono<TaskResult> {
-        return when (resource.status) {
-            ArchiveStatus.CREATED -> archive(resource)
-            ArchiveStatus.WAIT_TO_RESTORE -> restore(resource)
+    override fun apply(t: TArchiveFile): Mono<TaskResult> {
+        return when (t.status) {
+            ArchiveStatus.CREATED -> archive(t)
+            ArchiveStatus.WAIT_TO_RESTORE -> restore(t)
             else -> error("Not support")
         }
     }
 
-    override fun enqueue(resource: TArchiveFile): Boolean {
-        if (resource.status == ArchiveStatus.WAIT_TO_RESTORE) {
-            val deque = super.queue as LinkedBlockingDeque
-            while (!deque.offerFirst(resource)) {
-                if (deque.peekLast().status == ArchiveStatus.WAIT_TO_RESTORE) {
-                    return false
-                }
-                deque.pollLast()
-            }
-            return true
-        } else {
-            return super.enqueue(resource)
-        }
-    }
-
-    fun archive(file: TArchiveFile): Mono<TaskResult> {
+    private fun archive(file: TArchiveFile): Mono<TaskResult> {
         try {
             return archive0(file)
         } catch (e: Exception) {
@@ -97,7 +83,7 @@ class ArchiveManager(
         return Mono.just(TaskResult.FAILED)
     }
 
-    fun restore(file: TArchiveFile): Mono<TaskResult> {
+    private fun restore(file: TArchiveFile): Mono<TaskResult> {
         try {
             return restore0(file)
         } catch (e: Exception) {
@@ -126,26 +112,29 @@ class ArchiveManager(
              * 4. 归档文件
              * 5. 更新数据库
              * */
-            with(file) {
-                val dir = compressedPath.resolve(sha256)
-                Files.createDirectories(dir)
-                val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
-                val begin = System.nanoTime()
-                fileProvider.get(sha256, Range.full(size), credentials).flatMap {
+            val sha256 = file.sha256
+            val storageCredentialsKey = file.storageCredentialsKey
+            val dir = compressedPath.resolve(sha256)
+            Files.createDirectories(dir)
+            val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
+            val begin = System.nanoTime()
+            fileProvider.get(sha256, Range.full(file.size), credentials)
+                .publishOn(scheduler)
+                .flatMap {
                     val filePath = dir.resolve(sha256)
                     Files.move(it.toPath(), filePath)
                     if (archiveProperties.compress.enabledCompress) {
                         val type = tika.detect(it)
-                        val utilsName = determineCompressionUtils(type)
-                        val compressionUtils = chooseCompressionUtils(utilsName)
-                        file.compression = compressionUtils.name()
-                        val path = dir.resolve(getKey(sha256, compression))
-                        compressionUtils.compress(filePath, path)
+                        val archiverName = determineArchiverName(type)
+                        val archiver = chooseArchiver(archiverName)
+                        file.archiver = archiver.name()
+                        val path = dir.resolve(getKey(sha256, file.archiver))
+                        archiver.compress(filePath, path)
                     } else {
                         Mono.just(filePath.toFile())
                     }
                 }.doOnSuccess {
-                    val key = getKey(sha256, compression)
+                    val key = getKey(sha256, file.archiver)
                     val size = it.length()
                     val throughput = measureThroughput(size) { cosClient.putFileObject(key, it, DEEP_ARCHIVE) }
                     logger.info("Success upload $key,$throughput")
@@ -160,7 +149,7 @@ class ArchiveManager(
                     file.lastModifiedDate = LocalDateTime.now()
                     archiveFileRepository.save(file)
                     val took = System.nanoTime() - begin
-                    val throughput = Throughput(size, took)
+                    val throughput = Throughput(file.size, took)
                     val event = FileArchivedEvent(sha256, storageCredentialsKey, throughput)
                     SpringContextUtils.publishEvent(event)
                     logger.info("Complete archive file [$sha256] on $storageCredentialsKey")
@@ -168,7 +157,6 @@ class ArchiveManager(
                 }.onErrorResume {
                     Mono.empty()
                 }.subscribe()
-            }
         }
     }
 
@@ -191,7 +179,7 @@ class ArchiveManager(
          * 4. 存储源文件
          * 5. 更新数据库
          * */
-        val key = getKey(file.sha256, file.compression)
+        val key = getKey(file.sha256, file.archiver)
         val checkObjectExistRequest = CheckObjectExistRequest(key)
         val restored = cosClient.checkObjectRestore(checkObjectExistRequest)
         if (!restored) {
@@ -202,34 +190,37 @@ class ArchiveManager(
             return Mono.just(TaskResult.OK)
         }
         return Mono.create { sink ->
-            with(file) {
-                val dir = compressedPath.resolve(sha256)
-                Files.createDirectories(dir)
-                val begin = System.nanoTime()
-                fileProvider.get(key, Range.full(compressedSize), archiveProperties.cos).flatMap {
+            val sha256 = file.sha256
+            val storageCredentialsKey = file.storageCredentialsKey
+            val dir = compressedPath.resolve(sha256)
+            Files.createDirectories(dir)
+            val begin = System.nanoTime()
+            fileProvider.get(key, Range.full(file.compressedSize), archiveProperties.cos)
+                .publishOn(scheduler)
+                .flatMap {
                     val archiveFilePath = dir.resolve(key)
                     Files.move(it.toPath(), archiveFilePath)
                     val path = dir.resolve(sha256)
-                    chooseCompressionUtils(compression).uncompress(archiveFilePath, path)
+                    chooseArchiver(file.archiver).uncompress(archiveFilePath, path)
                 }.doOnSuccess {
                     val artifactFile = it.toArtifactFile(true)
                     val receiveSha256 = artifactFile.getFileSha256()
                     if (receiveSha256 != sha256) {
-                        error("File[${key()}] broken,receive $receiveSha256.)")
+                        error("File[$sha256] broken,receive $receiveSha256.)")
                     }
                     val storageCredentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
                     storageService.store(sha256, artifactFile, storageCredentials)
-                    status = ArchiveStatus.RESTORED
-                    logger.info("Success to restore file ${this.key()}.")
+                    file.status = ArchiveStatus.RESTORED
+                    logger.info("Success to restore file [$sha256] on $storageCredentialsKey.")
                 }.doOnError {
-                    status = ArchiveStatus.RESTORE_FAILED
+                    file.status = ArchiveStatus.RESTORE_FAILED
                     logger.error("Restore file $sha256 error: ", it)
                 }.doFinally {
                     dir.toFile().deleteRecursively()
                     file.lastModifiedDate = LocalDateTime.now()
                     archiveFileRepository.save(file)
                     val took = System.nanoTime() - begin
-                    val throughput = Throughput(size, took)
+                    val throughput = Throughput(file.size, took)
                     val event = FileRestoredEvent(sha256, storageCredentialsKey, throughput)
                     SpringContextUtils.publishEvent(event)
                     logger.info("Complete restore file [$sha256] on $storageCredentialsKey")
@@ -237,27 +228,26 @@ class ArchiveManager(
                 }.onErrorResume {
                     Mono.empty()
                 }.subscribe()
-            }
         }
     }
 
-    private fun determineCompressionUtils(type: String): String {
+    private fun determineArchiverName(type: String): String {
         // todo 根据文件类型选择压缩算法
         if (!archiveProperties.compress.enabledCompress) {
-            return EmptyUtils.NAME
+            return EmptyArchiver.NAME
         }
-        return XZUtils.NAME
+        return XZArchiver.NAME
     }
 
-    private fun chooseCompressionUtils(name: String): CompressionUtils {
+    private fun chooseArchiver(name: String): Archiver {
         return when (name) {
-            XZUtils.NAME -> xzCompressor
-            else -> emptyCompressor
+            XZArchiver.NAME -> xzArchiver
+            else -> emptyArchiver
         }
     }
 
-    private fun getKey(name: String, compression: String): String {
-        return name.plus(chooseCompressionUtils(compression).getSuffix())
+    fun getKey(name: String, archiveName: String): String {
+        return name.plus(chooseArchiver(archiveName).getSuffix())
     }
 
     companion object {

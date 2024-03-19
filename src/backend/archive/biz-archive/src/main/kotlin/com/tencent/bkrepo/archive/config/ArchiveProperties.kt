@@ -27,11 +27,6 @@ data class ArchiveProperties(
     var tier: String = "Standard",
 
     /**
-     * 单次最大查询数量
-     * */
-    var queryLimit: Int = 1000,
-
-    /**
      * 恢复数量限制
      * */
     var restoreLimit: Int = 1000,
@@ -47,9 +42,9 @@ data class ArchiveProperties(
     var maxConcurrency: Int = Runtime.getRuntime().availableProcessors(),
 
     /**
-     * 等待队列长度
+     * 归档线程数
      * */
-    var pendingQueueSize: Int = DEFAULT_BUFFER_SIZE,
+    var threads: Int = 2,
 
     /**
      * gc 压缩相关配置

@@ -4,10 +4,9 @@ import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.ArchiveMessageCode
-import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
 import com.tencent.bkrepo.archive.job.FileEntityEvent
 import com.tencent.bkrepo.archive.job.archive.ArchiveManager
-import com.tencent.bkrepo.archive.job.archive.EmptyUtils
+import com.tencent.bkrepo.archive.job.archive.EmptyArchiver
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
@@ -21,7 +20,6 @@ import com.tencent.bkrepo.common.storage.innercos.request.RestoreObjectRequest
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 归档服务实现类
@@ -34,8 +32,6 @@ class ArchiveServiceImpl(
 ) : ArchiveService {
 
     private val cosClient = CosClient(archiveProperties.cos)
-
-    private var shutdown = AtomicBoolean(false)
 
     override fun archive(request: CreateArchiveFileRequest) {
         // created
@@ -61,7 +57,7 @@ class ArchiveServiceImpl(
                     storageCredentialsKey = storageCredentialsKey,
                     size = size,
                     status = ArchiveStatus.CREATED,
-                    compression = EmptyUtils.NAME,
+                    archiver = EmptyArchiver.NAME,
                 )
                 archiveFileRepository.save(archiveFile)
                 SpringContextUtils.publishEvent(FileEntityEvent(sha256, archiveFile))
@@ -76,7 +72,7 @@ class ArchiveServiceImpl(
                 sha256,
                 storageCredentialsKey,
             ) ?: return
-            val key = "$sha256$XZ_SUFFIX"
+            val key = archiveManager.getKey(sha256, archiveFile.archiver)
             val deleteObjectRequest = DeleteObjectRequest(key)
             cosClient.deleteObject(deleteObjectRequest)
             logger.info("Success delete $key on archive cos.")
@@ -103,7 +99,7 @@ class ArchiveServiceImpl(
                 af.lastModifiedBy = operator
                 af.lastModifiedDate = LocalDateTime.now()
                 af.status = ArchiveStatus.WAIT_TO_RESTORE
-                val key = "${sha256}$XZ_SUFFIX"
+                val key = archiveManager.getKey(sha256, af.archiver)
                 val restoreRequest = RestoreObjectRequest(
                     key = key,
                     days = archiveProperties.days,
@@ -128,6 +124,7 @@ class ArchiveServiceImpl(
             size = af.size,
             storageCredentialsKey = af.storageCredentialsKey,
             status = af.status,
+            archiver = af.archiver,
         )
     }
 
@@ -140,14 +137,6 @@ class ArchiveServiceImpl(
             af.status = ArchiveStatus.COMPLETED
             archiveFileRepository.save(af)
             logger.info("Complete archive file $sha256 in $storageCredentialsKey.")
-        }
-    }
-
-    override fun cancel() {
-        if (shutdown.compareAndSet(false, true)) {
-            logger.info("Shutdown archive service successful.")
-        } else {
-            logger.info("Archive service has been shutdown.")
         }
     }
 

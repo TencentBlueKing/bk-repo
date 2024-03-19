@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.archive.service
 
-import com.tencent.bkrepo.archive.job.Cancellable
 import com.tencent.bkrepo.archive.pojo.CompressFile
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
 import com.tencent.bkrepo.archive.request.CompressFileRequest
@@ -11,7 +10,7 @@ import com.tencent.bkrepo.archive.request.UpdateCompressFileStatusRequest
 /**
  * 压缩服务
  * */
-interface CompressService : Cancellable {
+interface CompressService {
     /**
      * 压缩文件
      * @return 1表示压缩成功，0表示未压缩
