@@ -42,6 +42,7 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
+import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -50,13 +51,15 @@ import org.slf4j.LoggerFactory
 class RoleServiceImpl constructor(
     private val roleRepository: RoleRepository,
     private val userService: UserService,
-    override val userDao: UserDao
-) : RoleService, AbstractServiceImpl(userDao, roleRepository) {
+    private val userDao: UserDao
+) : RoleService {
+
+    private val userHelper by lazy { UserHelper(userDao, roleRepository) }
 
     override fun createRole(request: CreateRoleRequest): String? {
-        return createRoleCommon(request)
+        logger.info("create role : [$request]")
+        return userHelper.createRoleCommon(request)
     }
-
 
     override fun detail(id: String): Role? {
         logger.debug("get role detail : [$id] ")
@@ -65,38 +68,37 @@ class RoleServiceImpl constructor(
     }
 
     override fun detail(rid: String, projectId: String): Role? {
-        logger.debug("get  role  detail rid : [$rid] , projectId : [$projectId] ")
+        logger.debug("get  role  detail rid : [$rid,$projectId]")
         val result = roleRepository.findFirstByRoleIdAndProjectId(rid, projectId) ?: return null
         return transfer(result)
     }
 
     override fun detail(rid: String, projectId: String, repoName: String): Role? {
-        logger.debug("get  role  detail rid : [$rid] , projectId : [$projectId], repoName: [$repoName]")
+        logger.debug("get  role  detail rid : [$rid,$projectId,$repoName]")
         val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
         return transfer(result)
     }
 
-    override fun updateRoleInfo(id: String, updateRoleRequest: UpdateRoleRequest): Boolean {
-        with(updateRoleRequest) {
+    override fun updateRoleInfo(id: String, request: UpdateRoleRequest): Boolean {
+        logger.info("update role info: [$id, $request]")
+        val role = roleRepository.findFirstById(id) ?: return false
+        with(request) {
             if (name != null || description != null) {
-                val role = roleRepository.findFirstById(id)
-                if (role != null) {
-                    name?.let { role.name = name }
-                    description?.let { role.description = description }
-                    roleRepository.save(role)
-                }
+                name?.let { role.name = name }
+                description?.let { role.description = description }
+                roleRepository.save(role)
             }
-
-            updateRoleRequest.userIds?.map { it }?.let { idList ->
+            request.userIds?.map { it }?.let { idList ->
                 val users = userDao.findAllByRolesIn(listOf(id))
                 userService.removeUserFromRoleBatch(users.map { it.userId }, id)
                 userService.addUserToRoleBatch(idList, id)
             }
-            return true
         }
+        return true
     }
 
     override fun listUserByRoleId(id: String): Set<UserResult> {
+        logger.debug("list user by role id [$id]")
         val result = mutableSetOf<UserResult>()
         userDao.findAllByRolesIn(listOf(id)).let { users ->
             for (user in users) {
@@ -107,7 +109,7 @@ class RoleServiceImpl constructor(
     }
 
     override fun listRoleByProject(projectId: String, repoName: String?): List<Role> {
-        logger.info("list  role params , projectId : [$projectId], repoName: [$repoName]")
+        logger.debug("list role by project ,[$projectId , $repoName]")
         repoName?.let {
             return roleRepository.findByProjectIdAndRepoNameAndType(projectId, repoName, RoleType.REPO)
                 .map { transfer(it) }
@@ -124,7 +126,7 @@ class RoleServiceImpl constructor(
         logger.info("delete  role  id : [$id]")
         val role = roleRepository.findFirstById(id)
         if (role == null) {
-            logger.warn("delete role [$id ] not exist.")
+            logger.warn("delete role [$id] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         } else {
             val users = listUserByRoleId(role.id!!)

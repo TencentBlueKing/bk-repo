@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.proxy.artifact.storage.ProxyStorageService
+import com.tencent.bkrepo.repository.api.proxy.ProxyFileReferenceClient
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -48,16 +49,27 @@ class ProxySyncJob(
         ProxyFeignClientFactory.create("auth")
     }
 
+    private val proxyFileReferenceClient: ProxyFileReferenceClient by lazy {
+        ProxyFeignClientFactory.create("repository")
+    }
+
     @Scheduled(initialDelay = 10000, fixedRate = 1800000)
     fun sync() {
         val projectId = ProxyEnv.getProjectId()
         val name = ProxyEnv.getName()
         val proxyInfo = proxyProxyClient.info(projectId, name).data!!
         val (startHour, endHour) = proxyInfo.syncTimeRange.split(StringPool.DASH).map { it.toInt() }
+        if (disabledSync(startHour, endHour)) {
+            return storageService.clean(proxyFileReferenceClient, proxyInfo.cacheExpireDays)
+        }
         val currentHour = LocalDateTime.now().hour
         if (currentHour < startHour || currentHour > endHour) {
             return
         }
         storageService.sync(proxyInfo.syncRateLimit, proxyInfo.cacheExpireDays)
+    }
+
+    private fun disabledSync(startHour: Int, endHour: Int): Boolean {
+        return startHour >= endHour
     }
 }

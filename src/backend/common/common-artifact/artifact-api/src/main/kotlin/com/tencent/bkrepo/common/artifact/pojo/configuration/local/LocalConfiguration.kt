@@ -45,6 +45,12 @@ open class LocalConfiguration(
     @ApiModelProperty("WebHook配置", required = false)
     var webHook: WebHookConfiguration = WebHookConfiguration()
 ) : RepositoryConfiguration() {
+
+
+    override fun toString(): String {
+        return webHook.toString() + super.toString()
+    }
+
     companion object {
         const val type = "local"
     }

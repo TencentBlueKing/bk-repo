@@ -40,6 +40,11 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 data class VirtualConfiguration(
     var repositoryList: List<RepositoryIdentify> = emptyList()
 ) : RepositoryConfiguration() {
+
+    override fun toString(): String {
+        return repositoryList.toString() + super.toString()
+    }
+
     companion object {
         const val type = "virtual"
     }

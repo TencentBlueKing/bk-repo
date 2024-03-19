@@ -57,5 +57,9 @@ data class CacheProperties(
     /**
      * 缓存文件时间，小于或等于0则永久存储
      */
-    var expireDuration: Duration = Duration.ofHours(12)
+    var expireDuration: Duration = Duration.ofHours(12),
+    /**
+     * 最大允许缓存的制品总大小，为0时表示无限制
+     */
+    var maxSize: Long = 0
 )

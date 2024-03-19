@@ -96,6 +96,24 @@ interface FileStorage {
     fun copy(path: String, name: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials)
 
     /**
+     * 在不同存储实例之间移动文件
+     * @param fromPath 文件源路径
+     * @param fromName 文件源名称
+     * @param toPath 文件目标路径
+     * @param toName 文件目标名称
+     * @param fromCredentials 源存储凭证
+     * @param toCredentials 目的存储凭证
+     */
+    fun move(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromCredentials: StorageCredentials,
+        toCredentials: StorageCredentials
+    )
+
+    /**
      * 获取存储的临时目录，默认实现返回`java.io.tmpdir`目录
      * @param storageCredentials 存储凭证
      */

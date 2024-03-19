@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import kotlin.reflect.full.primaryConstructor
 
 /**
  * 构件上下文
@@ -70,10 +71,27 @@ open class ArtifactContext(
     /**
      * 使用当前实例的属性，拷贝出一个新的[ArtifactContext]实例
      * 传入的[repositoryDetail]会替换当前实例的仓库信息
+     * 适用于CompositeRepository
      */
     fun copy(repositoryDetail: RepositoryDetail): ArtifactContext {
         val context = this.javaClass.newInstance()
         context.repositoryDetail = repositoryDetail
+        context.contextAttributes = this.contextAttributes
+        return context
+    }
+
+    /**
+     * 使用传入的[repositoryDetail]构造新的[ArtifactContext]实例
+     * [instantiation]: 实例化方法, 为null时使用主构造函数
+     * 适用于VirtualRepository: projectId, repoName, storageCredentials均会复制到新的实例, 并构造新的artifactInfo
+     */
+    open fun copy(
+        repositoryDetail: RepositoryDetail,
+        instantiation: ((ArtifactInfo) -> ArtifactContext)?
+    ): ArtifactContext {
+        val artifactInfo = this.artifactInfo.copy(repositoryDetail.projectId, repositoryDetail.name)
+        val context = instantiation?.invoke(artifactInfo)
+            ?: this::class.primaryConstructor!!.call(repositoryDetail, artifactInfo)
         context.contextAttributes = this.contextAttributes
         return context
     }

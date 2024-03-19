@@ -32,12 +32,41 @@
 package com.tencent.bkrepo.helm.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RequestParam
 import java.time.LocalDateTime
 
 interface ChartRepositoryService {
+
+    /**
+     * 查看chart列表
+     */
+    fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime? = null): ResponseEntity<Any>
+
+    /**
+     * 查看chart是否存在
+     */
+    fun isExists(artifactInfo: HelmArtifactInfo)
+
+    /**
+     * 查询版本详情
+     */
+    fun detailVersion(
+        userId: String,
+        artifactInfo: HelmArtifactInfo,
+        packageKey: String,
+        version: String
+    ): PackageVersionInfo
+
+    /**
+     * 获取helm域名信息
+     */
+    fun getRegistryDomain(): HelmDomainInfo
+
     /**
      * get index.yaml
      */

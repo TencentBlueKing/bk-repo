@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.event
 
+import com.tencent.bkrepo.common.artifact.event.listener.ArtifactAccessListener
 import com.tencent.bkrepo.common.artifact.event.listener.ArtifactDownloadListener
 import com.tencent.bkrepo.common.artifact.event.listener.ArtifactTransferListener
 import com.tencent.bkrepo.common.artifact.event.listener.ArtifactWebHookListener
@@ -44,7 +45,8 @@ import org.springframework.context.annotation.Import
     ArtifactWebHookListener::class,
     ArtifactTransferListener::class,
     ArtifactDownloadListener::class,
-    WebHookService::class
+    WebHookService::class,
+    ArtifactAccessListener::class,
 )
 @EnableConfigurationProperties(ArtifactEventProperties::class)
 class ArtifactEventConfiguration

@@ -138,11 +138,13 @@ class PermissionServiceTest {
             )
         )
 
-        val permissionList2 = permissionService.listPermission("bk_test", null, null)
+        val permissionList2 = permissionService.listPermission("bk_test", null, ResourceType.PROJECT.name)
         Assertions.assertTrue(permissionList2.size == 1)
-        val permissionList3 = permissionService.listPermission("bk_test", "test-local", null)
+        val permissionList3 = permissionService.listPermission("bk_test", "test-local", ResourceType.PROJECT.name)
         Assertions.assertTrue(permissionList3.size == 1)
-        val permissionList5 = permissionService.listPermission("bkrepo_test", null, null)
+        val permissionList5 = permissionService.listPermission(
+            "bkrepo_test", null, ResourceType.PROJECT.name
+        )
         Assertions.assertTrue(permissionList5.isEmpty())
     }
 
@@ -250,7 +252,7 @@ class PermissionServiceTest {
     @DisplayName("删除权限测试用例")
     fun deletePermissionTest() {
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null, null).forEach {
+        permissionService.listPermission("test", null, ResourceType.REPO.name).forEach {
             permissionService.deletePermission(it.id!!)
         }
     }
@@ -266,7 +268,7 @@ class PermissionServiceTest {
             )
         }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null, null).forEach {
+        permissionService.listPermission("test", null, ResourceType.REPO.name).forEach {
             val request = UpdatePermissionRepoRequest(it.id!!, listOf("test-local", "test-remote"))
             val updateStatus = permissionService.updateRepoPermission(request)
             Assertions.assertTrue(updateStatus)
@@ -280,7 +282,7 @@ class PermissionServiceTest {
             permissionService.updatePermissionUser(UpdatePermissionUserRequest("test_test", "dev", listOf(userId)))
         }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission("test", null, null).forEach {
+        permissionService.listPermission("test", null, ResourceType.REPO.name).forEach {
             val request = UpdatePermissionUserRequest(it.id!!, "dev", listOf(userId))
             val updateStatus = permissionService.updatePermissionUser(request)
             Assertions.assertTrue(updateStatus)

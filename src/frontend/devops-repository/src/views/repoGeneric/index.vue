@@ -57,7 +57,7 @@
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
-                        <bk-button class="ml10" v-if="(userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
+                        <bk-button class="ml10" v-if="repoName !== 'pipeline' && (userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
                             key.folder === true
                         ))" @click="clean">
                             {{ $t('clean') }}
@@ -552,13 +552,15 @@
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
-                        v.nodeMetadata.forEach(item => {
-                            metadataLabelList.forEach(ele => {
-                                if (ele.labelKey === item.key) {
-                                    item.display = ele.display
-                                }
+                        if (v.nodeMetadata) {
+                            v.nodeMetadata.forEach(item => {
+                                metadataLabelList.forEach(ele => {
+                                    if (ele.labelKey === item.key) {
+                                        item.display = ele.display
+                                    }
+                                })
                             })
-                        })
+                        }
 
                         return {
                             metadata: {},
@@ -1394,7 +1396,7 @@
         }
     }
     .repo-generic-main {
-        height: calc(100% - 100px);
+        height: calc(100% - 70px);
         .repo-generic-side {
             height: 100%;
             overflow: hidden;

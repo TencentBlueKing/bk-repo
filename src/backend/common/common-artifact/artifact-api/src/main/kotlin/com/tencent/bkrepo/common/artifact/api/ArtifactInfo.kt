@@ -34,6 +34,9 @@ package com.tencent.bkrepo.common.artifact.api
 import com.tencent.bkrepo.common.api.constant.CharPool.AT
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import org.apache.commons.lang3.reflect.FieldUtils
+import java.lang.reflect.Modifier
+import kotlin.reflect.full.primaryConstructor
 
 /**
  * 构件信息
@@ -130,5 +133,28 @@ open class ArtifactInfo(
         builder.append(artifactName)
         getArtifactVersion()?.let { builder.append(AT).append(it) }
         return builder.toString()
+    }
+
+    /**
+     * 根据当前对象的属性值以及传入的[projectId]和[repoName]构造新的实例
+     */
+    fun copy(projectId: String? = null, repoName: String? = null): ArtifactInfo {
+        val constructor = this::class.primaryConstructor!!
+        val paramMap = constructor.parameters.associateWith { param ->
+            when (param.name) {
+                ArtifactInfo::projectId.name -> projectId ?: this.projectId
+                ArtifactInfo::repoName.name -> repoName ?: this.repoName
+                else -> FieldUtils.readField(this, param.name, true)
+            }
+        }
+        val newInstance = constructor.callBy(paramMap)
+        val fields = FieldUtils.getAllFieldsList(this::class.java)
+        fields.forEach {
+            if (it.name != this::projectId.name && it.name != this::repoName.name && !Modifier.isStatic(it.modifiers)) {
+                val value = FieldUtils.readField(it, this, true)
+                FieldUtils.writeField(it, newInstance, value, true)
+            }
+        }
+        return newInstance
     }
 }
