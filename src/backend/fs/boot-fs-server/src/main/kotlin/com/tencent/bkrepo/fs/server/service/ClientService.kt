@@ -178,7 +178,13 @@ class ClientService(
                 .and(TDailyClient::time.name).gt(LocalDate.now().atStartOfDay())
                 .lt(LocalDate.now().atStartOfDay().plusDays(1))
         )
-        dailyClientRepository.upsert(query, Update.update(TDailyClient::time.name, LocalDateTime.now()))
+        val dailyClient = dailyClientRepository.findOne(query)
+        val request = convertClientRequest(client)
+        if (dailyClient == null) {
+            insertDairyClient(request, "working")
+        } else {
+            updateDairyClient(dailyClient)
+        }
     }
 
     private suspend fun insertDairyClient(request: ClientCreateRequest, action: String): TDailyClient {
@@ -195,6 +201,13 @@ class ClientService(
             time = LocalDateTime.now()
         )
         return dailyClientRepository.save(client)
+    }
+
+    private suspend fun updateDairyClient(client: TDailyClient): TDailyClient {
+        val newClient = client.copy(
+            time = LocalDateTime.now()
+        )
+        return dailyClientRepository.save(newClient)
     }
 
     suspend fun listDailyClients(request: DailyClientListRequest): Page<DailyClientDetail> {
