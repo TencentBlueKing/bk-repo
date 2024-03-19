@@ -49,7 +49,6 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import java.time.LocalDate
 import java.time.LocalDateTime
