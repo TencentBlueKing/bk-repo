@@ -97,7 +97,8 @@ class FileReferenceCleanupJob(
     }
 
     override fun buildQuery(): Query {
-        return Query(Criteria.where(COUNT).isEqualTo(0))
+        // 可能存在历史脏数据引用数为负数，此处需要查询<=0的数据
+        return Query(Criteria.where(COUNT).lte(0))
     }
 
     override fun run(row: FileReferenceData, collectionName: String, context: FileJobContext) {
@@ -141,7 +142,7 @@ class FileReferenceCleanupJob(
     private fun correctRefCount(sha256: String, credentialsKey: String?, collectionName: String) {
         val criteria = Criteria.where(SHA256).isEqualTo(sha256)
             .and(CREDENTIALS).isEqualTo(credentialsKey)
-            .and(COUNT).isEqualTo(0)
+            .and(COUNT).lte(0)
         val query = Query.query(criteria)
         val update = Update().set(COUNT, 1L)
         val result = mongoTemplate.updateFirst(query, update, collectionName)
