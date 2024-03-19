@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.common.storage.core.cache.indexer
 
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
-import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
-import com.tencent.bkrepo.common.storage.core.locator.FileLocator
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer.Companion.MAX_EVICT_COUNT
+import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.UpdatableEldestRemovedListener
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
@@ -46,8 +46,6 @@ import java.util.concurrent.ConcurrentHashMap
  */
 open class StorageCacheIndexerManager(
     private val cacheFactory: StorageCacheIndexerFactory<String, Long>,
-    private val storageService: CacheStorageService,
-    private val fileLocator: FileLocator,
     private val storageCacheIndexProperties: StorageCacheIndexProperties,
 ) {
 
@@ -78,10 +76,10 @@ open class StorageCacheIndexerManager(
     @Async
     open fun onCacheReserved(credentials: StorageCredentials, sha256: String, size: Long, score: Double) {
         if (storageCacheIndexProperties.enabled) {
-            val strategy = getOrCreateIndexer(credentials)
-            if (!strategy.containsKey(sha256)) {
+            val indexer = getOrCreateIndexer(credentials)
+            if (!indexer.containsKey(sha256)) {
                 logger.info("file[$sha256] of credential[${credentials.key}] will be put into strategy")
-                strategy.put(sha256, size, score)
+                indexer.put(sha256, size, score)
             }
         }
     }
@@ -104,12 +102,33 @@ open class StorageCacheIndexerManager(
 
     /**
      * 同步淘汰策略内维护的索引与实际缓存文件
+     *
+     * @param credentials 需要淘汰的存储
+     *
+     * @return 同步的条目数
      */
-    open fun sync(credentials: StorageCredentials) {
+    open fun sync(credentials: StorageCredentials): Int {
         if (storageCacheIndexProperties.enabled) {
             logger.info("start sync ${credentials.key}")
-            getOrCreateIndexer(credentials).sync()
+            return getOrCreateIndexer(credentials).sync()
         }
+        return 0
+    }
+
+    /**
+     * 淘汰缓存
+     *
+     * @param credentials 需要淘汰的存储
+     * @param maxCount 单次最多淘汰的条目数
+     *
+     * @return 淘汰的条目数
+     */
+    open fun evict(credentials: StorageCredentials, maxCount: Int = MAX_EVICT_COUNT): Int {
+        if (storageCacheIndexProperties.enabled) {
+            logger.info("start evict ${credentials.key}")
+            return getOrCreateIndexer(credentials).evict()
+        }
+        return 0
     }
 
     @Async
@@ -126,6 +145,10 @@ open class StorageCacheIndexerManager(
     @Async
     @EventListener(FileSurvivedEvent::class)
     open fun onFileSurvived(event: FileSurvivedEvent) {
+        if (!storageCacheIndexProperties.syncExistedCacheFile) {
+            return
+        }
+
         with(event) {
             val filename = fullPath.toPath().fileName.toString()
             if (rootPath.toPath() == credentials.cache.path.toPath() && filename.length == SHA256_STR_LENGTH) {
@@ -139,44 +162,22 @@ open class StorageCacheIndexerManager(
 
     private fun getOrCreateIndexer(credentials: StorageCredentials): StorageCacheIndexer<String, Long> {
         val credentialsKey = credentials.key ?: DEFAULT_STORAGE_KEY
-        val cacheName = "$credentialsKey:${credentials.cache.path.replace("/", "__")}"
-        val cache = storageCacheMap.getOrPut(cacheName) {
-            val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
-            cacheFactory.create(cacheName, credentials.cache).apply { addEldestRemovedListener(listener) }
-        }
+        val name = "$credentialsKey:${credentials.cache.path.replace("/", "__")}"
+        val indexer = storageCacheMap.getOrPut(name) { cacheFactory.create(name, credentials) }
         // 获取策略时检查是否需要更新缓存淘汰策略配置
-        refreshCacheProperties(cache, credentials)
-        return cache
+        refreshIndexerProperties(indexer, credentials)
+        return indexer
     }
 
-    private fun refreshCacheProperties(
-        cache: StorageCacheIndexer<String, Long>,
+    private fun refreshIndexerProperties(
+        indexer: StorageCacheIndexer<String, Long>,
         credentials: StorageCredentials
     ) {
-        cache.setMaxWeight(credentials.cache.maxSize)
-        cache.getEldestRemovedListeners().forEach {
-            if (it is StorageEldestRemovedListener) {
-                it.setCredentials(credentials)
+        indexer.setMaxWeight(credentials.cache.maxSize)
+        indexer.getEldestRemovedListeners().forEach {
+            if (it is UpdatableEldestRemovedListener) {
+                it.updateCredentials(credentials)
             }
-        }
-    }
-
-    /**
-     * 缓存淘汰监听器，缓存索引被淘汰时同时删除硬盘上的缓存文件
-     */
-    private class StorageEldestRemovedListener(
-        @Volatile
-        private var storageCredentials: StorageCredentials,
-        private val fileLocator: FileLocator,
-        private val storageService: CacheStorageService,
-    ) : EldestRemovedListener<String, Long> {
-        override fun onEldestRemoved(key: String, value: Long) {
-            val path = fileLocator.locate(key)
-            storageService.deleteCacheFile(path, key, storageCredentials)
-        }
-
-        fun setCredentials(credentials: StorageCredentials) {
-            this.storageCredentials = credentials
         }
     }
 

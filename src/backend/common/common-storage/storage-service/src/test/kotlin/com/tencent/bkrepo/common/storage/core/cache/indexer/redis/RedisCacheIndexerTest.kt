@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
 import com.tencent.bkrepo.common.redis.RedisAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer
+import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -54,6 +55,8 @@ abstract class RedisCacheIndexerTest<T: StorageCacheIndexer<String, Long>> {
     protected lateinit var redisTemplate: RedisTemplate<String, String>
 
     protected lateinit var cacheIndexer: T
+
+    protected val fileLocator = HashFileLocator()
 
     @BeforeAll
     fun before() {
@@ -94,7 +97,7 @@ abstract class RedisCacheIndexerTest<T: StorageCacheIndexer<String, Long>> {
 
     @Test
     fun testSync() {
-        val cacheFile = File(CACHE_DIR.toString(), "test")
+        val cacheFile = File(CACHE_DIR.toString(), "/te/st/test")
         cacheFile.parentFile.mkdirs()
         cacheFile.delete()
         cacheFile.createNewFile()

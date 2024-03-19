@@ -25,43 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.indexer
+package com.tencent.bkrepo.common.storage.core.cache.indexer.listener
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
+import com.tencent.bkrepo.common.storage.core.locator.FileLocator
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
 /**
- * 存储层缓存文件索引配置
+ * 缓存淘汰监听器，缓存索引被淘汰时同时删除硬盘上的缓存文件
  */
-@ConfigurationProperties("storage.cache.index")
-data class StorageCacheIndexProperties(
-    var enabled: Boolean = false,
-    /**
-     * 索引器类型
-     */
-    var type: String = CACHE_TYPE_REDIS_SLRU,
-    /**
-     * 使用基于Redis实现的索引器时作为hashTag
-     */
-    var hashTag: String? = null,
-    /**
-     * 是否执行缓存淘汰
-     */
-    var evict: Boolean = true,
-    /**
-     * 是否同步已存在的缓存文件
-     * 可能存在缓存条目被淘汰后，由于缓存保留策略或其他原因无法删除缓存文件，此时如果开启缓存同步会再次将被淘汰的缓存条目加入到缓存索引器中
-     */
-    var syncExistedCacheFile: Boolean = true,
-) {
-    companion object {
-        /**
-         * 基于Redis实现的LRU
-         */
-        const val CACHE_TYPE_REDIS_LRU = "REDIS_LRU"
+open class StorageEldestRemovedListener(
+    @Volatile
+    protected var storageCredentials: StorageCredentials,
+    protected val fileLocator: FileLocator,
+    protected val storageService: CacheStorageService,
+) : UpdatableEldestRemovedListener<String, Long> {
+    override fun onEldestRemoved(key: String, value: Long) {
+        val path = fileLocator.locate(key)
+        storageService.deleteCacheFile(path, key, storageCredentials)
+    }
 
-        /**
-         * 基于Redis实现的SLRU
-         */
-        const val CACHE_TYPE_REDIS_SLRU = "REDIS_SLRU"
+    override fun updateCredentials(credentials: StorageCredentials) {
+        this.storageCredentials = credentials
     }
 }

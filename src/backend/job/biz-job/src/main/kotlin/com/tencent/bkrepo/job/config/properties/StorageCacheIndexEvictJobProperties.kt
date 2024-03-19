@@ -25,43 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.indexer
+package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 存储层缓存文件索引配置
- */
-@ConfigurationProperties("storage.cache.index")
-data class StorageCacheIndexProperties(
-    var enabled: Boolean = false,
+@ConfigurationProperties("job.storage-cache-index-evict")
+class StorageCacheIndexEvictJobProperties(
+    override var enabled: Boolean = false,
+    override var cron: String = "0 0/10 * * * ?",
     /**
-     * 索引器类型
+     * 忽略的存储凭据，这些存储的缓存将不执行索引同步
      */
-    var type: String = CACHE_TYPE_REDIS_SLRU,
-    /**
-     * 使用基于Redis实现的索引器时作为hashTag
-     */
-    var hashTag: String? = null,
-    /**
-     * 是否执行缓存淘汰
-     */
-    var evict: Boolean = true,
-    /**
-     * 是否同步已存在的缓存文件
-     * 可能存在缓存条目被淘汰后，由于缓存保留策略或其他原因无法删除缓存文件，此时如果开启缓存同步会再次将被淘汰的缓存条目加入到缓存索引器中
-     */
-    var syncExistedCacheFile: Boolean = true,
-) {
-    companion object {
-        /**
-         * 基于Redis实现的LRU
-         */
-        const val CACHE_TYPE_REDIS_LRU = "REDIS_LRU"
-
-        /**
-         * 基于Redis实现的SLRU
-         */
-        const val CACHE_TYPE_REDIS_SLRU = "REDIS_SLRU"
-    }
-}
+    var ignoredStorageCredentialsKeys: Set<String> = emptySet(),
+) : BatchJobProperties()

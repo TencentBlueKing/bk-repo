@@ -49,6 +49,10 @@ class BasedRepositoryFileExpireResolver(
         return !retainNodes.contains(file.name)
     }
 
+    fun isExpired(sha256: String): Boolean {
+        return !retainNodes.contains(sha256)
+    }
+
     private fun refreshRetainNode() {
         logger.info("Refresh retain nodes start. size of nodes ${retainNodes.size}")
         try {
