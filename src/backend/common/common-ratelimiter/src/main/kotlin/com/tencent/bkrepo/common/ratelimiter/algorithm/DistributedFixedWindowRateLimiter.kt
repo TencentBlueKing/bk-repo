@@ -29,9 +29,12 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.redis.LuaScript
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
 import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
 class DistributedFixedWindowRateLimiter(
     private val key: String,
@@ -42,13 +45,22 @@ class DistributedFixedWindowRateLimiter(
     ): RateLimiter {
     override fun tryAcquire(): Boolean {
         try {
-            val redisScript = DefaultRedisScript(LuaScript.fixWindowRateLimiterScript, Long::class.java)
-            val result = redisTemplate.execute(
-                redisScript, listOf(key), limit.toString(), permits.toString(), unit.toSeconds(1).toString()
-            )
-            return result == 1L
+            var acquireResult: Boolean = false
+            val elapsedTime = measureTimeMillis {
+                val redisScript = DefaultRedisScript(LuaScript.fixWindowRateLimiterScript, Long::class.java)
+                val result = redisTemplate.execute(
+                    redisScript, listOf(key), limit.toString(), permits.toString(), unit.toSeconds(1).toString()
+                )
+                acquireResult = result == 1L
+            }
+            logger.info("acquire distributed fixed window rateLimiter elapsed time: $elapsedTime")
+            return acquireResult
         } catch (e: Exception) {
             throw AcquireLockFailedException("distributed lock acquire failed: $e")
         }
+    }
+
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(DistributedFixedWindowRateLimiter::class.java)
     }
 }

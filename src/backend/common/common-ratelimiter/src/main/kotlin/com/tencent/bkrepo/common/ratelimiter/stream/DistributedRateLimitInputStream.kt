@@ -25,20 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.service
+package com.tencent.bkrepo.common.ratelimiter.stream
 
-import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
-import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
-import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
-import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
-import javax.servlet.http.HttpServletRequest
+import com.google.common.util.concurrent.RateLimiter
+import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
+import java.io.InputStream
 
-interface RateLimiterService<T> {
+class DistributedRateLimitInputStream(
+    delegate: InputStream,
+    rate: Long
+) : DelegateInputStream(delegate) {
 
-    @Throws(AcquireLockFailedException::class, InvalidResourceException::class, OverloadException::class)
-    fun limit(request: HttpServletRequest, applyPermits: Long? = null): T
+    private val rateLimiter = rate.takeIf { it > 0 }?.let { RateLimiter.create(rate.toDouble()) }
 
-    fun addInterceptor(interceptor: RateLimiterInterceptor)
+    override fun read(): Int {
+        rateLimiter?.acquire()
+        return super.read()
+    }
 
-    fun addInterceptors(interceptors: List<RateLimiterInterceptor>)
+    override fun read(byteArray: ByteArray): Int {
+        rateLimiter?.acquire(byteArray.size)
+        return super.read(byteArray)
+    }
+
+    override fun read(byteArray: ByteArray, off: Int, len: Int): Int {
+        rateLimiter?.acquire(len)
+        return super.read(byteArray, off, len)
+    }
 }

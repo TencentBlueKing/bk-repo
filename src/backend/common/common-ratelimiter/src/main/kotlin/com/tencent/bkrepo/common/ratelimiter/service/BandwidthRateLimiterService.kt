@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.ratelimiter.service
 
-
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedFixedWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedTokenBucketRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.FixedWindowRateLimiter
@@ -39,7 +38,6 @@ import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
-import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.MonitorRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
@@ -52,21 +50,21 @@ import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRu
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.UsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.stream.DistributedRateLimitInputStream
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.http.HttpMethod
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
-abstract class AbstractRateLimiterService(
+abstract class BandwidthRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): RateLimiterService<Unit> {
-
+):  RateLimiterService<> {
     private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
     private val interceptorChain: RateLimiterInterceptorChain =
@@ -80,65 +78,40 @@ abstract class AbstractRateLimiterService(
         taskScheduler.scheduleWithFixedDelay(this::refreshRateLimitRule, rateLimiterProperties.refreshDuration * 1000)
     }
 
-    override fun limit(request: HttpServletRequest, applyPermits: Long?): Unit {
-        if (!rateLimiterProperties.enabled) {
-            return
-        }
-        if (ignoreRequest(request)) return
-        val resource = buildResource(request)
-        interceptorChain.doBeforeLimitCheck(resource)
-        val applyPermits = applyPermits(request, applyPermits)
-        var resourceLimit: ResourceLimit? = null
-        var pass = false
-        var exception: Exception? = null
-        try {
-            resourceLimit = rateLimitRule?.getRateLimitRule(resource)
-                ?: rateLimitRule?.getRateLimitRule(
-                    resource,
-                    buildResourceTemplate(request)
-                )
-            if (resourceLimit == null) {
-                logger.info("no rule in ${this.javaClass.simpleName} for request ${request.requestURI}")
-                return
-            }
-            val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit, applyPermits)
-            pass = rateLimiter.tryAcquire()
-            if (!pass) {
-                logger.warn("resourceLimit for $resource is $resourceLimit")
-                val msg = "$resource has exceeded max rate limit: ${resourceLimit.limit} /${resourceLimit.unit}"
-                if (rateLimiterProperties.dryRun) {
-                    logger.warn(msg)
-                } else {
-                    throw OverloadException(msg)
-                }
-            }
-        } catch (e: OverloadException) {
-            pass = false
-            throw e
-        } catch (e: AcquireLockFailedException) {
-            exception = e
-            throw e
-        } catch (e: InvalidResourceException) {
-            exception = e
-            throw e
-        } catch (e: Exception) {
-            val newException = AcquireLockFailedException("internal error: $e")
-            exception = newException
-            throw newException
-        } finally {
-            interceptorChain.doAfterLimitCheck(resource, resourceLimit, pass, exception, applyPermits)
-        }
-
+    override fun limit(request: HttpServletRequest, applyPermits: Long?) {
+        throw UnsupportedOperationException()
     }
 
     override fun addInterceptor(interceptor: RateLimiterInterceptor) {
-            this.interceptorChain.addInterceptor(interceptor)
+        this.interceptorChain.addInterceptor(interceptor)
     }
 
     override fun addInterceptors(interceptors: List<RateLimiterInterceptor>) {
         if (interceptors.isNotEmpty()) {
             this.interceptorChain.addInterceptors(interceptors)
         }
+    }
+
+    fun enableBandwidthRateLimit(request: HttpServletRequest): Boolean {
+        if (!rateLimiterProperties.enabled) {
+            return false
+        }
+        val resource = buildResource(request)
+
+        val resourceLimit = rateLimitRule?.getRateLimitRule(resource)
+            ?: rateLimitRule?.getRateLimitRule(
+                resource,
+                buildResourceTemplate(request)
+            )
+        if (resourceLimit == null) {
+            logger.info("no rule in ${this.javaClass.simpleName} for request ${request.requestURI}")
+        }
+        return resourceLimit == null
+    }
+
+
+    fun bandwidthRateLimit(inputStream: InputStream): DistributedRateLimitInputStream {
+
     }
 
     abstract fun generateKey(resource: String, resourceLimit: ResourceLimit): String
@@ -153,9 +126,6 @@ abstract class AbstractRateLimiterService(
 
     abstract fun getRateLimitRuleClass(): Class<out RateLimitRule>
 
-    open fun ignoreRequest(request: HttpServletRequest): Boolean {
-        return false
-    }
 
     open fun createAlgorithmOfRateLimiter(resource: String, resourceLimit: ResourceLimit, permits: Long): RateLimiter {
         if (resourceLimit.limit < 0) {
@@ -235,9 +205,6 @@ abstract class AbstractRateLimiterService(
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(AbstractRateLimiterService::class.java)
-        val UPLOAD_REQUEST_METHOD = listOf(HttpMethod.POST.name, HttpMethod.PUT.name, HttpMethod.PATCH.name)
-        val DOWNLOAD_REQUEST_METHOD = listOf(HttpMethod.GET.name)
-
+        private val logger: Logger = LoggerFactory.getLogger(BandwidthRateLimiterService::class.java)
     }
 }

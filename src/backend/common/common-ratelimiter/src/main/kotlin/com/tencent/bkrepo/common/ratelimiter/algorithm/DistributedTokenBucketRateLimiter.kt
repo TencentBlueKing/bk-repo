@@ -29,8 +29,13 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.redis.LuaScript
+import org.redisson.api.RedissonClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
+import kotlin.system.measureTimeMillis
+
 
 class DistributedTokenBucketRateLimiter(
     private val key: String,
@@ -38,15 +43,27 @@ class DistributedTokenBucketRateLimiter(
     private val capacity: Long,
     private val redisTemplate: RedisTemplate<String, String>,
     private val permits: Long = 1L,
+    private val redisson: RedissonClient
 ): RateLimiter {
     override fun tryAcquire(): Boolean {
 
         try {
-            val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
-            val results = redisTemplate.execute(
-                redisScript, getKeys(key), permitsPerSecond.toString(), capacity.toString(), permits.toString()
-            )
-            return results[0] == 1L
+
+            var acquireResult: Boolean = false
+            val elapsedTime = measureTimeMillis {
+//                val downloadRate = 1.0 // 每秒下载速度为 1MB
+//
+//                val downloadLimiter: RRateLimiter = redisson.getRateLimiter("downloadRateLimiter")
+//                downloadLimiter.trySetRate(RateType.OVERALL, downloadRate.toLong(), 1, RateIntervalUnit.SECONDS)
+//                downloadLimiter.acquire()
+                val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
+                val results = redisTemplate.execute(
+                    redisScript, getKeys(key), permitsPerSecond.toString(), capacity.toString(), permits.toString()
+                )
+                acquireResult = results[0] == 1L
+            }
+            logger.info("acquire distributed token bucket rateLimiter elapsed time: $elapsedTime")
+            return acquireResult
         } catch (e: Exception) {
             e.printStackTrace()
             throw AcquireLockFailedException("distributed lock acquire failed: $e")
@@ -56,5 +73,10 @@ class DistributedTokenBucketRateLimiter(
 
     private fun getKeys(key: String): List<String> {
         return listOf(key, "$key.timestamp")
+    }
+
+
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(DistributedTokenBucketRateLimiter::class.java)
     }
 }
