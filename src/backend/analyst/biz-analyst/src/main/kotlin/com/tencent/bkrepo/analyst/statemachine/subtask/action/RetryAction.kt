@@ -70,7 +70,7 @@ class RetryAction(
         val oldStatus = SubScanTaskStatus.valueOf(source)
         val subtask = context.subtask
 
-        val task = subScanTaskDao.findById(subtask.taskId)!!
+        val task = subScanTaskDao.findById(subtask.taskId) ?: return TransitResult(source, false)
         val exceedMaxTaskDuration =
             Duration.between(task.createdDate, LocalDateTime.now()) > scannerProperties.maxTaskDuration
         return if (task.executedTimes + 1 > DEFAULT_MAX_EXECUTE_TIMES || exceedMaxTaskDuration) {
