@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.task.ddc
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.properties.DdcBlobCleanupJobProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest

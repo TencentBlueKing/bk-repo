@@ -31,6 +31,7 @@ import com.tencent.bkrepo.job.batch.base.BatchJob
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.pojo.JobDetail
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.ApplicationContext
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
 import org.springframework.scheduling.support.CronTrigger
@@ -48,6 +49,8 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
 
     @Autowired
     private val ctx: ApplicationContext? = null
+
+    private val propertyPackageName = "com.tencent.bkrepo.job.config.properties."
 
     fun detail(): List<JobDetail> {
         val jobDetails = mutableListOf<JobDetail>()
@@ -69,11 +72,23 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
                         it.lastBeginTime,
                         it.lastEndTime,
                     ),
+                    jobConfigName = getConfigName(it.getJobName())
                 )
                 jobDetails.add(jobDetail)
             }
         }
         return jobDetails
+    }
+
+    // 默认这个任务和属性对的上，查不到置空
+    private fun getConfigName(jobName:String) : String{
+        try {
+            var className = propertyPackageName + jobName + "Properties"
+            val annotation = Class.forName(className).getAnnotation(ConfigurationProperties::class.java)
+            return annotation.value
+        } catch (e:Exception) {
+            return ""
+        }
     }
 
     private fun getNextExecuteTime(
@@ -162,7 +177,7 @@ class SystemJobService(val jobs: List<BatchJob<*>>) {
         if (running) {
             jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().start()
         } else {
-            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().stop()
+            jobs.filter { batchJob -> batchJob.getJobName().equals(name) }.first().stop(force = true)
         }
         return true
     }

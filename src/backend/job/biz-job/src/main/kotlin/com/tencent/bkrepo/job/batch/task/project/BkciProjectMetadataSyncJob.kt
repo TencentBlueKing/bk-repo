@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.properties.BkciProjectMetadataSyncJobProperties
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import okhttp3.Request
 import org.slf4j.LoggerFactory

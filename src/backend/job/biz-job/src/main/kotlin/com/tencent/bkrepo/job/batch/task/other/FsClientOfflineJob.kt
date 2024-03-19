@@ -29,7 +29,7 @@ package com.tencent.bkrepo.job.batch.task.other
 
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.FsClientOfflineProperties
+import com.tencent.bkrepo.job.config.properties.FsClientOfflineJobProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -41,9 +41,9 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 @Component
-@EnableConfigurationProperties(FsClientOfflineProperties::class)
+@EnableConfigurationProperties(FsClientOfflineJobProperties::class)
 class FsClientOfflineJob(
-    properties: FsClientOfflineProperties,
+    properties: FsClientOfflineJobProperties,
     private val mongoTemplate: MongoTemplate
 ): DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {

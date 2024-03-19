@@ -25,14 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.ddc
+package com.tencent.bkrepo.job.config.properties
 
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
-import java.time.Duration
 
-@ConfigurationProperties(value = "job.expired-ddc-ref-cleanup")
-class ExpiredDdcRefCleanupJobProperties(
-    override var cron: String = "0 0 0 * * ?",
-    var expired: Duration = Duration.ofDays(14),
+@ConfigurationProperties(value = "job.ddc-blob-cleanup")
+class DdcBlobCleanupJobProperties(
+    override var cron: String = "0 0 3 * * ?",
 ) : MongodbJobProperties()

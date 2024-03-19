@@ -25,20 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.project
+package com.tencent.bkrepo.job.config.properties
 
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
 
-@ConfigurationProperties(value = "job.bkci-project-metadata-sync")
-class BkciProjectMetadataSyncJobProperties(
-    override var enabled: Boolean = false,
+@ConfigurationProperties(value = "job.expired-ddc-ref-cleanup")
+class ExpiredDdcRefCleanupJobProperties(
     override var cron: String = "0 0 0 * * ?",
-    var ignoredProjectPrefix: Set<String> = emptySet(),
-    var ciServer: String = "",
-    var ciToken: String = "",
-    /**
-     * 是否路由到bkci灰度集群
-     */
-    var routeToGray: Boolean = false,
+    var expired: Duration = Duration.ofDays(14),
 ) : MongodbJobProperties()
