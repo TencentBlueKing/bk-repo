@@ -208,7 +208,6 @@ class TemporaryAccessController(
     }
 
     @GetMapping("/cache/exist/check/$GENERIC_MAPPING_URI")
-    @Principal(PrincipalType.GENERAL)
     fun cacheExistCheck(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
         @RequestParam token: String,
