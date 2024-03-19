@@ -42,7 +42,16 @@ data class StorageCacheIndexProperties(
     /**
      * 使用基于Redis实现的索引器时作为hashTag
      */
-    var hashTag: String? = null
+    var hashTag: String? = null,
+    /**
+     * 是否执行缓存淘汰
+     */
+    var evict: Boolean = true,
+    /**
+     * 是否同步已存在的缓存文件
+     * 可能存在缓存条目被淘汰后，由于缓存保留策略或其他原因无法删除缓存文件，此时如果开启缓存同步会再次将被淘汰的缓存条目加入到缓存索引器中
+     */
+    var syncExistedCacheFile: Boolean = true,
 ) {
     companion object {
         /**

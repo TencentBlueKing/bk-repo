@@ -36,5 +36,5 @@ class StorageCacheIndexSyncJobProperties(
     /**
      * 忽略的存储凭据，这些存储的缓存将不执行索引同步
      */
-    var ignoredStorageCredentialsKeys: Set<String> = emptySet()
+    var ignoredStorageCredentialsKeys: Set<String> = emptySet(),
 ) : BatchJobProperties()

@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildDeletedEvent
+import com.tencent.bkrepo.repository.util.NodeEventFactory.buildNodeCleanEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
@@ -168,9 +169,9 @@ open class NodeDeleteSupport(
             .and(TNode::lastModifiedDate).lt(date)
         val query = Query(criteria)
         val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName)
-/*        publishEvent(buildNodeCleanEvent(
+        publishEvent(buildNodeCleanEvent(
             projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString())
-        )*/
+        )
         return nodeDeleteResult
     }
 

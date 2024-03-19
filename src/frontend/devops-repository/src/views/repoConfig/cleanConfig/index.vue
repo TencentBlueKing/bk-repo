@@ -25,7 +25,7 @@
             <bk-input class="w250" v-model="cleanupStrategy.cleanupValue" :disabled="!cleanupStrategy.enable"></bk-input>
         </bk-form-item>
         <bk-form-item :label="$t('cleanTarget')">
-            <bk-button :disabled="!cleanupStrategy.enable" icon="plus" @click="addRule()">{{$t('addTarget')}}</bk-button>
+            <bk-button :disabled="!cleanupStrategy.enable || repoName === 'pipeline'" icon="plus" @click="addRule()">{{$t('addTarget')}}</bk-button>
             <div class="rule-list">
                 <component
                     :is="'generic-clean-rule'"
@@ -180,13 +180,27 @@
             },
             asynCheckCleanValue () {
                 if (this.cleanupStrategy.cleanupType === 'retentionDate') {
-                    return this.cleanupStrategy.cleanupValue instanceof Date || moment(this.cleanupStrategy.cleanupValue).isValid()
+                    const validType = this.cleanupStrategy.cleanupValue instanceof Date || moment(this.cleanupStrategy.cleanupValue).isValid()
+                    if (this.repoName === 'pipeline') {
+                        return validType && moment(this.cleanupStrategy.cleanupValue).isBefore(moment().subtract(60, 'days'))
+                    } else if (this.repoName === 'custom') {
+                        return validType && moment(this.cleanupStrategy.cleanupValue).isBefore(moment().subtract(30, 'days'))
+                    } else {
+                        return validType
+                    }
                 } else {
-                    return (/^[0-9]+$/).test(this.cleanupStrategy.cleanupValue)
+                    const validType = (/^[0-9]+$/).test(this.cleanupStrategy.cleanupValue)
+                    if (this.repoName === 'pipeline') {
+                        return validType && this.cleanupStrategy.cleanupValue >= 60
+                    } else if (this.repoName === 'custom') {
+                        return validType && this.cleanupStrategy.cleanupValue >= 30
+                    } else {
+                        return validType
+                    }
                 }
             },
             changeType () {
-                if (this.cleanupStrategy.cleanupType !== 'retentionDate' && this.cleanupStrategy.cleanupValue instanceof Date) {
+                if (this.cleanupStrategy.cleanupType !== 'retentionDate') {
                     this.cleanupStrategy.cleanupValue = ''
                 }
                 this.clearError()

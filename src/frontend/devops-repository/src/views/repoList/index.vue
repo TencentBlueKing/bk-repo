@@ -117,7 +117,7 @@
     import { formatDate, convertFileSize, debounce } from '@repository/utils'
     import { cloneDeep } from 'lodash'
     import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
-    import { beforeMonths, beforeYears } from '@/utils/date'
+    import { before, beforeYears } from '@/utils/date'
     const paginationParams = {
         count: 0,
         current: 1,
@@ -431,7 +431,9 @@
                 this.$refs.genericCleanDialog.loading = false
                 this.$refs.genericCleanDialog.isComplete = false
                 if (row.name === 'pipeline') {
-                    this.$refs.genericCleanDialog.date = beforeMonths(2)
+                    this.$refs.genericCleanDialog.date = before(60)
+                } else if (row.name === 'custom') {
+                    this.$refs.genericCleanDialog.date = before(30)
                 } else {
                     this.$refs.genericCleanDialog.date = beforeYears(1)
                 }

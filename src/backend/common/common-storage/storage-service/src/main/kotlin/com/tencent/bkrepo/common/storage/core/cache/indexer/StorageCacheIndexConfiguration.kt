@@ -27,16 +27,18 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.indexer
 
-import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_LRU
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_SLRU
+import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.StorageEldestRemovedListener
 import com.tencent.bkrepo.common.storage.core.cache.indexer.redis.RedisLRUCacheIndexer
 import com.tencent.bkrepo.common.storage.core.cache.indexer.redis.RedisSLRUCacheIndexer
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -45,38 +47,37 @@ import org.springframework.data.redis.core.RedisTemplate
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(RedisTemplate::class)
+@ConditionalOnProperty(prefix = "storage.cache.index", name = ["enabled"])
 @EnableConfigurationProperties(StorageCacheIndexProperties::class)
-@ConditionalOnProperty("storage.cache.index.enabled")
 class StorageCacheIndexConfiguration {
     @Bean
     fun storageCacheIndexerManager(
         cacheFactory: StorageCacheIndexerFactory<String, Long>,
-        storageService: CacheStorageService,
-        fileLocator: FileLocator,
         storageProperties: StorageProperties,
         storageCacheIndexProperties: StorageCacheIndexProperties,
     ): StorageCacheIndexerManager {
-        return StorageCacheIndexerManager(
-            cacheFactory,
-            storageService,
-            fileLocator,
-            storageCacheIndexProperties
-        )
+        return StorageCacheIndexerManager(cacheFactory, storageCacheIndexProperties)
     }
 
     @Bean
     @ConditionalOnProperty(prefix = "storage.cache.index", name = ["type"], havingValue = CACHE_TYPE_REDIS_LRU)
     fun redisLruCacheFactory(
         storageCacheIndexProperties: StorageCacheIndexProperties,
-        redisTemplate: RedisTemplate<String, String>
+        redisTemplate: RedisTemplate<String, String>,
+        fileLocator: FileLocator,
+        customizer: IndexerCustomizer<String, Long>,
     ): StorageCacheIndexerFactory<String, Long> {
         return object : StorageCacheIndexerFactory<String, Long> {
-            override fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<String, Long> {
-                val cachePath = cacheProperties.path.toPath()
+            override fun create(name: String, credentials: StorageCredentials): StorageCacheIndexer<String, Long> {
+                val cachePath = credentials.cache.path.toPath()
                 val hashTag = storageCacheIndexProperties.hashTag
-                val cache = RedisLRUCacheIndexer(name, cachePath, redisTemplate, 0, hashTag = hashTag)
-                cache.setMaxWeight(cacheProperties.maxSize)
-                return cache
+                val evict = storageCacheIndexProperties.evict
+                val indexer = RedisLRUCacheIndexer(
+                    name, cachePath, fileLocator, redisTemplate, 0, hashTag = hashTag, evict = evict
+                )
+                indexer.setMaxWeight(credentials.cache.maxSize)
+                customizer.customize(indexer, credentials)
+                return indexer
             }
         }
     }
@@ -85,15 +86,35 @@ class StorageCacheIndexConfiguration {
     @ConditionalOnProperty(prefix = "storage.cache.index", name = ["type"], havingValue = CACHE_TYPE_REDIS_SLRU)
     fun redisSlruCacheFactory(
         storageCacheIndexProperties: StorageCacheIndexProperties,
-        redisTemplate: RedisTemplate<String, String>
+        redisTemplate: RedisTemplate<String, String>,
+        fileLocator: FileLocator,
+        customizer: IndexerCustomizer<String, Long>,
     ): StorageCacheIndexerFactory<String, Long> {
         return object : StorageCacheIndexerFactory<String, Long> {
-            override fun create(name: String, cacheProperties: CacheProperties): StorageCacheIndexer<String, Long> {
-                val cachePath = cacheProperties.path.toPath()
+            override fun create(name: String, credentials: StorageCredentials): StorageCacheIndexer<String, Long> {
+                val cachePath = credentials.cache.path.toPath()
                 val hashTag = storageCacheIndexProperties.hashTag
-                val cache = RedisSLRUCacheIndexer(name, cachePath, redisTemplate, 0, hashTag = hashTag)
-                cache.setMaxWeight(cacheProperties.maxSize)
-                return cache
+                val evict = storageCacheIndexProperties.evict
+                val indexer = RedisSLRUCacheIndexer(
+                    name, cachePath, fileLocator, redisTemplate, 0, hashTag = hashTag, evict = evict
+                )
+                indexer.setMaxWeight(credentials.cache.maxSize)
+                customizer.customize(indexer, credentials)
+                return indexer
+            }
+        }
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun defaultIndexerCustomizer(
+        storageService: CacheStorageService,
+        fileLocator: FileLocator,
+    ): IndexerCustomizer<String, Long> {
+        return object : IndexerCustomizer<String, Long> {
+            override fun customize(indexer: StorageCacheIndexer<String, Long>, credentials: StorageCredentials) {
+                val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
+                indexer.addEldestRemovedListener(listener)
             }
         }
     }

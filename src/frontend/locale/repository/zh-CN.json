@@ -827,7 +827,7 @@
     "createPermNameTip": "请输入权限名称",
     "createPathsTip": "请添加路径",
     "createUsersTip": "请添加用户",
-    "cleanConfigTip": "请填写正确的输入",
+    "cleanConfigTip": "请填写正确的输入(流水线仓需预留至少60天，自定义仓需预留至少30天)",
     "cleanupStrategy": "清理策略",
     "retentionDays":"保留天数",
     "retentionDate":"保留日期",
