@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.artifact.event.listener
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.cache.ArtifactAccessRecorder
+import com.tencent.bkrepo.common.artifact.cache.service.ArtifactAccessRecorder
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder

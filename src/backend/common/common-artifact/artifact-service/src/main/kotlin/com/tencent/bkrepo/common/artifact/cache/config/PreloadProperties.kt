@@ -25,25 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache
+package com.tencent.bkrepo.common.artifact.cache.config
 
-import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactAccessRecordDao
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
+import java.time.Duration
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(PreloadProperties::class)
-@ConditionalOnProperty("storage.cache.preload.enabled")
-@Import(ArtifactAccessRecordDao::class)
-class PreloadConfiguration {
-    @Bean
-    fun artifactAccessRecorder(
-        preloadProperties: PreloadProperties,
-        artifactAccessRecordDao: ArtifactAccessRecordDao,
-    ): ArtifactAccessRecorder {
-        return ArtifactAccessRecorder(preloadProperties, artifactAccessRecordDao)
-    }
-}
+/**
+ * 缓存预加载配置
+ */
+@ConfigurationProperties("storage.cache.preload")
+data class PreloadProperties(
+    var enabled: Boolean = false,
+    /**
+     * 制品访问时间间隔，只有距离上次访问超过这个间隔时才会记录
+     */
+    var minAccessInterval: Duration = Duration.ofMinutes(30L),
+    /**
+     * 仅记录未命中缓存的记录
+     */
+    var onlyRecordCacheMiss: Boolean = true,
+    /**
+     * 只记录大小大于该值的文件
+     */
+    var minSize: DataSize = DataSize.ofGigabytes(1L),
+    /**
+     * 单仓库最多创建的预加载策略数量，策略数量过多可能会导致生成预加载执行计划过慢
+     */
+    var maxStrategyCount: Int = 10,
+    /**
+     * 不允许预加载存在时间超超过这个值的制品，避免配置错误导致大量无用旧制品被加载到缓存中
+     */
+    var maxArtifactExistsDuration: Duration = Duration.ofDays(7L)
+)

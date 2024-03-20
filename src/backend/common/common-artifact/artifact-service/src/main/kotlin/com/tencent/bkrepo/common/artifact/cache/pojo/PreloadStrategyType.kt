@@ -25,28 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache
-
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+package com.tencent.bkrepo.common.artifact.cache.pojo
 
 /**
- * 缓存预加载配置
+ * 预加载策略类型
  */
-@ConfigurationProperties("storage.cache.preload")
-data class PreloadProperties(
-    var enabled: Boolean = false,
+enum class PreloadStrategyType {
     /**
-     * 制品访问时间间隔，只有距离上次访问超过这个间隔时才会记录
+     * 自定义类型，自定义需要预加载的文件与预加载时间
      */
-    var minAccessInterval: Duration = Duration.ofMinutes(30L),
+    CUSTOM,
+
     /**
-     * 仅记录未命中缓存的记录
+     * 系统生成的自定义类型
      */
-    var onlyRecordCacheMiss: Boolean = true,
+    CUSTOM_GENERATE,
+
     /**
-     * 只记录大小大于该值的文件
+     * 智能预加载策略，通过BkBase中的模型预测预加载时间
      */
-    var minSize: DataSize = DataSize.ofGigabytes(1L)
-)
+    INTELLIGENT;
+}

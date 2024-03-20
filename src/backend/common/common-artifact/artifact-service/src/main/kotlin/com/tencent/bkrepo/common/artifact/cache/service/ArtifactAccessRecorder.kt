@@ -25,8 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache
+package com.tencent.bkrepo.common.artifact.cache.service
 
+import com.tencent.bkrepo.common.artifact.cache.config.PreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactAccessRecordDao
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactAccessRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
