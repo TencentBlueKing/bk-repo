@@ -232,7 +232,7 @@
                 return ['maven', 'pypi', 'npm', 'composer', 'nuget'].includes(this.repoType)
             },
             showCleanConfigTab () {
-                return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
+                return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage) && !(['custom'].includes(this.repoName))
             },
             showPermissionConfigTab () {
                 return ['generic'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage) && !(['pipeline', 'custom'].includes(this.repoName))
