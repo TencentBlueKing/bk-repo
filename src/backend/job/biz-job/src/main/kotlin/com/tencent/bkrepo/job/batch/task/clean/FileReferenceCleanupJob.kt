@@ -33,6 +33,7 @@ import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -106,6 +107,10 @@ class FileReferenceCleanupJob(
         val sha256 = row.sha256
         val id = row.id
         val storageCredentials = credentialsKey?.let { getCredentials(credentialsKey) }
+        if ((credentialsKey ?: DEFAULT_STORAGE_KEY) in properties.ignoredStorageCredentialsKeys) {
+            logger.info("file[$sha256] in credentials[$credentialsKey], skip cleaning")
+            return
+        }
         try {
             /*
             * 我们认为大部分的情况下，引用计数应该是正确的，并且为了确保文件没有被节点或者压缩root等资源引用
