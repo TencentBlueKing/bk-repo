@@ -36,4 +36,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class ActiveProjectNodeFolderStatJobProperties(
     override var enabled: Boolean = true,
     override var cron: String = "0 0/30 * * * ?",
-) : ProjectNodeFolderStatJobProperties()
+    var runAllRepo: Boolean = true,
+    ) : ProjectNodeFolderStatJobProperties()
