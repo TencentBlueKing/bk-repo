@@ -27,9 +27,13 @@
 
 package com.tencent.bkrepo.job.config.properties
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties("job.storage-cache-index-evict")
-class StorageCacheIndexEvictJobProperties(
-    override var cron: String = "0 0/10 * * * ?",
-) : StorageCacheIndexJobProperties()
+/**
+ * 存储缓存索引相关任务配置
+ */
+open class StorageCacheIndexJobProperties(
+    override var enabled: Boolean = false,
+    /**
+     * 忽略的存储凭据
+     */
+    var ignoredStorageCredentialsKeys: Set<String> = emptySet(),
+) : BatchJobProperties()

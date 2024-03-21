@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexEvictJobProperties
-import com.tencent.bkrepo.job.config.properties.StorageCacheIndexSyncJobProperties
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -45,7 +44,7 @@ import org.springframework.stereotype.Component
 @Component
 @EnableConfigurationProperties(StorageCacheIndexEvictJobProperties::class)
 class StorageCacheIndexEvictJob(
-    properties: StorageCacheIndexSyncJobProperties,
+    properties: StorageCacheIndexEvictJobProperties,
     storageProperties: StorageProperties,
     clusterProperties: ClusterProperties,
     mongoTemplate: MongoTemplate,
