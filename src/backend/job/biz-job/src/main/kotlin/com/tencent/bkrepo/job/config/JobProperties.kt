@@ -35,5 +35,9 @@ data class JobProperties(
      * 节点亲和的任务集合，未配置时节点可调度任意任务，配置后节点将只能执行配置的任务
      * key为节点IP，value为任务名称集合
      */
-    var nodeAffinityJobs: Map<String, Set<String>> = emptyMap()
+    var nodeAffinityJobs: Map<String, Set<String>> = emptyMap(),
+    /**
+     * 任务分布式锁名前缀
+     */
+    var lockNamePrefix: String? = null,
 )

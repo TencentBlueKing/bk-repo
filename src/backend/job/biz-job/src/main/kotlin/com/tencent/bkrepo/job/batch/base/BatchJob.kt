@@ -50,11 +50,7 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     /**
      * 锁名称
      */
-    open fun getLockName(): String = if (batchJobProperties.lockName.isNullOrEmpty()) {
-        getJobName()
-    } else {
-        batchJobProperties.lockName!!
-    }
+    open fun getLockName(): String = generateLockName()
 
     /**
      * 返回任务名称
@@ -296,6 +292,20 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
             unlock()
         } catch (ignore: Exception) {
             // ignore
+        }
+    }
+
+    private fun generateLockName(): String {
+        val lockName = if (batchJobProperties.lockName.isNullOrEmpty()) {
+            getJobName()
+        } else {
+            batchJobProperties.lockName!!
+        }
+
+        return if (jobProperties.lockNamePrefix.isNullOrEmpty()) {
+            lockName
+        } else {
+            jobProperties.lockNamePrefix + lockName
         }
     }
 

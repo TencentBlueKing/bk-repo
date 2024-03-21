@@ -55,5 +55,5 @@ open class BatchJobProperties(
     /**
      * 任务分布式锁名
      */
-    var lockName: String? = null
+    var lockName: String? = null,
 )
