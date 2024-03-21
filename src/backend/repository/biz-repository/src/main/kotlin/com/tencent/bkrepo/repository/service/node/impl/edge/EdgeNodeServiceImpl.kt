@@ -97,8 +97,10 @@ class EdgeNodeServiceImpl(
     routerControllerProperties,
     clusterProperties,
 ) {
-    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean, before: LocalDateTime): NodeSizeInfo {
-        return NodeStatsSupport(this).computeSize(artifact, estimated, before)
+    override fun computeSize(
+        artifact: ArtifactInfo, estimated: Boolean, before: LocalDateTime, cleanUp: Boolean
+    ): NodeSizeInfo {
+        return NodeStatsSupport(this).computeSize(artifact, estimated, before, cleanUp)
     }
 
     override fun aggregateComputeSize(criteria: Criteria): Long {
