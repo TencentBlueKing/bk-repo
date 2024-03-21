@@ -345,7 +345,7 @@ class UserNodeController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) date: LocalDateTime
     ): Response<NodeSizeInfo> {
-        val nodeSizeInfo = nodeService.computeSize(artifactInfo,false, date)
+        val nodeSizeInfo = nodeService.computeSize(artifactInfo,false, date, true)
         return ResponseBuilder.success(nodeSizeInfo)
     }
 
