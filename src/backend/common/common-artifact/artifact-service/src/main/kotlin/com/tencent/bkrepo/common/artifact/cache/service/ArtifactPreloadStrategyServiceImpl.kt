@@ -33,9 +33,9 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadStrategy
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy.Companion.toDto
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyDto
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyDto.Companion.toDto
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.ARTIFACT_PRELOAD_STRATEGY_EXCEED_MAX_COUNT
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.ARTIFACT_PRELOAD_STRATEGY_NOT_FOUND
@@ -50,7 +50,7 @@ class ArtifactPreloadStrategyServiceImpl(
     private val artifactPreloadStrategyDao: ArtifactPreloadStrategyDao,
     private val preloadProperties: ArtifactPreloadProperties,
 ) : ArtifactPreloadStrategyService {
-    override fun create(request: ArtifactPreloadStrategyCreateRequest): ArtifactPreloadStrategyDto {
+    override fun create(request: ArtifactPreloadStrategyCreateRequest): ArtifactPreloadStrategy {
         with(request) {
             check(fullPathRegex, recentSeconds, preloadCron)
             val now = LocalDateTime.now()
@@ -74,7 +74,7 @@ class ArtifactPreloadStrategyServiceImpl(
         }
     }
 
-    override fun update(request: ArtifactPreloadStrategyUpdateRequest): ArtifactPreloadStrategyDto {
+    override fun update(request: ArtifactPreloadStrategyUpdateRequest): ArtifactPreloadStrategy {
         with(request) {
             check(fullPathRegex, recentSeconds, preloadCron)
             if (artifactPreloadStrategyDao.update(request).matchedCount == 0L) {
@@ -90,7 +90,7 @@ class ArtifactPreloadStrategyServiceImpl(
         }
     }
 
-    override fun list(projectId: String, repoName: String): List<ArtifactPreloadStrategyDto> {
+    override fun list(projectId: String, repoName: String): List<ArtifactPreloadStrategy> {
         return artifactPreloadStrategyDao.list(projectId, repoName).map { it.toDto() }
     }
 

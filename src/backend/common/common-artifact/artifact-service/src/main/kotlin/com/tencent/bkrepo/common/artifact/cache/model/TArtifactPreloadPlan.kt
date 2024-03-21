@@ -25,44 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service
+package com.tencent.bkrepo.common.artifact.cache.model
 
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-interface ArtifactPreloadStrategyService {
+/**
+ * 预加载执行计划
+ */
+@Document("artifact_preload_strategy")
+@CompoundIndexes(
+    CompoundIndex(name = "executeTime_idx", def = "{'executeTime': 1}", background = true)
+)
+data class TArtifactPreloadPlan(
+    val id: String? = null,
+    val createdDate: LocalDateTime,
     /**
-     * 创建预加载策略
-     *
-     * @param request 策略
-     *
-     * @return 创建后的策略
+     * 所属策略ID，仅用于记录执行计划来源
      */
-    fun create(request: ArtifactPreloadStrategyCreateRequest): ArtifactPreloadStrategy
-
+    val strategyId: String? = null,
     /**
-     * 更新预加载策略
-     *
-     * @param request 策略
-     * @param
+     * 所属项目ID，仅用于记录执行计划来源
      */
-    fun update(request: ArtifactPreloadStrategyUpdateRequest): ArtifactPreloadStrategy
-
+    val projectId: String? = null,
     /**
-     * 删除策略
-     *
-     * @param id 策略id
+     * 所属仓库，仅用于记录执行计划来源
      */
-    fun delete(projectId: String, repoName: String, id: String)
-
+    val repoName: String? = null,
     /**
-     * 获取预加载策略
-     *
-     * @param projectId 策略所属项目
-     * @param repoName 仓库名
-     *
-     * @return 策略列表
+     * 待加载制品的完整路径，仅用于记录执行计划来源
      */
-    fun list(projectId: String, repoName: String): List<ArtifactPreloadStrategy>
-}
+    val fullPath: String? = null,
+    /**
+     * 待加载制品sha256
+     */
+    val sha256: String,
+    /**
+     * 待加载制品所在存储，为null时表示默认存储
+     */
+    val credentialsKey: String? = null,
+    /**
+     * 预加载计划执行毫秒时间戳
+     */
+    val executeTime: Long
+)

@@ -33,7 +33,7 @@ import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
 
 @ApiModel("预加载策略")
-data class ArtifactPreloadStrategyDto(
+data class ArtifactPreloadStrategy(
     @ApiModelProperty("id")
     val id: String? = null,
     @ApiModelProperty("创建人")
@@ -72,7 +72,7 @@ data class ArtifactPreloadStrategyDto(
     )
 
     companion object {
-        fun TArtifactPreloadStrategy.toDto() = ArtifactPreloadStrategyDto(
+        fun TArtifactPreloadStrategy.toDto() = ArtifactPreloadStrategy(
             id = id,
             createdBy = createdBy,
             createdDate = createdDate,

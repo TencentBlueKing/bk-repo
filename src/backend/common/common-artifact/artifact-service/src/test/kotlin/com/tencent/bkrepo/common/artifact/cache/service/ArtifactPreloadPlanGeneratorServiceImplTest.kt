@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyDto
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.PreloadStrategyType
 import org.junit.jupiter.api.Assertions
@@ -58,7 +58,7 @@ import java.time.Duration
 )
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
-class ArtifactPreloadStrategyServiceImplTest @Autowired constructor(
+class ArtifactPreloadPlanGeneratorServiceImplTest @Autowired constructor(
     private val artifactPreloadStrategyService: ArtifactPreloadStrategyServiceImpl,
     private val preloadProperties: ArtifactPreloadProperties,
     private val artifactPreloadStrategyDao: ArtifactPreloadStrategyDao,
@@ -124,7 +124,7 @@ class ArtifactPreloadStrategyServiceImplTest @Autowired constructor(
         }
     }
 
-    private fun create(): ArtifactPreloadStrategyDto {
+    private fun create(): ArtifactPreloadStrategy {
         val request = ArtifactPreloadStrategyCreateRequest(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,

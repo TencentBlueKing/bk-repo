@@ -25,17 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.strategy
+package com.tencent.bkrepo.common.artifact.cache.service
+
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
 
 /**
  * 制品预加载策略
  */
-interface ArtifactPreloadStrategy {
+interface ArtifactPreloadPlanGenerator {
     /**
      * 生成预加载执行计划
      *
-     * @param storageCredentialsKey 所在存储
-     * @param sha256 待加载制品sha256
+     * @param param 用于生成计划的参数
+     *
+     * @return 预加载执行计划，返回null时表示不需要预加载
      */
-    fun generatePreloadPlan(storageCredentialsKey: String?, sha256: String)
+    fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan?
 }

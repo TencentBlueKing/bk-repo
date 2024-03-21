@@ -27,42 +27,37 @@
 
 package com.tencent.bkrepo.common.artifact.cache.service
 
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
+import org.springframework.scheduling.support.CronExpression
+import java.time.LocalDateTime
+import java.time.ZoneId
 
-interface ArtifactPreloadStrategyService {
-    /**
-     * 创建预加载策略
-     *
-     * @param request 策略
-     *
-     * @return 创建后的策略
-     */
-    fun create(request: ArtifactPreloadStrategyCreateRequest): ArtifactPreloadStrategy
-
-    /**
-     * 更新预加载策略
-     *
-     * @param request 策略
-     * @param
-     */
-    fun update(request: ArtifactPreloadStrategyUpdateRequest): ArtifactPreloadStrategy
-
-    /**
-     * 删除策略
-     *
-     * @param id 策略id
-     */
-    fun delete(projectId: String, repoName: String, id: String)
-
-    /**
-     * 获取预加载策略
-     *
-     * @param projectId 策略所属项目
-     * @param repoName 仓库名
-     *
-     * @return 策略列表
-     */
-    fun list(projectId: String, repoName: String): List<ArtifactPreloadStrategy>
+/**
+ * 用户自定义加载策略
+ */
+class CustomArtifactPreloadPlanGenerator : ArtifactPreloadPlanGenerator {
+    override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
+        val now = LocalDateTime.now()
+        val executeTime = CronExpression
+            .parse(param.strategy.preloadCron!!)
+            .next(now)
+            ?.atZone(ZoneId.systemDefault())
+            ?.toInstant()
+            ?.toEpochMilli()
+            ?: return null
+        with(param) {
+            return ArtifactPreloadPlan(
+                id = null,
+                createdDate = now,
+                strategyId = param.strategy.id!!,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                sha256 = sha256,
+                credentialsKey = credentialsKey,
+                executeTime = executeTime
+            )
+        }
+    }
 }

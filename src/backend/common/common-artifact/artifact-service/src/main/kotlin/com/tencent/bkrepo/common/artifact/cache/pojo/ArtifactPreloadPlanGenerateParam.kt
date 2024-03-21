@@ -25,44 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service
+package com.tencent.bkrepo.common.artifact.cache.pojo
 
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
-
-interface ArtifactPreloadStrategyService {
-    /**
-     * 创建预加载策略
-     *
-     * @param request 策略
-     *
-     * @return 创建后的策略
-     */
-    fun create(request: ArtifactPreloadStrategyCreateRequest): ArtifactPreloadStrategy
-
-    /**
-     * 更新预加载策略
-     *
-     * @param request 策略
-     * @param
-     */
-    fun update(request: ArtifactPreloadStrategyUpdateRequest): ArtifactPreloadStrategy
-
-    /**
-     * 删除策略
-     *
-     * @param id 策略id
-     */
-    fun delete(projectId: String, repoName: String, id: String)
-
-    /**
-     * 获取预加载策略
-     *
-     * @param projectId 策略所属项目
-     * @param repoName 仓库名
-     *
-     * @return 策略列表
-     */
-    fun list(projectId: String, repoName: String): List<ArtifactPreloadStrategy>
-}
+/**
+ * 用于生成预加载计划的参数
+ */
+data class ArtifactPreloadPlanGenerateParam(
+    val projectId: String,
+    val repoName: String,
+    val credentialsKey: String,
+    val fullPath: String,
+    val sha256: String,
+    val strategy: ArtifactPreloadStrategy,
+)
