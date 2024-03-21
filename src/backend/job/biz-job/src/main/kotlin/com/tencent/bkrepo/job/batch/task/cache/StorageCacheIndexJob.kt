@@ -34,14 +34,14 @@ import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerM
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.StorageCacheIndexSyncJobProperties
+import com.tencent.bkrepo.job.config.properties.StorageCacheIndexJobProperties
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import java.time.Duration
 
 abstract class StorageCacheIndexJob(
-    private val properties: StorageCacheIndexSyncJobProperties,
+    private val properties: StorageCacheIndexJobProperties,
     private val storageProperties: StorageProperties,
     private val clusterProperties: ClusterProperties,
     private val mongoTemplate: MongoTemplate,

@@ -46,6 +46,7 @@ export function updateCredential(key, credential, defaultCredential = false) {
     const expireDaysKey = `${prefix}.${STORAGE_CACHE_CONFIG_PREFIX}.expireDays`
     const expireDurationKey = `${prefix}.${STORAGE_CACHE_CONFIG_PREFIX}.expireDuration`
     const loadCacheFirstKey = `${prefix}.${STORAGE_CACHE_CONFIG_PREFIX}.loadCacheFirst`
+    const cacheMaxSizeKey = `${prefix}.${STORAGE_CACHE_CONFIG_PREFIX}.maxSize`
     const values = [
       {
         'key': expireDaysKey,
@@ -54,6 +55,10 @@ export function updateCredential(key, credential, defaultCredential = false) {
       {
         'key': expireDurationKey,
         'value': credential.cache.expireDuration * 1000 // consul上Duration不带单位时默认是毫秒
+      },
+      {
+        'key': cacheMaxSizeKey,
+        'value': credential.cache.maxSize
       },
       {
         'key': loadCacheFirstKey,
