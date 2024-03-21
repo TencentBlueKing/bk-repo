@@ -46,7 +46,8 @@ interface NodeStatsOperation {
      */
     fun computeSize(artifact: ArtifactInfo,
                     estimated: Boolean = false,
-                    before: LocalDateTime = LocalDateTime.now()
+                    before: LocalDateTime = LocalDateTime.now(),
+                    cleanUp: Boolean = false
     ): NodeSizeInfo
 
     /**
