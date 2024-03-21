@@ -183,7 +183,7 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.countDeleteNodes(nodesDeleteRequest))
     }
 
-    @ApiOperation("清理最后修改时间早于{date}的文件节点")
+    @ApiOperation("清理最后访问时间早于{date}的文件节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping("/clean/$DEFAULT_MAPPING_URI")
     fun deleteNodeLastModifiedBeforeDate(
