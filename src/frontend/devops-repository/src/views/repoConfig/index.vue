@@ -232,10 +232,10 @@
                 return ['maven', 'pypi', 'npm', 'composer', 'nuget'].includes(this.repoType)
             },
             showCleanConfigTab () {
-                return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage) && !(['custom'].includes(this.repoName))
+                return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage) && (this.repoName !== 'custom')
             },
             showPermissionConfigTab () {
-                return ['generic'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage) && !(['pipeline', 'custom'].includes(this.repoName))
+                return (this.repoType === 'generic') && (this.userInfo.admin || this.userInfo.manage) && !(['pipeline', 'custom'].includes(this.repoName))
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo
