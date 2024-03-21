@@ -284,7 +284,7 @@
                             this.debounceGetListData ? this.debounceGetListData() : this.getListData()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
                         }).catch(err => {
                             if (err.status === 403) {
@@ -306,6 +306,11 @@
                                             url: res
                                         }
                                     }
+                                })
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
                                 })
                             }
                         })
