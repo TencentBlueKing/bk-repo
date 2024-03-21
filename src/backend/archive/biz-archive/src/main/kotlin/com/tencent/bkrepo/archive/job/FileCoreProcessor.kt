@@ -65,7 +65,7 @@ class FileCoreProcessor(
         archiveProperties.maxConcurrency,
         archiveProperties.pullInterval,
         archiveManager,
-    )
+    ) { archiveFileQueue.offer(it) }
 
     /**
      * 压缩任务订阅
@@ -74,7 +74,7 @@ class FileCoreProcessor(
         archiveProperties.gc.maxConcurrency,
         archiveProperties.pullInterval,
         bdZipManager,
-    )
+    ) { compressFileQueue.offer(it) }
 
     /**
      * 处理器关闭标志

@@ -7,6 +7,7 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.Duration
 import java.util.concurrent.Semaphore
+import java.util.function.Consumer
 import java.util.function.Function
 
 /**
@@ -16,6 +17,7 @@ class ActiveTaskSubscriber<T, R>(
     private val maxConcurrency: Int,
     interval: Duration,
     private val accept: Function<T, Mono<R>>,
+    private val fallback: Consumer<PriorityWrapper<T>>,
 ) : BaseSubscriber<PriorityWrapper<T>>() {
     private var subscription: Subscription? = null
     private val semaphore = Semaphore(maxConcurrency)
@@ -51,8 +53,9 @@ class ActiveTaskSubscriber<T, R>(
                 }
                 .subscribe()
         } else {
-            // 如果许可已被占用，则跳过该任务
-            logger.warn("Can't acquire permit, skip task[${value.priority}]")
+            // 如果许可已被占用，则执行预先设计的降级
+            logger.info("Can't acquire permit, task[${value.priority}] to fallback")
+            fallback.accept(value)
         }
     }
 
