@@ -34,8 +34,8 @@ import java.time.Duration
 /**
  * 缓存预加载配置
  */
-@ConfigurationProperties("storage.cache.preload")
-data class PreloadProperties(
+@ConfigurationProperties("artifact.cache.preload")
+data class ArtifactPreloadProperties(
     var enabled: Boolean = false,
     /**
      * 制品访问时间间隔，只有距离上次访问超过这个间隔时才会记录

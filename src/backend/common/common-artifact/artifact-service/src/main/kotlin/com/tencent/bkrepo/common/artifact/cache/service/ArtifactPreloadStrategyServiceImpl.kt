@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.artifact.cache.service
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
-import com.tencent.bkrepo.common.artifact.cache.config.PreloadProperties
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
@@ -48,7 +48,7 @@ import java.util.regex.PatternSyntaxException
 @Service
 class ArtifactPreloadStrategyServiceImpl(
     private val artifactPreloadStrategyDao: ArtifactPreloadStrategyDao,
-    private val preloadProperties: PreloadProperties,
+    private val preloadProperties: ArtifactPreloadProperties,
 ) : ArtifactPreloadStrategyService {
     override fun create(request: ArtifactPreloadStrategyCreateRequest): ArtifactPreloadStrategyDto {
         with(request) {

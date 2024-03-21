@@ -34,6 +34,8 @@ import java.time.LocalDateTime
 
 @ApiModel("预加载策略")
 data class ArtifactPreloadStrategyDto(
+    @ApiModelProperty("id")
+    val id: String? = null,
     @ApiModelProperty("创建人")
     val createdBy: String,
     @ApiModelProperty("创建时间")
@@ -56,7 +58,7 @@ data class ArtifactPreloadStrategyDto(
     val type: String,
 ) {
     fun toPo() = TArtifactPreloadStrategy(
-        id = null,
+        id = id,
         createdBy = createdBy,
         createdDate = createdDate,
         lastModifiedBy = lastModifiedBy,
@@ -71,6 +73,7 @@ data class ArtifactPreloadStrategyDto(
 
     companion object {
         fun TArtifactPreloadStrategy.toDto() = ArtifactPreloadStrategyDto(
+            id = id,
             createdBy = createdBy,
             createdDate = createdDate,
             lastModifiedBy = lastModifiedBy,

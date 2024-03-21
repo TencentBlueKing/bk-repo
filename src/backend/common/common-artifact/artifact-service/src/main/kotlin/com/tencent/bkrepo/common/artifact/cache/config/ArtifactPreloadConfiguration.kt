@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(PreloadProperties::class)
+@EnableConfigurationProperties(ArtifactPreloadProperties::class)
 @ConditionalOnProperty("storage.cache.preload.enabled")
 @Import(
     ArtifactAccessRecordDao::class,
@@ -45,4 +45,4 @@ import org.springframework.context.annotation.Import
     ArtifactPreloadStrategyDao::class,
     ArtifactPreloadStrategyServiceImpl::class
 )
-class PreloadConfiguration
+class ArtifactPreloadConfiguration

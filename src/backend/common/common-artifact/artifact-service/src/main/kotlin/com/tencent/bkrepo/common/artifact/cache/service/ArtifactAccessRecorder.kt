@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.cache.service
 
-import com.tencent.bkrepo.common.artifact.cache.config.PreloadProperties
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactAccessRecordDao
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactAccessRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -45,7 +45,7 @@ import java.time.format.DateTimeFormatter
  */
 @Component
 class ArtifactAccessRecorder(
-    private val preloadProperties: PreloadProperties,
+    private val preloadProperties: ArtifactPreloadProperties,
     private val artifactAccessRecordDao: ArtifactAccessRecordDao
 ) {
 
