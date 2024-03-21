@@ -3,7 +3,7 @@ package com.tencent.bkrepo.archive.service
 import com.tencent.bkrepo.archive.BaseTest
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.constant.MAX_CHAIN_LENGTH
-import com.tencent.bkrepo.archive.job.compress.BDZipManager
+import com.tencent.bkrepo.archive.core.compress.BDZipManager
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.archive.request.CompressFileRequest
 import com.tencent.bkrepo.common.api.constant.StringPool

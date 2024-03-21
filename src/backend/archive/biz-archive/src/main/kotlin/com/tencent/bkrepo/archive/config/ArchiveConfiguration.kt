@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.archive.config
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.archive.job.FileStorageFileProvider
-import com.tencent.bkrepo.archive.job.PriorityFileProvider
+import com.tencent.bkrepo.archive.core.FileStorageFileProvider
+import com.tencent.bkrepo.archive.core.PriorityFileProvider
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import org.springframework.boot.context.properties.EnableConfigurationProperties

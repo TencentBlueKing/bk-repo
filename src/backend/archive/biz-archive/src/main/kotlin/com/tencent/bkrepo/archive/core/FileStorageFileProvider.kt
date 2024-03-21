@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.core
 
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.concurrent.PriorityRunnableWrapper

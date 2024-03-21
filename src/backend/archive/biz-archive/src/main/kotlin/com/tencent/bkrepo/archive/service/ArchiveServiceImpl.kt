@@ -4,9 +4,9 @@ import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.ArchiveMessageCode
-import com.tencent.bkrepo.archive.job.FileEntityEvent
-import com.tencent.bkrepo.archive.job.archive.ArchiveManager
-import com.tencent.bkrepo.archive.job.archive.EmptyArchiver
+import com.tencent.bkrepo.archive.core.FileEntityEvent
+import com.tencent.bkrepo.archive.core.archive.ArchiveManager
+import com.tencent.bkrepo.archive.core.archive.EmptyArchiver
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository

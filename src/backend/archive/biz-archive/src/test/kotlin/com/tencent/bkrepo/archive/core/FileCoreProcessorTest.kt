@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.core
 
 import com.tencent.bkrepo.archive.BaseTest
 import com.tencent.bkrepo.archive.CompressStatus

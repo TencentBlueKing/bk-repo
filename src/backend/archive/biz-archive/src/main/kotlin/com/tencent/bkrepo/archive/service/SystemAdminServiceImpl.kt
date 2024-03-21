@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.archive.service
 
-import com.tencent.bkrepo.archive.job.FileCoreProcessor
+import com.tencent.bkrepo.archive.core.FileCoreProcessor
 import org.springframework.stereotype.Service
 
 @Service

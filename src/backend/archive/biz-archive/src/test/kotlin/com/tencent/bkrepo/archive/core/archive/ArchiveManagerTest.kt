@@ -1,9 +1,9 @@
-package com.tencent.bkrepo.archive.job.archive
+package com.tencent.bkrepo.archive.core.archive
 
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.BaseTest
 import com.tencent.bkrepo.archive.config.ArchiveProperties
-import com.tencent.bkrepo.archive.job.FileProvider
+import com.tencent.bkrepo.archive.core.FileProvider
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository

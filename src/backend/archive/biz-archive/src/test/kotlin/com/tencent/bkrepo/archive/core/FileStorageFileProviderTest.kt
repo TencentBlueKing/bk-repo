@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.core
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.utils.ArchiveUtils

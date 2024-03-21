@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job.archive
+package com.tencent.bkrepo.archive.core.archive
 
 import reactor.core.publisher.Mono
 import java.io.File

@@ -1,11 +1,11 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.core
 
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.MAX_EMIT_TIME
-import com.tencent.bkrepo.archive.job.archive.ArchiveManager
-import com.tencent.bkrepo.archive.job.compress.BDZipManager
+import com.tencent.bkrepo.archive.core.archive.ArchiveManager
+import com.tencent.bkrepo.archive.core.compress.BDZipManager
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.model.TCompressFile
 import org.slf4j.LoggerFactory

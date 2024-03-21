@@ -1,6 +1,6 @@
-package com.tencent.bkrepo.archive.job.compress
+package com.tencent.bkrepo.archive.core.compress
 
-import com.tencent.bkrepo.archive.job.FileProvider
+import com.tencent.bkrepo.archive.core.FileProvider
 import com.tencent.bkrepo.common.api.concurrent.PriorityRunnableWrapper
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.bksync.BkSync

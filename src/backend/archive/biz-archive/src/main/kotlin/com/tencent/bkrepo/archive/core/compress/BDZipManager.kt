@@ -1,12 +1,12 @@
-package com.tencent.bkrepo.archive.job.compress
+package com.tencent.bkrepo.archive.core.compress
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.event.StorageFileCompressedEvent
 import com.tencent.bkrepo.archive.event.StorageFileUncompressedEvent
-import com.tencent.bkrepo.archive.job.PriorityFileProvider
-import com.tencent.bkrepo.archive.job.TaskResult
+import com.tencent.bkrepo.archive.core.PriorityFileProvider
+import com.tencent.bkrepo.archive.core.TaskResult
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository

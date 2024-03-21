@@ -4,7 +4,7 @@ import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.constant.ArchiveMessageCode
 import com.tencent.bkrepo.archive.constant.MAX_CHAIN_LENGTH
-import com.tencent.bkrepo.archive.job.FileEntityEvent
+import com.tencent.bkrepo.archive.core.FileEntityEvent
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.pojo.CompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileRepository

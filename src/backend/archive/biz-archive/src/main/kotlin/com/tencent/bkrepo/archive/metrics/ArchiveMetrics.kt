@@ -2,10 +2,10 @@ package com.tencent.bkrepo.archive.metrics
 
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.CompressStatus
-import com.tencent.bkrepo.archive.job.FileProvider
-import com.tencent.bkrepo.archive.job.FileStorageFileProvider
-import com.tencent.bkrepo.archive.job.archive.ArchiveManager
-import com.tencent.bkrepo.archive.job.compress.BDZipManager
+import com.tencent.bkrepo.archive.core.FileProvider
+import com.tencent.bkrepo.archive.core.FileStorageFileProvider
+import com.tencent.bkrepo.archive.core.archive.ArchiveManager
+import com.tencent.bkrepo.archive.core.compress.BDZipManager
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import io.micrometer.core.instrument.Counter

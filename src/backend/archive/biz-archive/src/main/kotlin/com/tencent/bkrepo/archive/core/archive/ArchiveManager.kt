@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job.archive
+package com.tencent.bkrepo.archive.core.archive
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.ArchiveStatus
@@ -6,8 +6,8 @@ import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.DEEP_ARCHIVE
 import com.tencent.bkrepo.archive.event.FileArchivedEvent
 import com.tencent.bkrepo.archive.event.FileRestoredEvent
-import com.tencent.bkrepo.archive.job.FileProvider
-import com.tencent.bkrepo.archive.job.TaskResult
+import com.tencent.bkrepo.archive.core.FileProvider
+import com.tencent.bkrepo.archive.core.TaskResult
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job.archive
+package com.tencent.bkrepo.archive.core.archive
 
 import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
 import com.tencent.bkrepo.archive.utils.ArchiveUtils

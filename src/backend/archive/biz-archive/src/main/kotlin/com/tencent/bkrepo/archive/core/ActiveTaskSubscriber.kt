@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.archive.job
+package com.tencent.bkrepo.archive.core
 
 import org.reactivestreams.Subscription
 import org.slf4j.LoggerFactory

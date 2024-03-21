@@ -1,8 +1,8 @@
-package com.tencent.bkrepo.archive.job.compress
+package com.tencent.bkrepo.archive.core.compress
 
 import com.tencent.bkrepo.archive.BaseTest
 import com.tencent.bkrepo.archive.CompressStatus
-import com.tencent.bkrepo.archive.job.TaskResult
+import com.tencent.bkrepo.archive.core.TaskResult
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
