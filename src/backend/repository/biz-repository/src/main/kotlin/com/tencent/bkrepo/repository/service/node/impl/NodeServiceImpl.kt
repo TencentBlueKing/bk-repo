@@ -90,7 +90,7 @@ class NodeServiceImpl(
     override fun computeSize(
         artifact: ArtifactInfo, estimated: Boolean, before: LocalDateTime, cleanUp: Boolean
     ): NodeSizeInfo {
-        return NodeStatsSupport(this).computeSize(artifact, estimated, before)
+        return NodeStatsSupport(this).computeSize(artifact, estimated, before, cleanUp)
     }
 
     override fun aggregateComputeSize(criteria: Criteria): Long {
