@@ -31,9 +31,9 @@ import com.google.common.hash.BloomFilter
 import com.google.common.hash.Funnels
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
-import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -54,6 +54,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
@@ -98,8 +99,16 @@ class FileReferenceCleanupJob(
     }
 
     override fun buildQuery(): Query {
+        val ignores: MutableSet<String?> = properties.ignoredStorageCredentialsKeys.toMutableSet()
+        if (ignores.contains(DEFAULT_KEY)) {
+            ignores.remove(DEFAULT_KEY)
+            ignores.add(null)
+        }
         // 可能存在历史脏数据引用数为负数，此处需要查询<=0的数据
-        return Query(Criteria.where(COUNT).lte(0))
+        return Query(
+            Criteria.where(COUNT).lte(0)
+                .and(CREDENTIALS).not().inValues(ignores),
+        )
     }
 
     override fun run(row: FileReferenceData, collectionName: String, context: FileJobContext) {
@@ -107,10 +116,6 @@ class FileReferenceCleanupJob(
         val sha256 = row.sha256
         val id = row.id
         val storageCredentials = credentialsKey?.let { getCredentials(credentialsKey) }
-        if ((credentialsKey ?: DEFAULT_STORAGE_KEY) in properties.ignoredStorageCredentialsKeys) {
-            logger.info("file[$sha256] in credentials[$credentialsKey], skip cleaning")
-            return
-        }
         try {
             /*
             * 我们认为大部分的情况下，引用计数应该是正确的，并且为了确保文件没有被节点或者压缩root等资源引用
