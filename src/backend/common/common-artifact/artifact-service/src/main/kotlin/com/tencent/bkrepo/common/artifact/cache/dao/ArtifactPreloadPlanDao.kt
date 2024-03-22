@@ -25,16 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.pojo
+package com.tencent.bkrepo.common.artifact.cache.dao
 
-/**
- * 用于生成预加载计划的参数
- */
-data class ArtifactPreloadPlanGenerateParam(
-    val projectId: String,
-    val repoName: String,
-    val credentialsKey: String?,
-    val fullPath: String,
-    val sha256: String,
-    val strategy: ArtifactPreloadStrategy,
-)
+import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadPlan
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.stereotype.Repository
+
+@Repository
+class ArtifactPreloadPlanDao : SimpleMongoDao<TArtifactPreloadPlan>()

@@ -62,7 +62,7 @@ class CustomArtifactPreloadPlanGeneratorTest {
         val param = ArtifactPreloadPlanGenerateParam(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
-            credentialsKey = DEFAULT_STORAGE_KEY,
+            credentialsKey = null,
             fullPath = "/a/b/c.exe",
             sha256 = "0000000000000000000000000000000000000000000000000000000000000001",
             strategy = strategy,
