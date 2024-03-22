@@ -192,10 +192,11 @@ class ArchiveManager(
         return Mono.create { sink ->
             val sha256 = file.sha256
             val storageCredentialsKey = file.storageCredentialsKey
-            val dir = compressedPath.resolve(sha256)
+            val dir = uncompressedPath.resolve(sha256)
             Files.createDirectories(dir)
             val begin = System.nanoTime()
-            fileProvider.get(key, Range.full(file.compressedSize), archiveProperties.cos)
+            val range = if (file.compressedSize == -1L) Range.FULL_RANGE else Range.full(file.compressedSize)
+            fileProvider.get(key, range, archiveProperties.cos)
                 .publishOn(scheduler)
                 .flatMap {
                     val archiveFilePath = dir.resolve(key)
