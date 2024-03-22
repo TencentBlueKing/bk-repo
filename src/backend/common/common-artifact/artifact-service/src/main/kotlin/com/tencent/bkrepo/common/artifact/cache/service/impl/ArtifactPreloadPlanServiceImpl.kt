@@ -25,26 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.config
+package com.tencent.bkrepo.common.artifact.cache.service.impl
 
-import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactAccessRecordDao
-import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
-import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
-import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadPlanServiceImpl
-import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadStrategyServiceImpl
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
+import com.tencent.bkrepo.repository.api.NodeClient
+import org.springframework.stereotype.Service
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ArtifactPreloadProperties::class)
-@ConditionalOnProperty("storage.cache.preload.enabled")
-@Import(
-    ArtifactAccessRecordDao::class,
-    ArtifactAccessRecorder::class,
-    ArtifactPreloadStrategyDao::class,
-    ArtifactPreloadStrategyServiceImpl::class,
-    ArtifactPreloadPlanServiceImpl::class,
-)
-class ArtifactPreloadConfiguration
+@Service
+class ArtifactPreloadPlanServiceImpl(
+    private val nodeClient: NodeClient
+) : ArtifactPreloadPlanService {
+    override fun createPlan(credentialsKey: String?, sha256: String) {
+
+    }
+}

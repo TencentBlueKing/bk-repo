@@ -25,26 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.config
+package com.tencent.bkrepo.common.artifact.cache.service.impl
 
-import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactAccessRecordDao
-import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
-import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
-import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadPlanServiceImpl
-import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadStrategyServiceImpl
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
+import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
+import org.springframework.scheduling.support.CronExpression
+import java.time.LocalDateTime
+import java.time.ZoneId
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ArtifactPreloadProperties::class)
-@ConditionalOnProperty("storage.cache.preload.enabled")
-@Import(
-    ArtifactAccessRecordDao::class,
-    ArtifactAccessRecorder::class,
-    ArtifactPreloadStrategyDao::class,
-    ArtifactPreloadStrategyServiceImpl::class,
-    ArtifactPreloadPlanServiceImpl::class,
-)
-class ArtifactPreloadConfiguration
+/**
+ * 用户自定义加载策略
+ */
+class CustomArtifactPreloadPlanGenerator : ArtifactPreloadPlanGenerator {
+    override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
+        val now = LocalDateTime.now()
+        val executeTime = CronExpression
+            .parse(param.strategy.preloadCron!!)
+            .next(now)
+            ?.atZone(ZoneId.systemDefault())
+            ?.toInstant()
+            ?.toEpochMilli()
+            ?: return null
+        with(param) {
+            return ArtifactPreloadPlan(
+                id = null,
+                createdDate = now,
+                strategyId = param.strategy.id!!,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                sha256 = sha256,
+                credentialsKey = credentialsKey,
+                executeTime = executeTime
+            )
+        }
+    }
+}

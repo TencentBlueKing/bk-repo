@@ -27,37 +27,12 @@
 
 package com.tencent.bkrepo.common.artifact.cache.service
 
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
-import org.springframework.scheduling.support.CronExpression
-import java.time.LocalDateTime
-import java.time.ZoneId
-
-/**
- * 用户自定义加载策略
- */
-class CustomArtifactPreloadPlanGenerator : ArtifactPreloadPlanGenerator {
-    override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
-        val now = LocalDateTime.now()
-        val executeTime = CronExpression
-            .parse(param.strategy.preloadCron!!)
-            .next(now)
-            ?.atZone(ZoneId.systemDefault())
-            ?.toInstant()
-            ?.toEpochMilli()
-            ?: return null
-        with(param) {
-            return ArtifactPreloadPlan(
-                id = null,
-                createdDate = now,
-                strategyId = param.strategy.id!!,
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                sha256 = sha256,
-                credentialsKey = credentialsKey,
-                executeTime = executeTime
-            )
-        }
-    }
+interface ArtifactPreloadPlanService {
+    /**
+     * 根据预加载策略创建执行计划
+     *
+     * @param credentialsKey 缓存文件所在存储
+     * @param sha256 缓存文件sha256
+     */
+    fun createPlan(credentialsKey: String?, sha256: String)
 }
