@@ -104,60 +104,60 @@ class ArchiveManager(
             logger.info("File[${file.sha256}] already start archive.")
             return Mono.just(TaskResult.OK)
         }
-        return Mono.create { sink ->
-            /*
-             * 1. 下载文件
-             * 2. 根据文件类型判断，应该使用哪种压缩算法
-             * 3. 压缩文件
-             * 4. 归档文件
-             * 5. 更新数据库
-             * */
-            val sha256 = file.sha256
-            val storageCredentialsKey = file.storageCredentialsKey
-            val dir = compressedPath.resolve(sha256)
-            Files.createDirectories(dir)
-            val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
-            val begin = System.nanoTime()
-            fileProvider.get(sha256, Range.full(file.size), credentials)
-                .publishOn(scheduler)
-                .flatMap {
-                    val filePath = dir.resolve(sha256)
-                    Files.move(it.toPath(), filePath)
-                    if (archiveProperties.compress.enabledCompress) {
-                        val type = tika.detect(it)
-                        val archiverName = determineArchiverName(type)
-                        val archiver = chooseArchiver(archiverName)
-                        file.archiver = archiver.name()
-                        val path = dir.resolve(getKey(sha256, file.archiver))
-                        archiver.compress(filePath, path)
-                    } else {
-                        Mono.just(filePath.toFile())
-                    }
-                }.doOnSuccess {
-                    val key = getKey(sha256, file.archiver)
-                    val size = it.length()
-                    val throughput = measureThroughput(size) { cosClient.putFileObject(key, it, DEEP_ARCHIVE) }
-                    logger.info("Success upload $key,$throughput")
-                    file.compressedSize = size
-                    file.status = ArchiveStatus.ARCHIVED
-                    logger.info("Success to archive file [$sha256] on $storageCredentialsKey.")
-                }.doOnError {
-                    logger.error("Failed to archive file [$sha256].", it)
-                    file.status = ArchiveStatus.ARCHIVE_FAILED
-                }.doFinally {
-                    dir.toFile().deleteRecursively()
-                    file.lastModifiedDate = LocalDateTime.now()
-                    archiveFileRepository.save(file)
-                    val took = System.nanoTime() - begin
-                    val throughput = Throughput(file.size, took)
-                    val event = FileArchivedEvent(sha256, storageCredentialsKey, throughput)
-                    SpringContextUtils.publishEvent(event)
-                    logger.info("Complete archive file [$sha256] on $storageCredentialsKey")
-                    sink.success(TaskResult.OK)
-                }.onErrorResume {
-                    Mono.empty()
-                }.subscribe()
-        }
+        /*
+           * 1. 下载文件
+           * 2. 根据文件类型判断，应该使用哪种压缩算法
+           * 3. 压缩文件
+           * 4. 归档文件
+           * 5. 更新数据库
+           * */
+        val sha256 = file.sha256
+        val storageCredentialsKey = file.storageCredentialsKey
+        val dir = compressedPath.resolve(sha256)
+        Files.createDirectories(dir)
+        val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
+        val begin = System.nanoTime()
+        val ret = fileProvider.get(sha256, Range.full(file.size), credentials)
+            .publishOn(scheduler)
+            .flatMap {
+                val filePath = dir.resolve(sha256)
+                Files.move(it.toPath(), filePath)
+                if (archiveProperties.compress.enabledCompress) {
+                    val type = tika.detect(it)
+                    val archiverName = determineArchiverName(type)
+                    val archiver = chooseArchiver(archiverName)
+                    file.archiver = archiver.name()
+                    val path = dir.resolve(getKey(sha256, file.archiver))
+                    archiver.compress(filePath, path)
+                } else {
+                    Mono.just(filePath.toFile())
+                }
+            }.doOnSuccess {
+                val key = getKey(sha256, file.archiver)
+                val size = it.length()
+                val throughput = measureThroughput(size) { cosClient.putFileObject(key, it, DEEP_ARCHIVE) }
+                logger.info("Success upload $key,$throughput")
+                file.compressedSize = size
+                file.status = ArchiveStatus.ARCHIVED
+                file.lastModifiedDate = LocalDateTime.now()
+                archiveFileRepository.save(file)
+                logger.info("Success to archive file [$sha256] on $storageCredentialsKey.")
+            }.doOnError {
+                logger.error("Failed to archive file [$sha256].", it)
+                file.status = ArchiveStatus.ARCHIVE_FAILED
+                file.lastModifiedDate = LocalDateTime.now()
+                archiveFileRepository.save(file)
+            }.onErrorResume {
+                Mono.empty()
+            }.doFinally {
+                dir.toFile().deleteRecursively()
+                val took = System.nanoTime() - begin
+                val throughput = Throughput(file.size, took)
+                val event = FileArchivedEvent(sha256, storageCredentialsKey, throughput)
+                SpringContextUtils.publishEvent(event)
+                logger.info("Complete archive file [$sha256] on $storageCredentialsKey")
+            }
+        return ret.thenReturn(TaskResult.OK)
     }
 
     private fun restore0(file: TArchiveFile): Mono<TaskResult> {
@@ -189,47 +189,47 @@ class ArchiveManager(
             archiveFileRepository.save(file)
             return Mono.just(TaskResult.OK)
         }
-        return Mono.create { sink ->
-            val sha256 = file.sha256
-            val storageCredentialsKey = file.storageCredentialsKey
-            val dir = uncompressedPath.resolve(sha256)
-            Files.createDirectories(dir)
-            val begin = System.nanoTime()
-            val range = if (file.compressedSize == -1L) Range.FULL_RANGE else Range.full(file.compressedSize)
-            fileProvider.get(key, range, archiveProperties.cos)
-                .publishOn(scheduler)
-                .flatMap {
-                    val archiveFilePath = dir.resolve(key)
-                    Files.move(it.toPath(), archiveFilePath)
-                    val path = dir.resolve(sha256)
-                    chooseArchiver(file.archiver).uncompress(archiveFilePath, path)
-                }.doOnSuccess {
-                    val artifactFile = it.toArtifactFile(true)
-                    val receiveSha256 = artifactFile.getFileSha256()
-                    if (receiveSha256 != sha256) {
-                        error("File[$sha256] broken,receive $receiveSha256.)")
-                    }
-                    val storageCredentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
-                    storageService.store(sha256, artifactFile, storageCredentials)
-                    file.status = ArchiveStatus.RESTORED
-                    logger.info("Success to restore file [$sha256] on $storageCredentialsKey.")
-                }.doOnError {
-                    file.status = ArchiveStatus.RESTORE_FAILED
-                    logger.error("Restore file $sha256 error: ", it)
-                }.doFinally {
-                    dir.toFile().deleteRecursively()
-                    file.lastModifiedDate = LocalDateTime.now()
-                    archiveFileRepository.save(file)
-                    val took = System.nanoTime() - begin
-                    val throughput = Throughput(file.size, took)
-                    val event = FileRestoredEvent(sha256, storageCredentialsKey, throughput)
-                    SpringContextUtils.publishEvent(event)
-                    logger.info("Complete restore file [$sha256] on $storageCredentialsKey")
-                    sink.success(TaskResult.OK)
-                }.onErrorResume {
-                    Mono.empty()
-                }.subscribe()
-        }
+        val sha256 = file.sha256
+        val storageCredentialsKey = file.storageCredentialsKey
+        val dir = uncompressedPath.resolve(sha256)
+        Files.createDirectories(dir)
+        val begin = System.nanoTime()
+        val range = if (file.compressedSize == -1L) Range.FULL_RANGE else Range.full(file.compressedSize)
+        val ret = fileProvider.get(key, range, archiveProperties.cos)
+            .publishOn(scheduler)
+            .flatMap {
+                val archiveFilePath = dir.resolve(key)
+                Files.move(it.toPath(), archiveFilePath)
+                val path = dir.resolve(sha256)
+                chooseArchiver(file.archiver).uncompress(archiveFilePath, path)
+            }.doOnSuccess {
+                val artifactFile = it.toArtifactFile(true)
+                val receiveSha256 = artifactFile.getFileSha256()
+                if (receiveSha256 != sha256) {
+                    error("File[$sha256] broken,receive $receiveSha256.)")
+                }
+                val storageCredentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
+                storageService.store(sha256, artifactFile, storageCredentials)
+                file.status = ArchiveStatus.RESTORED
+                file.lastModifiedDate = LocalDateTime.now()
+                archiveFileRepository.save(file)
+                logger.info("Success to restore file [$sha256] on $storageCredentialsKey.")
+            }.doOnError {
+                file.status = ArchiveStatus.RESTORE_FAILED
+                file.lastModifiedDate = LocalDateTime.now()
+                archiveFileRepository.save(file)
+                logger.error("Restore file $sha256 error: ", it)
+            }.onErrorResume {
+                Mono.empty()
+            }.doFinally {
+                dir.toFile().deleteRecursively()
+                val took = System.nanoTime() - begin
+                val throughput = Throughput(file.size, took)
+                val event = FileRestoredEvent(sha256, storageCredentialsKey, throughput)
+                SpringContextUtils.publishEvent(event)
+                logger.info("Complete restore file [$sha256] on $storageCredentialsKey")
+            }
+        return ret.thenReturn(TaskResult.OK)
     }
 
     private fun determineArchiverName(type: String): String {

@@ -139,57 +139,55 @@ class BDZipManager(
             logger.info("File[${file.sha256}] already start compress.")
             return Mono.just(TaskResult.OK)
         }
-        return Mono.create { sink ->
-            val sha256 = file.sha256
-            val baseSha256 = file.baseSha256
-            val baseSize = file.baseSize
-            // 增量存储源文件和基础文件必须不同，不然会导致base文件丢失
-            require(sha256 != baseSha256) { "Incremental storage source file and base file must be different." }
-            val storageCredentialsKey = file.storageCredentialsKey
-            val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
-            val workDir = Paths.get(workDir.toString(), COMPRESS_DIR, sha256)
-            val uncompressedSize = file.uncompressedSize
-            val srcFile = fileProvider.get(sha256, Range.full(uncompressedSize), credentials)
-            val baseRange = if (baseSize == null) Range.FULL_RANGE else Range.full(baseSize)
-            val checksumFile = checksumProvider.get(baseSha256, baseRange, credentials)
-            val begin = System.nanoTime()
-            bdCompressor.compress(srcFile, checksumFile, sha256, baseSha256, workDir)
-                .doOnSuccess {
-                    val newFileName = sha256.plus(BD_FILE_SUFFIX)
-                    storageService.store(newFileName, it.toArtifactFile(), credentials)
-                    file.compressedSize = it.length()
-                    file.status = CompressStatus.COMPRESSED
-                    logger.info("Success to compress file [$sha256] on $storageCredentialsKey.")
+        val sha256 = file.sha256
+        val baseSha256 = file.baseSha256
+        val baseSize = file.baseSize
+        // 增量存储源文件和基础文件必须不同，不然会导致base文件丢失
+        require(sha256 != baseSha256) { "Incremental storage source file and base file must be different." }
+        val storageCredentialsKey = file.storageCredentialsKey
+        val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
+        val workDir = Paths.get(workDir.toString(), COMPRESS_DIR, sha256)
+        val uncompressedSize = file.uncompressedSize
+        val srcFile = fileProvider.get(sha256, Range.full(uncompressedSize), credentials)
+        val baseRange = if (baseSize == null) Range.FULL_RANGE else Range.full(baseSize)
+        val checksumFile = checksumProvider.get(baseSha256, baseRange, credentials)
+        val begin = System.nanoTime()
+        val ret = bdCompressor.compress(srcFile, checksumFile, sha256, baseSha256, workDir)
+            .doOnSuccess {
+                val newFileName = sha256.plus(BD_FILE_SUFFIX)
+                storageService.store(newFileName, it.toArtifactFile(), credentials)
+                file.compressedSize = it.length()
+                file.status = CompressStatus.COMPRESSED
+                file.lastModifiedDate = LocalDateTime.now()
+                compressFileRepository.save(file)
+                logger.info("Success to compress file [$sha256] on $storageCredentialsKey.")
+            }.doOnError {
+                if (it !is TooLowerReuseRateException) {
+                    logger.error("Failed to compress file [$sha256].", it)
                 }
-                .doOnError {
-                    if (it !is TooLowerReuseRateException) {
-                        logger.error("Failed to compress file [$sha256].", it)
-                    }
-                    file.status = CompressStatus.COMPRESS_FAILED
-                    fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
-                }
-                .doFinally {
-                    workDir.toFile().deleteRecursively()
-                    file.lastModifiedDate = LocalDateTime.now()
-                    compressFileRepository.save(file)
-                    // 发送压缩事件
-                    val took = System.nanoTime() - begin
-                    val throughput = Throughput(uncompressedSize, took)
-                    val event = StorageFileCompressedEvent(
-                        sha256 = sha256,
-                        baseSha256 = baseSha256,
-                        uncompressed = uncompressedSize,
-                        compressed = file.compressedSize,
-                        storageCredentialsKey = storageCredentialsKey,
-                        throughput = throughput,
-                    )
-                    SpringContextUtils.publishEvent(event)
-                    logger.info("Complete compress file [$sha256] on $storageCredentialsKey")
-                    sink.success(TaskResult.OK)
-                }
-                .onErrorResume { Mono.empty() }
-                .subscribe()
-        }
+                fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
+                file.status = CompressStatus.COMPRESS_FAILED
+                file.lastModifiedDate = LocalDateTime.now()
+                compressFileRepository.save(file)
+            }.onErrorResume {
+                Mono.empty()
+            }.doFinally {
+                workDir.toFile().deleteRecursively()
+                // 发送压缩事件
+                val took = System.nanoTime() - begin
+                val throughput = Throughput(uncompressedSize, took)
+                val event = StorageFileCompressedEvent(
+                    sha256 = sha256,
+                    baseSha256 = baseSha256,
+                    uncompressed = uncompressedSize,
+                    compressed = file.compressedSize,
+                    storageCredentialsKey = storageCredentialsKey,
+                    throughput = throughput,
+                )
+                SpringContextUtils.publishEvent(event)
+                logger.info("Complete compress file [$sha256] on $storageCredentialsKey")
+            }
+        return ret.thenReturn(TaskResult.OK)
     }
 
     private fun uncompress0(fileStack: Stack<TCompressFile>, sink: MonoSink<TaskResult>) {
@@ -229,19 +227,21 @@ class BDZipManager(
         bdUncompressor.patch(bdFile, baseFile, sha256, fileWorkDir)
             .doOnSuccess {
                 // 更新状态
-                file.status = CompressStatus.UNCOMPRESSED
                 storageService.store(sha256, it.toArtifactFile(), credentials)
                 storageService.delete(bdFileName, credentials)
-                logger.info("Success to uncompress file [$sha256] on $storageCredentialsKey")
-            }
-            .doOnError {
-                logger.error("Failed to uncompress file [$sha256] on $storageCredentialsKey", it)
-                file.status = CompressStatus.UNCOMPRESS_FAILED
-            }
-            .doFinally {
-                fileWorkDir.toFile().deleteRecursively()
+                file.status = CompressStatus.UNCOMPRESSED
                 file.lastModifiedDate = LocalDateTime.now()
                 compressFileRepository.save(file)
+                logger.info("Success to uncompress file [$sha256] on $storageCredentialsKey")
+            }.doOnError {
+                logger.error("Failed to uncompress file [$sha256] on $storageCredentialsKey", it)
+                file.status = CompressStatus.UNCOMPRESS_FAILED
+                file.lastModifiedDate = LocalDateTime.now()
+                compressFileRepository.save(file)
+            }.onErrorResume {
+                Mono.empty()
+            }.doFinally {
+                fileWorkDir.toFile().deleteRecursively()
                 val took = System.nanoTime() - begin
                 val uncompressedSize = file.uncompressedSize
                 val throughput = Throughput(uncompressedSize, took)
@@ -260,9 +260,7 @@ class BDZipManager(
                     // 解压失败，解压事件结束
                     sink.success(TaskResult.OK)
                 }
-            }
-            .onErrorResume { Mono.empty() }
-            .subscribe()
+            }.subscribe()
     }
 
     companion object {
