@@ -312,7 +312,6 @@
             }
         },
         created () {
-            console.log(this.permissionConfig)
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
             this.getIamPermissionStatus().then(res => {
