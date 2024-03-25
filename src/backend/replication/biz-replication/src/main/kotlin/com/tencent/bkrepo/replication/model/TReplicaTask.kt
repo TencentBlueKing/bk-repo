@@ -111,6 +111,14 @@ data class TReplicaTask(
      */
     var enabled: Boolean = true,
     /**
+     * 是否记录详细日志
+     */
+    val record: Boolean?,
+    /**
+     * 不记录制品的分发记录
+     */
+    val recordReserveDays: Long?,
+    /**
      * 审计信息
      */
     var createdBy: String,

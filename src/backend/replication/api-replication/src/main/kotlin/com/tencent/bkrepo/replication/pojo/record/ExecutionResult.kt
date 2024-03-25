@@ -36,8 +36,12 @@ data class ExecutionResult(
     val errorReason: String? = null
 ) {
     companion object {
-        fun fail(errorReason: String?): ExecutionResult {
-            return ExecutionResult(status = ExecutionStatus.FAILED, errorReason = errorReason.orEmpty())
+        fun fail(errorReason: String?, progress: ReplicaProgress? = null): ExecutionResult {
+            return ExecutionResult(
+                status = ExecutionStatus.FAILED,
+                errorReason = errorReason.orEmpty(),
+                progress = progress
+            )
         }
 
         fun success(): ExecutionResult {

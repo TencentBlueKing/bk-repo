@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
@@ -63,8 +64,14 @@ interface ReplicaRecordService {
      * @param recordId 记录id
      * @param status 执行状态
      * @param errorReason 错误原因，当status为失败情况下才设置
+     * @param replicaOverview 执行结果总览
      */
-    fun completeRecord(recordId: String, status: ExecutionStatus, errorReason: String? = null)
+    fun completeRecord(
+        recordId: String,
+        status: ExecutionStatus,
+        errorReason: String? = null,
+        replicaOverview: ReplicaOverview? = null
+    )
 
     /**
      * 初始化一条同步详情
@@ -130,6 +137,13 @@ interface ReplicaRecordService {
     fun getRecordDetailById(id: String): ReplicaRecordDetail?
 
     /**
+     * 根据[id]删除执行记录详情
+     *
+     * @param id 记录详情id
+     */
+    fun deleteRecordDetailById(id: String)
+
+    /**
      * 根据任务[key]删除执行记录
      * @param key 任务key
      */
@@ -160,4 +174,9 @@ interface ReplicaRecordService {
      * 边缘节点回写记录到中心节点
      */
     fun writeBack(replicaRecordInfo: ReplicaRecordInfo)
+
+    /**
+     * 更新ReplicaRecord的replicaOverview
+     */
+    fun updateRecordReplicaOverview(recordId: String, replicaOverview: ReplicaOverview)
 }

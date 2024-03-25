@@ -32,6 +32,7 @@ import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordListOption
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -41,26 +42,40 @@ import org.springframework.data.mongodb.core.query.where
  * 执行日志查询条件构造工具
  */
 object TaskRecordQueryHelper {
-
     fun recordDetailListQuery(
         recordId: String,
         option: ReplicaRecordDetailListOption
     ): Query {
-        with(option) {
-            val criteria = where(TReplicaRecordDetail::recordId).isEqualTo(recordId)
-                .apply {
-                    packageName?.let { and("packageConstraint.packageKey").regex("^$it") }
-                }.apply {
-                    repoName?.let { and(TReplicaRecordDetail::localRepoName).isEqualTo(it) }
-                }.apply {
-                    clusterName?.let { and(TReplicaRecordDetail::remoteCluster).isEqualTo(it) }
-                }.apply {
-                    path?.let { and("pathConstraint.path").isEqualTo("^$it") }
-                }.apply {
-                    status?.let { and(TReplicaRecordDetail::status).isEqualTo(it) }
-                }
-            return Query(criteria)
-                .with(Sort.by(Sort.Order(Sort.Direction.DESC, TReplicaRecordDetail::startTime.name)))
+        val criteria = where(TReplicaRecordDetail::recordId).isEqualTo(recordId)
+        buildQueryCriteria(criteria,"packageConstraint.packageKey",option.packageName){
+            regex("^$it")
+        }
+        buildQueryCriteria(criteria, TReplicaRecordDetail::localRepoName.name, option.repoName)
+        buildQueryCriteria(criteria, TReplicaRecordDetail::remoteCluster.name, option.clusterName)
+        buildQueryCriteria(criteria, "pathConstraint.path", option.path) {
+            regex("^$it")
+        }
+        buildQueryCriteria(criteria, TReplicaRecordDetail::status.name, option.status?.name)
+        buildQueryCriteria(criteria, TReplicaRecordDetail::artifactName.name, option.artifactName) {
+            regex("^$it")
+        }
+        buildQueryCriteria(criteria, TReplicaRecordDetail::version.name, option.version)
+        return Query(criteria)
+            .with(Sort.by(Sort.Order(Sort.Direction.DESC, TReplicaRecordDetail::startTime.name)))
+    }
+
+    private fun buildQueryCriteria(
+        criteria: Criteria,
+        fieldName: String,
+        value: String?,
+        operation: (Criteria.(String) -> Unit)? = null
+    ) {
+        value?.let {
+            if (operation != null) {
+                criteria.and(fieldName).operation(it)
+            } else {
+                criteria.and(fieldName).isEqualTo(it)
+            }
         }
     }
 

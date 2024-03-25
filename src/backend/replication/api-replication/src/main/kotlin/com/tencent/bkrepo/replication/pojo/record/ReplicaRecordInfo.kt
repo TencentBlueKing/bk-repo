@@ -48,5 +48,7 @@ data class ReplicaRecordInfo(
     @ApiModelProperty("已同步字节数")
     var replicatedBytes: Long? = 0,
     @ApiModelProperty("总字节数")
-    var totalBytes: Long? = 0
+    var totalBytes: Long? = 0,
+    @ApiModelProperty("执行结果总览")
+    var replicaOverview: ReplicaOverview? = null
 )

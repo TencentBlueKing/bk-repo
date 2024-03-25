@@ -47,5 +47,9 @@ class ReplicaRecordDetailListOption(
     @ApiModelProperty("路径名称, 根据该字段前缀匹配")
     val path: String? = null,
     @ApiModelProperty("执行状态")
-    val status: ExecutionStatus? = null
+    val status: ExecutionStatus? = null,
+    @ApiModelProperty("制品名称")
+    var artifactName: String? = null,
+    @ApiModelProperty("版本")
+    var version: String? = null
 )

@@ -41,8 +41,6 @@ import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
-import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
 import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
@@ -139,23 +137,6 @@ class ClusterReplicator(
         with(context) {
             // 外部集群仓库没有project/repoName
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return true
-            // 包版本冲突检查
-            val fullPath = "${packageSummary.name}-${packageVersion.name}"
-            val checkRequest = PackageVersionExistCheckRequest(
-                projectId = remoteProjectId,
-                repoName = remoteRepoName,
-                packageKey = packageSummary.key,
-                versionName = packageVersion.name
-            )
-            if (artifactReplicaClient!!.checkPackageVersionExist(checkRequest).data == true) {
-                when (task.setting.conflictStrategy) {
-                    ConflictStrategy.SKIP -> return false
-                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("Package [$fullPath] conflict.")
-                    else -> {
-                        // do nothing
-                    }
-                }
-            }
             // 文件数据
             PackageNodeMappings.map(
                 packageSummary = packageSummary,
@@ -298,17 +279,6 @@ class ClusterReplicator(
         with(context) {
             // 外部集群仓库没有project/repoName
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return null
-            val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
-            // 节点冲突检查
-            if (artifactReplicaClient!!.checkNodeExist(remoteProjectId, remoteRepoName, node.fullPath).data == true) {
-                when (task.setting.conflictStrategy) {
-                    ConflictStrategy.SKIP -> return null
-                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
-                    else -> {
-                        // do nothing
-                    }
-                }
-            }
             // 查询元数据
             val metadata = if (task.setting.includeMetadata) node.nodeMetadata else emptyList()
             return NodeCreateRequest(

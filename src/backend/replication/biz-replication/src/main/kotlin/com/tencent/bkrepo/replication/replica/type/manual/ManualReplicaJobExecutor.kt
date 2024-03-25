@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.type.manual
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
@@ -62,6 +63,7 @@ class ManualReplicaJobExecutor(
         logger.info("The run once replication task[${taskDetail.task.key}] will be manually executed.")
         var status = ExecutionStatus.SUCCESS
         var errorReason: String? = null
+        var replicaOverview: ReplicaOverview? = null
         val taskRecord = replicaRecordService.findOrCreateLatestRecord(taskDetail.task.key)
             .copy(startTime = LocalDateTime.now())
         try {
@@ -74,20 +76,17 @@ class ManualReplicaJobExecutor(
                 ))
             )
             val result = taskDetail.task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
-            result.forEach {
-                if (it.status == ExecutionStatus.FAILED) {
-                    status = ExecutionStatus.FAILED
-                    errorReason = it.errorReason
-                    return@forEach
-                }
-            }
+            val resultsSummary = getResultsSummary(result)
+            status = resultsSummary.status
+            replicaOverview = resultsSummary.replicaOverview
+            errorReason = resultsSummary.errorReason
         } catch (exception: Exception) {
             // 记录异常
             status = ExecutionStatus.FAILED
             errorReason = exception.message.orEmpty()
         } finally {
             // 保存结果
-            replicaRecordService.completeRecord(taskRecord.id, status, errorReason)
+            replicaRecordService.completeRecord(taskRecord.id, status, errorReason, replicaOverview)
             val taskStatus = if (isCronJob(taskDetail.task.setting, taskDetail.task.replicaType))
                 ReplicaStatus.WAITING else ReplicaStatus.COMPLETED
             logger.info(

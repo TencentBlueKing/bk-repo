@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.pojo.record
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
+import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
@@ -52,6 +53,16 @@ data class ReplicaRecordDetail(
     var packageConstraint: PackageConstraint? = null,
     @ApiModelProperty("路径名称")
     var pathConstraint: PathConstraint? = null,
+    @ApiModelProperty("制品名称")
+    var artifactName: String? = null,
+    @ApiModelProperty("包版本")
+    var version: String? = null,
+    @ApiModelProperty("冲突策略")
+    var conflictStrategy: ConflictStrategy? = null,
+    @ApiModelProperty("制品大小")
+    var size: Long? = null,
+    @ApiModelProperty("制品sha256")
+    var sha256: String? = null,
     @ApiModelProperty("运行状态")
     var status: ExecutionStatus,
     @ApiModelProperty("同步进度")

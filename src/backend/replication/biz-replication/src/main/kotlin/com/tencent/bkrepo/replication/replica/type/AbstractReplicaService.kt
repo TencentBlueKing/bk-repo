@@ -36,9 +36,11 @@ import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
+import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaExecutionContext
@@ -114,67 +116,58 @@ abstract class AbstractReplicaService(
      * 同步整个仓库数据
      */
     protected fun replicaByRepo(replicaContext: ReplicaContext) {
-        val context = initialExecutionContext(replicaContext)
-        try {
-            if (replicaContext.taskObject.repoType == RepositoryType.GENERIC) {
-                // 同步generic节点
-                val root = localDataManager.findNodeDetail(
-                    projectId = replicaContext.localProjectId,
-                    repoName = replicaContext.localRepoName,
-                    fullPath = PathUtils.ROOT
-                ).nodeInfo
-                replicaByPath(context, root)
-                logger.info(
-                    "replicaByRepo for generic finished" +
-                        " ${replicaContext.localProjectId}|${replicaContext.localRepoName}"
-                )
-                return
+        if (replicaContext.taskObject.repoType == RepositoryType.GENERIC) {
+            // 同步generic节点
+            val root = localDataManager.findNodeDetail(
+                projectId = replicaContext.localProjectId,
+                repoName = replicaContext.localRepoName,
+                fullPath = PathUtils.ROOT
+            ).nodeInfo
+            replicaByPath(replicaContext, root)
+            logger.info(
+                "replicaByRepo for generic finished" +
+                    " ${replicaContext.localProjectId}|${replicaContext.localRepoName}"
+            )
+            return
+        }
+        // 同步包
+        val option = PackageListOption(pageNumber = 1, pageSize = PAGE_SIZE)
+        var packages = localDataManager.listPackagePage(
+            projectId = replicaContext.localProjectId,
+            repoName = replicaContext.localRepoName,
+            option = option
+        )
+        while (packages.isNotEmpty()) {
+            packages.forEach {
+                replicaByPackage(replicaContext, it)
             }
-            // 同步包
-            val option = PackageListOption(pageNumber = 1, pageSize = PAGE_SIZE)
-            var packages = localDataManager.listPackagePage(
+            option.pageNumber += 1
+            packages = localDataManager.listPackagePage(
                 projectId = replicaContext.localProjectId,
                 repoName = replicaContext.localRepoName,
                 option = option
             )
-            while (packages.isNotEmpty()) {
-                packages.forEach {
-                    replicaByPackage(context, it)
-                }
-                option.pageNumber += 1
-                packages = localDataManager.listPackagePage(
-                    projectId = replicaContext.localProjectId,
-                    repoName = replicaContext.localRepoName,
-                    option = option
-                )
-            }
-            logger.info("replicaByRepo finished ${replicaContext.localProjectId}|${replicaContext.localRepoName}")
-        } catch (throwable: Throwable) {
-            setErrorStatus(context, throwable)
-            logger.error("replicaByRepo failed,error is ${Throwables.getStackTraceAsString(throwable)}")
-        } finally {
-            completeRecordDetail(context)
         }
+        logger.info("replicaByRepo finished ${replicaContext.localProjectId}|${replicaContext.localRepoName}")
     }
 
     /**
      * 同步指定包的数据
      */
     protected fun replicaByPackageConstraint(replicaContext: ReplicaContext, constraint: PackageConstraint) {
-        val context = initialExecutionContext(replicaContext, packageConstraint = constraint)
-        try {
-            // 查询本地包信息
-            val packageSummary = localDataManager.findPackageByKey(
-                projectId = replicaContext.localProjectId,
-                repoName = replicaContext.taskObject.localRepoName,
-                packageKey = constraint.packageKey!!
-            )
-            replicaByPackage(context, packageSummary, constraint.versions)
-        } catch (throwable: Throwable) {
-            setErrorStatus(context, throwable)
-            setRunOnceTaskFailedRecordMetrics(context, throwable, packageConstraint = constraint)
-        } finally {
-            completeRecordDetail(context)
+        with(replicaContext) {
+            try {
+                // 查询本地包信息
+                val packageSummary = localDataManager.findPackageByKey(
+                    projectId = localProjectId,
+                    repoName = taskObject.localRepoName,
+                    packageKey = constraint.packageKey!!
+                )
+                replicaByPackage(this, packageSummary, constraint.versions)
+            } catch (throwable: Throwable) {
+                setRunOnceTaskFailedRecordMetrics(this, throwable, packageConstraint = constraint)
+                throw throwable
+            }
         }
     }
 
@@ -182,20 +175,19 @@ abstract class AbstractReplicaService(
      * 同步指定路径的数据
      */
     protected fun replicaByPathConstraint(replicaContext: ReplicaContext, constraint: PathConstraint) {
-        val context = initialExecutionContext(replicaContext, pathConstraint = constraint)
-        try {
-            val nodeInfo = localDataManager.findNodeDetail(
-                projectId = replicaContext.localProjectId,
-                repoName = replicaContext.localRepoName,
-                fullPath = constraint.path!!
-            ).nodeInfo
-            replicaByPath(context, nodeInfo)
-        } catch (throwable: Throwable) {
-            logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
-            setErrorStatus(context, throwable)
-            setRunOnceTaskFailedRecordMetrics(context, throwable, pathConstraint = constraint)
-        } finally {
-            completeRecordDetail(context)
+        with(replicaContext) {
+            try {
+                val nodeInfo = localDataManager.findNodeDetail(
+                    projectId = localProjectId,
+                    repoName = localRepoName,
+                    fullPath = constraint.path!!
+                ).nodeInfo
+                replicaByPath(this, nodeInfo)
+            }  catch (throwable: Throwable) {
+                logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
+                setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
+                throw throwable
+            }
         }
     }
 
@@ -203,10 +195,26 @@ abstract class AbstractReplicaService(
      * 同步路径
      * 采用广度优先遍历
      */
-    private fun replicaByPath(context: ReplicaExecutionContext, node: NodeInfo) {
-        with(context) {
+    private fun replicaByPath(replicaContext: ReplicaContext, node: NodeInfo) {
+        with(replicaContext) {
             if (!node.folder) {
-                replicaFile(context, node)
+                // 存在冲突：记录冲突策略
+                // 外部集群仓库没有project/repoName
+                val conflictStrategy = if (
+                    !remoteProjectId.isNullOrBlank() && !remoteRepoName.isNullOrBlank() &&
+                    artifactReplicaClient!!.checkNodeExist(remoteProjectId, remoteRepoName, node.fullPath).data == true
+                ) {
+                    replicaProgress.conflict++
+                    task.setting.conflictStrategy
+                } else null
+                val replicaExecutionContext = initialExecutionContext(
+                    context = replicaContext,
+                    artifactName = node.fullPath,
+                    conflictStrategy = conflictStrategy,
+                    size = node.size,
+                    sha256 = node.sha256
+                )
+                replicaFile(replicaExecutionContext, node)
                 return
             }
             // 查询子节点
@@ -230,7 +238,14 @@ abstract class AbstractReplicaService(
                 sha256 = node.sha256,
                 size = node.size.toString()
             )
-            runActionAndPrintLog(context, record) { replicaContext.replicator.replicaFile(replicaContext, node) }
+            val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
+            runActionAndPrintLog(context, record) {
+                when (context.detail.conflictStrategy) {
+                    ConflictStrategy.SKIP -> false
+                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
+                    else -> replicaContext.replicator.replicaFile(replicaContext, node)
+                }
+            }
         }
     }
 
@@ -238,36 +253,57 @@ abstract class AbstractReplicaService(
      * 根据[packageSummary]和版本列表[versionNames]执行同步
      */
     private fun replicaByPackage(
-        context: ReplicaExecutionContext,
+        replicaContext: ReplicaContext,
         packageSummary: PackageSummary,
         versionNames: List<String>? = null
     ) {
-        with(context) {
-            replicator.replicaPackage(replicaContext, packageSummary)
-            // 同步package功能： 对应内部集群配置是当version不存在时则同步全部的package version
-            // 而对于外部集群配置而言，当version不存在时，则不进行同步
-            val versions = versionNames?.map {
-                localDataManager.findPackageVersion(
+        replicaContext.replicator.replicaPackage(replicaContext, packageSummary)
+        // 同步package功能： 对应内部集群配置是当version不存在时则同步全部的package version
+        // 而对于外部集群配置而言，当version不存在时，则不进行同步
+        val versions = versionNames?.map {
+            localDataManager.findPackageVersion(
+                projectId = replicaContext.localProjectId,
+                repoName = replicaContext.localRepoName,
+                packageKey = packageSummary.key,
+                version = it
+            )
+        } ?: run {
+            if (replicaContext.remoteCluster.type == ClusterNodeType.REMOTE) {
+                emptyList()
+            } else {
+                localDataManager.listAllVersion(
                     projectId = replicaContext.localProjectId,
                     repoName = replicaContext.localRepoName,
                     packageKey = packageSummary.key,
-                    version = it
+                    option = VersionListOption()
                 )
-            } ?: run {
-                if (replicaContext.remoteCluster.type == ClusterNodeType.REMOTE) {
-                    emptyList()
-                } else {
-                    localDataManager.listAllVersion(
-                        projectId = replicaContext.localProjectId,
-                        repoName = replicaContext.localRepoName,
+            }
+        }
+        versions.forEach {
+            // 存在冲突：记录冲突策略
+            // 外部集群仓库没有project/repoName
+            val conflictStrategy = if (
+                !replicaContext.remoteProjectId.isNullOrBlank() && !replicaContext.remoteRepoName.isNullOrBlank() &&
+                replicaContext.artifactReplicaClient!!.checkPackageVersionExist(
+                    PackageVersionExistCheckRequest(
+                        projectId = replicaContext.remoteProjectId,
+                        repoName = replicaContext.remoteRepoName,
                         packageKey = packageSummary.key,
-                        option = VersionListOption()
+                        versionName = it.name
                     )
-                }
-            }
-            versions.forEach {
-                replicaPackageVersion(this, packageSummary, it)
-            }
+                ).data == true
+            ) {
+                replicaContext.replicaProgress.conflict++
+                replicaContext.task.setting.conflictStrategy
+            } else null
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = packageSummary.name,
+                version = it.name,
+                conflictStrategy = conflictStrategy,
+                size = it.size
+            )
+            replicaPackageVersion(replicaExecutionContext, packageSummary, it)
         }
     }
 
@@ -285,8 +321,13 @@ abstract class AbstractReplicaService(
                 version = version.name,
                 size = version.size.toString()
             )
+            val fullPath = "${packageSummary.name}-${version.name}"
             runActionAndPrintLog(context, record) {
-                replicator.replicaPackageVersion(replicaContext, packageSummary, version)
+                when (context.detail.conflictStrategy) {
+                    ConflictStrategy.SKIP -> false
+                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
+                    else -> replicator.replicaPackageVersion(replicaContext, packageSummary, version)
+                }
             }
         }
     }
@@ -302,20 +343,25 @@ abstract class AbstractReplicaService(
             var errorReason: String? = null
             try {
                 val executed = action()
-                updateProgress(executed)
+                replicaContext.updateProgress(executed)
             } catch (throwable: Throwable) {
                 status = ExecutionStatus.FAILED
                 errorReason = throwable.message.orEmpty()
                 logger.error(
                     "replica file failed, " +
-                                 "error is ${Throwables.getStackTraceAsString(throwable)}"
+                        "error is ${Throwables.getStackTraceAsString(throwable)}"
                 )
-                progress.failed += 1
+                replicaContext.replicaProgress.failed++
                 setErrorStatus(this, throwable)
                 if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
                     throw throwable
                 }
             } finally {
+                if (context.replicaContext.task.record == false) {
+                    replicaRecordService.deleteRecordDetailById(detail.id)
+                } else {
+                    completeRecordDetail(context)
+                }
                 setRunOnceTaskRecordMetrics(
                     task = replicaContext.task,
                     recordId = detail.recordId,
@@ -332,7 +378,7 @@ abstract class AbstractReplicaService(
      * 记录因需要分发的package或者path本地不存在而导致的异常，分发中的异常已在实际分发处记录
      */
     private fun setRunOnceTaskFailedRecordMetrics(
-        context: ReplicaExecutionContext,
+        context: ReplicaContext,
         throwable: Throwable,
         packageConstraint: PackageConstraint? = null,
         pathConstraint: PathConstraint? = null
@@ -344,11 +390,11 @@ abstract class AbstractReplicaService(
                 path = pathConstraint?.path
             )
             setRunOnceTaskRecordMetrics(
-                task = replicaContext.task,
-                recordId = detail.recordId,
+                task = task,
+                recordId = taskRecord.id,
                 startTime = LocalDateTime.now().toString(),
                 errorReason = throwable.message.orEmpty(),
-                status = status,
+                status = ExecutionStatus.FAILED,
                 record = record
             )
         }
@@ -389,7 +435,12 @@ abstract class AbstractReplicaService(
     private fun initialExecutionContext(
         context: ReplicaContext,
         packageConstraint: PackageConstraint? = null,
-        pathConstraint: PathConstraint? = null
+        pathConstraint: PathConstraint? = null,
+        artifactName: String,
+        version: String? = null,
+        conflictStrategy: ConflictStrategy? = null,
+        size: Long? = null,
+        sha256: String? = null
     ): ReplicaExecutionContext {
         // 创建详情
         val request = RecordDetailInitialRequest(
@@ -398,7 +449,12 @@ abstract class AbstractReplicaService(
             localRepoName = context.localRepoName,
             repoType = context.localRepoType,
             packageConstraint = packageConstraint,
-            pathConstraint = pathConstraint
+            pathConstraint = pathConstraint,
+            artifactName = artifactName,
+            version = version,
+            conflictStrategy = conflictStrategy,
+            size = size,
+            sha256 = sha256
         )
         val recordDetail = replicaRecordService.initialRecordDetail(request)
         return ReplicaExecutionContext(context, recordDetail)

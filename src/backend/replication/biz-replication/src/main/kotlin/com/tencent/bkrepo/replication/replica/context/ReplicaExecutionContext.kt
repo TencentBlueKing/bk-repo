@@ -48,7 +48,7 @@ class ReplicaExecutionContext(
     /**
      * 同步进度
      */
-
+    @Deprecated("以制品维度记录RecordDetail")
     val progress = ReplicaProgress()
 
     /**
@@ -68,17 +68,5 @@ class ReplicaExecutionContext(
      */
     fun buildErrorReason(): String {
         return errorReason.toString()
-    }
-
-    /**
-     * 更新进度
-     * @param executed 是否执行了同步
-     */
-    fun updateProgress(executed: Boolean) {
-        if (executed) {
-            progress.success += 1
-        } else {
-            progress.skip += 1
-        }
     }
 }

@@ -50,5 +50,9 @@ data class ReplicaTaskUpdateRequest(
     @ApiModelProperty("远程集群集合", required = true)
     val remoteClusterIds: Set<String>,
     @ApiModelProperty("任务描述", required = false)
-    val description: String? = null
+    val description: String? = null,
+    @ApiModelProperty("是否记录分发日志", required = true)
+    val record: Boolean = true,
+    @ApiModelProperty("分发日志保留天数", required = true)
+    val recordReserveDays: Long = 30,
 )
