@@ -22,6 +22,7 @@ const storeObject = {
                 roadMap: '0'
             }
         ],
+        permissionConfig: false,
         projectList: [],
         repoListAll: [],
         scannerSupportFileNameExt: [],
@@ -139,6 +140,9 @@ const storeObject = {
         },
         SET_DEPEND_INPUT_VALUE3 (state, data) {
             state.dependInputValue3 = data
+        },
+        SET_REPO_PERMISSION_LIMIT (state, data) {
+            state.permissionConfig = data
         }
     },
     actions

@@ -218,7 +218,7 @@
             }
         },
         computed: {
-            ...mapState(['domain', 'userInfo']),
+            ...mapState(['domain', 'userInfo', 'permissionConfig']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -235,7 +235,14 @@
                 return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
             },
             showPermissionConfigTab () {
-                return ['generic'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage) && !(['pipeline', 'custom'].includes(this.repoName))
+                if (this.permissionConfig === true) {
+                    return ['generic'].includes(this.repoType)
+                        && (this.userInfo.admin || this.userInfo.manage)
+                } else {
+                    return ['generic'].includes(this.repoType)
+                        && (this.userInfo.admin || this.userInfo.manage)
+                        && !(['pipeline', 'custom'].includes(this.repoName))
+                }
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo
@@ -305,6 +312,7 @@
             }
         },
         created () {
+            console.log(this.permissionConfig)
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
             this.getIamPermissionStatus().then(res => {
