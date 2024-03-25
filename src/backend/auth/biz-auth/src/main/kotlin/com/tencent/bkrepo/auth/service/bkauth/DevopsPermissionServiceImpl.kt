@@ -84,7 +84,7 @@ class DevopsPermissionServiceImpl constructor(
             || isDevopsProjectMember(userId, projectId, READ.name)
         ) return getAllRepoByProjectId(projectId)
 
-        return listPermissionRepo(projectId, userId, appId)
+        return super.listPermissionRepo(projectId, userId, appId)
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
@@ -102,7 +102,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     override fun listPermissionProject(userId: String): List<String> {
-        val localProjectList = listPermissionProject(userId)
+        val localProjectList = super.listPermissionProject(userId)
         val devopsProjectList = devopsProjectService.listProjectByUser(userId)
         if (devopsProjectList.size == 1 && devopsProjectList[0] == "*") {
             return localProjectList
@@ -115,7 +115,7 @@ class DevopsPermissionServiceImpl constructor(
         if (isDevopsProjectAdmin(userId, projectId)) {
             return emptyList()
         }
-        return listNoPermissionPath(userId, projectId, repoName)
+        return super.listNoPermissionPath(userId, projectId, repoName)
     }
 
     private fun parsePipelineId(path: String): String? {
