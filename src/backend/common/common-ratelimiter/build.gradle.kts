@@ -29,29 +29,9 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.s3.artifact.configuration
-
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
-import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
-import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
-import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.s3.artifact.response.S3ArtifactResourceWriter
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Primary
-
-@Configuration
-class ResourceWriterConfigurer{
-
-    @Primary
-    @Bean
-    fun artifactResourceWriter(
-        storageProperties: StorageProperties,
-        downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
-        userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService?= null,
-    ): ArtifactResourceWriter {
-        return S3ArtifactResourceWriter(
-            storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService
-        )
-    }
-}
+dependencies {
+    api("io.micrometer:micrometer-registry-prometheus")
+    api(project(":common:common-artifact:artifact-api"))
+    api(project(":common:common-redis"))
+    api(project(":common:common-api"))
+    api(project(":common:common-security")) }
