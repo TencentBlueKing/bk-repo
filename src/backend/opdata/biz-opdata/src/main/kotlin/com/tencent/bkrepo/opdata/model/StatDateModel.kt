@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -41,48 +42,8 @@ import java.time.LocalDateTime
 class StatDateModel @Autowired constructor(
     private val mongoTemplate: MongoTemplate
 ) {
-
-    companion object {
-        private val JOB_NAMES = listOf("ActiveProjectRepoMetricsStatJob", "InactiveProjectRepoMetricsStatJob")
+    fun getStatDate(): LocalDateTime {
+        return LocalDate.now().atStartOfDay()
     }
 
-    fun getShedLockInfo(ids: List<String> = JOB_NAMES): LocalDateTime {
-        return try {
-            val query = Query(Criteria.where(ID).`in`(ids))
-            val result = mongoTemplate.find(query, ShedlockInfo::class.java, SHED_LOCK_COLLECTION_NAME)
-            getLockedAtDate(result)
-        } catch (e: Exception) {
-            LocalDate.now().minusDays(1).atStartOfDay()
-        }
-    }
-
-
-    private fun getLockedAtDate(lockInfos: List<ShedlockInfo>): LocalDateTime {
-        if (lockInfos.isEmpty()) {
-            return LocalDate.now().minusDays(1).atStartOfDay()
-        }
-        var statDateTime: LocalDateTime? = null
-        lockInfos.forEach {
-            val tempStatDate = if (it.lockUntil!!.isBefore(LocalDateTime.now())) {
-                it.lockedAt!!.toLocalDate().atStartOfDay()
-            } else {
-                it.lockedAt!!.toLocalDate().minusDays(1).atStartOfDay()
-            }
-            if (statDateTime == null) {
-                statDateTime = tempStatDate
-            } else {
-                if (statDateTime!!.isBefore(tempStatDate)) {
-                    statDateTime = tempStatDate
-                }
-            }
-        }
-        return statDateTime!!
-    }
-
-    data class ShedlockInfo(
-        val id: String,
-        var lockUntil: LocalDateTime?,
-        var lockedAt: LocalDateTime?,
-        var lockedBy: String,
-    )
 }

@@ -323,7 +323,7 @@ class ProjectMetricsService (
      */
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INIT_DELAY, timeUnit = TimeUnit.MINUTES)
     fun loadCache() {
-        val createdDate = statDateModel.getShedLockInfo()
+        val createdDate = statDateModel.getStatDate()
         val cacheDateList = listOf(
             createdDate,
             createdDate.minusDays(1).toLocalDate().atStartOfDay(),
@@ -354,7 +354,7 @@ class ProjectMetricsService (
 
     private fun getProjectMetrics(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
         val createdDate = if (metricsRequest.default) {
-            statDateModel.getShedLockInfo()
+            statDateModel.getStatDate()
         } else {
             LocalDate.now().minusDays(metricsRequest.minusDay).atStartOfDay()
         }

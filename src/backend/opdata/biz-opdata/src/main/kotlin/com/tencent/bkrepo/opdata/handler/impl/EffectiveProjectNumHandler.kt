@@ -55,7 +55,7 @@ class EffectiveProjectNumHandler(
 
     override fun handle(target: Target, result: MutableList<Any>) {
         val projects = MetricsCacheUtil.getProjectMetrics(
-            statDateModel.getShedLockInfo().format(DateTimeFormatter.ISO_DATE_TIME)
+            statDateModel.getStatDate().format(DateTimeFormatter.ISO_DATE_TIME)
         )
         val count = projects.filter { it.capSize > 0 }.size.toLong()
         val columns = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)

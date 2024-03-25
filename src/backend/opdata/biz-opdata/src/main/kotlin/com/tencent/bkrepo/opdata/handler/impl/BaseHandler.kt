@@ -161,13 +161,13 @@ open class BaseHandler(
         val active = reqData?.get(ACTIVE)?.toString()?.toBoolean()
 
         val endDate = if (endDateStr.isNullOrEmpty()) {
-            statDateModel.getShedLockInfo()
+            statDateModel.getStatDate()
         } else {
             LocalDate.parse(endDateStr, DateTimeFormatter.ISO_DATE).atStartOfDay()
         }
         val startDate = if (startDateStr.isNullOrEmpty()) {
             val minusDays = duration ?: 1
-            statDateModel.getShedLockInfo().minusDays(minusDays).toLocalDate().atStartOfDay()
+            statDateModel.getStatDate().minusDays(minusDays).toLocalDate().atStartOfDay()
         } else {
             LocalDate.parse(startDateStr, DateTimeFormatter.ISO_DATE).atStartOfDay()
         }

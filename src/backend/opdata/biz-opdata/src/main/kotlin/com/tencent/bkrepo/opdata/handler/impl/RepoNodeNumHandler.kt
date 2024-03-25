@@ -53,7 +53,7 @@ class RepoNodeNumHandler(
     override val metric: Metrics get() = Metrics.REPONODENUM
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
-        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
+        val projects = projectMetricsRepository.findAllByCreatedDate(statDateModel.getStatDate())
         val tmpMap = HashMap<String, Long>()
         projects.forEach { it ->
             val projectId = it.projectId

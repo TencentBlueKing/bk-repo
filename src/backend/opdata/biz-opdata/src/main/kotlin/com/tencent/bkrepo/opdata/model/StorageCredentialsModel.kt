@@ -45,7 +45,7 @@ class StorageCredentialsModel @Autowired constructor(
 
     fun getStorageCredentialsStat(metrics: StatMetrics): Map<String, Long> {
         val result = mutableMapOf<String, Long>()
-        val projectMetricsList = projectMetricsRepository.findAllByCreatedDate(statDateModel.getShedLockInfo())
+        val projectMetricsList = projectMetricsRepository.findAllByCreatedDate(statDateModel.getStatDate())
         projectMetricsList.forEach { projectMetrics ->
             projectMetrics.repoMetrics.forEach {
                 val value = if (metrics == StatMetrics.NUM) it.num else it.size
