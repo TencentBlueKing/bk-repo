@@ -37,12 +37,17 @@ import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.account.ScopeRule
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.ENDPOINT
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.util.scope.RuleUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -105,8 +110,8 @@ class PermissionHelper constructor(
 
         scopeDesc.forEach {
             when (it.field) {
-                ResourceType.PROJECT.name -> {
-                    if (RuleUtil.check(it, projectId, ResourceType.PROJECT)) return true
+                PROJECT.name -> {
+                    if (RuleUtil.check(it, projectId, PROJECT)) return true
                 }
                 else -> return false
             }
@@ -119,8 +124,8 @@ class PermissionHelper constructor(
 
         scopeDesc.forEach {
             when (it.field) {
-                ResourceType.ENDPOINT.name -> {
-                    if (RuleUtil.check(it, endpoint, ResourceType.ENDPOINT)) return true
+                ENDPOINT.name -> {
+                    if (RuleUtil.check(it, endpoint, ENDPOINT)) return true
                 }
                 else -> return false
             }
@@ -160,7 +165,7 @@ class PermissionHelper constructor(
     ): Permission {
         return Permission(
             id = permissionId,
-            resourceType = ResourceType.PROJECT.name,
+            resourceType = PROJECT.name,
             projectId = projectId,
             permName = permissionName,
             users = userList,
@@ -172,11 +177,11 @@ class PermissionHelper constructor(
     }
 
     fun isRepoOrNodePermission(resourceType: String): Boolean {
-        return resourceType == ResourceType.NODE.name || resourceType == ResourceType.REPO.name
+        return resourceType == NODE.name || resourceType == REPO.name
     }
 
     fun checkProjectReadAction(request: CheckPermissionRequest, isProjectUser: Boolean): Boolean {
-        return request.projectId != null && request.action == PermissionAction.READ.name && isProjectUser
+        return request.projectId != null && request.action == READ.name && isProjectUser
     }
 
     fun getNoPermissionPathFromConfig(
@@ -220,7 +225,7 @@ class PermissionHelper constructor(
 
     fun checkRepoReadAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
         with(request) {
-            return resourceType == ResourceType.REPO.name && action == PermissionAction.READ.name &&
+            return resourceType == REPO.name && action == READ.name &&
                     permissionDao.listPermissionInRepo(projectId!!, repoName!!, uid, roles).isNotEmpty()
         }
     }
@@ -231,13 +236,13 @@ class PermissionHelper constructor(
         permName: String,
         actions: Set<PermissionAction>
     ): TPermission {
-        permissionDao.findOneByPermName(projectId, repoName, permName, ResourceType.REPO.name) ?: run {
+        permissionDao.findOneByPermName(projectId, repoName, permName, REPO.name) ?: run {
             val request = TPermission(
                 projectId = projectId,
                 repos = listOf(repoName),
                 permName = permName,
                 actions = actions.map { it.name },
-                resourceType = ResourceType.REPO.name,
+                resourceType = REPO.name,
                 createAt = LocalDateTime.now(),
                 updateAt = LocalDateTime.now(),
                 createBy = AUTH_ADMIN,
@@ -246,7 +251,7 @@ class PermissionHelper constructor(
             logger.info("permission not exist, create [$request]")
             permissionDao.insert(request)
         }
-        return permissionDao.findOneByPermName(projectId, repoName, permName, ResourceType.REPO.name)!!
+        return permissionDao.findOneByPermName(projectId, repoName, permName, REPO.name)!!
     }
 
     fun getNoAdminUserProject(userId: String): List<String> {
@@ -308,9 +313,7 @@ class PermissionHelper constructor(
         checkAction: String
     ): Boolean {
         patternList.forEach {
-            if (path.startsWith(it) && (actions.contains(PermissionAction.MANAGE.name)
-                        || actions.contains(checkAction))
-            ) return true
+            if (path.startsWith(it) && (actions.contains(MANAGE.name) || actions.contains(checkAction))) return true
         }
         return false
     }
@@ -330,10 +333,11 @@ class PermissionHelper constructor(
     fun updatePermissionById(id: String, key: String, value: Any): Boolean {
         return permissionDao.updateById(id, key, value)
     }
+
     fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
         with(request) {
             var roles = userRoles
-            if (resourceType != ResourceType.NODE.name) return false
+            if (resourceType != NODE.name) return false
             if (roles == null) {
                 val user = userDao.findFirstByUserId(uid) ?: run {
                     throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -365,13 +369,6 @@ class PermissionHelper constructor(
             return false
         }
         return true
-    }
-
-    fun isUserLocalAdmin(userId: String): Boolean {
-        val user = userDao.findFirstByUserId(userId) ?: run {
-            return false
-        }
-        return user.admin
     }
 
     fun isUserLocalProjectUser(userId: String, projectId: String): Boolean {

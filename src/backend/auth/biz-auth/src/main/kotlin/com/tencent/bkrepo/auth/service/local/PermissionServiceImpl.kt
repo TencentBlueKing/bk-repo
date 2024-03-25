@@ -64,6 +64,7 @@ import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -198,7 +199,7 @@ open class PermissionServiceImpl constructor(
                 val isProjectUser = isUserLocalProjectUser(uid, request.projectId!!)
                 if (permHelper.checkProjectReadAction(request, isProjectUser)) return true
                 // check node action
-                if (isNodeNeedLocalCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
+                if (needNodeCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
                     return true
                 }
             }
@@ -261,8 +262,7 @@ open class PermissionServiceImpl constructor(
         val roles = user.roles
 
         // 用户为系统管理员、项目管理员、项目用户
-        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)
-        ) {
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
             return getAllRepoByProjectId(projectId)
         }
 
@@ -294,7 +294,7 @@ open class PermissionServiceImpl constructor(
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
-        if (user.admin || isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)
+        if (user.admin || isUserLocalAdmin() || isUserLocalProjectAdmin(userId, projectId)
         ) {
             return emptyList()
         }
@@ -358,15 +358,15 @@ open class PermissionServiceImpl constructor(
         return permHelper.isUserLocalProjectUser(userId, projectId)
     }
 
-    fun isUserLocalAdmin(userId: String): Boolean {
-        return permHelper.isUserLocalAdmin(userId)
+    fun isUserLocalAdmin(): Boolean {
+        return SecurityUtils.isAdmin()
     }
 
     fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
         return permHelper.checkNodeAction(request, userRoles, isProjectUser)
     }
 
-    fun isNodeNeedLocalCheck(projectId: String, repoName: String): Boolean {
+    fun needNodeCheck(projectId: String, repoName: String): Boolean {
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
         return projectPermission.isNotEmpty()
     }
