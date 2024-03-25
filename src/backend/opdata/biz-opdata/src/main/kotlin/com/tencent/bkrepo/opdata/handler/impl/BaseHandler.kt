@@ -36,7 +36,6 @@ import com.tencent.bkrepo.opdata.constant.END_DATE
 import com.tencent.bkrepo.opdata.constant.FILTER_TYPE
 import com.tencent.bkrepo.opdata.constant.FILTER_VALUE
 import com.tencent.bkrepo.opdata.constant.START_DATE
-import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.MetricFilterInfo
 import com.tencent.bkrepo.opdata.pojo.RepoMetrics
@@ -44,6 +43,7 @@ import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.FilterType
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
+import com.tencent.bkrepo.opdata.util.StatDateUtil
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -60,9 +60,7 @@ import java.time.format.DateTimeFormatter
  *       "active": true"  true表示活跃项目、false 表示非活跃项目、 null表示所有项目
  *       }
  */
-open class BaseHandler(
-    private val statDateModel: StatDateModel
-) {
+open class BaseHandler {
 
     fun calculateMetricValue(target: Target): Map<String, Long> {
         val metricFilterInfo = getMetricFilterInfo(target)
@@ -161,13 +159,13 @@ open class BaseHandler(
         val active = reqData?.get(ACTIVE)?.toString()?.toBoolean()
 
         val endDate = if (endDateStr.isNullOrEmpty()) {
-            statDateModel.getStatDate()
+            StatDateUtil.getStatDate()
         } else {
             LocalDate.parse(endDateStr, DateTimeFormatter.ISO_DATE).atStartOfDay()
         }
         val startDate = if (startDateStr.isNullOrEmpty()) {
             val minusDays = duration ?: 1
-            statDateModel.getStatDate().minusDays(minusDays).toLocalDate().atStartOfDay()
+            StatDateUtil.getStatDate().minusDays(minusDays).toLocalDate().atStartOfDay()
         } else {
             LocalDate.parse(startDateStr, DateTimeFormatter.ISO_DATE).atStartOfDay()
         }

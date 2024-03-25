@@ -25,19 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.model
+package com.tencent.bkrepo.opdata.util
 
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-@Service
-class StatDateModel @Autowired constructor(
-) {
+object StatDateUtil {
     fun getStatDate(): LocalDateTime {
         return LocalDate.now().atStartOfDay()
     }
-
 }

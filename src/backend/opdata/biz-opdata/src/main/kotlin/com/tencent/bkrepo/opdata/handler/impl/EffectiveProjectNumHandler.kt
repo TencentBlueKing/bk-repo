@@ -34,12 +34,12 @@ package com.tencent.bkrepo.opdata.handler.impl
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NUM
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
+import com.tencent.bkrepo.opdata.util.StatDateUtil
 import org.springframework.stereotype.Component
 import java.time.format.DateTimeFormatter
 
@@ -47,15 +47,13 @@ import java.time.format.DateTimeFormatter
  * 有效项目数（有归档）统计
  */
 @Component
-class EffectiveProjectNumHandler(
-    private val statDateModel: StatDateModel
-) : QueryHandler {
+class EffectiveProjectNumHandler : QueryHandler {
 
     override val metric: Metrics get() = Metrics.EFFECTIVEPROJECTNUM
 
     override fun handle(target: Target, result: MutableList<Any>) {
         val projects = MetricsCacheUtil.getProjectMetrics(
-            statDateModel.getStatDate().format(DateTimeFormatter.ISO_DATE_TIME)
+            StatDateUtil.getStatDate().format(DateTimeFormatter.ISO_DATE_TIME)
         )
         val count = projects.filter { it.capSize > 0 }.size.toLong()
         val columns = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
