@@ -33,9 +33,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class ArtifactCleanupJobProperties(
     override var enabled: Boolean = false,
     // 如配置项目，则不清理该项目下的仓库
-    var projectList: List<String> = listOf(),
+    var projectList: List<String> = mutableListOf(),
     // 如配置仓库，则不清理改清理该仓库下的仓库
-    var repoList: List<String> = listOf(),
+    var repoList: List<String> = mutableListOf(),
     // 微服务调用超时后等待时间， 防止并发过大导致db压力过大
     var sleepSeconds: Long = 20,
     override var cron: String = "0 0 0 * * ?"
