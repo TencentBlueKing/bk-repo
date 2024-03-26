@@ -118,6 +118,10 @@ class DevopsPermissionServiceImpl constructor(
         return super.listNoPermissionPath(userId, projectId, repoName)
     }
 
+    override fun getPathCheckConfig(): Boolean {
+        return devopsAuthConfig.enablePathCheck
+    }
+
     private fun parsePipelineId(path: String): String? {
         val roads = PathUtils.normalizeFullPath(path).split("/")
         return if (roads.size < 2 || roads[1].isBlank()) {

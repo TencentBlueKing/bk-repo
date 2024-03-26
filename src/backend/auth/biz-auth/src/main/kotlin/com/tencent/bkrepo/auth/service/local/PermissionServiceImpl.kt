@@ -350,6 +350,10 @@ open class PermissionServiceImpl constructor(
                 && permHelper.updatePermissionById(request.permissionId, TPermission::roles.name, request.roles)
     }
 
+    override fun getPathCheckConfig(): Boolean {
+        return true
+    }
+
     fun isUserLocalProjectAdmin(userId: String, projectId: String?): Boolean {
         return permHelper.isUserLocalProjectAdmin(userId, projectId)
     }
