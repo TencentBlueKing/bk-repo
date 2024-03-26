@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.interceptor
 
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_AVAILABLE
 import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_EXT_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_INFO_PREFIX
@@ -291,6 +292,7 @@ class AuthInterceptor(
         )
 
         private val anonymousAccessApiSet = setOf(
+            AUTH_API_PERMISSION_AVAILABLE,
             AUTH_CLUSTER_PERMISSION_CHECK_PREFIX,
             AUTH_CLUSTER_TOKEN_INFO_PREFIX,
             AUTH_CLUSTER_TOKEN_DELETE_PREFIX,
