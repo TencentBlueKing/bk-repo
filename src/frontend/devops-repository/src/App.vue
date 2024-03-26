@@ -25,7 +25,7 @@
         created () {
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
-
+            this.getPermissionDialogConfig()
             if (this.ciMode) {
                 this.loadDevopsUtils('/ui/devops-utils.js')
                 // 请求管理员信息
@@ -90,7 +90,8 @@
                 'getProjectList',
                 'ajaxUserInfo',
                 'getRepoUserList',
-                'getClusterList'
+                'getClusterList',
+                'getPermissionDialogConfig'
             ])
         }
     }

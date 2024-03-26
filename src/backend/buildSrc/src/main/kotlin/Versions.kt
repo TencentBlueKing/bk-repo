@@ -67,4 +67,5 @@ object Versions {
     const val CryptoJavaSdk = "1.1.0"
     const val IamJavaSdk = "1.0.30-SNAPSHOT"
     const val Dom4j = "2.1.0"
+    const val TiKa = "2.9.1"
 }

@@ -58,7 +58,12 @@ open class NodeStatsSupport(
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
 
-    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean, before: LocalDateTime): NodeSizeInfo {
+    override fun computeSize(
+        artifact: ArtifactInfo,
+        estimated: Boolean,
+        before: LocalDateTime,
+        cleanUp: Boolean
+    ): NodeSizeInfo {
         val projectId = artifact.projectId
         val repoName = artifact.repoName
         val fullPath = artifact.getArtifactFullPath()
@@ -72,13 +77,21 @@ open class NodeStatsSupport(
             return computeEstimatedSize(node)
         }
         val listOption = NodeListOption(includeFolder = true, deep = true)
+        val timeCriteria = if (cleanUp) {
+            Criteria().orOperator(
+                Criteria().and(TNode::lastAccessDate).lt(before).and(TNode::lastModifiedDate).lt(before),
+                Criteria().and(TNode::lastAccessDate).`is`(null).and(TNode::lastModifiedDate).lt(before),
+            )
+        } else {
+            Criteria().and(TNode::lastModifiedDate).lt(before)
+        }
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, node.fullPath, listOption)
-            .and(TNode::lastModifiedDate).lt(before)
+            .andOperator(timeCriteria)
         val count = nodeDao.count(Query(criteria))
         val listOptionWithOutFolder = NodeListOption(includeFolder = false, deep = true)
         val criteriaWithOutFolder = NodeQueryHelper.nodeListCriteria(
             projectId, repoName, node.fullPath, listOptionWithOutFolder
-        ).and(TNode::lastModifiedDate).lt(before)
+        ).andOperator(timeCriteria)
         val countWithOutFolder = nodeDao.count(Query(criteriaWithOutFolder))
         val size = aggregateComputeSize(criteriaWithOutFolder)
         nodeDao.setSizeAndNodeNumOfFolder(

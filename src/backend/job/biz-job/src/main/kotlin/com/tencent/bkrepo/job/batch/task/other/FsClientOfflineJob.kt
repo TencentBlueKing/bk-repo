@@ -55,6 +55,22 @@ class FsClientOfflineJob(
         val update = Update.update(Client::online.name, false)
 
         while (true) {
+            val clients = mongoTemplate.find(query, ClientDetail::class.java,COLLECTION)
+            for (client in clients) {
+                val dailyClientDetail = DailyClientDetail(
+                    projectId = client.projectId,
+                    repoName = client.repoName,
+                    mountPoint = client.mountPoint,
+                    userId = client.userId,
+                    ip = client.ip,
+                    version = client.version,
+                    os = client.os,
+                    arch = client.arch,
+                    action = "finish",
+                    time = LocalDateTime.now()
+                )
+                mongoTemplate.insert(dailyClientDetail, DAILY_COLLECTION)
+            }
             val result = mongoTemplate.updateMulti(query, update, COLLECTION)
             logger.info("${result.modifiedCount} client(s) change to offline")
             jobContext.total.addAndGet(result.matchedCount)
@@ -70,8 +86,35 @@ class FsClientOfflineJob(
         val heartbeatTime: LocalDateTime
     )
 
+    data class ClientDetail(
+        val projectId: String,
+        val repoName: String,
+        val mountPoint: String,
+        val userId: String,
+        val ip: String,
+        val version: String,
+        val os: String,
+        val arch: String,
+        val online: Boolean,
+        val heartbeatTime: LocalDateTime
+    )
+
+    data class DailyClientDetail(
+        val projectId: String,
+        val repoName: String,
+        val mountPoint: String,
+        val userId: String,
+        val ip: String,
+        val version: String,
+        val os: String,
+        val arch: String,
+        val action: String,
+        val time: LocalDateTime
+    )
+
     companion object {
         private val logger = LoggerFactory.getLogger(FsClientOfflineJob::class.java)
         private const val COLLECTION = "client"
+        private const val DAILY_COLLECTION = "daily_client"
     }
 }

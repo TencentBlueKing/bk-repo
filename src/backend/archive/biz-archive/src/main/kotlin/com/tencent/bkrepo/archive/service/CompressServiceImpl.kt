@@ -4,7 +4,7 @@ import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.constant.ArchiveMessageCode
 import com.tencent.bkrepo.archive.constant.MAX_CHAIN_LENGTH
-import com.tencent.bkrepo.archive.job.compress.BDZipManager
+import com.tencent.bkrepo.archive.core.FileEntityEvent
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.pojo.CompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
@@ -15,13 +15,12 @@ import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.archive.request.UpdateCompressFileStatusRequest
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Sinks
 import java.time.LocalDateTime
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 压缩服务实现类
@@ -31,14 +30,7 @@ class CompressServiceImpl(
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
     private val fileReferenceClient: FileReferenceClient,
-    private val bdZipManager: BDZipManager,
 ) : CompressService {
-
-    private val compressSink = Sinks.many().unicast().onBackpressureBuffer<TCompressFile>()
-    private val uncompressSink = Sinks.many().unicast().onBackpressureBuffer<TCompressFile>()
-    private val compressDisposable = compressSink.asFlux().subscribe(bdZipManager::compress)
-    private val uncompressDisposable = uncompressSink.asFlux().subscribe(bdZipManager::uncompress)
-    private var shutdown = AtomicBoolean(false)
 
     override fun compress(request: CompressFileRequest) {
         with(request) {
@@ -108,7 +100,7 @@ class CompressServiceImpl(
             )
             compressFileRepository.save(compressFile)
             fileReferenceClient.increment(baseSha256, storageCredentialsKey)
-            compress(compressFile)
+            SpringContextUtils.publishEvent(FileEntityEvent(sha256, compressFile))
             logger.info("Compress file [$sha256] on $storageCredentialsKey.")
         }
     }
@@ -122,7 +114,7 @@ class CompressServiceImpl(
                 file.lastModifiedBy = operator
                 file.lastModifiedDate = LocalDateTime.now()
                 compressFileRepository.save(file)
-                uncompress(file)
+                SpringContextUtils.publishEvent(FileEntityEvent(sha256, file))
                 logger.info("Uncompress file [$sha256] on $storageCredentialsKey.")
             }
         }
@@ -173,11 +165,8 @@ class CompressServiceImpl(
             val oldStatus = file.status
             file.status = status
             compressFileRepository.save(file)
-            if (status == CompressStatus.CREATED) {
-                compress(file)
-            }
-            if (status == CompressStatus.WAIT_TO_UNCOMPRESS) {
-                uncompress(file)
+            if (status == CompressStatus.CREATED || status == CompressStatus.WAIT_TO_UNCOMPRESS) {
+                SpringContextUtils.publishEvent(FileEntityEvent(file.sha256, file))
             }
             logger.info("Update file $sha256 status $oldStatus -> $status.")
         }
@@ -201,26 +190,6 @@ class CompressServiceImpl(
                 uncompressedSize = uncompressedSize,
                 storageCredentialsKey = storageCredentialsKey,
             )
-        }
-    }
-
-    override fun compress(file: TCompressFile) {
-        val result = compressSink.tryEmitNext(file)
-        logger.info("Emit file ${file.sha256} to compress: $result")
-    }
-
-    override fun uncompress(file: TCompressFile) {
-        val result = uncompressSink.tryEmitNext(file)
-        logger.info("Emit file ${file.sha256} to uncompress: $result")
-    }
-
-    override fun cancel() {
-        if (shutdown.compareAndSet(false, true)) {
-            compressDisposable?.dispose()
-            uncompressDisposable?.dispose()
-            logger.info("Shutdown compress service successful.")
-        } else {
-            logger.info("Compress service has been shutdown.")
         }
     }
 

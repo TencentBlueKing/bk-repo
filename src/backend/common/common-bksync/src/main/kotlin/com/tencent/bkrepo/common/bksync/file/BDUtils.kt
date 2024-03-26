@@ -134,7 +134,10 @@ object BDUtils {
                     val bksync = BkSync()
                     bksync.calculateMd5 = true
                     val result = bksync.merge(dest, deltaInput, srcChannel)
-                    check(result.md5 == bdSource.getSrcMd5()) { "File [${bdSource.src}] failed verification" }
+                    check(result.md5 == bdSource.getSrcMd5()) {
+                        "File [${bdSource.src}] verify failed," +
+                            "require md5 ${bdSource.getSrcMd5()},but get ${result.md5}"
+                    }
                 }
             }
             return srcFile

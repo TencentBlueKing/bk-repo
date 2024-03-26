@@ -51,4 +51,9 @@ open class BatchJobProperties(
      * 停止任务超时时间，查过该时间，则会强制停止任务
      * */
     var stopTimeout: Long = 30000,
+
+    /**
+     * 任务分布式锁名
+     */
+    var lockName: String? = null,
 )

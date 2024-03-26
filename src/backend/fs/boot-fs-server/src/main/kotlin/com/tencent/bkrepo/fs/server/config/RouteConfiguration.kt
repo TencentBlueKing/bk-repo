@@ -119,6 +119,7 @@ class RouteConfiguration(
 
         "/service/client".nest {
             GET("/list", clientHandler::listClients)
+            GET("/daily/list", clientHandler::listDailyClients)
         }
 
         accept(APPLICATION_OCTET_STREAM).nest {
