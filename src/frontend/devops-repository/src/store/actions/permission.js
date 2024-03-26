@@ -302,5 +302,11 @@ export default {
                 }
             }
         )
+    },
+    // 获取权限dialog是否限制
+    getPermissionDialogConfig ({ commit }) {
+        return Vue.prototype.$ajax.get(`${authPrefix}/permission/permission/available`).then(res => {
+            commit('SET_REPO_PERMISSION_LIMIT', res)
+        })
     }
 }
