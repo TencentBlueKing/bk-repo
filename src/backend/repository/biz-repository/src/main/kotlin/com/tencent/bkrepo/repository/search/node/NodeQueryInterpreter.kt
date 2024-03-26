@@ -51,7 +51,8 @@ class NodeQueryInterpreter @Autowired @Lazy constructor(
     private val permissionManager: PermissionManager,
     private val repoNameRuleInterceptor: RepoNameRuleInterceptor,
     private val repoTypeRuleInterceptor: RepoTypeRuleInterceptor,
-    private val localDatetimeRuleInterceptor: LocalDatetimeRuleInterceptor
+    private val localDatetimeRuleInterceptor: LocalDatetimeRuleInterceptor,
+    private val metadataRuleInterceptor: MetadataRuleInterceptor
 ) : CommonQueryInterpreter(permissionManager) {
 
     @PostConstruct
@@ -60,7 +61,7 @@ class NodeQueryInterpreter @Autowired @Lazy constructor(
         addModelInterceptor(SelectFieldInterceptor())
         addRuleInterceptor(repoTypeRuleInterceptor)
         addRuleInterceptor(repoNameRuleInterceptor)
-        addRuleInterceptor(MetadataRuleInterceptor())
+        addRuleInterceptor(metadataRuleInterceptor)
         addRuleInterceptor(localDatetimeRuleInterceptor)
     }
 

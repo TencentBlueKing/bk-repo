@@ -51,6 +51,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.search.common.LocalDatetimeRuleInterceptor
+import com.tencent.bkrepo.repository.search.common.MetadataRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
@@ -82,7 +83,8 @@ import java.time.format.DateTimeFormatter
     NodeQueryInterpreter::class,
     RepoNameRuleInterceptor::class,
     RepoTypeRuleInterceptor::class,
-    LocalDatetimeRuleInterceptor::class
+    LocalDatetimeRuleInterceptor::class,
+    MetadataRuleInterceptor::class
 )
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class NodeSearchServiceTest @Autowired constructor(
