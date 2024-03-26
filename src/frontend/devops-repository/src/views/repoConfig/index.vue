@@ -239,9 +239,7 @@
                     return ['generic'].includes(this.repoType)
                         && (this.userInfo.admin || this.userInfo.manage)
                 } else {
-                    return ['generic'].includes(this.repoType)
-                        && (this.userInfo.admin || this.userInfo.manage)
-                        && !(['pipeline', 'custom'].includes(this.repoName))
+                    return false
                 }
             },
             repoAddress () {

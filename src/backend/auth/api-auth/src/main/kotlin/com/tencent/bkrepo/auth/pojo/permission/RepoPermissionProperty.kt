@@ -34,6 +34,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("permission.display")
 data class RepoPermissionProperty(
-    // 默认权限配置限制custom和pipeline（false），放开为true
+    // 默认权限配置不显示，放开为true
     var enable: Boolean = false
 )
