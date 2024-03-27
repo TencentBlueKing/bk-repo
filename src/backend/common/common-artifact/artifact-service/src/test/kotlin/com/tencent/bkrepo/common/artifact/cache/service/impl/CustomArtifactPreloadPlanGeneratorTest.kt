@@ -32,8 +32,6 @@ import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.pojo.PreloadStrategyType
-import com.tencent.bkrepo.common.artifact.cache.service.impl.CustomArtifactPreloadPlanGenerator
-import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
