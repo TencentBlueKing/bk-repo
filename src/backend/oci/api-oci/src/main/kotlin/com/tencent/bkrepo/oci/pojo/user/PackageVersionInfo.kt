@@ -40,6 +40,8 @@ data class PackageVersionInfo(
     @ApiModelProperty("基础信息")
     val basic: BasicInfo,
     @ApiModelProperty("元数据信息")
-    val metadata: List<MetadataModel>
+    val metadata: List<MetadataModel>,
+    @ApiModelProperty("history")
+    val history: List<Any>
 )
 

@@ -73,9 +73,13 @@ class OciBlobServiceImpl(
 
     override fun startUploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
         with(artifactInfo) {
-            logger.info("Handling bolb upload request $artifactInfo in ${getRepoIdentify()} .")
+            logger.info(
+                "Handling bolb upload request ${artifactInfo.digest}|${artifactInfo.uuid}|" +
+                    "${artifactInfo.mount}|${artifactInfo.from} in ${getRepoIdentify()}."
+            )
             if (digest.isNullOrBlank()) {
                 logger.info("Will use post then put to upload blob...")
+                // docker manifest mount upload blob
                 obtainSessionIdForUpload(artifactInfo)
             } else {
                 logger.info("Will use single post to upload blob...")
