@@ -35,12 +35,10 @@ import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
-import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
-import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.StatJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.springframework.data.mongodb.core.BulkOperations
@@ -59,17 +57,6 @@ open class NodeFolderStatJob(
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
 ): StatBaseJob(mongoTemplate, properties) {
-
-    override fun doStart0(jobContext: JobContext) {
-        logger.info("start to do folder stat job for active projects")
-        require(jobContext is NodeFolderJobContext)
-        jobContext.activeProjects.forEach {
-            val collectionName = COLLECTION_NODE_PREFIX +
-                MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-            queryNodes(projectId = it, collection = collectionName, context = jobContext)
-        }
-        logger.info("folder stat job for active projects finished")
-    }
 
     override fun runRow(row: Node, context: JobContext) {
         require(context is NodeFolderJobContext)

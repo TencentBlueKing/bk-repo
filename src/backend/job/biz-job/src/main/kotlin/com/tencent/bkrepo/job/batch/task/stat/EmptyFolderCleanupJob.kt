@@ -41,12 +41,10 @@ import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
-import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
-import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.StatJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
@@ -69,20 +67,6 @@ open class EmptyFolderCleanupJob(
     private val properties: StatJobProperties,
     private val activeProjectService: ActiveProjectService,
 ): StatBaseJob(mongoTemplate, properties) {
-
-    override fun doStart0(jobContext: JobContext) {
-        logger.info("start to do empty folder cleanup job for active projects")
-        require(jobContext is EmptyFolderCleanupJobContext)
-        jobContext.activeProjects.forEach {
-            val collectionName = COLLECTION_NODE_PREFIX +
-                MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-            queryNodes(projectId = it, collection = collectionName, context = jobContext)
-        }
-        logger.info("empty folder cleanup job for active projects finished")
-    }
-
-
-
 
     override fun runRow(row: Node, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
