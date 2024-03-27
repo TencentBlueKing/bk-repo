@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.artifact.cache.UT_USER
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.PreloadStrategyType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -101,6 +102,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         assertEquals(UT_PROJECT_ID, plan.projectId)
         assertEquals(UT_REPO_NAME, plan.repoName)
         assertEquals(UT_SHA256, plan.sha256)
+        assertEquals(ArtifactPreloadPlan.STATUS_PENDING, plan.status)
         resetMock()
     }
 

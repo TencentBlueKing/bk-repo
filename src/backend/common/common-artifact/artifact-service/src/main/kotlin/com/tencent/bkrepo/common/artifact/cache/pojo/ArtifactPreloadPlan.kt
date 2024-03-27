@@ -36,6 +36,7 @@ import java.time.LocalDateTime
 data class ArtifactPreloadPlan(
     val id: String? = null,
     val createdDate: LocalDateTime,
+    val lastModifiedDate: LocalDateTime,
     @ApiModelProperty("所属策略ID，仅用于记录执行计划来源")
     val strategyId: String? = null,
     @ApiModelProperty("所属项目ID，仅用于记录执行计划来源")
@@ -49,31 +50,39 @@ data class ArtifactPreloadPlan(
     @ApiModelProperty("待加载制品所在存储，为null时表示默认存储")
     val credentialsKey: String? = null,
     @ApiModelProperty("预加载计划执行毫秒时间戳")
-    val executeTime: Long
+    val executeTime: Long,
+    @ApiModelProperty("预加载计划执行状态")
+    val status: String = STATUS_PENDING
 ) {
     fun toPo() = TArtifactPreloadPlan(
         id = id,
         createdDate = createdDate,
+        lastModifiedDate = lastModifiedDate,
         strategyId = strategyId,
         projectId = projectId,
         repoName = repoName,
         fullPath = fullPath,
         sha256 = sha256,
         credentialsKey = credentialsKey,
-        executeTime = executeTime
+        executeTime = executeTime,
+        status = status,
     )
 
     companion object {
+        const val STATUS_PENDING = "PENDING"
+        const val STATUS_EXECUTING = "EXECUTING"
         fun TArtifactPreloadPlan.toDto() = ArtifactPreloadPlan(
             id = id,
             createdDate = createdDate,
+            lastModifiedDate = lastModifiedDate,
             strategyId = strategyId,
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
             sha256 = sha256,
             credentialsKey = credentialsKey,
-            executeTime = executeTime
+            executeTime = executeTime,
+            status = status
         )
     }
 }

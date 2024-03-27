@@ -51,6 +51,7 @@ class CustomArtifactPreloadPlanGenerator : ArtifactPreloadPlanGenerator {
             return ArtifactPreloadPlan(
                 id = null,
                 createdDate = now,
+                lastModifiedDate = now,
                 strategyId = param.strategy.id!!,
                 projectId = projectId,
                 repoName = repoName,

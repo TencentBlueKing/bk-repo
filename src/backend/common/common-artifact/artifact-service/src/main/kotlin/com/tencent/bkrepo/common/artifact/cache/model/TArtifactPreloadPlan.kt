@@ -37,12 +37,13 @@ import java.time.LocalDateTime
  */
 @Document("artifact_preload_plan")
 @CompoundIndexes(
-    CompoundIndex(name = "executeTime_idx", def = "{'executeTime': 1}", background = true),
+    CompoundIndex(name = "status_executeTime_idx", def = "{'status': 1, 'executeTime': 1}", background = true),
     CompoundIndex(name = "projectId_repoName_idx", def = "{'projectId': 1, 'repoName': 1}", background = true)
 )
 data class TArtifactPreloadPlan(
     val id: String? = null,
     val createdDate: LocalDateTime,
+    val lastModifiedDate: LocalDateTime,
     /**
      * 所属策略ID，仅用于记录执行计划来源
      */
@@ -70,5 +71,9 @@ data class TArtifactPreloadPlan(
     /**
      * 预加载计划执行毫秒时间戳
      */
-    val executeTime: Long
+    val executeTime: Long,
+    /**
+     * 计划执行状态
+     */
+    val status: String,
 )
