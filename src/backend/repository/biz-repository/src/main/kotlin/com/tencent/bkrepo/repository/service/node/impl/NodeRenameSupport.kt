@@ -73,6 +73,7 @@ open class NodeRenameSupport(
         val repoName = node.repoName
         val newPath = PathUtils.resolveParent(newFullPath)
         val newName = PathUtils.resolveName(newFullPath)
+        var modifiedCount = 0L
 
         // 检查新路径是否被占用
         if (nodeDao.exists(projectId, repoName, newFullPath)) {
@@ -93,12 +94,17 @@ open class NodeRenameSupport(
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, node.fullPath, listOption)
             nodeDao.find(query).forEach { doRename(it, newParentPath + it.name, operator) }
             // 删除自己
-            nodeDao.remove(NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath))
+            modifiedCount = nodeDao.remove(NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)).deletedCount
         } else {
             // 修改自己
             val selfQuery = NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = NodeQueryHelper.nodePathUpdate(newPath, newName, operator)
-            nodeDao.updateFirst(selfQuery, selfUpdate)
+            modifiedCount = nodeDao.updateFirst(selfQuery, selfUpdate).modifiedCount
+        }
+        if (modifiedCount == 1L) {
+            // 更新父目录的最后修改信息
+            val parentFullPath = PathUtils.toFullPath(PathUtils.resolveParent(node.fullPath))
+            nodeBaseService.updateModifiedInfo(projectId, repoName, parentFullPath, operator)
         }
     }
 

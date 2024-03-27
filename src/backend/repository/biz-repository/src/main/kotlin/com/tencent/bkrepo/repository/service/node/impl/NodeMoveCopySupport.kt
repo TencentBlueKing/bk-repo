@@ -105,6 +105,8 @@ open class NodeMoveCopySupport(
                 moveCopyFile(this)
             }
             if (move) {
+                val srcParentFullPath = PathUtils.toFullPath(resolveParent(srcNode.fullPath))
+                nodeBaseService.updateModifiedInfo(srcRepo.projectId, srcRepo.name, srcParentFullPath, operator)
                 publishEvent(NodeEventFactory.buildMovedEvent(request))
             } else {
                 publishEvent(NodeEventFactory.buildCopiedEvent(request))
@@ -322,6 +324,8 @@ open class NodeMoveCopySupport(
                 val name = srcNode.name
                 // 操作节点
                 doMoveCopy(this, srcNode, path, name)
+                // 更新dst目录的修改信息
+                nodeBaseService.updateModifiedInfo(dstProjectId, dstRepoName, dstNode.fullPath, operator)
                 PathUtils.combinePath(path, name)
             }
             val srcRootNodePath = toPath(srcNode.fullPath)
