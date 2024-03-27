@@ -27,10 +27,15 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
+import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.InactiveProjectEmptyFolderCleanupJobProperties
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 
 
@@ -41,14 +46,25 @@ import org.springframework.stereotype.Component
 @EnableConfigurationProperties(InactiveProjectEmptyFolderCleanupJobProperties::class)
 class InactiveProjectEmptyFolderCleanupJob(
     private val properties: InactiveProjectEmptyFolderCleanupJobProperties,
-    private val activeProjectService: ActiveProjectService
-): EmptyFolderCleanupJob(properties, activeProjectService) {
+    private val activeProjectService: ActiveProjectService,
+    private val mongoTemplate: MongoTemplate,
+): EmptyFolderCleanupJob(mongoTemplate, properties, activeProjectService) {
 
-    override fun statProjectCheck(
-        projectId: String,
-        context: EmptyFolderCleanupJobContext
-    ): Boolean {
-        if (!context.activeProjects.contains(projectId)) return true
-        return false
+    override fun doStart0(jobContext: JobContext) {
+        logger.info("start to do empty folder cleanup job for inactive projects")
+        require(jobContext is EmptyFolderCleanupJobContext)
+        findInactiveProjects {
+            if (!jobContext.activeProjects.contains(it))  {
+                val collectionName = COLLECTION_NODE_PREFIX +
+                    MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
+                queryNodes(projectId = it, collection = collectionName, context = jobContext)
+            }
+        }
+        logger.info("empty folder cleanup job for inactive projects finished")
+    }
+
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(InactiveProjectEmptyFolderCleanupJob::class.java)
     }
 }

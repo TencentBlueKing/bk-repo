@@ -43,80 +43,56 @@ import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
-import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
+import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
-import com.tencent.bkrepo.job.config.properties.ProjectEmptyFolderCleanupJobProperties
+import com.tencent.bkrepo.job.config.properties.StatJobProperties
+import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
-import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDateTime
-import kotlin.reflect.KClass
 
 
 /**
  * 空目录清理job
  */
 open class EmptyFolderCleanupJob(
-    private val properties: ProjectEmptyFolderCleanupJobProperties,
+    private val mongoTemplate: MongoTemplate,
+    private val properties: StatJobProperties,
     private val activeProjectService: ActiveProjectService,
-): DefaultContextMongoDbJob<EmptyFolderCleanupJob.Node>(properties) {
+): StatBaseJob(mongoTemplate, properties) {
 
-    override fun collectionNames(): List<String> {
-        return (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.toList()
-    }
-
-    override fun buildQuery(): Query = Query(Criteria.where(DELETED_DATE).`is`(null))
-
-    override fun mapToEntity(row: Map<String, Any?>): Node {
-        return Node(row)
-    }
-
-    override fun entityClass(): KClass<Node> {
-        return Node::class
-    }
-
-    open fun statProjectCheck(
-        projectId: String,
-        context: EmptyFolderCleanupJobContext
-    ): Boolean = true
-
-    // 特殊仓库每周统计一次
-    private fun specialRepoRunCheck(): Boolean {
-        val runDay = if (properties.specialDay < 1 || properties.specialDay > 7) {
-            6
-        } else {
-            properties.specialDay
+    override fun doStart0(jobContext: JobContext) {
+        logger.info("start to do empty folder cleanup job for active projects")
+        require(jobContext is EmptyFolderCleanupJobContext)
+        jobContext.activeProjects.forEach {
+            val collectionName = COLLECTION_NODE_PREFIX +
+                MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
+            queryNodes(projectId = it, collection = collectionName, context = jobContext)
         }
-        return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
+        logger.info("empty folder cleanup job for active projects finished")
     }
 
-    private fun isSpecialRepo(repoName: String): Boolean {
-        return properties.specialRepos.contains(repoName)
-    }
 
-    override fun run(row: Node, collectionName: String, context: JobContext) {
+
+
+    override fun runRow(row: Node, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
-        if (!statProjectCheck(row.projectId, context)) return
-        if (isSpecialRepo(row.repoName) && !specialRepoRunCheck()) {
-            return
-        }
-
         // 暂时只清理generic类型仓库下的空目录
         if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
                 row.projectId, row.repoName
             ).type != RepositoryType.GENERIC) return
         if (row.folder) {
             val folderKey = FolderUtils.buildCacheKey(
-                collectionName = collectionName, projectId = row.projectId,
-                repoName = row.repoName, fullPath = row.fullPath
+                projectId = row.projectId, repoName = row.repoName, fullPath = row.fullPath
             )
             val folderMetric = context.folders.getOrPut(folderKey) {
                 EmptyFolderCleanupJobContext.FolderMetricsInfo(id = row.id)
@@ -128,8 +104,7 @@ open class EmptyFolderCleanupJob(
                 if (folder == PathUtils.ROOT) continue
                 val tempFullPath = PathUtils.toFullPath(folder)
                 val folderKey = FolderUtils.buildCacheKey(
-                    collectionName = collectionName, projectId = row.projectId,
-                    repoName = row.repoName, fullPath = tempFullPath
+                    projectId = row.projectId, repoName = row.repoName, fullPath = tempFullPath
                 )
 
                 val folderMetric = context.folders.getOrPut(folderKey) {
@@ -152,38 +127,39 @@ open class EmptyFolderCleanupJob(
         )
     }
 
-
-
-    override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
+    override fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
-        super.onRunCollectionFinished(collectionName, context)
-        deleteEmptyFolders(collectionName, context)
-    }
-
-
-    private fun deleteEmptyFolders(
-        collectionName: String,
-        context: EmptyFolderCleanupJobContext
-    ) {
-        logger.info("will filter empty folder in table $collectionName")
+        logger.info("will filter empty folder in project $projectId")
         if (context.folders.isEmpty()) return
-        val prefix = FolderUtils.buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
         for(entry in context.folders) {
-            if (!entry.key.startsWith(prefix) || entry.value.nodeNum.toLong() > 0) continue
-            val folderInfo = FolderUtils.extractFolderInfoFromCacheKey(entry.key) ?: continue
+            if (entry.value.nodeNum.toLong() > 0) continue
+            val folderInfo = extractFolderInfoFromCacheKey(entry.key) ?: continue
             if (emptyFolderDoubleCheck(
                     projectId = folderInfo.projectId,
                     repoName = folderInfo.repoName,
                     path = folderInfo.fullPath,
-                    collectionName = collectionName
+                    collectionName = collection
                 )) {
                 logger.info("will delete empty folder ${folderInfo.fullPath}" +
                                 " in repo ${folderInfo.projectId}|${folderInfo.repoName}")
-                doEmptyFolderDelete(entry.value.id, collectionName)
+                doEmptyFolderDelete(entry.value.id, collection)
                 context.totalDeletedNum.increment()
             }
         }
-        clearCollectionContextCache(collectionName, context)
+        context.folders.clear()
+    }
+
+    private fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
+        val values = key.split(StringPool.COLON)
+        return try {
+            FolderInfo(
+                projectId = values[0],
+                repoName = values[1],
+                fullPath = values[2]
+            )
+        } catch (e: Exception) {
+            null
+        }
     }
 
     /**
@@ -227,45 +203,9 @@ open class EmptyFolderCleanupJob(
         mongoTemplate.updateFirst(query, update, collectionName)
     }
 
-    /**
-     * 清除collection在context中对应的缓存记录
-     */
-    private fun clearCollectionContextCache(
-        collectionName: String,
-        context: EmptyFolderCleanupJobContext
-    ) {
-        val prefix = FolderUtils.buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
-        for(entry in context.folders) {
-            if (entry.key.contains(prefix))
-                context.folders.remove(entry.key)
-        }
-    }
-
-
-    data class Node(
-        val id: String,
-        val projectId: String,
-        val repoName: String,
-        val folder: Boolean,
-        val fullPath: String,
-        val deleted: String? = null
-    ) {
-        constructor(map: Map<String, Any?>) : this(
-            map[Node::id.name].toString(),
-            map[Node::projectId.name].toString(),
-            map[Node::repoName.name].toString(),
-            map[Node::folder.name] as Boolean,
-            map[Node::fullPath.name].toString(),
-            map[Node::deleted.name]?.toString(),
-            )
-    }
-
-
-
     companion object {
         private val logger = LoggerFactory.getLogger(EmptyFolderCleanupJob::class.java)
-        const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
-        private const val COLLECTION_NAME_PREFIX = "node_"
         private val TARGET_REPO_LIST = listOf(REPORT, LOG, PIPELINE, CUSTOM, "remote-mirrors")
+        const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
     }
 }

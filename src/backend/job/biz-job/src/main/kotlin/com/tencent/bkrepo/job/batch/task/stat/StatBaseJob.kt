@@ -35,8 +35,9 @@ import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import com.tencent.bkrepo.job.config.properties.StatJobProperties
 import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
@@ -49,22 +50,19 @@ import kotlin.system.measureNanoTime
 
 open class StatBaseJob(
     private val mongoTemplate: MongoTemplate,
-    private val properties: MongodbJobProperties,
+    private val properties: StatJobProperties,
 ): DefaultContextJob(properties) {
 
     fun queryNodes(
         projectId: String,
         collection: String,
         context: JobContext,
-        runAllRepo: Boolean,
-        specialRepos: List<String>,
-        batchSize: Int
     ){
         measureNanoTime {
             val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(DELETED_DATE).isEqualTo(null)
-            if (!runAllRepo && !specialRepoRunCheck() && specialRepos.isNotEmpty()) {
-                criteria.andOperator(Criteria().and(REPO).nin(specialRepos))
+            if (!properties.runAllRepo && !specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
+                criteria.andOperator(Criteria().and(REPO).nin(properties.specialRepos))
             }
             val query = Query.query(criteria)
             var querySize: Int
@@ -72,9 +70,9 @@ open class StatBaseJob(
             do {
                 val newQuery = Query.of(query)
                     .addCriteria(Criteria.where(ID).gt(lastId))
-                    .limit(batchSize)
+                    .limit(properties.batchSize)
                     .with(Sort.by(ID).ascending())
-                val data = mongoTemplate.find<ActiveProjectEmptyFolderCleanupJob.Node>(
+                val data = mongoTemplate.find<Node>(
                     newQuery,
                     collection,
                 )
@@ -84,15 +82,17 @@ open class StatBaseJob(
                 data.forEach { runRow(it, context) }
                 querySize = data.size
                 lastId = data.last().id as ObjectId
-            } while (querySize == batchSize)
+            } while (querySize == properties.batchSize)
         }.apply {
             val elapsedTime = HumanReadable.time(this)
-            deleteEmptyFolders(collection, projectId, context)
+            onRunProjectFinished(collection, projectId, context)
             logger.info("project $projectId run completed, elapse $elapsedTime")
         }
     }
 
+    open fun runRow(row: Node, context: JobContext) {}
 
+    open fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {}
 
     // 特殊仓库每周统计一次
     private fun specialRepoRunCheck(): Boolean {
@@ -105,7 +105,73 @@ open class StatBaseJob(
     }
 
     override fun doStart0(jobContext: JobContext) {
-        TODO("Not yet implemented")
     }
 
+
+    fun findInactiveProjects(action: (String) -> Unit) {
+        val query = Query()
+        var querySize: Int
+        var lastId = ObjectId(MIN_OBJECT_ID)
+        do {
+            val newQuery = Query.of(query)
+                .addCriteria(Criteria.where(ID).gt(lastId))
+                .limit(properties.batchSize)
+                .with(Sort.by(ID).ascending())
+            val data = mongoTemplate.find<ProjectInfo>(newQuery, COLLECTION_PROJECT_NAME)
+            if (data.isEmpty()) {
+                break
+            }
+            data.forEach {
+                action(it.name)
+            }
+            querySize = data.size
+            lastId = data.last().id as ObjectId
+        } while (querySize == properties.batchSize)
+    }
+
+    data class ProjectInfo(
+        val id: String,
+        val name: String
+    )
+
+    data class Node(private val map: Map<String, Any?>) {
+        // 需要通过@JvmField注解将Kotlin backing-field直接作为Java field使用，MongoDbBatchJob中才能解析出需要查询的字段
+        @JvmField
+        val id: String
+
+        @JvmField
+        val folder: Boolean
+
+        @JvmField
+        val path: String
+
+        @JvmField
+        val fullPath: String
+
+        @JvmField
+        val size: Long
+
+        @JvmField
+        val projectId: String
+
+        @JvmField
+        val repoName: String
+
+        init {
+            id = map[Node::id.name] as String
+            folder = map[Node::folder.name] as Boolean
+            path = map[Node::path.name] as String
+            fullPath = map[Node::fullPath.name] as String
+            size = map[Node::size.name].toString().toLong()
+            projectId = map[Node::projectId.name] as String
+            repoName = map[Node::repoName.name] as String
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(StatBaseJob::class.java)
+        const val COLLECTION_NODE_PREFIX = "node_"
+        private const val COLLECTION_PROJECT_NAME = "project"
+
+    }
 }

@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.job.batch.task.stat
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.NAME
@@ -44,7 +46,10 @@ import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -91,27 +96,48 @@ open class ProjectRepoMetricsStatJob(
             )
             val nodeCollectionName = COLLECTION_NODE_PREFIX +
                 MongoShardingUtils.shardingSequence(projectId, SHARDING_COUNT)
-            val nodes = mongoTemplate.find(query, Node::class.java, nodeCollectionName)
-            if (nodes.isEmpty()) return
-            nodes.forEach {
-                val key = FolderUtils.buildCacheKey(collectionName = nodeCollectionName, projectId = projectId)
-                val metric = context.metrics.getOrPut(key) {
-                    ProjectRepoMetricsStatJobContext.ProjectMetrics(projectId)
+            var querySize: Int
+            var lastId = ObjectId(MIN_OBJECT_ID)
+            do {
+                val newQuery = Query.of(query)
+                    .addCriteria(Criteria.where(ID).gt(lastId))
+                    .limit(SIZE)
+                    .with(Sort.by(ID).ascending())
+                val data = mongoTemplate.find<Node>(newQuery, nodeCollectionName)
+                if (data.isEmpty()) {
+                    break
                 }
-                if (!it.folder) {
-                    metric.nodeNum.increment()
-                } else {
-                    val nodeNum = it.nodeNum ?: 0
-                    metric.nodeNum.add(nodeNum)
+                data.forEach {
+                    runRepoMetrics(nodeCollectionName, context, row, it)
                 }
-                metric.capSize.add(it.size)
-                metric.addRepoMetrics(row = it, credentialsKey = credentialsKey, repoType = type)
-            }
+                querySize = data.size
+                lastId = data.last().id as ObjectId
+            } while (querySize == SIZE)
         }
     }
 
+    private fun runRepoMetrics(
+        nodeCollectionName: String,
+        context: ProjectRepoMetricsStatJobContext,
+        repo: Repository,
+        node: Node,
+    ) {
+        val key = FolderUtils.buildCacheKey(collectionName = nodeCollectionName, projectId = repo.projectId)
+        val metric = context.metrics.getOrPut(key) {
+            ProjectRepoMetricsStatJobContext.ProjectMetrics(repo.projectId)
+        }
+        if (!node.folder) {
+            metric.nodeNum.increment()
+        } else {
+            val nodeNum = node.nodeNum ?: 0
+            metric.nodeNum.add(nodeNum)
+        }
+        metric.capSize.add(node.size)
+        metric.addRepoMetrics(row = node, credentialsKey = repo.credentialsKey, repoType = repo.type)
+    }
+
     override fun getLockAtMostFor(): Duration {
-        return Duration.ofDays(7)
+        return Duration.ofDays(1)
     }
 
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
@@ -177,6 +203,7 @@ open class ProjectRepoMetricsStatJob(
     }
 
     data class Node(
+        val id: String,
         val projectId: String,
         val repoName: String,
         val folder: Boolean,
@@ -185,6 +212,7 @@ open class ProjectRepoMetricsStatJob(
         val nodeNum: Long? = null
     ) {
         constructor(map: Map<String, Any?>) : this(
+            map[Node::id.name].toString(),
             map[Node::projectId.name].toString(),
             map[Node::repoName.name].toString(),
             map[Node::folder.name] as Boolean,
@@ -201,5 +229,6 @@ open class ProjectRepoMetricsStatJob(
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
         private const val COLLECTION_NAME_PROJECT = "project"
+        private const val SIZE = 10000
     }
 }
