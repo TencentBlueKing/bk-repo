@@ -38,6 +38,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class ArtifactPreloadStrategyDao : SimpleMongoDao<TArtifactPreloadStrategy>() {
@@ -47,6 +48,8 @@ class ArtifactPreloadStrategyDao : SimpleMongoDao<TArtifactPreloadStrategy>() {
                 .and(ID).isEqualTo(id)
                 .and(TArtifactPreloadStrategy::type.name).ne(PreloadStrategyType.INTELLIGENT.name)
             val update = Update()
+            update.set(TArtifactPreloadStrategy::lastModifiedBy.name, operator)
+            update.set(TArtifactPreloadStrategy::lastModifiedDate.name, LocalDateTime.now())
             fullPathRegex?.let { update.set(TArtifactPreloadStrategy::fullPathRegex.name, it) }
             recentSeconds?.let { update.set(TArtifactPreloadStrategy::recentSeconds.name, it) }
             preloadCron?.let { update.set(TArtifactPreloadStrategy::preloadCron.name, it) }

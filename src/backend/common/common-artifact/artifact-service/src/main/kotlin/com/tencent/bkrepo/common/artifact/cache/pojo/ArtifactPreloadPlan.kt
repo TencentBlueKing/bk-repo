@@ -28,38 +28,27 @@
 package com.tencent.bkrepo.common.artifact.cache.pojo
 
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadPlan
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
 
+@ApiModel("预加载执行计划")
 data class ArtifactPreloadPlan(
     val id: String? = null,
     val createdDate: LocalDateTime,
-    /**
-     * 所属策略ID，仅用于记录执行计划来源
-     */
+    @ApiModelProperty("所属策略ID，仅用于记录执行计划来源")
     val strategyId: String? = null,
-    /**
-     * 所属项目ID，仅用于记录执行计划来源
-     */
+    @ApiModelProperty("所属项目ID，仅用于记录执行计划来源")
     val projectId: String? = null,
-    /**
-     * 所属仓库，仅用于记录执行计划来源
-     */
+    @ApiModelProperty("所属仓库，仅用于记录执行计划来源")
     val repoName: String? = null,
-    /**
-     * 待加载制品的完整路径，仅用于记录执行计划来源
-     */
+    @ApiModelProperty("待加载制品的完整路径，仅用于记录执行计划来源")
     val fullPath: String? = null,
-    /**
-     * 待加载制品sha256
-     */
+    @ApiModelProperty("待加载制品sha256")
     val sha256: String,
-    /**
-     * 待加载制品所在存储，为null时表示默认存储
-     */
+    @ApiModelProperty("待加载制品所在存储，为null时表示默认存储")
     val credentialsKey: String? = null,
-    /**
-     * 预加载计划执行毫秒时间戳
-     */
+    @ApiModelProperty("预加载计划执行毫秒时间戳")
     val executeTime: Long
 ) {
     fun toPo() = TArtifactPreloadPlan(

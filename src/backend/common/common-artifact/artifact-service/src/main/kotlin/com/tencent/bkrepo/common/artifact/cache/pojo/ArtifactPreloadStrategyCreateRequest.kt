@@ -44,7 +44,7 @@ data class ArtifactPreloadStrategyCreateRequest(
     @ApiModelProperty("预加载执行时间")
     val preloadCron: String,
     @ApiModelProperty("策略类型")
-    val type: String,
+    val type: String = PreloadStrategyType.CUSTOM.name,
     @ApiModelProperty("操作人")
     val operator: String = SYSTEM_USER,
 )

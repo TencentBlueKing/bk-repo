@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.cache.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadPlan
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.data.domain.PageRequest
@@ -37,8 +38,19 @@ import org.springframework.stereotype.Repository
 @Repository
 class ArtifactPreloadPlanDao : SimpleMongoDao<TArtifactPreloadPlan>() {
     fun page(projectId: String, repoName: String, request: PageRequest): List<TArtifactPreloadPlan> {
-        val criteria = TArtifactPreloadPlan::projectId.isEqualTo(projectId)
-            .and(TArtifactPreloadPlan::repoName.name).isEqualTo(repoName)
+        val criteria = buildCriteria(projectId, repoName)
         return find(Query(criteria).with(request))
     }
+
+    fun remove(projectId: String, repoName: String, id: String): DeleteResult {
+        return remove(Query(buildCriteria(projectId, repoName).and(ID).isEqualTo(id)))
+    }
+
+    fun remove(projectId: String, repoName: String): DeleteResult {
+        return remove(Query(buildCriteria(projectId, repoName)))
+    }
+
+    private fun buildCriteria(projectId: String, repoName: String) =
+        TArtifactPreloadPlan::projectId.isEqualTo(projectId)
+            .and(TArtifactPreloadPlan::repoName.name).isEqualTo(repoName)
 }

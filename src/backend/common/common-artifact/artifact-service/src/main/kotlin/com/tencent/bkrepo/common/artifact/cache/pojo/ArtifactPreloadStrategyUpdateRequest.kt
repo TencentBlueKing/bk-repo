@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.cache.pojo
 
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -44,4 +45,6 @@ data class ArtifactPreloadStrategyUpdateRequest(
     val recentSeconds: Long? = null,
     @ApiModelProperty("预加载执行时间")
     val preloadCron: String? = null,
+    @ApiModelProperty("操作人")
+    val operator: String = SYSTEM_USER,
 )

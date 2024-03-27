@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.storage.core.cache.indexer
 
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
+import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer.Companion.MAX_EVICT_COUNT
 import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.UpdatableEldestRemovedListener
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -182,7 +183,6 @@ open class StorageCacheIndexerManager(
     }
 
     companion object {
-        private const val SHA256_STR_LENGTH = 64
         private val logger = LoggerFactory.getLogger(StorageCacheIndexerManager::class.java)
     }
 }

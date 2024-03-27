@@ -41,6 +41,23 @@ interface ArtifactPreloadPlanService {
     fun createPlan(credentialsKey: String?, sha256: String)
 
     /**
+     * 删除指定预加载计划
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param id 计划ID
+     */
+    fun deletePlan(projectId: String, repoName: String, id: String)
+
+    /**
+     * 删除指定项目仓库的所有预加载计划
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     */
+    fun deletePlan(projectId: String, repoName: String)
+
+    /**
      * 分页获取预加载计划
      *
      * @param projectId 项目ID

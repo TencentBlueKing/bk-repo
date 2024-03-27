@@ -29,6 +29,8 @@ package com.tencent.bkrepo.common.artifact.cache.service.impl
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
@@ -98,6 +100,16 @@ class ArtifactPreloadPlanServiceImpl(
         if (plans.isNotEmpty()) {
             preloadPlanDao.insert(plans.map { it.toPo() })
         }
+    }
+
+    override fun deletePlan(projectId: String, repoName: String, id: String) {
+        if (preloadPlanDao.remove(projectId, repoName, id).deletedCount == 0L) {
+            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
+        }
+    }
+
+    override fun deletePlan(projectId: String, repoName: String) {
+        preloadPlanDao.remove(projectId, repoName)
     }
 
     override fun plans(projectId: String, repoName: String, pageRequest: PageRequest): Page<ArtifactPreloadPlan> {
