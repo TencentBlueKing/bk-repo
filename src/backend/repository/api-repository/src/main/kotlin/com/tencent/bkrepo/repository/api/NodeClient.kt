@@ -252,7 +252,7 @@ interface NodeClient {
     @PutMapping("/uncompress/")
     fun uncompressedNode(@RequestBody nodeUnCompressedRequest: NodeUnCompressedRequest): Response<Void>
 
-    @ApiOperation("清理最后修改时间早于{date}的文件节点")
+    @ApiOperation("清理最后访问时间早于{date}的文件节点")
     @DeleteMapping("/clean")
     fun cleanNodes(@RequestBody nodeCleanRequest: NodeCleanRequest): Response<NodeDeleteResult>
 

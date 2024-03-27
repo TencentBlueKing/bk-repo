@@ -31,6 +31,7 @@ import com.google.common.hash.BloomFilter
 import com.google.common.hash.Funnels
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
 import com.tencent.bkrepo.common.mongo.constant.ID
@@ -53,6 +54,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
@@ -97,7 +99,16 @@ class FileReferenceCleanupJob(
     }
 
     override fun buildQuery(): Query {
-        return Query(Criteria.where(COUNT).isEqualTo(0))
+        val ignores: MutableSet<String?> = properties.ignoredStorageCredentialsKeys.toMutableSet()
+        if (ignores.contains(DEFAULT_KEY)) {
+            ignores.remove(DEFAULT_KEY)
+            ignores.add(null)
+        }
+        // 可能存在历史脏数据引用数为负数，此处需要查询<=0的数据
+        return Query(
+            Criteria.where(COUNT).lte(0)
+                .and(CREDENTIALS).not().inValues(ignores),
+        )
     }
 
     override fun run(row: FileReferenceData, collectionName: String, context: FileJobContext) {
@@ -141,7 +152,7 @@ class FileReferenceCleanupJob(
     private fun correctRefCount(sha256: String, credentialsKey: String?, collectionName: String) {
         val criteria = Criteria.where(SHA256).isEqualTo(sha256)
             .and(CREDENTIALS).isEqualTo(credentialsKey)
-            .and(COUNT).isEqualTo(0)
+            .and(COUNT).lte(0)
         val query = Query.query(criteria)
         val update = Update().set(COUNT, 1L)
         val result = mongoTemplate.updateFirst(query, update, collectionName)

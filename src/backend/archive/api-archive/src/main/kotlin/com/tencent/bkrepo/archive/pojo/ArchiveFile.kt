@@ -11,5 +11,6 @@ data class ArchiveFile(
     val sha256: String,
     val size: Long,
     val storageCredentialsKey: String?,
+    val archiver: String,
     var status: ArchiveStatus,
 )

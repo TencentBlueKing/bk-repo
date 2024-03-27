@@ -209,6 +209,9 @@
       <el-form-item v-if="credential.cache.enabled" label="缓存时间(秒)" prop="cache.expireDuration">
         <el-input-number v-model="credential.cache.expireDuration" controls-position="right" :min="0" />
       </el-form-item>
+      <el-form-item v-if="credential.cache.enabled" label="最大缓存大小(Byte)" prop="cache.maxSize">
+        <el-input-number v-model="credential.cache.maxSize" controls-position="right" :min="0" />
+      </el-form-item>
     </el-form>
     <div slot="footer">
       <el-button @click="close">取 消</el-button>

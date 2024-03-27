@@ -38,6 +38,11 @@
           <span>{{ formatSeconds(scope.row.cache.expireDuration) }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="最大缓存大小" width="180">
+        <template v-if="scope.row.cache.enabled" slot-scope="scope">
+          <span>{{ maxSize(scope.row.cache.maxSize) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column
         label="优先读缓存"
         width="180"
@@ -82,6 +87,7 @@
 <script>
 import { credentials, defaultCredential, deleteCredential } from '@/api/storage'
 import CreateOrUpdateCredentialDialog from '@/views/storage/components/CreateOrUpdateCredentialDialog'
+import { convertFileSize } from '@/utils/file'
 
 export default {
   name: 'Credential',
@@ -150,6 +156,9 @@ export default {
     },
     expireDays(expireDays) {
       return parseInt(expireDays) <= 0 ? '永久' : expireDays
+    },
+    maxSize(maxSize) {
+      return maxSize <= 0 ? '无限制' : convertFileSize(maxSize)
     },
     formatSeconds(seconds) {
       if (seconds <= 0) {
