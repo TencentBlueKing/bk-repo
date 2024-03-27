@@ -21,6 +21,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -66,6 +67,11 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         createStrategy()
     }
 
+    @BeforeEach
+    fun beforeEach() {
+        resetMock()
+    }
+
     @Test
     fun testCreatePlan() {
         // test repo credentials not match
@@ -103,7 +109,27 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         assertEquals(UT_REPO_NAME, plan.repoName)
         assertEquals(UT_SHA256, plan.sha256)
         assertEquals(ArtifactPreloadPlan.STATUS_PENDING, plan.status)
-        resetMock()
+    }
+
+    @Test
+    fun testDeletePlan() {
+        // delete by id
+        preloadPlanService.deletePlan(UT_PROJECT_ID, UT_REPO_NAME)
+        preloadPlanService.createPlan(null, UT_SHA256)
+        var plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
+        assertEquals(1, plans.size)
+        preloadPlanService.deletePlan(UT_PROJECT_ID, UT_REPO_NAME, plans[0].id!!)
+        plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
+        assertEquals(0, plans.size)
+
+        // delete all
+        preloadPlanService.createPlan(null, UT_SHA256)
+        preloadPlanService.createPlan(null, UT_SHA256)
+        plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
+        assertEquals(2, plans.size)
+        preloadPlanService.deletePlan(UT_PROJECT_ID, UT_REPO_NAME)
+        plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
+        assertEquals(0, plans.size)
     }
 
     @Test
@@ -120,7 +146,6 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
             )
         )
         assertThrows<RuntimeException> { preloadPlanService.createPlan(null, UT_SHA256) }
-        resetMock()
     }
 
     private fun resetMock(projectId: String = UT_PROJECT_ID, repoName: String = UT_REPO_NAME) {
