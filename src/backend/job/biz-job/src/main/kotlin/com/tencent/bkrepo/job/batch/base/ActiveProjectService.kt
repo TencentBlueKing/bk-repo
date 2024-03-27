@@ -53,6 +53,9 @@ class ActiveProjectService(
 
     private var uploadActiveProjects = mutableSetOf<String>()
 
+    private var moveCopyActiveProjects = mutableSetOf<String>()
+
+
     private var activeUsers = mutableSetOf<String>()
 
     fun getActiveProjects(): MutableSet<String> {
@@ -69,6 +72,10 @@ class ActiveProjectService(
 
     fun getActiveUsers(): Set<String> {
         return activeUsers
+    }
+
+    fun getMoveCopyActiveProjects(): Set<String> {
+        return moveCopyActiveProjects
     }
 
     private fun findDistinct(field: String, criteria: Criteria): MutableSet<String> {
@@ -93,6 +100,7 @@ class ActiveProjectService(
      */
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INITIAL_DELAY, timeUnit = TimeUnit.MINUTES)
     fun refreshActiveProjects() {
+        logger.info("start to refresh active projects and users")
         val criteriaList = IGNORE_PROJECT_PREFIX_LIST.mapTo(ArrayList()) { prefix ->
             TOperateLog::projectId.not().regex("^$prefix")
         }
@@ -100,6 +108,10 @@ class ActiveProjectService(
         fun buildTypesCriteriaList(types: List<String>): List<Criteria> {
             return ArrayList(criteriaList).apply { add(TOperateLog::type.inValues(types)) }
         }
+        moveCopyActiveProjects = findDistinct(
+            TOperateLog::projectId.name,
+        Criteria().andOperator(buildTypesCriteriaList(MOVE_COPY_EVENTS))
+        )
 
         // download event
         downloadActiveProjects = findDistinct(
@@ -112,7 +124,9 @@ class ActiveProjectService(
             TOperateLog::projectId.name,
             Criteria().andOperator(buildTypesCriteriaList(UPLOAD_EVENTS))
         )
-        activeProjects = downloadActiveProjects.union(uploadActiveProjects).toMutableSet()
+
+        activeProjects = downloadActiveProjects.union(uploadActiveProjects)
+            .union(moveCopyActiveProjects).toMutableSet()
 
         // active users
         activeUsers = findDistinct(TOperateLog::userId.name, TOperateLog::userId.ne(""))
@@ -130,6 +144,9 @@ class ActiveProjectService(
         )
         private val UPLOAD_EVENTS = listOf(
             EventType.NODE_CREATED.name, EventType.VERSION_CREATED.name
+        )
+        private val MOVE_COPY_EVENTS = listOf(
+            EventType.NODE_MOVED.name, EventType.NODE_COPIED.name
         )
     }
 }
