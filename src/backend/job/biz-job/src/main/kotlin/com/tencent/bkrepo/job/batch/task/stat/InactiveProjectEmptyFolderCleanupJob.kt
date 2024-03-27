@@ -53,7 +53,7 @@ class InactiveProjectEmptyFolderCleanupJob(
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do empty folder cleanup job for inactive projects")
         require(jobContext is EmptyFolderCleanupJobContext)
-        findInactiveProjects {
+        findAllProjects {
             if (!jobContext.activeProjects.contains(it))  {
                 val collectionName = COLLECTION_NODE_PREFIX +
                     MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)

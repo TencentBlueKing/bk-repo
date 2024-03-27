@@ -52,11 +52,13 @@ class InactiveProjectNodeFolderStatJob(
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do folder stat job for inactive projects")
         require(jobContext is NodeFolderJobContext)
-        findInactiveProjects {
+        val extraCriteria = getExtraCriteria()
+        findAllProjects {
             if (!jobContext.activeProjects.contains(it))  {
                 val collectionName = COLLECTION_NODE_PREFIX +
                     MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-                queryNodes(projectId = it, collection = collectionName, context = jobContext)
+                queryNodes(projectId = it, collection = collectionName,
+                           context = jobContext, extraCriteria = extraCriteria)
             }
         }
         logger.info("folder stat job for inactive projects finished")

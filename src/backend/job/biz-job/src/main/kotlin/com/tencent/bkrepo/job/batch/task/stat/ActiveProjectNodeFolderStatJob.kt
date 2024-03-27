@@ -52,10 +52,12 @@ class ActiveProjectNodeFolderStatJob(
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do folder stat job for active projects")
         require(jobContext is NodeFolderJobContext)
+        val extraCriteria = getExtraCriteria()
         jobContext.activeProjects.forEach {
             val collectionName = COLLECTION_NODE_PREFIX +
                 MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-            queryNodes(projectId = it, collection = collectionName, context = jobContext)
+            queryNodes(projectId = it, collection = collectionName,
+                       context = jobContext, extraCriteria = extraCriteria)
         }
         logger.info("folder stat job for active projects finished")
     }

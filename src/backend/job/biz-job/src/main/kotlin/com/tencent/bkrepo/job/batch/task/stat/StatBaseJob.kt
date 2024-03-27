@@ -57,10 +57,12 @@ open class StatBaseJob(
         projectId: String,
         collection: String,
         context: JobContext,
+        extraCriteria: Criteria? = null
     ){
         measureNanoTime {
             val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(DELETED_DATE).isEqualTo(null)
+            extraCriteria?.let { criteria.andOperator(extraCriteria) }
             if (!properties.runAllRepo && !specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
                 criteria.andOperator(Criteria().and(REPO).nin(properties.specialRepos))
             }
@@ -109,7 +111,7 @@ open class StatBaseJob(
     }
 
 
-    fun findInactiveProjects(action: (String) -> Unit) {
+    fun findAllProjects(action: (String) -> Unit) {
         val query = Query()
         var querySize: Int
         var lastId = ObjectId(MIN_OBJECT_ID)

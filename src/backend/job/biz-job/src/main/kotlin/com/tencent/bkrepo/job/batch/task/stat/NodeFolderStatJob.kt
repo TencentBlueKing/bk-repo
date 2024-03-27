@@ -47,6 +47,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import java.time.Duration
 
 
 /**
@@ -57,6 +58,11 @@ open class NodeFolderStatJob(
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
 ): StatBaseJob(mongoTemplate, properties) {
+
+
+    fun getExtraCriteria(): Criteria {
+        return Criteria().and(FOLDER).`is`(false)
+    }
 
     override fun runRow(row: Node, context: JobContext) {
         require(context is NodeFolderJobContext)
@@ -107,7 +113,7 @@ open class NodeFolderStatJob(
      */
     override fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {
         require(context is NodeFolderJobContext)
-        logger.info("store memory cache to db withe projectId $projectId")
+        logger.info("store memory cache to db with projectId $projectId")
         if (context.folderCache.isEmpty()) {
             return
         }
@@ -172,6 +178,11 @@ open class NodeFolderStatJob(
         return org.springframework.data.util.Pair.of(query, update)
     }
 
+
+    /**
+     * 最长加锁时间
+     */
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     companion object {
         private val logger = LoggerHolder.jobLogger
