@@ -29,7 +29,16 @@ package com.tencent.bkrepo.common.artifact.cache.dao
 
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadPlan
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 @Repository
-class ArtifactPreloadPlanDao : SimpleMongoDao<TArtifactPreloadPlan>()
+class ArtifactPreloadPlanDao : SimpleMongoDao<TArtifactPreloadPlan>() {
+    fun page(projectId: String, repoName: String, request: PageRequest): List<TArtifactPreloadPlan> {
+        val criteria = TArtifactPreloadPlan::projectId.isEqualTo(projectId)
+            .and(TArtifactPreloadPlan::repoName.name).isEqualTo(repoName)
+        return find(Query(criteria).with(request))
+    }
+}

@@ -29,18 +29,24 @@ package com.tencent.bkrepo.common.artifact.cache.service.impl
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan.Companion.toDto
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadStrategyService
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
@@ -54,6 +60,7 @@ class ArtifactPreloadPlanServiceImpl(
     private val strategyService: ArtifactPreloadStrategyService,
     private val preloadPlanDao: ArtifactPreloadPlanDao,
     private val preloadStrategies: Map<String, ArtifactPreloadPlanGenerator>,
+    private val properties: ArtifactPreloadProperties,
 ) : ArtifactPreloadPlanService {
     private val repositoryCache = CacheBuilder.newBuilder()
         .maximumSize(10000)
@@ -61,28 +68,51 @@ class ArtifactPreloadPlanServiceImpl(
         .build(CacheLoader.from<String, RepositoryInfo> { getRepo(it) })
 
     override fun createPlan(credentialsKey: String?, sha256: String) {
+        if (!properties.enabled) {
+            return
+        }
         val option = NodeListOption(pageSize = MAX_PAGE_SIZE, includeFolder = false)
         val res = nodeClient.listPageNodeBySha256(sha256, option)
-        if (res.data?.records?.size == MAX_PAGE_SIZE) {
+        val nodes = res.data?.records ?: return
+        if (nodes.size >= MAX_PAGE_SIZE) {
             // 限制查询出来的最大node数量，避免预加载计划创建时间过久
             throw RuntimeException("exceed max page size[$MAX_PAGE_SIZE]")
         }
+        // node属于同一项目仓库的概率较大，缓存避免频繁查询策略
         val strategyCache = HashMap<String, List<ArtifactPreloadStrategy>>()
-        res.data?.records?.forEach { node ->
+        val plans = ArrayList<ArtifactPreloadPlan>()
+        // 查询node是否有匹配的策略，并根据策略生成预加载计划
+        for (node in nodes) {
             val repo = repositoryCache.get(buildRepoId(node.projectId, node.repoName))
-            if (repo.storageCredentialsKey == credentialsKey) {
-                val strategies = strategyCache.getOrPut(buildRepoId(node.projectId, node.repoName)) {
-                    strategyService.list(node.projectId, node.repoName)
-                }
-                strategies.forEach { strategy -> createPlan(strategy, node, repo.storageCredentialsKey) }
+            if (repo.storageCredentialsKey != credentialsKey) {
+                continue
             }
+            val strategies = strategyCache.getOrPut(buildRepoId(node.projectId, node.repoName)) {
+                strategyService.list(node.projectId, node.repoName)
+            }
+            strategies.forEach { strategy ->
+                matchAndBuildPlan(strategy, node, repo.storageCredentialsKey)?.let { plans.add(it) }
+            }
+        }
+        // 保存计划
+        if (plans.isNotEmpty()) {
+            preloadPlanDao.insert(plans.map { it.toPo() })
         }
     }
 
-    private fun createPlan(strategy: ArtifactPreloadStrategy, node: NodeInfo, credentialsKey: String?) {
-        if (strategy.fullPathRegex!!.toRegex().matches(node.fullPath)) {
+    override fun plans(projectId: String, repoName: String, pageRequest: PageRequest): Page<ArtifactPreloadPlan> {
+        val records = preloadPlanDao.page(projectId, repoName, pageRequest).map { it.toDto() }
+        return Pages.ofResponse(pageRequest, records.size.toLong(), records)
+    }
+
+    private fun matchAndBuildPlan(
+        strategy: ArtifactPreloadStrategy,
+        node: NodeInfo,
+        credentialsKey: String?
+    ): ArtifactPreloadPlan? {
+        if (!strategy.fullPathRegex!!.toRegex().matches(node.fullPath)) {
             logger.info("${node.projectId}/${node.repoName}${node.fullPath} not match preload strategy")
-            return
+            return null
         }
 
         // check created date
@@ -90,10 +120,10 @@ class ArtifactPreloadPlanServiceImpl(
         val now = LocalDateTime.now()
         if (Duration.between(createdDate, now).seconds > strategy.recentSeconds!!) {
             logger.info("${node.projectId}/${node.repoName}${node.fullPath} cant be preload because of duration")
-            return
+            return null
         }
 
-        val plan = preloadStrategies[strategy.type]?.let { generator ->
+        return preloadStrategies[strategy.type]?.let { generator ->
             val param = ArtifactPreloadPlanGenerateParam(
                 projectId = node.projectId,
                 repoName = node.repoName,
@@ -104,7 +134,6 @@ class ArtifactPreloadPlanServiceImpl(
             )
             generator.generate(param)
         }
-        plan?.let { preloadPlanDao.insert(it.toPo()) }
     }
 
     private fun getRepo(key: String): RepositoryInfo {

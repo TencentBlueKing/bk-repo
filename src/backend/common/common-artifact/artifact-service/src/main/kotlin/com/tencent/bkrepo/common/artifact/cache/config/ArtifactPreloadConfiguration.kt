@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.cache.config
 
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactAccessRecordDao
+import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
 import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
 import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadPlanServiceImpl
@@ -47,6 +48,7 @@ import org.springframework.context.annotation.Import
     ArtifactAccessRecorder::class,
     ArtifactPreloadStrategyDao::class,
     ArtifactPreloadStrategyServiceImpl::class,
+    ArtifactPreloadPlanDao::class,
     ArtifactPreloadPlanServiceImpl::class,
 )
 class ArtifactPreloadConfiguration {

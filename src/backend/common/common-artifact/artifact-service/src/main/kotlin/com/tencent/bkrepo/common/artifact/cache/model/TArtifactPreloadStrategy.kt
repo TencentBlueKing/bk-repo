@@ -37,11 +37,7 @@ import java.time.LocalDateTime
  */
 @Document("artifact_preload_strategy")
 @CompoundIndexes(
-    CompoundIndex(
-        name = "projectId_repoName_idx",
-        def = "{'projectId': 1, 'repoName': 1}",
-        background = true
-    )
+    CompoundIndex(name = "projectId_repoName_idx", def = "{'projectId': 1, 'repoName': 1}", background = true)
 )
 data class TArtifactPreloadStrategy(
     val id: String? = null,

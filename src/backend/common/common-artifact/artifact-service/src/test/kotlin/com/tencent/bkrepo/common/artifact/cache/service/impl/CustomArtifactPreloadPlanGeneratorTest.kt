@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service
+package com.tencent.bkrepo.common.artifact.cache.service.impl
 
 import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME

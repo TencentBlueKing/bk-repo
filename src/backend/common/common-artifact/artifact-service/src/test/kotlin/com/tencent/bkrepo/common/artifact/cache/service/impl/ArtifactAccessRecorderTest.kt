@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service
+package com.tencent.bkrepo.common.artifact.cache.service.impl
 
 import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
@@ -49,7 +49,7 @@ import org.springframework.util.unit.DataSize
 import java.time.Duration
 import java.time.LocalDateTime
 
-@DisplayName("制品访问记录器")
+@DisplayName("制品访问记录器测试")
 @DataMongoTest
 @Import(
     ArtifactAccessRecordDao::class,

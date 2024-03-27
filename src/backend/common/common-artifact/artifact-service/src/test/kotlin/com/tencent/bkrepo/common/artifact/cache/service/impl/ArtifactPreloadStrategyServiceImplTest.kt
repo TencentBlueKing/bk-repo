@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service
+package com.tencent.bkrepo.common.artifact.cache.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
@@ -58,7 +58,7 @@ import java.time.Duration
 )
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
-class ArtifactPreloadPlanGeneratorServiceImplTest @Autowired constructor(
+class ArtifactPreloadStrategyServiceImplTest @Autowired constructor(
     private val artifactPreloadStrategyService: ArtifactPreloadStrategyServiceImpl,
     private val preloadProperties: ArtifactPreloadProperties,
     private val artifactPreloadStrategyDao: ArtifactPreloadStrategyDao,

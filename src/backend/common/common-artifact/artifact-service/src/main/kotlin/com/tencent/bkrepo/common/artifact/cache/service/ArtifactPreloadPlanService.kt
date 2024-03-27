@@ -27,6 +27,10 @@
 
 package com.tencent.bkrepo.common.artifact.cache.service
 
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import org.springframework.data.domain.PageRequest
+
 interface ArtifactPreloadPlanService {
     /**
      * 根据预加载策略创建执行计划
@@ -35,4 +39,15 @@ interface ArtifactPreloadPlanService {
      * @param sha256 缓存文件sha256
      */
     fun createPlan(credentialsKey: String?, sha256: String)
+
+    /**
+     * 分页获取预加载计划
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param pageRequest 分页请求
+     *
+     * @return 预加载计划
+     */
+    fun plans(projectId: String, repoName: String, pageRequest: PageRequest): Page<ArtifactPreloadPlan>
 }

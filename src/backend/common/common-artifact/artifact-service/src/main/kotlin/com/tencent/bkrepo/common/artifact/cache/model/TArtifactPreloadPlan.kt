@@ -35,9 +35,10 @@ import java.time.LocalDateTime
 /**
  * 预加载执行计划
  */
-@Document("artifact_preload_strategy")
+@Document("artifact_preload_plan")
 @CompoundIndexes(
-    CompoundIndex(name = "executeTime_idx", def = "{'executeTime': 1}", background = true)
+    CompoundIndex(name = "executeTime_idx", def = "{'executeTime': 1}", background = true),
+    CompoundIndex(name = "projectId_repoName_idx", def = "{'projectId': 1, 'repoName': 1}", background = true)
 )
 data class TArtifactPreloadPlan(
     val id: String? = null,
