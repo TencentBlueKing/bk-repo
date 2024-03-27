@@ -24,6 +24,7 @@
     </el-form>
     <el-table
       ref="jobTable"
+      v-loading="loading"
       :data="jobs.filter(data => !search || data.name.toLowerCase().includes(search.toLowerCase()))"
       style="width: 100%; margin-top: -20px"
       :max-height="825"
@@ -125,6 +126,7 @@ export default {
   name: 'Jobs',
   data() {
     return {
+      loading: false,
       jobs: [],
       search: '',
       hiddenColumn: {
@@ -154,29 +156,35 @@ export default {
   },
   methods: {
     changeEnabled(job) {
+      this.loading = true
       update(job.name, job.enabled, job.running).then(() => {
-        this.query()
+        let jobName = 'job.'
+        if (job.name.endsWith('Job')) {
+          jobName = jobName + job.name.substr(0, job.name.length - 3)
+        } else {
+          jobName = jobName + job.name
+        }
+        const key = (job.jobConfigName !== '' ? job.jobConfigName : jobName) + '.enabled'
+        const values = [{
+          'key': key,
+          'value': job.enabled
+        }]
+        updateConfig(values, 'job').finally(() => {
+          this.loading = false
+          this.query()
+        })
       })
-      let jobName
-      if (job.name.endsWith('Job')) {
-        jobName = job.name.substr(0, job.name.length - 3)
-      } else {
-        jobName = job.name
-      }
-      const key = 'job.' + jobName + '.enabled'
-      const values = [{
-        'key': key,
-        'value': job.enabled
-      }]
-      updateConfig(values, 'job')
     },
     changeRunning(job) {
-      const message = job.running !== true ? '启动成功' : '停止成功'
-      this.$message({
-        message: message,
-        type: 'success'
-      })
+      this.loading = true
       update(job.name, job.enabled, !job.running).then(() => {
+        const message = job.running !== true ? '启动成功' : '停止成功'
+        this.$message({
+          message: message,
+          type: 'success'
+        })
+      }).finally(() => {
+        this.loading = false
         this.query()
       })
     },

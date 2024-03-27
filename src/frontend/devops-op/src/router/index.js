@@ -22,6 +22,7 @@ export const ROUTER_NAME_SHED_LOCK = 'Shedlock'
 export const ROUTER_NAME_PROJECT_METRICS = 'ProjectMetrics'
 export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
 export const ROUTER_NAME_FILE_CACHE = 'FileCache'
+export const ROUTER_NAME_FILE_SYSTEM_RECORD = 'FileSystemRecord'
 
 Vue.use(Router)
 
@@ -146,6 +147,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_FILE_SYSTEM,
         meta: { title: '客户端管理', icon: 'file' },
         component: () => import('@/views/node/FileSystem')
+      },
+      {
+        path: 'fileSystemRecord',
+        name: ROUTER_NAME_FILE_SYSTEM_RECORD,
+        meta: { title: '客户端统计', icon: 'file' },
+        component: () => import('@/views/node/FileSystemRecord')
       },
       {
         path: 'emptyFolder',

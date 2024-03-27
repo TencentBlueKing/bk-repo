@@ -102,7 +102,7 @@ class ArtifactCleanupJob(
             val config = row.configuration.readJsonString<RepositoryConfiguration>()
             val cleanupStrategyMap = config.getSetting<Map<String, Any>>(CLEAN_UP_STRATEGY) ?: return
             val cleanupStrategy = toCleanupStrategy(cleanupStrategyMap) ?: return
-            if (!filterConfig(row.projectId, cleanupStrategy)) return
+            if (filterConfig(row.projectId, row.name, cleanupStrategy)) return
             logger.info("Will clean the artifacts in repo ${row.projectId}|${row.name} " +
                             "with cleanup strategy $cleanupStrategy")
             when (row.type) {
@@ -151,10 +151,10 @@ class ArtifactCleanupJob(
         return cleanupStrategy
     }
 
-    private fun filterConfig(projectId: String, cleanupStrategy: CleanupStrategy): Boolean {
-        if (properties.projectList.isNotEmpty() && !properties.projectList.contains(projectId)) return false
-        if (properties.repoList.isNotEmpty() && !properties.repoList.contains(projectId)) return false
-        return cleanupStrategy.enable
+    private fun filterConfig(projectId: String, repoName: String, cleanupStrategy: CleanupStrategy): Boolean {
+        if (properties.projectList.isNotEmpty() && properties.projectList.contains(projectId)) return true
+        if (properties.repoList.isNotEmpty() && properties.repoList.contains(repoName)) return true
+        return !cleanupStrategy.enable
     }
 
 

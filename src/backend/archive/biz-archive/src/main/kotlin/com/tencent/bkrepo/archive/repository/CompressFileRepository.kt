@@ -8,5 +8,12 @@ import org.springframework.stereotype.Repository
 @Repository
 interface CompressFileRepository : MongoRepository<TCompressFile, String> {
     fun findBySha256AndStorageCredentialsKey(sha256: String, key: String?): TCompressFile?
+
+    fun findBySha256AndStorageCredentialsKeyAndStatusIn(
+        sha256: String,
+        key: String?,
+        statusSet: Set<CompressStatus>,
+    ): TCompressFile?
+
     fun countByStatus(status: CompressStatus): Int
 }

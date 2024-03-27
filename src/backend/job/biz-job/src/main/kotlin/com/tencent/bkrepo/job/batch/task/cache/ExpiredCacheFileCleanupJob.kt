@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.batch.task.cache
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -74,11 +75,13 @@ class ExpiredCacheFileCleanupJob(
 
     override fun doStart0(jobContext: JobContext) {
         // cleanup default storage
-        cleanupStorage(storageProperties.defaultStorageCredentials())
+        if (DEFAULT_STORAGE_KEY !in properties.ignoredStorageCredentialsKeys) {
+            cleanupStorage(storageProperties.defaultStorageCredentials())
+        }
         // cleanup extended storage
         mongoTemplate.find(Query(), TStorageCredentials::class.java, COLLECTION_NAME)
             .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }
-            .filter { it.id !in properties.ignoredStorageCredentialsKeys }
+            .filter { (it.id ?: DEFAULT_STORAGE_KEY) !in properties.ignoredStorageCredentialsKeys }
             .map { convert(it) }
             .forEach { cleanupStorage(it) }
     }

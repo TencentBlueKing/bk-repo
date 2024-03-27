@@ -35,7 +35,6 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_CAP_SIZE
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
@@ -46,8 +45,8 @@ import org.springframework.stereotype.Component
  * 项目容量统计
  */
 @Component
-class CapSizeHandler(statDateModel: StatDateModel)
-    : QueryHandler, BaseHandler(statDateModel) {
+class CapSizeHandler
+    : QueryHandler, BaseHandler() {
 
     override val metric: Metrics get() = Metrics.CAPSIZE
 

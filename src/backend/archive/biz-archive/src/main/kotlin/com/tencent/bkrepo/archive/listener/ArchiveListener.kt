@@ -52,7 +52,7 @@ class ArchiveListener(val archiveMetrics: ArchiveMetrics) {
         with(event) {
             val ratio = StringPool.calculateRatio(uncompressed, compressed)
             logger.info(
-                "Archive utils compress file $sha256,compressed:$compressed," +
+                "Archiver[$archiver] compress file $sha256,compressed:$compressed," +
                     "uncompressed:$uncompressed,ratio:$ratio, $throughput",
             )
         }

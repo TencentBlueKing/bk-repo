@@ -45,4 +45,8 @@ class FileReferenceCleanupJobProperties(
      * 是否试运行，true则表示不会进行任务数据的删除，false会进行实际删除
      * */
     var dryRun: Boolean = false,
+    /**
+     * 忽略的存储凭据，这些存储的缓存将不执行清理
+     */
+    var ignoredStorageCredentialsKeys: Set<String> = emptySet()
 ) : MongodbJobProperties()

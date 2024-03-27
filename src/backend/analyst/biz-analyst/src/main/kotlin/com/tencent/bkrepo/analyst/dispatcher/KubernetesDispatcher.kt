@@ -44,6 +44,7 @@ import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.statemachine.StateMachine
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.BatchV1Api
@@ -61,9 +62,11 @@ class KubernetesDispatcher(
     subtaskStateMachine: StateMachine,
     temporaryScanTokenService: TemporaryScanTokenService,
     executor: ThreadPoolTaskExecutor,
+    redisOperation: RedisOperation,
 ) : SubtaskPushDispatcher<KubernetesJobExecutionCluster>(
     executionCluster,
     scannerProperties,
+    redisOperation,
     scanService,
     subtaskStateMachine,
     temporaryScanTokenService,
@@ -89,10 +92,6 @@ class KubernetesDispatcher(
                     Thread.sleep(Duration.ofSeconds(MAX_RETRY_TIMES - retryTimes + 1L).toMillis())
                 }
             }
-        }
-
-        if (retryTimes == 0) {
-            logger.error("subtask[${subtask.taskId}] dispatch failed after $MAX_RETRY_TIMES times retry")
         }
 
         return result
@@ -208,11 +207,11 @@ class KubernetesDispatcher(
         // 处理job名称冲突的情况
         if (e.code == HttpStatus.CONFLICT.value) {
             val cleaned = cleanJob(jobName(subtask))
-            logger.warn("subtask[${subtask.taskId}] job already exists, cleaned[$cleaned]")
+            logger.warn("${subtask.trace()} job already exists, cleaned[$cleaned]")
             return cleaned
         }
 
-        logger.error("subtask[${subtask.taskId}] dispatch failed\n, ${e.string()}")
+        logger.error("${subtask.trace()} dispatch failed\n, ${e.string()}")
         return false
     }
 
@@ -225,7 +224,7 @@ class KubernetesDispatcher(
                 namespace,
                 null,
                 null,
-                null,
+                0,
                 null,
                 "Foreground",
                 null
