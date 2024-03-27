@@ -80,7 +80,7 @@ class DevopsPermissionServiceImpl constructor(
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         // 用户为系统管理员，或者当前项目管理员
-        if (isUserLocalAdmin() || isUserLocalProjectAdmin(userId, projectId)
+        if (isUserSystemAdmin() || isUserLocalProjectAdmin(userId, projectId)
             || isDevopsProjectMember(userId, projectId, READ.name)
         ) return getAllRepoByProjectId(projectId)
 
@@ -136,17 +136,21 @@ class DevopsPermissionServiceImpl constructor(
         with(request) {
             logger.debug("check devops permission request [$request]")
 
-            if (projectId == null) return isUserLocalAdmin()
+            if (isUserSystemAdmin()) return true
 
-            if (isUserLocalAdmin() || isUserLocalProjectAdmin(uid, projectId!!) ||
-                isDevopsProjectAdmin(uid, projectId!!)
-            ) return true
+            //user is not local admin, not in project
+            if (projectId == null) return false
+
+            if (isUserLocalProjectAdmin(uid, projectId) || isDevopsProjectAdmin(uid, projectId!!)) {
+                logger.debug("user is devops/local project admin [$uid, $projectId]")
+                return true
+            }
 
 
             // project权限
             if (resourceType == PROJECT.name) {
                 return isDevopsProjectMember(uid, projectId!!, action)
-                        || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
+                        || checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
 
             // repo或者node权限
@@ -175,6 +179,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     private fun checkDevopsCustomPermission(request: CheckPermissionRequest): Boolean {
+        logger.debug("check devops custom permission request [$request]")
         with(request) {
             if (needCheckPathPermission(resourceType, projectId!!, repoName!!)) {
                 val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action)

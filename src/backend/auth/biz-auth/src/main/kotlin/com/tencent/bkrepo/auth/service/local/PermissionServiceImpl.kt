@@ -294,8 +294,7 @@ open class PermissionServiceImpl constructor(
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
-        if (user.admin || isUserLocalAdmin() || isUserLocalProjectAdmin(userId, projectId)
-        ) {
+        if (isUserSystemAdmin() || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
         }
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
@@ -362,7 +361,7 @@ open class PermissionServiceImpl constructor(
         return permHelper.isUserLocalProjectUser(userId, projectId)
     }
 
-    fun isUserLocalAdmin(): Boolean {
+    fun isUserSystemAdmin(): Boolean {
         return SecurityUtils.isAdmin()
     }
 
