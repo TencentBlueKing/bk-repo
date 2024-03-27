@@ -69,7 +69,7 @@ open class StatBaseJob(
             var criteria = Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(DELETED_DATE).isEqualTo(null)
             extraCriteria?.let { criteria.andOperator(extraCriteria) }
-            if (!properties.runAllRepo && !specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
+            if (!properties.runAllRepo && specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
                 criteria.and(REPO).nin(properties.specialRepos)
             }
             val query = Query.query(criteria)
