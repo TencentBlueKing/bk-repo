@@ -37,4 +37,5 @@ open class StatJobProperties(
     var specialRepos: List<String> = listOf(REPORT, LOG),
     // 特殊仓库在每周第几天执行，默认周六
     var specialDay: Int = 6,
+    var concurrencyNum: Int = 1,
 ) : MongodbJobProperties()

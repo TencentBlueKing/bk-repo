@@ -38,7 +38,7 @@ import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
-import com.tencent.bkrepo.job.batch.utils.FolderUtils
+import com.tencent.bkrepo.job.batch.utils.FolderUtils.buildCacheKey
 import com.tencent.bkrepo.job.config.properties.StatJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.springframework.data.mongodb.core.BulkOperations
@@ -47,6 +47,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Duration
 
 
@@ -57,7 +58,8 @@ open class NodeFolderStatJob(
     private val properties: StatJobProperties,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
-): StatBaseJob(mongoTemplate, properties) {
+    private val executor: ThreadPoolTaskExecutor,
+    ): StatBaseJob(mongoTemplate, properties, executor) {
 
 
     fun getExtraCriteria(): Criteria {
@@ -102,7 +104,7 @@ open class NodeFolderStatJob(
         size: Long,
         context: NodeFolderJobContext
     ) {
-        val key = FolderUtils.buildCacheKey(projectId = projectId, repoName = repoName, fullPath = fullPath)
+        val key = buildCacheKey(projectId = projectId, repoName = repoName, fullPath = fullPath)
         val folderMetrics = context.folderCache.getOrPut(key) { NodeFolderJobContext.FolderMetrics() }
         folderMetrics.capSize.add(size)
         folderMetrics.nodeNum.increment()
@@ -117,9 +119,13 @@ open class NodeFolderStatJob(
         if (context.folderCache.isEmpty()) {
             return
         }
+        val prefix = buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
+        val storedKeys = mutableSetOf<String>()
         val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
         for(entry in context.folderCache) {
+            if (!entry.key.startsWith(prefix)) continue
             extractFolderInfoFromCacheKey(entry.key)?.let {
+                storedKeys.add(entry.key)
                 updateList.add(buildUpdateClausesForFolder(
                     projectId = it.projectId,
                     repoName = it.repoName,
@@ -140,7 +146,9 @@ open class NodeFolderStatJob(
             .updateOne(updateList)
             .execute()
         updateList.clear()
-        context.folderCache.clear()
+        for (key in storedKeys) {
+            context.folderCache.remove(key)
+        }
     }
 
     private fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {

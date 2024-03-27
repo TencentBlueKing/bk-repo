@@ -36,7 +36,10 @@ import com.tencent.bkrepo.job.config.properties.InactiveProjectNodeFolderStatJob
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.util.concurrent.Future
+import java.util.concurrent.Semaphore
 
 /**
  * 非活跃项目下目录大小以及文件个数统计
@@ -44,23 +47,29 @@ import org.springframework.stereotype.Component
 @Component
 @EnableConfigurationProperties(InactiveProjectNodeFolderStatJobProperties::class)
 class InactiveProjectNodeFolderStatJob(
-    properties: InactiveProjectNodeFolderStatJobProperties,
+    private val properties: InactiveProjectNodeFolderStatJobProperties,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
-    ): NodeFolderStatJob(properties, activeProjectService, mongoTemplate) {
+    private val executor: ThreadPoolTaskExecutor,
+    ): NodeFolderStatJob(properties, activeProjectService, mongoTemplate, executor) {
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do folder stat job for inactive projects")
         require(jobContext is NodeFolderJobContext)
         val extraCriteria = getExtraCriteria()
+        val semaphore = Semaphore(properties.concurrencyNum)
+        val futureList = mutableListOf<Future<Unit>>()
         findAllProjects {
             if (!jobContext.activeProjects.contains(it))  {
-                val collectionName = COLLECTION_NODE_PREFIX +
-                    MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-                queryNodes(projectId = it, collection = collectionName,
-                           context = jobContext, extraCriteria = extraCriteria)
+                executeProject(it, futureList, semaphore) {
+                    val collectionName = COLLECTION_NODE_PREFIX +
+                        MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
+                    queryNodes(projectId = it, collection = collectionName,
+                               context = jobContext, extraCriteria = extraCriteria)
+                }
             }
         }
+        futureList.forEach { it.get() }
         logger.info("folder stat job for inactive projects finished")
     }
 

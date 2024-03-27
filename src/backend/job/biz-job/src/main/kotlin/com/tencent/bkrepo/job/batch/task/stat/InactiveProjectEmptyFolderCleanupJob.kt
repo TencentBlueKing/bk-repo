@@ -36,7 +36,10 @@ import com.tencent.bkrepo.job.config.properties.InactiveProjectEmptyFolderCleanu
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.util.concurrent.Future
+import java.util.concurrent.Semaphore
 
 
 /**
@@ -48,18 +51,24 @@ class InactiveProjectEmptyFolderCleanupJob(
     private val properties: InactiveProjectEmptyFolderCleanupJobProperties,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
-): EmptyFolderCleanupJob(mongoTemplate, properties, activeProjectService) {
+    private val executor: ThreadPoolTaskExecutor,
+    ): EmptyFolderCleanupJob(mongoTemplate, properties, activeProjectService, executor) {
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do empty folder cleanup job for inactive projects")
         require(jobContext is EmptyFolderCleanupJobContext)
+        val semaphore = Semaphore(properties.concurrencyNum)
+        val futureList = mutableListOf<Future<Unit>>()
         findAllProjects {
             if (!jobContext.activeProjects.contains(it))  {
-                val collectionName = COLLECTION_NODE_PREFIX +
-                    MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-                queryNodes(projectId = it, collection = collectionName, context = jobContext)
+                executeProject(it, futureList, semaphore) {
+                    val collectionName = COLLECTION_NODE_PREFIX +
+                        MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
+                    queryNodes(projectId = it, collection = collectionName, context = jobContext)
+                }
             }
         }
+        futureList.forEach { it.get() }
         logger.info("empty folder cleanup job for inactive projects finished")
     }
 

@@ -36,7 +36,9 @@ import com.tencent.bkrepo.job.config.properties.ActiveProjectEmptyFolderCleanupJ
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.util.concurrent.Future
 
 
 /**
@@ -48,16 +50,19 @@ class ActiveProjectEmptyFolderCleanupJob(
     private val properties: ActiveProjectEmptyFolderCleanupJobProperties,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
-    ): EmptyFolderCleanupJob(mongoTemplate, properties, activeProjectService) {
+    private val executor: ThreadPoolTaskExecutor,
+    ): EmptyFolderCleanupJob(mongoTemplate, properties, activeProjectService, executor) {
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do empty folder cleanup job for active projects")
         require(jobContext is EmptyFolderCleanupJobContext)
-        jobContext.activeProjects.forEach {
+        val futureList = mutableListOf<Future<Unit>>()
+        executeStat(jobContext.activeProjects, futureList) {
             val collectionName = COLLECTION_NODE_PREFIX +
                 MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
             queryNodes(projectId = it, collection = collectionName, context = jobContext)
         }
+        futureList.forEach { it.get() }
         logger.info("empty folder cleanup job for active projects finished")
     }
 

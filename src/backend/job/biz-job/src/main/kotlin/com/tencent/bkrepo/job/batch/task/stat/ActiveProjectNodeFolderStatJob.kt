@@ -36,7 +36,9 @@ import com.tencent.bkrepo.job.config.properties.ActiveProjectNodeFolderStatJobPr
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.util.concurrent.Future
 
 /**
  * 活跃项目下目录大小以及文件个数统计
@@ -47,18 +49,21 @@ class ActiveProjectNodeFolderStatJob(
     private val properties: ActiveProjectNodeFolderStatJobProperties,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
-    ): NodeFolderStatJob(properties, activeProjectService, mongoTemplate) {
+    private val executor: ThreadPoolTaskExecutor,
+    ): NodeFolderStatJob(properties, activeProjectService, mongoTemplate, executor) {
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do folder stat job for active projects")
         require(jobContext is NodeFolderJobContext)
         val extraCriteria = getExtraCriteria()
-        jobContext.activeProjects.forEach {
+        val futureList = mutableListOf<Future<Unit>>()
+        executeStat(jobContext.activeProjects, futureList) {
             val collectionName = COLLECTION_NODE_PREFIX +
                 MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
             queryNodes(projectId = it, collection = collectionName,
                        context = jobContext, extraCriteria = extraCriteria)
         }
+        futureList.forEach { it.get() }
         logger.info("folder stat job for active projects finished")
     }
 

@@ -55,6 +55,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -66,37 +67,43 @@ open class EmptyFolderCleanupJob(
     private val mongoTemplate: MongoTemplate,
     private val properties: StatJobProperties,
     private val activeProjectService: ActiveProjectService,
-): StatBaseJob(mongoTemplate, properties) {
+    private val executor: ThreadPoolTaskExecutor,
+    ): StatBaseJob(mongoTemplate, properties, executor) {
 
     override fun runRow(row: Node, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
-        // 暂时只清理generic类型仓库下的空目录
-        if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
-                row.projectId, row.repoName
-            ).type != RepositoryType.GENERIC) return
-        if (row.folder) {
-            val folderKey = FolderUtils.buildCacheKey(
-                projectId = row.projectId, repoName = row.repoName, fullPath = row.fullPath
-            )
-            val folderMetric = context.folders.getOrPut(folderKey) {
-                EmptyFolderCleanupJobContext.FolderMetricsInfo(id = row.id)
-            }
-            folderMetric.id = row.id
-        } else {
-            val ancestorFolder = PathUtils.resolveAncestor(row.fullPath)
-            for (folder in ancestorFolder) {
-                if (folder == PathUtils.ROOT) continue
-                val tempFullPath = PathUtils.toFullPath(folder)
+        try {
+            // 暂时只清理generic类型仓库下的空目录
+            if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
+                    row.projectId, row.repoName
+                ).type != RepositoryType.GENERIC) return
+            if (row.folder) {
                 val folderKey = FolderUtils.buildCacheKey(
-                    projectId = row.projectId, repoName = row.repoName, fullPath = tempFullPath
+                    projectId = row.projectId, repoName = row.repoName, fullPath = row.fullPath
                 )
-
                 val folderMetric = context.folders.getOrPut(folderKey) {
-                    EmptyFolderCleanupJobContext.FolderMetricsInfo()
+                    EmptyFolderCleanupJobContext.FolderMetricsInfo(id = row.id)
                 }
-                folderMetric.nodeNum.increment()
+                folderMetric.id = row.id
+            } else {
+                val ancestorFolder = PathUtils.resolveAncestor(row.fullPath)
+                for (folder in ancestorFolder) {
+                    if (folder == PathUtils.ROOT) continue
+                    val tempFullPath = PathUtils.toFullPath(folder)
+                    val folderKey = FolderUtils.buildCacheKey(
+                        projectId = row.projectId, repoName = row.repoName, fullPath = tempFullPath
+                    )
+
+                    val folderMetric = context.folders.getOrPut(folderKey) {
+                        EmptyFolderCleanupJobContext.FolderMetricsInfo()
+                    }
+                    folderMetric.nodeNum.increment()
+                }
             }
+        } catch (e: Exception) {
+            logger.error("run empty folder clean for Node $row failed, ${e.message}")
         }
+
     }
 
     override fun getLockAtMostFor(): Duration {
@@ -115,8 +122,9 @@ open class EmptyFolderCleanupJob(
         require(context is EmptyFolderCleanupJobContext)
         logger.info("will filter empty folder in project $projectId")
         if (context.folders.isEmpty()) return
+        val prefix = FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
         for(entry in context.folders) {
-            if (entry.value.nodeNum.toLong() > 0) continue
+            if (!entry.key.startsWith(prefix) || entry.value.nodeNum.toLong() > 0) continue
             val folderInfo = extractFolderInfoFromCacheKey(entry.key) ?: continue
             if (emptyFolderDoubleCheck(
                     projectId = folderInfo.projectId,
@@ -130,7 +138,21 @@ open class EmptyFolderCleanupJob(
                 context.totalDeletedNum.increment()
             }
         }
-        context.folders.clear()
+        clearProjectContextCache(projectId, context)
+    }
+
+    /**
+     * 清除collection在context中对应的缓存记录
+     */
+    private fun clearProjectContextCache(
+        projectId: String,
+        context: EmptyFolderCleanupJobContext
+    ) {
+        val prefix = FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
+        for(entry in context.folders) {
+            if (entry.key.startsWith(prefix))
+                context.folders.remove(entry.key)
+        }
     }
 
     private fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {

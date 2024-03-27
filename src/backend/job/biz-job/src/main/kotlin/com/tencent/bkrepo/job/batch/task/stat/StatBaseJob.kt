@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.task.stat
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
@@ -44,14 +45,19 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.DayOfWeek
 import java.time.LocalDateTime
+import java.util.concurrent.Callable
+import java.util.concurrent.Future
+import java.util.concurrent.Semaphore
 import kotlin.system.measureNanoTime
 
 open class StatBaseJob(
     private val mongoTemplate: MongoTemplate,
     private val properties: StatJobProperties,
-): DefaultContextJob(properties) {
+    private val executor: ThreadPoolTaskExecutor,
+    ): DefaultContextJob(properties) {
 
     fun queryNodes(
         projectId: String,
@@ -60,11 +66,11 @@ open class StatBaseJob(
         extraCriteria: Criteria? = null
     ){
         measureNanoTime {
-            val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
+            var criteria = Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(DELETED_DATE).isEqualTo(null)
             extraCriteria?.let { criteria.andOperator(extraCriteria) }
             if (!properties.runAllRepo && !specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
-                criteria.andOperator(Criteria().and(REPO).nin(properties.specialRepos))
+                criteria.and(REPO).nin(properties.specialRepos)
             }
             val query = Query.query(criteria)
             var querySize: Int
@@ -110,6 +116,37 @@ open class StatBaseJob(
         throw UnsupportedOperationException()
     }
 
+    fun executeStat(
+        projectList: Set<String>,
+        futureList: MutableList<Future<Unit>>,
+        semaphore: Semaphore = Semaphore(properties.concurrencyNum),
+        action: (String) -> Unit,
+    ) {
+        projectList.forEach {
+            executeProject(projectId = it, semaphore = semaphore,
+                           futureList = futureList, action = action)
+        }
+    }
+
+    fun executeProject(
+        projectId: String,
+        futureList: MutableList<Future<Unit>>,
+        semaphore: Semaphore = Semaphore(properties.concurrencyNum),
+        action: (String) -> Unit,
+    ) {
+        semaphore.acquire()
+        futureList.add(
+            executor.submit(
+                Callable {
+                    try {
+                        action(projectId)
+                    } finally {
+                        semaphore.release()
+                    }
+                }.trace()
+            )
+        )
+    }
 
     fun findAllProjects(action: (String) -> Unit) {
         val query = Query()
