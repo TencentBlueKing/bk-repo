@@ -38,7 +38,6 @@ import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.controller.OpenResource
-import com.tencent.bkrepo.auth.pojo.permission.RepoPermissionProperty
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -59,7 +58,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping(AUTH_API_PERMISSION_PREFIX)
 class PermissionController @Autowired constructor(
     private val permissionService: PermissionService,
-    private val repoPermissionProperty: RepoPermissionProperty
 ) : OpenResource(permissionService) {
 
     @ApiOperation("创建权限")
@@ -166,6 +164,6 @@ class PermissionController @Autowired constructor(
     @ApiOperation("查询是否限制权限配置页，用于前端展示")
     @GetMapping("/permission/available")
     fun getRepoPermissionEnabled():Response<Boolean>{
-        return ResponseBuilder.success(repoPermissionProperty.enable)
+        return ResponseBuilder.success(permissionService.getPathCheckConfig())
     }
 }
