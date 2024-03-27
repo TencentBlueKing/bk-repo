@@ -81,7 +81,7 @@ open class StatBaseJob(
                 }
                 data.forEach { runRow(it, context) }
                 querySize = data.size
-                lastId = data.last().id as ObjectId
+                lastId = ObjectId(data.last().id)
             } while (querySize == properties.batchSize)
         }.apply {
             val elapsedTime = HumanReadable.time(this)
@@ -105,6 +105,7 @@ open class StatBaseJob(
     }
 
     override fun doStart0(jobContext: JobContext) {
+        throw UnsupportedOperationException()
     }
 
 
@@ -125,7 +126,7 @@ open class StatBaseJob(
                 action(it.name)
             }
             querySize = data.size
-            lastId = data.last().id as ObjectId
+            lastId = ObjectId(data.last().id)
         } while (querySize == properties.batchSize)
     }
 
@@ -133,40 +134,15 @@ open class StatBaseJob(
         val id: String,
         val name: String
     )
-
-    data class Node(private val map: Map<String, Any?>) {
-        // 需要通过@JvmField注解将Kotlin backing-field直接作为Java field使用，MongoDbBatchJob中才能解析出需要查询的字段
-        @JvmField
-        val id: String
-
-        @JvmField
-        val folder: Boolean
-
-        @JvmField
-        val path: String
-
-        @JvmField
-        val fullPath: String
-
-        @JvmField
-        val size: Long
-
-        @JvmField
-        val projectId: String
-
-        @JvmField
-        val repoName: String
-
-        init {
-            id = map[Node::id.name] as String
-            folder = map[Node::folder.name] as Boolean
-            path = map[Node::path.name] as String
-            fullPath = map[Node::fullPath.name] as String
-            size = map[Node::size.name].toString().toLong()
-            projectId = map[Node::projectId.name] as String
-            repoName = map[Node::repoName.name] as String
-        }
-    }
+    data class Node(
+        val id: String,
+        val folder: Boolean,
+        val path: String,
+        val fullPath: String,
+        val size: Long,
+        val projectId: String,
+        val repoName: String,
+    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(StatBaseJob::class.java)

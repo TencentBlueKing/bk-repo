@@ -111,7 +111,7 @@ open class ProjectRepoMetricsStatJob(
                     runRepoMetrics(nodeCollectionName, context, row, it)
                 }
                 querySize = data.size
-                lastId = data.last().id as ObjectId
+                lastId = ObjectId(data.last().id)
             } while (querySize == SIZE)
         }
     }
