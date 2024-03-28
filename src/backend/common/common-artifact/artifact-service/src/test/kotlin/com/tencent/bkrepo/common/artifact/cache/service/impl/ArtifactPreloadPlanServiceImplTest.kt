@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.UT_SHA256
 import com.tencent.bkrepo.common.artifact.cache.UT_USER
-import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadConfiguration
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
@@ -14,38 +13,38 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.core.locator.FileLocator
+import com.tencent.bkrepo.common.storage.util.existReal
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.test.context.TestPropertySource
 import org.springframework.util.unit.DataSize
 import java.time.LocalDateTime
 
 @DisplayName("预加载执行计划服务类测试")
-@DataMongoTest
-@ImportAutoConfiguration(ArtifactPreloadConfiguration::class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.properties"])
 class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
-    private val properties: ArtifactPreloadProperties,
+    properties: ArtifactPreloadProperties,
+    storageService: StorageService,
+    fileLocator: FileLocator,
+    storageProperties: StorageProperties,
     private val preloadStrategyService: ArtifactPreloadStrategyServiceImpl,
     private val preloadPlanService: ArtifactPreloadPlanServiceImpl,
-) {
+) : ArtifactPreloadBaseServiceTest(properties, storageService, fileLocator, storageProperties) {
 
     @MockBean
     lateinit var repositoryClient: RepositoryClient
@@ -142,6 +141,32 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         assertThrows<RuntimeException> { preloadPlanService.createPlan(null, UT_SHA256) }
     }
 
+    @Test
+    fun testExecutePlans() {
+        // create file
+        val artifactFile = createTempArtifactFile(1024 * 1024)
+        storageService.store(UT_SHA256, artifactFile, null)
+
+        // 删除缓存
+        val cacheFilePath = deleteCache(storageProperties.defaultStorageCredentials(), UT_SHA256)
+
+        // 创建计划，每秒执行一次预加载
+        createStrategy("0/1 * * * * ?")
+        preloadPlanService.createPlan(null, UT_SHA256)
+        // 等待到达预加载时间
+        Thread.sleep(2000L)
+
+        // 执行计划
+        preloadPlanService.executePlans()
+        // 等待异步加载完成
+        Thread.sleep(1000L)
+
+        // 确认缓存加载成功
+        Assertions.assertTrue(cacheFilePath.existReal())
+        storageService.delete(UT_SHA256, storageProperties.defaultStorageCredentials())
+        artifactFile.delete()
+    }
+
     private fun resetMock(projectId: String = UT_PROJECT_ID, repoName: String = UT_REPO_NAME) {
         whenever(repositoryClient.getRepoInfo(anyString(), anyString())).thenReturn(
             Response(0, "", buildRepo(projectId = projectId, repoName = repoName))
@@ -152,13 +177,13 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         )
     }
 
-    private fun createStrategy() {
+    private fun createStrategy(cron: String = "0 0 0 * * ?") {
         val request = ArtifactPreloadStrategyCreateRequest(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             fullPathRegex = ".*\\.txt",
             recentSeconds = 3600L,
-            preloadCron = "0 0 0 * * ?",
+            preloadCron = cron,
             type = PreloadStrategyType.CUSTOM.name
         )
         preloadStrategyService.create(request)
