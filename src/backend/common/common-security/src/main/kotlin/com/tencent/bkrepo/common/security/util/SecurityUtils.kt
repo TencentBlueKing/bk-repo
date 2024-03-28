@@ -64,6 +64,10 @@ object SecurityUtils {
      * 是否系统管理员
      */
     fun isAdmin(): Boolean {
+        val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)
+        val admin = HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER)
+        logger.info("aaaaaaaaaaaa [$userId]")
+        logger.info("bbbbbbbbbbbb [$admin]")
         return HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
     }
 
