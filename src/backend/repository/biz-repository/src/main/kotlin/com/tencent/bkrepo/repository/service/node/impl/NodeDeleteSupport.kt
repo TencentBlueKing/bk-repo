@@ -203,7 +203,13 @@ open class NodeDeleteSupport(
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }
-            deletedSize = nodeBaseService.aggregateComputeSize(criteria.and(TNode::deleted).isEqualTo(deleteTime))
+            var deletedCriteria = criteria.and(TNode::deleted).isEqualTo(deleteTime)
+            fullPaths?.let {
+                // 节点删除接口返回的数据排除目录
+                deletedCriteria = deletedCriteria.and(TNode::folder).isEqualTo(false)
+                deletedNum = nodeDao.count(Query(deletedCriteria))
+            }
+            deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
             quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             fullPaths?.forEach {
                 if (routerControllerProperties.enabled) {
