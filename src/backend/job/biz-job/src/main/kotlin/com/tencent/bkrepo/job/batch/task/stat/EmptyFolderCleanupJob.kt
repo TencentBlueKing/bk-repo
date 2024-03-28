@@ -77,33 +77,36 @@ open class EmptyFolderCleanupJob(
             if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
                     row.projectId, row.repoName
                 ).type != RepositoryType.GENERIC) return
-            if (row.folder) {
-                val folderKey = FolderUtils.buildCacheKey(
-                    projectId = row.projectId, repoName = row.repoName, fullPath = row.fullPath
-                )
-                val folderMetric = context.folders.getOrPut(folderKey) {
-                    EmptyFolderCleanupJobContext.FolderMetricsInfo(id = row.id)
-                }
-                folderMetric.id = row.id
-            } else {
-                val ancestorFolder = PathUtils.resolveAncestor(row.fullPath)
-                for (folder in ancestorFolder) {
-                    if (folder == PathUtils.ROOT) continue
-                    val tempFullPath = PathUtils.toFullPath(folder)
-                    val folderKey = FolderUtils.buildCacheKey(
-                        projectId = row.projectId, repoName = row.repoName, fullPath = tempFullPath
-                    )
-
-                    val folderMetric = context.folders.getOrPut(folderKey) {
-                        EmptyFolderCleanupJobContext.FolderMetricsInfo()
-                    }
-                    folderMetric.nodeNum.increment()
-                }
-            }
+            collectEmptyFolder(row, context)
         } catch (e: Exception) {
             logger.error("run empty folder clean for Node $row failed, ${e.message}")
         }
+    }
 
+    private fun collectEmptyFolder(row: Node, context: EmptyFolderCleanupJobContext) {
+        if (row.folder) {
+            val folderKey = FolderUtils.buildCacheKey(
+                projectId = row.projectId, repoName = row.repoName, fullPath = row.fullPath
+            )
+            val folderMetric = context.folders.getOrPut(folderKey) {
+                EmptyFolderCleanupJobContext.FolderMetricsInfo(id = row.id)
+            }
+            folderMetric.id = row.id
+        } else {
+            val ancestorFolder = PathUtils.resolveAncestor(row.fullPath)
+            for (folder in ancestorFolder) {
+                if (folder == PathUtils.ROOT) continue
+                val tempFullPath = PathUtils.toFullPath(folder)
+                val folderKey = FolderUtils.buildCacheKey(
+                    projectId = row.projectId, repoName = row.repoName, fullPath = tempFullPath
+                )
+
+                val folderMetric = context.folders.getOrPut(folderKey) {
+                    EmptyFolderCleanupJobContext.FolderMetricsInfo()
+                }
+                folderMetric.nodeNum.increment()
+            }
+        }
     }
 
     override fun getLockAtMostFor(): Duration {
