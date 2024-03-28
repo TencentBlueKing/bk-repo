@@ -205,6 +205,7 @@ open class NodeDeleteSupport(
             }
             var deletedCriteria = criteria.and(TNode::deleted).isEqualTo(deleteTime)
             fullPaths?.let {
+                // 节点删除接口返回的数据排除目录
                 deletedCriteria = deletedCriteria.and(TNode::folder).isEqualTo(false)
                 deletedNum = nodeDao.count(Query(deletedCriteria))
             }
