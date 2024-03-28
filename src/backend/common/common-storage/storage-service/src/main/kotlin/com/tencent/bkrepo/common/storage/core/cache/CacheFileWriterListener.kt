@@ -25,24 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.storage.core.cache
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import java.nio.file.Path
 
 /**
- * 文件清理事件
+ * 缓存写入过程监听器
  */
-data class FileDeletedEvent(
+interface CacheFileWriterListener {
     /**
-     * 存储凭据
+     * 缓存写入完成时回调
+     *
+     * @param sha256 缓存文件sha256
+     * @param cacheFilePath 缓存文件完整路径
      */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
-    val fullPath: String,
-)
+    fun onCacheFileWritten(sha256: String, cacheFilePath: Path)
+}

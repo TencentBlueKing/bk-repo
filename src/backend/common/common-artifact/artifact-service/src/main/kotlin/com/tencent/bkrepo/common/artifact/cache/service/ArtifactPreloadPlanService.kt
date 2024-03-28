@@ -25,24 +25,51 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.service
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import org.springframework.data.domain.PageRequest
 
-/**
- * 文件清理事件
- */
-data class FileDeletedEvent(
+interface ArtifactPreloadPlanService {
     /**
-     * 存储凭据
+     * 根据预加载策略创建执行计划
+     *
+     * @param credentialsKey 缓存文件所在存储
+     * @param sha256 缓存文件sha256
      */
-    val credentials: StorageCredentials,
+    fun createPlan(credentialsKey: String?, sha256: String)
+
     /**
-     * 正在清理的目录
+     * 删除指定预加载计划
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param id 计划ID
      */
-    val rootPath: String,
+    fun deletePlan(projectId: String, repoName: String, id: String)
+
     /**
-     * 被清理的文件完整路径
+     * 删除指定项目仓库的所有预加载计划
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
      */
-    val fullPath: String,
-)
+    fun deletePlan(projectId: String, repoName: String)
+
+    /**
+     * 执行预加载计划
+     */
+    fun executePlans()
+
+    /**
+     * 分页获取预加载计划
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param pageRequest 分页请求
+     *
+     * @return 预加载计划
+     */
+    fun plans(projectId: String, repoName: String, pageRequest: PageRequest): Page<ArtifactPreloadPlan>
+}

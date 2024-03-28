@@ -25,24 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.pojo
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 文件清理事件
- */
-data class FileDeletedEvent(
-    /**
-     * 存储凭据
-     */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
-    val fullPath: String,
+@ApiModel("预加载策略更新请求")
+data class ArtifactPreloadStrategyUpdateRequest(
+    @ApiModelProperty("策略ID")
+    val id: String,
+    @ApiModelProperty("策略所属项目")
+    val projectId: String,
+    @ApiModelProperty("策略所属仓库")
+    val repoName: String,
+    @ApiModelProperty("文件路径正则，匹配成功才会执行预加载")
+    val fullPathRegex: String? = null,
+    @ApiModelProperty("限制只对最近一段时间内创建的制品执行预加载")
+    val recentSeconds: Long? = null,
+    @ApiModelProperty("预加载执行时间")
+    val preloadCron: String? = null,
+    @ApiModelProperty("操作人")
+    val operator: String = SYSTEM_USER,
 )

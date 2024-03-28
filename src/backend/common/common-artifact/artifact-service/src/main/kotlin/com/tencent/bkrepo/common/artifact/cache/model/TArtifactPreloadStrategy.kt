@@ -25,24 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.model
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
- * 文件清理事件
+ * 制品预加载策略，用于将制品提前加载到缓存提高下载速度
  */
-data class FileDeletedEvent(
+@Document("artifact_preload_strategy")
+@CompoundIndexes(
+    CompoundIndex(name = "projectId_repoName_idx", def = "{'projectId': 1, 'repoName': 1}", background = true)
+)
+data class TArtifactPreloadStrategy(
+    val id: String? = null,
+    val createdBy: String,
+    val createdDate: LocalDateTime,
+    val lastModifiedBy: String,
+    val lastModifiedDate: LocalDateTime,
+
     /**
-     * 存储凭据
+     * 策略所属项目
      */
-    val credentials: StorageCredentials,
+    val projectId: String,
     /**
-     * 正在清理的目录
+     * 策略所属仓库
      */
-    val rootPath: String,
+    val repoName: String,
     /**
-     * 被清理的文件完整路径
+     * 文件路径正则，匹配成功才会执行预加载
      */
-    val fullPath: String,
+    val fullPathRegex: String? = null,
+    /**
+     * 限制只对最近一段时间内创建的制品执行预加载
+     */
+    val recentSeconds: Long? = null,
+    /**
+     * 预加载执行时间
+     */
+    val preloadCron: String? = null,
+    /**
+     * 策略类型
+     */
+    val type: String,
 )

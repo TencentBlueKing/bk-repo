@@ -25,24 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.storage.core.cache
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.CacheFileLoadedEvent
+import org.springframework.context.ApplicationEventPublisher
+import java.nio.file.Path
 
 /**
- * 文件清理事件
+ * 用于发布缓存文件加载完成事件
  */
-data class FileDeletedEvent(
-    /**
-     * 存储凭据
-     */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
-    val fullPath: String,
-)
+class CacheFileLoadedEventPublisher(
+    private val publisher: ApplicationEventPublisher,
+    private val credentials: StorageCredentials,
+) : CacheFileWriterListener {
+    override fun onCacheFileWritten(sha256: String, cacheFilePath: Path) {
+        publisher.publishEvent(CacheFileLoadedEvent(credentials, sha256, cacheFilePath.toString()))
+    }
+}

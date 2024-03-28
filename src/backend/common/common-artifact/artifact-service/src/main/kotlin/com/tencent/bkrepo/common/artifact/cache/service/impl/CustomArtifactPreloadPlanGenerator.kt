@@ -25,24 +25,42 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.service.impl
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
+import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
+import org.springframework.scheduling.support.CronExpression
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
- * 文件清理事件
+ * 用户自定义加载策略
  */
-data class FileDeletedEvent(
-    /**
-     * 存储凭据
-     */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
-    val fullPath: String,
-)
+class CustomArtifactPreloadPlanGenerator : ArtifactPreloadPlanGenerator {
+    override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
+        val now = LocalDateTime.now()
+        val executeTime = CronExpression
+            .parse(param.strategy.preloadCron!!)
+            .next(now)
+            ?.atZone(ZoneId.systemDefault())
+            ?.toInstant()
+            ?.toEpochMilli()
+            ?: return null
+        with(param) {
+            return ArtifactPreloadPlan(
+                id = null,
+                createdDate = now,
+                lastModifiedDate = now,
+                strategyId = param.strategy.id!!,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                sha256 = sha256,
+                size = size,
+                credentialsKey = credentialsKey,
+                executeTime = executeTime
+            )
+        }
+    }
+}

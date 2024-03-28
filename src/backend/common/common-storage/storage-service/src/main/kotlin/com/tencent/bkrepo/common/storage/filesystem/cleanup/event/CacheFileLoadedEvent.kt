@@ -30,19 +30,19 @@ package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
 /**
- * 文件清理事件
+ * 制品被加载到存储缓存后发出事件
  */
-data class FileDeletedEvent(
+data class CacheFileLoadedEvent(
     /**
      * 存储凭据
      */
-    val credentials: StorageCredentials,
+    val credentials: StorageCredentials?,
     /**
-     * 正在清理的目录
+     * 被清理文件的sha256
      */
-    val rootPath: String,
+    val sha256: String,
     /**
-     * 被清理的文件完整路径
+     * 缓存文件完整路径
      */
     val fullPath: String,
 )

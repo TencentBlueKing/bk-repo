@@ -25,24 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.config
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
+import java.time.Duration
 
 /**
- * 文件清理事件
+ * 缓存预加载配置
  */
-data class FileDeletedEvent(
+@ConfigurationProperties("artifact.cache.preload")
+data class ArtifactPreloadProperties(
+    var enabled: Boolean = false,
     /**
-     * 存储凭据
+     * 制品访问时间间隔，只有距离上次访问超过这个间隔时才会记录
      */
-    val credentials: StorageCredentials,
+    var minAccessInterval: Duration = Duration.ofMinutes(30L),
     /**
-     * 正在清理的目录
+     * 仅记录未命中缓存的记录
      */
-    val rootPath: String,
+    var onlyRecordCacheMiss: Boolean = true,
     /**
-     * 被清理的文件完整路径
+     * 只记录大小大于该值的文件
      */
-    val fullPath: String,
+    var minSize: DataSize = DataSize.ofGigabytes(1L),
+    /**
+     * 单仓库最多创建的预加载策略数量，策略数量过多可能会导致生成预加载执行计划过慢
+     */
+    var maxStrategyCount: Int = 10,
+    /**
+     * 不允许预加载存在时间超超过这个值的制品，避免配置错误导致大量无用旧制品被加载到缓存中
+     */
+    var maxArtifactExistsDuration: Duration = Duration.ofDays(7L),
+    /**
+     * 允许同时预加载的制品个数
+     */
+    var preloadConcurrency: Int = 8,
 )

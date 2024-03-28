@@ -25,24 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.service.impl
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan.Companion.STATUS_EXECUTING
+import com.tencent.bkrepo.common.artifact.cache.service.PreloadListener
 
-/**
- * 文件清理事件
- */
-data class FileDeletedEvent(
-    /**
-     * 存储凭据
-     */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
-    val fullPath: String,
-)
+class DefaultPreloadListener(private val preloadPlanDao: ArtifactPreloadPlanDao) : PreloadListener {
+    override fun onPreloadStart(plan: ArtifactPreloadPlan) {
+        // 使用乐观锁尝试更新计划执行状态
+        if (preloadPlanDao.updateStatus(plan.id!!, STATUS_EXECUTING, plan.lastModifiedDate).modifiedCount != 1L) {
+            throw RuntimeException("update plan status failed, maybe plan was executed by other thread")
+        }
+    }
+
+    override fun onPreloadSuccess(plan: ArtifactPreloadPlan) = Unit
+    override fun onPreloadFailed(plan: ArtifactPreloadPlan) = Unit
+
+    override fun onPreloadFinished(plan: ArtifactPreloadPlan) {
+        // 执行结束后删除预加载计划
+        preloadPlanDao.removeById(plan.id!!)
+    }
+}

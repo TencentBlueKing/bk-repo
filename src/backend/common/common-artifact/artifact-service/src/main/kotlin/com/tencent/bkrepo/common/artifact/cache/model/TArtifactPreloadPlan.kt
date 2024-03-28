@@ -25,24 +25,59 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.model
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
- * 文件清理事件
+ * 预加载执行计划
  */
-data class FileDeletedEvent(
+@Document("artifact_preload_plan")
+@CompoundIndexes(
+    CompoundIndex(name = "status_executeTime_idx", def = "{'status': 1, 'executeTime': 1}", background = true),
+    CompoundIndex(name = "projectId_repoName_idx", def = "{'projectId': 1, 'repoName': 1}", background = true)
+)
+data class TArtifactPreloadPlan(
+    val id: String? = null,
+    val createdDate: LocalDateTime,
+    val lastModifiedDate: LocalDateTime,
     /**
-     * 存储凭据
+     * 所属策略ID，仅用于记录执行计划来源
      */
-    val credentials: StorageCredentials,
+    val strategyId: String? = null,
     /**
-     * 正在清理的目录
+     * 所属项目ID，仅用于记录执行计划来源
      */
-    val rootPath: String,
+    val projectId: String? = null,
     /**
-     * 被清理的文件完整路径
+     * 所属仓库，仅用于记录执行计划来源
      */
-    val fullPath: String,
+    val repoName: String? = null,
+    /**
+     * 待加载制品的完整路径，仅用于记录执行计划来源
+     */
+    val fullPath: String? = null,
+    /**
+     * 待加载制品sha256
+     */
+    val sha256: String,
+    /**
+     * 待加载制品大小
+     */
+    val size: Long,
+    /**
+     * 待加载制品所在存储，为null时表示默认存储
+     */
+    val credentialsKey: String? = null,
+    /**
+     * 预加载计划执行毫秒时间戳
+     */
+    val executeTime: Long,
+    /**
+     * 计划执行状态
+     */
+    val status: String,
 )

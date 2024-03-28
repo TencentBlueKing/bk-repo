@@ -25,24 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
-
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+package com.tencent.bkrepo.common.artifact.cache.pojo
 
 /**
- * 文件清理事件
+ * 用于生成预加载计划的参数
  */
-data class FileDeletedEvent(
-    /**
-     * 存储凭据
-     */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
+data class ArtifactPreloadPlanGenerateParam(
+    val projectId: String,
+    val repoName: String,
+    val credentialsKey: String?,
     val fullPath: String,
+    val sha256: String,
+    val size: Long,
+    val strategy: ArtifactPreloadStrategy,
 )

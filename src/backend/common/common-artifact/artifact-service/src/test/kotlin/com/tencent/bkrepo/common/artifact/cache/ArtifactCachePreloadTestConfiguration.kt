@@ -25,24 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.springframework.boot.SpringBootConfiguration
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 
-/**
- * 文件清理事件
- */
-data class FileDeletedEvent(
-    /**
-     * 存储凭据
-     */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
-    val fullPath: String,
-)
+@SpringBootConfiguration
+@EnableAutoConfiguration
+class ArtifactCachePreloadTestConfiguration
+
+const val UT_USER = "system"
+const val UT_PROJECT_ID = "ut-project"
+const val UT_REPO_NAME = "ut-repo"
+const val UT_SHA256 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c6"
+
+

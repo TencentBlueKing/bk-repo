@@ -25,24 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.model
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
+
 
 /**
- * 文件清理事件
+ * 制品访问记录
  */
-data class FileDeletedEvent(
-    /**
-     * 存储凭据
-     */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
+@Document("artifact_access_record")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "projectId_repoName_fullPath_sha256_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'sha256': 1}",
+        unique = true,
+        background = true
+    )
+)
+data class TArtifactAccessRecord(
+    val id: String? = null,
+    val createdDate: LocalDateTime,
+    val lastModifiedDate: LocalDateTime,
+
+    val projectId: String,
+    val repoName: String,
     val fullPath: String,
+    val sha256: String,
+    /**
+     * 访问时cache miss次数
+     */
+    val cacheMissCount: Long,
+    /**
+     * 制品对应的node创建时间
+     */
+    val nodeCreateTime: LocalDateTime,
+    /**
+     * 制品访问时间序列
+     */
+    val accessTimeSequence: List<Long>
 )

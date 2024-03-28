@@ -25,24 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
-
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+package com.tencent.bkrepo.common.artifact.cache.pojo
 
 /**
- * 文件清理事件
+ * 预加载策略类型
  */
-data class FileDeletedEvent(
+enum class PreloadStrategyType {
     /**
-     * 存储凭据
+     * 自定义类型，自定义需要预加载的文件与预加载时间
      */
-    val credentials: StorageCredentials,
+    CUSTOM,
+
     /**
-     * 正在清理的目录
+     * 系统生成的自定义类型
      */
-    val rootPath: String,
+    CUSTOM_GENERATE,
+
     /**
-     * 被清理的文件完整路径
+     * 智能预加载策略，通过BkBase中的模型预测预加载时间
      */
-    val fullPath: String,
-)
+    INTELLIGENT;
+}

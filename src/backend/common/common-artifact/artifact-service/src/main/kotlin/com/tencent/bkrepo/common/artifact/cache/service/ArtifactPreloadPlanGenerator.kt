@@ -25,24 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.service
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
 
 /**
- * 文件清理事件
+ * 制品预加载策略
  */
-data class FileDeletedEvent(
+interface ArtifactPreloadPlanGenerator {
     /**
-     * 存储凭据
+     * 生成预加载执行计划
+     *
+     * @param param 用于生成计划的参数
+     *
+     * @return 预加载执行计划，返回null时表示不需要预加载
      */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
-    val fullPath: String,
-)
+    fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan?
+}

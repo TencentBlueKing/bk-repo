@@ -180,3 +180,8 @@ const val METADATA_KEY_LINK_REPO = "targetRepoName"
  * 节点链接的目标路径
  */
 const val METADATA_KEY_LINK_FULL_PATH = "targetFullPath"
+
+/**
+ * sha256长度
+ */
+const val SHA256_STR_LENGTH = 64

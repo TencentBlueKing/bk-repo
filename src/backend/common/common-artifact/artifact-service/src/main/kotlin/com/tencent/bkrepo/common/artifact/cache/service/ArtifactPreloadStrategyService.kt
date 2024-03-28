@@ -25,24 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.common.artifact.cache.service
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
 
-/**
- * 文件清理事件
- */
-data class FileDeletedEvent(
+interface ArtifactPreloadStrategyService {
     /**
-     * 存储凭据
+     * 创建预加载策略
+     *
+     * @param request 策略
+     *
+     * @return 创建后的策略
      */
-    val credentials: StorageCredentials,
+    fun create(request: ArtifactPreloadStrategyCreateRequest): ArtifactPreloadStrategy
+
     /**
-     * 正在清理的目录
+     * 更新预加载策略
+     *
+     * @param request 策略
+     * @param
      */
-    val rootPath: String,
+    fun update(request: ArtifactPreloadStrategyUpdateRequest): ArtifactPreloadStrategy
+
     /**
-     * 被清理的文件完整路径
+     * 删除策略
+     *
+     * @param id 策略id
      */
-    val fullPath: String,
-)
+    fun delete(projectId: String, repoName: String, id: String)
+
+    /**
+     * 获取预加载策略
+     *
+     * @param projectId 策略所属项目
+     * @param repoName 仓库名
+     *
+     * @return 策略列表
+     */
+    fun list(projectId: String, repoName: String): List<ArtifactPreloadStrategy>
+}

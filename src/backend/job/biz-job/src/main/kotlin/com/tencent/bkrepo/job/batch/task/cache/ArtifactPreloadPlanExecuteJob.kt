@@ -25,24 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup.event
+package com.tencent.bkrepo.job.batch.task.cache
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
+import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.properties.ArtifactPreloadPlanExecuteJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
- * 文件清理事件
+ * 执行预加载计划将制品加载到缓存中
  */
-data class FileDeletedEvent(
-    /**
-     * 存储凭据
-     */
-    val credentials: StorageCredentials,
-    /**
-     * 正在清理的目录
-     */
-    val rootPath: String,
-    /**
-     * 被清理的文件完整路径
-     */
-    val fullPath: String,
-)
+@Component
+@EnableConfigurationProperties(ArtifactPreloadPlanExecuteJobProperties::class)
+class ArtifactPreloadPlanExecuteJob(
+    properties: ArtifactPreloadPlanExecuteJobProperties,
+    private val preloadPlanService: ArtifactPreloadPlanService,
+) : DefaultContextJob(properties) {
+    override fun doStart0(jobContext: JobContext) {
+        preloadPlanService.executePlans()
+    }
+}

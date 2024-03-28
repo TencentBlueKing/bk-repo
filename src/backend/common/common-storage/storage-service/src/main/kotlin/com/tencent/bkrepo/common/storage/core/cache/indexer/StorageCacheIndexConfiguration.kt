@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.storage.util.toPath
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.core.RedisTemplate
@@ -47,6 +48,7 @@ import org.springframework.data.redis.core.RedisTemplate
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(RedisTemplate::class)
 @ConditionalOnProperty(prefix = "storage.cache.index", name = ["enabled"])
+@EnableConfigurationProperties(StorageCacheIndexProperties::class)
 class StorageCacheIndexConfiguration {
     @Bean
     fun storageCacheIndexerManager(

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.storage.core.cache.indexer
 
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
+import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer.Companion.MAX_EVICT_COUNT
 import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.UpdatableEldestRemovedListener
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -137,7 +138,7 @@ open class StorageCacheIndexerManager(
         with(event) {
             val filename = fullPath.toPath().fileName.toString()
             if (rootPath.toPath() == credentials.cache.path.toPath() && filename.length == SHA256_STR_LENGTH) {
-                onCacheDeleted(credentials, sha256)
+                onCacheDeleted(credentials, filename)
             }
         }
     }
@@ -155,7 +156,7 @@ open class StorageCacheIndexerManager(
                 val attributes = Files.readAttributes(fullPath.toPath(), BasicFileAttributes::class.java)
                 val lastAccessTime = attributes.lastAccessTime().toMillis()
                 val size = attributes.size()
-                onCacheReserved(credentials, sha256, size, lastAccessTime.toDouble())
+                onCacheReserved(credentials, filename, size, lastAccessTime.toDouble())
             }
         }
     }
@@ -182,7 +183,6 @@ open class StorageCacheIndexerManager(
     }
 
     companion object {
-        private const val SHA256_STR_LENGTH = 64
         private val logger = LoggerFactory.getLogger(StorageCacheIndexerManager::class.java)
     }
 }
