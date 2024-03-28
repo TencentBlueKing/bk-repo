@@ -46,7 +46,16 @@
     <el-table v-loading="loading" :data="fileCaches" style="width: 100%">
       <el-table-column prop="projectId" label="项目Id" />
       <el-table-column prop="repoName" label="仓库名称" />
-      <el-table-column prop="paths" label="路径前缀匹配" width="780" />
+      <el-table-column prop="pathPrefix" label="路径前缀匹配" width="780">
+        <template slot-scope="scope">
+          <div
+            v-for="(item,index) in scope.row.pathPrefix"
+            :key="index"
+          >
+            <span> {{ item }}</span>
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column prop="size" label="大小(MB)" />
       <el-table-column prop="days" label="保存时间（天）" />
       <el-table-column align="right">
