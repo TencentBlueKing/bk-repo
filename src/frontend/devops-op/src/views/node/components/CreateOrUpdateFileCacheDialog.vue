@@ -46,8 +46,8 @@
         prop="pathPrefix"
       >
         <el-input
-          style="height: 40px ; width: 500px;"
           v-model="fileCache.pathPrefix[index]"
+          style="height: 40px ; width: 500px;"
           placeholder="请输入数据（如/1）"
           min="0"
           @input="updateInput()"
