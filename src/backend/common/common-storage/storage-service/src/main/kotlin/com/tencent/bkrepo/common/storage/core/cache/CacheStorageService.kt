@@ -79,9 +79,7 @@ class CacheStorageService(
 
             else -> {
                 val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
-                publisher.publishEvent(
-                    CacheFileLoadedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
-                )
+                publishCacheFileLoadedEvent(credentials, cacheFile)
                 async2Store(cancel, filename, credentials, path, cacheFile)
             }
         }
@@ -146,9 +144,7 @@ class CacheStorageService(
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
         fileStorage.delete(path, filename, credentials)
         getCacheClient(credentials).delete(path, filename)
-        publisher.publishEvent(
-            CacheFileDeletedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
-        )
+        publishCacheFileDeletedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
     }
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
@@ -213,9 +209,7 @@ class CacheStorageService(
         if (doExist(path, filename, credentials)) {
             logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
             getCacheClient(credentials).delete(path, filename)
-            publisher.publishEvent(
-                CacheFileDeletedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
-            )
+            publishCacheFileDeletedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
         } else {
             logger.info("Cache file[${credentials.cache.path}/$path/$filename] was not in storage")
         }
@@ -226,6 +220,24 @@ class CacheStorageService(
      */
     fun cacheHealthy(credentials: StorageCredentials?): Boolean {
         return getMonitor(getCredentialsOrDefault(credentials)).healthy.get()
+    }
+
+    private fun publishCacheFileDeletedEvent(credentials: StorageCredentials, filename: String, cacheFilePath: String) {
+        try {
+            val event = CacheFileDeletedEvent(credentials, filename, cacheFilePath, File(cacheFilePath).length())
+            publisher.publishEvent(event)
+        } catch (e: Exception) {
+            logger.error("publish cache file delete event failed", e)
+        }
+    }
+
+    private fun publishCacheFileLoadedEvent(credentials: StorageCredentials, cacheFile: File) {
+        try {
+            val event = CacheFileLoadedEvent(credentials, cacheFile.name, cacheFile.absolutePath, cacheFile.length())
+            publisher.publishEvent(event)
+        } catch (e: Exception) {
+            logger.error("publish cache file loaded event failed", e)
+        }
     }
 
     /**

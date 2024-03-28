@@ -25,23 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache
+package com.tencent.bkrepo.common.artifact.cache.service.impl
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.CacheFileLoadedEvent
-import org.springframework.context.ApplicationEventPublisher
-import java.io.File
-import java.nio.file.Path
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
+import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.CacheFileDeletedEvent
+import org.slf4j.LoggerFactory
+import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Async
+import org.springframework.stereotype.Component
 
 /**
- * 用于发布缓存文件加载完成事件
+ * 缓存文件相关事件监听器
  */
-class CacheFileLoadedEventPublisher(
-    private val publisher: ApplicationEventPublisher,
-    private val credentials: StorageCredentials,
-) : CacheFileWriterListener {
-    override fun onCacheFileWritten(sha256: String, cacheFilePath: Path) {
-        val fullPath = cacheFilePath.toString()
-        publisher.publishEvent(CacheFileLoadedEvent(credentials, sha256, fullPath, File(fullPath).length()))
+@Component
+class CacheFileEventListener(
+    private val properties: ArtifactPreloadProperties,
+    private val preloadPlanService: ArtifactPreloadPlanService,
+) {
+
+    /**
+     * 缓存被删除时判断是否需要创建预加载执行计划
+     */
+    @Async
+    @EventListener(CacheFileDeletedEvent::class)
+    fun onCacheFileDeleted(event: CacheFileDeletedEvent) {
+        if (properties.enabled && event.size >= properties.minSize.toBytes()) {
+            logger.info("try generate preload plan for $event")
+            preloadPlanService.createPlan(event.credentials?.key, event.sha256)
+        } else if (event.size < properties.minSize.toBytes()) {
+            logger.info("cache file size less than ${properties.minSize}, will not generate preload plan")
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(CacheFileEventListener::class.java)
     }
 }

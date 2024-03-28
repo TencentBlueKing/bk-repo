@@ -45,4 +45,8 @@ data class CacheFileLoadedEvent(
      * 缓存文件完整路径
      */
     val fullPath: String,
+    /**
+     * 缓存文件大小
+     */
+    val size: Long,
 )

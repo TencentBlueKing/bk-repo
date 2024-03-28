@@ -80,7 +80,7 @@ class CleanupFileVisitor(
                     result.cleanupFile += 1
                     result.cleanupSize += size
                     deleted = true
-                    onFileCleaned(filePath)
+                    onFileCleaned(filePath, size)
                     logger.info("Clean up file[$filePath], size[$size], summary: $result")
                 }
             }
@@ -182,7 +182,7 @@ class CleanupFileVisitor(
         return filePath.fileName.toString().startsWith(NFS_TEMP_FILE_PREFIX)
     }
 
-    private fun onFileCleaned(filePath: Path) {
+    private fun onFileCleaned(filePath: Path, size: Long) {
         val fileName = filePath.fileName.toString()
         val event = FileDeletedEvent(
             credentials = credentials,
@@ -190,7 +190,7 @@ class CleanupFileVisitor(
             fullPath = filePath.toString(),
         )
         if (rootPath == credentials.cache.path.toPath() && filePath.fileName.toString().length == SHA256_STR_LENGTH) {
-            publisher.publishEvent(CacheFileDeletedEvent(credentials, fileName, filePath.toString()))
+            publisher.publishEvent(CacheFileDeletedEvent(credentials, fileName, filePath.toString(), size))
         }
 
         publisher.publishEvent(event)
