@@ -27,11 +27,18 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
+import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.ActiveProjectEmptyFolderCleanupJobProperties
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.util.concurrent.Future
 
 
 /**
@@ -41,14 +48,25 @@ import org.springframework.stereotype.Component
 @EnableConfigurationProperties(ActiveProjectEmptyFolderCleanupJobProperties::class)
 class ActiveProjectEmptyFolderCleanupJob(
     private val properties: ActiveProjectEmptyFolderCleanupJobProperties,
-    private val activeProjectService: ActiveProjectService
-): EmptyFolderCleanupJob(properties, activeProjectService) {
+    private val activeProjectService: ActiveProjectService,
+    private val mongoTemplate: MongoTemplate,
+    private val executor: ThreadPoolTaskExecutor,
+    ): EmptyFolderCleanupJob(mongoTemplate, properties, activeProjectService, executor) {
 
-    override fun statProjectCheck(
-        projectId: String,
-        context: EmptyFolderCleanupJobContext
-    ): Boolean {
-        if (context.activeProjects.contains(projectId)) return true
-        return false
+    override fun doStart0(jobContext: JobContext) {
+        logger.info("start to do empty folder cleanup job for active projects")
+        require(jobContext is EmptyFolderCleanupJobContext)
+        val futureList = mutableListOf<Future<Unit>>()
+        executeStat(jobContext.activeProjects, futureList) {
+            val collectionName = COLLECTION_NODE_PREFIX +
+                MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
+            queryNodes(projectId = it, collection = collectionName, context = jobContext)
+        }
+        futureList.forEach { it.get() }
+        logger.info("empty folder cleanup job for active projects finished")
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ActiveProjectEmptyFolderCleanupJob::class.java)
     }
 }

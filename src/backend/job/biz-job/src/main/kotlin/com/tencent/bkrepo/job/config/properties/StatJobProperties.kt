@@ -30,12 +30,12 @@ package com.tencent.bkrepo.job.config.properties
 import com.tencent.bkrepo.common.artifact.constant.LOG
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 
-/**
- * 项目空目录清理任务配置项
- */
-open class ProjectEmptyFolderCleanupJobProperties(
+open class StatJobProperties(
+    // 是否执行所有仓库统计
+    var runAllRepo: Boolean = false,
     // 特殊仓库统计每周统计一次
     var specialRepos: List<String> = listOf(REPORT, LOG),
     // 特殊仓库在每周第几天执行，默认周六
     var specialDay: Int = 6,
+    var concurrencyNum: Int = 1,
 ) : MongodbJobProperties()

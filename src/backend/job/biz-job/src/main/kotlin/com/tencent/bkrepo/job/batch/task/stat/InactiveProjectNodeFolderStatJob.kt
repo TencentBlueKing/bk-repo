@@ -27,12 +27,19 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
+import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.InactiveProjectNodeFolderStatJobProperties
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.util.concurrent.Future
+import java.util.concurrent.Semaphore
 
 /**
  * 非活跃项目下目录大小以及文件个数统计
@@ -40,16 +47,33 @@ import org.springframework.stereotype.Component
 @Component
 @EnableConfigurationProperties(InactiveProjectNodeFolderStatJobProperties::class)
 class InactiveProjectNodeFolderStatJob(
-    properties: InactiveProjectNodeFolderStatJobProperties,
-    private val redisTemplate: RedisTemplate<String, String>,
-    private val activeProjectService: ActiveProjectService
-): NodeFolderStatJob(properties, redisTemplate, activeProjectService) {
+    private val properties: InactiveProjectNodeFolderStatJobProperties,
+    private val activeProjectService: ActiveProjectService,
+    private val mongoTemplate: MongoTemplate,
+    private val executor: ThreadPoolTaskExecutor,
+    ): NodeFolderStatJob(properties, activeProjectService, mongoTemplate, executor) {
 
-    override fun statProjectCheck(
-        projectId: String,
-        context: NodeFolderJobContext
-    ): Boolean {
-        if (!context.activeProjects.contains(projectId)) return true
-        return false
+    override fun doStart0(jobContext: JobContext) {
+        logger.info("start to do folder stat job for inactive projects")
+        require(jobContext is NodeFolderJobContext)
+        val extraCriteria = getExtraCriteria()
+        val semaphore = Semaphore(properties.concurrencyNum)
+        val futureList = mutableListOf<Future<Unit>>()
+        findAllProjects {
+            if (!jobContext.activeProjects.contains(it))  {
+                executeProject(it, futureList, semaphore) {
+                    val collectionName = COLLECTION_NODE_PREFIX +
+                        MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
+                    queryNodes(projectId = it, collection = collectionName,
+                               context = jobContext, extraCriteria = extraCriteria)
+                }
+            }
+        }
+        futureList.forEach { it.get() }
+        logger.info("folder stat job for inactive projects finished")
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(InactiveProjectNodeFolderStatJob::class.java)
     }
 }

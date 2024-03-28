@@ -33,102 +33,51 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
-import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
-import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.PROJECT
-import com.tencent.bkrepo.job.REDIS_CACHE_TYPE
 import com.tencent.bkrepo.job.REPO
-import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
-import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.buildCacheKey
-import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
-import com.tencent.bkrepo.job.config.properties.ProjectNodeFolderStatJobProperties
+import com.tencent.bkrepo.job.config.properties.StatJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
-import org.springframework.data.mongodb.core.BulkOperations.BulkMode
+import org.springframework.data.mongodb.core.BulkOperations
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.redis.core.HashOperations
-import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.data.redis.core.ScanOptions
-import java.time.DayOfWeek
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Duration
-import java.time.LocalDateTime
-import kotlin.reflect.KClass
-import kotlin.system.measureTimeMillis
-import kotlin.text.toLongOrNull as toLongOrNull1
 
 
 /**
  * 目录大小以及文件个数统计
  */
 open class NodeFolderStatJob(
-    private val properties: ProjectNodeFolderStatJobProperties,
-    private val redisTemplate: RedisTemplate<String, String>,
-    private val activeProjectService: ActiveProjectService
-): DefaultContextMongoDbJob<NodeFolderStatJob.Node>(properties) {
+    private val properties: StatJobProperties,
+    private val activeProjectService: ActiveProjectService,
+    private val mongoTemplate: MongoTemplate,
+    private val executor: ThreadPoolTaskExecutor,
+    ): StatBaseJob(mongoTemplate, properties, executor) {
 
-    override fun collectionNames(): List<String> {
-        return (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.toList()
+
+    fun getExtraCriteria(): Criteria {
+        return Criteria().and(FOLDER).`is`(false)
     }
 
-    override fun buildQuery(): Query = Query(
-        Criteria.where(DELETED_DATE).`is`(null)
-            .and(FOLDER).`is`(false)
-    )
-
-    override fun mapToEntity(row: Map<String, Any?>): Node = Node(row)
-
-    override fun entityClass(): KClass<Node> = Node::class
-
-    /**
-     * 最长加锁时间
-     */
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
-
-    open fun statProjectCheck(
-        projectId: String,
-        context: NodeFolderJobContext
-    ): Boolean = true
-
-    // 特殊仓库每周统计一次
-    private fun specialRepoRunCheck(): Boolean {
-        val runDay = if (properties.specialDay < 1 || properties.specialDay > 7) {
-            6
-        } else {
-            properties.specialDay
-        }
-        return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
-    }
-
-    private fun isSpecialRepo(repoName: String): Boolean {
-        return properties.specialRepos.contains(repoName)
-    }
-
-    override fun run(row: Node, collectionName: String, context: JobContext) {
+    override fun runRow(row: Node, context: JobContext) {
         require(context is NodeFolderJobContext)
-        if (!statProjectCheck(row.projectId, context)) return
-
-        if (isSpecialRepo(row.repoName) && !specialRepoRunCheck()) {
-            return
-        }
         //只统计非目录类节点；没有根目录这个节点，不需要统计
         if (row.path == PathUtils.ROOT) {
             return
         }
-        // 判断是否在不统计项目或者仓库列表中
-        if (ignoreProjectOrRepoCheck(row.projectId)) return
 
         // 更新当前节点所有上级目录（排除根目录）统计信息
         val folderFullPaths = PathUtils.resolveAncestorFolder(row.fullPath)
         for (fullPath in folderFullPaths) {
             if (fullPath == PathUtils.ROOT) continue
-            updateCache(
-                collectionName = collectionName,
+            updateMemoryCache(
                 projectId = row.projectId,
                 repoName = row.repoName,
                 fullPath = fullPath,
@@ -139,280 +88,40 @@ open class NodeFolderStatJob(
     }
 
     override fun createJobContext(): NodeFolderJobContext {
-        val cacheType = try {
-            redisTemplate.execute { null }
-            REDIS_CACHE_TYPE
-        } catch (e: Exception) {
-            MEMORY_CACHE_TYPE
-        }
         return NodeFolderJobContext(
-            cacheType = cacheType,
             activeProjects = activeProjectService.getActiveProjects()
         )
     }
 
-    override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
-        super.onRunCollectionFinished(collectionName, context)
-        require(context is NodeFolderJobContext)
-        // 如果使用的是redis作为缓存，将内存中的临时记录写入redis
-        updateRedisCache(context, force = true, collectionName = collectionName)
-        // 当表执行完成后，将属于该表的所有记录写入数据库
-        storeCacheToDB(collectionName, context)
-        context.projectMap.remove(collectionName)
-    }
-
-    /**
-     * 判断项目或者仓库是否不需要进行目录统计
-     */
-    private fun ignoreProjectOrRepoCheck(projectId: String): Boolean {
-        return IGNORE_PROJECT_PREFIX_LIST.firstOrNull { projectId.startsWith(it) } != null
-    }
-
-    /**
-     * 更新缓存中的size和nodeNum
-     */
-    private fun updateCache(
-        collectionName: String,
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        size: Long,
-        context: NodeFolderJobContext
-    ) {
-        val elapsedTime = measureTimeMillis {
-            if (context.cacheType == REDIS_CACHE_TYPE && collectionName in properties.redisCacheCollections) {
-                updateRedisCache(
-                    collectionName = collectionName,
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = fullPath,
-                    size = size,
-                    context = context
-                )
-            } else {
-                updateMemoryCache(
-                    collectionName = collectionName,
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = fullPath,
-                    size = size,
-                    context = context
-                )
-            }
-            context.projectMap.putIfAbsent(collectionName, mutableSetOf())
-            context.projectMap[collectionName]!!.add(projectId)
-        }
-        logger.debug("updateCache, elapse: $elapsedTime")
-    }
-
-    /**
-     * 更新redis缓存中对应key下将新增的size和nodeNum
-     */
-    private fun updateRedisCache(
-        collectionName: String,
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        size: Long,
-        context: NodeFolderJobContext
-    ) {
-        // 避免每次请求都去请求redis， 先将数据缓存在本地cache中，到达上限后更新到redis
-        updateMemoryCache(
-            collectionName = collectionName,
-            projectId = projectId,
-            repoName = repoName,
-            fullPath = fullPath,
-            size = size,
-            context = context
-        )
-        updateRedisCache(context, collectionName = collectionName)
-    }
-
-    /**
-     * 将存储在内存中的临时记录更新到redis
-     */
-    private fun updateRedisCache(
-        context: NodeFolderJobContext,
-        force: Boolean = false,
-        collectionName: String
-    ) {
-        if (context.cacheType != REDIS_CACHE_TYPE) return
-        if (collectionName !in properties.redisCacheCollections) return
-        if (!force && context.folderCache.size < 50000) return
-        if (context.folderCache.isEmpty()) return
-
-        // 避免每次设置值都创建一个 Redis 连接
-        redisTemplate.execute { connection ->
-            val hashCommands = connection.hashCommands()
-            for (entry in context.folderCache) {
-                val folderInfo = extractFolderInfoFromCacheKey(entry.key) ?: continue
-                val cName = extractCollectionNameFromCacheKey(entry.key)
-                if (!cName.isNullOrEmpty()) {
-                    val sizeHKey = buildCacheKey(
-                        projectId = folderInfo.projectId, repoName = folderInfo.repoName,
-                        fullPath = folderInfo.fullPath, tag = SIZE
-                    )
-                    val nodeNumHKey = buildCacheKey(
-                        projectId = folderInfo.projectId, repoName = folderInfo.repoName,
-                        fullPath = folderInfo.fullPath, tag = NODE_NUM
-                    )
-                    val key = buildCacheKey(collectionName = cName, projectId = folderInfo.projectId)
-                    hashCommands.hIncrBy(key.toByteArray(), sizeHKey.toByteArray(), entry.value.capSize.toLong())
-                    hashCommands.hIncrBy(key.toByteArray(), nodeNumHKey.toByteArray(), entry.value.nodeNum.toLong())
-                }
-            }
-            null
-        }
-        context.folderCache.clear()
-    }
 
     /**
      * 更新内存缓存中对应key下将新增的size和nodeNum
      */
     private fun updateMemoryCache(
-        collectionName: String,
         projectId: String,
         repoName: String,
         fullPath: String,
         size: Long,
         context: NodeFolderJobContext
     ) {
-        val key = buildCacheKey(
-            collectionName = collectionName, projectId = projectId, repoName = repoName, fullPath = fullPath
-        )
+        val key = buildCacheKey(projectId = projectId, repoName = repoName, fullPath = fullPath)
         val folderMetrics = context.folderCache.getOrPut(key) { NodeFolderJobContext.FolderMetrics() }
         folderMetrics.capSize.add(size)
         folderMetrics.nodeNum.increment()
     }
 
-
     /**
-     * 将缓存中的数据更新到DB中
+     * 将memory缓存中属于projectId下的记录写入DB中
      */
-    private fun storeCacheToDB(collectionName: String, context: NodeFolderJobContext) {
-        if (context.cacheType == REDIS_CACHE_TYPE && collectionName in properties.redisCacheCollections) {
-            storeRedisCacheToDB(collectionName, context)
-        } else {
-            storeMemoryCacheToDB(collectionName, context)
-        }
-    }
-
-
-    /**
-     * 将redis缓存中属于collectionName下的记录写入DB中
-     */
-    private fun storeRedisCacheToDB(collectionName: String, context: NodeFolderJobContext) {
-        logger.info("store redis cache to db withe table $collectionName")
-        val hashOps = redisTemplate.opsForHash<String, String>()
-        context.projectMap[collectionName]?.forEach {
-            storeFolderOfProject(collectionName, it, hashOps)
-        }
-    }
-
-
-    /**
-     * 存储对应项目下缓存在redis下的folder记录
-     */
-    private fun storeFolderOfProject(
-        collectionName: String,
-        projectId: String,
-        hashOps: HashOperations<String, String, String>
-    ) {
-        val projectKey = buildCacheKey(collectionName = collectionName, projectId = projectId)
-        val storedProjectIdKey = buildCacheKey(collectionName = collectionName, projectId = projectId, tag = STORED)
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
-
-        val options = ScanOptions.scanOptions().build()
-        redisTemplate.execute { connection ->
-            val hashCommands = connection.hashCommands()
-            val cursor = hashCommands.hScan(projectKey.toByteArray(), options)
-            while (cursor.hasNext()) {
-                val entry: Map.Entry<ByteArray, ByteArray> = cursor.next()
-                val folderInfo = extractFolderInfoFromRedisKey(String(entry.key)) ?: continue
-                // 由于可能KEYS或者SCAN命令会被禁用，调整redis存储格式，key为collectionName,
-                // hkey为projectId:repoName:fullPath:size或者nodenum, hvalue为对应值,
-                // 为了避免遍历时删除，用一个额外的key去记录当前collectionName+project下已经存储到db的目录记录
-                val storedFolderHkey = buildCacheKey(
-                    projectId = folderInfo.projectId, repoName = folderInfo.repoName, fullPath = folderInfo.fullPath
-                )
-                val storedHkeyExist = hashCommands.hExists(
-                    storedProjectIdKey.toByteArray(), storedFolderHkey.toByteArray()
-                )
-                if (storedHkeyExist == null || !storedHkeyExist) {
-                    val statInfo = getFolderStatInfo(
-                        collectionName, entry, folderInfo, hashOps
-                    )
-                    updateList.add(buildUpdateClausesForFolder(
-                        projectId = folderInfo.projectId,
-                        repoName = folderInfo.repoName,
-                        fullPath = folderInfo.fullPath,
-                        size = statInfo.size,
-                        nodeNum = statInfo.nodeNum
-                    ))
-                    if (updateList.size >= BATCH_LIMIT) {
-                        mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
-                            .updateOne(updateList)
-                            .execute()
-                        updateList.clear()
-                    }
-                    hashCommands.hSet(
-                        storedProjectIdKey.toByteArray(), storedFolderHkey.toByteArray(), STORED.toByteArray()
-                    )
-                }
-            }
-        }
-        if (updateList.isNotEmpty()) {
-            mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
-                .updateOne(updateList)
-                .execute()
-            updateList.clear()
-        }
-        redisTemplate.delete(projectKey)
-        redisTemplate.delete(storedProjectIdKey)
-    }
-
-
-    /**
-     * 从redis中获取对应目录的统计信息
-     */
-    private fun getFolderStatInfo(
-        collectionName: String,
-        entry: Map.Entry<ByteArray, ByteArray>,
-        folderInfo: FolderInfo,
-        hashOps: HashOperations<String, String, String>
-    ): StatInfo {
-        val size: Long
-        val nodeNum: Long
-        val key = buildCacheKey(collectionName = collectionName, projectId = folderInfo.projectId)
-        if (String(entry.key).endsWith(SIZE)) {
-            val nodeNumKey = buildCacheKey(
-                projectId = folderInfo.projectId, repoName = folderInfo.repoName,
-                fullPath = folderInfo.fullPath, tag = NODE_NUM
-            )
-            size = String(entry.value).toLongOrNull1() ?: 0
-            nodeNum = hashOps.get(key, nodeNumKey)?.toLongOrNull1() ?: 0
-        } else {
-            val sizeKey = buildCacheKey(
-                projectId = folderInfo.projectId, repoName = folderInfo.repoName,
-                fullPath = folderInfo.fullPath, tag = SIZE
-            )
-            nodeNum = String(entry.value).toLongOrNull1() ?: 0
-            size = hashOps.get(key, sizeKey)?.toLongOrNull1() ?: 0
-        }
-        return StatInfo(size, nodeNum)
-    }
-
-    /**
-     * 将memory缓存中属于collectionName下的记录写入DB中
-     */
-    private fun storeMemoryCacheToDB(collectionName: String, context: NodeFolderJobContext) {
-        logger.info("store memory cache to db withe table $collectionName")
+    override fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {
+        require(context is NodeFolderJobContext)
+        logger.info("store memory cache to db with projectId $projectId")
         if (context.folderCache.isEmpty()) {
             return
         }
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
-        val prefix = buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
+        val prefix = buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
         val storedKeys = mutableSetOf<String>()
+        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
         for(entry in context.folderCache) {
             if (!entry.key.startsWith(prefix)) continue
             extractFolderInfoFromCacheKey(entry.key)?.let {
@@ -426,19 +135,32 @@ open class NodeFolderStatJob(
                 ))
             }
             if (updateList.size >= BATCH_LIMIT) {
-                mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+                mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, collection)
                     .updateOne(updateList)
                     .execute()
                 updateList.clear()
             }
         }
         if (updateList.isEmpty()) return
-        mongoTemplate.bulkOps(BulkMode.UNORDERED,collectionName)
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, collection)
             .updateOne(updateList)
             .execute()
         updateList.clear()
         for (key in storedKeys) {
             context.folderCache.remove(key)
+        }
+    }
+
+    private fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
+        val values = key.split(StringPool.COLON)
+        return try {
+            FolderInfo(
+                projectId = values[0],
+                repoName = values[1],
+                fullPath = values[2]
+            )
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -465,83 +187,15 @@ open class NodeFolderStatJob(
     }
 
 
-    private fun extractFolderInfoFromRedisKey(key: String): FolderInfo? {
-        val values = key.split(StringPool.COLON)
-        return try {
-            FolderInfo(
-                projectId = values[0],
-                repoName = values[1],
-                fullPath = values[2]
-            )
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-
     /**
-     * 从缓存key中解析出collectionName
+     * 最长加锁时间
      */
-    private fun extractCollectionNameFromCacheKey(key: String): String? {
-        val values = key.split(StringPool.COLON)
-        return try {
-            values.firstOrNull()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    data class StatInfo(
-        var size: Long,
-        var nodeNum: Long
-    )
-
-
-    data class Node(private val map: Map<String, Any?>) {
-        // 需要通过@JvmField注解将Kotlin backing-field直接作为Java field使用，MongoDbBatchJob中才能解析出需要查询的字段
-        @JvmField
-        val id: String
-
-        @JvmField
-        val folder: Boolean
-
-        @JvmField
-        val path: String
-
-        @JvmField
-        val fullPath: String
-
-        @JvmField
-        val name: String
-
-        @JvmField
-        val size: Long
-
-        @JvmField
-        val projectId: String
-
-        @JvmField
-        val repoName: String
-
-        init {
-            id = map[Node::id.name] as String
-            folder = map[Node::folder.name] as Boolean
-            path = map[Node::path.name] as String
-            fullPath = map[Node::fullPath.name] as String
-            name = map[Node::name.name] as String
-            size = map[Node::size.name].toString().toLong()
-            projectId = map[Node::projectId.name] as String
-            repoName = map[Node::repoName.name] as String
-        }
-    }
-
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     companion object {
         private val logger = LoggerHolder.jobLogger
         private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
-        private const val STORED = "stored"
         private const val BATCH_LIMIT = 500
-        private const val COLLECTION_NAME_PREFIX = "node_"
     }
 }
