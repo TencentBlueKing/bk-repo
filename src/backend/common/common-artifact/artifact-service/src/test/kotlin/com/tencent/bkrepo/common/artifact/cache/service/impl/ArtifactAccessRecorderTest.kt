@@ -53,7 +53,7 @@ import java.time.LocalDateTime
 @DataMongoTest
 @ImportAutoConfiguration(ArtifactPreloadConfiguration::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.yaml"])
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.properties"])
 class ArtifactAccessRecorderTest @Autowired constructor(
     private val recorder: ArtifactAccessRecorder,
     private val accessRecordDao: ArtifactAccessRecordDao,

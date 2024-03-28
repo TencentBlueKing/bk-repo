@@ -54,7 +54,7 @@ import java.time.Duration
 @DataMongoTest
 @ImportAutoConfiguration(ArtifactPreloadConfiguration::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.yaml"])
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.properties"])
 class ArtifactPreloadStrategyServiceImplTest @Autowired constructor(
     private val artifactPreloadStrategyService: ArtifactPreloadStrategyServiceImpl,
     private val preloadProperties: ArtifactPreloadProperties,

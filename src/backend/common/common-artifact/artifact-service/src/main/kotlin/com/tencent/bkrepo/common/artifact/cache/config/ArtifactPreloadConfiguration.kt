@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadStrategyServiceImpl
 import com.tencent.bkrepo.common.artifact.cache.service.impl.CustomArtifactPreloadPlanGenerator
 import com.tencent.bkrepo.common.artifact.cache.service.impl.DefaultPreloadPlanExecutor
+import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -53,6 +55,7 @@ import org.springframework.context.annotation.Import
     ArtifactPreloadPlanServiceImpl::class,
     DefaultPreloadPlanExecutor::class,
 )
+@AutoConfigureAfter(StorageAutoConfiguration::class)
 class ArtifactPreloadConfiguration {
 
     @Bean("CUSTOM")

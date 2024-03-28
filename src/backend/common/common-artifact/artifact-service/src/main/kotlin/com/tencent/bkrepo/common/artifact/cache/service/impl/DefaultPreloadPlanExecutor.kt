@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.cache.service.PreloadPlanExecutor
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -58,7 +59,7 @@ import java.util.concurrent.TimeUnit
 @Component
 class DefaultPreloadPlanExecutor(
     private val preloadProperties: ArtifactPreloadProperties,
-    private val cacheStorageService: CacheStorageService,
+    private val cacheStorageService: StorageService,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val fileLocator: FileLocator,
     private val storageProperties: StorageProperties,
@@ -71,6 +72,7 @@ class DefaultPreloadPlanExecutor(
     )
 
     override fun execute(plan: ArtifactPreloadPlan, listener: PreloadListener?): Boolean {
+        require(cacheStorageService is CacheStorageService)
         updateExecutor()
         val credentials = if (plan.credentialsKey != null) {
             storageCredentialsClient.findByKey(plan.credentialsKey).data!!
@@ -86,31 +88,33 @@ class DefaultPreloadPlanExecutor(
 
         // 提交预加载任务
         try {
-            executor.execute {
-                try {
-                    logger.info("preload start, ${plan.artifactInfo()}")
-                    listener?.onPreloadStart(plan)
-                    if (existsOrCaching(credentials, plan.sha256)) {
-                        // 正在缓存或缓存已存在的情况不执行加载
-                        logger.info("cache exists or caching, ${plan.artifactInfo()}")
-                    } else {
-                        // 执行预加载
-                        val throughput = doLoad(plan.sha256, plan.size, credentials)
-                        logger.info("preload throughput[$throughput], ${plan.artifactInfo()}")
-                    }
-                    logger.info("preload success, ${plan.artifactInfo()}")
-                    listener?.onPreloadSuccess(plan)
-                } catch (e: Exception) {
-                    listener?.onPreloadFailed(plan)
-                    logger.warn("preload failed, ${plan.artifactInfo()}", e)
-                } finally {
-                    listener?.onPreloadFinished(plan)
-                }
-            }
+            executor.execute { load(plan, credentials, listener) }
         } catch (e: RejectedExecutionException) {
             return false
         }
         return true
+    }
+
+    fun load(plan: ArtifactPreloadPlan, credentials: StorageCredentials, listener: PreloadListener?) {
+        try {
+            logger.info("preload start, ${plan.artifactInfo()}")
+            listener?.onPreloadStart(plan)
+            val throughput = if (existsOrCaching(credentials, plan.sha256)) {
+                // 正在缓存或缓存已存在的情况不执行加载
+                logger.info("cache exists or caching, ${plan.artifactInfo()}")
+                null
+            } else {
+                // 执行预加载
+                doLoad(plan.sha256, plan.size, credentials)
+            }
+            logger.info("preload success, ${plan.artifactInfo()}, throughput[$throughput]")
+            listener?.onPreloadSuccess(plan)
+        } catch (e: Exception) {
+            listener?.onPreloadFailed(plan)
+            logger.warn("preload failed, ${plan.artifactInfo()}", e)
+        } finally {
+            listener?.onPreloadFinished(plan)
+        }
     }
 
     private fun doLoad(sha256: String, size: Long, credentials: StorageCredentials?): Throughput {

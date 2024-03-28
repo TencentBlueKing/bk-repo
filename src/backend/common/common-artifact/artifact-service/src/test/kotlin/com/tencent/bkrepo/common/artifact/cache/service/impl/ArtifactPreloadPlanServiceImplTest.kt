@@ -40,7 +40,7 @@ import java.time.LocalDateTime
 @DataMongoTest
 @ImportAutoConfiguration(ArtifactPreloadConfiguration::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.yaml"])
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.properties"])
 class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     private val properties: ArtifactPreloadProperties,
     private val preloadStrategyService: ArtifactPreloadStrategyServiceImpl,
