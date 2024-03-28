@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -52,15 +53,31 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
+import com.tencent.bkrepo.pypi.constants.INDENT
+import com.tencent.bkrepo.pypi.constants.LINE_BREAK
+import com.tencent.bkrepo.pypi.constants.NON_ALPHANUMERIC_SEQ_REGEX
+import com.tencent.bkrepo.pypi.constants.PACKAGE_INDEX_TITLE
 import com.tencent.bkrepo.pypi.constants.PypiQueryType
 import com.tencent.bkrepo.pypi.constants.QUERY_TYPE
+import com.tencent.bkrepo.pypi.constants.REQUIRES_PYTHON
+import com.tencent.bkrepo.pypi.constants.REQUIRES_PYTHON_ATTR
+import com.tencent.bkrepo.pypi.constants.SIMPLE_PAGE_CONTENT
+import com.tencent.bkrepo.pypi.constants.SUMMARY
+import com.tencent.bkrepo.pypi.constants.VERSION
+import com.tencent.bkrepo.pypi.constants.VERSION_INDEX_TITLE
 import com.tencent.bkrepo.pypi.exception.PypiSimpleNotFoundException
 import com.tencent.bkrepo.pypi.pojo.Basic
 import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
+import com.tencent.bkrepo.pypi.util.HtmlUtils
 import com.tencent.bkrepo.pypi.util.PypiVersionUtils.toPypiPackagePojo
 import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.repository.api.StageClient
+import com.tencent.bkrepo.repository.constant.FULL_PATH
+import com.tencent.bkrepo.repository.constant.METADATA
+import com.tencent.bkrepo.repository.constant.NAME
+import com.tencent.bkrepo.repository.constant.NODE_METADATA
+import com.tencent.bkrepo.repository.constant.SHA256
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -69,6 +86,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -122,7 +140,8 @@ class PypiLocalRepository(
                 size = context.getArtifactFile("content").getSize(),
                 artifactPath = nodeCreateRequest.fullPath,
                 overwrite = true,
-                createdBy = context.userId
+                createdBy = context.userId,
+                packageDescription = context.request.getParameter(SUMMARY)?.ifBlank { null }
             ),
             HttpContextHolder.getClientAddress()
         )
@@ -297,29 +316,42 @@ class PypiLocalRepository(
         }
     }
 
+    // https://packaging.python.org/en/latest/specifications/simple-repository-api/
     fun getSimpleHtml(artifactInfo: ArtifactInfo, type: PypiQueryType): String? {
-        logger.info("Get simple html. artifactInfo[${artifactInfo.getArtifactFullPath()}]")
         with(artifactInfo) {
+            val packagePath = getArtifactFullPath()
+            logger.info("Get simple html. artifactInfo[$packagePath]")
             // 请求不带包名，返回包名列表.
             if (type == PypiQueryType.PACKAGE_INDEX) {
-                val nodeList = nodeClient.listNode(
-                    projectId, repoName, getArtifactFullPath(), includeFolder = true, deep = true
-                ).data
-                    ?: throw PypiSimpleNotFoundException(getArtifactFullPath())
+                val nodeList = nodeClient.listNode(projectId, repoName, ROOT, includeFolder = true).data
+                    ?.filter { it.folder }?.takeIf { it.isNotEmpty() }
+                    ?: throw PypiSimpleNotFoundException(packagePath)
                 // 过滤掉'根节点',
-                return buildPackageListContent(nodeList.filter { it.folder }.filter { it.path == "/" })
+                return buildPypiPageContent(PACKAGE_INDEX_TITLE, buildPackageListContent(nodeList))
             }
             // 请求中带包名，返回对应包的文件列表。
             else {
-                val packageNode = nodeClient.listNode(
-                    projectId, repoName, getArtifactFullPath(), includeFolder = false,
-                    deep = true, includeMetadata = true
-                ).data
-                if (packageNode.isNullOrEmpty()) {
-                    throw PypiSimpleNotFoundException(getArtifactFullPath())
-                }
+                // 客户端标准化包名规则：1.连续的[-_.]转换为单个"-"；2.转换为全小写。此处需要以反向规则查询
+                var pageNumber = 1
+                val nodeList = mutableListOf<Map<String, Any?>>()
+                do {
+                    val queryModel = NodeQueryBuilder()
+                        .select(NAME, FULL_PATH, METADATA, SHA256)
+                        .sortByAsc(NAME)
+                        .page(pageNumber, PAGE_SIZE)
+                        .projectId(projectId)
+                        .repoName(repoName)
+                        .path("^${packagePath.replace("-", NON_ALPHANUMERIC_SEQ_REGEX)}/", OperationType.REGEX_I)
+                        .excludeFolder()
+                        .build()
+                    val records = nodeClient.queryWithoutCount(queryModel).data!!.records
+                    nodeList.addAll(records)
+                    pageNumber++
+                } while (records.size == PAGE_SIZE)
+                nodeList.ifEmpty { throw PypiSimpleNotFoundException(packagePath) }
                 return buildPypiPageContent(
-                    buildPackageFileNodeListContent(packageNode)
+                    String.format(VERSION_INDEX_TITLE, getArtifactName().removePrefix("/")),
+                    buildPackageFileNodeListContent(nodeList)
                 )
             }
         }
@@ -329,39 +361,34 @@ class PypiLocalRepository(
      * html 页面公用的元素
      * @param listContent 显示的内容
      */
-    private fun buildPypiPageContent(listContent: String): String {
-        return """
-            <html>
-                <head><title>Simple Index</title><meta name="api-version" value="2" /></head>
-                <body>
-                    $listContent
-                </body>
-            </html>
-        """.trimIndent()
-    }
+    private fun buildPypiPageContent(title: String, listContent: String) =
+        String.format(SIMPLE_PAGE_CONTENT, title, title, listContent)
 
     /**
      * 对应包中的文件列表
      * [nodeList]
      */
-    private fun buildPackageFileNodeListContent(nodeList: List<NodeInfo>): String {
+    @Suppress("UNCHECKED_CAST")
+    private fun buildPackageFileNodeListContent(nodeList: List<Map<String, Any?>>): String {
         val builder = StringBuilder()
-        val sortedNodeList = nodeList.sortedBy {
+        val sortedNodeList = nodeList.sortedBy { node ->
             try {
-                SemVersionParser.parse(it.metadata?.get("version").toString())
+                SemVersionParser.parse(
+                    (node[NODE_METADATA] as List<Map<String, Any?>>).find { it["key"] == VERSION }
+                        ?.get("value").toString()
+                )
             } catch (ignore: IllegalArgumentException) {
                 SemVersion(0,0,0)
             }
         }
-        for (node in sortedNodeList) {
-            val sha256 = node.sha256
-            builder.append("<a")
-            val requiresPython = node.metadata?.get("requires_python")?.toString()
-            if (!requiresPython.isNullOrBlank()) {
-                builder.append(" data-requires-python=\"$requiresPython\"")
-            }
-            builder.append(" href=\"../../packages${node.fullPath}#sha256=$sha256\"" +
-                " rel=\"internal\" >${node.name}</a><br/>")
+        // data-requires-python属性值中的"<"和">"需要转换为HTML编码
+        sortedNodeList.forEachIndexed { i, node ->
+            val href = "../../packages${node[FULL_PATH]}#sha256=${node[SHA256]}"
+            val requiresPython = (node[NODE_METADATA] as List<Map<String, Any?>>)
+                .find { it["key"] == REQUIRES_PYTHON }?.get("value")?.toString()?.ifBlank { null }
+                ?.let { " $REQUIRES_PYTHON_ATTR=\"${HtmlUtils.partialEncode(it)}\"" } ?: ""
+            builder.append("$INDENT<a href=\"$href\"$requiresPython rel=\"internal\">${node[NAME]}</a>$LINE_BREAK")
+            if (i != nodeList.size - 1) builder.append("\n")
         }
         return builder.toString()
     }
@@ -375,11 +402,11 @@ class PypiLocalRepository(
         if (nodeList.isEmpty()) {
             builder.append("The directory is empty.")
         }
-        for (node in nodeList) {
-            builder.append(
-                "<a data-requires-python=\">=\" href=\"${node.name}\"" +
-                    " rel=\"internal\" >${node.name}</a><br/>"
-            )
+        // href中的包名需要根据PEP 503规范进行标准化，且以"/"结尾
+        nodeList.forEachIndexed { i, node ->
+            val href = "\"${node.name.replace(nonAlphanumericSeqRegex, "-").toLowerCase()}/\""
+            builder.append("$INDENT<a href=$href rel=\"internal\">${node.name}</a>$LINE_BREAK")
+            if (i != nodeList.size - 1) builder.append("\n")
         }
         return builder.toString()
     }
@@ -422,6 +449,8 @@ class PypiLocalRepository(
     }
 
     companion object {
+        private const val PAGE_SIZE = 1000
+        private val nonAlphanumericSeqRegex = Regex(NON_ALPHANUMERIC_SEQ_REGEX)
         val logger: Logger = LoggerFactory.getLogger(PypiLocalRepository::class.java)
         const val pageLimitCurrent = 0
         const val pageLimitSize = 10

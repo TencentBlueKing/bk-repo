@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,21 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.constant
+package com.tencent.bkrepo.pypi.util
 
-const val SYSTEM_USER = "system"
-const val SHARDING_COUNT = 256
-const val METADATA_PREFIX = "metadata."
-const val DEFAULT_STORAGE_CREDENTIALS_KEY = "default"
+import com.tencent.bkrepo.pypi.constants.HTML_ENCODED_GREATER_THAN
+import com.tencent.bkrepo.pypi.constants.HTML_ENCODED_LESS_THAN
 
-const val PROJECT_ID = "projectId"
-const val REPO_NAME = "repoName"
-const val FULL_PATH = "fullPath"
-const val NAME = "name"
-const val METADATA = "metadata"
-const val NODE_METADATA = "nodeMetadata"
-const val MD5 = "md5"
-const val SHA256 = "sha256"
-const val PACKAGE_KEY = "key"
-
-const val NODE_DETAIL_LIST_KEY = "nodeDetailList"
+object HtmlUtils {
+    fun partialEncode(s: String) = s.replace("<", HTML_ENCODED_LESS_THAN).replace(">", HTML_ENCODED_GREATER_THAN)
+}
