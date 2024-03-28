@@ -41,6 +41,7 @@ import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
@@ -149,6 +150,9 @@ class DevopsPermissionServiceImpl constructor(
 
             // project权限
             if (resourceType == PROJECT.name) {
+                if (action == MANAGE.name) {
+                    return isDevopsProjectAdmin(uid, projectId!!)
+                }
                 return isDevopsProjectMember(uid, projectId!!, action)
                         || checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
