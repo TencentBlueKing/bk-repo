@@ -30,10 +30,11 @@ package com.tencent.bkrepo.common.artifact.cache.service.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadConfiguration
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.PreloadStrategyType
 import org.junit.jupiter.api.Assertions
@@ -43,21 +44,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.TestPropertySource
 import java.time.Duration
 
 @DisplayName("预加载策略服务测试")
 @DataMongoTest
-@Import(
-    ArtifactPreloadStrategyServiceImpl::class,
-    ArtifactPreloadProperties::class,
-    ArtifactPreloadStrategyDao::class
-)
+@ImportAutoConfiguration(ArtifactPreloadConfiguration::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.yaml"])
 class ArtifactPreloadStrategyServiceImplTest @Autowired constructor(
     private val artifactPreloadStrategyService: ArtifactPreloadStrategyServiceImpl,
     private val preloadProperties: ArtifactPreloadProperties,

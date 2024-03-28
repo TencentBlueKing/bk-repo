@@ -27,17 +27,12 @@
 
 package com.tencent.bkrepo.common.artifact.cache
 
-import com.tencent.bkrepo.common.artifact.cache.service.impl.CustomArtifactPreloadPlanGenerator
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.context.annotation.Bean
 
 @SpringBootConfiguration
 @EnableAutoConfiguration
-class ArtifactCachePreloadTestConfiguration {
-    @Bean("CUSTOM")
-    fun customPreloadPlanGenerator() = CustomArtifactPreloadPlanGenerator()
-}
+class ArtifactCachePreloadTestConfiguration
 
 const val UT_USER = "system"
 const val UT_PROJECT_ID = "ut-project"

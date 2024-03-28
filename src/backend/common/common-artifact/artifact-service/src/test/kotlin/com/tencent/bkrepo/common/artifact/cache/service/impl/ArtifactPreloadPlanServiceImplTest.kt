@@ -5,9 +5,8 @@ import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.UT_SHA256
 import com.tencent.bkrepo.common.artifact.cache.UT_USER
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadConfiguration
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
-import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
-import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.PreloadStrategyType
@@ -30,24 +29,18 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import org.springframework.util.unit.DataSize
 import java.time.LocalDateTime
 
 @DisplayName("预加载执行计划服务类测试")
 @DataMongoTest
-@Import(
-    ArtifactPreloadPlanDao::class,
-    ArtifactPreloadPlanServiceImpl::class,
-    ArtifactPreloadStrategyDao::class,
-    ArtifactPreloadStrategyServiceImpl::class,
-    ArtifactPreloadProperties::class,
-)
+@ImportAutoConfiguration(ArtifactPreloadConfiguration::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.yaml"])
 class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     private val properties: ArtifactPreloadProperties,
     private val preloadStrategyService: ArtifactPreloadStrategyServiceImpl,

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.artifact.cache.service.impl
 import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.UT_USER
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadConfiguration
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactAccessRecordDao
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
@@ -41,8 +42,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import org.springframework.util.unit.DataSize
 import java.time.Duration
@@ -50,13 +51,9 @@ import java.time.LocalDateTime
 
 @DisplayName("制品访问记录器测试")
 @DataMongoTest
-@Import(
-    ArtifactAccessRecordDao::class,
-    ArtifactPreloadProperties::class,
-    ArtifactAccessRecorder::class,
-)
+@ImportAutoConfiguration(ArtifactPreloadConfiguration::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.yaml"])
 class ArtifactAccessRecorderTest @Autowired constructor(
     private val recorder: ArtifactAccessRecorder,
     private val accessRecordDao: ArtifactAccessRecordDao,
