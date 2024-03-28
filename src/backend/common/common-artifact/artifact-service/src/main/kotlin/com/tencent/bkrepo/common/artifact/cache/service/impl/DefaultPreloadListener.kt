@@ -27,40 +27,29 @@
 
 package com.tencent.bkrepo.common.artifact.cache.service.impl
 
+import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import org.springframework.scheduling.support.CronExpression
-import java.time.LocalDateTime
-import java.time.ZoneId
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan.Companion.STATUS_EXECUTING
+import com.tencent.bkrepo.common.artifact.cache.service.PreloadListener
 
-/**
- * 用户自定义加载策略
- */
-class CustomArtifactPreloadPlanGenerator : ArtifactPreloadPlanGenerator {
-    override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
-        val now = LocalDateTime.now()
-        val executeTime = CronExpression
-            .parse(param.strategy.preloadCron!!)
-            .next(now)
-            ?.atZone(ZoneId.systemDefault())
-            ?.toInstant()
-            ?.toEpochMilli()
-            ?: return null
-        with(param) {
-            return ArtifactPreloadPlan(
-                id = null,
-                createdDate = now,
-                lastModifiedDate = now,
-                strategyId = param.strategy.id!!,
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                sha256 = sha256,
-                size = size,
-                credentialsKey = credentialsKey,
-                executeTime = executeTime
-            )
+class DefaultPreloadListener(private val preloadPlanDao: ArtifactPreloadPlanDao) : PreloadListener {
+    override fun onPreloadStart(plan: ArtifactPreloadPlan) {
+        // 使用乐观锁尝试更新计划执行状态
+        if (preloadPlanDao.updateStatus(plan.id!!, STATUS_EXECUTING, plan.lastModifiedDate).modifiedCount != 1L) {
+            throw RuntimeException("update plan status failed, maybe plan was executed by other thread")
         }
+    }
+
+    override fun onPreloadSuccess(plan: ArtifactPreloadPlan) {
+
+    }
+
+    override fun onPreloadFailed(plan: ArtifactPreloadPlan) {
+
+    }
+
+    override fun onPreloadFinished(plan: ArtifactPreloadPlan) {
+        // 执行结束后删除预加载计划
+        preloadPlanDao.removeById(plan.id!!)
     }
 }

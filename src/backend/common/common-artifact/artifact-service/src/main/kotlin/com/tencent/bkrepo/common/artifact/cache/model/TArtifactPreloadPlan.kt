@@ -65,6 +65,10 @@ data class TArtifactPreloadPlan(
      */
     val sha256: String,
     /**
+     * 待加载制品大小
+     */
+    val size: Long,
+    /**
      * 待加载制品所在存储，为null时表示默认存储
      */
     val credentialsKey: String? = null,

@@ -25,42 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service.impl
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import org.springframework.scheduling.support.CronExpression
-import java.time.LocalDateTime
-import java.time.ZoneId
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 用户自定义加载策略
- */
-class CustomArtifactPreloadPlanGenerator : ArtifactPreloadPlanGenerator {
-    override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
-        val now = LocalDateTime.now()
-        val executeTime = CronExpression
-            .parse(param.strategy.preloadCron!!)
-            .next(now)
-            ?.atZone(ZoneId.systemDefault())
-            ?.toInstant()
-            ?.toEpochMilli()
-            ?: return null
-        with(param) {
-            return ArtifactPreloadPlan(
-                id = null,
-                createdDate = now,
-                lastModifiedDate = now,
-                strategyId = param.strategy.id!!,
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                sha256 = sha256,
-                size = size,
-                credentialsKey = credentialsKey,
-                executeTime = executeTime
-            )
-        }
-    }
-}
+@ConfigurationProperties("job.artifact-preload-plan-execute")
+class ArtifactPreloadPlanExecuteJobProperties(
+    override var enabled: Boolean = false,
+    override var cron: String = "0 0/1 * * * ?",
+) : BatchJobProperties()

@@ -36,5 +36,6 @@ data class ArtifactPreloadPlanGenerateParam(
     val credentialsKey: String?,
     val fullPath: String,
     val sha256: String,
+    val size: Long,
     val strategy: ArtifactPreloadStrategy,
 )

@@ -63,6 +63,7 @@ class CustomArtifactPreloadPlanGeneratorTest {
             credentialsKey = null,
             fullPath = "/a/b/c.exe",
             sha256 = "0000000000000000000000000000000000000000000000000000000000000001",
+            size = 1000L,
             strategy = strategy,
         )
         val plan = generator.generate(param)

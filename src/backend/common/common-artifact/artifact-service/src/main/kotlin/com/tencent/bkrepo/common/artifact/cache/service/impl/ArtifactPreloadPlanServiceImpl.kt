@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadStrategyService
+import com.tencent.bkrepo.common.artifact.cache.service.PreloadPlanExecutor
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -63,11 +64,13 @@ class ArtifactPreloadPlanServiceImpl(
     private val preloadPlanDao: ArtifactPreloadPlanDao,
     private val preloadStrategies: Map<String, ArtifactPreloadPlanGenerator>,
     private val properties: ArtifactPreloadProperties,
+    private val preloadPlanExecutor: PreloadPlanExecutor,
 ) : ArtifactPreloadPlanService {
     private val repositoryCache = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterWrite(5, TimeUnit.MINUTES)
         .build(CacheLoader.from<String, RepositoryInfo> { getRepo(it) })
+    private val listener = DefaultPreloadListener(preloadPlanDao)
 
     override fun createPlan(credentialsKey: String?, sha256: String) {
         if (!properties.enabled) {
@@ -112,6 +115,19 @@ class ArtifactPreloadPlanServiceImpl(
         preloadPlanDao.remove(projectId, repoName)
     }
 
+    override fun executePlans() {
+        val plans = preloadPlanDao.listReadyPlans(properties.preloadConcurrency)
+        logger.info("${plans.size} plans is ready to execute")
+        var count = 0
+        for (plan in plans) {
+            if (!preloadPlanExecutor.execute(plan.toDto(), listener)) {
+                break
+            }
+            count++
+        }
+        logger.info("$count plans is executed")
+    }
+
     override fun plans(projectId: String, repoName: String, pageRequest: PageRequest): Page<ArtifactPreloadPlan> {
         val records = preloadPlanDao.page(projectId, repoName, pageRequest).map { it.toDto() }
         return Pages.ofResponse(pageRequest, records.size.toLong(), records)
@@ -142,6 +158,7 @@ class ArtifactPreloadPlanServiceImpl(
                 credentialsKey = credentialsKey,
                 fullPath = node.fullPath,
                 sha256 = node.sha256!!,
+                size = node.size,
                 strategy = strategy
             )
             generator.generate(param)

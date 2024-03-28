@@ -101,6 +101,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         assertEquals(UT_PROJECT_ID, plan.projectId)
         assertEquals(UT_REPO_NAME, plan.repoName)
         assertEquals(UT_SHA256, plan.sha256)
+        assertEquals(DataSize.ofGigabytes(2L).toBytes(), plan.size)
         assertEquals(ArtifactPreloadPlan.STATUS_PENDING, plan.status)
     }
 

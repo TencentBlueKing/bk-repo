@@ -47,6 +47,8 @@ data class ArtifactPreloadPlan(
     val fullPath: String? = null,
     @ApiModelProperty("待加载制品sha256")
     val sha256: String,
+    @ApiModelProperty("待加载制品大小")
+    val size: Long,
     @ApiModelProperty("待加载制品所在存储，为null时表示默认存储")
     val credentialsKey: String? = null,
     @ApiModelProperty("预加载计划执行毫秒时间戳")
@@ -63,13 +65,23 @@ data class ArtifactPreloadPlan(
         repoName = repoName,
         fullPath = fullPath,
         sha256 = sha256,
+        size = size,
         credentialsKey = credentialsKey,
         executeTime = executeTime,
         status = status,
     )
 
+    fun artifactInfo() = "plan[$id] credentials[$credentialsKey] sha256[$sha256] size[$size]"
+
     companion object {
+        /**
+         * 等待执行
+         */
         const val STATUS_PENDING = "PENDING"
+
+        /**
+         * 执行中
+         */
         const val STATUS_EXECUTING = "EXECUTING"
         fun TArtifactPreloadPlan.toDto() = ArtifactPreloadPlan(
             id = id,
@@ -80,6 +92,7 @@ data class ArtifactPreloadPlan(
             repoName = repoName,
             fullPath = fullPath,
             sha256 = sha256,
+            size = size,
             credentialsKey = credentialsKey,
             executeTime = executeTime,
             status = status

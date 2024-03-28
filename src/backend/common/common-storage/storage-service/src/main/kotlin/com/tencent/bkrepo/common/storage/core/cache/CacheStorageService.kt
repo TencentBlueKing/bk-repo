@@ -210,6 +210,13 @@ class CacheStorageService(
     }
 
     /**
+     * 获取存储的缓存目录健康状态
+     */
+    fun cacheHealthy(credentials: StorageCredentials?): Boolean {
+        return getMonitor(getCredentialsOrDefault(credentials)).healthy.get()
+    }
+
+    /**
      * 从缓存中加载构件。
      *
      * 生成一个构件流需要两个步骤,判断文件是否存在，存在则新建一个文件流。

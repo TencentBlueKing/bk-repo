@@ -25,42 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service.impl
+package com.tencent.bkrepo.job.batch.task.cache
 
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import org.springframework.scheduling.support.CronExpression
-import java.time.LocalDateTime
-import java.time.ZoneId
+import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
+import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.properties.ArtifactPreloadPlanExecuteJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
- * 用户自定义加载策略
+ * 执行预加载计划将制品加载到缓存中
  */
-class CustomArtifactPreloadPlanGenerator : ArtifactPreloadPlanGenerator {
-    override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
-        val now = LocalDateTime.now()
-        val executeTime = CronExpression
-            .parse(param.strategy.preloadCron!!)
-            .next(now)
-            ?.atZone(ZoneId.systemDefault())
-            ?.toInstant()
-            ?.toEpochMilli()
-            ?: return null
-        with(param) {
-            return ArtifactPreloadPlan(
-                id = null,
-                createdDate = now,
-                lastModifiedDate = now,
-                strategyId = param.strategy.id!!,
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                sha256 = sha256,
-                size = size,
-                credentialsKey = credentialsKey,
-                executeTime = executeTime
-            )
-        }
+@Component
+@EnableConfigurationProperties(ArtifactPreloadPlanExecuteJobProperties::class)
+class ArtifactPreloadPlanExecuteJob(
+    properties: ArtifactPreloadPlanExecuteJobProperties,
+    private val preloadPlanService: ArtifactPreloadPlanService,
+) : DefaultContextJob(properties) {
+    override fun doStart0(jobContext: JobContext) {
+        preloadPlanService.executePlans()
     }
 }

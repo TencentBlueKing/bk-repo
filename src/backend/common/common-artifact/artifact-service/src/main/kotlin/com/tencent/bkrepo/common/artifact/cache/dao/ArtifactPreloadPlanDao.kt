@@ -28,12 +28,17 @@
 package com.tencent.bkrepo.common.artifact.cache.dao
 
 import com.mongodb.client.result.DeleteResult
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class ArtifactPreloadPlanDao : SimpleMongoDao<TArtifactPreloadPlan>() {
@@ -48,6 +53,21 @@ class ArtifactPreloadPlanDao : SimpleMongoDao<TArtifactPreloadPlan>() {
 
     fun remove(projectId: String, repoName: String): DeleteResult {
         return remove(Query(buildCriteria(projectId, repoName)))
+    }
+
+    fun listReadyPlans(limit: Int): List<TArtifactPreloadPlan> {
+        val now = System.currentTimeMillis()
+        val criteria = Criteria.where(TArtifactPreloadPlan::status.name)
+            .isEqualTo(ArtifactPreloadPlan.STATUS_PENDING)
+            .and(TArtifactPreloadPlan::executeTime.name).lte(now)
+        return find(Query(criteria).limit(limit))
+    }
+
+    fun updateStatus(planId: String, status: String, lastModifiedDate: LocalDateTime): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(planId)
+            .and(TArtifactPreloadPlan::lastModifiedDate.name).isEqualTo(lastModifiedDate)
+        val update = Update.update(TArtifactPreloadPlan::status.name, status)
+        return updateFirst(Query(criteria), update)
     }
 
     private fun buildCriteria(projectId: String, repoName: String) =

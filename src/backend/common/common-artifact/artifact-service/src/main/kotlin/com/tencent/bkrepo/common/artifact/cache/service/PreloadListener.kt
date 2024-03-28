@@ -25,42 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service.impl
+package com.tencent.bkrepo.common.artifact.cache.service
 
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import org.springframework.scheduling.support.CronExpression
-import java.time.LocalDateTime
-import java.time.ZoneId
 
-/**
- * 用户自定义加载策略
- */
-class CustomArtifactPreloadPlanGenerator : ArtifactPreloadPlanGenerator {
-    override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
-        val now = LocalDateTime.now()
-        val executeTime = CronExpression
-            .parse(param.strategy.preloadCron!!)
-            .next(now)
-            ?.atZone(ZoneId.systemDefault())
-            ?.toInstant()
-            ?.toEpochMilli()
-            ?: return null
-        with(param) {
-            return ArtifactPreloadPlan(
-                id = null,
-                createdDate = now,
-                lastModifiedDate = now,
-                strategyId = param.strategy.id!!,
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                sha256 = sha256,
-                size = size,
-                credentialsKey = credentialsKey,
-                executeTime = executeTime
-            )
-        }
-    }
+interface PreloadListener {
+    fun onPreloadStart(plan: ArtifactPreloadPlan)
+    fun onPreloadSuccess(plan: ArtifactPreloadPlan)
+    fun onPreloadFailed(plan: ArtifactPreloadPlan)
+    fun onPreloadFinished(plan: ArtifactPreloadPlan)
 }

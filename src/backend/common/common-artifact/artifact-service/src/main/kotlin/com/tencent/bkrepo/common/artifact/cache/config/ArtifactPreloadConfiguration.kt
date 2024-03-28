@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecor
 import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadPlanServiceImpl
 import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadStrategyServiceImpl
 import com.tencent.bkrepo.common.artifact.cache.service.impl.CustomArtifactPreloadPlanGenerator
+import com.tencent.bkrepo.common.artifact.cache.service.impl.DefaultPreloadPlanExecutor
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -50,6 +51,7 @@ import org.springframework.context.annotation.Import
     ArtifactPreloadStrategyServiceImpl::class,
     ArtifactPreloadPlanDao::class,
     ArtifactPreloadPlanServiceImpl::class,
+    DefaultPreloadPlanExecutor::class,
 )
 class ArtifactPreloadConfiguration {
 

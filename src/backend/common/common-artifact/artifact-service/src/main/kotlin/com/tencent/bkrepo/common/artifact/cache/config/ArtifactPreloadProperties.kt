@@ -56,5 +56,9 @@ data class ArtifactPreloadProperties(
     /**
      * 不允许预加载存在时间超超过这个值的制品，避免配置错误导致大量无用旧制品被加载到缓存中
      */
-    var maxArtifactExistsDuration: Duration = Duration.ofDays(7L)
+    var maxArtifactExistsDuration: Duration = Duration.ofDays(7L),
+    /**
+     * 允许同时预加载的制品个数
+     */
+    var preloadConcurrency: Int = 8,
 )

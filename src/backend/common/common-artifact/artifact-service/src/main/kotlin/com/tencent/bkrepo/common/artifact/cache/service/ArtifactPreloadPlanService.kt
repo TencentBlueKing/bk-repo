@@ -58,6 +58,11 @@ interface ArtifactPreloadPlanService {
     fun deletePlan(projectId: String, repoName: String)
 
     /**
+     * 执行预加载计划
+     */
+    fun executePlans()
+
+    /**
      * 分页获取预加载计划
      *
      * @param projectId 项目ID
