@@ -29,12 +29,15 @@ package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
 import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.api.constant.JOB_LOGGER_NAME
+import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.CacheFileDeletedEvent
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import java.io.IOException
@@ -180,12 +183,16 @@ class CleanupFileVisitor(
     }
 
     private fun onFileCleaned(filePath: Path) {
+        val fileName = filePath.fileName.toString()
         val event = FileDeletedEvent(
             credentials = credentials,
             rootPath = rootPath.toString(),
             fullPath = filePath.toString(),
-            sha256 = filePath.fileName.toString()
         )
+        if (rootPath == credentials.cache.path.toPath() && filePath.fileName.toString().length == SHA256_STR_LENGTH) {
+            publisher.publishEvent(CacheFileDeletedEvent(credentials, fileName, filePath.toString()))
+        }
+
         publisher.publishEvent(event)
     }
 
@@ -194,7 +201,6 @@ class CleanupFileVisitor(
             credentials = credentials,
             rootPath = rootPath.toString(),
             fullPath = filePath.toString(),
-            sha256 = filePath.fileName.toString()
         )
         publisher.publishEvent(event)
     }

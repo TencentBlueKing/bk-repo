@@ -138,7 +138,7 @@ open class StorageCacheIndexerManager(
         with(event) {
             val filename = fullPath.toPath().fileName.toString()
             if (rootPath.toPath() == credentials.cache.path.toPath() && filename.length == SHA256_STR_LENGTH) {
-                onCacheDeleted(credentials, sha256)
+                onCacheDeleted(credentials, filename)
             }
         }
     }
@@ -156,7 +156,7 @@ open class StorageCacheIndexerManager(
                 val attributes = Files.readAttributes(fullPath.toPath(), BasicFileAttributes::class.java)
                 val lastAccessTime = attributes.lastAccessTime().toMillis()
                 val size = attributes.size()
-                onCacheReserved(credentials, sha256, size, lastAccessTime.toDouble())
+                onCacheReserved(credentials, filename, size, lastAccessTime.toDouble())
             }
         }
     }

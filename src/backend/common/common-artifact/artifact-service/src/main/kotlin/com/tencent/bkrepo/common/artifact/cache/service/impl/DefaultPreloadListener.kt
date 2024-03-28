@@ -40,8 +40,8 @@ class DefaultPreloadListener(private val preloadPlanDao: ArtifactPreloadPlanDao)
         }
     }
 
-    override fun onPreloadSuccess(plan: ArtifactPreloadPlan) {}
-    override fun onPreloadFailed(plan: ArtifactPreloadPlan) {}
+    override fun onPreloadSuccess(plan: ArtifactPreloadPlan) = Unit
+    override fun onPreloadFailed(plan: ArtifactPreloadPlan) = Unit
 
     override fun onPreloadFinished(plan: ArtifactPreloadPlan) {
         // 执行结束后删除预加载计划

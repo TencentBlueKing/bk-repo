@@ -43,6 +43,8 @@ import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CompositeFileExpireResolver
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.CacheFileDeletedEvent
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.CacheFileLoadedEvent
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -77,6 +79,9 @@ class CacheStorageService(
 
             else -> {
                 val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
+                publisher.publishEvent(
+                    CacheFileLoadedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
+                )
                 async2Store(cancel, filename, credentials, path, cacheFile)
             }
         }
@@ -126,7 +131,8 @@ class CacheStorageService(
         if (artifactInputStream != null && loadCacheFirst && range.isFullContent()) {
             val cachePath = Paths.get(credentials.cache.path, path)
             val tempPath = Paths.get(credentials.cache.path, TEMP)
-            val readListener = CachedFileWriter(cachePath, filename, tempPath)
+            val cacheFileLoadedEventPublisher = CacheFileLoadedEventPublisher(publisher, credentials)
+            val readListener = CachedFileWriter(cachePath, filename, tempPath, cacheFileLoadedEventPublisher)
             artifactInputStream.addListener(readListener)
         }
 
@@ -140,6 +146,9 @@ class CacheStorageService(
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
         fileStorage.delete(path, filename, credentials)
         getCacheClient(credentials).delete(path, filename)
+        publisher.publishEvent(
+            CacheFileDeletedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
+        )
     }
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
@@ -204,6 +213,9 @@ class CacheStorageService(
         if (doExist(path, filename, credentials)) {
             logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
             getCacheClient(credentials).delete(path, filename)
+            publisher.publishEvent(
+                CacheFileDeletedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
+            )
         } else {
             logger.info("Cache file[${credentials.cache.path}/$path/$filename] was not in storage")
         }
