@@ -25,11 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.batch.task.cache
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
+import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.properties.ArtifactPreloadStrategyGenerateJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
 
-@ConfigurationProperties(value = "job.artifact-access-record-cleanup")
-data class ArtifactAccessRecordCleanupJobProperties(
-    override var cron: String = "0 0 0 * * ?",
-) : BatchJobProperties()
+/**
+ * 根据缓存访问记录生成预加载策略
+ */
+@Component
+@EnableConfigurationProperties(ArtifactPreloadStrategyGenerateJobProperties::class)
+class ArtifactPreloadStrategyGenerateJob(
+    properties: ArtifactPreloadStrategyGenerateJobProperties,
+    private val artifactAccessRecorder: ArtifactAccessRecorder,
+) : DefaultContextJob(properties) {
+    override fun doStart0(jobContext: JobContext) {
+        artifactAccessRecorder.generateStrategy()
+    }
+}

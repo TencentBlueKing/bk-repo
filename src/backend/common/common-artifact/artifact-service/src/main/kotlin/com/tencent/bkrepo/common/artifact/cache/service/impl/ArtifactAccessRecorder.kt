@@ -46,7 +46,7 @@ import java.time.format.DateTimeFormatter
 @Component
 class ArtifactAccessRecorder(
     private val preloadProperties: ArtifactPreloadProperties,
-    private val artifactAccessRecordDao: ArtifactAccessRecordDao
+    private val artifactAccessRecordDao: ArtifactAccessRecordDao,
 ) {
 
     @Async
@@ -106,6 +106,10 @@ class ArtifactAccessRecorder(
         val result = artifactAccessRecordDao.delete(beforeDateTime)
         logger.info("${result.deletedCount} artifact access record was deleted")
         return result.deletedCount
+    }
+
+    fun generateStrategy() {
+        // TODO
     }
 
     companion object {

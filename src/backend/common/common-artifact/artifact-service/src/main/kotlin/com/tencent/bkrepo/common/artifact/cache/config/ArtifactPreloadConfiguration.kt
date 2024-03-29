@@ -60,4 +60,7 @@ class ArtifactPreloadConfiguration {
 
     @Bean("CUSTOM")
     fun customPreloadPlanGenerator() = CustomArtifactPreloadPlanGenerator()
+
+    @Bean("CUSTOM_GENERATED")
+    fun customGeneratedPreloadPlanGenerator() = CustomArtifactPreloadPlanGenerator()
 }
