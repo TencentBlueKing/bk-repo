@@ -58,7 +58,7 @@
           @click.prevent="removeDomain(item)"
         />
         <i
-          v-if="index == fileCache.pathPrefix.length - 1"
+          v-if="index === fileCache.pathPrefix.length - 1"
           class="el-icon-circle-plus-outline"
           style="margin: 0px 20px"
           @click.prevent="addDomain()"
