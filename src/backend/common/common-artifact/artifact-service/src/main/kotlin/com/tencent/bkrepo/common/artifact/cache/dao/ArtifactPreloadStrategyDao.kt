@@ -57,8 +57,9 @@ class ArtifactPreloadStrategyDao : SimpleMongoDao<TArtifactPreloadStrategy>() {
         }
     }
 
-    fun delete(projectId: String, repoName: String, id: String): DeleteResult {
-        val criteria = build(projectId, repoName).and(ID).isEqualTo(id)
+    fun delete(projectId: String, repoName: String, id: String? = null): DeleteResult {
+        val criteria = build(projectId, repoName)
+        id?.let { criteria.and(ID).isEqualTo(id) }
         return remove(Query(criteria))
     }
 

@@ -52,9 +52,11 @@ interface ArtifactPreloadStrategyService {
     /**
      * 删除策略
      *
+     * @param projectId 项目id
+     * @param repoName 仓库名
      * @param id 策略id
      */
-    fun delete(projectId: String, repoName: String, id: String)
+    fun delete(projectId: String, repoName: String, id: String? = null)
 
     /**
      * 获取预加载策略

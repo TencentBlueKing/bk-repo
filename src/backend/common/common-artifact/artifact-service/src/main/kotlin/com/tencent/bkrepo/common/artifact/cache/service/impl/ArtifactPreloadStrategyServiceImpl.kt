@@ -85,8 +85,9 @@ class ArtifactPreloadStrategyServiceImpl(
         }
     }
 
-    override fun delete(projectId: String, repoName: String, id: String) {
-        if (artifactPreloadStrategyDao.delete(projectId, repoName, id).deletedCount == 0L) {
+    override fun delete(projectId: String, repoName: String, id: String?) {
+        val deleteResult = artifactPreloadStrategyDao.delete(projectId, repoName, id)
+        if (id != null && deleteResult.deletedCount == 0L) {
             throw ErrorCodeException(ARTIFACT_PRELOAD_STRATEGY_NOT_FOUND, id, status = HttpStatus.NOT_FOUND)
         }
     }

@@ -53,8 +53,6 @@ class CacheFileEventListener(
         if (properties.enabled && event.size >= properties.minSize.toBytes()) {
             logger.info("try generate preload plan for $event")
             preloadPlanService.createPlan(event.credentials?.key, event.sha256)
-        } else if (event.size < properties.minSize.toBytes()) {
-            logger.info("cache file size less than ${properties.minSize}, will not generate preload plan")
         }
     }
 

@@ -21,6 +21,7 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
@@ -55,22 +56,26 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     @BeforeAll
     fun before() {
         properties.enabled = true
-        resetMock()
-        createStrategy()
     }
 
     @BeforeEach
     fun beforeEach() {
         resetMock()
+        createStrategy()
+    }
+
+    @AfterEach
+    fun afterEach() {
+        deleteStrategy()
+        deletePlans()
     }
 
     @Test
     fun testCreatePlan() {
         // test repo credentials not match
-        val repoName2 = "${UT_REPO_NAME}2"
-        resetMock(repoName = repoName2)
-        preloadPlanService.createPlan("other", UT_SHA256)
-        var plans = preloadPlanService.plans(UT_PROJECT_ID, repoName2, Pages.ofRequest(0, 10)).records
+        resetMock(repoName = UT_REPO_NAME2)
+        preloadPlanService.createPlan(OTHER_CREDENTIALS_KEY, UT_SHA256)
+        var plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME2, Pages.ofRequest(0, 10)).records
         assertEquals(0, plans.size)
 
         // test success create
@@ -146,6 +151,8 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         // create file
         val artifactFile = createTempArtifactFile(1024 * 1024)
         storageService.store(UT_SHA256, artifactFile, null)
+        // 等待异步存储完成
+        Thread.sleep(1000L)
 
         // 删除缓存
         val cacheFilePath = deleteCache(storageProperties.defaultStorageCredentials(), UT_SHA256)
@@ -177,6 +184,8 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         )
     }
 
+    // 构造测试数据
+
     private fun createStrategy(cron: String = "0 0 0 * * ?") {
         val request = ArtifactPreloadStrategyCreateRequest(
             projectId = UT_PROJECT_ID,
@@ -187,7 +196,21 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
             type = PreloadStrategyType.CUSTOM.name
         )
         preloadStrategyService.create(request)
-        preloadStrategyService.create(request.copy(projectId = "${UT_PROJECT_ID}2"))
+        preloadStrategyService.create(request.copy(projectId = UT_PROJECT_ID2))
+    }
+
+    private fun deleteStrategy() {
+        preloadStrategyService.delete(UT_PROJECT_ID, UT_REPO_NAME)
+        preloadStrategyService.delete(UT_PROJECT_ID, UT_REPO_NAME2)
+        preloadStrategyService.delete(UT_PROJECT_ID2, UT_REPO_NAME)
+        preloadStrategyService.delete(UT_PROJECT_ID2, UT_REPO_NAME2)
+    }
+
+    private fun deletePlans() {
+        preloadPlanService.deletePlan(UT_PROJECT_ID, UT_REPO_NAME)
+        preloadPlanService.deletePlan(UT_PROJECT_ID, UT_REPO_NAME2)
+        preloadPlanService.deletePlan(UT_PROJECT_ID2, UT_REPO_NAME)
+        preloadPlanService.deletePlan(UT_PROJECT_ID2, UT_REPO_NAME2)
     }
 
     private fun buildRepo(projectId: String = UT_PROJECT_ID, repoName: String = UT_REPO_NAME) = RepositoryInfo(
@@ -228,5 +251,11 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
             sha256 = UT_SHA256,
             metadata = emptyMap()
         )
+    }
+
+    companion object {
+        private const val OTHER_CREDENTIALS_KEY = "other"
+        private const val UT_REPO_NAME2 = "${UT_REPO_NAME}2"
+        private const val UT_PROJECT_ID2 = "${UT_PROJECT_ID}2"
     }
 }
