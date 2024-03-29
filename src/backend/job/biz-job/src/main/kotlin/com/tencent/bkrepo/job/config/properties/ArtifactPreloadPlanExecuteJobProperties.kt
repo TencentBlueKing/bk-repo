@@ -31,6 +31,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("job.artifact-preload-plan-execute")
 class ArtifactPreloadPlanExecuteJobProperties(
-    override var enabled: Boolean = false,
+    override var enabled: Boolean = true,
     override var cron: String = "0 0/1 * * * ?",
 ) : BatchJobProperties()

@@ -50,6 +50,10 @@ data class ArtifactPreloadProperties(
      */
     var minSize: DataSize = DataSize.ofGigabytes(1L),
     /**
+     * 访问记录保留时间
+     */
+    var accessRecordKeepDuration: Duration = Duration.ofDays(7),
+    /**
      * 单仓库最多创建的预加载策略数量，策略数量过多可能会导致生成预加载执行计划过慢
      */
     var maxStrategyCount: Int = 10,

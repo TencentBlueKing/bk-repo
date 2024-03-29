@@ -98,6 +98,16 @@ class ArtifactAccessRecorder(
         }
     }
 
+    /**
+     * 清理访问记录
+     */
+    fun cleanup(): Long {
+        val beforeDateTime = LocalDateTime.now().minus(preloadProperties.accessRecordKeepDuration)
+        val result = artifactAccessRecordDao.delete(beforeDateTime)
+        logger.info("${result.deletedCount} artifact access record was deleted")
+        return result.deletedCount
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactAccessRecorder::class.java)
     }

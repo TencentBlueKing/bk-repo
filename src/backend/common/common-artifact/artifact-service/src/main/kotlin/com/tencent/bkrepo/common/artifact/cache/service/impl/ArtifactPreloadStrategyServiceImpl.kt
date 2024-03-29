@@ -56,6 +56,7 @@ class ArtifactPreloadStrategyServiceImpl(
             check(fullPathRegex, recentSeconds, preloadCron)
             val now = LocalDateTime.now()
             if (artifactPreloadStrategyDao.count(projectId, repoName) > preloadProperties.maxStrategyCount) {
+                // 限制可创建的策略数量，避免生成预加载计划过慢
                 throw ErrorCodeException(ARTIFACT_PRELOAD_STRATEGY_EXCEED_MAX_COUNT, preloadProperties.maxStrategyCount)
             }
             return artifactPreloadStrategyDao.insert(

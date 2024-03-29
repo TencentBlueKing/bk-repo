@@ -27,12 +27,14 @@
 
 package com.tencent.bkrepo.common.artifact.cache.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactAccessRecord
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.lt
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -59,6 +61,10 @@ class ArtifactAccessRecordDao : SimpleMongoDao<TArtifactAccessRecord>() {
         update.push(TArtifactAccessRecord::accessTimeSequence.name, now.atZone(ZoneId.systemDefault()).toEpochSecond())
         val query = Query(buildCriteria(projectId, repoName, fullPath, sha256))
         updateFirst(query, update)
+    }
+
+    fun delete(beforeDateTime: LocalDateTime): DeleteResult {
+        return remove(Query(TArtifactAccessRecord::lastModifiedDate.lt(beforeDateTime)))
     }
 
     private fun buildCriteria(projectId: String, repoName: String, fullPath: String, sha256: String): Criteria {

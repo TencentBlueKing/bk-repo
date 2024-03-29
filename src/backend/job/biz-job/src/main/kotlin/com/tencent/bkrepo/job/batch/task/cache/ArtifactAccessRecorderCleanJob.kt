@@ -25,46 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.model
+package com.tencent.bkrepo.job.batch.task.cache
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
-
+import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
+import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.properties.ArtifactAccessRecordCleanupJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
- * 制品访问记录
+ * 制品访问记录清理
  */
-@Document("artifact_access_record")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "projectId_repoName_fullPath_sha256_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'sha256': 1}",
-        unique = true,
-        background = true
-    ),
-    CompoundIndex(name = "lastModifiedDate_idx", def = "{'lastModifiedDate': 1}", unique = true, background = true)
-)
-data class TArtifactAccessRecord(
-    val id: String? = null,
-    val createdDate: LocalDateTime,
-    val lastModifiedDate: LocalDateTime,
-
-    val projectId: String,
-    val repoName: String,
-    val fullPath: String,
-    val sha256: String,
-    /**
-     * 访问时cache miss次数
-     */
-    val cacheMissCount: Long,
-    /**
-     * 制品对应的node创建时间
-     */
-    val nodeCreateTime: LocalDateTime,
-    /**
-     * 制品访问时间序列
-     */
-    val accessTimeSequence: List<Long>
-)
+@Component
+@EnableConfigurationProperties(ArtifactAccessRecordCleanupJobProperties::class)
+class ArtifactAccessRecordCleanupJob(
+    properties: ArtifactAccessRecordCleanupJobProperties,
+    private val recorder: ArtifactAccessRecorder,
+) : DefaultContextJob(properties) {
+    override fun doStart0(jobContext: JobContext) {
+        recorder.cleanup()
+    }
+}

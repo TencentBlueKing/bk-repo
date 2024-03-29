@@ -38,12 +38,14 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.TestPropertySource
 import org.springframework.util.unit.DataSize
 import java.time.Duration
@@ -63,6 +65,11 @@ class ArtifactAccessRecorderTest @Autowired constructor(
     @BeforeAll
     fun before() {
         preloadProperties.enabled = true
+    }
+
+    @BeforeEach
+    fun beforeEach() {
+        accessRecordDao.remove(Query())
     }
 
     @Test
@@ -91,6 +98,19 @@ class ArtifactAccessRecorderTest @Autowired constructor(
             Assertions.assertEquals(2, record!!.cacheMissCount)
             Assertions.assertEquals(2, record.accessTimeSequence.size)
         }
+    }
+
+    @Test
+    fun testCleanup() {
+        val node = buildNodeDetail()
+        recorder.onArtifactAccess(node, true)
+        Assertions.assertEquals(1L, accessRecordDao.count(Query()))
+        recorder.cleanup()
+        Assertions.assertEquals(1L, accessRecordDao.count(Query()))
+        preloadProperties.accessRecordKeepDuration = Duration.ofSeconds(1L)
+        Thread.sleep(1000L)
+        recorder.cleanup()
+        Assertions.assertEquals(0L, accessRecordDao.count(Query()))
     }
 
     private fun buildNodeDetail(): NodeDetail {

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.cache
 
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -42,8 +43,11 @@ import org.springframework.stereotype.Component
 class ArtifactPreloadPlanExecuteJob(
     properties: ArtifactPreloadPlanExecuteJobProperties,
     private val preloadPlanService: ArtifactPreloadPlanService,
+    private val preloadProperties: ArtifactPreloadProperties,
 ) : DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
-        preloadPlanService.executePlans()
+        if (preloadProperties.enabled) {
+            preloadPlanService.executePlans()
+        }
     }
 }
