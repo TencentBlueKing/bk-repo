@@ -97,6 +97,9 @@ class DefaultPreloadPlanExecutor(
 
     fun load(plan: ArtifactPreloadPlan, credentials: StorageCredentials, listener: PreloadListener?) {
         try {
+            if (System.currentTimeMillis() - plan.executeTime > preloadProperties.planTimeout.toMillis()) {
+                throw RuntimeException("plan timeout[${plan.executeTime}], ${plan.artifactInfo()}")
+            }
             logger.info("preload start, ${plan.artifactInfo()}")
             listener?.onPreloadStart(plan)
             val throughput = if (existsOrCaching(credentials, plan.sha256)) {

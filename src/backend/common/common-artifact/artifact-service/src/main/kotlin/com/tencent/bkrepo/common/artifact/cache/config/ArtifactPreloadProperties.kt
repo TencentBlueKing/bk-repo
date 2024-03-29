@@ -62,6 +62,10 @@ data class ArtifactPreloadProperties(
      */
     var maxArtifactExistsDuration: Duration = Duration.ofDays(7L),
     /**
+     * 执行计划超时时间，超时后将不再预加载
+     */
+    var planTimeout: Duration = Duration.ofHours(1L),
+    /**
      * 允许同时预加载的制品个数
      */
     var preloadConcurrency: Int = 8,

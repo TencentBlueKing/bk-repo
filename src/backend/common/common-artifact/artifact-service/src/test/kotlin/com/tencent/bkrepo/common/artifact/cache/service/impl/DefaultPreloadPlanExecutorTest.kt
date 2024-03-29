@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.cache.service.impl
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.UT_SHA256
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import java.time.Duration
 import java.time.LocalDateTime
 
 @DisplayName("预加载策略服务测试")
@@ -60,14 +62,21 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
     private val monitorHelper: StorageHealthMonitorHelper,
 ) : ArtifactPreloadBaseServiceTest(properties, storageService, fileLocator, storageProperties) {
 
+    private lateinit var artifactFile: ArtifactFile
+
     @BeforeEach
     fun beforeEach() {
         resetMock()
+        artifactFile = createTempArtifactFile(1024 * 1024)
+        storageService.store(UT_SHA256, artifactFile, null)
+        // 等待文件异步保存完成
+        Thread.sleep(1000L)
     }
 
     @AfterEach
     fun afterEach() {
-        storageService.delete(UT_SHA256, storageProperties.defaultStorageCredentials())
+        artifactFile.delete()
+        storageService.delete(UT_SHA256, null)
     }
 
     @Test
@@ -76,6 +85,26 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
         monitorHelper.getMonitor(storageProperties, storageProperties.defaultStorageCredentials()).healthy.set(false)
         Assertions.assertFalse(preloadPlanExecutor.execute(buildPlan()))
         monitorHelper.getMonitor(storageProperties, storageProperties.defaultStorageCredentials()).healthy.set(true)
+    }
+
+    @Test
+    fun testPlanTimeout() {
+        val cacheFile = deleteCache(storageProperties.defaultStorageCredentials(), UT_SHA256).toFile()
+
+        // 加载缓存成功
+        Assertions.assertTrue(preloadPlanExecutor.execute(buildPlan()))
+        Thread.sleep(1000L)
+        Assertions.assertTrue(cacheFile.exists())
+        deleteCache(storageProperties.defaultStorageCredentials(), UT_SHA256)
+        Assertions.assertFalse(cacheFile.exists())
+
+        // 计划超时，加载失败
+        properties.planTimeout = Duration.ofSeconds(1L)
+        val plan = buildPlan(executeTime = System.currentTimeMillis() - 2000)
+        Assertions.assertTrue(preloadPlanExecutor.execute(plan))
+        Thread.sleep(1000L)
+        Assertions.assertFalse(cacheFile.exists())
+        properties.planTimeout = Duration.ofHours(1L)
     }
 
     @Test
@@ -90,10 +119,6 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
     @Test
     fun testLoadCacheSuccess() {
         require(storageService is CacheStorageService)
-        // create file
-        val artifactFile = createTempArtifactFile(1024 * 1024)
-        storageService.store(UT_SHA256, artifactFile, null)
-
         // 缓存已经存在
         Assertions.assertTrue(preloadPlanExecutor.execute(buildPlan()))
         Thread.sleep(1000L)
@@ -105,10 +130,9 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
         preloadPlanExecutor.execute(buildPlan())
         Thread.sleep(1000L)
         Assertions.assertTrue(cachePath.existReal())
-        artifactFile.delete()
     }
 
-    private fun buildPlan() = ArtifactPreloadPlan(
+    private fun buildPlan(executeTime: Long = System.currentTimeMillis() - 1000) = ArtifactPreloadPlan(
         id = "xxx",
         createdDate = LocalDateTime.now(),
         lastModifiedDate = LocalDateTime.now(),
@@ -119,7 +143,7 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
         sha256 = UT_SHA256,
         size = 1000L,
         credentialsKey = null,
-        executeTime = System.currentTimeMillis() - 1000,
+        executeTime = executeTime,
     )
 
     private fun resetMock() {
