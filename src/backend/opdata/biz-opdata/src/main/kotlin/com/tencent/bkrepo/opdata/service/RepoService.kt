@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.opdata.pojo.CleanupRules
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -35,12 +36,17 @@ import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
+import java.util.concurrent.Callable
+import java.util.concurrent.Future
+import java.util.concurrent.Semaphore
 
 @Service
 class RepoService(
     private val projectClient: ProjectClient,
     private val repoClient: RepositoryClient,
+    private val executor: ThreadPoolTaskExecutor,
 ) {
 
     fun batchUpdateCleanupStrategy(rule: CleanupRules) {
@@ -48,10 +54,11 @@ class RepoService(
             val (projectId, repoName) = repoStr.split(StringPool.SLASH)
             updateRepo(
                 projectId = projectId,
-                repoName = repoName,
+                repoNames = listOf(repoName),
                 cleanupType = rule.cleanupType,
                 cleanupValue = value,
                 enable = rule.enable,
+                relatedRepo = rule.relatedRepo
             )
         }
 
@@ -82,53 +89,85 @@ class RepoService(
                 val (_, repoName) = key.split(StringPool.SLASH)
                 updateRepo(
                     projectId = projectInfo.name,
-                    repoName = repoName,
+                    repoNames = listOf(repoName),
                     cleanupType = rule.cleanupType,
                     cleanupValue = value,
                     enable = rule.enable,
-                    specialRepoRules = rule.specialRepoRules
+                    specialRepoRules = rule.specialRepoRules,
+                    relatedRepo = rule.relatedRepo
                 )
                 return
             }
         }
         updateRepo(
             projectId = projectInfo.name,
-            repoName = rule.defaultRepoName,
+            repoNames = rule.defaultRepos,
             cleanupType = rule.cleanupType,
             cleanupValue = rule.cleanupValue,
             enable = rule.enable,
-            specialRepoRules = rule.specialRepoRules
+            specialRepoRules = rule.specialRepoRules,
+            relatedRepo = rule.relatedRepo
         )
     }
 
 
     private fun updateRepo(
         projectId: String,
-        repoName: String?,
+        repoNames: List<String>?,
         cleanupType: String,
         cleanupValue: String,
         enable: Boolean,
-        specialRepoRules: Map<String, String> = emptyMap()
+        specialRepoRules: Map<String, String> = emptyMap(),
+        relatedRepo: String? = null
     ) {
-        if (repoName.isNullOrEmpty() || cleanupValue.isEmpty() || cleanupType.isEmpty()) return
-        if (specialRepoRules.containsKey("$projectId/$repoName")) return
-        val repoInfo = repoClient.getRepoInfo(projectId, repoName).data ?: return
-        val configuration = repoInfo.configuration
-        val cleanupStrategy = CleanupStrategy(
-            cleanupType = cleanupType,
-            cleanupValue = cleanupValue,
-            enable = enable
-        )
-        configuration.settings["cleanupStrategy"] = cleanupStrategy
-        val request = RepoUpdateRequest(
-            projectId = repoInfo.projectId,
-            name = repoInfo.name,
-            configuration = configuration,
-            operator = SYSTEM_USER
-        )
-        repoClient.updateRepo(request)
+        if (repoNames.isNullOrEmpty() || cleanupValue.isEmpty() || cleanupType.isEmpty()) return
+        repoNames.forEach {
+            if (specialRepoRules.containsKey("$projectId/$it")) return
+            val repoInfo = repoClient.getRepoInfo(projectId, it).data ?: return
+            val configuration = repoInfo.configuration
+            if (configuration.settings["cleanupStrategy"] != null) return
+            if (relatedRepo.isNullOrEmpty()) {
+                val cleanupStrategy = CleanupStrategy(
+                    cleanupType = cleanupType,
+                    cleanupValue = cleanupValue,
+                    enable = enable
+                )
+                configuration.settings["cleanupStrategy"] = cleanupStrategy
+            } else {
+                val relatedRepoInfo = repoClient.getRepoInfo(projectId, relatedRepo).data ?: return
+                configuration.settings["cleanupStrategy"] = relatedRepoInfo.configuration.settings["cleanupStrategy"] as CleanupStrategy
+            }
+
+            val request = RepoUpdateRequest(
+                projectId = repoInfo.projectId,
+                name = repoInfo.name,
+                configuration = configuration,
+                operator = SYSTEM_USER
+            )
+            repoClient.updateRepo(request)
+        }
     }
 
+
+    fun executeProject(
+        projectId: String,
+        futureList: MutableList<Future<Unit>>,
+        semaphore: Semaphore = Semaphore(5),
+        action: (String) -> Unit,
+    ) {
+        semaphore.acquire()
+        futureList.add(
+            executor.submit(
+                Callable {
+                    try {
+                        action(projectId)
+                    } finally {
+                        semaphore.release()
+                    }
+                }.trace()
+            )
+        )
+    }
 
 
     data class CleanupStrategy(
