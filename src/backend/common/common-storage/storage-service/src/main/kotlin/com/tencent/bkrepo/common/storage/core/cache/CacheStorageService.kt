@@ -143,8 +143,10 @@ class CacheStorageService(
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
         fileStorage.delete(path, filename, credentials)
+        val cacheFilePath = "${credentials.cache.path}$path/$filename"
+        val size = File(cacheFilePath).length()
         getCacheClient(credentials).delete(path, filename)
-        publishCacheFileDeletedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
+        publishCacheFileDeletedEvent(credentials, filename, cacheFilePath, size)
     }
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
@@ -208,8 +210,10 @@ class CacheStorageService(
     ) {
         if (doExist(path, filename, credentials)) {
             logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
+            val cacheFilePath = "${credentials.cache.path}$path/$filename"
+            val size = File(cacheFilePath).length()
             getCacheClient(credentials).delete(path, filename)
-            publishCacheFileDeletedEvent(credentials, filename, "${credentials.cache.path}$path/$filename")
+            publishCacheFileDeletedEvent(credentials, filename, cacheFilePath, size)
         } else {
             logger.info("Cache file[${credentials.cache.path}/$path/$filename] was not in storage")
         }
@@ -222,9 +226,14 @@ class CacheStorageService(
         return getMonitor(getCredentialsOrDefault(credentials)).healthy.get()
     }
 
-    private fun publishCacheFileDeletedEvent(credentials: StorageCredentials, filename: String, cacheFilePath: String) {
+    private fun publishCacheFileDeletedEvent(
+        credentials: StorageCredentials,
+        filename: String,
+        cacheFilePath: String,
+        size: Long
+    ) {
         try {
-            val event = CacheFileDeletedEvent(credentials, filename, cacheFilePath, File(cacheFilePath).length())
+            val event = CacheFileDeletedEvent(credentials, filename, cacheFilePath, size)
             publisher.publishEvent(event)
         } catch (e: Exception) {
             logger.error("publish cache file delete event failed", e)

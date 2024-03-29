@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
 import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
 import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadPlanServiceImpl
 import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactPreloadStrategyServiceImpl
+import com.tencent.bkrepo.common.artifact.cache.service.impl.CacheFileEventListener
 import com.tencent.bkrepo.common.artifact.cache.service.impl.CustomArtifactPreloadPlanGenerator
 import com.tencent.bkrepo.common.artifact.cache.service.impl.DefaultPreloadPlanExecutor
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
@@ -45,7 +46,7 @@ import org.springframework.context.annotation.Import
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ArtifactPreloadProperties::class)
-@ConditionalOnProperty("storage.cache.preload.enabled")
+@ConditionalOnProperty("artifact.cache.preload.enabled")
 @Import(
     ArtifactAccessRecordDao::class,
     ArtifactAccessRecorder::class,
@@ -54,6 +55,7 @@ import org.springframework.context.annotation.Import
     ArtifactPreloadPlanDao::class,
     ArtifactPreloadPlanServiceImpl::class,
     DefaultPreloadPlanExecutor::class,
+    CacheFileEventListener::class,
 )
 @AutoConfigureAfter(StorageAutoConfiguration::class)
 class ArtifactPreloadConfiguration {

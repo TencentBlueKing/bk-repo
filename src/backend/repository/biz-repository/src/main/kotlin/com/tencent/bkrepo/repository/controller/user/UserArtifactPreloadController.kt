@@ -120,8 +120,8 @@ class UserArtifactPreloadController(
     fun pagePlans(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
-        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE,
+        @RequestParam(required = false, defaultValue = "$DEFAULT_PAGE_NUMBER") pageNumber: Int = DEFAULT_PAGE_NUMBER,
+        @RequestParam(required = false, defaultValue = "$DEFAULT_PAGE_SIZE") pageSize: Int = DEFAULT_PAGE_SIZE,
     ): Response<Page<ArtifactPreloadPlan>> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         val page = preloadPlanService.plans(projectId, repoName, Pages.ofRequest(pageNumber, pageSize))

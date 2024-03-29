@@ -209,10 +209,10 @@ interface NodeClient {
     ): Response<List<NodeInfo>>
 
     @ApiOperation("按sha256分页查询节点")
-    @GetMapping("/page", params = ["sha256"])
+    @PostMapping("/page", params = ["sha256"])
     fun listPageNodeBySha256(
         @RequestParam("sha256", required = true) sha256: String,
-        nodeListOption: NodeListOption
+        @RequestBody nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>>
 
     @ApiOperation("查询已删除节点")
