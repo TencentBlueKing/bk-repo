@@ -38,23 +38,33 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.service.PermissionService
+import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.LoggerFactory
 
 open class OpenResource(private val permissionService: PermissionService) {
 
     /**
      * the userContext should equal userId or be admin
-     * only use in service api
+     * only use in user api
      */
     fun preCheckContextUser(userId: String) {
         val userContext = SecurityUtils.getUserId()
-        if (!SecurityUtils.isAdminFromApi() && userContext.isNotEmpty() && userContext != userId) {
+        if (!isAdminFromApi() && userContext.isNotEmpty() && userContext != userId) {
             logger.warn("user not match [$userContext, $userId]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
+    }
+
+    /**
+     * 是否系统管理员
+     * 限定在auth服务api请求时使用
+     */
+    fun isAdminFromApi(): Boolean {
+        return HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
     }
 
     /**
@@ -68,11 +78,11 @@ open class OpenResource(private val permissionService: PermissionService) {
 
     /**
      * the userContext should be admin
-     * only use in service api
+     * only use in user api
      */
     fun preCheckUserAdmin() {
         val userContext = SecurityUtils.getUserId()
-        if (!SecurityUtils.isAdminFromApi()) {
+        if (!isAdminFromApi()) {
             logger.warn("user not match admin [$userContext]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
