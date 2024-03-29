@@ -64,7 +64,6 @@ import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -294,7 +293,7 @@ open class PermissionServiceImpl constructor(
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
-        if (isUserSystemAdmin() || isUserLocalProjectAdmin(userId, projectId)) {
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
         }
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
@@ -361,8 +360,9 @@ open class PermissionServiceImpl constructor(
         return permHelper.isUserLocalProjectUser(userId, projectId)
     }
 
-    fun isUserSystemAdmin(): Boolean {
-        return SecurityUtils.isAdmin()
+    fun isUserSystemAdmin(userId: String): Boolean {
+        val user = userDao.findFirstByUserId(userId) ?: return false
+        return user.admin
     }
 
     fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {

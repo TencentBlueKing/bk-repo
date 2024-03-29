@@ -47,10 +47,11 @@ open class OpenResource(private val permissionService: PermissionService) {
 
     /**
      * the userContext should equal userId or be admin
+     * only use in service api
      */
     fun preCheckContextUser(userId: String) {
         val userContext = SecurityUtils.getUserId()
-        if (!SecurityUtils.isAdmin() && userContext.isNotEmpty() && userContext != userId) {
+        if (!SecurityUtils.isAdminFromApi() && userContext.isNotEmpty() && userContext != userId) {
             logger.warn("user not match [$userContext, $userId]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
@@ -60,17 +61,18 @@ open class OpenResource(private val permissionService: PermissionService) {
      *  userId's assetUsers contain userContext or userContext be admin
      */
     fun preCheckUserOrAssetUser(userId: String, users: List<UserInfo>) {
-        if (!users.any { userInfo -> userInfo.userId.equals(userId) }) {
+        if (!users.any { userInfo -> userInfo.userId == userId }) {
             preCheckContextUser(userId)
         }
     }
 
     /**
      * the userContext should be admin
+     * only use in service api
      */
     fun preCheckUserAdmin() {
         val userContext = SecurityUtils.getUserId()
-        if (!SecurityUtils.isAdmin()) {
+        if (!SecurityUtils.isAdminFromApi()) {
             logger.warn("user not match admin [$userContext]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }

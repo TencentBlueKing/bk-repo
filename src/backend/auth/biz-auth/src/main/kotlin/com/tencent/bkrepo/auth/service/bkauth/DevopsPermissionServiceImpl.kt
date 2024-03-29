@@ -81,7 +81,7 @@ class DevopsPermissionServiceImpl constructor(
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         // 用户为系统管理员，或者当前项目管理员
-        if (isUserSystemAdmin() || isUserLocalProjectAdmin(userId, projectId)
+        if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)
             || isDevopsProjectMember(userId, projectId, READ.name)
         ) return getAllRepoByProjectId(projectId)
 
@@ -137,7 +137,7 @@ class DevopsPermissionServiceImpl constructor(
         with(request) {
             logger.debug("check devops permission request [$request]")
 
-            if (isUserSystemAdmin()) return true
+            if (isUserSystemAdmin(uid)) return true
 
             //user is not local admin, not in project
             if (projectId == null) return false

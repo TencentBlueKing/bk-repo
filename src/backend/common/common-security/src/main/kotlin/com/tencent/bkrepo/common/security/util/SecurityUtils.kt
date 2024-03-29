@@ -62,12 +62,9 @@ object SecurityUtils {
 
     /**
      * 是否系统管理员
+     * 限定在api请求时使用
      */
-    fun isAdmin(): Boolean {
-        val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)
-        val admin = HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER)
-        logger.info("aaaaaaaaaaaa [$userId]")
-        logger.info("bbbbbbbbbbbb [$admin]")
+    fun isAdminFromApi(): Boolean {
         return HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
     }
 
