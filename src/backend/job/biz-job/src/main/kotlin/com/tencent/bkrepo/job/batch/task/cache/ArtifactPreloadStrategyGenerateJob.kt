@@ -41,9 +41,9 @@ import org.springframework.stereotype.Component
 @EnableConfigurationProperties(ArtifactPreloadStrategyGenerateJobProperties::class)
 class ArtifactPreloadStrategyGenerateJob(
     properties: ArtifactPreloadStrategyGenerateJobProperties,
-    private val artifactAccessRecorder: ArtifactAccessRecorder,
+    private val artifactAccessRecorder: ArtifactAccessRecorder?,
 ) : DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
-        artifactAccessRecorder.generateStrategy()
+        artifactAccessRecorder?.generateStrategy()
     }
 }

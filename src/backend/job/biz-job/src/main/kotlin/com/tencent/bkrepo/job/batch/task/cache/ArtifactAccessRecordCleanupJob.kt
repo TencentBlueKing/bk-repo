@@ -41,9 +41,9 @@ import org.springframework.stereotype.Component
 @EnableConfigurationProperties(ArtifactAccessRecordCleanupJobProperties::class)
 class ArtifactAccessRecordCleanupJob(
     properties: ArtifactAccessRecordCleanupJobProperties,
-    private val recorder: ArtifactAccessRecorder,
+    private val recorder: ArtifactAccessRecorder?,
 ) : DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
-        recorder.cleanup()
+        recorder?.cleanup()
     }
 }

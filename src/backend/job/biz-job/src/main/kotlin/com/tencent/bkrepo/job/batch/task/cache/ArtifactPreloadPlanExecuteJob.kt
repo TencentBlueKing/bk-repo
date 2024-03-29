@@ -42,12 +42,12 @@ import org.springframework.stereotype.Component
 @EnableConfigurationProperties(ArtifactPreloadPlanExecuteJobProperties::class)
 class ArtifactPreloadPlanExecuteJob(
     properties: ArtifactPreloadPlanExecuteJobProperties,
-    private val preloadPlanService: ArtifactPreloadPlanService,
-    private val preloadProperties: ArtifactPreloadProperties,
+    private val preloadPlanService: ArtifactPreloadPlanService?,
+    private val preloadProperties: ArtifactPreloadProperties?,
 ) : DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
-        if (preloadProperties.enabled) {
-            preloadPlanService.executePlans()
+        if (preloadProperties?.enabled == true) {
+            preloadPlanService?.executePlans()
         }
     }
 }
