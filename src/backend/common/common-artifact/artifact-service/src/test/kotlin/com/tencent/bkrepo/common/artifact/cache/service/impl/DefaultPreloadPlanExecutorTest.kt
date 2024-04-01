@@ -52,7 +52,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.time.Duration
 import java.time.LocalDateTime
 
-@DisplayName("预加载策略服务测试")
+@DisplayName("预加载计划执行器测试")
 class DefaultPreloadPlanExecutorTest @Autowired constructor(
     properties: ArtifactPreloadProperties,
     storageService: StorageService,
@@ -112,6 +112,8 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
         properties.preloadConcurrency = 1
         val plan = buildPlan()
         Assertions.assertTrue(preloadPlanExecutor.execute(plan))
+        preloadPlanExecutor.execute(plan)
+        preloadPlanExecutor.execute(plan)
         Assertions.assertFalse(preloadPlanExecutor.execute(plan))
         properties.preloadConcurrency = 8
     }
