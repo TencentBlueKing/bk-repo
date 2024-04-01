@@ -35,14 +35,13 @@ import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class RepoService(
     private val projectClient: ProjectClient,
     private val repoClient: RepositoryClient,
-    private val executor: ThreadPoolTaskExecutor,
 ) {
 
     fun batchUpdateCleanupStrategy(rule: CleanupRules) {
@@ -141,7 +140,7 @@ class RepoService(
                 )
                 configuration.settings["cleanupStrategy"] = cleanupStrategy
             }
-
+            logger.info("will update cleanup strategy for $projectId|${repoInfo.name}")
             val request = RepoUpdateRequest(
                 projectId = repoInfo.projectId,
                 name = repoInfo.name,
@@ -175,5 +174,7 @@ class RepoService(
         // 是否启用
         val enable: Boolean = false
     )
-
+    companion object {
+        private val logger = LoggerFactory.getLogger(RepoService::class.java)
+    }
 }
