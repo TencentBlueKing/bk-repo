@@ -42,4 +42,6 @@ class CleanupRules(
     var enable: Boolean = false,
     // 关联仓库（根据关联仓库去更新默认仓库清理策略）
     var relatedRepo: String = "",
+    // 当开启后，对已经设置清理策略的仓库也进行策略更新
+    var forceRefresh: Boolean = false,
 )

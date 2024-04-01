@@ -53,7 +53,8 @@ class RepoService(
                 cleanupType = rule.cleanupType,
                 cleanupValue = value,
                 enable = rule.enable,
-                relatedRepo = rule.relatedRepo
+                relatedRepo = rule.relatedRepo,
+                forceRefresh = rule.forceRefresh,
             )
         }
 
@@ -89,7 +90,8 @@ class RepoService(
                     cleanupValue = value,
                     enable = rule.enable,
                     specialRepoRules = rule.specialRepoRules,
-                    relatedRepo = rule.relatedRepo
+                    relatedRepo = rule.relatedRepo,
+                    forceRefresh = rule.forceRefresh,
                 )
                 return
             }
@@ -101,7 +103,8 @@ class RepoService(
             cleanupValue = rule.cleanupValue,
             enable = rule.enable,
             specialRepoRules = rule.specialRepoRules,
-            relatedRepo = rule.relatedRepo
+            relatedRepo = rule.relatedRepo,
+            forceRefresh = rule.forceRefresh,
         )
     }
 
@@ -113,14 +116,15 @@ class RepoService(
         cleanupValue: String,
         enable: Boolean,
         specialRepoRules: Map<String, String> = emptyMap(),
-        relatedRepo: String? = null
+        relatedRepo: String? = null,
+        forceRefresh: Boolean = false
     ) {
         if (repoNames.isNullOrEmpty() || cleanupValue.isEmpty() || cleanupType.isEmpty()) return
         repoNames.forEach {
             if (specialRepoRules.containsKey("$projectId/$it")) return
             val repoInfo = repoClient.getRepoInfo(projectId, it).data ?: return
             val configuration = repoInfo.configuration
-            if (configuration.settings["cleanupStrategy"] != null) return
+            if (configuration.settings["cleanupStrategy"] != null && !forceRefresh) return
             var useDefault = true
             if (!relatedRepo.isNullOrEmpty()) {
                 val relatedConfig = repoClient.getRepoInfo(projectId, relatedRepo).data?.configuration
@@ -130,7 +134,6 @@ class RepoService(
                     configuration.settings["cleanupStrategy"] = relatedCleanupStrategy
                     useDefault = false
                 }
-
             }
             if (useDefault) {
                 val cleanupStrategy = CleanupStrategy(
