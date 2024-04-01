@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
@@ -91,5 +92,11 @@ class ReplicaRecordController(
         option: ReplicaRecordDetailListOption
     ): Response<Page<ReplicaRecordDetail>> {
         return ResponseBuilder.success(replicaRecordService.listRecordDetailPage(recordId, option))
+    }
+
+    @ApiOperation("根据recordId查询任务执行总览信息")
+    @GetMapping("/overview/{recordId}")
+    fun getRecordOverviewByRecordId(@PathVariable recordId: String): Response<ReplicaOverview?> {
+        return ResponseBuilder.success(replicaRecordService.getRecordById(recordId)?.replicaOverview)
     }
 }
