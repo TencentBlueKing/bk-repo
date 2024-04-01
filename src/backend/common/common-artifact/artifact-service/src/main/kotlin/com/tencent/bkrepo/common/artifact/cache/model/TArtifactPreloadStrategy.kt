@@ -57,13 +57,17 @@ data class TArtifactPreloadStrategy(
     /**
      * 文件路径正则，匹配成功才会执行预加载
      */
-    val fullPathRegex: String? = null,
+    val fullPathRegex: String,
+    /**
+     * 仅加载大于指定大小的文件
+     */
+    val minSize: Long,
     /**
      * 限制只对最近一段时间内创建的制品执行预加载
      */
-    val recentSeconds: Long? = null,
+    val recentSeconds: Long,
     /**
-     * 预加载执行时间
+     * 预加载执行时间，CUSTOM、CUSTOM_GENERATED类型时该字段有值
      */
     val preloadCron: String? = null,
     /**

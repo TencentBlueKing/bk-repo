@@ -72,6 +72,7 @@ class ArtifactPreloadStrategyServiceImplTest @Autowired constructor(
         Assertions.assertEquals(UT_PROJECT_ID, strategy.projectId)
         Assertions.assertEquals(UT_REPO_NAME, strategy.repoName)
         Assertions.assertEquals(".*", strategy.fullPathRegex)
+        Assertions.assertEquals(0L, strategy.minSize)
         Assertions.assertEquals(3600L, strategy.recentSeconds)
         Assertions.assertEquals("0 0 0 * * ?", strategy.preloadCron)
         Assertions.assertEquals(PreloadStrategyType.CUSTOM.name, strategy.type)
@@ -88,6 +89,7 @@ class ArtifactPreloadStrategyServiceImplTest @Autowired constructor(
             projectId = strategy.projectId,
             repoName = strategy.repoName,
             fullPathRegex = ".*\\.jar",
+            minSize = 0L,
             recentSeconds = 1000L,
             preloadCron = "0 0 1 * * ?"
         )
@@ -109,6 +111,9 @@ class ArtifactPreloadStrategyServiceImplTest @Autowired constructor(
         assertThrows<ErrorCodeException> {
             artifactPreloadStrategyService.update(request.copy(fullPathRegex = "[0-9"))
         }
+        assertThrows<ErrorCodeException> {
+            artifactPreloadStrategyService.update(request.copy(minSize = -1L))
+        }
     }
 
     @Test
@@ -126,6 +131,7 @@ class ArtifactPreloadStrategyServiceImplTest @Autowired constructor(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             fullPathRegex = ".*",
+            minSize = 0L,
             recentSeconds = 3600L,
             preloadCron = "0 0 0 * * ?",
             type = PreloadStrategyType.CUSTOM.name

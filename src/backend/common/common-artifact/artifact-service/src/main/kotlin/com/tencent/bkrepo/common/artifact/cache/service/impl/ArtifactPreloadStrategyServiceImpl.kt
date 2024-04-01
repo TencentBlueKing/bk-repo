@@ -53,7 +53,7 @@ class ArtifactPreloadStrategyServiceImpl(
 ) : ArtifactPreloadStrategyService {
     override fun create(request: ArtifactPreloadStrategyCreateRequest): ArtifactPreloadStrategy {
         with(request) {
-            check(fullPathRegex, recentSeconds, preloadCron)
+            check(fullPathRegex, minSize, recentSeconds, preloadCron)
             val now = LocalDateTime.now()
             if (artifactPreloadStrategyDao.count(projectId, repoName) > preloadProperties.maxStrategyCount) {
                 // 限制可创建的策略数量，避免生成预加载计划过慢
@@ -68,6 +68,7 @@ class ArtifactPreloadStrategyServiceImpl(
                     projectId = projectId,
                     repoName = repoName,
                     fullPathRegex = fullPathRegex,
+                    minSize = minSize,
                     recentSeconds = recentSeconds,
                     preloadCron = preloadCron,
                     type = type
@@ -78,7 +79,7 @@ class ArtifactPreloadStrategyServiceImpl(
 
     override fun update(request: ArtifactPreloadStrategyUpdateRequest): ArtifactPreloadStrategy {
         with(request) {
-            check(fullPathRegex, recentSeconds, preloadCron)
+            check(fullPathRegex, minSize, recentSeconds, preloadCron)
             if (artifactPreloadStrategyDao.update(request).matchedCount == 0L) {
                 throw ErrorCodeException(ARTIFACT_PRELOAD_STRATEGY_NOT_FOUND, id, status = HttpStatus.NOT_FOUND)
             }
@@ -97,13 +98,17 @@ class ArtifactPreloadStrategyServiceImpl(
         return artifactPreloadStrategyDao.list(projectId, repoName).map { it.toDto() }
     }
 
-    private fun check(regex: String?, recentSeconds: Long?, cron: String?) {
+    private fun check(regex: String?, minSize: Long?, recentSeconds: Long?, cron: String?) {
         // check regex
         try {
             regex?.toPattern()
         } catch (e: PatternSyntaxException) {
             logger.warn("invalid regex", e)
             throw ErrorCodeException(PARAMETER_INVALID, regex.toString(), status = HttpStatus.BAD_REQUEST)
+        }
+
+        if (minSize != null && minSize < 0) {
+            throw ErrorCodeException(PARAMETER_INVALID, minSize)
         }
 
         // check recentSeconds

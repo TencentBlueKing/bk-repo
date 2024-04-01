@@ -49,9 +49,11 @@ data class ArtifactPreloadStrategy(
     @ApiModelProperty("策略所属仓库")
     val repoName: String,
     @ApiModelProperty("文件路径正则，匹配成功才会执行预加载")
-    val fullPathRegex: String? = null,
+    val fullPathRegex: String,
+    @ApiModelProperty("仅加载大于指定大小的文件")
+    val minSize: Long,
     @ApiModelProperty("限制只对最近一段时间内创建的制品执行预加载")
-    val recentSeconds: Long? = null,
+    val recentSeconds: Long,
     @ApiModelProperty("预加载执行时间")
     val preloadCron: String? = null,
     @ApiModelProperty("策略类型")
@@ -66,6 +68,7 @@ data class ArtifactPreloadStrategy(
         projectId = projectId,
         repoName = repoName,
         fullPathRegex = fullPathRegex,
+        minSize = minSize,
         recentSeconds = recentSeconds,
         preloadCron = preloadCron,
         type = type,
@@ -81,6 +84,7 @@ data class ArtifactPreloadStrategy(
             projectId = projectId,
             repoName = repoName,
             fullPathRegex = fullPathRegex,
+            minSize = minSize,
             recentSeconds = recentSeconds,
             preloadCron = preloadCron,
             type = type,

@@ -52,7 +52,7 @@ class CacheFileEventListener(
     fun onCacheFileDeleted(event: CacheFileDeletedEvent) {
         if (properties.enabled && event.size >= properties.minSize.toBytes()) {
             logger.info("try generate preload plan for $event")
-            preloadPlanService.createPlan(event.credentials?.key, event.sha256)
+            preloadPlanService.generatePlan(event.credentials?.key, event.sha256)
         }
     }
 

@@ -74,7 +74,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     fun testCreatePlan() {
         // test repo credentials not match
         resetMock(repoName = UT_REPO_NAME2)
-        preloadPlanService.createPlan(OTHER_CREDENTIALS_KEY, UT_SHA256)
+        preloadPlanService.generatePlan(OTHER_CREDENTIALS_KEY, UT_SHA256)
         var plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME2, Pages.ofRequest(0, 10)).records
         assertEquals(0, plans.size)
 
@@ -84,6 +84,8 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         val nodes = listOf(
             // match path
             node.copy(fullPath = "test.exe"),
+            // match size
+            node.copy(size = DataSize.ofKilobytes(1L).toBytes()),
             // match create date
             node.copy(createdDate = LocalDateTime.now().minusDays(1L).toString()),
             // success create
@@ -98,7 +100,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
             )
         )
 
-        preloadPlanService.createPlan(null, UT_SHA256)
+        preloadPlanService.generatePlan(null, UT_SHA256)
         plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
         assertEquals(2, plans.size)
         val plan = plans[0]
@@ -113,7 +115,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     fun testDeletePlan() {
         // delete by id
         preloadPlanService.deletePlan(UT_PROJECT_ID, UT_REPO_NAME)
-        preloadPlanService.createPlan(null, UT_SHA256)
+        preloadPlanService.generatePlan(null, UT_SHA256)
         var plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
         assertEquals(1, plans.size)
         preloadPlanService.deletePlan(UT_PROJECT_ID, UT_REPO_NAME, plans[0].id!!)
@@ -121,8 +123,8 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         assertEquals(0, plans.size)
 
         // delete all
-        preloadPlanService.createPlan(null, UT_SHA256)
-        preloadPlanService.createPlan(null, UT_SHA256)
+        preloadPlanService.generatePlan(null, UT_SHA256)
+        preloadPlanService.generatePlan(null, UT_SHA256)
         plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
         assertEquals(2, plans.size)
         preloadPlanService.deletePlan(UT_PROJECT_ID, UT_REPO_NAME)
@@ -143,7 +145,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
                 Pages.ofResponse(Pages.ofRequest(0, 2000), nodes.size.toLong(), nodes)
             )
         )
-        assertThrows<RuntimeException> { preloadPlanService.createPlan(null, UT_SHA256) }
+        assertThrows<RuntimeException> { preloadPlanService.generatePlan(null, UT_SHA256) }
     }
 
     @Test
@@ -159,7 +161,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
 
         // 创建计划，每秒执行一次预加载
         createStrategy("0/1 * * * * ?")
-        preloadPlanService.createPlan(null, UT_SHA256)
+        preloadPlanService.generatePlan(null, UT_SHA256)
         // 等待到达预加载时间
         Thread.sleep(2000L)
 
@@ -192,6 +194,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
             repoName = UT_REPO_NAME,
             fullPathRegex = ".*\\.txt",
             recentSeconds = 3600L,
+            minSize = DataSize.ofMegabytes(1L).toBytes(),
             preloadCron = cron,
             type = PreloadStrategyType.CUSTOM.name
         )

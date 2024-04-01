@@ -39,6 +39,8 @@ data class ArtifactPreloadStrategyCreateRequest(
     val repoName: String,
     @ApiModelProperty("文件路径正则，匹配成功才会执行预加载")
     val fullPathRegex: String,
+    @ApiModelProperty("仅加载大于指定大小的文件")
+    val minSize: Long,
     @ApiModelProperty("限制只对最近一段时间内创建的制品执行预加载")
     val recentSeconds: Long,
     @ApiModelProperty("预加载执行时间")

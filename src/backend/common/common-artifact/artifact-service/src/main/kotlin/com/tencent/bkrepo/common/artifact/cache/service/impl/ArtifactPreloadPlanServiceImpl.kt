@@ -72,7 +72,7 @@ class ArtifactPreloadPlanServiceImpl(
         .build(CacheLoader.from<String, RepositoryInfo> { getRepo(it) })
     private val listener = DefaultPreloadListener(preloadPlanDao)
 
-    override fun createPlan(credentialsKey: String?, sha256: String) {
+    override fun generatePlan(credentialsKey: String?, sha256: String) {
         if (!properties.enabled) {
             return
         }
@@ -96,7 +96,7 @@ class ArtifactPreloadPlanServiceImpl(
                 strategyService.list(node.projectId, node.repoName)
             }
             strategies.forEach { strategy ->
-                matchAndBuildPlan(strategy, node, repo.storageCredentialsKey)?.let { plans.add(it) }
+                matchAndGeneratePlan(strategy, node, repo.storageCredentialsKey)?.let { plans.add(it) }
             }
         }
         // 保存计划
@@ -133,24 +133,24 @@ class ArtifactPreloadPlanServiceImpl(
         return Pages.ofResponse(pageRequest, records.size.toLong(), records)
     }
 
-    private fun matchAndBuildPlan(
+    private fun matchAndGeneratePlan(
         strategy: ArtifactPreloadStrategy,
         node: NodeInfo,
         credentialsKey: String?
     ): ArtifactPreloadPlan? {
-        if (!strategy.fullPathRegex!!.toRegex().matches(node.fullPath)) {
-            logger.info("${node.projectId}/${node.repoName}${node.fullPath} not match preload strategy")
-            return null
-        }
-
-        // check created date
-        val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+        // 检查是否匹配筛选规则
+        val createdDateTime = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val now = LocalDateTime.now()
-        if (Duration.between(createdDate, now).seconds > strategy.recentSeconds!!) {
-            logger.info("${node.projectId}/${node.repoName}${node.fullPath} cant be preload because of duration")
+        val sizeNotMatch = node.size < strategy.minSize
+        val pathNotMatch = !strategy.fullPathRegex.toRegex().matches(node.fullPath)
+        val createTimeNotMatch = Duration.between(createdDateTime, now).seconds > strategy.recentSeconds
+        if (sizeNotMatch || pathNotMatch || createTimeNotMatch) {
+            logger.info("${node.projectId}/${node.repoName}${node.fullPath} not match preload strategy, " +
+                    "node size[${node.size}], node createdDateTime[$createdDateTime]")
             return null
         }
 
+        // 生成预加载计划
         return preloadStrategies[strategy.type]?.let { generator ->
             val param = ArtifactPreloadPlanGenerateParam(
                 projectId = node.projectId,

@@ -38,7 +38,7 @@ interface ArtifactPreloadPlanService {
      * @param credentialsKey 缓存文件所在存储
      * @param sha256 缓存文件sha256
      */
-    fun createPlan(credentialsKey: String?, sha256: String)
+    fun generatePlan(credentialsKey: String?, sha256: String)
 
     /**
      * 删除指定预加载计划

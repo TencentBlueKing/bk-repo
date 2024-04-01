@@ -53,6 +53,7 @@ class CustomArtifactPreloadPlanGeneratorTest {
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             fullPathRegex = "/a/b/.*\\.exe",
+            minSize = 0L,
             recentSeconds = Duration.ofDays(7L).seconds,
             preloadCron = "0 0 0/1 * * ?",
             type = PreloadStrategyType.CUSTOM.name,

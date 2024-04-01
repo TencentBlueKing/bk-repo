@@ -51,6 +51,7 @@ class ArtifactPreloadStrategyDao : SimpleMongoDao<TArtifactPreloadStrategy>() {
             update.set(TArtifactPreloadStrategy::lastModifiedBy.name, operator)
             update.set(TArtifactPreloadStrategy::lastModifiedDate.name, LocalDateTime.now())
             fullPathRegex?.let { update.set(TArtifactPreloadStrategy::fullPathRegex.name, it) }
+            minSize?.let { update.set(TArtifactPreloadStrategy::minSize.name, it) }
             recentSeconds?.let { update.set(TArtifactPreloadStrategy::recentSeconds.name, it) }
             preloadCron?.let { update.set(TArtifactPreloadStrategy::preloadCron.name, it) }
             return updateFirst(Query(criteria), update)
