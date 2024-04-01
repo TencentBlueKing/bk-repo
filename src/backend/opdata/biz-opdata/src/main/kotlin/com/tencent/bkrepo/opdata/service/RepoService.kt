@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.opdata.pojo.CleanupRules
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -38,9 +37,6 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
-import java.util.concurrent.Callable
-import java.util.concurrent.Future
-import java.util.concurrent.Semaphore
 
 @Service
 class RepoService(
@@ -126,16 +122,24 @@ class RepoService(
             val repoInfo = repoClient.getRepoInfo(projectId, it).data ?: return
             val configuration = repoInfo.configuration
             if (configuration.settings["cleanupStrategy"] != null) return
-            if (relatedRepo.isNullOrEmpty()) {
+            var useDefault = true
+            if (!relatedRepo.isNullOrEmpty()) {
+                val relatedConfig = repoClient.getRepoInfo(projectId, relatedRepo).data?.configuration
+                    ?.getSetting<Map<String, Any>>("cleanupStrategy")
+                val relatedCleanupStrategy = toCleanupStrategy(relatedConfig)
+                if (relatedCleanupStrategy != null) {
+                    configuration.settings["cleanupStrategy"] = relatedCleanupStrategy
+                    useDefault = false
+                }
+
+            }
+            if (useDefault) {
                 val cleanupStrategy = CleanupStrategy(
                     cleanupType = cleanupType,
                     cleanupValue = cleanupValue,
                     enable = enable
                 )
                 configuration.settings["cleanupStrategy"] = cleanupStrategy
-            } else {
-                val relatedRepoInfo = repoClient.getRepoInfo(projectId, relatedRepo).data ?: return
-                configuration.settings["cleanupStrategy"] = relatedRepoInfo.configuration.settings["cleanupStrategy"] as CleanupStrategy
             }
 
             val request = RepoUpdateRequest(
@@ -148,27 +152,18 @@ class RepoService(
         }
     }
 
-
-    fun executeProject(
-        projectId: String,
-        futureList: MutableList<Future<Unit>>,
-        semaphore: Semaphore = Semaphore(5),
-        action: (String) -> Unit,
-    ) {
-        semaphore.acquire()
-        futureList.add(
-            executor.submit(
-                Callable {
-                    try {
-                        action(projectId)
-                    } finally {
-                        semaphore.release()
-                    }
-                }.trace()
-            )
+    private fun toCleanupStrategy(map: Map<String, Any>?): Any? {
+        if (map.isNullOrEmpty()) return null
+        val cleanupStrategy = CleanupStrategy(
+            enable = map[CleanupStrategy::enable.name] as? Boolean ?: false,
+            cleanupType = map[CleanupStrategy::cleanupType.name] as? String,
+            cleanupValue = map[CleanupStrategy::cleanupValue.name] as? String,
+            cleanTargets = map[CleanupStrategy::cleanTargets.name] as? List<String>,
         )
+        if (cleanupStrategy.cleanupType.isNullOrEmpty() || cleanupStrategy.cleanupValue.isNullOrEmpty())
+            return null
+        return cleanupStrategy
     }
-
 
     data class CleanupStrategy(
         // 清理策略类型
