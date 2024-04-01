@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-open class CleanupRules(
+class CleanupRules(
     // 特殊项目仓库的保留周期
     var specialRepoRules: Map<String, String> = emptyMap(),
     // bg下仓库标准保留周期
