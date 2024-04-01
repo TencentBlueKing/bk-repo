@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
@@ -40,6 +41,7 @@ import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
@@ -57,6 +59,9 @@ import com.tencent.bkrepo.replication.util.TaskRecordQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -99,7 +104,12 @@ class ReplicaRecordServiceImpl(
         }
     }
 
-    override fun completeRecord(recordId: String, status: ExecutionStatus, errorReason: String?) {
+    override fun completeRecord(
+        recordId: String,
+        status: ExecutionStatus,
+        errorReason: String?,
+        replicaOverview: ReplicaOverview?
+    ) {
         val replicaRecordInfo = getRecordById(recordId)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, recordId)
         val record = with(replicaRecordInfo) {
@@ -109,7 +119,8 @@ class ReplicaRecordServiceImpl(
                 status = status,
                 startTime = startTime,
                 endTime = LocalDateTime.now(),
-                errorReason = errorReason
+                errorReason = errorReason,
+                replicaOverview = replicaOverview
             )
         }
         val tReplicaTask = replicaTaskDao.findByKey(record.taskKey)
@@ -136,6 +147,11 @@ class ReplicaRecordServiceImpl(
                 repoType = repoType,
                 packageConstraint = packageConstraint,
                 pathConstraint = pathConstraint,
+                artifactName = artifactName,
+                version = version,
+                conflictStrategy = conflictStrategy,
+                size = size,
+                sha256 = sha256,
                 status = ExecutionStatus.RUNNING,
                 progress = ReplicaProgress(),
                 startTime = LocalDateTime.now()
@@ -161,25 +177,14 @@ class ReplicaRecordServiceImpl(
     }
 
     override fun completeRecordDetail(detailId: String, result: ExecutionResult) {
-        val replicaRecordDetail = getRecordDetailById(detailId)
+        val tReplicaRecordDetail = replicaRecordDetailDao.findById(detailId)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, detailId)
-        val recordDetail = with(replicaRecordDetail) {
-            TReplicaRecordDetail(
-                id = detailId,
-                recordId = recordId,
-                localCluster = localCluster,
-                remoteCluster = remoteCluster,
-                localRepoName = localRepoName,
-                repoType = repoType,
-                packageConstraint = packageConstraint,
-                pathConstraint = pathConstraint,
-                status = result.status,
-                progress = result.progress!!,
-                startTime = startTime,
-                endTime = LocalDateTime.now(),
-                errorReason = result.errorReason
-            )
-        }
+        val recordDetail = tReplicaRecordDetail.copy(
+            status = result.status,
+            progress = result.progress!!,
+            errorReason = result.errorReason,
+            endTime = LocalDateTime.now()
+        )
         replicaRecordDetailDao.save(recordDetail)
     }
 
@@ -216,6 +221,10 @@ class ReplicaRecordServiceImpl(
 
     override fun getRecordDetailById(id: String): ReplicaRecordDetail? {
         return convert(findRecordDetailById(id))
+    }
+
+    override fun deleteRecordDetailById(id: String) {
+        replicaRecordDetailDao.removeById(id)
     }
 
     private fun findRecordDetailById(id: String): TReplicaRecordDetail? {
@@ -256,6 +265,13 @@ class ReplicaRecordServiceImpl(
         return
     }
 
+    override fun updateRecordReplicaOverview(recordId: String, replicaOverview: ReplicaOverview) {
+        replicaRecordDao.updateFirst(
+            Query(Criteria.where(ID).`is`(recordId)),
+            Update.update(TReplicaRecord::replicaOverview.name, replicaOverview)
+        )
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaRecordServiceImpl::class.java)
 
@@ -272,7 +288,8 @@ class ReplicaRecordServiceImpl(
                     status = it.status,
                     startTime = it.startTime,
                     endTime = it.endTime,
-                    errorReason = it.errorReason
+                    errorReason = it.errorReason,
+                    replicaOverview = it.replicaOverview
                 )
             }
         }
@@ -288,6 +305,11 @@ class ReplicaRecordServiceImpl(
                     repoType = it.repoType,
                     packageConstraint = it.packageConstraint,
                     pathConstraint = it.pathConstraint,
+                    artifactName = it.artifactName,
+                    version = it.version,
+                    conflictStrategy = it.conflictStrategy,
+                    size = it.size,
+                    sha256 = it.sha256,
                     status = it.status,
                     progress = it.progress,
                     startTime = it.startTime,

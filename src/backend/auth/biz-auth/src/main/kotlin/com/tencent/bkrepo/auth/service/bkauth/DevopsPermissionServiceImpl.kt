@@ -41,6 +41,7 @@ import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
@@ -80,7 +81,7 @@ class DevopsPermissionServiceImpl constructor(
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         // 用户为系统管理员，或者当前项目管理员
-        if (isUserSystemAdmin() || isUserLocalProjectAdmin(userId, projectId)
+        if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)
             || isDevopsProjectMember(userId, projectId, READ.name)
         ) return getAllRepoByProjectId(projectId)
 
@@ -136,7 +137,7 @@ class DevopsPermissionServiceImpl constructor(
         with(request) {
             logger.debug("check devops permission request [$request]")
 
-            if (isUserSystemAdmin()) return true
+            if (isUserSystemAdmin(uid)) return true
 
             //user is not local admin, not in project
             if (projectId == null) return false
@@ -149,6 +150,9 @@ class DevopsPermissionServiceImpl constructor(
 
             // project权限
             if (resourceType == PROJECT.name) {
+                if (action == MANAGE.name) {
+                    return isDevopsProjectAdmin(uid, projectId!!)
+                }
                 return isDevopsProjectMember(uid, projectId!!, action)
                         || checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
