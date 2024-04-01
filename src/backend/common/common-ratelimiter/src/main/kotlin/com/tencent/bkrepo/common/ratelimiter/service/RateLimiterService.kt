@@ -33,10 +33,10 @@ import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import javax.servlet.http.HttpServletRequest
 
-interface RateLimiterService<T> {
+interface RateLimiterService {
 
     @Throws(AcquireLockFailedException::class, InvalidResourceException::class, OverloadException::class)
-    fun limit(request: HttpServletRequest, applyPermits: Long? = null): T
+    fun limit(request: HttpServletRequest, applyPermits: Long? = null)
 
     fun addInterceptor(interceptor: RateLimiterInterceptor)
 

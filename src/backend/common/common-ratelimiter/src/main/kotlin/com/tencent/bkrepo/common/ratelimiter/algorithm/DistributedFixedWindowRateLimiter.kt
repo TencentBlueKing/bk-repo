@@ -39,17 +39,16 @@ import kotlin.system.measureTimeMillis
 class DistributedFixedWindowRateLimiter(
     private val key: String,
     private val limit: Long,
-    private val unit: TimeUnit,
+    private val limitUnit: TimeUnit,
     private val redisTemplate: RedisTemplate<String, String>,
-    private val permits: Long = 1L,
     ): RateLimiter {
-    override fun tryAcquire(): Boolean {
+    override fun tryAcquire(permits: Long): Boolean {
         try {
             var acquireResult: Boolean = false
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.fixWindowRateLimiterScript, Long::class.java)
                 val result = redisTemplate.execute(
-                    redisScript, listOf(key), limit.toString(), permits.toString(), unit.toSeconds(1).toString()
+                    redisScript, listOf(key), limit.toString(), permits.toString(), limitUnit.toSeconds(1).toString()
                 )
                 acquireResult = result == 1L
             }

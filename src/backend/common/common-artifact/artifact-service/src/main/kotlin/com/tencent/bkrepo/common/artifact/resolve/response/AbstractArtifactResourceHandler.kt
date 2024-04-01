@@ -118,7 +118,8 @@ abstract class AbstractArtifactResourceHandler(
         val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
             return measureThroughput {
-                recordAbleInputStream.rateLimit(responseRateLimitWrapper(storageProperties.response.rateLimit)).use {
+                val stream = recordAbleInputStream.rateLimit(responseRateLimitWrapper(storageProperties.response.rateLimit))
+                stream.use {
                     it.copyTo(
                         out = response.outputStream,
                         bufferSize = getBufferSize(inputStream.range.length)

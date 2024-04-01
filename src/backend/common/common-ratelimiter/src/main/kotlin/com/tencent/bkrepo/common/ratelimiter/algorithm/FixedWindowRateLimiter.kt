@@ -38,7 +38,6 @@ import java.util.concurrent.locks.ReentrantLock
 class FixedWindowRateLimiter(
     private val limit: Long,
     private val unit: TimeUnit,
-    private val permits: Long = 1L,
     private val stopWatch: Stopwatch = Stopwatch.createStarted()
 ): RateLimiter {
 
@@ -46,7 +45,7 @@ class FixedWindowRateLimiter(
 
     private val lock: Lock = ReentrantLock()
 
-    override fun tryAcquire(): Boolean {
+    override fun tryAcquire(permits: Long): Boolean {
         var updateValue = currentValue.incrementAndGet()
         if (updateValue <= limit) {
             return true

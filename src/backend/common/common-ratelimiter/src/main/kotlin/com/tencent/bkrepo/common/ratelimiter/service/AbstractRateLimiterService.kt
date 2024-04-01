@@ -65,7 +65,7 @@ abstract class AbstractRateLimiterService(
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): RateLimiterService<Unit> {
+): RateLimiterService {
 
     private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
@@ -80,7 +80,7 @@ abstract class AbstractRateLimiterService(
         taskScheduler.scheduleWithFixedDelay(this::refreshRateLimitRule, rateLimiterProperties.refreshDuration * 1000)
     }
 
-    override fun limit(request: HttpServletRequest, applyPermits: Long?): Unit {
+    override fun limit(request: HttpServletRequest, applyPermits: Long?) {
         if (!rateLimiterProperties.enabled) {
             return
         }
@@ -101,8 +101,8 @@ abstract class AbstractRateLimiterService(
                 logger.info("no rule in ${this.javaClass.simpleName} for request ${request.requestURI}")
                 return
             }
-            val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit, applyPermits)
-            pass = rateLimiter.tryAcquire()
+            val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit)
+            pass = rateLimiter.tryAcquire(applyPermits)
             if (!pass) {
                 logger.warn("resourceLimit for $resource is $resourceLimit")
                 val msg = "$resource has exceeded max rate limit: ${resourceLimit.limit} /${resourceLimit.unit}"
@@ -157,31 +157,31 @@ abstract class AbstractRateLimiterService(
         return false
     }
 
-    open fun createAlgorithmOfRateLimiter(resource: String, resourceLimit: ResourceLimit, permits: Long): RateLimiter {
+    open fun createAlgorithmOfRateLimiter(resource: String, resourceLimit: ResourceLimit): RateLimiter {
         if (resourceLimit.limit < 0) {
             throw InvalidResourceException("config limit is ${resourceLimit.limit}")
         }
         return when (resourceLimit.algo) {
             Algorithms.FIXED_WINDOW -> {
                 if (rateLimiterProperties.scope == WorkScope.LOCAL) {
-                    FixedWindowRateLimiter(resourceLimit.limit, resourceLimit.unit, permits)
+                    FixedWindowRateLimiter(resourceLimit.limit, resourceLimit.unit)
                 } else {
                     DistributedFixedWindowRateLimiter(
-                        resource, resourceLimit.limit, resourceLimit.unit, redisTemplate!!, permits
+                        resource, resourceLimit.limit, resourceLimit.unit, redisTemplate!!
                     )
                 }
             }
             Algorithms.TOKEN_BUCKET -> {
                 if (rateLimiterProperties.scope == WorkScope.LOCAL) {
                     val permitsPerSecond = resourceLimit.limit / resourceLimit.unit.toSeconds(1)
-                    TokenBucketRateLimiter(permitsPerSecond, permits)
+                    TokenBucketRateLimiter(permitsPerSecond)
                 } else {
                     if (resourceLimit.bucketCapacity == null || resourceLimit.bucketCapacity!! <= 0) {
                         throw AcquireLockFailedException("Resource limit config $resourceLimit is illegal")
                     }
                     val permitsPerSecond = resourceLimit.limit / resourceLimit.unit.toSeconds(1).toDouble()
                     DistributedTokenBucketRateLimiter(
-                        resource, permitsPerSecond, resourceLimit.bucketCapacity!!, redisTemplate!!, permits
+                        resource, permitsPerSecond, resourceLimit.bucketCapacity!!, redisTemplate!!
                     )
                 }
             }
@@ -220,12 +220,12 @@ abstract class AbstractRateLimiterService(
     }
 
     private fun getAlgorithmOfRateLimiter(
-        resource: String, resourceLimit: ResourceLimit, permits: Long = 1
+        resource: String, resourceLimit: ResourceLimit
     ): RateLimiter {
         val limitKey = generateKey(resource, resourceLimit)
         var rateLimiter = rateLimiterCache[limitKey]
         if (rateLimiter == null) {
-            val newRateLimiter = createAlgorithmOfRateLimiter(limitKey, resourceLimit, permits)
+            val newRateLimiter = createAlgorithmOfRateLimiter(limitKey, resourceLimit)
             rateLimiter = rateLimiterCache.putIfAbsent(limitKey, newRateLimiter)
             if (rateLimiter == null) {
                 rateLimiter = newRateLimiter

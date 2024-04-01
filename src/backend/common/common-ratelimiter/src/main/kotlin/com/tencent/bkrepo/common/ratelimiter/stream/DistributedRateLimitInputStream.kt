@@ -27,29 +27,38 @@
 
 package com.tencent.bkrepo.common.ratelimiter.stream
 
-import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
+import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
+import com.tencent.bkrepo.common.ratelimiter.constant.SLEEP_TIME
 import java.io.InputStream
 
 class DistributedRateLimitInputStream(
     delegate: InputStream,
-    rate: Long
+    private val rateLimiter: RateLimiter
 ) : DelegateInputStream(delegate) {
 
-    private val rateLimiter = rate.takeIf { it > 0 }?.let { RateLimiter.create(rate.toDouble()) }
-
     override fun read(): Int {
-        rateLimiter?.acquire()
+        acquire(1)
         return super.read()
     }
 
     override fun read(byteArray: ByteArray): Int {
-        rateLimiter?.acquire(byteArray.size)
+        acquire(byteArray.size)
         return super.read(byteArray)
     }
 
     override fun read(byteArray: ByteArray, off: Int, len: Int): Int {
-        rateLimiter?.acquire(len)
+        acquire(len)
         return super.read(byteArray, off, len)
+    }
+
+    private fun acquire(permits: Int) {
+        var flag = false
+        while (!flag) {
+            flag = rateLimiter.tryAcquire(permits.toLong())
+            if (!flag) {
+                Thread.sleep(SLEEP_TIME.toLong())
+            }
+        }
     }
 }

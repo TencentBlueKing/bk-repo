@@ -33,13 +33,11 @@ import java.util.concurrent.TimeUnit
 
 class TokenBucketRateLimiter(
     private val permitsPerSecond: Long,
-    private val permits: Long = 1L,
-
     ): RateLimiter {
 
     private val guavaRateLimiter = com.google.common.util.concurrent.RateLimiter.create(permitsPerSecond.toDouble())
 
-    override fun tryAcquire(): Boolean {
+    override fun tryAcquire(permits: Long): Boolean {
         try {
             return guavaRateLimiter.tryAcquire(permits.toInt(), TRY_LOCK_TIMEOUT, TimeUnit.MILLISECONDS)
         } catch (e: Exception) {

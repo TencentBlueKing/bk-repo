@@ -29,6 +29,6 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 
 interface RateLimiter {
 
-    fun tryAcquire(): Boolean
+    fun tryAcquire(permits: Long): Boolean
 
 }

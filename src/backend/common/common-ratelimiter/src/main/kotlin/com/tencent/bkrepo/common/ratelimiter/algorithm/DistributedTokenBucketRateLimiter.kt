@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.redis.LuaScript
-import org.redisson.api.RedissonClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
@@ -42,20 +41,13 @@ class DistributedTokenBucketRateLimiter(
     private val permitsPerSecond: Double,
     private val capacity: Long,
     private val redisTemplate: RedisTemplate<String, String>,
-    private val permits: Long = 1L,
-    private val redisson: RedissonClient
 ): RateLimiter {
-    override fun tryAcquire(): Boolean {
+    override fun tryAcquire(permits: Long): Boolean {
 
         try {
 
             var acquireResult: Boolean = false
             val elapsedTime = measureTimeMillis {
-//                val downloadRate = 1.0 // 每秒下载速度为 1MB
-//
-//                val downloadLimiter: RRateLimiter = redisson.getRateLimiter("downloadRateLimiter")
-//                downloadLimiter.trySetRate(RateType.OVERALL, downloadRate.toLong(), 1, RateIntervalUnit.SECONDS)
-//                downloadLimiter.acquire()
                 val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
                 val results = redisTemplate.execute(
                     redisScript, getKeys(key), permitsPerSecond.toString(), capacity.toString(), permits.toString()
