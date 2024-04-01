@@ -52,7 +52,7 @@
 
 ## 上传分块文件
 
-- API: PUT /generic/block/{project}/{repo}/{path}
+- API: PUT /generic/{project}/{repo}/{path}
 - API 名称: block_upload
 - 功能说明：
 	- 中文：分块上传通用制品文件
