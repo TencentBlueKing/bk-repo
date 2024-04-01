@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.common.security.util
 
-import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.AUTHORITIES_KEY
 import com.tencent.bkrepo.common.api.constant.MS_REQUEST_KEY
@@ -58,13 +57,6 @@ object SecurityUtils {
      */
     fun getUserId(): String {
         return HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-    }
-
-    /**
-     * 是否系统管理员
-     */
-    fun isAdmin(): Boolean {
-        return HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
     }
 
     /**
