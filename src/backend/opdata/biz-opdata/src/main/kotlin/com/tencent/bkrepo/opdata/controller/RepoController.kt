@@ -52,14 +52,4 @@ class RepoController(
         repoService.batchUpdateCleanupStrategy(rule)
         return ResponseBuilder.success()
     }
-
-    /**
-     * 根据基础仓库去跟新关联仓库清理策略
-     */
-    @PostMapping("/batch/update/related/cleanup/strategy")
-    @Principal(PrincipalType.ADMIN)
-    fun batchUpdateRelatedCleanupStrategy(@RequestBody rule: CleanupRules): Response<Void> {
-        repoService.batchUpdateCleanupStrategy(rule)
-        return ResponseBuilder.success()
-    }
 }
