@@ -29,10 +29,12 @@ package com.tencent.bkrepo.common.storage.core.cache.indexer
 
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileAccessedEvent
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileLoadedEvent
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer.Companion.MAX_EVICT_COUNT
 import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.UpdatableEldestRemovedListener
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
@@ -133,13 +135,26 @@ open class StorageCacheIndexerManager(
     }
 
     @Async
-    @EventListener(FileDeletedEvent::class)
-    open fun onFileDeleted(event: FileDeletedEvent) {
-        with(event) {
-            val filename = fullPath.toPath().fileName.toString()
-            if (rootPath.toPath() == credentials.cache.path.toPath() && filename.length == SHA256_STR_LENGTH) {
-                onCacheDeleted(credentials, filename)
-            }
+    @EventListener(CacheFileAccessedEvent::class)
+    open fun onCacheFileAccessed(event: CacheFileAccessedEvent) {
+        with(event.data) {
+            onCacheAccessed(credentials, sha256, size)
+        }
+    }
+
+    @Async
+    @EventListener(CacheFileLoadedEvent::class)
+    open fun onCacheFileLoaded(event: CacheFileLoadedEvent) {
+        with(event.data) {
+            onCacheAccessed(credentials, sha256, size)
+        }
+    }
+
+    @Async
+    @EventListener(CacheFileDeletedEvent::class)
+    open fun onCacheFileDeleted(event: CacheFileDeletedEvent) {
+        with(event.data) {
+            onCacheDeleted(credentials, sha256)
         }
     }
 

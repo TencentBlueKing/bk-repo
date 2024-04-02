@@ -34,7 +34,8 @@ import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.CacheFileDeletedEvent
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventData
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
 import com.tencent.bkrepo.common.storage.util.toPath
@@ -90,12 +91,12 @@ class CleanupFileVisitor(
         } finally {
             result.totalFile += 1
             result.totalSize += size
-            if(!isTempFile && !deleted) {
+            if (!isTempFile && !deleted) {
                 // 仅统计非temp目录下未被清理的文件
                 result.rootDirNotDeletedFile += 1
                 result.rootDirNotDeletedSize += size
             }
-            if(!deleted) {
+            if (!deleted) {
                 onFileSurvived(filePath)
             }
         }
@@ -130,7 +131,7 @@ class CleanupFileVisitor(
                     Files.delete(dirPath)
                     logger.info("Clean up folder[$dirPath].")
                     result.cleanupFolder += 1
-                }  catch (ignore: DirectoryNotEmptyException) {
+                } catch (ignore: DirectoryNotEmptyException) {
                     logger.warn("Directory [$dirPath] is not empty!")
                 }
             }
@@ -190,7 +191,8 @@ class CleanupFileVisitor(
             fullPath = filePath.toString(),
         )
         if (rootPath == credentials.cache.path.toPath() && filePath.fileName.toString().length == SHA256_STR_LENGTH) {
-            publisher.publishEvent(CacheFileDeletedEvent(credentials, fileName, filePath.toString(), size))
+            val data = CacheFileEventData(credentials, fileName, filePath.toString(), size)
+            publisher.publishEvent(CacheFileDeletedEvent(data))
         }
 
         publisher.publishEvent(event)

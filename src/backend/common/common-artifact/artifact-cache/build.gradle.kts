@@ -29,22 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+dependencies {
+    implementation(project(":repository:api-repository"))
+    implementation(project(":common:common-service"))
+    implementation(project(":common:common-artifact:artifact-service"))
+    implementation(project(":common:common-storage:storage-service"))
+    implementation(project(":common:common-mongo"))
 
-import com.tencent.bkrepo.common.artifact.event.listener.ArtifactDownloadListener
-import com.tencent.bkrepo.common.artifact.event.listener.ArtifactTransferListener
-import com.tencent.bkrepo.common.artifact.event.listener.ArtifactWebHookListener
-import com.tencent.bkrepo.common.artifact.webhook.WebHookService
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
-
-@Configuration(proxyBeanMethods = false)
-@Import(
-    ArtifactWebHookListener::class,
-    ArtifactTransferListener::class,
-    ArtifactDownloadListener::class,
-    WebHookService::class,
-)
-@EnableConfigurationProperties(ArtifactEventProperties::class)
-class ArtifactEventConfiguration
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
+    testImplementation("io.mockk:mockk")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
+}
