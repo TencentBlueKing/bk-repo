@@ -72,8 +72,10 @@ class StorageCacheIndexConfiguration {
                 val cachePath = credentials.cache.path.toPath()
                 val hashTag = storageCacheIndexProperties.hashTag
                 val evict = storageCacheIndexProperties.evict
+                val maxEvictCount = storageCacheIndexProperties.maxEvictCount
                 val indexer = RedisLRUCacheIndexer(
-                    name, cachePath, fileLocator, redisTemplate, 0, hashTag = hashTag, evict = evict
+                    name, cachePath, fileLocator, maxEvictCount, redisTemplate, 0,
+                    hashTag = hashTag, evict = evict
                 )
                 indexer.setMaxWeight(credentials.cache.maxSize)
                 customizer.customize(indexer, credentials)
@@ -95,8 +97,10 @@ class StorageCacheIndexConfiguration {
                 val cachePath = credentials.cache.path.toPath()
                 val hashTag = storageCacheIndexProperties.hashTag
                 val evict = storageCacheIndexProperties.evict
+                val maxEvictCount = storageCacheIndexProperties.maxEvictCount
                 val indexer = RedisSLRUCacheIndexer(
-                    name, cachePath, fileLocator, redisTemplate, 0, hashTag = hashTag, evict = evict
+                    name, cachePath, fileLocator, maxEvictCount, redisTemplate, 0,
+                    hashTag = hashTag, evict = evict
                 )
                 indexer.setMaxWeight(credentials.cache.maxSize)
                 customizer.customize(indexer, credentials)

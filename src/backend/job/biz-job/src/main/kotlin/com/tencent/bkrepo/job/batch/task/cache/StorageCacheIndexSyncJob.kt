@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexSyncJobProperties
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
@@ -48,11 +47,11 @@ class StorageCacheIndexSyncJob(
     storageProperties: StorageProperties,
     clusterProperties: ClusterProperties,
     mongoTemplate: MongoTemplate,
-    indexerManager: ObjectProvider<StorageCacheIndexerManager>
+    indexerManager: StorageCacheIndexerManager?
 ) : StorageCacheIndexJob(properties, storageProperties, clusterProperties, mongoTemplate, indexerManager) {
 
     override fun doWithCredentials(credentials: StorageCredentials) {
-        val synced = indexerManager.ifAvailable?.sync(credentials)
+        val synced = indexerManager?.sync(credentials)
         logger.info("credential[default] sync[$synced]")
     }
 

@@ -42,6 +42,7 @@ abstract class RedisCacheIndexer(
     protected val cacheName: String,
     protected val cacheDir: Path,
     protected val fileLocator: FileLocator,
+    protected val maxEvictCount: Int = 1000,
     protected val redisTemplate: RedisTemplate<String, String>,
     /**
      * 作为hash tag使用，未设置时使用cacheName作为hash tag
@@ -85,7 +86,7 @@ abstract class RedisCacheIndexer(
                 while (true) {
                     evictSemaphore.acquire()
                     try {
-                        evict()
+                        evict(maxEvictCount)
                     } catch (e: Exception) {
                         logger.error("evict failed", e)
                     }

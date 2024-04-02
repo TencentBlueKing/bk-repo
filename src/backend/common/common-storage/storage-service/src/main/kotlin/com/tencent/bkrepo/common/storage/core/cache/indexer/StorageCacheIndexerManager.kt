@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
 import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileAccessedEvent
 import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
 import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileLoadedEvent
-import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer.Companion.MAX_EVICT_COUNT
 import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.UpdatableEldestRemovedListener
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
@@ -126,10 +125,10 @@ open class StorageCacheIndexerManager(
      *
      * @return 淘汰的条目数
      */
-    open fun evict(credentials: StorageCredentials, maxCount: Int = MAX_EVICT_COUNT): Int {
+    open fun evict(credentials: StorageCredentials, maxCount: Int = storageCacheIndexProperties.maxEvictCount): Int {
         if (storageCacheIndexProperties.enabled) {
             logger.info("start evict ${credentials.key}")
-            return getOrCreateIndexer(credentials).evict()
+            return getOrCreateIndexer(credentials).evict(maxCount)
         }
         return 0
     }
