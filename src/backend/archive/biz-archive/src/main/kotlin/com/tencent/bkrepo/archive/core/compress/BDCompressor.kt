@@ -2,6 +2,7 @@ package com.tencent.bkrepo.archive.core.compress
 
 import com.tencent.bkrepo.common.api.concurrent.PriorityRunnableWrapper
 import com.tencent.bkrepo.common.bksync.file.BDUtils
+import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import org.slf4j.LoggerFactory
 import reactor.core.publisher.Mono
@@ -44,6 +45,9 @@ class BDCompressor(
                     val throughput = Throughput(src.length(), nanos)
                     logger.info("Success to bd compress $srcKey,$throughput.")
                     it.success(file)
+                } catch (e: TooLowerReuseRateException) {
+                    logger.info("File[$srcKey] duplication rate detected is too low.")
+                    it.error(e)
                 } catch (e: Exception) {
                     logger.error("Failed to bd compress $srcKey", e)
                     it.error(e)
