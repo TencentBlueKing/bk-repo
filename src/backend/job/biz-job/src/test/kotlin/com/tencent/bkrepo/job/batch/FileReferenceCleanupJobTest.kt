@@ -71,6 +71,7 @@ import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.insert
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.redis.core.RedisTemplate
 
 @DisplayName("文件引用清理Job测试")
 @DataMongoTest
@@ -93,6 +94,9 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @Autowired
     lateinit var mongoTemplate: MongoTemplate
+
+    @Autowired
+    lateinit var redisTemplate: RedisTemplate<String, String>
 
     @Autowired
     lateinit var fileReferenceCleanupJob: FileReferenceCleanupJob
