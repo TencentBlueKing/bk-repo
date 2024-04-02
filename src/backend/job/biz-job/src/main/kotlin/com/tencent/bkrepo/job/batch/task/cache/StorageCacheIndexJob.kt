@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.task.cache
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
@@ -44,6 +45,7 @@ abstract class StorageCacheIndexJob(
     private val storageProperties: StorageProperties,
     private val clusterProperties: ClusterProperties,
     private val mongoTemplate: MongoTemplate,
+    protected val storageCacheIndexProperties: StorageCacheIndexProperties?,
     protected val indexerManager: StorageCacheIndexerManager?
 ) : DefaultContextJob(properties) {
 
@@ -56,7 +58,7 @@ abstract class StorageCacheIndexJob(
     override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
 
     override fun doStart0(jobContext: JobContext) {
-        if (!properties.enabled) {
+        if (storageCacheIndexProperties?.enabled != true) {
             return
         }
 

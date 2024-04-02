@@ -50,5 +50,4 @@ dependencies {
 
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }
