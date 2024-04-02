@@ -145,7 +145,7 @@ class CacheStorageService(
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
-        val cacheFilePath = "${credentials.cache.path}$path/$filename"
+        val cacheFilePath = "${credentials.cache.path}$path$filename"
         val size = File(cacheFilePath).length()
         fileStorage.delete(path, filename, credentials)
         getCacheClient(credentials).delete(path, filename)
@@ -212,7 +212,7 @@ class CacheStorageService(
         credentials: StorageCredentials,
     ) {
         if (doExist(path, filename, credentials)) {
-            val cacheFilePath = "${credentials.cache.path}$path/$filename"
+            val cacheFilePath = "${credentials.cache.path}$path$filename"
             val size = File(cacheFilePath).length()
             getCacheClient(credentials).delete(path, filename)
             cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)

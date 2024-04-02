@@ -39,7 +39,7 @@ class CacheFileEventPublisher(private val publisher: ApplicationEventPublisher) 
         size: Long,
         credentials: StorageCredentials,
     ) {
-        val cacheFilePath = "${credentials.cache.path}$path/$filename"
+        val cacheFilePath = "${credentials.cache.path}$path$filename"
         val event = CacheFileDeletedEvent(CacheFileEventData(credentials, filename, cacheFilePath, size))
         safePublish(event)
     }
@@ -56,7 +56,7 @@ class CacheFileEventPublisher(private val publisher: ApplicationEventPublisher) 
         size: Long,
         credentials: StorageCredentials,
     ) {
-        val cacheFilePath = "${credentials.cache.path}$path/$filename"
+        val cacheFilePath = "${credentials.cache.path}$path$filename"
         val data = CacheFileEventData(credentials, filename, cacheFilePath, size)
         safePublish(CacheFileAccessedEvent(data))
     }
