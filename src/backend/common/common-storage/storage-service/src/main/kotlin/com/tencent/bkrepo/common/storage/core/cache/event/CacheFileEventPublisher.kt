@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import java.io.File
-import java.nio.file.Paths
 
 class CacheFileEventPublisher(private val publisher: ApplicationEventPublisher) {
     fun publishCacheFileDeletedEvent(
@@ -57,8 +56,8 @@ class CacheFileEventPublisher(private val publisher: ApplicationEventPublisher) 
         size: Long,
         credentials: StorageCredentials,
     ) {
-        val fullPath = Paths.get(credentials.cache.path, path, filename).toString()
-        val data = CacheFileEventData(credentials, filename, fullPath, size)
+        val cacheFilePath = "${credentials.cache.path}$path/$filename"
+        val data = CacheFileEventData(credentials, filename, cacheFilePath, size)
         safePublish(CacheFileAccessedEvent(data))
     }
 
