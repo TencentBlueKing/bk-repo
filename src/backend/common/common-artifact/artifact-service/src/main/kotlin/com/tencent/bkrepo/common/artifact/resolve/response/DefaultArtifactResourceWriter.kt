@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils.isClientBroken
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -66,9 +67,10 @@ import javax.servlet.http.HttpServletResponse
 open class DefaultArtifactResourceWriter(
     private val storageProperties: StorageProperties,
     private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService ?= null,
-    private val userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService? = null
-) : AbstractArtifactResourceHandler(
-    storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService)
+    private val userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService? = null,
+    private val downloadBandwidthRateLimiterService: DownloadBandwidthRateLimiterService? = null,
+    ) : AbstractArtifactResourceHandler(
+    storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService, downloadBandwidthRateLimiterService)
 {
 
     @Throws(ArtifactResponseException::class)

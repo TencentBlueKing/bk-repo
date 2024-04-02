@@ -55,7 +55,8 @@ open class BandwidthRateLimitRule: RateLimitRule {
             return
         }
         when (resourceLimit.limitDimension) {
-            LimitDimension.UPLOAD_BANDWIDTH -> bandwidthLimitRules[resourceLimit.resource] = resourceLimit
+            LimitDimension.UPLOAD_BANDWIDTH, LimitDimension.DOWNLOAD_BANDWIDTH ->
+                bandwidthLimitRules[resourceLimit.resource] = resourceLimit
             else -> return
         }
     }

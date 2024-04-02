@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.resolve.response.AbstractArtifactResourceHandler
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -57,8 +58,10 @@ class S3ArtifactResourceWriter (
     storageProperties: StorageProperties,
     downloadUsageRateLimiterService: DownloadUsageRateLimiterService? = null,
     userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService?= null,
+    downloadBandwidthRateLimiterService: DownloadBandwidthRateLimiterService? = null,
     ) : AbstractArtifactResourceHandler(
-    storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService
+    storageProperties, downloadUsageRateLimiterService,
+    userDownloadUsageRateLimiterService, downloadBandwidthRateLimiterService
 ) {
 
     @Throws(ArtifactResponseException::class)

@@ -44,7 +44,7 @@ class DistributedFixedWindowRateLimiter(
     ): RateLimiter {
     override fun tryAcquire(permits: Long): Boolean {
         try {
-            var acquireResult: Boolean = false
+            var acquireResult = false
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.fixWindowRateLimiterScript, Long::class.java)
                 val result = redisTemplate.execute(

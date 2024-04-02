@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorC
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.BandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRule
@@ -222,6 +223,7 @@ abstract class AbstractRateLimiterService(
             UserDownloadUsageRateLimitRule::class.java -> UserDownloadUsageRateLimitRule()
             UserUploadUsageRateLimitRule::class.java -> UserUploadUsageRateLimitRule()
             UserUrlRateLimitRule::class.java -> UserUrlRateLimitRule()
+            BandwidthRateLimitRule::class.java -> BandwidthRateLimitRule()
             else -> return
         }
         usageRules.addRateLimitRules(usageRuleConfigs)

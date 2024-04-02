@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.s3.artifact.configuration
 
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -49,9 +50,11 @@ class ResourceWriterConfigurer{
         storageProperties: StorageProperties,
         downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
         userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService?= null,
-    ): ArtifactResourceWriter {
+        downloadBandwidthRateLimiterService: DownloadBandwidthRateLimiterService? = null,
+        ): ArtifactResourceWriter {
         return S3ArtifactResourceWriter(
-            storageProperties, downloadUsageRateLimiterService, userDownloadUsageRateLimiterService
+            storageProperties, downloadUsageRateLimiterService,
+            userDownloadUsageRateLimiterService, downloadBandwidthRateLimiterService
         )
     }
 }

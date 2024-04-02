@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.resolve.path.DefaultArtifactInfoResolv
 import com.tencent.bkrepo.common.artifact.resolve.path.ResolverMap
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -89,12 +90,14 @@ class ArtifactResolverConfiguration {
     fun artifactResourceWriter(
         storageProperties: StorageProperties,
         downloadUsageRateLimiterService: DownloadUsageRateLimiterService? = null,
-        userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService? = null
-    ): ArtifactResourceWriter {
+        userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService? = null,
+        downloadBandwidthRateLimiterService: DownloadBandwidthRateLimiterService? = null,
+        ): ArtifactResourceWriter {
         return DefaultArtifactResourceWriter(
             storageProperties,
             downloadUsageRateLimiterService,
-            userDownloadUsageRateLimiterService
+            userDownloadUsageRateLimiterService,
+            downloadBandwidthRateLimiterService,
         )
     }
 

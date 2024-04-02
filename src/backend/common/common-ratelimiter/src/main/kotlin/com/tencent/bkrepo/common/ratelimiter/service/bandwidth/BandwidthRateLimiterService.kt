@@ -53,10 +53,17 @@ open class BandwidthRateLimiterService(
     }
 
     override fun buildResourceTemplate(request: HttpServletRequest): List<String> {
-        return listOf("/*/")
+        val (projectId, repoName) = getRepoInfo(request)
+        val result = mutableListOf<String>()
+        if (!repoName.isNullOrEmpty()) {
+            result.add("/$projectId/$repoName/")
+            result.add("/*/$repoName/")
+        }
+        result.add("/$projectId/*/")
+        result.add("/*/*/")
+        result.add(("/*/"))
+        return result
     }
-
-
 
     override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
         throw UnsupportedOperationException()
