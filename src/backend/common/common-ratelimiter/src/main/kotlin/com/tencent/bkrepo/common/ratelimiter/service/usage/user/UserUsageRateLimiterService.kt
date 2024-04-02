@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
-import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
@@ -41,7 +40,6 @@ import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 
 open class UserUsageRateLimiterService(
@@ -69,18 +67,6 @@ open class UserUsageRateLimiterService(
         result.add("$userId:/*/*/")
         result.add("*:/*/*/")
         return result
-    }
-
-
-    private fun getRepoInfo(request: HttpServletRequest): Pair<String?, String?> {
-        val projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) )
-            as LinkedHashMap<*,*>)["projectId"] as String?
-        val repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) )
-            as LinkedHashMap<*,*>)["repoName"] as String?
-        if (projectId.isNullOrEmpty()) {
-            throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
-        }
-        return Pair(projectId, repoName)
     }
 
     override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {

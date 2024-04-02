@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpMethod
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
@@ -189,6 +190,17 @@ abstract class AbstractRateLimiterService(
         }
     }
 
+    fun getRepoInfo(request: HttpServletRequest): Pair<String?, String?> {
+        val projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) )
+            as LinkedHashMap<*,*>)["projectId"] as String?
+        val repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) )
+            as LinkedHashMap<*,*>)["repoName"] as String?
+        if (projectId.isNullOrEmpty()) {
+            throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
+        }
+        return Pair(projectId, repoName)
+    }
+
     //TODO 配置异常需要处理
     private fun refreshRateLimitRule() {
         if (!rateLimiterProperties.enabled) return
@@ -219,7 +231,7 @@ abstract class AbstractRateLimiterService(
         logger.info("rules in ${this.javaClass.simpleName} for request has been refreshed!")
     }
 
-    private fun getAlgorithmOfRateLimiter(
+    fun getAlgorithmOfRateLimiter(
         resource: String, resourceLimit: ResourceLimit
     ): RateLimiter {
         val limitKey = generateKey(resource, resourceLimit)

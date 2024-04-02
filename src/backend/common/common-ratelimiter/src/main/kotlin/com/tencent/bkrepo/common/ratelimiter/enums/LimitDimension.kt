@@ -40,4 +40,6 @@ enum class LimitDimension {
     USER_URL_TEMPLATE,  // 针对指定用户某一类请求进行限流
     USER_UPLOAD_USAGE,  // 针对指定用户上传总大小进行限流
     USER_DOWNLOAD_USAGE,  // 针对指定用户下载总大小进行限流
+    UPLOAD_BANDWIDTH, // 针对项目维度上传带宽进行限流
+    DOWNLOAD_BANDWIDTH, // 针对项目维度下载带宽进行限流
 }

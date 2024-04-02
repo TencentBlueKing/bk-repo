@@ -25,8 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.service.usage
-
+package com.tencent.bkrepo.common.ratelimiter.service.bandwidth
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
@@ -34,61 +33,33 @@ import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
-import com.tencent.bkrepo.common.ratelimiter.rule.usage.UsageRateLimitRule
-import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.BandwidthRateLimitRule
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import javax.servlet.http.HttpServletRequest
 
-open class UsageRateLimiterService(
+class DownloadBandwidthRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)  {
-
-    override fun buildResource(request: HttpServletRequest): String {
-        val (projectId, repoName) = getRepoInfo(request)
-        return if (repoName.isNullOrEmpty()) {
-            "/$projectId/*/"
-        } else {
-            "/$projectId/$repoName/"
-        }
-    }
-
-    override fun buildResourceTemplate(request: HttpServletRequest): List<String> {
-        val (projectId, repoName) = getRepoInfo(request)
-        val result = mutableListOf<String>()
-        result.add("/$projectId/*/")
-        if (!repoName.isNullOrEmpty()) {
-            result.add("/*/$repoName/")
-        }
-        result.add("/*/*/")
-        return result
-    }
-
-    override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
-        return when (request.method) {
-            in UPLOAD_REQUEST_METHOD -> request.contentLengthLong
-            else -> 0
-        }
-    }
+): BandwidthRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun getLimitDimensions(): List<LimitDimension> {
         return listOf(
-            LimitDimension.UPLOAD_USAGE
+            LimitDimension.DOWNLOAD_BANDWIDTH
         )
     }
 
-    override fun getRateLimitRuleClass(): Class<out RateLimitRule> {
-        return UsageRateLimitRule::class.java
+    override fun ignoreRequest(request: HttpServletRequest): Boolean {
+        return request.method !in DOWNLOAD_REQUEST_METHOD
     }
 
-    override fun ignoreRequest(request: HttpServletRequest): Boolean {
-        return request.method !in UPLOAD_REQUEST_METHOD
+    override fun getRateLimitRuleClass(): Class<out RateLimitRule> {
+        return BandwidthRateLimitRule::class.java
     }
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
-        return KEY_PREFIX+"upload:$resource"
+        return KEY_PREFIX +"downloadBandwidth:$resource"
     }
 }

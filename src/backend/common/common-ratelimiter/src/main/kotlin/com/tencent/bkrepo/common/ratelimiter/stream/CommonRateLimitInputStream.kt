@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.file.multipart
+package com.tencent.bkrepo.common.ratelimiter.stream
 
-import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
-import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.BandwidthRateLimiterService
-import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
-import org.springframework.web.multipart.MultipartFile
+import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
+import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
+import com.tencent.bkrepo.common.ratelimiter.constant.SLEEP_TIME
+import java.io.InputStream
 
-class MultipartArtifactFile(
-    private val multipartFile: MultipartFile,
-    monitor: StorageHealthMonitor,
-    storageProperties: StorageProperties,
-    storageCredentials: StorageCredentials,
-    bandwidthRateLimiterService: BandwidthRateLimiterService? = null
-) : StreamArtifactFile(
-    multipartFile.inputStream, monitor, storageProperties, storageCredentials, multipartFile.size,
-    bandwidthRateLimiterService
-) {
-    fun getOriginalFilename() = multipartFile.originalFilename.orEmpty()
+class CommonRateLimitInputStream(
+    delegate: InputStream,
+    private val rateLimiter: RateLimiter
+) : DelegateInputStream(delegate) {
+
+    override fun read(): Int {
+        acquire(1)
+        return super.read()
+    }
+
+    override fun read(byteArray: ByteArray): Int {
+        acquire(byteArray.size)
+        return super.read(byteArray)
+    }
+
+    override fun read(byteArray: ByteArray, off: Int, len: Int): Int {
+        acquire(len)
+        return super.read(byteArray, off, len)
+    }
+
+    private fun acquire(permits: Int) {
+        var flag = false
+        while (!flag) {
+            flag = rateLimiter.tryAcquire(permits.toLong())
+            if (!flag) {
+                Thread.sleep(SLEEP_TIME.toLong())
+            }
+        }
+    }
 }

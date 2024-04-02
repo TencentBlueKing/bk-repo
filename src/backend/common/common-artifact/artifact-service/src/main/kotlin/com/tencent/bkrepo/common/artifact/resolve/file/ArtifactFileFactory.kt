@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.chunk.RandomAccessArtifac
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
 import com.tencent.bkrepo.common.bksync.BlockChannel
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.BandwidthRateLimiterService
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -53,18 +54,21 @@ import java.io.InputStream
 @Component
 class ArtifactFileFactory(
     storageProperties: StorageProperties,
-    storageHealthMonitorHelper: StorageHealthMonitorHelper
+    storageHealthMonitorHelper: StorageHealthMonitorHelper,
+    bandwidthRateLimiterService: BandwidthRateLimiterService
 ) {
 
     init {
         monitorHelper = storageHealthMonitorHelper
         properties = storageProperties
+        uploadBandwidthRateLimiterService = bandwidthRateLimiterService
     }
 
     companion object {
 
         private lateinit var monitorHelper: StorageHealthMonitorHelper
         private lateinit var properties: StorageProperties
+        private lateinit var uploadBandwidthRateLimiterService: BandwidthRateLimiterService
 
         const val ARTIFACT_FILES = "artifact.files"
 
@@ -89,13 +93,19 @@ class ArtifactFileFactory(
          * 构造分块接收数据的artifact file
          */
         fun buildChunked(): ChunkedArtifactFile {
-            return ChunkedArtifactFile(getMonitor(), properties, getStorageCredentials()).apply {
+            return ChunkedArtifactFile(
+                getMonitor(), properties, getStorageCredentials(),
+                bandwidthRateLimiterService = uploadBandwidthRateLimiterService
+            ).apply {
                 track(this)
             }
         }
 
         fun buildDfsArtifactFile(): RandomAccessArtifactFile {
-            return RandomAccessArtifactFile(getMonitor(), getStorageCredentials(), properties).apply {
+            return RandomAccessArtifactFile(
+                getMonitor(), getStorageCredentials(), properties,
+                bandwidthRateLimiterService = uploadBandwidthRateLimiterService
+            ).apply {
                 track(this)
             }
         }
@@ -106,7 +116,8 @@ class ArtifactFileFactory(
          */
         fun build(inputStream: InputStream, contentLength: Long? = null): ArtifactFile {
             return StreamArtifactFile(
-                inputStream, getMonitor(), properties, getStorageCredentials(), contentLength
+                inputStream, getMonitor(), properties, getStorageCredentials(), contentLength,
+                bandwidthRateLimiterService = uploadBandwidthRateLimiterService
             ).apply {
                 track(this)
             }
@@ -127,7 +138,8 @@ class ArtifactFileFactory(
          */
         fun build(multipartFile: MultipartFile, storageCredentials: StorageCredentials): ArtifactFile {
             return MultipartArtifactFile(
-                multipartFile, getMonitor(storageCredentials), properties, storageCredentials
+                multipartFile, getMonitor(storageCredentials), properties, storageCredentials,
+                bandwidthRateLimiterService = uploadBandwidthRateLimiterService
             ).apply {
                 track(this)
             }

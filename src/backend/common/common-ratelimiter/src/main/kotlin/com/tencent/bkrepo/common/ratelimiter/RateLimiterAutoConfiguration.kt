@@ -30,6 +30,8 @@ package com.tencent.bkrepo.common.ratelimiter
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimitHandlerInterceptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.BandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
@@ -119,6 +121,30 @@ class RateLimiterAutoConfiguration {
         redisTemplate: RedisTemplate<String, String>? = null
     ): UserUrlRateLimiterService {
         return UserUrlRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate
+        )
+    }
+
+    @Bean
+    fun bandwidthRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>? = null
+    ): BandwidthRateLimiterService {
+        return BandwidthRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate
+        )
+    }
+
+    @Bean
+    fun downloadBandwidthRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>? = null
+    ): DownloadBandwidthRateLimiterService {
+        return DownloadBandwidthRateLimiterService(
             taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate
         )
     }

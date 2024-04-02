@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -51,8 +52,9 @@ import javax.servlet.http.HttpServletResponse
 
 abstract class AbstractArtifactResourceHandler(
     private val storageProperties: StorageProperties,
-    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService ?= null,
-    private val userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService?= null,
+    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService? = null,
+    private val userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService? = null,
+    private val downloadBandwidthRateLimiterService: DownloadBandwidthRateLimiterService? = null,
 ) : ArtifactResourceWriter {
     /**
      * 获取动态buffer size
@@ -118,7 +120,11 @@ abstract class AbstractArtifactResourceHandler(
         val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
             return measureThroughput {
-                val stream = recordAbleInputStream.rateLimit(responseRateLimitWrapper(storageProperties.response.rateLimit))
+                val stream = downloadBandwidthRateLimiterService?.bandwidthRateLimit(
+                    request, inputStream
+                ) ?: recordAbleInputStream.rateLimit(
+                    responseRateLimitWrapper(storageProperties.response.rateLimit)
+                )
                 stream.use {
                     it.copyTo(
                         out = response.outputStream,

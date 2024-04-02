@@ -25,40 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.stream
+package com.tencent.bkrepo.common.ratelimiter.rule.bandwidth
 
-import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
-import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
-import com.tencent.bkrepo.common.ratelimiter.constant.SLEEP_TIME
-import java.io.InputStream
+import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
+import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
+import java.util.concurrent.ConcurrentHashMap
 
-class DistributedRateLimitInputStream(
-    delegate: InputStream,
-    private val rateLimiter: RateLimiter
-) : DelegateInputStream(delegate) {
+open class BandwidthRateLimitRule: RateLimitRule {
 
-    override fun read(): Int {
-        acquire(1)
-        return super.read()
-    }
+    val bandwidthLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
 
-    override fun read(byteArray: ByteArray): Int {
-        acquire(byteArray.size)
-        return super.read(byteArray)
-    }
-
-    override fun read(byteArray: ByteArray, off: Int, len: Int): Int {
-        acquire(len)
-        return super.read(byteArray, off, len)
-    }
-
-    private fun acquire(permits: Int) {
-        var flag = false
-        while (!flag) {
-            flag = rateLimiter.tryAcquire(permits.toLong())
-            if (!flag) {
-                Thread.sleep(SLEEP_TIME.toLong())
+    override fun getRateLimitRule(resource: String, extraResource: List<String>): ResourceLimit? {
+        if (resource.isBlank()) return null
+        var ruleLimit = bandwidthLimitRules[resource]
+        if (ruleLimit == null && extraResource.isNotEmpty()) {
+            for (res in extraResource) {
+                ruleLimit = bandwidthLimitRules[res]
+                if (ruleLimit != null) {
+                    break
+                }
             }
+        }
+        return ruleLimit
+    }
+
+    override fun addRateLimitRule(resourceLimit: ResourceLimit) {
+        if (resourceLimit.resource.isBlank()) {
+            return
+        }
+        when (resourceLimit.limitDimension) {
+            LimitDimension.UPLOAD_BANDWIDTH -> bandwidthLimitRules[resourceLimit.resource] = resourceLimit
+            else -> return
+        }
+    }
+
+    override fun addRateLimitRules(resourceLimit: List<ResourceLimit>) {
+        resourceLimit.forEach {
+            addRateLimitRule(it)
         }
     }
 }

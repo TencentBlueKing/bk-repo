@@ -34,6 +34,8 @@ import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.BandwidthRateLimiterService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.innercos.retry
@@ -75,6 +77,7 @@ class ArtifactDataReceiver(
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
     private val originPath: Path = path,
+    private val bandwidthRateLimiterService: BandwidthRateLimiterService? = null
 ) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
@@ -187,6 +190,9 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
+            bandwidthRateLimiterService?.bandwidthRateLimit(
+                HttpContextHolder.getRequest(), length.toLong()
+            )
             writeData(chunk, offset, length)
         } catch (exception: IOException) {
             handleIOException(exception)
@@ -203,6 +209,9 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
+            bandwidthRateLimiterService?.bandwidthRateLimit(
+                HttpContextHolder.getRequest(), 1
+            )
             checkFallback()
             outputStream.write(b)
             listener.data(b)
@@ -223,7 +232,10 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
-            val input = source.rateLimit(receiveProperties.rateLimit.toBytes())
+
+            val input = bandwidthRateLimiterService?.bandwidthRateLimit(
+                HttpContextHolder.getRequest(), source
+            ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
             val buffer = ByteArray(bufferSize)
             input.use {
                 var bytes = input.read(buffer)
