@@ -196,7 +196,7 @@ open class PermissionServiceImpl constructor(
                 // check repo read action
                 if (permHelper.checkRepoReadAction(request, roles)) return true
                 //  check project user
-                val isProjectUser = isUserLocalProjectUser(uid, request.projectId!!)
+                val isProjectUser = isUserLocalProjectUser(uid, projectId!!)
                 if (permHelper.checkProjectReadAction(request, isProjectUser)) return true
                 // check node action
                 if (needNodeCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
@@ -294,7 +294,7 @@ open class PermissionServiceImpl constructor(
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
-        if (isUserSystemAdmin() || isUserLocalProjectAdmin(userId, projectId)) {
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
         }
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)

@@ -365,9 +365,7 @@ class PermissionHelper constructor(
         roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
             roleIdArray.add(it.id!!)
         }
-        userDao.findFirstByUserIdAndRolesIn(userId, roleIdArray) ?: run {
-            return false
-        }
+        userDao.findFirstByUserIdAndRolesIn(userId, roleIdArray) ?: return false
         return true
     }
 

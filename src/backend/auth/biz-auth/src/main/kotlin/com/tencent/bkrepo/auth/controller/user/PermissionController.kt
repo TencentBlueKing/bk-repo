@@ -97,9 +97,10 @@ class PermissionController @Autowired constructor(
 
     @ApiOperation("权限列表")
     @GetMapping("/list")
-    fun listPermission(@RequestParam projectId: String,
-                       @RequestParam repoName: String?,
-                       @RequestParam resourceType: String
+    fun listPermission(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String?,
+        @RequestParam resourceType: String
     ): Response<List<Permission>> {
         preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(permissionService.listPermission(projectId, repoName, resourceType))
@@ -163,7 +164,7 @@ class PermissionController @Autowired constructor(
 
     @ApiOperation("查询是否限制权限配置页，用于前端展示")
     @GetMapping("/permission/available")
-    fun getRepoPermissionEnabled():Response<Boolean>{
+    fun getRepoPermissionEnabled(): Response<Boolean> {
         return ResponseBuilder.success(permissionService.getPathCheckConfig())
     }
 }

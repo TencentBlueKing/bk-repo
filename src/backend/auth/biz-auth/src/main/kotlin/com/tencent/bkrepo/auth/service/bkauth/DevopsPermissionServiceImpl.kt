@@ -249,7 +249,7 @@ class DevopsPermissionServiceImpl constructor(
         return devopsProjectService.isProjectMember(userId, projectId, action)
     }
 
-    private fun isDevopsProjectAdmin(userId: String, projectId: String): Boolean {
+    fun isDevopsProjectAdmin(userId: String, projectId: String): Boolean {
         logger.debug("isDevopsProjectAdmin: [$userId,$projectId]")
         return devopsProjectService.isProjectManager(userId, projectId)
     }
