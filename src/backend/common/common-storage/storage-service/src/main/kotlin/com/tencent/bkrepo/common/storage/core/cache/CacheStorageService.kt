@@ -145,9 +145,11 @@ class CacheStorageService(
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
+        val cacheFilePath = "${credentials.cache.path}$path/$filename"
+        val size = File(cacheFilePath).length()
         fileStorage.delete(path, filename, credentials)
         getCacheClient(credentials).delete(path, filename)
-        cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, credentials)
+        cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)
     }
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
@@ -210,9 +212,11 @@ class CacheStorageService(
         credentials: StorageCredentials,
     ) {
         if (doExist(path, filename, credentials)) {
-            logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
+            val cacheFilePath = "${credentials.cache.path}$path/$filename"
+            val size = File(cacheFilePath).length()
             getCacheClient(credentials).delete(path, filename)
-            cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, credentials)
+            cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)
+            logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
         } else {
             logger.info("Cache file[${credentials.cache.path}/$path/$filename] was not in storage")
         }

@@ -36,10 +36,10 @@ class CacheFileEventPublisher(private val publisher: ApplicationEventPublisher) 
     fun publishCacheFileDeletedEvent(
         path: String,
         filename: String,
+        size: Long,
         credentials: StorageCredentials,
     ) {
         val cacheFilePath = "${credentials.cache.path}$path/$filename"
-        val size = File(cacheFilePath).length()
         val event = CacheFileDeletedEvent(CacheFileEventData(credentials, filename, cacheFilePath, size))
         safePublish(event)
     }

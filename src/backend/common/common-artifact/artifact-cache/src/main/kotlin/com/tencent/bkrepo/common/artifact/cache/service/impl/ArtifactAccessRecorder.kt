@@ -117,8 +117,8 @@ class ArtifactAccessRecorder(
         // TODO
     }
 
-    @EventListener(ArtifactResponseEvent::class)
     @Async
+    @EventListener(ArtifactResponseEvent::class)
     fun listen(event: ArtifactResponseEvent) {
         safeRecordArtifactCacheAccess(event.artifactResource)
     }

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.artifact.cache.config
 
-import com.tencent.bkrepo.common.artifact.cache.controller.UserArtifactPreloadController
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactAccessRecordDao
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadStrategyDao
@@ -59,7 +58,6 @@ import kotlin.contracts.ExperimentalContracts
     ArtifactPreloadPlanServiceImpl::class,
     DefaultPreloadPlanExecutor::class,
     CacheFileEventListener::class,
-    UserArtifactPreloadController::class,
 )
 @AutoConfigureAfter(StorageAutoConfiguration::class)
 class ArtifactPreloadConfiguration {

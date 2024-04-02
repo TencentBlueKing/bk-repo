@@ -35,4 +35,5 @@ dependencies {
     api(project(":analyst:api-analyst"))
     api(project(":common:common-generic"))
     api(project(":common:common-artifact:artifact-service"))
+    implementation(project(":common:common-artifact:artifact-cache"))
 }
