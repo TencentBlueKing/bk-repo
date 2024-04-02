@@ -118,10 +118,7 @@ class NodeOperationsHandler(
                 fullPath = fullPath,
                 operator = ReactiveSecurityUtils.getUser()
             )
-            val nodeDeleteResult = rRepositoryClient.deleteNode(nodeDeleteRequest).awaitSingle().data
-            if (nodeDeleteResult?.deletedNumber != 1L) {
-                return ServerResponse.badRequest().buildAndAwait()
-            }
+            rRepositoryClient.deleteNode(nodeDeleteRequest).awaitSingle().data
             fileNodeService.deleteNodeBlocks(projectId, repoName, fullPath)
             return ReactiveResponseBuilder.success()
         }
