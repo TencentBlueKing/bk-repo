@@ -131,6 +131,8 @@ class EdgePullReplicaTaskJob(
                 nextExecutionTime = nextExecutionTime,
                 executionTimes = executionTimes,
                 enabled = enabled,
+                record = record,
+                recordReserveDays = recordReserveDays,
                 createdBy = createdBy,
                 createdDate = LocalDateTime.parse(createdDate, DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
