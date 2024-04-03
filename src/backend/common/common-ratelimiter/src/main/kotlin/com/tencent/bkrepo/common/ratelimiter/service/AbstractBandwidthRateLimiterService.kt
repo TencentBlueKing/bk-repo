@@ -87,7 +87,7 @@ abstract class AbstractBandwidthRateLimiterService(
             return null
         }
         val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit)
-        return CommonRateLimitInputStream(inputStream, rateLimiter)
+        return CommonRateLimitInputStream(inputStream, rateLimiter, rateLimiterProperties.sleepTime)
     }
 
     fun bandwidthRateLimit(request: HttpServletRequest, permits: Long) {
@@ -110,7 +110,7 @@ abstract class AbstractBandwidthRateLimiterService(
         while (!flag) {
             flag = rateLimiter.tryAcquire(permits)
             if (!flag) {
-                Thread.sleep(SLEEP_TIME.toLong())
+                Thread.sleep(rateLimiterProperties.sleepTime)
             }
         }
     }

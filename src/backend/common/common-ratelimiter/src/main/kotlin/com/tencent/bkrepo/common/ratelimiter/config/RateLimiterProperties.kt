@@ -39,5 +39,7 @@ data class RateLimiterProperties(
     // 配置规则刷新频率 单位为秒
     var refreshDuration: Long = 10L,
     var cacheCapacity: Long = 1024L,
-    var rules: List<ResourceLimit> = mutableListOf()
+    var rules: List<ResourceLimit> = mutableListOf(),
+    // 等待时间，单位毫秒
+    var sleepTime: Long = 10
 )

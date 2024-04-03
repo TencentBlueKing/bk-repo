@@ -46,6 +46,7 @@ class FixedWindowRateLimiter(
     private val lock: Lock = ReentrantLock()
 
     override fun tryAcquire(permits: Long): Boolean {
+        // TODO 当剩余容量少于permit时，会导致一直获取不到
         var updateValue = currentValue.incrementAndGet()
         if (updateValue <= limit) {
             return true

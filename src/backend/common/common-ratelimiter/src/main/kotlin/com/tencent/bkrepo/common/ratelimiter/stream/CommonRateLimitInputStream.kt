@@ -29,12 +29,12 @@ package com.tencent.bkrepo.common.ratelimiter.stream
 
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
-import com.tencent.bkrepo.common.ratelimiter.constant.SLEEP_TIME
 import java.io.InputStream
 
 class CommonRateLimitInputStream(
     delegate: InputStream,
-    private val rateLimiter: RateLimiter
+    private val rateLimiter: RateLimiter,
+    private val sleepTime: Long
 ) : DelegateInputStream(delegate) {
 
     override fun read(): Int {
@@ -55,9 +55,10 @@ class CommonRateLimitInputStream(
     private fun acquire(permits: Int) {
         var flag = false
         while (!flag) {
+            // TODO 当限制小于读取大小时，会进入死循环
             flag = rateLimiter.tryAcquire(permits.toLong())
             if (!flag) {
-                Thread.sleep(SLEEP_TIME.toLong())
+                Thread.sleep(sleepTime)
             }
         }
     }
