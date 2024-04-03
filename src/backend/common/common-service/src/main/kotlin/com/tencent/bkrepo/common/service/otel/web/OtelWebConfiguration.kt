@@ -43,9 +43,4 @@ class OtelWebConfiguration {
         registrationBean.addUrlPatterns("/*")
         return registrationBean
     }
-
-    @Bean
-    fun otelResponseAspect(): OtelResponseAspect {
-        return OtelResponseAspect()
-    }
 }
