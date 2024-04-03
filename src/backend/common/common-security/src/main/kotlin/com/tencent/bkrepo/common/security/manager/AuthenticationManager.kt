@@ -39,7 +39,6 @@ import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import org.springframework.beans.factory.annotation.Autowired
 
-@Suppress("SpringJavaInjectionPointsAutowiringInspection")
 open class AuthenticationManager {
     @Autowired
     private lateinit var serviceUserClient: ServiceUserClient
