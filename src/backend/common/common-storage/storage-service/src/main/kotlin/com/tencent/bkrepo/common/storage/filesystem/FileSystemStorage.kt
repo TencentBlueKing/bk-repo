@@ -48,7 +48,7 @@ import java.nio.file.StandardCopyOption
  */
 open class FileSystemStorage : AbstractEncryptorFileStorage<FileSystemCredentials, FileSystemClient>() {
 
-    override fun store(path: String, name: String, file: File, client: FileSystemClient) {
+    override fun store(path: String, name: String, file: File, client: FileSystemClient, storageClass: String?) {
         file.inputStream().use {
             client.store(path, name, it, file.length())
         }
@@ -85,7 +85,7 @@ open class FileSystemStorage : AbstractEncryptorFileStorage<FileSystemCredential
         toPath: String,
         toName: String,
         fromClient: FileSystemClient,
-        toClient: FileSystemClient
+        toClient: FileSystemClient,
     ) {
         val fromFullPath = Paths.get(fromClient.root, fromPath, fromName)
         val toFullPath = Paths.get(toClient.root, toPath, toName)

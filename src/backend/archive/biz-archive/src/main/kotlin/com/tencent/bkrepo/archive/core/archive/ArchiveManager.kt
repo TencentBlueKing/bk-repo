@@ -3,7 +3,7 @@ package com.tencent.bkrepo.archive.core.archive
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
-import com.tencent.bkrepo.archive.constant.DEEP_ARCHIVE
+import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.archive.event.FileArchivedEvent
 import com.tencent.bkrepo.archive.event.FileRestoredEvent
 import com.tencent.bkrepo.archive.core.FileProvider
@@ -17,8 +17,7 @@ import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.innercos.client.CosClient
-import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import org.apache.tika.Tika
@@ -41,7 +40,6 @@ class ArchiveManager(
     private val storageService: StorageService,
 ) : Function<TArchiveFile, Mono<TaskResult>> {
 
-    var cosClient: CosClient = CosClient(archiveProperties.cos)
     private val tika = Tika()
     private val compressPool = ArchiveUtils.newFixedAndCachedThreadPool(
         archiveProperties.compress.compressThreads,
@@ -135,7 +133,11 @@ class ArchiveManager(
             }.doOnSuccess {
                 val key = getKey(sha256, file.archiver)
                 val size = it.length()
-                val throughput = measureThroughput(size) { cosClient.putFileObject(key, it, DEEP_ARCHIVE) }
+                val throughput = measureThroughput(size) {
+                    val storageCredentials = getStorageCredentials(file.archiveCredentialsKey)
+                    val storageClass = file.storageClass ?: ArchiveStorageClass.DEEP_ARCHIVE
+                    storageService.store(key, it.toArtifactFile(), storageCredentials, storageClass = storageClass.name)
+                }
                 logger.info("Success upload $key,$throughput")
                 file.compressedSize = size
                 file.status = ArchiveStatus.ARCHIVED
@@ -180,8 +182,8 @@ class ArchiveManager(
          * 5. 更新数据库
          * */
         val key = getKey(file.sha256, file.archiver)
-        val checkObjectExistRequest = CheckObjectExistRequest(key)
-        val restored = cosClient.checkObjectRestore(checkObjectExistRequest)
+        val credentials = getStorageCredentials(file.archiveCredentialsKey)
+        val restored = storageService.checkRestore(key, credentials)
         if (!restored) {
             logger.info("$key is not ready.")
             file.status = ArchiveStatus.WAIT_TO_RESTORE
@@ -195,7 +197,7 @@ class ArchiveManager(
         Files.createDirectories(dir)
         val begin = System.nanoTime()
         val range = if (file.compressedSize == -1L) Range.FULL_RANGE else Range.full(file.compressedSize)
-        val ret = fileProvider.get(key, range, archiveProperties.cos)
+        val ret = fileProvider.get(key, range, credentials)
             .publishOn(scheduler)
             .flatMap {
                 val archiveFilePath = dir.resolve(key)
@@ -249,6 +251,15 @@ class ArchiveManager(
 
     fun getKey(name: String, archiveName: String): String {
         return name.plus(chooseArchiver(archiveName).getSuffix())
+    }
+
+    fun getStorageCredentials(key: String?): StorageCredentials {
+        return if (key == null) {
+            archiveProperties.cos
+        } else {
+            val credential = archiveProperties.credentials[key]?.apply { this.key = key }
+            credential ?: archiveProperties.cos
+        }
     }
 
     companion object {

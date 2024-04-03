@@ -105,7 +105,8 @@ abstract class AbstractStorageSupport : StorageService {
         filename: String,
         artifactFile: ArtifactFile,
         credentials: StorageCredentials,
-        cancel: AtomicBoolean? = null
+        cancel: AtomicBoolean? = null,
+        storageClass: String? = null,
     )
 
     /**
@@ -115,7 +116,7 @@ abstract class AbstractStorageSupport : StorageService {
         path: String,
         filename: String,
         range: Range,
-        credentials: StorageCredentials
+        credentials: StorageCredentials,
     ): ArtifactInputStream?
 
     /**
@@ -127,4 +128,20 @@ abstract class AbstractStorageSupport : StorageService {
      * 实际判断文件存在抽象方法
      */
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
+
+    /**
+     * 实际检查文件是否恢复
+     * */
+    protected abstract fun doCheckRestore(path: String, filename: String, credentials: StorageCredentials): Boolean
+
+    /**
+     * 实际恢复文件
+     * */
+    protected abstract fun doRestore(
+        path: String,
+        filename: String,
+        days: Int,
+        tier: String,
+        credentials: StorageCredentials,
+    )
 }
