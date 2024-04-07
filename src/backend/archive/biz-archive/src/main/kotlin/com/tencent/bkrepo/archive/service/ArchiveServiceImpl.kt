@@ -14,9 +14,7 @@ import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.common.storage.innercos.client.CosClient
-import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
-import com.tencent.bkrepo.common.storage.innercos.request.RestoreObjectRequest
+import com.tencent.bkrepo.common.storage.core.StorageService
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -29,9 +27,8 @@ class ArchiveServiceImpl(
     private val archiveProperties: ArchiveProperties,
     private val archiveFileRepository: ArchiveFileRepository,
     private val archiveManager: ArchiveManager,
+    private val storageService: StorageService,
 ) : ArchiveService {
-
-    private val cosClient = CosClient(archiveProperties.cos)
 
     override fun archive(request: CreateArchiveFileRequest) {
         // created
@@ -58,6 +55,8 @@ class ArchiveServiceImpl(
                     size = size,
                     status = ArchiveStatus.CREATED,
                     archiver = EmptyArchiver.NAME,
+                    archiveCredentialsKey = archiveCredentialsKey,
+                    storageClass = storageClass,
                 )
                 archiveFileRepository.save(archiveFile)
                 SpringContextUtils.publishEvent(FileEntityEvent(sha256, archiveFile))
@@ -73,9 +72,9 @@ class ArchiveServiceImpl(
                 storageCredentialsKey,
             ) ?: return
             val key = archiveManager.getKey(sha256, archiveFile.archiver)
-            val deleteObjectRequest = DeleteObjectRequest(key)
-            cosClient.deleteObject(deleteObjectRequest)
-            logger.info("Success delete $key on archive cos.")
+            val credentials = archiveManager.getStorageCredentials(archiveFile.archiveCredentialsKey)
+            storageService.delete(key, credentials)
+            logger.info("Success delete $key on ${credentials.key}.")
             archiveFileRepository.delete(archiveFile)
             logger.info("Delete archive file $sha256 in $storageCredentialsKey.")
         }
@@ -100,12 +99,12 @@ class ArchiveServiceImpl(
                 af.lastModifiedDate = LocalDateTime.now()
                 af.status = ArchiveStatus.WAIT_TO_RESTORE
                 val key = archiveManager.getKey(sha256, af.archiver)
-                val restoreRequest = RestoreObjectRequest(
-                    key = key,
-                    days = archiveProperties.days,
-                    tier = archiveProperties.tier,
+                storageService.restore(
+                    key,
+                    archiveProperties.days,
+                    archiveProperties.tier,
+                    archiveManager.getStorageCredentials(af.archiveCredentialsKey),
                 )
-                cosClient.restoreObject(restoreRequest)
                 archiveFileRepository.save(af)
                 logger.info("Restore archive file $sha256 in $storageCredentialsKey.")
             }

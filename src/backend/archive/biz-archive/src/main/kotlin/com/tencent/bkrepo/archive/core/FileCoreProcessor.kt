@@ -222,6 +222,6 @@ class FileCoreProcessor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(FileCoreProcessor::class.java)
-        private const val COS_RESTORE_MIN_HOUR = 12L
+        private const val COS_RESTORE_MIN_HOUR = 3L
     }
 }

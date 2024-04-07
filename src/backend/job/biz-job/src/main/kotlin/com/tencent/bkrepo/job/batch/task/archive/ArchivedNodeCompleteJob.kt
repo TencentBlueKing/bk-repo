@@ -37,12 +37,10 @@ import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.ArchivedNodeCompleteJobProperties
-import com.tencent.bkrepo.job.config.properties.IdleNodeArchiveJobProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import java.time.Duration
-import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -66,8 +64,8 @@ class ArchivedNodeCompleteJob(
     private val archiveClient: ArchiveClient,
     private val nodeClient: NodeClient,
     private val storageService: StorageService,
-    private val idleNodeArchiveJobProperties: IdleNodeArchiveJobProperties,
 ) : MongoDbBatchJob<ArchivedNodeRestoreJob.ArchiveFile, NodeContext>(properties) {
+
     override fun createJobContext(): NodeContext {
         return NodeContext()
     }
@@ -84,7 +82,6 @@ class ArchivedNodeCompleteJob(
 
     override fun run(row: ArchivedNodeRestoreJob.ArchiveFile, collectionName: String, context: NodeContext) {
         with(row) {
-            val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(idleNodeArchiveJobProperties.days.toLong()))
             val pendingNodes = listNode(sha256, storageCredentialsKey)
             if (pendingNodes.isEmpty()) {
                 logger.info("$sha256($storageCredentialsKey) no nodes need to be archived.")
@@ -94,20 +91,6 @@ class ArchivedNodeCompleteJob(
                     operator = SYSTEM_USER,
                 )
                 archiveClient.complete(archiveFileRequest)
-                return
-            }
-            val inUseNodes = pendingNodes.filter { it.lastAccessDate != null && it.lastAccessDate > cutoffTime }
-            if (inUseNodes.isNotEmpty()) {
-                inUseNodes.forEach {
-                    logger.info("New node[$it] created.")
-                }
-                val archiveFileRequest = ArchiveFileRequest(
-                    sha256 = sha256,
-                    storageCredentialsKey = storageCredentialsKey,
-                    operator = SYSTEM_USER,
-                )
-                archiveClient.delete(archiveFileRequest)
-                logger.info("$sha256/$storageCredentialsKey reuse,delete archive file")
                 return
             }
             pendingNodes.forEach {

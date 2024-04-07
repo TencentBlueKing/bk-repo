@@ -199,7 +199,7 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         if (inProcess && force) {
             logger.info("Force stop job [${getJobName()}] and unlock.")
             failover()
-            lock?.unlockQuietly()
+            lock?.doUnlock()
         }
         stop = true
     }
@@ -277,18 +277,18 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         try {
             block()
         } finally {
-            unlockQuietly()
+            doUnlock()
         }
     }
 
     /**
      * 静默释放锁
      * */
-    private fun SimpleLock.unlockQuietly() {
+    private fun SimpleLock.doUnlock() {
         try {
             unlock()
-        } catch (ignore: Exception) {
-            // ignore
+        } catch (e: Exception) {
+            logger.error("Unlock failed", e)
         }
     }
 

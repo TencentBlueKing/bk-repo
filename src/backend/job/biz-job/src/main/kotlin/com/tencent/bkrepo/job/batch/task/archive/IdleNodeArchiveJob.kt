@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch.task.archive
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
@@ -127,6 +128,16 @@ class IdleNodeArchiveJob(
     }
 
     override fun run(row: Node, collectionName: String, context: NodeContext) {
+        archiveNode(row, context, ArchiveStorageClass.DEEP_ARCHIVE, null, properties.days)
+    }
+
+    fun archiveNode(
+        row: Node,
+        context: NodeContext,
+        storageClass: ArchiveStorageClass,
+        archiveCredentialsKey: String?,
+        days: Int,
+    ) {
         val sha256 = row.sha256
         val projectId = row.projectId
         val repoName = row.repoName
@@ -149,10 +160,10 @@ class IdleNodeArchiveJob(
             // 归档任务不存在
             if (count == 1L) {
                 // 快速归档
-                createArchiveFile(credentialsKey, context, row)
+                createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
             } else {
                 synchronized(sha256.intern()) {
-                    slowArchive(row, credentialsKey, context)
+                    slowArchive(row, credentialsKey, context, storageClass, archiveCredentialsKey, days)
                 }
             }
         } else {
@@ -164,17 +175,20 @@ class IdleNodeArchiveJob(
         row: Node,
         credentialsKey: String?,
         context: NodeContext,
+        storageClass: ArchiveStorageClass,
+        archiveCredentialsKey: String?,
+        days: Int,
     ) {
         with(row) {
             val af = archiveClient.get(sha256, credentialsKey).data
             if (af == null) {
                 val nodeDataId = NodeDataId(sha256, credentialsKey)
-                val inUse = nodeUseInfoCache[nodeDataId] ?: checkUse(sha256, credentialsKey)
+                val inUse = nodeUseInfoCache[nodeDataId] ?: checkUse(sha256, credentialsKey, days)
                 if (inUse) {
                     // 只需要缓存被使用的情况，这可以避免sha256被重复搜索。当sha256未被使用时，它会创建一条归档记录，所以无需缓存。
                     nodeUseInfoCache[nodeDataId] = true
                 } else {
-                    createArchiveFile(credentialsKey, context, row)
+                    createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
                 }
             } else {
                 logger.info("Archive[$row] job already exist[${af.status}].")
@@ -186,12 +200,16 @@ class IdleNodeArchiveJob(
         credentialsKey: String?,
         context: NodeContext,
         row: Node,
+        storageClass: ArchiveStorageClass,
+        archiveCredentialsKey: String?,
     ) {
         with(row) {
             val createArchiveFileRequest = CreateArchiveFileRequest(
                 sha256 = sha256,
                 size = size,
                 storageCredentialsKey = credentialsKey,
+                archiveCredentialsKey = archiveCredentialsKey,
+                storageClass = storageClass,
                 operator = SYSTEM_USER,
             )
             archiveClient.archive(createArchiveFileRequest)
@@ -235,8 +253,8 @@ class IdleNodeArchiveJob(
         }
     }
 
-    private fun checkUse(sha256: String, credentialsKey: String?): Boolean {
-        val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(properties.days.toLong()))
+    private fun checkUse(sha256: String, credentialsKey: String?, days: Int): Boolean {
+        val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(days.toLong()))
         val query = Query.query(
             Criteria.where("sha256").isEqualTo(sha256)
                 .and("deleted").isEqualTo(null)
@@ -261,7 +279,7 @@ class IdleNodeArchiveJob(
     )
 
     companion object {
-        private const val COLLECTION_NAME_PREFIX = "node_"
+        const val COLLECTION_NAME_PREFIX = "node_"
         private const val INITIAL_REFRESH_COUNT = 3
         private val logger = LoggerFactory.getLogger(IdleNodeArchiveJob::class.java)
     }
