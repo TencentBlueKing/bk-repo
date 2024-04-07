@@ -86,13 +86,19 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         retryTemplate.registerListener(FileStoreRetryListener())
     }
 
-    override fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials) {
+    override fun store(
+        path: String,
+        name: String,
+        file: File,
+        storageCredentials: StorageCredentials,
+        storageClass: String?,
+    ) {
         retryTemplate.execute<Unit, Exception> {
             it.setAttribute(RetryContext.NAME, RETRY_NAME_STORE_FILE)
             val client = getClient(storageCredentials)
             val size = file.length()
             val throughput = measureThroughput(size) {
-                store(path, name, file, client)
+                store(path, name, file, client, storageClass)
             }
             logger.info("Success to persist file [$name], $throughput.")
         }
@@ -165,11 +171,25 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         toPath: String,
         toName: String,
         fromCredentials: StorageCredentials,
-        toCredentials: StorageCredentials
+        toCredentials: StorageCredentials,
     ) {
         val fromClient = getClient(fromCredentials)
         val toClient = getClient(toCredentials)
         move(fromPath, fromName, toPath, toName, fromClient, toClient)
+    }
+
+    override fun checkRestore(
+        path: String,
+        name: String,
+        storageCredentials: StorageCredentials,
+    ): Boolean {
+        val client = getClient(storageCredentials)
+        return checkRestore(path, name, client)
+    }
+
+    override fun restore(path: String, name: String, days: Int, tier: String, storageCredentials: StorageCredentials) {
+        val client = getClient(storageCredentials)
+        restore(path, name, days, tier, client)
     }
 
     private fun getClient(storageCredentials: StorageCredentials): Client {
@@ -181,7 +201,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     protected abstract fun onCreateClient(credentials: Credentials): Client
-    abstract fun store(path: String, name: String, file: File, client: Client)
+    abstract fun store(path: String, name: String, file: File, client: Client, storageClass: String?)
     abstract fun store(path: String, name: String, inputStream: InputStream, size: Long, client: Client)
     abstract fun load(path: String, name: String, range: Range, client: Client): InputStream?
     abstract fun delete(path: String, name: String, client: Client)
@@ -196,9 +216,17 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         toPath: String,
         toName: String,
         fromClient: Client,
-        toClient: Client
+        toClient: Client,
     ) {
         throw UnsupportedOperationException("Move operation unsupported")
+    }
+
+    open fun checkRestore(path: String, name: String, client: Client): Boolean {
+        throw UnsupportedOperationException("CheckRestore operation unsupported")
+    }
+
+    open fun restore(path: String, name: String, days: Int, tier: String, client: Client) {
+        throw UnsupportedOperationException("Restore operation unsupported")
     }
 
     companion object {

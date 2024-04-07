@@ -69,20 +69,27 @@ class CacheStorageService(
         artifactFile: ArtifactFile,
         credentials: StorageCredentials,
         cancel: AtomicBoolean?,
+        storageClass: String?,
     ) {
         when {
             artifactFile.isInMemory() -> {
-                fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
+                fileStorage.store(
+                    path,
+                    filename,
+                    artifactFile.getInputStream(),
+                    artifactFile.getSize(),
+                    credentials,
+                )
             }
 
             artifactFile.isFallback() || artifactFile.isInLocalDisk() -> {
-                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
+                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials, storageClass)
             }
 
             else -> {
                 val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
                 cacheFileEventPublisher.publishCacheFileLoadedEvent(credentials, cacheFile)
-                async2Store(cancel, filename, credentials, path, cacheFile)
+                async2Store(cancel, filename, credentials, path, cacheFile, storageClass)
             }
         }
     }
@@ -93,6 +100,7 @@ class CacheStorageService(
         credentials: StorageCredentials,
         path: String,
         cacheFile: File,
+        storageClass: String?,
     ) {
         threadPoolTaskExecutor.execute {
             try {
@@ -100,7 +108,7 @@ class CacheStorageService(
                     logger.info("Cancel store fle [$filename] on [${credentials.key}]")
                     return@execute
                 }
-                fileStorage.store(path, filename, cacheFile, credentials)
+                fileStorage.store(path, filename, cacheFile, credentials, storageClass)
             } catch (ignored: Exception) {
                 if (cancel?.get() == true) {
                     logger.info("Cancel store fle [$filename] on [${credentials.key}]")
@@ -156,6 +164,14 @@ class CacheStorageService(
         return fileStorage.exist(path, filename, credentials)
     }
 
+    override fun doCheckRestore(path: String, filename: String, credentials: StorageCredentials): Boolean {
+        return fileStorage.checkRestore(path, filename, credentials)
+    }
+
+    override fun doRestore(path: String, filename: String, days: Int, tier: String, credentials: StorageCredentials) {
+        fileStorage.restore(path, filename, days, tier, credentials)
+    }
+
     /**
      * 覆盖父类cleanUp逻辑，还包括清理缓存的文件内容
      */
@@ -178,7 +194,7 @@ class CacheStorageService(
             fileLocator,
             credentials,
             resolver,
-            publisher
+            publisher,
         )
         getCacheClient(credentials).walk(visitor)
         val result = mutableMapOf<Path, CleanupResult>()

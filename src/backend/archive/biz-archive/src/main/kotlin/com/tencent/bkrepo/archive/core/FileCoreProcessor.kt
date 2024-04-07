@@ -9,6 +9,7 @@ import com.tencent.bkrepo.archive.core.compress.BDZipManager
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.model.TCompressFile
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.DependsOn
 import org.springframework.context.event.EventListener
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
@@ -32,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * 基于reactor中的sink实现，通过监听事件来触发任务执行，同时也支持任务的主动拉取。
  * */
 @Component
+@DependsOn("archiveUtils")
 class FileCoreProcessor(
     private val archiveManager: ArchiveManager,
     private val bdZipManager: BDZipManager,
@@ -128,7 +130,7 @@ class FileCoreProcessor(
      * 从db中按时间逆序，获取待归档文件
      * */
     private fun requestArchiveFile(request: Long) {
-        if (request <= 0 || archiveFileQueue.size > 0) {
+        if (request <= 0 || archiveFileQueue.size > 0 || closed.get()) {
             return
         }
         logger.info("Request $request files to archive or restore.")
@@ -163,7 +165,7 @@ class FileCoreProcessor(
      * 从db中按时间逆序，获取待压缩文件
      * */
     private fun requestCompressFile(request: Long) {
-        if (request <= 0 || compressFileQueue.size > 0) {
+        if (request <= 0 || compressFileQueue.size > 0 || closed.get()) {
             return
         }
         logger.info("Request $request files to compress or uncompress.")
@@ -220,6 +222,6 @@ class FileCoreProcessor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(FileCoreProcessor::class.java)
-        private const val COS_RESTORE_MIN_HOUR = 12L
+        private const val COS_RESTORE_MIN_HOUR = 3L
     }
 }

@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.archive.model
 
 import com.tencent.bkrepo.archive.ArchiveStatus
+import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.archive.model.TArchiveFile.Companion.SHA256_IDX
 import com.tencent.bkrepo.archive.model.TArchiveFile.Companion.SHA256_IDX_DEF
 import com.tencent.bkrepo.archive.model.TArchiveFile.Companion.STATUS_IDX
@@ -28,6 +29,8 @@ class TArchiveFile(
     val storageCredentialsKey: String?,
     var status: ArchiveStatus,
     var archiver: String,
+    var archiveCredentialsKey: String? = null,
+    var storageClass: ArchiveStorageClass? = null,
 ) : AbstractEntity(
     id,
     createdBy,

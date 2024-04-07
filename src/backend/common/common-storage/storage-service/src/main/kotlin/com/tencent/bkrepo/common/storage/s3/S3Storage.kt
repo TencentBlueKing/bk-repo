@@ -56,7 +56,7 @@ class S3Storage(
 
     private var defaultTransferManager: TransferManager? = null
 
-    override fun store(path: String, name: String, file: File, client: S3Client) {
+    override fun store(path: String, name: String, file: File, client: S3Client, storageClass: String?) {
         val transferManager = getTransferManager(client)
         val putObjectRequest = PutObjectRequest(client.bucketName, name, file)
         val upload = transferManager.upload(putObjectRequest)

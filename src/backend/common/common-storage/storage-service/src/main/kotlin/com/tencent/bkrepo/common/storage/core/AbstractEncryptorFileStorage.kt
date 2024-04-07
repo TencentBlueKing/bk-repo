@@ -45,16 +45,22 @@ import java.nio.file.Paths
  * */
 abstract class AbstractEncryptorFileStorage<Credentials : StorageCredentials, Client> :
     AbstractFileStorage<Credentials, Client>() {
-    override fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials) {
+    override fun store(
+        path: String,
+        name: String,
+        file: File,
+        storageCredentials: StorageCredentials,
+        storageClass: String?,
+    ) {
         if (!storageCredentials.encrypt.enabled) {
-            return super.store(path, name, file, storageCredentials)
+            return super.store(path, name, file, storageCredentials, storageClass)
         }
         val encryptedFile = createTempFile(storageCredentials)
         val newName = getEncryptName(name, storageCredentials)
         try {
             val throughput = measureThroughput { encryptFile(storageCredentials, file, encryptedFile) }
             logger.info("Success to encrypt artifact file [$name], $throughput.")
-            super.store(path, newName, encryptedFile, storageCredentials)
+            super.store(path, newName, encryptedFile, storageCredentials, storageClass)
         } finally {
             encryptedFile.delete()
             logger.info("Delete temp encrypt file [${encryptedFile.absolutePath}] success.")

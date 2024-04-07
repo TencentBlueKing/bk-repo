@@ -46,5 +46,20 @@ data class ReplicaProgress(
     /**
      * 数据大小, 单位bytes
      */
-    var totalSize: Long = 0
-)
+    var totalSize: Long = 0,
+    /**
+     * 冲突数量
+     */
+    var conflict: Long = 0
+) {
+
+    operator fun plus(replicaProgress: ReplicaProgress): ReplicaProgress {
+        return ReplicaProgress(
+            success = this.success + replicaProgress.success,
+            skip = this.skip + replicaProgress.skip,
+            failed = this.failed + replicaProgress.failed,
+            totalSize = this.totalSize + replicaProgress.totalSize,
+            conflict = this.conflict + replicaProgress.conflict
+        )
+    }
+}

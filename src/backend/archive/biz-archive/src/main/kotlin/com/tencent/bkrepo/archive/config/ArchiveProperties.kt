@@ -10,8 +10,16 @@ import java.time.Duration
  * */
 @ConfigurationProperties("archive")
 data class ArchiveProperties(
+    /**
+     * 默认归档存储配置
+     * */
     @NestedConfigurationProperty
     val cos: InnerCosCredentials = InnerCosCredentials(),
+
+    /**
+     * 额外存储配置
+     * */
+    var credentials: Map<String, InnerCosCredentials> = mutableMapOf(),
     /**
      * 工作路径
      * */

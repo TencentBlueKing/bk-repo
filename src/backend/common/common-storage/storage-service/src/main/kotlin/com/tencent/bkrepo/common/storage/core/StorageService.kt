@@ -62,6 +62,7 @@ interface StorageService :
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
         cancel: AtomicBoolean? = null,
+        storageClass: String? = null,
     ): Int
 
     /**
@@ -92,6 +93,16 @@ interface StorageService :
      * 检验缓存文件一致性
      */
     fun synchronizeFile(storageCredentials: StorageCredentials? = null): SynchronizeResult
+
+    /**
+     * 检查文件是否恢复
+     * */
+    fun checkRestore(digest: String, storageCredentials: StorageCredentials?): Boolean
+
+    /**
+     * 恢复归档文件
+     * */
+    fun restore(digest: String, days: Int, tier: String, storageCredentials: StorageCredentials?)
 
     /**
      * 获取临时目录
