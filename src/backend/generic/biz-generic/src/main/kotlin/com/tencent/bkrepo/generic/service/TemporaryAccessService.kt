@@ -60,10 +60,12 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericChunkedArtifactInfo
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
+import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
 import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyContext
 import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyExtension
@@ -258,12 +260,27 @@ class TemporaryAccessService(
         with(artifactInfo) {
             val result = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw RepoNotFoundException(repoName)
-            val uuidCreated =  storageService.createAppendId(result.storageCredentials)
-            val responseProperty = ChunkedResponseProperty(
-                uuid = uuidCreated,
-                status = HttpStatus.ACCEPTED,
-                contentLength = 0
-            )
+            val responseProperty = if (uuid.isNullOrEmpty()) {
+                val uuidCreated =  storageService.createAppendId(result.storageCredentials)
+                ChunkedResponseProperty(
+                    uuid = uuidCreated,
+                    status = HttpStatus.ACCEPTED,
+                    contentLength = 0
+                )
+            } else {
+                val lengthOfAppendFile = try {
+                    storageService.findLengthOfAppendFile(
+                        uuid!!, result.storageCredentials
+                    )
+                } catch (ignore: StorageErrorException) {
+                    throw BadRequestException(GenericMessageCode.CHUNKED_ARTIFACT_BROKEN, sha256.orEmpty())
+                }
+                ChunkedResponseProperty(
+                    uuid = uuid,
+                    status = HttpStatus.ACCEPTED,
+                    contentLength = lengthOfAppendFile
+                )
+            }
             uploadResponse(
                 responseProperty,
                 HttpContextHolder.getResponse()

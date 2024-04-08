@@ -66,6 +66,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
@@ -658,9 +659,13 @@ class GenericLocalRepository(
             } else {
                 null
             }
-            val fileInfo = storageService.finishAppend(
-                uuid!!, context.repositoryDetail.storageCredentials, originalFileInfo
-            )
+            val fileInfo = try {
+                storageService.finishAppend(
+                    uuid!!, context.repositoryDetail.storageCredentials, originalFileInfo
+                )
+            } catch (e: StorageErrorException) {
+                throw BadRequestException(GenericMessageCode.CHUNKED_ARTIFACT_BROKEN, sha256.orEmpty())
+            }
             logger.info(
                 "The file with sha256 $sha256 in repo $projectId|$repoName " +
                     "has been uploaded with uuid: $uuid"
