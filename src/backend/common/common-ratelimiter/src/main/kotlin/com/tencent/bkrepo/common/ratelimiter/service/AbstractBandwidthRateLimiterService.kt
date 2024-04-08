@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.ratelimiter.service
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
-import com.tencent.bkrepo.common.ratelimiter.constant.SLEEP_TIME
+import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
@@ -107,12 +107,17 @@ abstract class AbstractBandwidthRateLimiterService(
         }
         val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit)
         var flag = false
-        while (!flag) {
-            flag = rateLimiter.tryAcquire(permits)
-            if (!flag) {
-                Thread.sleep(rateLimiterProperties.sleepTime)
+        try {
+            while (!flag) {
+                flag = rateLimiter.tryAcquire(permits)
+                if (!flag) {
+                    Thread.sleep(rateLimiterProperties.sleepTime)
+                }
             }
+        } catch (e: AcquireLockFailedException) {
+            return
         }
+
     }
 
     companion object {

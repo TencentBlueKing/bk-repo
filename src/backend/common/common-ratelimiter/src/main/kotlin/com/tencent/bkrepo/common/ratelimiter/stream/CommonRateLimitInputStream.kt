@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.ratelimiter.stream
 
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
+import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import java.io.InputStream
 
 class CommonRateLimitInputStream(
@@ -54,12 +55,16 @@ class CommonRateLimitInputStream(
 
     private fun acquire(permits: Int) {
         var flag = false
-        while (!flag) {
-            // TODO 当限制小于读取大小时，会进入死循环
-            flag = rateLimiter.tryAcquire(permits.toLong())
-            if (!flag) {
-                Thread.sleep(sleepTime)
+        try {
+            while (!flag) {
+                // TODO 当限制小于读取大小时，会进入死循环
+                flag = rateLimiter.tryAcquire(permits.toLong())
+                if (!flag) {
+                    Thread.sleep(sleepTime)
+                }
             }
+        } catch (e: AcquireLockFailedException) {
+            return
         }
     }
 }
