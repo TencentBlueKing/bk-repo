@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
@@ -45,7 +47,10 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
+import com.tencent.bkrepo.generic.config.GenericProperties
+import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_CLIENT
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
@@ -63,8 +68,9 @@ import org.springframework.stereotype.Service
 @Service
 class UploadService(
     private val nodeClient: NodeClient,
-    private val storageService: StorageService
-) : ArtifactService() {
+    private val storageService: StorageService,
+    private val genericProperties: GenericProperties,
+    ) : ArtifactService() {
 
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
@@ -110,11 +116,24 @@ class UploadService(
         logger.info("User[${SecurityUtils.getPrincipal()}] abort upload block [$artifactInfo] success.")
     }
 
-    fun completeBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
+    fun completeBlockUpload(
+        userId: String,
+        uploadId: String,
+        artifactInfo: GenericArtifactInfo,
+        sha256: String? = null,
+        md5: String? = null,
+        size: Long? = null
+    ) {
         val storageCredentials = getStorageCredentials()
         checkUploadId(uploadId, storageCredentials)
-
-        val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials)
+        val fileInfo = if (!sha256.isNullOrEmpty() && !md5.isNullOrEmpty() && size != null) {
+            if (!validateClientAgent())
+                throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+            FileInfo(sha256, md5, size)
+        } else {
+            null
+        }
+        val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials, fileInfo)
         // 保存节点
         nodeClient.createNode(
             NodeCreateRequest(
@@ -152,6 +171,14 @@ class UploadService(
         val repoDetail = HttpContextHolder.getRequest().getAttribute(REPO_KEY)
         require(repoDetail is RepositoryDetail)
         return repoDetail.storageCredentials
+    }
+
+    /**
+     * 判断来源是否可信
+     */
+    private fun validateClientAgent(): Boolean {
+        val uploadClient = HttpContextHolder.getRequest().getHeader(CHUNKED_UPLOAD_CLIENT)
+        return !uploadClient.isNullOrEmpty() && genericProperties.chunkedUploadClients.contains(uploadClient)
     }
 
     companion object {

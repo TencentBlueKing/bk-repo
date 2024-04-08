@@ -55,6 +55,10 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BATCH_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
+import com.tencent.bkrepo.generic.config.GenericProperties
+import com.tencent.bkrepo.generic.constant.HEADER_MD5
+import com.tencent.bkrepo.generic.constant.HEADER_SHA256
+import com.tencent.bkrepo.generic.constant.HEADER_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.pojo.BatchDownloadPaths
 import com.tencent.bkrepo.generic.pojo.BlockInfo
@@ -133,9 +137,15 @@ class GenericController(
     fun completeBlockUpload(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
+        @RequestHeader(HEADER_SHA256) sha256: String? = null,
+        @RequestHeader(HEADER_MD5) md5: String? = null,
+        @RequestHeader(HEADER_SIZE) size: Long? = null,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
-        uploadService.completeBlockUpload(userId, uploadId, artifactInfo)
+        uploadService.completeBlockUpload(
+            userId, uploadId, artifactInfo,
+            sha256, md5, size
+        )
         return ResponseBuilder.success()
     }
 

@@ -157,7 +157,11 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
-    override fun mergeBlock(blockId: String, storageCredentials: StorageCredentials?): FileInfo {
+    override fun mergeBlock(
+        blockId: String,
+        storageCredentials: StorageCredentials?,
+        fileInfo: FileInfo?
+    ): FileInfo {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
         try {
@@ -177,7 +181,7 @@ abstract class FileBlockSupport : CleanupSupport() {
                     MERGED_FILENAME
                 )
             )
-            val fileInfo = storeMergedFile(mergedFile, credentials)
+            val fileInfo = storeMergedFile(mergedFile, credentials, fileInfo)
             tempClient.deleteDirectory(CURRENT_PATH, blockId)
             logger.info("Success to merge block [$blockId]")
             return fileInfo

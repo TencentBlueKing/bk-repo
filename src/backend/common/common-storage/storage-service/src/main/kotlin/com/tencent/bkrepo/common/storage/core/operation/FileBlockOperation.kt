@@ -109,5 +109,8 @@ interface FileBlockOperation {
      * 合并分块文件
      * blockId: 分块存储id
      */
-    fun mergeBlock(blockId: String, storageCredentials: StorageCredentials?): FileInfo
+    fun mergeBlock(
+        blockId: String, storageCredentials: StorageCredentials?,
+        fileInfo: FileInfo? = null
+    ): FileInfo
 }
