@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.task.stat
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
+import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.NAME
@@ -43,7 +44,7 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.bson.types.ObjectId
@@ -62,7 +63,7 @@ import kotlin.reflect.KClass
  * 项目仓库指标统计任务
  */
 open class ProjectRepoMetricsStatJob(
-    properties: MongodbJobProperties,
+    val properties: ProjectRepoMetricsStatJobProperties,
     private val activeProjectService: ActiveProjectService,
     private val active: Boolean = true,
 ) : DefaultContextMongoDbJob<ProjectRepoMetricsStatJob.Repository>(properties) {
@@ -83,7 +84,7 @@ open class ProjectRepoMetricsStatJob(
 
     open fun statProjectCheck(
         projectId: String,
-        context: ProjectRepoMetricsStatJobContext
+        context: ProjectRepoMetricsStatJobContext,
     ): Boolean = true
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {
@@ -92,7 +93,7 @@ open class ProjectRepoMetricsStatJob(
             if (!statProjectCheck(projectId, context)) return
             val query = Query(
                 Criteria.where(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(name)
-                    .and(PATH).isEqualTo(PathUtils.ROOT).and(DELETED_DATE).isEqualTo(null)
+                    .and(PATH).isEqualTo(PathUtils.ROOT).and(DELETED_DATE).isEqualTo(null),
             )
             val nodeCollectionName = COLLECTION_NODE_PREFIX +
                 MongoShardingUtils.shardingSequence(projectId, SHARDING_COUNT)
@@ -113,6 +114,15 @@ open class ProjectRepoMetricsStatJob(
                 querySize = data.size
                 lastId = ObjectId(data.last().id)
             } while (querySize == SIZE)
+            // 减掉指定项目归档大小
+            if (properties.ignoreArchiveProjects.contains(projectId)) {
+                val (num, size) = getArchiveInfo(projectId, name, nodeCollectionName)
+                logger.info("Archive info: project $projectId, repo $name, num $num, size $size")
+                metric.repoMetrics[name]!!.num.add((-num))
+                metric.repoMetrics[name]!!.size.add(-size)
+                metric.nodeNum.add(-num)
+                metric.capSize.add(-size)
+            }
         }
     }
 
@@ -151,17 +161,16 @@ open class ProjectRepoMetricsStatJob(
         logger.info("stat [active: ${this.active}] project metrics done")
     }
 
-    override fun createJobContext(): ProjectRepoMetricsStatJobContext{
+    override fun createJobContext(): ProjectRepoMetricsStatJobContext {
         return ProjectRepoMetricsStatJobContext(
             statDate = LocalDate.now().atStartOfDay(),
-            statProjects = activeProjectService.getActiveProjects()
+            statProjects = activeProjectService.getActiveProjects(),
         )
     }
 
-
     private fun storeMetrics(
         statDate: LocalDateTime,
-        projectMetric: TProjectMetrics
+        projectMetric: TProjectMetrics,
     ) {
         // insert project repo metrics
         val criteria = Criteria.where(CREATED_DATE).isEqualTo(statDate).and(PROJECT).`is`(projectMetric.projectId)
@@ -178,6 +187,25 @@ open class ProjectRepoMetricsStatJob(
         return project.metadata.firstOrNull() { it.key == "enabled" }?.value as Boolean?
     }
 
+    /**
+     * 获取归档信息
+     * @return Pair(归档数,归档大小)
+     * */
+    private fun getArchiveInfo(projectId: String, repoName: String, collectionName: String): Pair<Long, Long> {
+        val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
+            .and(REPO).isEqualTo(repoName)
+            .and(ARCHIVED).isEqualTo(true)
+            .and(DELETED_DATE).isEqualTo(null)
+        var num = 0L
+        var size = 0L
+        val query = Query.query(criteria).cursorBatchSize(BATCH_SIZE)
+        mongoTemplate.find(query, Node::class.java, collectionName).forEach {
+            num++
+            size += it.size
+        }
+        return Pair(num, size)
+    }
+
     data class Project(var name: String, var metadata: List<ProjectMetadata> = emptyList()) {
         constructor(map: Map<String, Any?>) : this(
             map[Project::name.name].toString(),
@@ -186,7 +214,6 @@ open class ProjectRepoMetricsStatJob(
             } ?: emptyList(),
         )
     }
-
 
     data class Repository(
         var projectId: String,
@@ -209,7 +236,7 @@ open class ProjectRepoMetricsStatJob(
         val folder: Boolean,
         val fullPath: String,
         val size: Long,
-        val nodeNum: Long? = null
+        val nodeNum: Long? = null,
     ) {
         constructor(map: Map<String, Any?>) : this(
             map[Node::id.name].toString(),
@@ -218,10 +245,9 @@ open class ProjectRepoMetricsStatJob(
             map[Node::folder.name] as Boolean,
             map[Node::fullPath.name].toString(),
             map[Node::size.name].toString().toLong(),
-            map[Node::nodeNum.name]?.toString()?.toLong()
+            map[Node::nodeNum.name]?.toString()?.toLong(),
         )
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectRepoMetricsStatJob::class.java)
@@ -229,6 +255,7 @@ open class ProjectRepoMetricsStatJob(
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
         private const val COLLECTION_NAME_PROJECT = "project"
+        private const val ARCHIVED = "archived"
         private const val SIZE = 10000
     }
 }

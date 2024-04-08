@@ -3,6 +3,7 @@ package com.tencent.bkrepo.job.service.impl
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
+import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.task.archive.IdleNodeArchiveJob
@@ -36,7 +37,7 @@ class ArchiveJobServiceImpl(
                     Criteria.where("lastAccessDate").isEqualTo(null),
                     Criteria.where("lastAccessDate").lt(cutoffTime),
                 ),
-        )
+        ).cursorBatchSize(BATCH_SIZE)
         val index = HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val collectionName = COLLECTION_NAME_PREFIX.plus(index)
         val context = NodeContext()
