@@ -48,7 +48,6 @@ import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Lazy
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -57,7 +56,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 class HttpAuthSecurityConfiguration(
     private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>,
     private val unifiedCustomizer: ObjectProvider<HttpAuthSecurityCustomizer>,
-    @Lazy
     private val authenticationManager: AuthenticationManager,
     private val jwtAuthProperties: JwtAuthProperties,
     private val cryptoProperties: CryptoProperties
