@@ -214,8 +214,8 @@ class KubernetesDispatcher(
     private fun resolveCreateJobFailed(e: ApiException, subtask: SubScanTask): Boolean {
         // 处理job名称冲突的情况
         if (e.code == HttpStatus.CONFLICT.value) {
+            logger.warn("${subtask.trace()} job already exists, try to clean")
             val cleaned = cleanJob(jobName(subtask))
-            logger.warn("${subtask.trace()} job already exists, cleaned[$cleaned]")
             return cleaned
         }
 
@@ -227,18 +227,36 @@ class KubernetesDispatcher(
         logger.info("cleaning job[$jobName]")
         return ignoreApiException {
             val namespace = executionCluster.kubernetesProperties.namespace
-            batchV1Api.deleteNamespacedJob(
-                jobName,
-                namespace,
-                null,
-                null,
-                0,
-                null,
-                "Foreground",
-                null
-            )
-            logger.info("job[$jobName] clean success")
-            true
+            var retryTimes = 1
+            var deleted = false
+            while (true) {
+                batchV1Api.deleteNamespacedJob(
+                    jobName,
+                    namespace,
+                    null,
+                    null,
+                    0,
+                    null,
+                    "Foreground",
+                    null
+                )
+                try {
+                    batchV1Api.readNamespacedJob(jobName, namespace, null, null, null)
+                } catch (e: ApiException) {
+                    deleted = (e.code == HttpStatus.NOT_FOUND.value)
+                }
+
+                // 删除失败时进行重试
+                if (!deleted && retryTimes < MAX_RETRY_TIMES) {
+                    logger.info("job[$jobName] still exists after cleaning, retry times[$retryTimes]")
+                    Thread.sleep(retryTimes * 1000L)
+                    retryTimes++
+                } else {
+                    break
+                }
+            }
+            logger.info("job[$jobName] clean result[$deleted]")
+            deleted
         }
     }
 
