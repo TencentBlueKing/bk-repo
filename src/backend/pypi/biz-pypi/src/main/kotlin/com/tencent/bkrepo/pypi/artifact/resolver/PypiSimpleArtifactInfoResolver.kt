@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,22 +29,38 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.artifact
+package com.tencent.bkrepo.pypi.artifact.resolver
 
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import org.springframework.stereotype.Component
+import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 
 @Component
-@Resolver(PypiArtifactInfo::class)
-class PypiArtifactInfoResolver : ArtifactInfoResolver {
+@Resolver(PypiSimpleArtifactInfo::class)
+class PypiSimpleArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(
         projectId: String,
         repoName: String,
         artifactUri: String,
         request: HttpServletRequest
     ): PypiArtifactInfo {
-        return PypiArtifactInfo(projectId, repoName, artifactUri)
+        val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
+        val name = attributes["name"]?.toString()?.trim()?.also { validatePackageName(it) }
+        return PypiSimpleArtifactInfo(projectId, repoName, name)
+    }
+
+    private fun validatePackageName(name: String) {
+        PACKAGE_NAME_REGEX.matchEntire(name)
+            ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, name)
+    }
+
+    companion object {
+        private val PACKAGE_NAME_REGEX = Regex("^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])\$", RegexOption.IGNORE_CASE)
     }
 }

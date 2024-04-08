@@ -29,10 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.constants
+package com.tencent.bkrepo.pypi.artifact
 
-enum class PypiQueryType {
-    PACKAGE_INDEX,
-    VERSION_INDEX,
-    VERSION_DETAIL
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import com.tencent.bkrepo.pypi.constants.REMOTE_HTML_CACHE_FULL_PATH
+
+class PypiSimpleArtifactInfo(
+    projectId: String,
+    repoName: String,
+    val packageName: String?
+) : PypiArtifactInfo(projectId, repoName, StringPool.EMPTY) {
+
+    override fun getArtifactName(): String {
+        return packageName ?: StringPool.SLASH
+    }
+
+    override fun getArtifactFullPath() = if (packageName == null) "/$REMOTE_HTML_CACHE_FULL_PATH" else
+        throw MethodNotAllowedException("Information about version-index cache file is not available")
 }
