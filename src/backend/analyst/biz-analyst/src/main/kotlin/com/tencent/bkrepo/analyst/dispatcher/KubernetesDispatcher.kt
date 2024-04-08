@@ -122,12 +122,20 @@ class KubernetesDispatcher(
         }
         val limitCpu = hard["limits.cpu"]!!.number.toDouble()
         val limitMem = hard["limits.memory"]!!.number.toLong()
-        val usedCpu = used["limits.cpu"]!!.number.toDouble()
-        val usedMem = used["limits.memory"]!!.number.toLong()
-        val availableCpu = limitCpu - usedCpu
-        val availableMem = limitMem - usedMem
+        val jobs = batchV1Api.listNamespacedJob(
+            k8sProps.namespace,
+            null, null, null,
+            null, null, null,
+            null, null, null, null
+        )
+        val executingJobCount = jobs.items.filter {
+            (it.status?.failed ?: 0) == 0 && (it.status?.succeeded ?: 0) == 0
+        }.size
         val requireCpuPerTask = k8sProps.limitCpu
         val requireMemPerTask = k8sProps.limitMem
+        val availableCpu = limitCpu - executingJobCount * requireCpuPerTask
+        val availableMem = limitMem - executingJobCount * requireMemPerTask
+
         return if (availableCpu < requireCpuPerTask || availableMem < requireMemPerTask) {
             0
         } else {
