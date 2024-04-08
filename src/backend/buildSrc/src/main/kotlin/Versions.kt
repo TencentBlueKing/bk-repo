@@ -35,7 +35,7 @@ object Versions {
     const val Netty = "4.1.77.Final"
     const val SpringCloudCircuitbreaker = "2.1.2"
     const val Jersey = "2.35"
-    const val Jsoup = "1.15.1"
+    const val Jsoup = "1.17.2"
     const val Redline = "1.2.10"
     const val SkyWalkingApmToolkit = "8.10.0"
     const val Gson = "2.9.0"
