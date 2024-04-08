@@ -48,18 +48,27 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC
 import com.tencent.bkrepo.generic.artifact.GenericChunkedArtifactInfo
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_CLIENT
+import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
+import com.tencent.bkrepo.generic.constant.HEADER_SHA256
+import com.tencent.bkrepo.generic.constant.HEADER_SIZE
+import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.ChunkedMetrics
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
+import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.TemporaryAccessService
+import com.tencent.bkrepo.generic.service.UploadService
 import org.springframework.http.HttpMethod
 import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
@@ -73,6 +82,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 class TemporaryAccessController(
     private val temporaryAccessService: TemporaryAccessService,
     private val permissionManager: PermissionManager,
+    private val uploadService: UploadService,
     private val genericProperties: GenericProperties,
     ) {
 
@@ -205,6 +215,78 @@ class TemporaryAccessController(
             throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
         temporaryAccessService.reportChunkedMetrics(metrics)
         return ResponseBuilder.success()
+    }
+
+    @PostMapping(GenericArtifactInfo.BLOCK_MAPPING_URI)
+    fun startBlockUploadWithToken(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam token: String
+    ): Response<UploadTransactionInfo> {
+        if (!validateClientAgent())
+            throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+        temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
+        return ResponseBuilder.success(uploadService.startBlockUpload(userId, artifactInfo))
+    }
+
+    @PutMapping("/block/upload/$GENERIC_MAPPING_URI")
+    fun uploadBlockUploadWithToken(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        file: ArtifactFile,
+        @RequestParam token: String
+    ) {
+        if (!validateClientAgent())
+            throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+        temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
+        uploadService.upload(artifactInfo, file)
+    }
+
+    @DeleteMapping(GenericArtifactInfo.BLOCK_MAPPING_URI)
+    fun abortBlockUploadWithToken(
+        @RequestAttribute userId: String,
+        @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam token: String
+    ): Response<Void> {
+        if (!validateClientAgent())
+            throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+        temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
+        uploadService.abortBlockUpload(userId, uploadId, artifactInfo)
+        return ResponseBuilder.success()
+    }
+
+    @PutMapping(GenericArtifactInfo.BLOCK_MAPPING_URI)
+    fun completeBlockUploadWithToken(
+        @RequestAttribute userId: String,
+        @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
+        @RequestHeader(HEADER_SHA256) sha256: String? = null,
+        @RequestHeader(HEADER_MD5) md5: String? = null,
+        @RequestHeader(HEADER_SIZE) size: Long? = null,
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam token: String
+    ): Response<Void> {
+        if (!validateClientAgent())
+            throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+        val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
+        uploadService.completeBlockUpload(
+            userId, uploadId, artifactInfo,
+            sha256, md5, size
+        )
+        temporaryAccessService.decrementPermits(tokenInfo)
+        return ResponseBuilder.success()
+    }
+
+    @GetMapping(GenericArtifactInfo.BLOCK_MAPPING_URI)
+    fun listBlockWithToken(
+        @RequestAttribute userId: String,
+        @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam token: String
+    ): Response<List<BlockInfo>> {
+        if (!validateClientAgent())
+            throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+        temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
+        return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
     }
 
     /**

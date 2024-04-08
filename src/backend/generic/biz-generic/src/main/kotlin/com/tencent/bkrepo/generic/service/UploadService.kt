@@ -31,9 +31,7 @@
 
 package com.tencent.bkrepo.generic.service
 
-import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
@@ -49,8 +47,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import com.tencent.bkrepo.generic.config.GenericProperties
-import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_CLIENT
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
@@ -69,7 +65,6 @@ import org.springframework.stereotype.Service
 class UploadService(
     private val nodeClient: NodeClient,
     private val storageService: StorageService,
-    private val genericProperties: GenericProperties,
     ) : ArtifactService() {
 
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
@@ -127,8 +122,6 @@ class UploadService(
         val storageCredentials = getStorageCredentials()
         checkUploadId(uploadId, storageCredentials)
         val fileInfo = if (!sha256.isNullOrEmpty() && !md5.isNullOrEmpty() && size != null) {
-            if (!validateClientAgent())
-                throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
             FileInfo(sha256, md5, size)
         } else {
             null
@@ -171,14 +164,6 @@ class UploadService(
         val repoDetail = HttpContextHolder.getRequest().getAttribute(REPO_KEY)
         require(repoDetail is RepositoryDetail)
         return repoDetail.storageCredentials
-    }
-
-    /**
-     * 判断来源是否可信
-     */
-    private fun validateClientAgent(): Boolean {
-        val uploadClient = HttpContextHolder.getRequest().getHeader(CHUNKED_UPLOAD_CLIENT)
-        return !uploadClient.isNullOrEmpty() && genericProperties.chunkedUploadClients.contains(uploadClient)
     }
 
     companion object {
