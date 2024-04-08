@@ -35,7 +35,7 @@
           </template>
         </el-autocomplete>
       </el-form-item>
-      <el-form-item label="项目类型" style="margin-left: 15px">
+      <el-form-item label="仓库类型" style="margin-left: 15px">
         <el-select v-model="clientQuery.type" placeholder="请选择" clearable>
           <el-option
             v-for="item in options"
