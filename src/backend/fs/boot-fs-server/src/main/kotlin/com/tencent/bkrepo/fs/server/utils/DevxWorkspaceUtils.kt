@@ -107,6 +107,7 @@ class DevxWorkspaceUtils(
          * 是否为已知非法ip
          */
         fun knownIllegalIp(ip: String, projectId: String): Boolean {
+            illegalIp.cleanUp()
             return illegalIp.getIfPresent(ip) == projectId
         }
 
@@ -114,6 +115,9 @@ class DevxWorkspaceUtils(
          * 添加非法ip
          */
         fun addIllegalIp(ip: String, projectId: String) {
+            if (illegalIp.getIfPresent(ip) == projectId) {
+                return
+            }
             illegalIp.put(ip, projectId)
         }
 
