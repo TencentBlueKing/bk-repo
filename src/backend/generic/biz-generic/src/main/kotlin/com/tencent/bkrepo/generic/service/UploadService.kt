@@ -64,7 +64,7 @@ class UploadService(
     private val nodeClient: NodeClient,
     private val storageService: StorageService,
     private val repositoryClient: RepositoryClient,
-    ) : ArtifactService() {
+) : ArtifactService() {
 
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
@@ -121,6 +121,10 @@ class UploadService(
         val storageCredentials = getStorageCredentials(artifactInfo)
         checkUploadId(uploadId, storageCredentials)
         val fileInfo = if (!sha256.isNullOrEmpty() && !md5.isNullOrEmpty() && size != null) {
+            logger.info(
+                "sha256 $sha256, md5 $md5, size $size for " +
+                    "fullPath ${artifactInfo.getArtifactFullPath()} with uploadId $uploadId"
+            )
             FileInfo(sha256, md5, size)
         } else {
             null
