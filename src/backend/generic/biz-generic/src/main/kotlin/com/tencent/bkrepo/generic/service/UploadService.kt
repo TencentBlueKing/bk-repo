@@ -34,7 +34,6 @@ package com.tencent.bkrepo.generic.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -42,7 +41,6 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
@@ -53,8 +51,8 @@ import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -65,6 +63,7 @@ import org.springframework.stereotype.Service
 class UploadService(
     private val nodeClient: NodeClient,
     private val storageService: StorageService,
+    private val repositoryClient: RepositoryClient,
     ) : ArtifactService() {
 
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
@@ -92,7 +91,7 @@ class UploadService(
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
-            val uploadId = storageService.createBlockId(getStorageCredentials())
+            val uploadId = storageService.createBlockId(getStorageCredentials(artifactInfo))
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
                 expireSeconds = TRANSACTION_EXPIRES
@@ -104,7 +103,7 @@ class UploadService(
     }
 
     fun abortBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
-        val storageCredentials = getStorageCredentials()
+        val storageCredentials = getStorageCredentials(artifactInfo)
         checkUploadId(uploadId, storageCredentials)
 
         storageService.deleteBlockId(uploadId, storageCredentials)
@@ -119,7 +118,7 @@ class UploadService(
         md5: String? = null,
         size: Long? = null
     ) {
-        val storageCredentials = getStorageCredentials()
+        val storageCredentials = getStorageCredentials(artifactInfo)
         checkUploadId(uploadId, storageCredentials)
         val fileInfo = if (!sha256.isNullOrEmpty() && !md5.isNullOrEmpty() && size != null) {
             FileInfo(sha256, md5, size)
@@ -145,7 +144,7 @@ class UploadService(
     }
 
     fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): List<BlockInfo> {
-        val storageCredentials = getStorageCredentials()
+        val storageCredentials = getStorageCredentials(artifactInfo)
         checkUploadId(uploadId, storageCredentials)
 
         val blockInfoList = storageService.listBlock(uploadId, storageCredentials)
@@ -160,10 +159,12 @@ class UploadService(
         }
     }
 
-    private fun getStorageCredentials(): StorageCredentials? {
-        val repoDetail = HttpContextHolder.getRequest().getAttribute(REPO_KEY)
-        require(repoDetail is RepositoryDetail)
-        return repoDetail.storageCredentials
+    private fun getStorageCredentials(artifactInfo: GenericArtifactInfo): StorageCredentials? {
+        with(artifactInfo) {
+            val repoDetail = repositoryClient.getRepoDetail(projectId, repoName).data
+                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            return repoDetail.storageCredentials
+        }
     }
 
     companion object {
