@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.job.batch.utils
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.job.pojo.FolderInfo
 
 object FolderUtils {
 
@@ -59,21 +58,4 @@ object FolderUtils {
             }
         }.toString()
     }
-
-    /**
-     * 从缓存key中解析出节点信息
-     */
-    fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
-        val values = key.split(StringPool.COLON)
-        return try {
-            FolderInfo(
-                projectId = values[1],
-                repoName = values[2],
-                fullPath = values[3]
-            )
-        } catch (e: Exception) {
-            null
-        }
-    }
-
 }
