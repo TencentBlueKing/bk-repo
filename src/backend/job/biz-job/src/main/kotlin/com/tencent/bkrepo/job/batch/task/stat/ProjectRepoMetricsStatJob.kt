@@ -97,6 +97,10 @@ open class ProjectRepoMetricsStatJob(
             )
             val nodeCollectionName = COLLECTION_NODE_PREFIX +
                 MongoShardingUtils.shardingSequence(projectId, SHARDING_COUNT)
+            val key = FolderUtils.buildCacheKey(collectionName = nodeCollectionName, projectId = projectId)
+            val metric = context.metrics.getOrPut(key) {
+                ProjectRepoMetricsStatJobContext.ProjectMetrics(projectId)
+            }
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
             do {
@@ -109,7 +113,7 @@ open class ProjectRepoMetricsStatJob(
                     break
                 }
                 data.forEach {
-                    runRepoMetrics(nodeCollectionName, context, row, it)
+                    runRepoMetrics(metric, row, it)
                 }
                 querySize = data.size
                 lastId = ObjectId(data.last().id)
@@ -127,15 +131,10 @@ open class ProjectRepoMetricsStatJob(
     }
 
     private fun runRepoMetrics(
-        nodeCollectionName: String,
-        context: ProjectRepoMetricsStatJobContext,
+        metric: ProjectRepoMetricsStatJobContext.ProjectMetrics,
         repo: Repository,
         node: Node,
     ) {
-        val key = FolderUtils.buildCacheKey(collectionName = nodeCollectionName, projectId = repo.projectId)
-        val metric = context.metrics.getOrPut(key) {
-            ProjectRepoMetricsStatJobContext.ProjectMetrics(repo.projectId)
-        }
         if (!node.folder) {
             metric.nodeNum.increment()
         } else {
