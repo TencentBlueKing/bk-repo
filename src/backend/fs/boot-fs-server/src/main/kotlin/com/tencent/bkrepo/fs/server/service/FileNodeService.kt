@@ -66,16 +66,15 @@ class FileNodeService(
         range: Range
     ): List<RegionResource> {
         with(nodeDetail) {
+            val blocks = blockNodeService.listBlocks(range, projectId, repoName, fullPath, createdDate)
             val blockResources = mutableListOf<RegionResource>()
             if (sha256 != null && sha256 != FAKE_SHA256) {
                 val nodeData = RegionResource(sha256!!, 0, size, 0, size)
                 blockResources.add(nodeData)
-            } else {
-                val blocks = blockNodeService.listBlocks(range, projectId, repoName, fullPath)
-                blocks.forEach {
-                    val res = RegionResource(it.sha256, it.startPos, it.size, 0, it.size)
-                    blockResources.add(res)
-                }
+            }
+            blocks.forEach {
+                val res = RegionResource(it.sha256, it.startPos, it.size, 0, it.size)
+                blockResources.add(res)
             }
             return blockResources
         }
