@@ -28,8 +28,6 @@
 package com.tencent.bkrepo.job.batch.task.stat
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.DELETED_DATE
@@ -47,9 +45,7 @@ import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
-import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -101,23 +97,10 @@ open class ProjectRepoMetricsStatJob(
             val metric = context.metrics.getOrPut(key) {
                 ProjectRepoMetricsStatJobContext.ProjectMetrics(projectId)
             }
-            var querySize: Int
-            var lastId = ObjectId(MIN_OBJECT_ID)
-            do {
-                val newQuery = Query.of(query)
-                    .addCriteria(Criteria.where(ID).gt(lastId))
-                    .limit(SIZE)
-                    .with(Sort.by(ID).ascending())
-                val data = mongoTemplate.find<Node>(newQuery, nodeCollectionName)
-                if (data.isEmpty()) {
-                    break
-                }
-                data.forEach {
-                    runRepoMetrics(metric, row, it)
-                }
-                querySize = data.size
-                lastId = ObjectId(data.last().id)
-            } while (querySize == SIZE)
+            val data = mongoTemplate.find<Node>(query, nodeCollectionName)
+            data.forEach {
+                runRepoMetrics(metric, row, it)
+            }
             // 减掉指定项目归档大小
             if (properties.ignoreArchiveProjects.contains(projectId)) {
                 val (num, size) = getArchiveInfo(projectId, name, nodeCollectionName)
