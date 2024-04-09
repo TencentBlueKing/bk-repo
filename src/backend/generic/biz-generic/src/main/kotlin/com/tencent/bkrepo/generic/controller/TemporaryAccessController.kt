@@ -30,6 +30,7 @@ package com.tencent.bkrepo.generic.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -219,7 +220,7 @@ class TemporaryAccessController(
 
     @PostMapping(GenericArtifactInfo.BLOCK_MAPPING_URI)
     fun startBlockUploadWithToken(
-        @RequestAttribute userId: String,
+        @RequestHeader(AUTH_HEADER_UID) userId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
         @RequestParam token: String
     ): Response<UploadTransactionInfo> {
@@ -243,7 +244,7 @@ class TemporaryAccessController(
 
     @DeleteMapping(GenericArtifactInfo.BLOCK_MAPPING_URI)
     fun abortBlockUploadWithToken(
-        @RequestAttribute userId: String,
+        @RequestHeader(AUTH_HEADER_UID) userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
         @RequestParam token: String
@@ -257,7 +258,7 @@ class TemporaryAccessController(
 
     @PutMapping(GenericArtifactInfo.BLOCK_MAPPING_URI)
     fun completeBlockUploadWithToken(
-        @RequestAttribute userId: String,
+        @RequestHeader(AUTH_HEADER_UID) userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @RequestHeader(HEADER_SHA256) sha256: String? = null,
         @RequestHeader(HEADER_MD5) md5: String? = null,
