@@ -90,7 +90,7 @@ class CommitEdgeCenterRepositoryServiceImpl(
     projectMetricsRepository
 ) {
 
-    override fun determineStorageKey(request: RepoCreateRequest): String? {
+    override fun determineStorageKey(request: RepoCreateRequest, projectCredentialsKey: String?): String? {
         return repositoryProperties.defaultStorageCredentialsKey
     }
 

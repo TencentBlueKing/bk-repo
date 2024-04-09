@@ -42,4 +42,6 @@ data class ProjectUpdateRequest(
     val description: String? = null,
     @ApiModelProperty("项目元数据", required = false)
     val metadata: List<ProjectMetadata> = emptyList(),
+    @ApiModelProperty("项目新建仓库默认使用的存储", required = false)
+    val credentialsKey: String? = null,
 )

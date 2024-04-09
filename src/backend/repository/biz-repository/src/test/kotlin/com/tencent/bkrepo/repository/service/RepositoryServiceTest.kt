@@ -51,6 +51,7 @@ import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -235,6 +236,16 @@ class RepositoryServiceTest @Autowired constructor(
             repositoryService.getRepoDetail(UT_PROJECT_ID, "repo-default-storage-key", RepositoryType.GENERIC.name)!!
         val dbCredential = repository.storageCredentials
         assertEquals(storageCredentials, dbCredential)
+    }
+
+    @Test
+    @DisplayName("测试使用项目指定的storage key创建仓库")
+    fun `test create with project storage key`() {
+        val repoName = "repo-project-storage-key"
+        projectService.updateProject(UT_PROJECT_ID, ProjectUpdateRequest(credentialsKey = UT_STORAGE_CREDENTIALS_KEY))
+        repositoryService.createRepo(createRequest(repoName))
+        val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, repoName, RepositoryType.GENERIC.name)!!
+        assertEquals(UT_STORAGE_CREDENTIALS_KEY, repository.storageCredentials!!.key!!)
     }
 
     @Test
