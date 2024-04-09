@@ -130,7 +130,7 @@ class FileCoreProcessor(
      * 从db中按时间逆序，获取待归档文件
      * */
     private fun requestArchiveFile(request: Long) {
-        if (request <= 0 || archiveFileQueue.size > 0 || closed.get()) {
+        if (request <= 0 || closed.get()) {
             return
         }
         logger.info("Request $request files to archive or restore.")
@@ -143,7 +143,7 @@ class FileCoreProcessor(
             .limit(req)
         reactiveMongoTemplate.find(query, TArchiveFile::class.java).collectList().zipWhen {
             val remain = req - it.size
-            if (remain > 0) {
+            if (remain > 0 && archiveFileQueue.isEmpty()) {
                 val query2 = Query.query(where(TArchiveFile::status).isEqualTo(ArchiveStatus.CREATED))
                     .with(Sort.by(Sort.Direction.DESC, TArchiveFile::lastModifiedDate.name))
                     .limit(remain)
