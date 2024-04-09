@@ -151,7 +151,7 @@ class DeletedNodeCleanupJob(
             if (node.sha256.isNullOrEmpty() || node.sha256 == FAKE_SHA256) return
             val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
             if (!decrementFileReferences(node.sha256, credentialsKey)) {
-                logger.error("clean up node fail node[$collectionName], node[$node]")
+                logger.error("Clean up node fail collection[$collectionName], node[$node]")
                 return
             }
             result = mongoTemplate.remove(query, collectionName)
