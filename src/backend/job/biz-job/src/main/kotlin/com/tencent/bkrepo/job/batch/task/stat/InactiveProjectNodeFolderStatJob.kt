@@ -29,7 +29,6 @@ package com.tencent.bkrepo.job.batch.task.stat
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
@@ -44,6 +43,7 @@ import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.buildCacheKey
 import com.tencent.bkrepo.job.config.properties.InactiveProjectNodeFolderStatJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.BulkOperations.BulkMode
 import org.springframework.data.mongodb.core.query.Criteria
@@ -313,7 +313,7 @@ class InactiveProjectNodeFolderStatJob(
     }
 
     companion object {
-        private val logger = LoggerHolder.jobLogger
+        private val logger = LoggerFactory.getLogger(InactiveProjectNodeFolderStatJob::class.java)
         private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
         private const val BATCH_LIMIT = 500
