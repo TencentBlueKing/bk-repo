@@ -61,11 +61,11 @@ import java.util.concurrent.Future
 @Component
 @EnableConfigurationProperties(ActiveProjectNodeFolderStatJobProperties::class)
 class ActiveProjectNodeFolderStatJob(
-    private val properties: ActiveProjectNodeFolderStatJobProperties,
+    properties: ActiveProjectNodeFolderStatJobProperties,
+    executor: ThreadPoolTaskExecutor,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
-    private val executor: ThreadPoolTaskExecutor,
-): StatBaseJob(mongoTemplate, properties, executor) {
+) : StatBaseJob(mongoTemplate, properties, executor) {
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do folder stat job for active projects")
@@ -94,7 +94,6 @@ class ActiveProjectNodeFolderStatJob(
         if (row.path == PathUtils.ROOT) {
             return
         }
-
         // 更新当前节点所有上级目录（排除根目录）统计信息
         val folderFullPaths = PathUtils.resolveAncestorFolder(row.fullPath)
         for (fullPath in folderFullPaths) {
@@ -118,7 +117,6 @@ class ActiveProjectNodeFolderStatJob(
             activeProjects = temp
         )
     }
-
 
     /**
      * 更新内存缓存中对应key下将新增的size和nodeNum
@@ -148,17 +146,19 @@ class ActiveProjectNodeFolderStatJob(
         val prefix = buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
         val storedKeys = mutableSetOf<String>()
         val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
-        for(entry in context.folderCache) {
+        for (entry in context.folderCache) {
             if (!entry.key.startsWith(prefix)) continue
             extractFolderInfoFromCacheKey(entry.key)?.let {
                 storedKeys.add(entry.key)
-                updateList.add(buildUpdateClausesForFolder(
-                    projectId = it.projectId,
-                    repoName = it.repoName,
-                    fullPath = it.fullPath,
-                    size = entry.value.capSize.toLong(),
-                    nodeNum = entry.value.nodeNum.toLong()
-                ))
+                updateList.add(
+                    buildUpdateClausesForFolder(
+                        projectId = it.projectId,
+                        repoName = it.repoName,
+                        fullPath = it.fullPath,
+                        size = entry.value.capSize.toLong(),
+                        nodeNum = entry.value.nodeNum.toLong()
+                    )
+                )
             }
             if (updateList.size >= BATCH_LIMIT) {
                 mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, collection)
@@ -211,7 +211,6 @@ class ActiveProjectNodeFolderStatJob(
             .set(NODE_NUM, nodeNum)
         return org.springframework.data.util.Pair.of(query, update)
     }
-
 
     /**
      * 最长加锁时间

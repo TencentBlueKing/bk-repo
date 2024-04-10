@@ -92,7 +92,7 @@ class InactiveProjectEmptyFolderCleanupJob(
         projectId: String,
         context: EmptyFolderCleanupJobContext
     ): Boolean {
-        return context.activeProjects.contains(projectId)
+        return context.activeProjects[projectId] != null
     }
 
     // 特殊仓库每周统计一次
@@ -115,7 +115,6 @@ class InactiveProjectEmptyFolderCleanupJob(
         if (isSpecialRepo(row.repoName) && !specialRepoRunCheck()) {
             return
         }
-
         // 暂时只清理generic类型仓库下的空目录
         if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
                 row.projectId, row.repoName
@@ -151,7 +150,6 @@ class InactiveProjectEmptyFolderCleanupJob(
         return Duration.ofDays(1)
     }
 
-
     override fun createJobContext(): EmptyFolderCleanupJobContext {
         val temp = mutableMapOf<String, Boolean>()
         activeProjectService.getActiveProjects().forEach {
@@ -162,13 +160,11 @@ class InactiveProjectEmptyFolderCleanupJob(
         )
     }
 
-
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         super.onRunCollectionFinished(collectionName, context)
         deleteEmptyFolders(collectionName, context)
     }
-
 
     private fun deleteEmptyFolders(
         collectionName: String,
@@ -234,7 +230,6 @@ class InactiveProjectEmptyFolderCleanupJob(
         return result.isNullOrEmpty()
     }
 
-
     /**
      * 删除空目录
      */
@@ -268,7 +263,6 @@ class InactiveProjectEmptyFolderCleanupJob(
         }
     }
 
-
     data class Node(
         val id: String,
         val projectId: String,
@@ -286,7 +280,6 @@ class InactiveProjectEmptyFolderCleanupJob(
             map[Node::deleted.name]?.toString(),
         )
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(InactiveProjectEmptyFolderCleanupJob::class.java)

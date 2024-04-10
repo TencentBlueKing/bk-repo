@@ -92,7 +92,7 @@ class InactiveProjectNodeFolderStatJob(
         projectId: String,
         context: NodeFolderJobContext
     ): Boolean {
-        return context.activeProjects.contains(projectId)
+        return context.activeProjects[projectId] != null
     }
 
     // 特殊仓库每周统计一次
@@ -207,7 +207,6 @@ class InactiveProjectNodeFolderStatJob(
         folderMetrics.capSize.add(size)
         folderMetrics.nodeNum.increment()
     }
-
 
     /**
      * 将缓存中的数据更新到DB中
@@ -333,7 +332,6 @@ class InactiveProjectNodeFolderStatJob(
             repoName = map[Node::repoName.name] as String
         }
     }
-
 
     companion object {
         private val logger = LoggerHolder.jobLogger

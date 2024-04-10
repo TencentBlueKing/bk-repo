@@ -71,10 +71,10 @@ import java.util.concurrent.Future
 @Component
 @EnableConfigurationProperties(ActiveProjectEmptyFolderCleanupJobProperties::class)
 class ActiveProjectEmptyFolderCleanupJob(
-    private val properties: ActiveProjectEmptyFolderCleanupJobProperties,
+    properties: ActiveProjectEmptyFolderCleanupJobProperties,
+    executor: ThreadPoolTaskExecutor,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
-    private val executor: ThreadPoolTaskExecutor,
 ) : StatBaseJob(mongoTemplate, properties, executor) {
 
     override fun doStart0(jobContext: JobContext) {
@@ -89,7 +89,6 @@ class ActiveProjectEmptyFolderCleanupJob(
         futureList.forEach { it.get() }
         logger.info("empty folder cleanup job for active projects finished")
     }
-
 
     override fun runRow(row: Node, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
@@ -133,7 +132,6 @@ class ActiveProjectEmptyFolderCleanupJob(
     override fun getLockAtMostFor(): Duration {
         return Duration.ofDays(1)
     }
-
 
     override fun createJobContext(): EmptyFolderCleanupJobContext {
         val temp = mutableMapOf<String, Boolean>()
@@ -217,7 +215,6 @@ class ActiveProjectEmptyFolderCleanupJob(
         val result = mongoTemplate.find(query, Map::class.java, collectionName)
         return result.isNullOrEmpty()
     }
-
 
     /**
      * 删除空目录
