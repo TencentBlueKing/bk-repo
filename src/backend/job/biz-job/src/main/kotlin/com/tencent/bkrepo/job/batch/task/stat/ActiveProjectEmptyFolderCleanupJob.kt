@@ -110,6 +110,5 @@ class ActiveProjectEmptyFolderCleanupJob(
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveProjectEmptyFolderCleanupJob::class.java)
         private val TARGET_REPO_LIST = listOf(REPORT, LOG, PIPELINE, CUSTOM, "remote-mirrors")
-        const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
     }
 }

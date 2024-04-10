@@ -128,6 +128,7 @@ class InactiveProjectEmptyFolderCleanupJob(
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         super.onRunCollectionFinished(collectionName, context)
+        logger.info("will filter empty folder in $collectionName")
         emptyFolderCleanup.emptyFolderHandler(collectionName, context, runCollection = true)
     }
 

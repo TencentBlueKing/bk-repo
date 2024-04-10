@@ -60,7 +60,7 @@ open class StatBaseJob(
     private val executor: ThreadPoolTaskExecutor,
 ) : DefaultContextJob(properties) {
 
-    fun queryNodes(
+    private fun queryNodes(
         projectId: String,
         collection: String,
         context: JobContext,

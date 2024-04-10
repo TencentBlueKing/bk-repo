@@ -124,7 +124,6 @@ class NodeFolderStat(
         projectId: String = StringPool.EMPTY,
         runCollection: Boolean = false
     ) {
-        logger.info("store memory cache to db withe table $collectionName")
         if (context.folderCache.isEmpty()) {
             return
         }

@@ -111,7 +111,6 @@ class EmptyFolderCleanup(
         projectId: String = StringPool.EMPTY,
         runCollection: Boolean = false,
     ) {
-        logger.info("will filter empty folder in project $projectId")
         if (context.folders.isEmpty()) return
         val prefix = if (runCollection) {
             FolderUtils.buildCacheKey(collectionName = collection, projectId = StringPool.EMPTY)
@@ -154,7 +153,7 @@ class EmptyFolderCleanup(
             .and(FULL_PATH).regex("^${PathUtils.escapeRegex(nodePath)}")
             .and(FOLDER).isEqualTo(false)
 
-        val query = Query(criteria).withHint(ActiveProjectEmptyFolderCleanupJob.FULL_PATH_IDX)
+        val query = Query(criteria).withHint(FULL_PATH_IDX)
         val result = mongoTemplate.find(query, Map::class.java, collectionName)
         return result.isNullOrEmpty()
     }
@@ -210,5 +209,6 @@ class EmptyFolderCleanup(
 
     companion object {
         private val logger = LoggerFactory.getLogger(EmptyFolderCleanup::class.java)
+        const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
     }
 }
