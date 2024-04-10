@@ -184,7 +184,7 @@ export default {
     removeDomain(item) {
       this.$forceUpdate()
       const index = this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets.indexOf(item)
-      if (index !== -1 && this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets !== 1) {
+      if (index !== -1 && this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets.length !== 1) {
         this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets.splice(index, 1)
       }
     },
