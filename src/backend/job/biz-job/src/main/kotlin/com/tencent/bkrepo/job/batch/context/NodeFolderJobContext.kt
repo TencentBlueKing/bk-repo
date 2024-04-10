@@ -32,8 +32,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.LongAdder
 
 class NodeFolderJobContext(
-    // 表对应项目记录： 主要用于redis缓存生成key使用
-    var projectMap: ConcurrentHashMap<String, MutableSet<String>> = ConcurrentHashMap(),
     // 用于内存缓存下存储目录统计信息
     var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap(),
     var activeProjects: Map<String, Boolean> = emptyMap()

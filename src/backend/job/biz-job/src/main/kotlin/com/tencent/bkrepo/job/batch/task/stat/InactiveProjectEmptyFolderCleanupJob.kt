@@ -80,7 +80,7 @@ class InactiveProjectEmptyFolderCleanupJob(
 
     override fun buildQuery(): Query {
         var criteria = Criteria.where(DELETED_DATE).`is`(null)
-        if (!properties.runAllRepo && specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
+        if (!properties.runAllRepo && !specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
             criteria = criteria.and(REPO).nin(properties.specialRepos)
         }
         return Query(criteria)

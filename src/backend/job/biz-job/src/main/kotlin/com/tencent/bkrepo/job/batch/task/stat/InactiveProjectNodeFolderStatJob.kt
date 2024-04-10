@@ -55,7 +55,6 @@ import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.reflect.KClass
-import kotlin.system.measureTimeMillis
 
 
 /**
@@ -75,7 +74,7 @@ class InactiveProjectNodeFolderStatJob(
     override fun buildQuery(): Query {
         var criteria = Criteria.where(DELETED_DATE).`is`(null)
             .and(FOLDER).`is`(false)
-        if (!properties.runAllRepo && specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
+        if (!properties.runAllRepo && !specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
             criteria = criteria.and(REPO).nin(properties.specialRepos)
         }
         return Query(criteria)
@@ -121,7 +120,7 @@ class InactiveProjectNodeFolderStatJob(
         val folderFullPaths = PathUtils.resolveAncestorFolder(row.fullPath)
         for (fullPath in folderFullPaths) {
             if (fullPath == PathUtils.ROOT) continue
-            updateCache(
+            updateMemoryCache(
                 collectionName = collectionName,
                 projectId = row.projectId,
                 repoName = row.repoName,
@@ -147,7 +146,6 @@ class InactiveProjectNodeFolderStatJob(
         require(context is NodeFolderJobContext)
         // 当表执行完成后，将属于该表的所有记录写入数据库
         storeMemoryCacheToDB(collectionName, context)
-        context.projectMap.remove(collectionName)
     }
 
     /**
@@ -155,32 +153,6 @@ class InactiveProjectNodeFolderStatJob(
      */
     private fun ignoreProjectOrRepoCheck(projectId: String): Boolean {
         return IGNORE_PROJECT_PREFIX_LIST.firstOrNull { projectId.startsWith(it) } != null
-    }
-
-    /**
-     * 更新缓存中的size和nodeNum
-     */
-    private fun updateCache(
-        collectionName: String,
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        size: Long,
-        context: NodeFolderJobContext
-    ) {
-        val elapsedTime = measureTimeMillis {
-            updateMemoryCache(
-                collectionName = collectionName,
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                size = size,
-                context = context
-            )
-            context.projectMap.putIfAbsent(collectionName, mutableSetOf())
-            context.projectMap[collectionName]!!.add(projectId)
-        }
-        logger.debug("updateCache, elapse: $elapsedTime")
     }
 
     /**
@@ -215,11 +187,11 @@ class InactiveProjectNodeFolderStatJob(
         val storedKeys = mutableSetOf<String>()
         for (entry in context.folderCache) {
             if (!entry.key.startsWith(prefix)) continue
-            extractFolderInfoFromCacheKey(entry.key).let {
+            extractFolderInfoFromCacheKey(entry.key)?.let {
                 storedKeys.add(entry.key)
                 updateList.add(
                     buildUpdateClausesForFolder(
-                        projectId = it!!.projectId,
+                        projectId = it.projectId,
                         repoName = it.repoName,
                         fullPath = it.fullPath,
                         size = entry.value.capSize.toLong(),
