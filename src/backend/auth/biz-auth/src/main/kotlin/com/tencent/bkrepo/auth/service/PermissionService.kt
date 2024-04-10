@@ -86,4 +86,6 @@ interface PermissionService {
     fun updatePermissionDeployInRepo(request: UpdatePermissionDeployInRepoRequest): Boolean
 
     fun getPathCheckConfig(): Boolean
+
+    fun getOrCreatePersonalPath(projectId: String, repoName: String): String
 }

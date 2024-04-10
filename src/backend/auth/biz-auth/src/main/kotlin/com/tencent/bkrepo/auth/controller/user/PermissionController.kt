@@ -167,4 +167,14 @@ class PermissionController @Autowired constructor(
     fun getRepoPermissionEnabled(): Response<Boolean> {
         return ResponseBuilder.success(permissionService.getPathCheckConfig())
     }
+
+    @ApiOperation("查询或创建个人目录")
+    @GetMapping("/personal/path")
+    fun getOrCreatePersonalPath(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String
+    ): Response<String> {
+        preCheckProjectUser(projectId)
+        return ResponseBuilder.success(permissionService.getOrCreatePersonalPath(projectId, repoName))
+    }
 }

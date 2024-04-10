@@ -41,6 +41,7 @@ import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
@@ -63,6 +64,7 @@ class DevopsPermissionServiceImpl constructor(
     accountRepository: AccountRepository,
     permissionDao: PermissionDao,
     userDao: UserDao,
+    personalPathDao: PersonalPathDao,
     private val devopsAuthConfig: DevopsAuthConfig,
     private val devopsPipelineService: DevopsPipelineService,
     private val devopsProjectService: DevopsProjectService,
@@ -75,6 +77,7 @@ class DevopsPermissionServiceImpl constructor(
     roleRepository,
     accountRepository,
     permissionDao,
+    personalPathDao,
     repoClient,
     projectClient,
 ) {
@@ -249,7 +252,7 @@ class DevopsPermissionServiceImpl constructor(
         return devopsProjectService.isProjectMember(userId, projectId, action)
     }
 
-    fun isDevopsProjectAdmin(userId: String, projectId: String): Boolean {
+    private fun isDevopsProjectAdmin(userId: String, projectId: String): Boolean {
         logger.debug("isDevopsProjectAdmin: [$userId,$projectId]")
         return devopsProjectService.isProjectManager(userId, projectId)
     }

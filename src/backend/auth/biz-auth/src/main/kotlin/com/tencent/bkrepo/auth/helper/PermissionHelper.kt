@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.helper
 import com.tencent.bkrepo.auth.constant.AUTH_ADMIN
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.account.ScopeRule
@@ -58,7 +59,8 @@ import java.time.LocalDateTime
 class PermissionHelper constructor(
     private val userDao: UserDao,
     private val roleRepository: RoleRepository,
-    private val permissionDao: PermissionDao
+    private val permissionDao: PermissionDao,
+    private val personalPathDao: PersonalPathDao
 ) {
     // check user is existed
     private fun checkUserExistBatch(idList: List<String>) {
@@ -337,7 +339,7 @@ class PermissionHelper constructor(
     fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
         with(request) {
             var roles = userRoles
-            if (resourceType != NODE.name) return false
+            if (resourceType != NODE.name || path == null ) return false
             if (roles == null) {
                 val user = userDao.findFirstByUserId(uid) ?: run {
                     throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -354,6 +356,15 @@ class PermissionHelper constructor(
             val noPermissionResult = permissionDao.listNoPermission(projectId!!, repoName!!, uid, resourceType, roles)
             noPermissionResult.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
+            }
+            // check personal path
+            val personalPath = personalPathDao.findOneByProjectAndRepo(uid, projectId!!, repoName!!)
+            if (personalPath != null && path!!.startsWith(personalPath.fullPath)) return true
+
+            // check personal exclude path
+            val personalExcludePath = personalPathDao.listByProjectAndRepoAndExcludeUser(uid, projectId!!, repoName!!)
+            personalExcludePath.forEach {
+                if (path!!.startsWith(it.fullPath)) return false
             }
         }
         return isProjectUser

@@ -63,7 +63,7 @@ open class OpenResource(private val permissionService: PermissionService) {
      * 是否系统管理员
      * 限定在auth服务api请求时使用
      */
-    fun isAdminFromApi(): Boolean {
+    private fun isAdminFromApi(): Boolean {
         return HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
     }
 
@@ -138,12 +138,29 @@ open class OpenResource(private val permissionService: PermissionService) {
         val userId = SecurityUtils.getUserId()
         val checkRequest = CheckPermissionRequest(
             uid = userId,
-            resourceType = ResourceType.PROJECT.toString(),
+            resourceType = ResourceType.PROJECT.name,
             projectId = projectId,
-            action = PermissionAction.MANAGE.toString()
+            action = PermissionAction.MANAGE.name
         )
         if (!permissionService.checkPermission(checkRequest)) {
             logger.warn("user is not project admin [$checkRequest]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
+        }
+    }
+
+    /**
+     * check is the user is project user
+     */
+    fun preCheckProjectUser(projectId: String) {
+        val userId = SecurityUtils.getUserId()
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.PROJECT.name,
+            projectId = projectId,
+            action = PermissionAction.READ.name
+        )
+        if (!permissionService.checkPermission(checkRequest)) {
+            logger.warn("user is not project user [$checkRequest]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
