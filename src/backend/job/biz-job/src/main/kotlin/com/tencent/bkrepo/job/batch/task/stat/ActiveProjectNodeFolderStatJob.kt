@@ -34,12 +34,10 @@ import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
-import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.buildCacheKey
-import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.ActiveProjectNodeFolderStatJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.slf4j.LoggerFactory
@@ -53,7 +51,6 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.time.Duration
-import java.util.concurrent.Future
 
 /**
  * 活跃项目下目录大小以及文件个数统计
@@ -71,16 +68,7 @@ class ActiveProjectNodeFolderStatJob(
         logger.info("start to do folder stat job for active projects")
         require(jobContext is NodeFolderJobContext)
         val extraCriteria = getExtraCriteria()
-        val futureList = mutableListOf<Future<Unit>>()
-        executeStat(jobContext.activeProjects.keys, futureList) {
-            val collectionName = COLLECTION_NODE_PREFIX +
-                MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-            queryNodes(
-                projectId = it, collection = collectionName,
-                context = jobContext, extraCriteria = extraCriteria
-            )
-        }
-        futureList.forEach { it.get() }
+        doStatStart(jobContext, jobContext.activeProjects.keys, extraCriteria)
         logger.info("folder stat job for active projects finished")
     }
 

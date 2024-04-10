@@ -80,13 +80,7 @@ class ActiveProjectEmptyFolderCleanupJob(
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do empty folder cleanup job for active projects")
         require(jobContext is EmptyFolderCleanupJobContext)
-        val futureList = mutableListOf<Future<Unit>>()
-        executeStat(jobContext.activeProjects.keys, futureList) {
-            val collectionName = COLLECTION_NODE_PREFIX +
-                MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-            queryNodes(projectId = it, collection = collectionName, context = jobContext)
-        }
-        futureList.forEach { it.get() }
+        doStatStart(jobContext, jobContext.activeProjects.keys)
         logger.info("empty folder cleanup job for active projects finished")
     }
 

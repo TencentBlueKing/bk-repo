@@ -48,6 +48,7 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
+import com.tencent.bkrepo.job.batch.utils.StatUtils.specialRepoRunCheck
 import com.tencent.bkrepo.job.config.properties.InactiveProjectEmptyFolderCleanupJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.bson.types.ObjectId
@@ -58,7 +59,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
-import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.reflect.KClass
@@ -80,7 +80,7 @@ class InactiveProjectEmptyFolderCleanupJob(
 
     override fun buildQuery(): Query {
         var criteria = Criteria.where(DELETED_DATE).`is`(null)
-        if (!properties.runAllRepo && !specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
+        if (!properties.runAllRepo && !specialRepoRunCheck(properties.specialDay) && properties.specialRepos.isNotEmpty()) {
             criteria = criteria.and(REPO).nin(properties.specialRepos)
         }
         return Query(criteria)
@@ -99,16 +99,6 @@ class InactiveProjectEmptyFolderCleanupJob(
         context: EmptyFolderCleanupJobContext
     ): Boolean {
         return context.activeProjects[projectId] != null
-    }
-
-    // 特殊仓库每周统计一次
-    private fun specialRepoRunCheck(): Boolean {
-        val runDay = if (properties.specialDay < 1 || properties.specialDay > 7) {
-            6
-        } else {
-            properties.specialDay
-        }
-        return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {

@@ -34,8 +34,11 @@ import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
+import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
+import com.tencent.bkrepo.job.batch.utils.StatUtils.specialRepoRunCheck
 import com.tencent.bkrepo.job.config.properties.StatJobProperties
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -46,8 +49,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import java.time.DayOfWeek
-import java.time.LocalDateTime
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.Semaphore
@@ -69,7 +70,7 @@ open class StatBaseJob(
             val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(DELETED_DATE).isEqualTo(null)
             extraCriteria?.let { criteria.andOperator(extraCriteria) }
-            if (!properties.runAllRepo && !specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
+            if (!properties.runAllRepo && !specialRepoRunCheck(properties.specialDay) && properties.specialRepos.isNotEmpty()) {
                 criteria.and(REPO).nin(properties.specialRepos)
             }
             val query = Query.query(criteria)
@@ -105,21 +106,28 @@ open class StatBaseJob(
 
     open fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {}
 
-    // 特殊仓库每周统计一次
-    private fun specialRepoRunCheck(): Boolean {
-        val runDay = if (properties.specialDay < 1 || properties.specialDay > 7) {
-            6
-        } else {
-            properties.specialDay
-        }
-        return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
-    }
-
     override fun doStart0(jobContext: JobContext) {
         throw UnsupportedOperationException()
     }
 
-    fun executeStat(
+    fun doStatStart(
+        jobContext: JobContext,
+        activeProjects: Set<String>,
+        extraCriteria: Criteria? = null
+    ) {
+        val futureList = mutableListOf<Future<Unit>>()
+        executeStat(activeProjects, futureList) {
+            val collectionName = COLLECTION_NODE_PREFIX +
+                MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
+            queryNodes(
+                projectId = it, collection = collectionName,
+                context = jobContext, extraCriteria = extraCriteria
+            )
+        }
+        futureList.forEach { it.get() }
+    }
+
+    private fun executeStat(
         projectList: Set<String>,
         futureList: MutableList<Future<Unit>>,
         semaphore: Semaphore = Semaphore(properties.concurrencyNum),
