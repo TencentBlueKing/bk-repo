@@ -339,7 +339,7 @@ class PermissionHelper constructor(
     fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
         with(request) {
             var roles = userRoles
-            if (resourceType != NODE.name || path == null ) return false
+            if (resourceType != NODE.name || path == null) return false
             if (roles == null) {
                 val user = userDao.findFirstByUserId(uid) ?: run {
                     throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -357,17 +357,23 @@ class PermissionHelper constructor(
             noPermissionResult.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
             }
-            // check personal path
-            val personalPath = personalPathDao.findOneByProjectAndRepo(uid, projectId!!, repoName!!)
-            if (personalPath != null && path!!.startsWith(personalPath.fullPath)) return true
-
-            // check personal exclude path
-            val personalExcludePath = personalPathDao.listByProjectAndRepoAndExcludeUser(uid, projectId!!, repoName!!)
-            personalExcludePath.forEach {
-                if (path!!.startsWith(it.fullPath)) return false
-            }
+            val personalPathCheck = checkPersonalPath(uid, projectId!!, repoName!!, path!!)
+            if (personalPathCheck != null) return personalPathCheck
         }
         return isProjectUser
+    }
+
+    private fun checkPersonalPath(userId: String, projectId: String, repoName: String, path: String): Boolean? {
+        // check personal path
+        val personalPath = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
+        if (personalPath != null && path.startsWith(personalPath.fullPath)) return true
+
+        // check personal exclude path
+        val personalExcludePath = personalPathDao.listByProjectAndRepoAndExcludeUser(userId, projectId, repoName)
+        personalExcludePath.forEach {
+            if (path.startsWith(it.fullPath)) return false
+        }
+        return null
     }
 
     fun isUserLocalProjectAdmin(userId: String, projectId: String?): Boolean {
