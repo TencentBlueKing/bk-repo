@@ -78,7 +78,13 @@ class InactiveProjectEmptyFolderCleanupJob(
         return (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.toList()
     }
 
-    override fun buildQuery(): Query = Query(Criteria.where(DELETED_DATE).`is`(null))
+    override fun buildQuery(): Query {
+        var criteria = Criteria.where(DELETED_DATE).`is`(null)
+        if (!properties.runAllRepo && specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
+            criteria = criteria.and(REPO).nin(properties.specialRepos)
+        }
+        return Query(criteria)
+    }
 
     override fun mapToEntity(row: Map<String, Any?>): Node {
         return Node(row)
@@ -105,16 +111,9 @@ class InactiveProjectEmptyFolderCleanupJob(
         return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
     }
 
-    private fun isSpecialRepo(repoName: String): Boolean {
-        return properties.specialRepos.contains(repoName)
-    }
-
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         if (statProjectCheck(row.projectId, context)) return
-        if (isSpecialRepo(row.repoName) && !specialRepoRunCheck()) {
-            return
-        }
         // 暂时只清理generic类型仓库下的空目录
         if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
                 row.projectId, row.repoName
@@ -269,7 +268,6 @@ class InactiveProjectEmptyFolderCleanupJob(
         val repoName: String,
         val folder: Boolean,
         val fullPath: String,
-        val deleted: String? = null
     ) {
         constructor(map: Map<String, Any?>) : this(
             map[Node::id.name].toString(),
@@ -277,7 +275,6 @@ class InactiveProjectEmptyFolderCleanupJob(
             map[Node::repoName.name].toString(),
             map[Node::folder.name] as Boolean,
             map[Node::fullPath.name].toString(),
-            map[Node::deleted.name]?.toString(),
         )
     }
 

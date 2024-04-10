@@ -50,7 +50,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
 import java.time.DayOfWeek
 import java.time.Duration
@@ -66,7 +65,6 @@ import kotlin.system.measureTimeMillis
 @EnableConfigurationProperties(InactiveProjectNodeFolderStatJobProperties::class)
 class InactiveProjectNodeFolderStatJob(
     private val properties: InactiveProjectNodeFolderStatJobProperties,
-    private val redisTemplate: RedisTemplate<String, String>,
     private val activeProjectService: ActiveProjectService
 ) : DefaultContextMongoDbJob<InactiveProjectNodeFolderStatJob.Node>(properties) {
 
@@ -74,10 +72,14 @@ class InactiveProjectNodeFolderStatJob(
         return (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.toList()
     }
 
-    override fun buildQuery(): Query = Query(
-        Criteria.where(DELETED_DATE).`is`(null)
+    override fun buildQuery(): Query {
+        var criteria = Criteria.where(DELETED_DATE).`is`(null)
             .and(FOLDER).`is`(false)
-    )
+        if (!properties.runAllRepo && specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
+            criteria = criteria.and(REPO).nin(properties.specialRepos)
+        }
+        return Query(criteria)
+    }
 
     override fun mapToEntity(row: Map<String, Any?>): Node = Node(row)
 
@@ -105,17 +107,9 @@ class InactiveProjectNodeFolderStatJob(
         return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
     }
 
-    private fun isSpecialRepo(repoName: String): Boolean {
-        return properties.specialRepos.contains(repoName)
-    }
-
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is NodeFolderJobContext)
         if (statProjectCheck(row.projectId, context)) return
-
-        if (isSpecialRepo(row.repoName) && !specialRepoRunCheck()) {
-            return
-        }
         //只统计非目录类节点；没有根目录这个节点，不需要统计
         if (row.path == PathUtils.ROOT) {
             return
@@ -152,7 +146,7 @@ class InactiveProjectNodeFolderStatJob(
         super.onRunCollectionFinished(collectionName, context)
         require(context is NodeFolderJobContext)
         // 当表执行完成后，将属于该表的所有记录写入数据库
-        storeCacheToDB(collectionName, context)
+        storeMemoryCacheToDB(collectionName, context)
         context.projectMap.remove(collectionName)
     }
 
@@ -206,13 +200,6 @@ class InactiveProjectNodeFolderStatJob(
         val folderMetrics = context.folderCache.getOrPut(key) { NodeFolderJobContext.FolderMetrics() }
         folderMetrics.capSize.add(size)
         folderMetrics.nodeNum.increment()
-    }
-
-    /**
-     * 将缓存中的数据更新到DB中
-     */
-    private fun storeCacheToDB(collectionName: String, context: NodeFolderJobContext) {
-        storeMemoryCacheToDB(collectionName, context)
     }
 
     /**
@@ -301,16 +288,10 @@ class InactiveProjectNodeFolderStatJob(
         val id: String
 
         @JvmField
-        val folder: Boolean
-
-        @JvmField
         val path: String
 
         @JvmField
         val fullPath: String
-
-        @JvmField
-        val name: String
 
         @JvmField
         val size: Long
@@ -323,10 +304,8 @@ class InactiveProjectNodeFolderStatJob(
 
         init {
             id = map[Node::id.name] as String
-            folder = map[Node::folder.name] as Boolean
             path = map[Node::path.name] as String
             fullPath = map[Node::fullPath.name] as String
-            name = map[Node::name.name] as String
             size = map[Node::size.name].toString().toLong()
             projectId = map[Node::projectId.name] as String
             repoName = map[Node::repoName.name] as String
@@ -337,7 +316,6 @@ class InactiveProjectNodeFolderStatJob(
         private val logger = LoggerHolder.jobLogger
         private const val SIZE = "size"
         private const val NODE_NUM = "nodeNum"
-        private const val STORED = "stored"
         private const val BATCH_LIMIT = 500
         private const val COLLECTION_NAME_PREFIX = "node_"
     }
