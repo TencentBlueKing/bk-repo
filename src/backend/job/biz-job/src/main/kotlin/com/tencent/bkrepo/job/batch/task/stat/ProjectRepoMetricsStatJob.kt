@@ -151,10 +151,14 @@ open class ProjectRepoMetricsStatJob(
         logger.info("stat [active: ${this.active}] project metrics done")
     }
 
-    override fun createJobContext(): ProjectRepoMetricsStatJobContext{
+    override fun createJobContext(): ProjectRepoMetricsStatJobContext {
+        val temp = mutableMapOf<String, Boolean>()
+        activeProjectService.getActiveProjects().forEach {
+            temp[it] = true
+        }
         return ProjectRepoMetricsStatJobContext(
             statDate = LocalDate.now().atStartOfDay(),
-            statProjects = activeProjectService.getActiveProjects()
+            statProjects = temp
         )
     }
 
@@ -175,7 +179,7 @@ open class ProjectRepoMetricsStatJob(
         val query = Query.query(Criteria.where(NAME).isEqualTo(projectId))
         val project = mongoTemplate.find(query, Project::class.java, COLLECTION_NAME_PROJECT)
             .firstOrNull() ?: return null
-        return project.metadata.firstOrNull() { it.key == "enabled" }?.value as Boolean?
+        return project.metadata.firstOrNull { it.key == "enabled" }?.value as Boolean?
     }
 
     data class Project(var name: String, var metadata: List<ProjectMetadata> = emptyList()) {

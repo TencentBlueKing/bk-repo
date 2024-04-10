@@ -27,19 +27,37 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.FOLDER
+import com.tencent.bkrepo.job.FULL_PATH
+import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
+import com.tencent.bkrepo.job.PROJECT
+import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
-import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
+import com.tencent.bkrepo.job.batch.utils.FolderUtils.buildCacheKey
 import com.tencent.bkrepo.job.config.properties.InactiveProjectNodeFolderStatJobProperties
-import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import org.springframework.data.mongodb.core.BulkOperations.BulkMode
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
-import java.util.concurrent.Future
-import java.util.concurrent.Semaphore
+import java.time.DayOfWeek
+import java.time.Duration
+import java.time.LocalDateTime
+import kotlin.reflect.KClass
+import kotlin.system.measureTimeMillis
+
 
 /**
  * 非活跃项目下目录大小以及文件个数统计
@@ -48,32 +66,281 @@ import java.util.concurrent.Semaphore
 @EnableConfigurationProperties(InactiveProjectNodeFolderStatJobProperties::class)
 class InactiveProjectNodeFolderStatJob(
     private val properties: InactiveProjectNodeFolderStatJobProperties,
-    private val activeProjectService: ActiveProjectService,
-    private val mongoTemplate: MongoTemplate,
-    private val executor: ThreadPoolTaskExecutor,
-    ): NodeFolderStatJob(properties, activeProjectService, mongoTemplate, executor) {
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val activeProjectService: ActiveProjectService
+) : DefaultContextMongoDbJob<InactiveProjectNodeFolderStatJob.Node>(properties) {
 
-    override fun doStart0(jobContext: JobContext) {
-        logger.info("start to do folder stat job for inactive projects")
-        require(jobContext is NodeFolderJobContext)
-        val extraCriteria = getExtraCriteria()
-        val semaphore = Semaphore(properties.concurrencyNum)
-        val futureList = mutableListOf<Future<Unit>>()
-        findAllProjects {
-            if (!jobContext.activeProjects.contains(it))  {
-                executeProject(it, futureList, semaphore) {
-                    val collectionName = COLLECTION_NODE_PREFIX +
-                        MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-                    queryNodes(projectId = it, collection = collectionName,
-                               context = jobContext, extraCriteria = extraCriteria)
-                }
-            }
-        }
-        futureList.forEach { it.get() }
-        logger.info("folder stat job for inactive projects finished")
+    override fun collectionNames(): List<String> {
+        return (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.toList()
     }
 
+    override fun buildQuery(): Query = Query(
+        Criteria.where(DELETED_DATE).`is`(null)
+            .and(FOLDER).`is`(false)
+    )
+
+    override fun mapToEntity(row: Map<String, Any?>): Node = Node(row)
+
+    override fun entityClass(): KClass<Node> = Node::class
+
+    /**
+     * 最长加锁时间
+     */
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+
+    fun statProjectCheck(
+        projectId: String,
+        context: NodeFolderJobContext
+    ): Boolean {
+        return context.activeProjects.contains(projectId)
+    }
+
+    // 特殊仓库每周统计一次
+    private fun specialRepoRunCheck(): Boolean {
+        val runDay = if (properties.specialDay < 1 || properties.specialDay > 7) {
+            6
+        } else {
+            properties.specialDay
+        }
+        return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
+    }
+
+    private fun isSpecialRepo(repoName: String): Boolean {
+        return properties.specialRepos.contains(repoName)
+    }
+
+    override fun run(row: Node, collectionName: String, context: JobContext) {
+        require(context is NodeFolderJobContext)
+        if (statProjectCheck(row.projectId, context)) return
+
+        if (isSpecialRepo(row.repoName) && !specialRepoRunCheck()) {
+            return
+        }
+        //只统计非目录类节点；没有根目录这个节点，不需要统计
+        if (row.path == PathUtils.ROOT) {
+            return
+        }
+        // 判断是否在不统计项目或者仓库列表中
+        if (ignoreProjectOrRepoCheck(row.projectId)) return
+
+        // 更新当前节点所有上级目录（排除根目录）统计信息
+        val folderFullPaths = PathUtils.resolveAncestorFolder(row.fullPath)
+        for (fullPath in folderFullPaths) {
+            if (fullPath == PathUtils.ROOT) continue
+            updateCache(
+                collectionName = collectionName,
+                projectId = row.projectId,
+                repoName = row.repoName,
+                fullPath = fullPath,
+                size = row.size,
+                context = context
+            )
+        }
+    }
+
+    override fun createJobContext(): NodeFolderJobContext {
+        val temp = mutableMapOf<String, Boolean>()
+        activeProjectService.getActiveProjects().forEach {
+            temp[it] = true
+        }
+        return NodeFolderJobContext(
+            activeProjects = temp
+        )
+    }
+
+    override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
+        super.onRunCollectionFinished(collectionName, context)
+        require(context is NodeFolderJobContext)
+        // 当表执行完成后，将属于该表的所有记录写入数据库
+        storeCacheToDB(collectionName, context)
+        context.projectMap.remove(collectionName)
+    }
+
+    /**
+     * 判断项目或者仓库是否不需要进行目录统计
+     */
+    private fun ignoreProjectOrRepoCheck(projectId: String): Boolean {
+        return IGNORE_PROJECT_PREFIX_LIST.firstOrNull { projectId.startsWith(it) } != null
+    }
+
+    /**
+     * 更新缓存中的size和nodeNum
+     */
+    private fun updateCache(
+        collectionName: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long,
+        context: NodeFolderJobContext
+    ) {
+        val elapsedTime = measureTimeMillis {
+            updateMemoryCache(
+                collectionName = collectionName,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                size = size,
+                context = context
+            )
+            context.projectMap.putIfAbsent(collectionName, mutableSetOf())
+            context.projectMap[collectionName]!!.add(projectId)
+        }
+        logger.debug("updateCache, elapse: $elapsedTime")
+    }
+
+    /**
+     * 更新内存缓存中对应key下将新增的size和nodeNum
+     */
+    private fun updateMemoryCache(
+        collectionName: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long,
+        context: NodeFolderJobContext
+    ) {
+        val key = buildCacheKey(
+            collectionName = collectionName, projectId = projectId, repoName = repoName, fullPath = fullPath
+        )
+        val folderMetrics = context.folderCache.getOrPut(key) { NodeFolderJobContext.FolderMetrics() }
+        folderMetrics.capSize.add(size)
+        folderMetrics.nodeNum.increment()
+    }
+
+
+    /**
+     * 将缓存中的数据更新到DB中
+     */
+    private fun storeCacheToDB(collectionName: String, context: NodeFolderJobContext) {
+        storeMemoryCacheToDB(collectionName, context)
+    }
+
+    /**
+     * 将memory缓存中属于collectionName下的记录写入DB中
+     */
+    private fun storeMemoryCacheToDB(collectionName: String, context: NodeFolderJobContext) {
+        logger.info("store memory cache to db withe table $collectionName")
+        if (context.folderCache.isEmpty()) {
+            return
+        }
+        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
+        val prefix = buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
+        val storedKeys = mutableSetOf<String>()
+        for (entry in context.folderCache) {
+            if (!entry.key.startsWith(prefix)) continue
+            extractFolderInfoFromCacheKey(entry.key).let {
+                storedKeys.add(entry.key)
+                updateList.add(
+                    buildUpdateClausesForFolder(
+                        projectId = it!!.projectId,
+                        repoName = it.repoName,
+                        fullPath = it.fullPath,
+                        size = entry.value.capSize.toLong(),
+                        nodeNum = entry.value.nodeNum.toLong()
+                    )
+                )
+            }
+            if (updateList.size >= BATCH_LIMIT) {
+                mongoTemplate.bulkOps(BulkMode.UNORDERED, collectionName)
+                    .updateOne(updateList)
+                    .execute()
+                updateList.clear()
+            }
+        }
+        if (updateList.isEmpty()) return
+        mongoTemplate.bulkOps(BulkMode.UNORDERED, collectionName)
+            .updateOne(updateList)
+            .execute()
+        updateList.clear()
+        for (key in storedKeys) {
+            context.folderCache.remove(key)
+        }
+    }
+
+    /**
+     * 从缓存key中解析出节点信息
+     */
+    fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
+        val values = key.split(StringPool.COLON)
+        return try {
+            FolderInfo(
+                projectId = values[1],
+                repoName = values[2],
+                fullPath = values[3]
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 生成db更新语句
+     */
+    private fun buildUpdateClausesForFolder(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        size: Long,
+        nodeNum: Long
+    ): org.springframework.data.util.Pair<Query, Update> {
+        val query = Query(
+            Criteria.where(PROJECT).isEqualTo(projectId)
+                .and(REPO).isEqualTo(repoName)
+                .and(FULL_PATH).isEqualTo(fullPath)
+                .and(DELETED_DATE).isEqualTo(null)
+                .and(FOLDER).isEqualTo(true)
+        )
+        val update = Update().set(SIZE, size)
+            .set(NODE_NUM, nodeNum)
+        return org.springframework.data.util.Pair.of(query, update)
+    }
+
+    data class Node(private val map: Map<String, Any?>) {
+        // 需要通过@JvmField注解将Kotlin backing-field直接作为Java field使用，MongoDbBatchJob中才能解析出需要查询的字段
+        @JvmField
+        val id: String
+
+        @JvmField
+        val folder: Boolean
+
+        @JvmField
+        val path: String
+
+        @JvmField
+        val fullPath: String
+
+        @JvmField
+        val name: String
+
+        @JvmField
+        val size: Long
+
+        @JvmField
+        val projectId: String
+
+        @JvmField
+        val repoName: String
+
+        init {
+            id = map[Node::id.name] as String
+            folder = map[Node::folder.name] as Boolean
+            path = map[Node::path.name] as String
+            fullPath = map[Node::fullPath.name] as String
+            name = map[Node::name.name] as String
+            size = map[Node::size.name].toString().toLong()
+            projectId = map[Node::projectId.name] as String
+            repoName = map[Node::repoName.name] as String
+        }
+    }
+
+
     companion object {
-        private val logger = LoggerFactory.getLogger(InactiveProjectNodeFolderStatJob::class.java)
+        private val logger = LoggerHolder.jobLogger
+        private const val SIZE = "size"
+        private const val NODE_NUM = "nodeNum"
+        private const val STORED = "stored"
+        private const val BATCH_LIMIT = 500
+        private const val COLLECTION_NAME_PREFIX = "node_"
     }
 }

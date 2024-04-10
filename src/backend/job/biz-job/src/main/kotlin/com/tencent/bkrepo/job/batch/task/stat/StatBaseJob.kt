@@ -57,19 +57,19 @@ open class StatBaseJob(
     private val mongoTemplate: MongoTemplate,
     private val properties: StatJobProperties,
     private val executor: ThreadPoolTaskExecutor,
-    ): DefaultContextJob(properties) {
+) : DefaultContextJob(properties) {
 
     fun queryNodes(
         projectId: String,
         collection: String,
         context: JobContext,
         extraCriteria: Criteria? = null
-    ){
+    ) {
         measureNanoTime {
-            var criteria = Criteria.where(PROJECT).isEqualTo(projectId)
+            val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(DELETED_DATE).isEqualTo(null)
             extraCriteria?.let { criteria.andOperator(extraCriteria) }
-            if (!properties.runAllRepo && specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
+            if (!properties.runAllRepo && !specialRepoRunCheck() && properties.specialRepos.isNotEmpty()) {
                 criteria.and(REPO).nin(properties.specialRepos)
             }
             val query = Query.query(criteria)
@@ -94,7 +94,7 @@ open class StatBaseJob(
         }.apply {
             val elapsedTime = HumanReadable.time(this)
             onRunProjectFinished(collection, projectId, context)
-            logger.info("project $projectId run completed, elapse $elapsedTime")
+            logger.info("${this.javaClass.simpleName} project $projectId run completed, elapse $elapsedTime")
         }
     }
 
@@ -123,12 +123,14 @@ open class StatBaseJob(
         action: (String) -> Unit,
     ) {
         projectList.forEach {
-            executeProject(projectId = it, semaphore = semaphore,
-                           futureList = futureList, action = action)
+            executeProject(
+                projectId = it, semaphore = semaphore,
+                futureList = futureList, action = action
+            )
         }
     }
 
-    fun executeProject(
+    private fun executeProject(
         projectId: String,
         futureList: MutableList<Future<Unit>>,
         semaphore: Semaphore = Semaphore(properties.concurrencyNum),
@@ -148,31 +150,6 @@ open class StatBaseJob(
         )
     }
 
-    fun findAllProjects(action: (String) -> Unit) {
-        val query = Query()
-        var querySize: Int
-        var lastId = ObjectId(MIN_OBJECT_ID)
-        do {
-            val newQuery = Query.of(query)
-                .addCriteria(Criteria.where(ID).gt(lastId))
-                .limit(properties.batchSize)
-                .with(Sort.by(ID).ascending())
-            val data = mongoTemplate.find<ProjectInfo>(newQuery, COLLECTION_PROJECT_NAME)
-            if (data.isEmpty()) {
-                break
-            }
-            data.forEach {
-                action(it.name)
-            }
-            querySize = data.size
-            lastId = ObjectId(data.last().id)
-        } while (querySize == properties.batchSize)
-    }
-
-    data class ProjectInfo(
-        val id: String,
-        val name: String
-    )
     data class Node(
         val id: String,
         val folder: Boolean,
@@ -186,7 +163,5 @@ open class StatBaseJob(
     companion object {
         private val logger = LoggerFactory.getLogger(StatBaseJob::class.java)
         const val COLLECTION_NODE_PREFIX = "node_"
-        private const val COLLECTION_PROJECT_NAME = "project"
-
     }
 }
