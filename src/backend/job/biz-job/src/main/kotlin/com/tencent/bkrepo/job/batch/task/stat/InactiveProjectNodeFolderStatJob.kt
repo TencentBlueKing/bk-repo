@@ -27,30 +27,21 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
-import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
-import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
-import com.tencent.bkrepo.job.batch.utils.FolderUtils.buildCacheKey
 import com.tencent.bkrepo.job.batch.utils.StatUtils.specialRepoRunCheck
 import com.tencent.bkrepo.job.config.properties.InactiveProjectNodeFolderStatJobProperties
-import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.BulkOperations.BulkMode
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import kotlin.reflect.KClass
@@ -63,7 +54,8 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(InactiveProjectNodeFolderStatJobProperties::class)
 class InactiveProjectNodeFolderStatJob(
     private val properties: InactiveProjectNodeFolderStatJobProperties,
-    private val activeProjectService: ActiveProjectService
+    private val activeProjectService: ActiveProjectService,
+    private val nodeFolderStat: NodeFolderStat,
 ) : DefaultContextMongoDbJob<InactiveProjectNodeFolderStatJob.Node>(properties) {
 
     override fun collectionNames(): List<String> {
@@ -101,26 +93,18 @@ class InactiveProjectNodeFolderStatJob(
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is NodeFolderJobContext)
         if (statProjectCheck(row.projectId, context)) return
-        //只统计非目录类节点；没有根目录这个节点，不需要统计
-        if (row.path == PathUtils.ROOT) {
-            return
-        }
         // 判断是否在不统计项目或者仓库列表中
         if (ignoreProjectOrRepoCheck(row.projectId)) return
-
-        // 更新当前节点所有上级目录（排除根目录）统计信息
-        val folderFullPaths = PathUtils.resolveAncestorFolder(row.fullPath)
-        for (fullPath in folderFullPaths) {
-            if (fullPath == PathUtils.ROOT) continue
-            updateMemoryCache(
-                collectionName = collectionName,
-                projectId = row.projectId,
-                repoName = row.repoName,
-                fullPath = fullPath,
-                size = row.size,
-                context = context
-            )
-        }
+        val node = nodeFolderStat.buildNode(
+            id = row.id,
+            projectId = row.projectId,
+            repoName = row.repoName,
+            path = row.path,
+            fullPath = row.fullPath,
+            folder = row.folder,
+            size = row.size
+        )
+        nodeFolderStat.collectNode(node, context, collectionName)
     }
 
     override fun createJobContext(): NodeFolderJobContext {
@@ -137,7 +121,7 @@ class InactiveProjectNodeFolderStatJob(
         super.onRunCollectionFinished(collectionName, context)
         require(context is NodeFolderJobContext)
         // 当表执行完成后，将属于该表的所有记录写入数据库
-        storeMemoryCacheToDB(collectionName, context)
+        nodeFolderStat.storeMemoryCacheToDB(context, collectionName, runCollection = true)
     }
 
     /**
@@ -145,105 +129,6 @@ class InactiveProjectNodeFolderStatJob(
      */
     private fun ignoreProjectOrRepoCheck(projectId: String): Boolean {
         return IGNORE_PROJECT_PREFIX_LIST.firstOrNull { projectId.startsWith(it) } != null
-    }
-
-    /**
-     * 更新内存缓存中对应key下将新增的size和nodeNum
-     */
-    private fun updateMemoryCache(
-        collectionName: String,
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        size: Long,
-        context: NodeFolderJobContext
-    ) {
-        val key = buildCacheKey(
-            collectionName = collectionName, projectId = projectId, repoName = repoName, fullPath = fullPath
-        )
-        val folderMetrics = context.folderCache.getOrPut(key) { NodeFolderJobContext.FolderMetrics() }
-        folderMetrics.capSize.add(size)
-        folderMetrics.nodeNum.increment()
-    }
-
-    /**
-     * 将memory缓存中属于collectionName下的记录写入DB中
-     */
-    private fun storeMemoryCacheToDB(collectionName: String, context: NodeFolderJobContext) {
-        logger.info("store memory cache to db withe table $collectionName")
-        if (context.folderCache.isEmpty()) {
-            return
-        }
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
-        val prefix = buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
-        val storedKeys = mutableSetOf<String>()
-        for (entry in context.folderCache) {
-            if (!entry.key.startsWith(prefix)) continue
-            extractFolderInfoFromCacheKey(entry.key)?.let {
-                storedKeys.add(entry.key)
-                updateList.add(
-                    buildUpdateClausesForFolder(
-                        projectId = it.projectId,
-                        repoName = it.repoName,
-                        fullPath = it.fullPath,
-                        size = entry.value.capSize.toLong(),
-                        nodeNum = entry.value.nodeNum.toLong()
-                    )
-                )
-            }
-            if (updateList.size >= BATCH_LIMIT) {
-                mongoTemplate.bulkOps(BulkMode.UNORDERED, collectionName)
-                    .updateOne(updateList)
-                    .execute()
-                updateList.clear()
-            }
-        }
-        if (updateList.isEmpty()) return
-        mongoTemplate.bulkOps(BulkMode.UNORDERED, collectionName)
-            .updateOne(updateList)
-            .execute()
-        updateList.clear()
-        for (key in storedKeys) {
-            context.folderCache.remove(key)
-        }
-    }
-
-    /**
-     * 从缓存key中解析出节点信息
-     */
-    fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
-        val values = key.split(StringPool.COLON)
-        return try {
-            FolderInfo(
-                projectId = values[1],
-                repoName = values[2],
-                fullPath = values[3]
-            )
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    /**
-     * 生成db更新语句
-     */
-    private fun buildUpdateClausesForFolder(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        size: Long,
-        nodeNum: Long
-    ): org.springframework.data.util.Pair<Query, Update> {
-        val query = Query(
-            Criteria.where(PROJECT).isEqualTo(projectId)
-                .and(REPO).isEqualTo(repoName)
-                .and(FULL_PATH).isEqualTo(fullPath)
-                .and(DELETED_DATE).isEqualTo(null)
-                .and(FOLDER).isEqualTo(true)
-        )
-        val update = Update().set(SIZE, size)
-            .set(NODE_NUM, nodeNum)
-        return org.springframework.data.util.Pair.of(query, update)
     }
 
     data class Node(private val map: Map<String, Any?>) {
@@ -266,6 +151,9 @@ class InactiveProjectNodeFolderStatJob(
         @JvmField
         val repoName: String
 
+        @JvmField
+        val folder: Boolean
+
         init {
             id = map[Node::id.name] as String
             path = map[Node::path.name] as String
@@ -273,14 +161,12 @@ class InactiveProjectNodeFolderStatJob(
             size = map[Node::size.name].toString().toLong()
             projectId = map[Node::projectId.name] as String
             repoName = map[Node::repoName.name] as String
+            folder = map[Node::folder.name] as Boolean
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(InactiveProjectNodeFolderStatJob::class.java)
-        private const val SIZE = "size"
-        private const val NODE_NUM = "nodeNum"
-        private const val BATCH_LIMIT = 500
         private const val COLLECTION_NAME_PREFIX = "node_"
     }
 }

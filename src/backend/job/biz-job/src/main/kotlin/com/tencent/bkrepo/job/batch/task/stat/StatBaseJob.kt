@@ -84,7 +84,7 @@ open class StatBaseJob(
                     .addCriteria(Criteria.where(ID).gt(lastId))
                     .limit(properties.batchSize)
                     .with(Sort.by(ID).ascending())
-                val data = mongoTemplate.find<Node>(
+                val data = mongoTemplate.find<StatNode>(
                     newQuery,
                     collection,
                 )
@@ -105,7 +105,7 @@ open class StatBaseJob(
         }
     }
 
-    open fun runRow(row: Node, context: JobContext) {}
+    open fun runRow(row: StatNode, context: JobContext) {}
 
     open fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {}
 
@@ -164,7 +164,7 @@ open class StatBaseJob(
         )
     }
 
-    data class Node(
+    data class StatNode(
         val id: String,
         val folder: Boolean,
         val path: String,
