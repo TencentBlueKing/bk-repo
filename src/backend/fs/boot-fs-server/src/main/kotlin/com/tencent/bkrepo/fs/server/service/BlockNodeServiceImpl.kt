@@ -69,11 +69,13 @@ class BlockNodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
+        createdDate: String
     ): List<TBlockNode> {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId.name).isEqualTo(projectId)
             .and(TBlockNode::repoName.name).isEqualTo(repoName)
             .and(TBlockNode::deleted).isEqualTo(null)
+            .and(TBlockNode::createdDate).gt(LocalDateTime.parse(createdDate))
             .norOperator(
                 TBlockNode::startPos.gt(range.end),
                 TBlockNode::endPos.lt(range.start)
