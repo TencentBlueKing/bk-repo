@@ -94,7 +94,10 @@ open class StatBaseJob(
         }.apply {
             val elapsedTime = HumanReadable.time(this)
             onRunProjectFinished(collection, projectId, context)
-            logger.info("${this.javaClass.simpleName} project $projectId run completed, elapse $elapsedTime")
+            logger.info(
+                "${this@StatBaseJob.javaClass.simpleName} " +
+                    "project $projectId run completed, elapse $elapsedTime"
+            )
         }
     }
 
