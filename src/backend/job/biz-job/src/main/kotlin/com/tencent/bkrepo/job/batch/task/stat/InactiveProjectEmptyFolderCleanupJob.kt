@@ -48,7 +48,7 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
-import com.tencent.bkrepo.job.config.properties.InactiveProjectNodeFolderStatJobProperties
+import com.tencent.bkrepo.job.config.properties.InactiveProjectEmptyFolderCleanupJobProperties
 import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -68,9 +68,9 @@ import kotlin.reflect.KClass
  * 非活跃项目下目录大小以及文件个数统计
  */
 @Component
-@EnableConfigurationProperties(InactiveProjectNodeFolderStatJobProperties::class)
+@EnableConfigurationProperties(InactiveProjectEmptyFolderCleanupJobProperties::class)
 class InactiveProjectEmptyFolderCleanupJob(
-    private val properties: InactiveProjectNodeFolderStatJobProperties,
+    private val properties: InactiveProjectEmptyFolderCleanupJobProperties,
     private val activeProjectService: ActiveProjectService,
 ) : DefaultContextMongoDbJob<InactiveProjectEmptyFolderCleanupJob.Node>(properties) {
 
