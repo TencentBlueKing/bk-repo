@@ -73,7 +73,10 @@ class InactiveProjectNodeFolderStatJob(
     override fun buildQuery(): Query {
         var criteria = Criteria.where(DELETED_DATE).`is`(null)
             .and(FOLDER).`is`(false)
-        if (!properties.runAllRepo && !specialRepoRunCheck(properties.specialDay) && properties.specialRepos.isNotEmpty()) {
+        if (
+            !properties.runAllRepo && !specialRepoRunCheck(properties.specialDay)
+            && properties.specialRepos.isNotEmpty()
+        ) {
             criteria = criteria.and(REPO).nin(properties.specialRepos)
         }
         return Query(criteria)
