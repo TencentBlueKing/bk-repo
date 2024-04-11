@@ -30,8 +30,12 @@ package com.tencent.bkrepo.job.api
 import com.tencent.bkrepo.common.api.constant.JOB_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.job.pojo.JobDetail
+import com.tencent.bkrepo.job.pojo.UpdateJobStatusRequest
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
 @FeignClient(JOB_SERVICE_NAME)
@@ -52,4 +56,10 @@ interface JobClient {
 
     @GetMapping("/activeUsers")
     fun activeUsers(): Response<Set<String>>
+
+    @PutMapping("/update/{name}")
+    fun updateJobStatus(
+        @PathVariable("name") name: String,
+        @RequestBody updateJobStatusRequest: UpdateJobStatusRequest
+    ): Response<Boolean>
 }

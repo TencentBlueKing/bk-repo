@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.pojo.JobDetail
+import com.tencent.bkrepo.job.pojo.UpdateJobStatusRequest
 import com.tencent.bkrepo.job.service.SystemJobService
 import org.springframework.web.bind.annotation.RestController
 
@@ -58,5 +59,10 @@ class JobController(
 
     override fun activeUsers(): Response<Set<String>> {
         return ResponseBuilder.success(activeProjectService.getActiveUsers())
+    }
+
+    override fun updateJobStatus(name: String, updateJobStatusRequest: UpdateJobStatusRequest) : Response<Boolean>{
+        return ResponseBuilder.success(
+            systemJobService.update(name, updateJobStatusRequest.enabled, updateJobStatusRequest.running))
     }
 }

@@ -27,24 +27,48 @@
 
 package com.tencent.bkrepo.job.controller.user
 
+import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
+import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.pojo.JobDetail
 import com.tencent.bkrepo.job.service.SystemJobService
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.cloud.client.discovery.DiscoveryClient
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.client.RestTemplate
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RestController
 @RequestMapping("/api/job")
 @Principal(type = PrincipalType.ADMIN)
-class UserJobController(val systemJobService: SystemJobService) {
+class UserJobController(
+    val systemJobService: SystemJobService,
+    val discoveryClient: DiscoveryClient,
+    val serviceAuthManager: ServiceAuthManager
+) {
+
+    private val restTemplate = RestTemplate()
+
+    private val timeoutInSecond:Int = 10
+
+    private val jobServiceId:String = "bkrepo-job"
 
     @GetMapping("/detail")
     @LogOperate(type = "JOB_LIST")
@@ -55,7 +79,31 @@ class UserJobController(val systemJobService: SystemJobService) {
     @PutMapping("/update/{name}")
     @LogOperate(type = "JOB_STATUS_UPDATE")
     fun update(@PathVariable name: String, enabled: Boolean, running: Boolean): Response<Boolean> {
-        return ResponseBuilder.success(systemJobService.update(name, enabled, running))
+        val path = "/service/job/update/$name"
+        val requestBody: MutableMap<String, Boolean> = HashMap()
+        requestBody["running"] = running
+        requestBody["enabled"] = enabled
+        val results : MutableList<Boolean> = ArrayList()
+        val instances = discoveryClient.getInstances(jobServiceId)
+        val countDownLatch = CountDownLatch(instances.size)
+        instances.forEach {
+            instance ->
+                val targetUri =  instance.uri
+                val url = "$targetUri$path"
+                val headers = HttpHeaders()
+                headers.add(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
+                headers.add(MS_AUTH_HEADER_UID, SYSTEM_USER)
+                val httpEntity = HttpEntity<Any>(requestBody,headers)
+                val response = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, Response::class.java)
+                countDownLatch.countDown()
+                results.add(response.statusCode == HttpStatus.OK)
+                if (response.statusCode != HttpStatus.OK) {
+                    logger.error(
+                        "Instance has error, job:$name change running to $running, change enable to $enabled fail")
+                }
+        }
+        countDownLatch.await(timeoutInSecond.toLong(), TimeUnit.SECONDS)
+        return ResponseBuilder.success(results.size> 0 && !results.contains(false))
     }
 
     @PutMapping("/stop")
@@ -66,5 +114,9 @@ class UserJobController(val systemJobService: SystemJobService) {
     ): Response<Void> {
         systemJobService.stop(name, maxWaitTime, failover)
         return ResponseBuilder.success()
+    }
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(UserJobController::class.java)
     }
 }
