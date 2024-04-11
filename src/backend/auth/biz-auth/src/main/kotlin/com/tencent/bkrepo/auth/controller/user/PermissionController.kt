@@ -169,7 +169,7 @@ class PermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.getPathCheckConfig())
     }
 
-    @ApiOperation("查询或创建个人目录")
+    @ApiOperation("创建或查询私有目录")
     @PostMapping("/personal/path")
     fun getOrCreatePersonalPath(
         @RequestParam projectId: String,
