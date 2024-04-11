@@ -144,9 +144,13 @@ open class ProjectRepoMetricsStatJob(
     }
 
     override fun createJobContext(): ProjectRepoMetricsStatJobContext {
+        val temp = mutableMapOf<String, Boolean>()
+        activeProjectService.getActiveProjects().forEach {
+            temp[it] = true
+        }
         return ProjectRepoMetricsStatJobContext(
             statDate = LocalDate.now().atStartOfDay(),
-            statProjects = activeProjectService.getActiveProjects(),
+            statProjects = temp
         )
     }
 
@@ -166,7 +170,7 @@ open class ProjectRepoMetricsStatJob(
         val query = Query.query(Criteria.where(NAME).isEqualTo(projectId))
         val project = mongoTemplate.find(query, Project::class.java, COLLECTION_NAME_PROJECT)
             .firstOrNull() ?: return null
-        return project.metadata.firstOrNull() { it.key == "enabled" }?.value as Boolean?
+        return project.metadata.firstOrNull { it.key == "enabled" }?.value as Boolean?
     }
 
     /**
@@ -238,6 +242,5 @@ open class ProjectRepoMetricsStatJob(
         private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
         private const val COLLECTION_NAME_PROJECT = "project"
         private const val ARCHIVED = "archived"
-        private const val SIZE = 10000
     }
 }

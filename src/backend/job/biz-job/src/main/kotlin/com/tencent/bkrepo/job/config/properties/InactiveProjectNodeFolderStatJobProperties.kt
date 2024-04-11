@@ -35,5 +35,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("job.inactive-project-node-folder-stat")
 class InactiveProjectNodeFolderStatJobProperties(
     override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/6 * * ?",
+    override var cron: String = "0 0 0/12 * * ?",
 ) : StatJobProperties()
