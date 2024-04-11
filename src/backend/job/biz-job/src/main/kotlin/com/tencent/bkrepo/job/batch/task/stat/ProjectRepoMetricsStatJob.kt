@@ -98,6 +98,7 @@ open class ProjectRepoMetricsStatJob(
                 ProjectRepoMetricsStatJobContext.ProjectMetrics(projectId)
             }
             val data = mongoTemplate.find<Node>(query, nodeCollectionName)
+            if (data.isEmpty()) return
             data.forEach {
                 runRepoMetrics(metric, row, it)
             }
