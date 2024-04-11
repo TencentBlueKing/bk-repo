@@ -169,7 +169,7 @@ class PermissionController @Autowired constructor(
     }
 
     @ApiOperation("查询或创建个人目录")
-    @GetMapping("/personal/path")
+    @PostMapping("/personal/path")
     fun getOrCreatePersonalPath(
         @RequestParam projectId: String,
         @RequestParam repoName: String
