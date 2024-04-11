@@ -38,8 +38,10 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 
-open class AuthenticationManager {
+@Component
+class AuthenticationManager {
     @Autowired
     private lateinit var serviceUserClient: ServiceUserClient
 
@@ -56,7 +58,7 @@ open class AuthenticationManager {
      * 校验普通用户类型账户
      * @throws AuthenticationException 校验失败
      */
-    open fun checkUserAccount(uid: String, token: String): String {
+    fun checkUserAccount(uid: String, token: String): String {
         val response = serviceUserClient.checkToken(uid, token)
         return if (response.data == true) uid else throw AuthenticationException("Authorization value check failed")
     }
@@ -65,7 +67,7 @@ open class AuthenticationManager {
      * 校验平台账户
      * @throws AuthenticationException 校验失败
      */
-    open fun checkPlatformAccount(accessKey: String, secretKey: String): String {
+    fun checkPlatformAccount(accessKey: String, secretKey: String): String {
         val response = serviceAccountClient.checkAccountCredential(
             accesskey = accessKey,
             secretkey = secretKey,
@@ -77,7 +79,7 @@ open class AuthenticationManager {
     /**
      * 校验Oauth Token
      */
-    open fun checkOauthToken(accessToken: String): String {
+    fun checkOauthToken(accessToken: String): String {
         val response = serviceOauthAuthorizationClient.validateToken(accessToken)
         return response.data ?: throw AuthenticationException("Access token check failed.")
     }
@@ -85,7 +87,7 @@ open class AuthenticationManager {
     /**
      * 普通用户类型账户
      */
-    open fun createUserAccount(userId: String) {
+    fun createUserAccount(userId: String) {
         val request = CreateUserRequest(userId = userId, name = userId)
         serviceUserClient.createUser(request)
     }
@@ -94,7 +96,7 @@ open class AuthenticationManager {
      * 根据用户id[userId]查询用户信息
      * 当用户不存在时返回`null`
      */
-    open fun findUserAccount(userId: String): UserInfo? {
+    fun findUserAccount(userId: String): UserInfo? {
         return serviceUserClient.userInfoById(userId).data
     }
     /**
@@ -112,18 +114,18 @@ open class AuthenticationManager {
         return serviceUserClient.userTokenById(userId).data
     }
 
-    open fun findOauthToken(accessToken: String): OauthToken? {
+    fun findOauthToken(accessToken: String): OauthToken? {
         return serviceOauthAuthorizationClient.getToken(accessToken).data
     }
 
     /**
      * 根据appId和ak查找sk
      * */
-    open fun findSecretKey(appId: String, accessKey: String): String? {
+    fun findSecretKey(appId: String, accessKey: String): String? {
         return serviceAccountClient.findSecretKey(appId, accessKey).data
     }
 
-    open fun getTokenInfo(token: String): TemporaryTokenInfo? {
+    fun getTokenInfo(token: String): TemporaryTokenInfo? {
         return serviceTemporaryTokenClient.getTokenInfo(token).data
     }
 }
