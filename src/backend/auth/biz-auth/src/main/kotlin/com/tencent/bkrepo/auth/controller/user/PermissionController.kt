@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.controller.OpenResource
+import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -174,7 +175,7 @@ class PermissionController @Autowired constructor(
         @RequestParam projectId: String,
         @RequestParam repoName: String
     ): Response<String> {
-        preCheckProjectUser(projectId)
+        preCheckUserInProject(AuthPermissionType.REPO, projectId, repoName)
         return ResponseBuilder.success(permissionService.getOrCreatePersonalPath(projectId, repoName))
     }
 }

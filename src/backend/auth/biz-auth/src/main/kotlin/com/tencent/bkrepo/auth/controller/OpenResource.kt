@@ -123,7 +123,7 @@ open class OpenResource(private val permissionService: PermissionService) {
         )
         if (type == AuthPermissionType.REPO) {
             checkRequest.repoName = repoName
-            checkRequest.resourceType = ResourceType.REPO.toString()
+            checkRequest.resourceType = ResourceType.REPO.name
         }
         if (!permissionService.checkPermission(checkRequest)) {
             logger.warn("check user permission error [$checkRequest]")
@@ -147,23 +147,7 @@ open class OpenResource(private val permissionService: PermissionService) {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
-
-    /**
-     * check is the user is project user
-     */
-    fun preCheckProjectUser(projectId: String) {
-        val userId = SecurityUtils.getUserId()
-        val checkRequest = CheckPermissionRequest(
-            uid = userId,
-            resourceType = ResourceType.PROJECT.name,
-            projectId = projectId,
-            action = PermissionAction.READ.name
-        )
-        if (!permissionService.checkPermission(checkRequest)) {
-            logger.warn("user is not project user [$checkRequest]")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
-        }
-    }
+    
 
     fun isContextUserProjectAdmin(projectId: String): Boolean {
         val userId = SecurityUtils.getUserId()
