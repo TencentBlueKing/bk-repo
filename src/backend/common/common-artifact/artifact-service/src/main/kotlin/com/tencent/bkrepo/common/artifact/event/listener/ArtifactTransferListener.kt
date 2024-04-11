@@ -173,7 +173,7 @@ class ArtifactTransferListener(
                 sha256 = sha256,
                 project = projectId,
                 repoName = repoName,
-                clientIp = clientIp
+                clientIp = HttpContextHolder.getClientAddress()
             )
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(
