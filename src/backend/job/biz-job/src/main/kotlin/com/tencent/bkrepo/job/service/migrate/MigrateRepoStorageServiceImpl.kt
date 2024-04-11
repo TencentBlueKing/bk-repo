@@ -60,13 +60,17 @@ class MigrateRepoStorageServiceImp(
                     lastModifiedBy = operator,
                     projectId = projectId,
                     repoName = repoName,
-                    srcCredentialsKey = repo.storageCredentials?.key,
-                    dstCredentialsKey = dstCredentialsKey
+                    srcStorageKey = repo.storageCredentials?.key,
+                    dstStorageKey = dstCredentialsKey
                 )
             )
             logger.info("create migrate task for $projectId/$repoName success")
             return task.toDto()
         }
+    }
+
+    override fun tryExecuteTask(): MigrateRepoStorageTask? {
+        TODO()
     }
 
     companion object {

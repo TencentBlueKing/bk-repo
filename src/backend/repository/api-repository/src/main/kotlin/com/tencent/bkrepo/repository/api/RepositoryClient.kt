@@ -136,4 +136,12 @@ interface RepositoryClient {
         @PathVariable projectId: String,
         @PathVariable repoName: String,
     ): Response<NodeSizeInfo>
+
+    @ApiOperation("更新仓库存储")
+    @PostMapping("/update/storage/{projectId}/{repoName}")
+    fun updateStorageCredentialsKey(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam storageCredentialsKey: String?
+    ): Response<Void>
 }

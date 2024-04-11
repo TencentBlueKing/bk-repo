@@ -45,6 +45,21 @@ data class TMigrateRepoStorageTask(
     var lastModifiedDate: LocalDateTime,
 
     /**
+     * 任务开始执行的时间
+     */
+    var startDate: LocalDateTime? = null,
+
+    /**
+     * 需要迁移的制品总数
+     */
+    val totalCount: Long? = null,
+
+    /**
+     * 已迁移的制品数
+     */
+    var migratedCount: Long = 0,
+
+    /**
      * 迁移任务所属项目
      */
     var projectId: String,
@@ -55,11 +70,11 @@ data class TMigrateRepoStorageTask(
     /**
      * 源存储，为null时表示默认存储
      */
-    var srcCredentialsKey: String? = null,
+    var srcStorageKey: String? = null,
     /**
      * 目标存储，为null时表示默认存储
      */
-    var dstCredentialsKey: String? = null,
+    var dstStorageKey: String? = null,
     /**
      * 迁移状态
      */

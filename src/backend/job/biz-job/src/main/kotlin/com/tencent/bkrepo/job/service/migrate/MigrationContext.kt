@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,34 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.service.migrate
 
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
-import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
-import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import com.tencent.bkrepo.job.pojo.MigrateRepoStorageTask
+import java.util.concurrent.atomic.AtomicLong
 
-/**
- * Job配置
- * */
-@Configuration
-@EnableConfigurationProperties(JobProperties::class, MigrateRepoStorageProperties::class)
-class JobConfig {
-    @Bean
-    fun blockThreadPoolTaskExecutorDecorator(
-        threadPoolTaskExecutor: ThreadPoolTaskExecutor,
-        properties: TaskExecutionProperties
-    ): BlockThreadPoolTaskExecutorDecorator {
-        return BlockThreadPoolTaskExecutorDecorator(
-            threadPoolTaskExecutor,
-            properties.pool.queueCapacity,
-            Runtime.getRuntime().availableProcessors()
-        )
-    }
-
-    @Bean
-    fun httpAuthSecurity(): HttpAuthSecurity = HttpAuthSecurity().withPrefix("/job")
-}
+data class MigrationContext(
+    val task: MigrateRepoStorageTask,
+    var successCount: AtomicLong = AtomicLong(),
+    var failedCount: AtomicLong = AtomicLong(),
+    var totalCount: AtomicLong = AtomicLong(),
+)

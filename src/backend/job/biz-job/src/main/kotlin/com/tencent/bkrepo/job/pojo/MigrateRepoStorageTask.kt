@@ -45,16 +45,22 @@ data class MigrateRepoStorageTask(
     @ApiModelProperty("最后修改时间")
     var lastModifiedDate: LocalDateTime,
 
+    @ApiModelProperty("任务开始执行的时间")
+    var startDate: LocalDateTime? = null,
+    @ApiModelProperty("需要迁移的制品总数")
+    var totalCount: Long? = null,
+    @ApiModelProperty("已迁移的制品数")
+    var migratedCount: Long = 0,
     @ApiModelProperty("迁移任务所属项目")
     var projectId: String,
     @ApiModelProperty("迁移项目所属仓库")
     var repoName: String,
     @ApiModelProperty("源存储，为null时表示默认存储")
-    var srcCredentialsKey: String? = null,
+    var srcStorageKey: String? = null,
     @ApiModelProperty("目标存储，为null时表示默认存储")
-    var dstCredentialsKey: String? = null,
+    var dstStorageKey: String? = null,
     @ApiModelProperty("迁移状态")
-    var state: String
+    var state: String,
 ) {
     companion object {
         fun TMigrateRepoStorageTask.toDto() = MigrateRepoStorageTask(
@@ -63,10 +69,13 @@ data class MigrateRepoStorageTask(
             createdDate = createdDate,
             lastModifiedBy = lastModifiedBy,
             lastModifiedDate = lastModifiedDate,
+            startDate = startDate,
+            totalCount = totalCount,
+            migratedCount = migratedCount,
             projectId = projectId,
             repoName = repoName,
-            srcCredentialsKey = srcCredentialsKey,
-            dstCredentialsKey = dstCredentialsKey,
+            srcStorageKey = srcStorageKey,
+            dstStorageKey = dstStorageKey,
             state = state
         )
     }

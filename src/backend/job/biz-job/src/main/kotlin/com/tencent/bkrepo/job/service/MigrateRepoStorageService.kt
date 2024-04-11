@@ -40,4 +40,11 @@ interface MigrateRepoStorageService {
      * @param request 迁移请求
      */
     fun createTask(request: CreateMigrateRepoStorageTaskRequest): MigrateRepoStorageTask
+
+    /**
+     * 尝试从队列中取出一个任务执行
+     *
+     * @return 无任务可执行时返回null，否则返回触发执行的任务
+     */
+    fun tryExecuteTask(): MigrateRepoStorageTask?
 }

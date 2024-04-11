@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
@@ -140,11 +141,13 @@ class RepositoryServiceImpl(
         return convertToDetail(tRepository, storageCredentials)
     }
 
-    override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String) {
-        repositoryDao.findByNameAndType(projectId, repoName, null)?.run {
-            oldCredentialsKey = credentialsKey
-            credentialsKey = storageCredentialsKey
-            repositoryDao.save(this)
+    override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String?) {
+        val repo = repositoryDao.findByNameAndType(projectId, repoName, null)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "$projectId/$repoName")
+        if (repo.credentialsKey != storageCredentialsKey) {
+            repo.oldCredentialsKey = repo.credentialsKey
+            repo.credentialsKey = storageCredentialsKey
+            repositoryDao.save(repo)
         }
     }
 

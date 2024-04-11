@@ -101,4 +101,13 @@ class RepositoryController(
     override fun statRepo(projectId: String, repoName: String): Response<NodeSizeInfo> {
         return ResponseBuilder.success(repositoryService.statRepo(projectId, repoName))
     }
+
+    override fun updateStorageCredentialsKey(
+        projectId: String,
+        repoName: String,
+        storageCredentialsKey: String?
+    ): Response<Void> {
+        repositoryService.updateStorageCredentialsKey(projectId, repoName, storageCredentialsKey)
+        return ResponseBuilder.success()
+    }
 }

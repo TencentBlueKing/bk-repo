@@ -27,11 +27,15 @@
 
 package com.tencent.bkrepo.job.dao
 
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.model.TMigrateRepoStorageTask
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
@@ -39,5 +43,38 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         val criteria = TMigrateRepoStorageTask::projectId.isEqualTo(projectId)
             .and(TMigrateRepoStorageTask::repoName.name).isEqualTo(repoName)
         return exists(Query(criteria))
+    }
+
+    fun updateStartDate(id: String, startDate: LocalDateTime) {
+        val criteria = Criteria.where(ID).isEqualTo(id)
+        val update = Update()
+            .set(TMigrateRepoStorageTask::startDate.name, startDate)
+            .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())
+        updateFirst(Query(criteria), update)
+    }
+
+    fun updateState(id: String, sourceState: String, targetState: String): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(id)
+            .and(TMigrateRepoStorageTask::state.name).isEqualTo(sourceState)
+        val update = Update()
+            .set(TMigrateRepoStorageTask::state.name, targetState)
+            .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())
+        return updateFirst(Query(criteria), update)
+    }
+
+    fun updateMigratedCount(id: String, count: Long): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(id)
+        val update = Update()
+            .set(TMigrateRepoStorageTask::migratedCount.name, count)
+            .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())
+        return updateFirst(Query(criteria), update)
+    }
+
+    fun updateTotalCount(id: String, count: Long): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(id)
+        val update = Update()
+            .set(TMigrateRepoStorageTask::totalCount.name, count)
+            .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())
+        return updateFirst(Query(criteria), update)
     }
 }
