@@ -48,9 +48,12 @@ import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
+import com.tencent.bkrepo.common.artifact.event.ChunkArtifactTransferEvent
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -59,6 +62,7 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
@@ -69,7 +73,6 @@ import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
 import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyContext
 import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyExtension
-import com.tencent.bkrepo.generic.pojo.ChunkedMetrics
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
@@ -96,7 +99,7 @@ class TemporaryAccessService(
     private val deltaSyncService: DeltaSyncService,
     private val permissionManager: PermissionManager,
     private val storageService: StorageService,
-    ) {
+) {
 
     /**
      * 上传
@@ -261,7 +264,7 @@ class TemporaryAccessService(
             val result = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw RepoNotFoundException(repoName)
             val responseProperty = if (uuid.isNullOrEmpty()) {
-                val uuidCreated =  storageService.createAppendId(result.storageCredentials)
+                val uuidCreated = storageService.createAppendId(result.storageCredentials)
                 ChunkedResponseProperty(
                     uuid = uuidCreated,
                     status = HttpStatus.ACCEPTED,
@@ -296,7 +299,12 @@ class TemporaryAccessService(
         ArtifactContextHolder.getRepository().upload(context)
     }
 
-    fun reportChunkedMetrics(metrics: ChunkedMetrics) {
+    fun reportChunkedMetrics(metrics: ChunkArtifactTransferMetrics) {
+        if (metrics.success) {
+            val repo = repositoryClient.getRepoDetail(metrics.projectId, metrics.repoName).data ?: return
+            metrics.storage = repo.storageCredentials?.key ?: DEFAULT_STORAGE_KEY
+            SpringContextUtils.publishEvent(ChunkArtifactTransferEvent(metrics))
+        }
         logger.info(metrics.toJsonString().replace(System.lineSeparator(), ""))
     }
 

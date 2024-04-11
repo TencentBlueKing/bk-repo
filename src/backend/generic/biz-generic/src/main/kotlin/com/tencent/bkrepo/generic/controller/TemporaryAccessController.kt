@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -55,7 +56,6 @@ import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.pojo.BlockInfo
-import com.tencent.bkrepo.generic.pojo.ChunkedMetrics
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
@@ -85,7 +85,7 @@ class TemporaryAccessController(
     private val permissionManager: PermissionManager,
     private val uploadService: UploadService,
     private val genericProperties: GenericProperties,
-    ) {
+) {
 
     @PostMapping("/token/create")
     @Principal(PrincipalType.GENERAL)
@@ -210,7 +210,7 @@ class TemporaryAccessController(
     @PostMapping("/chunked/metrics")
     @Principal(PrincipalType.GENERAL)
     fun recordChunkedMetrics(
-        @RequestBody metrics: ChunkedMetrics,
+        @RequestBody metrics: ChunkArtifactTransferMetrics,
     ): Response<Void> {
         if (!validateClientAgent())
             throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
