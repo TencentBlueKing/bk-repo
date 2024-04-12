@@ -73,6 +73,10 @@ class MigrateRepoStorageServiceImpl(
         TODO()
     }
 
+    override fun migrating(projectId: String, repoName: String): Boolean {
+        return migrateRepoStorageTaskDao.exists(projectId, repoName)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(MigrateRepoStorageServiceImpl::class.java)
     }

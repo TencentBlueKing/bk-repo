@@ -47,4 +47,14 @@ interface MigrateRepoStorageService {
      * @return 无任务可执行时返回null，否则返回触发执行的任务
      */
     fun tryExecuteTask(): MigrateRepoStorageTask?
+
+    /**
+     * 是否存在指定仓库的迁移任务
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名
+     *
+     * @return 是否正在迁移
+     */
+    fun migrating(projectId: String, repoName: String): Boolean
 }
