@@ -30,10 +30,10 @@ package com.tencent.bkrepo.job.batch.task.cache
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexEvictJobProperties
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
@@ -48,11 +48,19 @@ class StorageCacheIndexEvictJob(
     storageProperties: StorageProperties,
     clusterProperties: ClusterProperties,
     mongoTemplate: MongoTemplate,
-    indexerManager: ObjectProvider<StorageCacheIndexerManager>
-) : StorageCacheIndexJob(properties, storageProperties, clusterProperties, mongoTemplate, indexerManager) {
+    storageCacheIndexProperties: StorageCacheIndexProperties?,
+    indexerManager: StorageCacheIndexerManager?
+) : StorageCacheIndexJob(
+    properties,
+    storageProperties,
+    clusterProperties,
+    mongoTemplate,
+    storageCacheIndexProperties,
+    indexerManager
+) {
 
     override fun doWithCredentials(credentials: StorageCredentials) {
-        val evicted = indexerManager.ifAvailable?.evict(credentials, Int.MAX_VALUE)
+        val evicted = indexerManager?.evict(credentials, Int.MAX_VALUE)
         logger.info("credential[${credentials.key}] evict[$evicted]")
     }
 

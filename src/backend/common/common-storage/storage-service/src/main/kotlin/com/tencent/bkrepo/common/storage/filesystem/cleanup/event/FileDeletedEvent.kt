@@ -45,8 +45,4 @@ data class FileDeletedEvent(
      * 被清理的文件完整路径
      */
     val fullPath: String,
-    /**
-     * 被清理文件的sha256
-     */
-    val sha256: String,
 )

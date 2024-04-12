@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.storage.util.toPath
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.core.RedisTemplate
@@ -47,6 +48,7 @@ import org.springframework.data.redis.core.RedisTemplate
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(RedisTemplate::class)
 @ConditionalOnProperty(prefix = "storage.cache.index", name = ["enabled"])
+@EnableConfigurationProperties(StorageCacheIndexProperties::class)
 class StorageCacheIndexConfiguration {
     @Bean
     fun storageCacheIndexerManager(
@@ -70,8 +72,10 @@ class StorageCacheIndexConfiguration {
                 val cachePath = credentials.cache.path.toPath()
                 val hashTag = storageCacheIndexProperties.hashTag
                 val evict = storageCacheIndexProperties.evict
+                val maxEvictCount = storageCacheIndexProperties.maxEvictCount
                 val indexer = RedisLRUCacheIndexer(
-                    name, cachePath, fileLocator, redisTemplate, 0, hashTag = hashTag, evict = evict
+                    name, cachePath, fileLocator, maxEvictCount, redisTemplate, 0,
+                    hashTag = hashTag, evict = evict
                 )
                 indexer.setMaxWeight(credentials.cache.maxSize)
                 customizer.customize(indexer, credentials)
@@ -93,8 +97,10 @@ class StorageCacheIndexConfiguration {
                 val cachePath = credentials.cache.path.toPath()
                 val hashTag = storageCacheIndexProperties.hashTag
                 val evict = storageCacheIndexProperties.evict
+                val maxEvictCount = storageCacheIndexProperties.maxEvictCount
                 val indexer = RedisSLRUCacheIndexer(
-                    name, cachePath, fileLocator, redisTemplate, 0, hashTag = hashTag, evict = evict
+                    name, cachePath, fileLocator, maxEvictCount, redisTemplate, 0,
+                    hashTag = hashTag, evict = evict
                 )
                 indexer.setMaxWeight(credentials.cache.maxSize)
                 customizer.customize(indexer, credentials)

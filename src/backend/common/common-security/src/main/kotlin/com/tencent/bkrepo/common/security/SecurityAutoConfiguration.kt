@@ -73,7 +73,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
     ProxyAuthConfiguration::class,
     ServiceAuthConfiguration::class,
     ActuatorAuthConfiguration::class,
-    CryptoConfiguration::class
+    CryptoConfiguration::class,
+    AuthenticationManager::class
 )
 @EnableConfigurationProperties(DevXProperties::class)
 class SecurityAutoConfiguration {
@@ -161,11 +162,5 @@ class SecurityAutoConfiguration {
             nodeClient = nodeClient,
             httpAuthProperties = httpAuthProperties
         )
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun defaultAuthenticationManager(): AuthenticationManager {
-        return AuthenticationManager()
     }
 }

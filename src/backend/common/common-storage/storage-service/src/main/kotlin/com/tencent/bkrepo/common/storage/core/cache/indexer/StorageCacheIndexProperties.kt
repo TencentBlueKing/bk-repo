@@ -52,6 +52,10 @@ data class StorageCacheIndexProperties(
      * 可能存在缓存条目被淘汰后，由于缓存保留策略或其他原因无法删除缓存文件，此时如果开启缓存同步会再次将被淘汰的缓存条目加入到缓存索引器中
      */
     var syncExistedCacheFile: Boolean = true,
+    /**
+     * 一次淘汰中最多淘汰的缓存条目数
+     */
+    var maxEvictCount: Int = 1000
 ) {
     companion object {
         /**

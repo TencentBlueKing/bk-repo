@@ -208,6 +208,13 @@ interface NodeClient {
         includeMetadata: Boolean = false,
     ): Response<List<NodeInfo>>
 
+    @ApiOperation("按sha256分页查询节点")
+    @PostMapping("/page", params = ["sha256"])
+    fun listPageNodeBySha256(
+        @RequestParam("sha256", required = true) sha256: String,
+        @RequestBody nodeListOption: NodeListOption
+    ): Response<Page<NodeInfo>>
+
     @ApiOperation("查询已删除节点")
     @GetMapping("/deleted/detail/{projectId}/{repoName}")
     fun getDeletedNodeDetail(

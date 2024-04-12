@@ -151,7 +151,7 @@ class DeletedNodeCleanupJob(
             if (node.sha256.isNullOrEmpty() || node.sha256 == FAKE_SHA256) return
             val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
             if (!decrementFileReferences(node.sha256, credentialsKey)) {
-                logger.error("Clean up node fail collection[$collectionName], node[$node]")
+                logger.warn("Clean up node fail collection[$collectionName], node[$node]")
                 return
             }
             result = mongoTemplate.remove(query, collectionName)
@@ -204,10 +204,10 @@ class DeletedNodeCleanupJob(
     private val credentialsKeyCache: LoadingCache<RepositoryId, Optional<String>> = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterWrite(30, TimeUnit.MINUTES)
-        .build(CacheLoader.from { key -> Optional.ofNullable(loadcredentialsKey(key!!)) })
+        .build(CacheLoader.from { key -> Optional.ofNullable(loadCredentialsKey(key!!)) })
 
 
-    private fun loadcredentialsKey(repositoryId: RepositoryId): String? {
+    private fun loadCredentialsKey(repositoryId: RepositoryId): String? {
         val repo = repositoryClient.getRepoInfo(repositoryId.projectId, repositoryId.repoName).data
             ?: throw RepoNotFoundException("${repositoryId.projectId}/${repositoryId.repoName}")
         return repo.storageCredentialsKey
