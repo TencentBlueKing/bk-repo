@@ -105,7 +105,12 @@ interface FileStorage {
      * @param fromCredentials 源存储凭证
      * @param toCredentials 目的存储凭证
      */
-    fun copy(path: String, name: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials)
+    fun copy(
+        path: String,
+        name: String,
+        fromCredentials: StorageCredentials,
+        toCredentials: StorageCredentials,
+    )
 
     /**
      * 在不同存储实例之间移动文件

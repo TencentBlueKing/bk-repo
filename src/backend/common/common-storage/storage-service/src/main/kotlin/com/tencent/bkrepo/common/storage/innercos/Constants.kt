@@ -43,6 +43,8 @@ const val COS_COPY_SOURCE = "x-cos-copy-source"
 
 const val RESPONSE_UPLOAD_ID = "UploadId"
 const val RESPONSE_LAST_MODIFIED = "LastModified"
+const val RESPONSE_SIZE = "Size"
+const val RESPONSE_CRC64 = "x-cos-hash-crc64ecma"
 
 private const val ENCODED_STR_SIZE = 3
 

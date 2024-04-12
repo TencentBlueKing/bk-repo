@@ -32,16 +32,21 @@
 package com.tencent.bkrepo.common.storage.innercos.response.handler
 
 import com.tencent.bkrepo.common.storage.innercos.RESPONSE_CRC64
-import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.ETAG
+import com.tencent.bkrepo.common.storage.innercos.RESPONSE_SIZE
+import com.tencent.bkrepo.common.storage.innercos.http.Headers
 import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
-import com.tencent.bkrepo.common.storage.innercos.response.PutObjectResponse
+import com.tencent.bkrepo.common.storage.innercos.response.CosObject
 import okhttp3.Response
 
-class CompleteMultipartUploadResponseHandler : HttpResponseHandler<PutObjectResponse>() {
-    override fun handle(response: Response): PutObjectResponse {
-        return PutObjectResponse(
-            readXmlValue(response)[ETAG].toString(),
-            response.header(RESPONSE_CRC64)
-        )
+class HeadObjectResponseHandler : HttpResponseHandler<CosObject>() {
+    override fun handle(response: Response): CosObject {
+        val eTag = response.header(Headers.ETAG)!!.trim('"')
+        val length = response.header(RESPONSE_SIZE)!!.toLong()
+        val crc64ecma = response.header(RESPONSE_CRC64)
+        return CosObject(eTag, null, length, crc64ecma)
+    }
+
+    override fun handle404(): CosObject {
+        return CosObject(null, null, null, null)
     }
 }

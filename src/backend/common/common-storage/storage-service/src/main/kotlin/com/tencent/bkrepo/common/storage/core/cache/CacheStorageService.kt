@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
+import java.io.FileNotFoundException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicBoolean
@@ -207,6 +208,21 @@ class CacheStorageService(
             throw IllegalStateException("Cache storage is unhealthy: ${monitor.fallBackReason}")
         }
         super.doCheckHealth(credentials)
+    }
+
+    override fun copy(
+        digest: String,
+        fromCredentials: StorageCredentials?,
+        toCredentials: StorageCredentials?
+    ) {
+        val path = fileLocator.locate(digest)
+        if (doExist(path, digest, fromCredentials!!)) {
+            super.copy(digest, fromCredentials, toCredentials)
+        } else {
+            val cacheFile = getCacheClient(fromCredentials).load(path, digest)
+                ?: throw FileNotFoundException(Paths.get(fromCredentials.cache.path, path, digest).toString())
+            fileStorage.store(path, digest, cacheFile, toCredentials!!)
+        }
     }
 
     /**

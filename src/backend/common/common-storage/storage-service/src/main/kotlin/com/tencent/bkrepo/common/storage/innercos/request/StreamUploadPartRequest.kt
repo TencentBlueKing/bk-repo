@@ -29,19 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.response.handler
+package com.tencent.bkrepo.common.storage.innercos.request
 
-import com.tencent.bkrepo.common.storage.innercos.RESPONSE_CRC64
-import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.ETAG
-import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
-import com.tencent.bkrepo.common.storage.innercos.response.PutObjectResponse
-import okhttp3.Response
+import com.tencent.bkrepo.common.artifact.stream.BoundedInputStream
+import com.tencent.bkrepo.common.storage.innercos.PARAMETER_PART_NUMBER
+import com.tencent.bkrepo.common.storage.innercos.PARAMETER_UPLOAD_ID
+import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.CONTENT_LENGTH
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import com.tencent.bkrepo.common.storage.innercos.http.InputStreamRequestBody
+import okhttp3.RequestBody
+import java.io.InputStream
 
-class CompleteMultipartUploadResponseHandler : HttpResponseHandler<PutObjectResponse>() {
-    override fun handle(response: Response): PutObjectResponse {
-        return PutObjectResponse(
-            readXmlValue(response)[ETAG].toString(),
-            response.header(RESPONSE_CRC64)
-        )
+data class StreamUploadPartRequest(
+    val key: String,
+    val uploadId: String,
+    val partNumber: Int,
+    val partSize: Long,
+    val inputStream: InputStream
+) : CosRequest(HttpMethod.PUT, key) {
+
+    init {
+        parameters[PARAMETER_UPLOAD_ID] = uploadId
+        parameters[PARAMETER_PART_NUMBER] = partNumber.toString()
+        headers[CONTENT_LENGTH] = partSize.toString()
+    }
+
+    override fun buildRequestBody(): RequestBody {
+        val inputStream = BoundedInputStream(inputStream, partSize)
+        return InputStreamRequestBody(inputStream, partSize)
     }
 }
