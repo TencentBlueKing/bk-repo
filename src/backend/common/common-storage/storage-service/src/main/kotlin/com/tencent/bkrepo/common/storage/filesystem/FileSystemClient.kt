@@ -220,6 +220,29 @@ class FileSystemClient(val root: String) {
     }
 
     /**
+     * 从指定开始位置追加文件内容
+     * @param dir 目录
+     * @param filename 文件名
+     * @param inputStream 输入流
+     * @param size 输入流数据大小
+     * @param start 写入开始位置, 当为空时追加到文件末尾
+     * @return 当前文件总大小
+     */
+    fun appendAt(dir: String, filename: String, inputStream: InputStream, size: Long, start: Long? = null) {
+        val filePath = Paths.get(this.root, dir, filename)
+        if (!Files.isRegularFile(filePath)) {
+            throw IllegalArgumentException("[$filePath] is not a regular file.")
+        }
+        val file = filePath.toFile()
+        val startPosition = start ?: 0
+        FileLockExecutor.executeInLock(inputStream) { input ->
+            FileLockExecutor.executeInLock(file) { output ->
+                transfer(input, output, size, start == null, startPosition)
+            }
+        }
+    }
+
+    /**
      * 创建目录
      * @param dir 父目录
      * @param name 要创建的目录名称
@@ -269,7 +292,8 @@ class FileSystemClient(val root: String) {
      *
      * @return 合并后的文件
      */
-    fun mergeFiles(fileList: List<File>, outputFile: File): File {
+    fun mergeFiles(fileList: List<File>, outputFile: File, mergeFile: Boolean): File {
+        if (outputFile.exists() && !mergeFile) return outputFile
         if (!outputFile.exists()) {
             if (!outputFile.createNewFile()) {
                 throw IOException("Failed to create file [$outputFile]!")
@@ -308,8 +332,14 @@ class FileSystemClient(val root: String) {
         return Files.size(filePath)
     }
 
-    private fun transfer(input: ReadableByteChannel, output: FileChannel, size: Long, append: Boolean = false) {
-        val startPosition: Long = if (append) output.size() else 0L
+    private fun transfer(
+        input: ReadableByteChannel,
+        output: FileChannel,
+        size: Long,
+        appendAtEnd: Boolean = false,
+        start: Long = 0
+    ) {
+        val startPosition: Long = if (appendAtEnd) output.size() else start
         var bytesCopied: Long
         var totalCopied = 0L
         var count: Long

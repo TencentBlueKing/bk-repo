@@ -73,6 +73,7 @@ import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
+import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
@@ -522,14 +523,27 @@ class GenericLocalRepository(
             if (!storageService.checkBlockId(uploadId, storageCredentials)) {
                 throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
             }
-            storageService.storeBlock(
-                uploadId,
-                sequence,
-                getArtifactSha256(),
-                getArtifactFile(),
-                HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
-                storageCredentials
-            )
+            val blockAppend = HeaderUtils.getHeader(HEADER_BLOCK_APPEND)?.toBoolean() ?: false
+            if (blockAppend) {
+                storageService.storeBlockWithAppend(
+                    uploadId,
+                    sequence,
+                    getArtifactSha256(),
+                    getArtifactFile(),
+                    HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
+                    storageCredentials,
+                    blockSize =
+                )
+            } else {
+                storageService.storeBlock(
+                    uploadId,
+                    sequence,
+                    getArtifactSha256(),
+                    getArtifactFile(),
+                    HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
+                    storageCredentials
+                )
+            }
         }
     }
 

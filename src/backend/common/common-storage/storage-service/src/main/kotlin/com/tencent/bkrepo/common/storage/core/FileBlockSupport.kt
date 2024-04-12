@@ -139,7 +139,7 @@ abstract class FileBlockSupport : CleanupSupport() {
         digest: String,
         artifactFile: ArtifactFile,
         overwrite: Boolean,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
     ) {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
@@ -157,10 +157,40 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
+    override fun storeBlockWithAppend(
+        blockId: String,
+        sequence: Int,
+        digest: String,
+        artifactFile: ArtifactFile,
+        overwrite: Boolean,
+        storageCredentials: StorageCredentials?,
+        blockSize: Long
+    ) {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        val tempClient = getTempClient(credentials)
+        val blockInputStream = artifactFile.getInputStream()
+        val blockFileSize = artifactFile.getSize()
+        val digestInputStream = digest.byteInputStream()
+        val digestSize = digest.length.toLong()
+        val startPosition = (sequence - 1) * blockSize
+        try {
+            tempClient.store(blockId, "$sequence$BLOCK_SUFFIX", digestInputStream, digestSize, overwrite)
+            tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digestInputStream, digestSize, overwrite)
+            tempClient.appendAt(blockId, MERGED_FILENAME, blockInputStream, blockFileSize, startPosition)
+            logger.info("Success to store block [$blockId/$sequence]")
+        } catch (exception: Exception) {
+            logger.error("Failed to store block [$blockId/$sequence] on [${credentials.key}]", exception)
+            tempClient.delete(blockId, "$sequence$BLOCK_SUFFIX")
+            tempClient.delete(blockId, "$sequence$SHA256_SUFFIX")
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
+        }
+    }
+
     override fun mergeBlock(
         blockId: String,
         storageCredentials: StorageCredentials?,
-        fileInfo: FileInfo?
+        fileInfo: FileInfo?,
+        mergeFile: Boolean
     ): FileInfo {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
@@ -177,9 +207,9 @@ abstract class FileBlockSupport : CleanupSupport() {
             }
             val mergedFile = tempClient.mergeFiles(
                 blockFileList, tempClient.touch(
-                    blockId,
-                    MERGED_FILENAME
-                )
+                blockId,
+                MERGED_FILENAME
+            ), mergeFile
             )
             val fileInfo = storeMergedFile(mergedFile, credentials, fileInfo)
             tempClient.deleteDirectory(CURRENT_PATH, blockId)
