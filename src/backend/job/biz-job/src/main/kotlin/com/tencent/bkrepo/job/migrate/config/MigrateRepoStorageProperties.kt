@@ -42,5 +42,5 @@ data class MigrateRepoStorageProperties(
     /**
      * 更新进度间隔，指定每迁移多少个制品更新一次任务进度
      */
-    val updateProgressInterval: Int = 10
+    val updateProgressInterval: Int = 10,
 )

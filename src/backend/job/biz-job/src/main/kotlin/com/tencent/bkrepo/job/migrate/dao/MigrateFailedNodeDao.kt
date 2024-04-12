@@ -29,7 +29,37 @@ package com.tencent.bkrepo.job.migrate.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 @Repository
-class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>()
+class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
+    fun findOneToRetry(projectId: String, repoName: String, maxRetryTimes: Int = 3): TMigrateFailedNode? {
+        val criteria = Criteria
+            .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
+            .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
+            .and(TMigrateFailedNode::retryTimes.name).lt(maxRetryTimes)
+        val query = Query(criteria).with(Sort.by(Sort.Order.asc(TMigrateFailedNode::retryTimes.name)))
+        return findOne(query)
+    }
+
+    fun existsFailedNode(projectId: String, repoName: String): Boolean {
+        val criteria = Criteria
+            .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
+            .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
+        return exists(Query(criteria))
+    }
+
+    fun incRetryTimes(projectId: String, repoName: String, fullPath: String) {
+        val criteria = Criteria
+            .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
+            .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
+            .and(TMigrateFailedNode::fullPath.name).isEqualTo(fullPath)
+        val update = Update().inc(TMigrateFailedNode::retryTimes.name, 1)
+        updateFirst(Query(criteria), update)
+    }
+}

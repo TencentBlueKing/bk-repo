@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.job.migrate.pojo
 
 data class Node(
-    val id: String,
     val projectId: String,
     val repoName: String,
     val fullPath: String,

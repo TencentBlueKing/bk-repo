@@ -37,12 +37,33 @@ enum class MigrateRepoStorageTaskState {
     PENDING,
 
     /**
-     * 执行中
+     * 执行迁移中
      */
-    EXECUTING,
+    MIGRATING,
 
     /**
-     * 执行结束
+     * 旧数据迁移完成
+     */
+    MIGRATE_FINISHED,
+
+    /**
+     * 矫正数据中，将迁移任务启动之后上传到旧存储中的数据迁移到新存储中
+     * 此过程通常等待MIGRATING启动之后一段时间才执行，避免还有制品正在上传中导致数据丢失
+     */
+    CORRECTING,
+
+    /**
+     * 数据矫正结束，
+     */
+    CORRECT_FINISHED,
+
+    /**
+     * 尝试重新传输迁移失败的node，前面两个过程中迁移失败的node重新完成迁移后即可结束整个迁移流程
+     */
+    MIGRATING_FAILED_NODE,
+
+    /**
+     * 迁移结束
      */
     FINISHED;
 }

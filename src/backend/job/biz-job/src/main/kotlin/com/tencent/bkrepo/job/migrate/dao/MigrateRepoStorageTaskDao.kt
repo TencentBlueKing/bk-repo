@@ -59,9 +59,15 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         updateFirst(Query(criteria), update)
     }
 
-    fun updateState(id: String, sourceState: String, targetState: String): UpdateResult {
+    fun updateState(
+        id: String,
+        sourceState: String,
+        targetState: String,
+        lastModifiedDate: LocalDateTime
+    ): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(id)
             .and(TMigrateRepoStorageTask::state.name).isEqualTo(sourceState)
+            .and(TMigrateRepoStorageTask::lastModifiedDate.name).isEqualTo(lastModifiedDate)
         val update = Update()
             .set(TMigrateRepoStorageTask::state.name, targetState)
             .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())

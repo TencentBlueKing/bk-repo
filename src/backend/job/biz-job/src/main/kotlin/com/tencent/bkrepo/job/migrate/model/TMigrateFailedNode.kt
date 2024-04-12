@@ -43,6 +43,10 @@ data class TMigrateFailedNode(
     var createdDate: LocalDateTime,
     var lastModifiedDate: LocalDateTime,
 
+    /**
+     * 迁移任务的id
+     */
+    var taskId: String,
     var projectId: String,
     var repoName: String,
     val fullPath: String,
