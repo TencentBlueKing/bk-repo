@@ -159,6 +159,7 @@ open class ProjectRepoMetricsStatJob(
         statDate: LocalDateTime,
         projectMetric: TProjectMetrics,
     ) {
+        if (projectMetric.capSize <=0 && projectMetric.nodeNum <=0) return
         // insert project repo metrics
         val criteria = Criteria.where(CREATED_DATE).isEqualTo(statDate).and(PROJECT).`is`(projectMetric.projectId)
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
