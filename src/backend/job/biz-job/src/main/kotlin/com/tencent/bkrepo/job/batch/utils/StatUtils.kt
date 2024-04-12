@@ -25,15 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.batch.utils
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.DayOfWeek
+import java.time.LocalDateTime
 
-/**
- * 无变更项目空目录清理任务配置项
- */
-@ConfigurationProperties("job.inactive-project-empty-folder-cleanup")
-class InactiveProjectEmptyFolderCleanupJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/12 * * ?",
-) : StatJobProperties()
+object StatUtils {
+
+    // 特殊仓库每周统计一次
+    fun specialRepoRunCheck(specialDay: Int): Boolean {
+        val runDay = if (specialDay < 1 || specialDay > 7) {
+            6
+        } else {
+            specialDay
+        }
+        return DayOfWeek.of(runDay) == LocalDateTime.now().dayOfWeek
+    }
+}

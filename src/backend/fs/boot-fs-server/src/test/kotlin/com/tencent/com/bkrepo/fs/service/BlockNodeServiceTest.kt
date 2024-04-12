@@ -75,6 +75,7 @@ class BlockNodeServiceTest {
     @Test
     fun testListRangeBlockNodes() {
         runBlocking {
+            val createdDate = LocalDateTime.now().minusSeconds(1).toString()
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
             createBlockNode(10)
@@ -85,7 +86,8 @@ class BlockNodeServiceTest {
                 range = range,
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
-                fullPath = "/file"
+                fullPath = "/file",
+                createdDate = createdDate
             )
             Assertions.assertEquals(2, blocks.size)
             Assertions.assertEquals(20, blocks.first().startPos)
@@ -97,6 +99,7 @@ class BlockNodeServiceTest {
     @Test
     fun testDeleteBlocks() {
         runBlocking {
+            val createdDate = LocalDateTime.now().minusSeconds(1).toString()
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
             createBlockNode(startPos = 10)
@@ -105,7 +108,8 @@ class BlockNodeServiceTest {
                 Range.full(Long.MAX_VALUE),
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
-                "/file"
+                "/file",
+                createdDate
             )
             Assertions.assertEquals(2, blocks0.size)
             // 删除所有分块
@@ -118,7 +122,8 @@ class BlockNodeServiceTest {
                 Range.full(Long.MAX_VALUE),
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
-                "/file"
+                "/file",
+                createdDate
             )
             // 所有分块已被删除
             Assertions.assertEquals(0, blocks1.size)
@@ -129,6 +134,7 @@ class BlockNodeServiceTest {
     @Test
     fun testMoveNode() {
         runBlocking {
+            val createdDate = LocalDateTime.now().minusSeconds(1).toString()
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
             createBlockNode(startPos = 10)
@@ -140,14 +146,16 @@ class BlockNodeServiceTest {
                 Range.full(Long.MAX_VALUE),
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
-                newFullPath
+                newFullPath,
+                createdDate
             )
             Assertions.assertEquals(2, blocks.size)
             val blocks1 = blockNodeService.listBlocks(
                 Range.full(Long.MAX_VALUE),
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
-                fullPath
+                fullPath,
+                createdDate
             )
             Assertions.assertEquals(0, blocks1.size)
         }
