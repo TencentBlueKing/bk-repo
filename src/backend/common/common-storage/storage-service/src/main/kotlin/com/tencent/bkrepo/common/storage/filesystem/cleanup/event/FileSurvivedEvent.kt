@@ -45,8 +45,4 @@ class FileSurvivedEvent(
      * 文件完整路径
      */
     val fullPath: String,
-    /**
-     * 文件的sha256
-     */
-    val sha256: String,
 )

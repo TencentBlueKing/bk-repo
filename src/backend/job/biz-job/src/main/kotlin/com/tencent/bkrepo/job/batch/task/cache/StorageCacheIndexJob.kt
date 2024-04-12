@@ -30,12 +30,12 @@ package com.tencent.bkrepo.job.batch.task.cache
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexJobProperties
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import java.time.Duration
@@ -45,7 +45,8 @@ abstract class StorageCacheIndexJob(
     private val storageProperties: StorageProperties,
     private val clusterProperties: ClusterProperties,
     private val mongoTemplate: MongoTemplate,
-    protected val indexerManager: ObjectProvider<StorageCacheIndexerManager>
+    protected val storageCacheIndexProperties: StorageCacheIndexProperties?,
+    protected val indexerManager: StorageCacheIndexerManager?
 ) : DefaultContextJob(properties) {
 
     private data class TStorageCredentials(
@@ -57,6 +58,10 @@ abstract class StorageCacheIndexJob(
     override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
 
     override fun doStart0(jobContext: JobContext) {
+        if (storageCacheIndexProperties?.enabled != true) {
+            return
+        }
+
         doWithCredentials(storageProperties.defaultStorageCredentials())
         mongoTemplate.find(Query(), TStorageCredentials::class.java, "storage_credentials")
             .filter { clusterProperties.region.isNullOrBlank() || it.region == clusterProperties.region }

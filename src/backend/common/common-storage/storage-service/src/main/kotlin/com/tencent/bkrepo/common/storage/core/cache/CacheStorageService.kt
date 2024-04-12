@@ -34,6 +34,8 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.M
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventPublisher
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileLoadedEventPublisher
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
@@ -58,6 +60,8 @@ class CacheStorageService(
     private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
     private val fileExpireResolver: FileExpireResolver? = null,
 ) : AbstractStorageService() {
+
+    private val cacheFileEventPublisher by lazy { CacheFileEventPublisher(publisher) }
 
     override fun doStore(
         path: String,
@@ -84,6 +88,7 @@ class CacheStorageService(
 
             else -> {
                 val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
+                cacheFileEventPublisher.publishCacheFileLoadedEvent(credentials, cacheFile)
                 async2Store(cancel, filename, credentials, path, cacheFile, storageClass)
             }
         }
@@ -127,6 +132,7 @@ class CacheStorageService(
         val loadCacheFirst = isLoadCacheFirst(range, credentials)
         if (loadCacheFirst) {
             loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let {
+                cacheFileEventPublisher.publishCacheFileAccessEvent(path, filename, range.total!!, credentials)
                 return it.apply { putMetadata(METADATA_KEY_CACHE_ENABLED, true) }
             }
         }
@@ -134,7 +140,8 @@ class CacheStorageService(
         if (artifactInputStream != null && loadCacheFirst && range.isFullContent()) {
             val cachePath = Paths.get(credentials.cache.path, path)
             val tempPath = Paths.get(credentials.cache.path, TEMP)
-            val readListener = CachedFileWriter(cachePath, filename, tempPath)
+            val cacheFileLoadedEventPublisher = CacheFileLoadedEventPublisher(publisher, credentials)
+            val readListener = CachedFileWriter(cachePath, filename, tempPath, cacheFileLoadedEventPublisher)
             artifactInputStream.addListener(readListener)
         }
 
@@ -146,8 +153,11 @@ class CacheStorageService(
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
+        val cacheFilePath = "${credentials.cache.path}$path$filename"
+        val size = File(cacheFilePath).length()
         fileStorage.delete(path, filename, credentials)
         getCacheClient(credentials).delete(path, filename)
+        cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)
     }
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
@@ -218,11 +228,21 @@ class CacheStorageService(
         credentials: StorageCredentials,
     ) {
         if (doExist(path, filename, credentials)) {
-            logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
+            val cacheFilePath = "${credentials.cache.path}$path$filename"
+            val size = File(cacheFilePath).length()
             getCacheClient(credentials).delete(path, filename)
+            cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)
+            logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
         } else {
             logger.info("Cache file[${credentials.cache.path}/$path/$filename] was not in storage")
         }
+    }
+
+    /**
+     * 获取存储的缓存目录健康状态
+     */
+    fun cacheHealthy(credentials: StorageCredentials?): Boolean {
+        return getMonitor(getCredentialsOrDefault(credentials)).healthy.get()
     }
 
     /**

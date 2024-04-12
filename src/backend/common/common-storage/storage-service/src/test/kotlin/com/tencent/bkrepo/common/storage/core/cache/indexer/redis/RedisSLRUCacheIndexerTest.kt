@@ -112,7 +112,7 @@ class RedisSLRUCacheIndexerTest : RedisCacheIndexerTest<RedisSLRUCacheIndexer>()
     }
 
     override fun createIndexer(cacheName: String, cacheDir: Path): RedisSLRUCacheIndexer {
-        return RedisSLRUCacheIndexer(cacheName, cacheDir, fileLocator, redisTemplate, 0)
+        return RedisSLRUCacheIndexer(cacheName, cacheDir, fileLocator, 1000, redisTemplate, 0)
     }
 
     /**
