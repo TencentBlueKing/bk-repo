@@ -25,9 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.pojo
+package com.tencent.bkrepo.job.migrate.pojo
 
-import com.tencent.bkrepo.job.model.TMigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
@@ -35,32 +35,32 @@ import java.time.LocalDateTime
 @ApiModel("数据迁移任务")
 data class MigrateRepoStorageTask(
     @ApiModelProperty("ID")
-    var id: String? = null,
+    val id: String? = null,
     @ApiModelProperty("创建人")
-    var createdBy: String,
+    val createdBy: String,
     @ApiModelProperty("创建时间")
-    var createdDate: LocalDateTime,
+    val createdDate: LocalDateTime,
     @ApiModelProperty("最后修改人")
-    var lastModifiedBy: String,
+    val lastModifiedBy: String,
     @ApiModelProperty("最后修改时间")
-    var lastModifiedDate: LocalDateTime,
+    val lastModifiedDate: LocalDateTime,
 
     @ApiModelProperty("任务开始执行的时间")
-    var startDate: LocalDateTime? = null,
+    val startDate: LocalDateTime? = null,
     @ApiModelProperty("需要迁移的制品总数")
-    var totalCount: Long? = null,
+    val totalCount: Long? = null,
     @ApiModelProperty("已迁移的制品数")
-    var migratedCount: Long = 0,
+    val migratedCount: Long = 0,
     @ApiModelProperty("迁移任务所属项目")
-    var projectId: String,
+    val projectId: String,
     @ApiModelProperty("迁移项目所属仓库")
-    var repoName: String,
+    val repoName: String,
     @ApiModelProperty("源存储，为null时表示默认存储")
-    var srcStorageKey: String? = null,
+    val srcStorageKey: String? = null,
     @ApiModelProperty("目标存储，为null时表示默认存储")
-    var dstStorageKey: String? = null,
+    val dstStorageKey: String? = null,
     @ApiModelProperty("迁移状态")
-    var state: String,
+    val state: String,
 ) {
     companion object {
         fun TMigrateRepoStorageTask.toDto() = MigrateRepoStorageTask(

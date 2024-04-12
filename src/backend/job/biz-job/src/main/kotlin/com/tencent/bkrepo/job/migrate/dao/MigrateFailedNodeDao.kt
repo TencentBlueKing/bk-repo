@@ -25,58 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.model
+package com.tencent.bkrepo.job.migrate.dao
 
-import com.tencent.bkrepo.job.pojo.MigrateRepoStorageTaskState
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
+import org.springframework.stereotype.Repository
 
-@Document("migrate_repo_storage_task")
-@CompoundIndexes(
-    CompoundIndex(name = "projectId_repoName_idx", def = "{'projectId': 1, 'repoName': 1}", unique = true)
-)
-data class TMigrateRepoStorageTask(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-
-    /**
-     * 任务开始执行的时间
-     */
-    var startDate: LocalDateTime? = null,
-
-    /**
-     * 需要迁移的制品总数
-     */
-    val totalCount: Long? = null,
-
-    /**
-     * 已迁移的制品数
-     */
-    var migratedCount: Long = 0,
-
-    /**
-     * 迁移任务所属项目
-     */
-    var projectId: String,
-    /**
-     * 迁移项目所属仓库
-     */
-    var repoName: String,
-    /**
-     * 源存储，为null时表示默认存储
-     */
-    var srcStorageKey: String? = null,
-    /**
-     * 目标存储，为null时表示默认存储
-     */
-    var dstStorageKey: String? = null,
-    /**
-     * 迁移状态
-     */
-    var state: String = MigrateRepoStorageTaskState.PENDING.name
-)
+@Repository
+class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>()

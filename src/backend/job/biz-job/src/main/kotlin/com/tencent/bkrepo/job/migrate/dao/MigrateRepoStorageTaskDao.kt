@@ -25,11 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.dao
+package com.tencent.bkrepo.job.migrate.dao
 
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.job.model.TMigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -43,6 +43,12 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         val criteria = TMigrateRepoStorageTask::projectId.isEqualTo(projectId)
             .and(TMigrateRepoStorageTask::repoName.name).isEqualTo(repoName)
         return exists(Query(criteria))
+    }
+
+    fun find(projectId: String, repoName: String): TMigrateRepoStorageTask? {
+        val criteria = TMigrateRepoStorageTask::projectId.isEqualTo(projectId)
+            .and(TMigrateRepoStorageTask::repoName.name).isEqualTo(repoName)
+        return findOne(Query(criteria))
     }
 
     fun updateStartDate(id: String, startDate: LocalDateTime) {

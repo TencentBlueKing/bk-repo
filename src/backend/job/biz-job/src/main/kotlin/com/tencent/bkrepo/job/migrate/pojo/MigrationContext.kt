@@ -25,9 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.service.migrate
+package com.tencent.bkrepo.job.migrate.pojo
 
-import com.tencent.bkrepo.job.pojo.MigrateRepoStorageTask
 import java.util.concurrent.atomic.AtomicLong
 
 data class MigrationContext(

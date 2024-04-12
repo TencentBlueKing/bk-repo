@@ -25,26 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.service.migrate
+package com.tencent.bkrepo.job.migrate
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
-import com.tencent.bkrepo.job.dao.MigrateRepoStorageTaskDao
-import com.tencent.bkrepo.job.model.TMigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
+import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
 import com.tencent.bkrepo.job.pojo.CreateMigrateRepoStorageTaskRequest
-import com.tencent.bkrepo.job.pojo.MigrateRepoStorageTask
-import com.tencent.bkrepo.job.pojo.MigrateRepoStorageTask.Companion.toDto
-import com.tencent.bkrepo.job.service.MigrateRepoStorageService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
+/**
+ * 仓库存储迁移服务
+ */
 @Service
-class MigrateRepoStorageServiceImpl(
+class MigrateRepoStorageService(
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
-) : MigrateRepoStorageService {
-    override fun createTask(request: CreateMigrateRepoStorageTaskRequest): MigrateRepoStorageTask {
+) {
+    /**
+     * 迁移仓库存储
+     *
+     * @param request 迁移请求
+     */
+    fun createTask(request: CreateMigrateRepoStorageTaskRequest): MigrateRepoStorageTask {
         with(request) {
             if (migrateRepoStorageTaskDao.exists(projectId, repoName)) {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, "$projectId/$repoName")
@@ -69,15 +76,29 @@ class MigrateRepoStorageServiceImpl(
         }
     }
 
-    override fun tryExecuteTask(): MigrateRepoStorageTask? {
+
+    /**
+     * 尝试从队列中取出一个任务执行
+     *
+     * @return 无任务可执行时返回null，否则返回触发执行的任务
+     */
+    fun tryExecuteTask(): MigrateRepoStorageTask? {
         TODO()
     }
 
-    override fun migrating(projectId: String, repoName: String): Boolean {
+    /**
+     * 是否存在指定仓库的迁移任务
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名
+     *
+     * @return 是否正在迁移
+     */
+    fun migrating(projectId: String, repoName: String): Boolean {
         return migrateRepoStorageTaskDao.exists(projectId, repoName)
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MigrateRepoStorageServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(MigrateRepoStorageService::class.java)
     }
 }

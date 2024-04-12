@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.service.migrate
+package com.tencent.bkrepo.job.migrate
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.retry
@@ -35,9 +35,14 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.MigrateRepoStorageProperties
-import com.tencent.bkrepo.job.dao.MigrateRepoStorageTaskDao
-import com.tencent.bkrepo.job.pojo.MigrateRepoStorageTask
-import com.tencent.bkrepo.job.pojo.MigrateRepoStorageTaskState.EXECUTING
+import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.EXECUTING
+import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
+import com.tencent.bkrepo.job.migrate.pojo.CorrectionContext
+import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
+import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -62,6 +67,7 @@ class MigrateRepoStorageTaskExecutor(
     private val fileReferenceClient: FileReferenceClient,
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     private val storageService: StorageService,
+    private val migrateFailedNodeDao: MigrateFailedNodeDao,
 ) {
     /**
      * 任务执行线程池，用于提交node迁移任务到[migrateExecutor]
@@ -102,7 +108,7 @@ class MigrateRepoStorageTaskExecutor(
      */
     fun migrate(task: MigrateRepoStorageTask): Boolean {
         with(task) {
-            logger.info(
+            com.tencent.bkrepo.job.migrate.MigrateRepoStorageTaskExecutor.logger.info(
                 "Start to execute migrate task[$projectId/$repoName], srcKey[$srcStorageKey], dstKey[$dstStorageKey]"
             )
             val context = prepare(task) ?: return false
@@ -112,7 +118,7 @@ class MigrateRepoStorageTaskExecutor(
                         doMigrate(context)
                         correct(task)
                     } catch (exception: Exception) {
-                        logger.error("Migrate task[$projectId/$repoName] failed.", exception)
+                        com.tencent.bkrepo.job.migrate.MigrateRepoStorageTaskExecutor.logger.error("Migrate task[$projectId/$repoName] failed.", exception)
                     }
                 }
             } catch (e: RejectedExecutionException) {
@@ -132,20 +138,20 @@ class MigrateRepoStorageTaskExecutor(
             // 更新待迁移制品总数
             migrateRepoStorageTaskDao.updateTotalCount(task.id!!, iterator.totalCount())
 
-            iterator.forEach {
+            iterator.forEach { node ->
                 try {
                     // 迁移制品
                     val throughput = measureThroughput {
-                        migrateNode(it, context.task.srcStorageKey, context.task.dstStorageKey)
+                        migrateNode(node, context.task.srcStorageKey, context.task.dstStorageKey)
                     }
                     // 输出迁移速率
-                    logger.info(
-                        "Success to migrate file[${it.sha256}], " +
-                                "$throughput, task[${task.projectId}/${task.repoName}]"
+                    com.tencent.bkrepo.job.migrate.MigrateRepoStorageTaskExecutor.logger.info(
+                        "Success to migrate file[${node.sha256}], $throughput, task[${task.projectId}/${task.repoName}]"
                     )
                     successCount.incrementAndGet()
                 } catch (e: Exception) {
-                    logger.error("Failed to migrate file[${it.sha256}], task[${task.projectId}/${task.repoName}]", e)
+                    com.tencent.bkrepo.job.migrate.MigrateRepoStorageTaskExecutor.logger.error("Failed to migrate file[${node.sha256}], task[${task.projectId}/${task.repoName}]", e)
+                    saveMigrateFailedNode(node)
                     failedCount.incrementAndGet()
                 } finally {
                     totalCount.incrementAndGet()
@@ -154,16 +160,16 @@ class MigrateRepoStorageTaskExecutor(
                 val iteratedCount = iterator.iteratedCount()
                 // 更新任务进度
                 if (iteratedCount % properties.updateProgressInterval == 0L) {
-                    logger.info(
+                    com.tencent.bkrepo.job.migrate.MigrateRepoStorageTaskExecutor.logger.info(
                         "migrate repo[${task.projectId}/${task.repoName}]," +
                                 " storage progress[$iteratedCount/${iterator.totalCount()}]"
                     )
-                    migrateRepoStorageTaskDao.updateMigratedCount(task.id!!, iteratedCount)
+                    migrateRepoStorageTaskDao.updateMigratedCount(task.id, iteratedCount)
                 }
             }
 
             val migrateElapsed = System.nanoTime() - startNanoTime
-            logger.info(
+            com.tencent.bkrepo.job.migrate.MigrateRepoStorageTaskExecutor.logger.info(
                 "Complete migrate old files, " +
                         "project: ${task.projectId}, repo: ${task.repoName}, key: ${task.dstStorageKey}, " +
                         "total: $totalCount, success: $successCount, failed: $failedCount, duration $migrateElapsed ns"
@@ -184,11 +190,11 @@ class MigrateRepoStorageTaskExecutor(
         // FileReferenceCleanupJob 会定期清理引用为0的文件数据，所以不需要删除文件数据
         // old引用计数 -1
         if (fileReferenceClient.decrement(sha256, srcStorageKey).data != true) {
-            logger.error("Failed to decrement file reference[$sha256].")
+            logger.error("Failed to decrement file reference[$sha256] on storage[$srcStorageKey].")
         }
         // new引用计数 +1
         if (fileReferenceClient.increment(sha256, dstStorageKey).data != true) {
-            logger.error("Failed to decrement file reference[$sha256].")
+            logger.error("Failed to increment file reference[$sha256] on storage[$dstStorageKey].")
         }
         return node.size
     }
@@ -202,14 +208,15 @@ class MigrateRepoStorageTaskExecutor(
                 try {
                     correctNode(context, node)
                 } catch (exception: Exception) {
-                    logger.error("Failed to check file[$${node.sha256}].", exception)
+                    saveMigrateFailedNode(node)
+                    com.tencent.bkrepo.job.migrate.MigrateRepoStorageTaskExecutor.logger.error("Failed to check file[$${node.sha256}].", exception)
                     correctFailedCount.incrementAndGet()
                 } finally {
                     correctTotalCount.incrementAndGet()
                 }
             }
             val elapsed = System.nanoTime() - startNanoTime
-            logger.info(
+            com.tencent.bkrepo.job.migrate.MigrateRepoStorageTaskExecutor.logger.info(
                 "Complete check new created files, " +
                         "projectId: ${task.projectId}, repoName: ${task.repoName}, key: ${task.dstStorageKey}, " +
                         "total: $correctTotalCount, correct: $correctSuccessCount, migrate: $correctMigrateCount, " +
@@ -264,6 +271,26 @@ class MigrateRepoStorageTaskExecutor(
             MigrationContext(task.copy(startDate = startDate, state = EXECUTING.name))
         } else {
             MigrationContext(task.copy(state = EXECUTING.name))
+        }
+    }
+
+    private fun saveMigrateFailedNode(node: Node) {
+        val now = LocalDateTime.now()
+        with(node) {
+            migrateFailedNodeDao.insert(
+                TMigrateFailedNode(
+                    id = null,
+                    createdDate = now,
+                    lastModifiedDate = now,
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    sha256 = sha256,
+                    md5 = md5,
+                    size = size,
+                    retryTimes = 0
+                )
+            )
         }
     }
 

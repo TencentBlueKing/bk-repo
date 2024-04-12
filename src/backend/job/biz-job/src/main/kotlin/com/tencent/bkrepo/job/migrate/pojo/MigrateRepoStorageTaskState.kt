@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.pojo
+package com.tencent.bkrepo.job.migrate.pojo
 
 /**
  * 制品数据迁移任务执行状态

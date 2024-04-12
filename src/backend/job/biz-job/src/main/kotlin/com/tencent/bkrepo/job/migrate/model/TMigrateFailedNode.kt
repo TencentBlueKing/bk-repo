@@ -25,14 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.service.migrate
+package com.tencent.bkrepo.job.migrate.model
 
-data class Node(
-    val id: String,
-    val projectId: String,
-    val repoName: String,
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode.Companion.FULL_PATH_IDX
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode.Companion.FULL_PATH_IDX_DEF
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
+
+@Document("migrate_failed_node")
+@CompoundIndexes(
+    CompoundIndex(name = FULL_PATH_IDX, def = FULL_PATH_IDX_DEF, unique = true)
+)
+data class TMigrateFailedNode(
+    var id: String? = null,
+    var createdDate: LocalDateTime,
+    var lastModifiedDate: LocalDateTime,
+
+    var projectId: String,
+    var repoName: String,
     val fullPath: String,
-    val size: Long,
     val sha256: String,
     val md5: String,
-)
+    val size: Long,
+    /**
+     * 迁移重试次数
+     */
+    val retryTimes: Int,
+) {
+    companion object {
+        const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
+        const val FULL_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'fullPath': 1}"
+    }
+}

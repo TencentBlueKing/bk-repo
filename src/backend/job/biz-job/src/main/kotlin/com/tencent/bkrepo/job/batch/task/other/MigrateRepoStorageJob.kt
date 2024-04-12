@@ -30,7 +30,7 @@ package com.tencent.bkrepo.job.batch.task.other
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.MigrateRepoStorageJobProperties
-import com.tencent.bkrepo.job.service.MigrateRepoStorageService
+import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 

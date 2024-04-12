@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.SHARDING_COUNT
-import com.tencent.bkrepo.job.service.MigrateRepoStorageService
+import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
 import java.time.LocalDateTime

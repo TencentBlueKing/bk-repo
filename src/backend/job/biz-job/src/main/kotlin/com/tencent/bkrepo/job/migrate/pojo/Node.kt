@@ -25,36 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.service
+package com.tencent.bkrepo.job.migrate.pojo
 
-import com.tencent.bkrepo.job.pojo.CreateMigrateRepoStorageTaskRequest
-import com.tencent.bkrepo.job.pojo.MigrateRepoStorageTask
-
-/**
- * 仓库存储迁移服务
- */
-interface MigrateRepoStorageService {
-    /**
-     * 迁移仓库存储
-     *
-     * @param request 迁移请求
-     */
-    fun createTask(request: CreateMigrateRepoStorageTaskRequest): MigrateRepoStorageTask
-
-    /**
-     * 尝试从队列中取出一个任务执行
-     *
-     * @return 无任务可执行时返回null，否则返回触发执行的任务
-     */
-    fun tryExecuteTask(): MigrateRepoStorageTask?
-
-    /**
-     * 是否存在指定仓库的迁移任务
-     *
-     * @param projectId 项目id
-     * @param repoName 仓库名
-     *
-     * @return 是否正在迁移
-     */
-    fun migrating(projectId: String, repoName: String): Boolean
-}
+data class Node(
+    val id: String,
+    val projectId: String,
+    val repoName: String,
+    val fullPath: String,
+    val size: Long,
+    val sha256: String,
+    val md5: String,
+)
