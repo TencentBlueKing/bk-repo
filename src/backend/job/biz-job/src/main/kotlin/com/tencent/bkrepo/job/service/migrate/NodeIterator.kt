@@ -42,25 +42,18 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 
 /**
  * 待迁移制品遍历工具
+ *
+ * @param task 迁移任务
+ * @param mongoTemplate mongoTemplate
+ * @param addition 是否正在遍历新增数据
  */
 class NodeIterator(
     task: MigrateRepoStorageTask,
     private val mongoTemplate: MongoTemplate,
+    private val addition: Boolean = false,
 ) : Iterator<Node> {
     private val collectionName = "node_${HashShardingUtils.shardingSequenceFor(task.projectId, SHARDING_COUNT)}"
     private val pageSize: Int = DEFAULT_PAGE_SIZE
-    private val query: Query = Query(
-        Criteria
-            .where(Node::projectId.name).isEqualTo(task.projectId)
-            .and(Node::repoName.name).isEqualTo(task.repoName)
-            .and(NodeDetail::folder.name).isEqualTo(false)
-            .and(NodeDetail::createdDate.name).lte(task.startDate!!)
-    ).with(Sort.by(Sort.Direction.ASC, ID))
-
-    /**
-     * 需要遍历的制品总数
-     */
-    private val total: Long = mongoTemplate.count(query, collectionName)
 
     /**
      * 待遍历的游标
@@ -73,9 +66,34 @@ class NodeIterator(
     private var page: Int = (task.migratedCount / pageSize.toLong()).toInt()
 
     /**
+     * 数据查询请求
+     */
+    private val query: Query
+
+    /**
+     * 需要遍历的制品总数
+     */
+    private val total: Long
+
+    /**
      * 当前正在遍历的数据
      */
-    private var data: List<Node> = nextPage()
+    private var data: List<Node>
+
+    init {
+        val criteria = Criteria
+            .where(Node::projectId.name).isEqualTo(task.projectId)
+            .and(Node::repoName.name).isEqualTo(task.repoName)
+            .and(NodeDetail::folder.name).isEqualTo(false)
+        if (addition) {
+            criteria.and(NodeDetail::createdDate.name).gt(task.startDate!!)
+        } else {
+            criteria.and(NodeDetail::createdDate.name).lte(task.startDate!!)
+        }
+        query = Query(criteria).with(Sort.by(Sort.Direction.ASC, ID))
+        total = mongoTemplate.count(query, collectionName)
+        data = nextPage()
+    }
 
     override fun hasNext() = cursor != data.size
 

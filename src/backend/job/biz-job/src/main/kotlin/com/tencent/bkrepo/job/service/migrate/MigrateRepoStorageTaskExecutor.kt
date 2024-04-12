@@ -176,12 +176,6 @@ class MigrateRepoStorageTaskExecutor(
         val dstCredentials = getStorageCredentials(dstStorageKey)
         val sha256 = node.sha256
 
-        // 源文件不存在时不执行迁移，忽略该文件
-        if (!storageService.exist(sha256, srcCredentials)) {
-            logger.error("File data [$sha256] not found in src[$srcStorageKey]")
-            return 0L
-        }
-
         // 跨bucket copy
         retry(RETRY_COUNT) {
             storageService.copy(node.sha256, srcCredentials, dstCredentials)
@@ -201,7 +195,52 @@ class MigrateRepoStorageTaskExecutor(
 
     private fun correct(task: MigrateRepoStorageTask) {
         val context = CorrectionContext(task)
-        TODO()
+        with(context) {
+            val startNanoTime = System.nanoTime()
+            val iterator = NodeIterator(task, mongoTemplate, true)
+            iterator.forEach { node ->
+                try {
+                    correctNode(context, node)
+                } catch (exception: Exception) {
+                    logger.error("Failed to check file[$${node.sha256}].", exception)
+                    correctFailedCount.incrementAndGet()
+                } finally {
+                    correctTotalCount.incrementAndGet()
+                }
+            }
+            val elapsed = System.nanoTime() - startNanoTime
+            logger.info(
+                "Complete check new created files, " +
+                        "projectId: ${task.projectId}, repoName: ${task.repoName}, key: ${task.dstStorageKey}, " +
+                        "total: $correctTotalCount, correct: $correctSuccessCount, migrate: $correctMigrateCount, " +
+                        "missing data: $dataMissingCount, failed: $correctFailedCount, duration $elapsed ns."
+            )
+        }
+    }
+
+    private fun correctNode(context: CorrectionContext, node: Node) {
+        val srcCredentials = getStorageCredentials(context.task.srcStorageKey)
+        val dstCredentials = getStorageCredentials(context.task.dstStorageKey)
+        val sha256 = node.sha256
+        // 文件已存在于目标存储则不处理
+        if (storageService.exist(sha256, dstCredentials)) {
+            return
+        }
+
+        if (fileReferenceClient.count(sha256, context.task.dstStorageKey).data!! > 0) {
+            /*
+              可能由于在上传制品时使用的旧存储，而创建Node时由于会重新查一遍仓库的存储凭据而使用新存储
+              这种情况会导致目标存储引用大于0但是文件不再目标存储，此时仅迁移存储不修改引用数
+             */
+            retry(RETRY_COUNT) { storageService.copy(sha256, srcCredentials, dstCredentials) }
+            context.correctSuccessCount.incrementAndGet()
+            logger.info("Success to correct file[$sha256].")
+        } else {
+            // dst data和reference都不存在，migrate
+            migrateNode(node, context.task.srcStorageKey, context.task.dstStorageKey)
+            context.correctMigrateCount.incrementAndGet()
+            logger.info("Success to migrate file[$sha256].")
+        }
     }
 
     /**

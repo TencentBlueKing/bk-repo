@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-class MigrateRepoStorageServiceImp(
+class MigrateRepoStorageServiceImpl(
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
 ) : MigrateRepoStorageService {
     override fun createTask(request: CreateMigrateRepoStorageTaskRequest): MigrateRepoStorageTask {
@@ -74,6 +74,6 @@ class MigrateRepoStorageServiceImp(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MigrateRepoStorageServiceImp::class.java)
+        private val logger = LoggerFactory.getLogger(MigrateRepoStorageServiceImpl::class.java)
     }
 }
