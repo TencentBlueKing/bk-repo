@@ -110,4 +110,9 @@ class RepositoryController(
         repositoryService.updateStorageCredentialsKey(projectId, repoName, storageCredentialsKey)
         return ResponseBuilder.success()
     }
+
+    override fun unsetOldStorageCredentialsKey(projectId: String, repoName: String): Response<Void> {
+        repositoryService.unsetOldStorageCredentialsKey(projectId, repoName)
+        return ResponseBuilder.success()
+    }
 }

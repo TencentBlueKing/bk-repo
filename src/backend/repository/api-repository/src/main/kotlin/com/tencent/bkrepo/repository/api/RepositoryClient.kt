@@ -144,4 +144,11 @@ interface RepositoryClient {
         @PathVariable repoName: String,
         @RequestParam storageCredentialsKey: String?
     ): Response<Void>
+
+    @ApiOperation("重置仓库旧存储")
+    @PostMapping("/unset/storage/{projectId}/{repoName}")
+    fun unsetOldStorageCredentialsKey(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+    ): Response<Void>
 }

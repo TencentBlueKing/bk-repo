@@ -156,6 +156,11 @@ interface RepositoryService {
     fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String?)
 
     /**
+     * 重置仓库旧存储字段
+     */
+    fun unsetOldStorageCredentialsKey(projectId: String, repoName: String)
+
+    /**
      * 根据请求[repoDeleteRequest]删除仓库
      *
      * 删除仓库前，需要保证仓库下的文件已经被删除

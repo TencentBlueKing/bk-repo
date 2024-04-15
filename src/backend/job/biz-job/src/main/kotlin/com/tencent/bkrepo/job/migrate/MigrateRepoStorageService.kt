@@ -30,11 +30,12 @@ package com.tencent.bkrepo.job.migrate
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
+import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.CreateMigrateRepoStorageTaskRequest
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
-import com.tencent.bkrepo.job.migrate.pojo.CreateMigrateRepoStorageTaskRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -44,7 +45,9 @@ import java.time.LocalDateTime
  */
 @Service
 class MigrateRepoStorageService(
+    private val migrateRepoStorageProperties: MigrateRepoStorageProperties,
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
+    private val executor: MigrateRepoStorageTaskExecutor,
 ) {
     /**
      * 迁移仓库存储
@@ -58,6 +61,10 @@ class MigrateRepoStorageService(
             }
             val now = LocalDateTime.now()
             val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
+            if (repo.storageCredentials?.key == dstCredentialsKey) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "src key cant be same as dst key")
+            }
+
             val task = migrateRepoStorageTaskDao.insert(
                 TMigrateRepoStorageTask(
                     id = null,
@@ -80,10 +87,17 @@ class MigrateRepoStorageService(
     /**
      * 尝试从队列中取出一个任务执行
      *
-     * @return 无任务可执行时返回null，否则返回触发执行的任务
+     * @return 未执行任务时返回null，否则返回触发执行的任务
      */
     fun tryExecuteTask(): MigrateRepoStorageTask? {
-        TODO()
+        val task = migrateRepoStorageTaskDao.executableTask()?.toDto()
+            ?: migrateRepoStorageTaskDao.correctableTask(migrateRepoStorageProperties.correctInterval)?.toDto()
+            ?: return null
+        return if (executor.execute(task)) {
+            task
+        } else {
+            null
+        }
     }
 
     /**

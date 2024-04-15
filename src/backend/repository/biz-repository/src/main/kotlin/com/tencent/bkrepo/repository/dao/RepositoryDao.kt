@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.repository.model.TRepository
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -85,5 +86,11 @@ class RepositoryDao : SimpleMongoDao<TRepository>() {
             criteria.and(TRepository::type).isEqualTo(repoType.toUpperCase())
         }
         return Query(criteria)
+    }
+
+    fun unsetOldCredentialsKey(projectId: String, repoName: String, repoType: String? = null) {
+        val query = buildSingleQuery(projectId, repoName, repoType)
+        val update = Update().unset(TRepository::oldCredentialsKey.name)
+        updateFirst(query, update)
     }
 }

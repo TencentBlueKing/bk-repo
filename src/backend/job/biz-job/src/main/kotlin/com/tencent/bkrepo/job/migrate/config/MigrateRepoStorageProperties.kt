@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
 
 @ConfigurationProperties("migrate")
 data class MigrateRepoStorageProperties(
@@ -43,4 +44,8 @@ data class MigrateRepoStorageProperties(
      * 更新进度间隔，指定每迁移多少个制品更新一次任务进度
      */
     val updateProgressInterval: Int = 10,
+    /**
+     * 从开始执行迁移任务到可执行数据矫正的时间间隔，用于等待传输中的制品完成传输，避免执行数据矫正时候还有数据在传输到旧存储中
+     */
+    val correctInterval: Duration = Duration.ofHours(4L)
 )

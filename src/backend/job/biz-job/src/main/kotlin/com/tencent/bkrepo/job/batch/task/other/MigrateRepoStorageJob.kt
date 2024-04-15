@@ -31,6 +31,7 @@ import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.MigrateRepoStorageJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 
@@ -41,6 +42,14 @@ class MigrateRepoStorageJob(
     private val migrateRepoStorageService: MigrateRepoStorageService
 ) : DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
-        migrateRepoStorageService.tryExecuteTask()
+        while (true) {
+            migrateRepoStorageService.tryExecuteTask()
+                ?.let { logger.info("execute migrate task[$it]") }
+                ?: break
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(MigrateRepoStorageJob::class.java)
     }
 }

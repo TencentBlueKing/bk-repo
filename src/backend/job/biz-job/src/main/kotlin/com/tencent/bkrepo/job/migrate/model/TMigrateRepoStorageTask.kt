@@ -35,7 +35,8 @@ import java.time.LocalDateTime
 
 @Document("migrate_repo_storage_task")
 @CompoundIndexes(
-    CompoundIndex(name = "projectId_repoName_idx", def = "{'projectId': 1, 'repoName': 1}", unique = true)
+    CompoundIndex(name = "projectId_repoName_idx", def = "{'projectId': 1, 'repoName': 1}", unique = true),
+    CompoundIndex(name = "state_idx", def = "{'state': 1}")
 )
 data class TMigrateRepoStorageTask(
     val id: String? = null,

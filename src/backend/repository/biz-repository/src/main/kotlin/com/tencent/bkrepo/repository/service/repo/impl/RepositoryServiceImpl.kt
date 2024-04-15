@@ -151,6 +151,10 @@ class RepositoryServiceImpl(
         }
     }
 
+    override fun unsetOldStorageCredentialsKey(projectId: String, repoName: String) {
+        repositoryDao.unsetOldCredentialsKey(projectId, repoName)
+    }
+
     override fun listRepo(projectId: String, name: String?, type: String?, display: Boolean?): List<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type, display)
         return repositoryDao.find(query).map { convertToInfo(it)!! }

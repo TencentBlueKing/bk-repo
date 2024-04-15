@@ -30,11 +30,15 @@ package com.tencent.bkrepo.job.migrate.dao
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTABLE_STATE
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.Duration
 import java.time.LocalDateTime
 
 @Repository
@@ -88,5 +92,18 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
             .set(TMigrateRepoStorageTask::totalCount.name, count)
             .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())
         return updateFirst(Query(criteria), update)
+    }
+
+    fun executableTask(): TMigrateRepoStorageTask? {
+        val criteria = TMigrateRepoStorageTask::state.inValues(EXECUTABLE_STATE)
+        return findOne(Query(criteria))
+    }
+
+    fun correctableTask(interval: Duration): TMigrateRepoStorageTask? {
+        // 需要等待一段时间，待所有传输中的制品传输结束后再执行correct
+        val beforeDateTime = LocalDateTime.now().minus(interval)
+        val criteria = TMigrateRepoStorageTask::state.isEqualTo(MigrateRepoStorageTaskState.MIGRATE_FINISHED.name)
+            .and(TMigrateRepoStorageTask::startDate.name).lte(beforeDateTime)
+        return findOne(Query(criteria))
     }
 }

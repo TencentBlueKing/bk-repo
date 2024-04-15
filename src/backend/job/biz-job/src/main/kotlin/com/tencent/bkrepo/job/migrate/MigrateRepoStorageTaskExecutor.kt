@@ -118,6 +118,30 @@ class MigrateRepoStorageTaskExecutor(
      */
     private val nodeLimit: Semaphore = Semaphore(properties.nodeConcurrency)
 
+    fun execute(task: MigrateRepoStorageTask): Boolean {
+        with(task) {
+            val executor = when (state) {
+                PENDING.name -> migrateExecutor
+                MIGRATE_FINISHED.name -> correctExecutor
+                CORRECT_FINISHED.name -> migrateFailedNodeExecutor
+                FINISHED.name -> null
+                else -> throw IllegalStateException("unsupported state[$state], task[$projectId/$repoName]")
+            }
+
+            if (executor != null && executor.activeCount == executor.maximumPoolSize) {
+                return false
+            }
+
+            return when (state) {
+                PENDING.name -> migrate(task)
+                MIGRATE_FINISHED.name -> correct(task)
+                CORRECT_FINISHED.name -> migrateFailedNode(task)
+                FINISHED.name -> finish(task)
+                else -> throw IllegalStateException("unsupported state[$state], task[$projectId/$repoName]")
+            }
+        }
+    }
+
     /**
      * 执行迁移任务
      *
@@ -125,7 +149,7 @@ class MigrateRepoStorageTaskExecutor(
      *
      * @return 是否开始执行
      */
-    fun migrate(task: MigrateRepoStorageTask): Boolean {
+    private fun migrate(task: MigrateRepoStorageTask): Boolean {
         val context = prepare(task) ?: return false
         return migrateExecutor.execute(context.task, PENDING.name, MIGRATE_FINISHED.name) {
             doMigrate(context)
@@ -139,7 +163,7 @@ class MigrateRepoStorageTaskExecutor(
      *
      * @return 是否开始执行
      */
-    fun correct(task: MigrateRepoStorageTask): Boolean {
+    private fun correct(task: MigrateRepoStorageTask): Boolean {
         require(task.state == MIGRATE_FINISHED.name)
         if (!updateState(task, CORRECTING.name)) {
             return false
@@ -157,7 +181,7 @@ class MigrateRepoStorageTaskExecutor(
      *
      * @return 是否开始执行
      */
-    fun migrateFailedNode(task: MigrateRepoStorageTask): Boolean {
+    private fun migrateFailedNode(task: MigrateRepoStorageTask): Boolean {
         require(task.state == CORRECT_FINISHED.name)
         if (!updateState(task, MIGRATING_FAILED_NODE.name)) {
             return false
@@ -201,6 +225,16 @@ class MigrateRepoStorageTaskExecutor(
                     "task[${projectId}/${repoName}] still contain migrate failed node that must migrate manually"
                 )
             }
+        }
+    }
+
+    private fun finish(task: MigrateRepoStorageTask): Boolean {
+        with(task) {
+            logger.info("migrate finished, task[$task]")
+            repositoryClient.unsetOldStorageCredentialsKey(projectId, repoName)
+            migrateRepoStorageTaskDao.removeById(id!!)
+            logger.info("clean migrate task[${projectId}/${repoName}] success")
+            return true
         }
     }
 

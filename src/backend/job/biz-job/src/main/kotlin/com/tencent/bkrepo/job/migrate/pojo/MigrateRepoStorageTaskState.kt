@@ -66,4 +66,11 @@ enum class MigrateRepoStorageTaskState {
      * 迁移结束
      */
     FINISHED;
+
+    companion object {
+        /**
+         * 待执行的任务状态，MIGRATE_FINISHED状态的任务需要等待一段时间待所有传输中的制品传输结束才能执行
+         */
+        val EXECUTABLE_STATE = listOf(PENDING.name, CORRECT_FINISHED.name, FINISHED.name)
+    }
 }
