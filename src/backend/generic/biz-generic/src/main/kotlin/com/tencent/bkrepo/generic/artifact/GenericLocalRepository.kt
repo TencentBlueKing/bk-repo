@@ -80,6 +80,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
+import com.tencent.bkrepo.generic.constant.HEADER_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
@@ -531,7 +532,8 @@ class GenericLocalRepository(
             }
             val blockAppend = HeaderUtils.getHeader(HEADER_BLOCK_APPEND)?.toBoolean() ?: false
             val range = HttpRangeUtils.resolveContentRange(HeaderUtils.getHeader(CONTENT_RANGE))
-            if (blockAppend && range != null) {
+            val totalSize = HeaderUtils.getHeader(HEADER_SIZE)?.toLongOrNull()
+            if (blockAppend && range != null && totalSize != null) {
                 storageService.storeBlockWithAppend(
                     uploadId,
                     sequence,
@@ -539,7 +541,8 @@ class GenericLocalRepository(
                     getArtifactFile(),
                     HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
                     storageCredentials,
-                    startPosition = range.start
+                    startPosition = range.start,
+                    totalLength = totalSize
                 )
             } else {
                 storageService.storeBlock(
