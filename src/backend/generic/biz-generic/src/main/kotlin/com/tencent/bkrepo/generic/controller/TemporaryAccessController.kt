@@ -271,7 +271,7 @@ class TemporaryAccessController(
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
         uploadService.completeBlockUpload(
             userId, uploadId, artifactInfo,
-            sha256, md5, size
+            sha256, md5, size, false
         )
         temporaryAccessService.decrementPermits(tokenInfo)
         return ResponseBuilder.success()
