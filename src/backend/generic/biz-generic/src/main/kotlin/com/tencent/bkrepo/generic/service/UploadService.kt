@@ -117,7 +117,7 @@ class UploadService(
         sha256: String? = null,
         md5: String? = null,
         size: Long? = null,
-        mergeFile: Boolean = true
+        mergeFileFlag: Boolean = true
     ) {
         val storageCredentials = getStorageCredentials(artifactInfo)
         checkUploadId(uploadId, storageCredentials)
@@ -130,7 +130,7 @@ class UploadService(
         } else {
             null
         }
-        val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials, fileInfo, mergeFile)
+        val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials, fileInfo, mergeFileFlag)
         // 保存节点
         nodeClient.createNode(
             NodeCreateRequest(

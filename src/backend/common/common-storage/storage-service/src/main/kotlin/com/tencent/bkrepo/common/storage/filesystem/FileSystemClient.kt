@@ -292,8 +292,8 @@ class FileSystemClient(val root: String) {
      *
      * @return 合并后的文件
      */
-    fun mergeFiles(fileList: List<File>, outputFile: File, mergeFile: Boolean): File {
-        if (outputFile.exists() && !mergeFile) return outputFile
+    fun mergeFiles(fileList: List<File>, outputFile: File, mergeFileFlag: Boolean): File {
+        if (outputFile.exists() && !mergeFileFlag) return outputFile
         if (!outputFile.exists()) {
             if (!outputFile.createNewFile()) {
                 throw IOException("Failed to create file [$outputFile]!")

@@ -126,6 +126,6 @@ interface FileBlockOperation {
      */
     fun mergeBlock(
         blockId: String, storageCredentials: StorageCredentials?,
-        fileInfo: FileInfo? = null, mergeFile: Boolean = true
+        fileInfo: FileInfo? = null, mergeFileFlag: Boolean = true
     ): FileInfo
 }
