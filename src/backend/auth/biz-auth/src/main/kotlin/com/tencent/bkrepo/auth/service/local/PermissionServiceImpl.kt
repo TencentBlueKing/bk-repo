@@ -305,7 +305,7 @@ open class PermissionServiceImpl constructor(
         val configPath = permHelper.getNoPermissionPathFromConfig(userId, user.roles, projectPermission)
         val personalPath = personalPathDao.listByProjectAndRepoAndExcludeUser(userId, projectId, repoName)
             .map { it.fullPath }
-        return (configPath + personalPath + listOf(defaultPersonalPrefix)).distinct()
+        return (configPath + personalPath).distinct()
     }
 
     fun getAllRepoByProjectId(projectId: String): List<String> {
