@@ -57,10 +57,10 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.Semaphore
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy
+import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent.TimeUnit
 
 /**
@@ -109,14 +109,9 @@ class MigrateRepoStorageTaskExecutor(
             TimeUnit.MILLISECONDS,
             SynchronousQueue(),
             ThreadFactoryBuilder().setNameFormat("migrate-node-%d").build(),
-            AbortPolicy()
+            CallerRunsPolicy()
         )
     }
-
-    /**
-     * 用于限制同时执行的node数量
-     */
-    private val nodeLimit: Semaphore = Semaphore(properties.nodeConcurrency)
 
     fun execute(task: MigrateRepoStorageTask): Boolean {
         with(task) {
@@ -411,23 +406,18 @@ class MigrateRepoStorageTaskExecutor(
         StorageCredentials,
         dstCredentials: StorageCredentials
     ) {
-        nodeLimit.acquire()
         val sha256 = node.sha256
-        try {
-            transferDataExecutor.execute {
-                retry(RETRY_COUNT) {
-                    val throughput = measureThroughput {
-                        storageService.copy(sha256, srcCredentials, dstCredentials)
-                        node.size
-                    }
-                    // 输出迁移速率
-                    logger.info(
-                        "Success to transfer file[$sha256], $throughput, task[${node.projectId}/${node.repoName}]"
-                    )
+        transferDataExecutor.execute {
+            retry(RETRY_COUNT) {
+                val throughput = measureThroughput {
+                    storageService.copy(sha256, srcCredentials, dstCredentials)
+                    node.size
                 }
+                // 输出迁移速率
+                logger.info(
+                    "Success to transfer file[$sha256], $throughput, task[${node.projectId}/${node.repoName}]"
+                )
             }
-        } finally {
-            nodeLimit.release()
         }
     }
 
