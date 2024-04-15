@@ -61,6 +61,8 @@ data class MigrateRepoStorageTask(
     val dstStorageKey: String? = null,
     @ApiModelProperty("迁移状态")
     val state: String,
+    @ApiModelProperty("当前正在执行该任务的实例instanceId")
+    val executingOn: String? = null,
 ) {
     companion object {
         fun TMigrateRepoStorageTask.toDto() = MigrateRepoStorageTask(
@@ -76,7 +78,8 @@ data class MigrateRepoStorageTask(
             repoName = repoName,
             srcStorageKey = srcStorageKey,
             dstStorageKey = dstStorageKey,
-            state = state
+            state = state,
+            executingOn = executingOn,
         )
     }
 }

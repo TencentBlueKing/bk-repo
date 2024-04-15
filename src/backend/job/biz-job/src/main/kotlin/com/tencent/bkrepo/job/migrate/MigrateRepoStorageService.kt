@@ -83,6 +83,12 @@ class MigrateRepoStorageService(
         }
     }
 
+    /**
+     * 回滚因进程重启或其他原因导致中断的任务状态
+     */
+    fun rollbackInterruptedTaskState() {
+        executor.rollbackInterruptedTaskState()
+    }
 
     /**
      * 尝试从队列中取出一个任务执行

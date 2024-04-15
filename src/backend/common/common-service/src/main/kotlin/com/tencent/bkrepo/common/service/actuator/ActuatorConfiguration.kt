@@ -75,6 +75,6 @@ class ActuatorConfiguration {
         private const val SERVICE_NAME = "\${service.prefix:}\${spring.application.name}\${service.suffix:}"
         private const val SERVER_HOST = "\${spring.cloud.client.ip-address}"
         private const val SERVER_PORT = "\${server.port}"
-        private const val SERVICE_INSTANCE_ID = "${SERVICE_NAME}-${SERVER_PORT}-${SERVER_HOST}"
+        const val SERVICE_INSTANCE_ID = "${SERVICE_NAME}-${SERVER_PORT}-${SERVER_HOST}"
     }
 }

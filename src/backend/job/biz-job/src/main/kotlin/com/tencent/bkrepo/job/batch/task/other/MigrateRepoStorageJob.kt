@@ -42,6 +42,7 @@ class MigrateRepoStorageJob(
     private val migrateRepoStorageService: MigrateRepoStorageService
 ) : DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
+        migrateRepoStorageService.rollbackInterruptedTaskState()
         while (true) {
             migrateRepoStorageService.tryExecuteTask()
                 ?.let { logger.info("execute migrate task[$it]") }

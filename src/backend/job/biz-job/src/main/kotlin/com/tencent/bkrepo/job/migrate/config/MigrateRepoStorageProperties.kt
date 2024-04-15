@@ -47,5 +47,10 @@ data class MigrateRepoStorageProperties(
     /**
      * 从开始执行迁移任务到可执行数据矫正的时间间隔，用于等待传输中的制品完成传输，避免执行数据矫正时候还有数据在传输到旧存储中
      */
-    val correctInterval: Duration = Duration.ofHours(4L)
+    val correctInterval: Duration = Duration.ofHours(4L),
+
+    /**
+     * 任务执行超时时间，超时后会检查任务是否被中断
+     */
+    val timeout: Duration = Duration.ofMinutes(10L),
 )

@@ -63,14 +63,24 @@ enum class MigrateRepoStorageTaskState {
     MIGRATING_FAILED_NODE,
 
     /**
-     * 迁移结束
+     * 完成失败node迁移
      */
-    FINISHED;
+    MIGRATE_FAILED_NODE_FINISHED,
+
+    /**
+     * 迁移结束中，清理完相关资源后将删除任务
+     */
+    FINISHING;
 
     companion object {
         /**
          * 待执行的任务状态，MIGRATE_FINISHED状态的任务需要等待一段时间待所有传输中的制品传输结束才能执行
          */
-        val EXECUTABLE_STATE = listOf(PENDING.name, CORRECT_FINISHED.name, FINISHED.name)
+        val EXECUTABLE_STATE = listOf(PENDING.name, CORRECT_FINISHED.name, MIGRATE_FAILED_NODE_FINISHED.name)
+
+        /**
+         * 执行中的任务状态
+         */
+        val EXECUTING_STATE = listOf(MIGRATING.name, CORRECTING.name, MIGRATING_FAILED_NODE.name, FINISHING.name)
     }
 }

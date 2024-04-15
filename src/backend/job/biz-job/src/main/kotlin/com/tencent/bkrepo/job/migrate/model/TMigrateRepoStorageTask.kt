@@ -79,5 +79,10 @@ data class TMigrateRepoStorageTask(
     /**
      * 迁移状态
      */
-    val state: String = MigrateRepoStorageTaskState.PENDING.name
+    val state: String = MigrateRepoStorageTaskState.PENDING.name,
+
+    /**
+     * 所在实例的instanceId
+     */
+    val executingOn: String? = null,
 )

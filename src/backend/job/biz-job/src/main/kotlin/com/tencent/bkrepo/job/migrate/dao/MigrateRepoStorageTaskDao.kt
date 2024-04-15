@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTABLE_STATE
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTING_STATE
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -67,7 +68,8 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         id: String,
         sourceState: String,
         targetState: String,
-        lastModifiedDate: LocalDateTime
+        lastModifiedDate: LocalDateTime,
+        instanceId: String? = null,
     ): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(id)
             .and(TMigrateRepoStorageTask::state.name).isEqualTo(sourceState)
@@ -75,6 +77,7 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         val update = Update()
             .set(TMigrateRepoStorageTask::state.name, targetState)
             .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())
+            .set(TMigrateRepoStorageTask::executingOn.name, instanceId)
         return updateFirst(Query(criteria), update)
     }
 
@@ -97,6 +100,17 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
     fun executableTask(): TMigrateRepoStorageTask? {
         val criteria = TMigrateRepoStorageTask::state.inValues(EXECUTABLE_STATE)
         return findOne(Query(criteria))
+    }
+
+    /**
+     * 获取在本实例中执行超时的任务列表
+     */
+    fun timeoutTasks(instanceId: String, timeout: Duration): List<TMigrateRepoStorageTask> {
+        val before = LocalDateTime.now().minus(timeout)
+        val criteria = TMigrateRepoStorageTask::state.inValues(EXECUTING_STATE)
+            .and(TMigrateRepoStorageTask::executingOn.name).isEqualTo(instanceId)
+            .and(TMigrateRepoStorageTask::lastModifiedDate.name).lt(before)
+        return find(Query(criteria))
     }
 
     fun correctableTask(interval: Duration): TMigrateRepoStorageTask? {
