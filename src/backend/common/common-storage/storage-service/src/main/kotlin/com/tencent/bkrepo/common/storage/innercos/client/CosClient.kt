@@ -72,7 +72,6 @@ import com.tencent.bkrepo.common.storage.innercos.response.CopyObjectResponse
 import com.tencent.bkrepo.common.storage.innercos.response.CosObject
 import com.tencent.bkrepo.common.storage.innercos.response.PutObjectResponse
 import com.tencent.bkrepo.common.storage.innercos.response.handler.CheckArchiveObjectExistResponseHandler
-import com.tencent.bkrepo.common.storage.innercos.response.handler.CheckObjectExistResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.CheckObjectRestoreResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.CompleteMultipartUploadResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.CopyObjectResponseHandler
@@ -250,8 +249,7 @@ class CosClient(val credentials: InnerCosCredentials) {
      * 文件不存在时，cos返回404
      */
     fun checkObjectExist(cosRequest: CheckObjectExistRequest): Boolean {
-        val httpRequest = buildHttpRequest(cosRequest)
-        return CosHttpClient.execute(httpRequest, CheckObjectExistResponseHandler())
+        return headObject(HeadObjectRequest(cosRequest.key)).eTag != null
     }
 
     /**
