@@ -180,7 +180,7 @@ abstract class FileBlockSupport : CleanupSupport() {
             logger.info("Success to append block [$blockId/$sequence] at position $startPosition")
         } catch (exception: Exception) {
             logger.error("Failed to store block [$blockId/$sequence] on [${credentials.key}]", exception)
-            tempClient.delete(blockId, "$sequence$BLOCK_SUFFIX")
+            tempClient.delete(blockId, "$sequence$BLOCK_APPEND_SUFFIX")
             tempClient.delete(blockId, "$sequence$SHA256_SUFFIX")
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
