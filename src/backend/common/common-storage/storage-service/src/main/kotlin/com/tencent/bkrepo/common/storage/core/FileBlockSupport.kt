@@ -177,7 +177,7 @@ abstract class FileBlockSupport : CleanupSupport() {
             tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digestInputStream, digestSize, overwrite)
             tempClient.store(blockId, "$sequence$BLOCK_APPEND_SUFFIX", digestInputStream, digestSize, overwrite)
             tempClient.appendAt(blockId, MERGED_FILENAME, blockInputStream, blockFileSize, startPosition)
-            logger.info("Success to store block [$blockId/$sequence]")
+            logger.info("Success to append block [$blockId/$sequence] at position $startPosition")
         } catch (exception: Exception) {
             logger.error("Failed to store block [$blockId/$sequence] on [${credentials.key}]", exception)
             tempClient.delete(blockId, "$sequence$BLOCK_SUFFIX")
