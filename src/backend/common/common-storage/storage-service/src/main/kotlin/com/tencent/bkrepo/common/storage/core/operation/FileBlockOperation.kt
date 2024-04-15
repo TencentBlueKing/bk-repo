@@ -117,7 +117,8 @@ interface FileBlockOperation {
         artifactFile: ArtifactFile,
         overwrite: Boolean,
         storageCredentials: StorageCredentials?,
-        startPosition: Long
+        startPosition: Long,
+        totalLength: Long
     )
 
     /**

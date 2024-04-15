@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
 import java.nio.channels.ReadableByteChannel
 import java.nio.file.FileAlreadyExistsException
@@ -228,16 +229,20 @@ class FileSystemClient(val root: String) {
      * @param start 写入开始位置, 当为空时追加到文件末尾
      * @return 当前文件总大小
      */
-    fun appendAt(dir: String, filename: String, inputStream: InputStream, size: Long, start: Long? = null) {
+    fun appendAt(
+        dir: String, filename: String, inputStream: InputStream,
+        size: Long, start: Long, totalLength: Long
+    ) {
         val filePath = Paths.get(this.root, dir, filename)
-        if (!Files.isRegularFile(filePath)) {
-            throw IllegalArgumentException("[$filePath] is not a regular file.")
-        }
         val file = filePath.toFile()
-        val startPosition = start ?: 0
+        if (!file.exists()) {
+            val raf = RandomAccessFile(file, "rw")
+            raf.setLength(totalLength)
+            raf.close()
+        }
         FileLockExecutor.executeInLock(inputStream) { input ->
             FileLockExecutor.executeInLock(file) { output ->
-                transfer(input, output, size, start == null, startPosition)
+                transfer(input, output, size, false, start)
             }
         }
     }
