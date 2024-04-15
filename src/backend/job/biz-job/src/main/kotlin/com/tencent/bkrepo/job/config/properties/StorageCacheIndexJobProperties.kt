@@ -31,7 +31,6 @@ package com.tencent.bkrepo.job.config.properties
  * 存储缓存索引相关任务配置
  */
 open class StorageCacheIndexJobProperties(
-    override var enabled: Boolean = false,
     /**
      * 忽略的存储凭据
      */

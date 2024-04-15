@@ -180,6 +180,10 @@ class NodeController(
         return ResponseBuilder.success(nodeService.listNode(artifactInfo, nodeListOption))
     }
 
+    override fun listPageNodeBySha256(sha256: String, nodeListOption: NodeListOption): Response<Page<NodeInfo>> {
+        return nodeService.listNodePageBySha256(sha256, nodeListOption).let { ResponseBuilder.success(it) }
+    }
+
     override fun getDeletedNodeDetail(
         projectId: String,
         repoName: String,

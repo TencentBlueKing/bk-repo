@@ -34,6 +34,8 @@ dependencies {
     implementation(project(":common:common-redis"))
     implementation(project(":common:common-query:query-mongo"))
     implementation(project(":common:common-mongo-reactive"))
+    implementation(project(":common:common-artifact:artifact-service"))
+    implementation(project(":common:common-artifact:artifact-cache"))
     implementation(project(":repository:api-repository"))
     implementation(project(":helm:api-helm"))
     implementation(project(":oci:api-oci"))

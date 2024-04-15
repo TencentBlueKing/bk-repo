@@ -118,7 +118,7 @@ class ScheduledTaskConfigurer(
         private val logger = LoggerFactory.getLogger(ScheduledTaskConfigurer::class.java)
 
         fun cleanScheduledTask() {
-            scheduledTaskSet.forEach { it.cancel() }
+            scheduledTaskSet.forEach { it.cancel(false) }
             scheduledTaskSet.clear()
             logger.info("Clean scheduled task")
         }

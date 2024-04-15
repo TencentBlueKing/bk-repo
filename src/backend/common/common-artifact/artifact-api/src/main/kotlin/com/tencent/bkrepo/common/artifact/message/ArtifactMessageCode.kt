@@ -69,6 +69,8 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     NODE_CREATE_TIMEOUT("artifact.node.create.timeout"),
     SIZE_CHECK_FAILED("artifact.size.check-failed"),
     NODE_LINK_FOLDER_UNSUPPORTED("artifact.node.link-folder-unsupported"),
+    ARTIFACT_PRELOAD_STRATEGY_NOT_FOUND("artifact.preload-strategy.not-found"),
+    ARTIFACT_PRELOAD_STRATEGY_EXCEED_MAX_COUNT("artifact.preload-strategy.exceed-max-count")
     ;
 
     override fun getBusinessCode() = ordinal + 1

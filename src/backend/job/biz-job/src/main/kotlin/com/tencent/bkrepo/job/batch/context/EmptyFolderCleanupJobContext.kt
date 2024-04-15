@@ -36,7 +36,7 @@ data class EmptyFolderCleanupJobContext(
     var folders: ConcurrentHashMap<String, FolderMetricsInfo> = ConcurrentHashMap(),
     // 总共删除的路径个数
     var totalDeletedNum: LongAdder = LongAdder(),
-    var activeProjects: Set<String> = emptySet()
+    var activeProjects: Map<String, Boolean> = emptyMap()
 ) : JobContext() {
 
     data class FolderMetricsInfo(

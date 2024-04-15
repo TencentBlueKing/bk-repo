@@ -76,6 +76,7 @@ export default {
         projectId: '',
         repoName: '',
         pageNumber: 1,
+        pageSize: 10,
         ip: '',
         version: '',
         startTime: '',
@@ -112,7 +113,7 @@ export default {
     },
     changeRouteQueryParams(pageNum) {
       let url = '?'
-      url = url + 'pageNumber=' + pageNum + '&pageSize=' + 20 +
+      url = url + 'pageNumber=' + pageNum + '&pageSize=' + this.clientQuery.pageSize +
         '&projectId=' + this.param.projectId +
         '&repoName=' + this.param.repoName +
         '&ip=' + this.param.ip +

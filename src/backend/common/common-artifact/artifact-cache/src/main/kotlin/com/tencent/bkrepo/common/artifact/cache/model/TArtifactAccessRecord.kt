@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,17 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.artifact.cache.model
 
-import com.tencent.bkrepo.common.artifact.constant.LOG
-import com.tencent.bkrepo.common.artifact.constant.REPORT
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
- * 项目空目录清理任务配置项
+ * 制品访问记录
  */
-open class ProjectEmptyFolderCleanupJobProperties(
-    // 特殊仓库统计每周统计一次
-    var specialRepos: List<String> = listOf(REPORT, LOG),
-    // 特殊仓库在每周第几天执行，默认周六
-    var specialDay: Int = 6,
-) : MongodbJobProperties()
+@Document("artifact_access_record")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "projectId_repoName_fullPath_sha256_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'sha256': 1}",
+        unique = true,
+        background = true
+    ),
+    CompoundIndex(name = "lastModifiedDate_idx", def = "{'lastModifiedDate': 1}", unique = true, background = true)
+)
+data class TArtifactAccessRecord(
+    val id: String? = null,
+    val createdDate: LocalDateTime,
+    val lastModifiedDate: LocalDateTime,
+
+    val projectId: String,
+    val repoName: String,
+    val fullPath: String,
+    val sha256: String,
+    /**
+     * 访问时cache miss次数
+     */
+    val cacheMissCount: Long,
+    /**
+     * 制品对应的node创建时间
+     */
+    val nodeCreateTime: LocalDateTime,
+    /**
+     * 制品访问时间序列
+     */
+    val accessTimeSequence: List<Long>
+)

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,22 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
-
-import com.tencent.bkrepo.common.artifact.constant.LOG
-import com.tencent.bkrepo.common.artifact.constant.REPORT
+package com.tencent.bkrepo.common.storage.core.cache.event
 
 /**
- * 活跃项目下目录大小以及文件个数统计
+ * 存储层缓存被删除时发出事件
  */
-open class ProjectNodeFolderStatJobProperties(
-    /**
-     * 可用于将部分表的统计数据使用redis缓存存储临时存储
-     * 避免使用内存进行缓存时导致使用内存过大
-     */
-    var redisCacheCollections: List<String> = emptyList(),
-    // 特殊仓库统计每周统计一次
-    var specialRepos: List<String> = listOf(REPORT, LOG),
-    // 特殊仓库在每周第几天执行，默认周六
-    var specialDay: Int = 6,
-) : MongodbJobProperties()
+data class CacheFileDeletedEvent(val data: CacheFileEventData)

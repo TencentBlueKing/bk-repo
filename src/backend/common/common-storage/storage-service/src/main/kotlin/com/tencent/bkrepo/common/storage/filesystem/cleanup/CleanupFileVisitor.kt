@@ -29,12 +29,16 @@ package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
 import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.api.constant.JOB_LOGGER_NAME
+import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventData
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import java.io.IOException
@@ -77,7 +81,7 @@ class CleanupFileVisitor(
                     result.cleanupFile += 1
                     result.cleanupSize += size
                     deleted = true
-                    onFileCleaned(filePath)
+                    onFileCleaned(filePath, size)
                     logger.info("Clean up file[$filePath], size[$size], summary: $result")
                 }
             }
@@ -87,12 +91,12 @@ class CleanupFileVisitor(
         } finally {
             result.totalFile += 1
             result.totalSize += size
-            if(!isTempFile && !deleted) {
+            if (!isTempFile && !deleted) {
                 // 仅统计非temp目录下未被清理的文件
                 result.rootDirNotDeletedFile += 1
                 result.rootDirNotDeletedSize += size
             }
-            if(!deleted) {
+            if (!deleted) {
                 onFileSurvived(filePath)
             }
         }
@@ -127,7 +131,7 @@ class CleanupFileVisitor(
                     Files.delete(dirPath)
                     logger.info("Clean up folder[$dirPath].")
                     result.cleanupFolder += 1
-                }  catch (ignore: DirectoryNotEmptyException) {
+                } catch (ignore: DirectoryNotEmptyException) {
                     logger.warn("Directory [$dirPath] is not empty!")
                 }
             }
@@ -179,13 +183,18 @@ class CleanupFileVisitor(
         return filePath.fileName.toString().startsWith(NFS_TEMP_FILE_PREFIX)
     }
 
-    private fun onFileCleaned(filePath: Path) {
+    private fun onFileCleaned(filePath: Path, size: Long) {
+        val fileName = filePath.fileName.toString()
         val event = FileDeletedEvent(
             credentials = credentials,
             rootPath = rootPath.toString(),
             fullPath = filePath.toString(),
-            sha256 = filePath.fileName.toString()
         )
+        if (rootPath == credentials.cache.path.toPath() && filePath.fileName.toString().length == SHA256_STR_LENGTH) {
+            val data = CacheFileEventData(credentials, fileName, filePath.toString(), size)
+            publisher.publishEvent(CacheFileDeletedEvent(data))
+        }
+
         publisher.publishEvent(event)
     }
 
@@ -194,7 +203,6 @@ class CleanupFileVisitor(
             credentials = credentials,
             rootPath = rootPath.toString(),
             fullPath = filePath.toString(),
-            sha256 = filePath.fileName.toString()
         )
         publisher.publishEvent(event)
     }

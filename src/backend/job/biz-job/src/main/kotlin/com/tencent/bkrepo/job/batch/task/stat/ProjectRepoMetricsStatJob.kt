@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch.task.stat
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.NAME
@@ -41,10 +42,11 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
-import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
+import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -57,7 +59,7 @@ import kotlin.reflect.KClass
  * 项目仓库指标统计任务
  */
 open class ProjectRepoMetricsStatJob(
-    properties: MongodbJobProperties,
+    val properties: ProjectRepoMetricsStatJobProperties,
     private val activeProjectService: ActiveProjectService,
     private val active: Boolean = true,
 ) : DefaultContextMongoDbJob<ProjectRepoMetricsStatJob.Repository>(properties) {
@@ -78,7 +80,7 @@ open class ProjectRepoMetricsStatJob(
 
     open fun statProjectCheck(
         projectId: String,
-        context: ProjectRepoMetricsStatJobContext
+        context: ProjectRepoMetricsStatJobContext,
     ): Boolean = true
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {
@@ -87,31 +89,48 @@ open class ProjectRepoMetricsStatJob(
             if (!statProjectCheck(projectId, context)) return
             val query = Query(
                 Criteria.where(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(name)
-                    .and(PATH).isEqualTo(PathUtils.ROOT).and(DELETED_DATE).isEqualTo(null)
+                    .and(PATH).isEqualTo(PathUtils.ROOT).and(DELETED_DATE).isEqualTo(null),
             )
             val nodeCollectionName = COLLECTION_NODE_PREFIX +
                 MongoShardingUtils.shardingSequence(projectId, SHARDING_COUNT)
-            val nodes = mongoTemplate.find(query, Node::class.java, nodeCollectionName)
-            if (nodes.isEmpty()) return
-            nodes.forEach {
-                val key = FolderUtils.buildCacheKey(collectionName = nodeCollectionName, projectId = projectId)
-                val metric = context.metrics.getOrPut(key) {
-                    ProjectRepoMetricsStatJobContext.ProjectMetrics(projectId)
-                }
-                if (!it.folder) {
-                    metric.nodeNum.increment()
-                } else {
-                    val nodeNum = it.nodeNum ?: 0
-                    metric.nodeNum.add(nodeNum)
-                }
-                metric.capSize.add(it.size)
-                metric.addRepoMetrics(row = it, credentialsKey = credentialsKey, repoType = type)
+            val key = FolderUtils.buildCacheKey(collectionName = nodeCollectionName, projectId = projectId)
+            val metric = context.metrics.getOrPut(key) {
+                ProjectRepoMetricsStatJobContext.ProjectMetrics(projectId)
+            }
+            val data = mongoTemplate.find<Node>(query, nodeCollectionName)
+            if (data.isEmpty()) return
+            data.forEach {
+                runRepoMetrics(metric, row, it)
+            }
+            // 减掉指定项目归档大小
+            if (properties.ignoreArchiveProjects.contains(projectId)) {
+                val (num, size) = getArchiveInfo(projectId, name, nodeCollectionName)
+                logger.info("Archive info: project $projectId, repo $name, num $num, size $size")
+                metric.repoMetrics[name]!!.num.add((-num))
+                metric.repoMetrics[name]!!.size.add(-size)
+                metric.nodeNum.add(-num)
+                metric.capSize.add(-size)
             }
         }
     }
 
+    private fun runRepoMetrics(
+        metric: ProjectRepoMetricsStatJobContext.ProjectMetrics,
+        repo: Repository,
+        node: Node,
+    ) {
+        if (!node.folder) {
+            metric.nodeNum.increment()
+        } else {
+            val nodeNum = node.nodeNum ?: 0
+            metric.nodeNum.add(nodeNum)
+        }
+        metric.capSize.add(node.size)
+        metric.addRepoMetrics(row = node, credentialsKey = repo.credentialsKey, repoType = repo.type)
+    }
+
     override fun getLockAtMostFor(): Duration {
-        return Duration.ofDays(7)
+        return Duration.ofDays(1)
     }
 
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
@@ -125,18 +144,22 @@ open class ProjectRepoMetricsStatJob(
         logger.info("stat [active: ${this.active}] project metrics done")
     }
 
-    override fun createJobContext(): ProjectRepoMetricsStatJobContext{
+    override fun createJobContext(): ProjectRepoMetricsStatJobContext {
+        val temp = mutableMapOf<String, Boolean>()
+        activeProjectService.getActiveProjects().forEach {
+            temp[it] = true
+        }
         return ProjectRepoMetricsStatJobContext(
             statDate = LocalDate.now().atStartOfDay(),
-            statProjects = activeProjectService.getActiveProjects()
+            statProjects = temp
         )
     }
 
-
     private fun storeMetrics(
         statDate: LocalDateTime,
-        projectMetric: TProjectMetrics
+        projectMetric: TProjectMetrics,
     ) {
+        if (projectMetric.capSize <=0 && projectMetric.nodeNum <=0) return
         // insert project repo metrics
         val criteria = Criteria.where(CREATED_DATE).isEqualTo(statDate).and(PROJECT).`is`(projectMetric.projectId)
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
@@ -149,7 +172,26 @@ open class ProjectRepoMetricsStatJob(
         val query = Query.query(Criteria.where(NAME).isEqualTo(projectId))
         val project = mongoTemplate.find(query, Project::class.java, COLLECTION_NAME_PROJECT)
             .firstOrNull() ?: return null
-        return project.metadata.firstOrNull() { it.key == "enabled" }?.value as Boolean?
+        return project.metadata.firstOrNull { it.key == "enabled" }?.value as Boolean?
+    }
+
+    /**
+     * 获取归档信息
+     * @return Pair(归档数,归档大小)
+     * */
+    private fun getArchiveInfo(projectId: String, repoName: String, collectionName: String): Pair<Long, Long> {
+        val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
+            .and(REPO).isEqualTo(repoName)
+            .and(ARCHIVED).isEqualTo(true)
+            .and(DELETED_DATE).isEqualTo(null)
+        var num = 0L
+        var size = 0L
+        val query = Query.query(criteria).cursorBatchSize(BATCH_SIZE)
+        mongoTemplate.find(query, Node::class.java, collectionName).forEach {
+            num++
+            size += it.size
+        }
+        return Pair(num, size)
     }
 
     data class Project(var name: String, var metadata: List<ProjectMetadata> = emptyList()) {
@@ -160,7 +202,6 @@ open class ProjectRepoMetricsStatJob(
             } ?: emptyList(),
         )
     }
-
 
     data class Repository(
         var projectId: String,
@@ -177,23 +218,24 @@ open class ProjectRepoMetricsStatJob(
     }
 
     data class Node(
+        val id: String,
         val projectId: String,
         val repoName: String,
         val folder: Boolean,
         val fullPath: String,
         val size: Long,
-        val nodeNum: Long? = null
+        val nodeNum: Long? = null,
     ) {
         constructor(map: Map<String, Any?>) : this(
+            map[Node::id.name].toString(),
             map[Node::projectId.name].toString(),
             map[Node::repoName.name].toString(),
             map[Node::folder.name] as Boolean,
             map[Node::fullPath.name].toString(),
             map[Node::size.name].toString().toLong(),
-            map[Node::nodeNum.name]?.toString()?.toLong()
+            map[Node::nodeNum.name]?.toString()?.toLong(),
         )
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectRepoMetricsStatJob::class.java)
@@ -201,5 +243,6 @@ open class ProjectRepoMetricsStatJob(
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
         private const val COLLECTION_NAME_PROJECT = "project"
+        private const val ARCHIVED = "archived"
     }
 }
