@@ -37,6 +37,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.auth.dao.repository.AccountRepository
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.PermissionHelper
 import com.tencent.bkrepo.auth.helper.UserHelper
+import com.tencent.bkrepo.auth.model.TPersonalPath
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
@@ -64,6 +66,7 @@ import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -73,13 +76,15 @@ open class PermissionServiceImpl constructor(
     private val account: AccountRepository,
     private val permissionDao: PermissionDao,
     private val userDao: UserDao,
+    private val personalPathDao: PersonalPathDao,
     val repoClient: RepositoryClient,
     val projectClient: ProjectClient
 ) : PermissionService {
 
-    private val permHelper by lazy { PermissionHelper(userDao, roleRepository, permissionDao) }
+    private val permHelper by lazy { PermissionHelper(userDao, roleRepository, permissionDao, personalPathDao) }
 
     private val userHelper by lazy { UserHelper(userDao, roleRepository) }
+
 
     override fun deletePermission(id: String): Boolean {
         logger.info("delete  permission  repoName: [$id]")
@@ -195,7 +200,7 @@ open class PermissionServiceImpl constructor(
                 // check repo read action
                 if (permHelper.checkRepoReadAction(request, roles)) return true
                 //  check project user
-                val isProjectUser = isUserLocalProjectUser(uid, request.projectId!!)
+                val isProjectUser = isUserLocalProjectUser(uid, projectId!!)
                 if (permHelper.checkProjectReadAction(request, isProjectUser)) return true
                 // check node action
                 if (needNodeCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
@@ -297,7 +302,10 @@ open class PermissionServiceImpl constructor(
             return emptyList()
         }
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
-        return permHelper.getNoPermissionPathFromConfig(userId, user.roles, projectPermission)
+        val configPath = permHelper.getNoPermissionPathFromConfig(userId, user.roles, projectPermission)
+        val personalPath = personalPathDao.listByProjectAndRepoAndExcludeUser(userId, projectId, repoName)
+            .map { it.fullPath }
+        return (configPath + personalPath).distinct()
     }
 
     fun getAllRepoByProjectId(projectId: String): List<String> {
@@ -348,6 +356,28 @@ open class PermissionServiceImpl constructor(
                 && permHelper.updatePermissionById(request.permissionId, TPermission::roles.name, request.roles)
     }
 
+    override fun getOrCreatePersonalPath(projectId: String, repoName: String): String {
+        val userId = SecurityUtils.getUserId()
+        val personalPath = "$defaultPersonalPrefix/$userId"
+        personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName) ?: run {
+            logger.info("personal path [$projectId, $repoName, $personalPath ] not exist , create")
+            val personalPathData =
+                TPersonalPath(
+                    projectId = projectId,
+                    repoName = repoName,
+                    userId = userId,
+                    fullPath = personalPath
+                )
+            try {
+                personalPathDao.insert(personalPathData)
+            } catch (exception: RuntimeException) {
+                logger.error("create personal path error [$projectId, $repoName, $personalPath ,$exception]")
+            }
+
+        }
+        return personalPath
+    }
+
     override fun getPathCheckConfig(): Boolean {
         return true
     }
@@ -376,5 +406,6 @@ open class PermissionServiceImpl constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(PermissionServiceImpl::class.java)
+        private const val defaultPersonalPrefix = "/Personal"
     }
 }

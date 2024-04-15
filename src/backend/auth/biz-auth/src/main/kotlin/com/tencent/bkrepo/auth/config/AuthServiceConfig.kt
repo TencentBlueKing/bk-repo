@@ -39,6 +39,7 @@ import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.condition.BkV3RbacAuthCondition
 import com.tencent.bkrepo.auth.condition.LocalAuthCondition
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
@@ -91,13 +92,15 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         accountRepository: AccountRepository,
         permissionDao: PermissionDao,
-        userDao: UserDao
+        userDao: UserDao,
+        personalPathDao: PersonalPathDao
     ): PermissionService {
         return PermissionServiceImpl(
             roleRepository,
             accountRepository,
             permissionDao,
             userDao,
+            personalPathDao,
             repositoryClient,
             projectClient
         )
@@ -107,6 +110,7 @@ class AuthServiceConfig {
     fun bkiamV3PermissionService(
         bkiamV3Service: BkIamV3Service,
         userDao: UserDao,
+        personalPathDao: PersonalPathDao,
         roleRepository: RoleRepository,
         accountRepository: AccountRepository,
         permissionDao: PermissionDao,
@@ -118,6 +122,7 @@ class AuthServiceConfig {
             roleRepository,
             accountRepository,
             permissionDao,
+            personalPathDao,
             repoClient,
             projectClient
         )
@@ -130,6 +135,7 @@ class AuthServiceConfig {
         accountRepository: AccountRepository,
         permissionDao: PermissionDao,
         userDao: UserDao,
+        personalPathDao: PersonalPathDao,
         bkAuthConfig: DevopsAuthConfig,
         bkAuthPipelineService: DevopsPipelineService,
         bkAuthProjectService: DevopsProjectService,
@@ -140,6 +146,7 @@ class AuthServiceConfig {
             accountRepository,
             permissionDao,
             userDao,
+            personalPathDao,
             bkAuthConfig,
             bkAuthPipelineService,
             bkAuthProjectService,

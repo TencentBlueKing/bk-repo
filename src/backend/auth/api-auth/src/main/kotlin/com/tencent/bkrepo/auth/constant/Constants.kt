@@ -117,6 +117,7 @@ const val AUTH_API_EXT_PERMISSION_PREFIX = "/api/ext-permission"
 const val AUTH_SERVICE_EXT_PERMISSION_PREFIX = "/service/ext-permission"
 
 
+const val AUTH_API_PERMISSION_PERSONAL_PATH = "/api/permission/personal/path"
 const val AUTH_API_PERMISSION_AVAILABLE = "/api/permission/permission/available"
 const val AUTH_API_PERMISSION_LIST_PREFIX = "/api/permission/list"
 const val AUTH_API_PERMISSION_CREATE_PREFIX = "/api/permission/create"
