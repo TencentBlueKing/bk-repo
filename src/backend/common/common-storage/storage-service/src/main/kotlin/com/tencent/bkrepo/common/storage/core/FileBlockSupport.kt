@@ -171,11 +171,9 @@ abstract class FileBlockSupport : CleanupSupport() {
         val tempClient = getTempClient(credentials)
         val blockInputStream = artifactFile.getInputStream()
         val blockFileSize = artifactFile.getSize()
-        val digestInputStream = digest.byteInputStream()
-        val digestSize = digest.length.toLong()
         try {
-            tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digestInputStream, digestSize, overwrite)
-            tempClient.store(blockId, "$sequence$BLOCK_APPEND_SUFFIX", digestInputStream, digestSize, overwrite)
+            tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digest.byteInputStream(), digest.length.toLong(), overwrite)
+            tempClient.store(blockId, "$sequence$BLOCK_APPEND_SUFFIX", digest.byteInputStream(), digest.length.toLong(), overwrite)
             tempClient.appendAt(blockId, MERGED_FILENAME, blockInputStream, blockFileSize, startPosition)
             logger.info("Success to append block [$blockId/$sequence] at position $startPosition")
         } catch (exception: Exception) {
