@@ -103,7 +103,7 @@ class UserJobController(
                 }
         }
         countDownLatch.await(timeoutInSecond.toLong(), TimeUnit.SECONDS)
-        return ResponseBuilder.success(results.size> 0 && !results.contains(false))
+        return ResponseBuilder.success(results.size == instances.size && !results.contains(false))
     }
 
     @PutMapping("/stop")
