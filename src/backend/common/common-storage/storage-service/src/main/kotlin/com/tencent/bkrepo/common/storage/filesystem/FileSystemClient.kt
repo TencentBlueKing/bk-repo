@@ -236,9 +236,10 @@ class FileSystemClient(val root: String) {
         val filePath = Paths.get(this.root, dir, filename)
         val file = filePath.toFile()
         if (!file.exists()) {
-            val raf = RandomAccessFile(file, "rw")
-            raf.setLength(totalLength)
-            raf.close()
+//            val raf = RandomAccessFile(file, "rw")
+//            raf.setLength(totalLength)
+//            raf.close()
+            filePath.createFile()
         }
         FileLockExecutor.executeInLock(inputStream) { input ->
             FileLockExecutor.executeInLock(file) { output ->
