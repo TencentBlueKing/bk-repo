@@ -164,7 +164,7 @@ abstract class FileBlockSupport : CleanupSupport() {
         artifactFile: ArtifactFile,
         overwrite: Boolean,
         storageCredentials: StorageCredentials?,
-        blockSize: Long
+        startPosition: Long
     ) {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
@@ -172,7 +172,6 @@ abstract class FileBlockSupport : CleanupSupport() {
         val blockFileSize = artifactFile.getSize()
         val digestInputStream = digest.byteInputStream()
         val digestSize = digest.length.toLong()
-        val startPosition = (sequence - 1) * blockSize
         try {
             tempClient.store(blockId, "$sequence$BLOCK_SUFFIX", digestInputStream, digestSize, overwrite)
             tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digestInputStream, digestSize, overwrite)

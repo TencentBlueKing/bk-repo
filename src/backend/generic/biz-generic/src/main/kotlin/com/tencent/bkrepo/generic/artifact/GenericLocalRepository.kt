@@ -62,6 +62,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -178,23 +179,27 @@ class GenericLocalRepository(
                 return
             }
             // TODO 如果分块上传也进行分发，此处需要修改
-            replicaTaskClient.create(ReplicaTaskCreateRequest(
-                name = context.artifactInfo.getArtifactFullPath() +
-                    "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
-                localProjectId = context.projectId,
-                replicaObjectType = ReplicaObjectType.PATH,
-                replicaTaskObjects = listOf(ReplicaObjectInfo(
-                    localRepoName = context.repoName,
-                    remoteProjectId = context.projectId,
-                    remoteRepoName = context.repoName,
-                    repoType = RepositoryType.GENERIC,
-                    packageConstraints = null,
-                    pathConstraints = listOf(PathConstraint(context.artifactInfo.getArtifactFullPath()))
-                )),
-                replicaType = ReplicaType.EDGE_PULL,
-                setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
-                remoteClusterIds = emptySet()
-            ))
+            replicaTaskClient.create(
+                ReplicaTaskCreateRequest(
+                    name = context.artifactInfo.getArtifactFullPath() +
+                        "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
+                    localProjectId = context.projectId,
+                    replicaObjectType = ReplicaObjectType.PATH,
+                    replicaTaskObjects = listOf(
+                        ReplicaObjectInfo(
+                            localRepoName = context.repoName,
+                            remoteProjectId = context.projectId,
+                            remoteRepoName = context.repoName,
+                            repoType = RepositoryType.GENERIC,
+                            packageConstraints = null,
+                            pathConstraints = listOf(PathConstraint(context.artifactInfo.getArtifactFullPath()))
+                        )
+                    ),
+                    replicaType = ReplicaType.EDGE_PULL,
+                    setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
+                    remoteClusterIds = emptySet()
+                )
+            )
         }
     }
 
@@ -362,7 +367,7 @@ class GenericLocalRepository(
             nodeDetailList.addAll(
                 records.filter { paths.contains(it.fullPath) }.map { NodeDetail(it) }
             )
-            pageNumber ++
+            pageNumber++
         } while (nodeDetailList.size < paths.size)
         return nodeDetailList
     }
@@ -394,6 +399,7 @@ class GenericLocalRepository(
         }
         return nodeDetailList
     }
+
     /**
      * 检查文件数量是否超过阈值
      * @throws ErrorCodeException 超过阈值抛出NODE_LIST_TOO_LARGE类型ErrorCodeException
@@ -524,7 +530,8 @@ class GenericLocalRepository(
                 throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
             }
             val blockAppend = HeaderUtils.getHeader(HEADER_BLOCK_APPEND)?.toBoolean() ?: false
-            if (blockAppend) {
+            val range = HttpRangeUtils.resolveContentRange(HeaderUtils.getHeader(CONTENT_RANGE))
+            if (blockAppend && range != null) {
                 storageService.storeBlockWithAppend(
                     uploadId,
                     sequence,
@@ -532,7 +539,7 @@ class GenericLocalRepository(
                     getArtifactFile(),
                     HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
                     storageCredentials,
-                    blockSize =
+                    startPosition = range.start
                 )
             } else {
                 storageService.storeBlock(
@@ -641,7 +648,8 @@ class GenericLocalRepository(
                 else -> {
                     logger.info(
                         "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
-                            "already appended, size of append file is $lengthOfAppendFile and uuid: $uuid")
+                            "already appended, size of append file is $lengthOfAppendFile and uuid: $uuid"
+                    )
                     Pair(lengthOfAppendFile, HttpStatus.ACCEPTED)
                 }
             }
