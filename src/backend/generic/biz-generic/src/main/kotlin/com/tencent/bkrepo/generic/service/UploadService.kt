@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -43,6 +45,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
@@ -91,7 +94,11 @@ class UploadService(
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
-            val uploadId = storageService.createBlockId(getStorageCredentials(artifactInfo))
+            val uploadId = try {
+                storageService.createBlockId(getStorageCredentials(artifactInfo))
+            } catch (ignore: StorageErrorException) {
+                throw BadRequestException(CommonMessageCode.SYSTEM_ERROR)
+            }
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
                 expireSeconds = TRANSACTION_EXPIRES
@@ -130,7 +137,11 @@ class UploadService(
         } else {
             null
         }
-        val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials, fileInfo, mergeFileFlag)
+        val mergedFileInfo = try {
+            storageService.mergeBlock(uploadId, storageCredentials, fileInfo, mergeFileFlag)
+        } catch (ignore: StorageErrorException) {
+            throw BadRequestException(GenericMessageCode.CHUNKED_ARTIFACT_BROKEN, sha256.orEmpty())
+        }
         // 保存节点
         nodeClient.createNode(
             NodeCreateRequest(
