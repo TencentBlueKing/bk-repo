@@ -291,6 +291,8 @@ class MigrateRepoStorageTaskExecutor(
                         }
                     } catch (exception: Exception) {
                         logger.error("$state task[$projectId/$repoName] failed.", exception)
+                    } finally {
+                        executingTasks[state]!!.remove(id)
                     }
                 }
             } catch (e: RejectedExecutionException) {
