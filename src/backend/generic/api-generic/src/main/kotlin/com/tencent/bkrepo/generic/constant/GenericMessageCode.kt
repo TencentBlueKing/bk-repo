@@ -42,7 +42,8 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     SIGN_FILE_NOT_FOUND(3, "generic.delta.sign-file.notfound"),
     NODE_DATA_HAS_CHANGED(4, "generic.node.data.has.changed"),
     DOWNLOAD_DIR_NOT_ALLOWED(5, "generic.download.dir.not-allowed"),
-    ARTIFACT_SEARCH_FAILED(6, "generic.artifact.query.failed");
+    ARTIFACT_SEARCH_FAILED(6, "generic.artifact.query.failed"),
+    CHUNKED_ARTIFACT_BROKEN(7, "generic.chunked.artifact.broken");
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key
