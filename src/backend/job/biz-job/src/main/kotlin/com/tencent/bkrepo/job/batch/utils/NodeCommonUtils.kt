@@ -75,7 +75,7 @@ class NodeCommonUtils(
                     .any {
                         // node正在迁移时无法判断是否存在于存储[storageCredentialsKey]上
                         if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
-                            throw IllegalStateException("repo[$${it.projectId}/${it.repoName}] was migrating")
+                            throw IllegalStateException("repo[${it.projectId}/${it.repoName}] was migrating")
                         }
                         val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
                         repo.storageCredentials?.key == storageCredentialsKey

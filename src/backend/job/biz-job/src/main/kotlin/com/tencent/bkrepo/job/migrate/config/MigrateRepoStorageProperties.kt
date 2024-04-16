@@ -33,10 +33,6 @@ import java.time.Duration
 @ConfigurationProperties("migrate")
 data class MigrateRepoStorageProperties(
     /**
-     * 存储允许同时执行的任务数量
-     */
-    val storageTaskConcurrency: Int = 1,
-    /**
      * 允许同时迁移的制品数量
      */
     val nodeConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
