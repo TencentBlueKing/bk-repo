@@ -426,6 +426,37 @@ class RepositoryServiceTest @Autowired constructor(
         assertNotNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test2"))
     }
 
+    @Test
+    @DisplayName("测试更新仓库存储凭据")
+    fun `test update repository credentials`() {
+        // create storage key
+        val newStorageKey = "$UT_STORAGE_CREDENTIALS_KEY-2"
+        val request = StorageCredentialsCreateRequest(
+            newStorageKey, storageCredentials.copy(key = newStorageKey), UT_REGION
+        )
+        storageCredentialService.create(UT_USER, request)
+
+        // create repo
+        var repo = repositoryService.createRepo(createRequest("test-update", UT_STORAGE_CREDENTIALS_KEY))
+        repo = repositoryService.getRepoDetail(repo.projectId, repo.name)!!
+        assertEquals(UT_STORAGE_CREDENTIALS_KEY, repo.storageCredentials?.key)
+
+        // update
+        repositoryService.updateStorageCredentialsKey(repo.projectId, repo.name, newStorageKey)
+        repo = repositoryService.getRepoDetail(repo.projectId, repo.name)!!
+        assertEquals(newStorageKey, repo.storageCredentials?.key)
+        assertEquals(UT_STORAGE_CREDENTIALS_KEY, repo.oldCredentialsKey)
+
+        // unset old
+        repositoryService.unsetOldStorageCredentialsKey(repo.projectId, repo.name)
+        repo = repositoryService.getRepoDetail(repo.projectId, repo.name)!!
+        assertEquals(null, repo.oldCredentialsKey)
+
+        // clean
+        repositoryService.deleteRepo(RepoDeleteRequest(repo.projectId, repo.name, operator = UT_USER))
+        storageCredentialService.delete(newStorageKey)
+    }
+
     private fun createRequest(name: String = UT_REPO_NAME, storageCredentialsKey: String? = null): RepoCreateRequest {
         val configuration = LocalConfiguration()
         val type = DownloadInterceptorType.WEB
