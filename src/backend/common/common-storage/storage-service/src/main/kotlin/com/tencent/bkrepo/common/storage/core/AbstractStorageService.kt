@@ -111,7 +111,11 @@ abstract class AbstractStorageService : CompressSupport() {
         }
     }
 
-    override fun copy(digest: String, fromCredentials: StorageCredentials?, toCredentials: StorageCredentials?) {
+    override fun copy(
+        digest: String,
+        fromCredentials: StorageCredentials?,
+        toCredentials: StorageCredentials?
+    ) {
         val path = fileLocator.locate(digest)
         val from = getCredentialsOrDefault(fromCredentials)
         val to = getCredentialsOrDefault(toCredentials)
