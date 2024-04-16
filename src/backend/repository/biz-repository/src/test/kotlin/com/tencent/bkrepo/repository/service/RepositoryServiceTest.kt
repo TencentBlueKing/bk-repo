@@ -246,6 +246,7 @@ class RepositoryServiceTest @Autowired constructor(
         repositoryService.createRepo(createRequest(repoName))
         val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, repoName, RepositoryType.GENERIC.name)!!
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, repository.storageCredentials!!.key!!)
+        projectService.updateProject(UT_PROJECT_ID, ProjectUpdateRequest(useDefaultCredentialsKey = true))
     }
 
     @Test

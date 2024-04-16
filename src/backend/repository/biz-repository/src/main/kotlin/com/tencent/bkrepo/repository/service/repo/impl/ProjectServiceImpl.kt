@@ -243,8 +243,13 @@ class ProjectServiceImpl(
         val update = Update().apply {
             request.displayName?.let { this.set(TProject::displayName.name, it) }
             request.description?.let { this.set(TProject::description.name, it) }
-            request.credentialsKey?.let { this.set(TProject::credentialsKey.name, it) }
         }
+        if (request.credentialsKey != null) {
+            update.set(TProject::credentialsKey.name, request.credentialsKey)
+        } else if (request.useDefaultCredentialsKey == true) {
+            update.set(TProject::credentialsKey.name, null)
+        }
+
         if (request.metadata.isNotEmpty()) {
             // 直接使用request的metadata，不存在于request的metadata会被删除，存在的会被覆盖
             update.set(TProject::metadata.name, request.metadata)

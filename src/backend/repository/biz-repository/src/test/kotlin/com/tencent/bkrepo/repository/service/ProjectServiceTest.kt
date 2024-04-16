@@ -213,6 +213,12 @@ class ProjectServiceTest @Autowired constructor(
 
         // 更新成功
         projectService.updateProject(UT_PROJECT_ID, ProjectUpdateRequest(credentialsKey = UT_STORAGE_CREDENTIALS_KEY))
+        Assertions.assertEquals(
+            UT_STORAGE_CREDENTIALS_KEY, projectService.getProjectInfo(UT_PROJECT_ID)!!.credentialsKey
+        )
+        // 取消项目存储凭据设置
+        projectService.updateProject(UT_PROJECT_ID, ProjectUpdateRequest(useDefaultCredentialsKey = true))
+        Assertions.assertEquals(null, projectService.getProjectInfo(UT_PROJECT_ID)!!.credentialsKey)
     }
 
     @Test
