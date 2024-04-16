@@ -860,5 +860,11 @@
     "mavenArtifactIdPlaceholder":"Please fill in the artifactId",
     "fileNamePlaceholder":"Please enter file name",
     "composerInputLabel":"Package Name",
-    "composerInputPlaceholder":"Please fill in the artifact package Name"
+    "composerInputPlaceholder":"Please fill in the artifact package Name",
+    "staffing":"Staffing",
+    "next": "Next",
+    "previous": "Previous",
+    "copyAll": "Copy All",
+    "clear": "Clear",
+    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space"
 }
