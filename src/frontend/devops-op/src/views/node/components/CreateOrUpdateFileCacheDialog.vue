@@ -39,13 +39,29 @@
       <el-form-item label="保存时间(天)" prop="days" :rules="[{ required: true, message: '保存天数不能为空'}]">
         <el-input-number v-model="fileCache.days" controls-position="right" :min="0" />
       </el-form-item>
-      <el-form-item label="路径前缀" prop="paths">
+      <el-form-item
+        v-for="(item,index) in fileCache.pathPrefix"
+        :key="index"
+        label="路径前缀"
+        prop="pathPrefix"
+      >
         <el-input
-          v-model="fileCache.paths"
-          placeholder="请输入数据按逗号分割（如/1,/2,/3）"
+          v-model="fileCache.pathPrefix[index]"
+          style="height: 40px ; width: 500px;"
+          placeholder="请输入数据（如/1）"
           min="0"
-          type="text"
           @input="updateInput()"
+        />
+        <i
+          class="el-icon-circle-close"
+          style="color: red"
+          @click.prevent="removeDomain(item)"
+        />
+        <i
+          v-if="index === fileCache.pathPrefix.length - 1"
+          class="el-icon-circle-plus-outline"
+          style="margin: 0px 20px"
+          @click.prevent="addDomain()"
         />
       </el-form-item>
     </el-form>
@@ -151,7 +167,10 @@ export default {
       this.$refs['form'].validate((valid) => {
         if (valid) {
           const fileCache = this.fileCache
-          fileCache.pathPrefix = fileCache.paths === '' ? ['/'] : fileCache.paths.split(',')
+          if (fileCache.pathPrefix.length === 1 && fileCache.pathPrefix[0].trim() === '') {
+            fileCache.pathPrefix = ['/']
+          }
+          fileCache.pathPrefix = Array.from(new Set(fileCache.pathPrefix)).filter(path => path.trim() !== '')
           // 根据是否为创建模式发起不同请求
           let reqPromise
           let msg
@@ -209,7 +228,7 @@ export default {
         projectId: '',
         repoName: '',
         paths: '',
-        pathPrefix: [],
+        pathPrefix: [''],
         days: '',
         size: ''
       }
@@ -228,6 +247,15 @@ export default {
         ) { return true }
       }
       return false
+    },
+    removeDomain(item) {
+      const index = this.fileCache.pathPrefix.indexOf(item)
+      if (index !== -1 && this.fileCache.pathPrefix.length !== 1) {
+        this.fileCache.pathPrefix.splice(index, 1)
+      }
+    },
+    addDomain() {
+      this.fileCache.pathPrefix.push('')
     }
   }
 }</script>
