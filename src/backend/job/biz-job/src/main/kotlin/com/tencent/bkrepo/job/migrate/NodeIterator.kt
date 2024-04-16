@@ -29,9 +29,10 @@ package com.tencent.bkrepo.job.migrate
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.springframework.data.domain.PageRequest
@@ -46,25 +47,25 @@ import org.springframework.data.mongodb.core.query.isEqualTo
  *
  * @param task 迁移任务
  * @param mongoTemplate mongoTemplate
- * @param addition 是否正在遍历新增数据
+ * @param collectionName 遍历的collection
+ * @param pageSize 分页大小
  */
 class NodeIterator(
     task: MigrateRepoStorageTask,
     private val mongoTemplate: MongoTemplate,
-    private val addition: Boolean = false,
-) : Iterator<Node> {
-    private val collectionName = "node_${HashShardingUtils.shardingSequenceFor(task.projectId, SHARDING_COUNT)}"
+    private val collectionName: String = "node_${shardingSequenceFor(task.projectId, SHARDING_COUNT)}",
     private val pageSize: Int = DEFAULT_PAGE_SIZE
+) : Iterator<Node> {
 
     /**
      * 待遍历的游标
      */
-    private var cursor: Int = (task.migratedCount % pageSize.toLong()).toInt()
+    private var cursor: Int
 
     /**
      * 待查询的页码
      */
-    private var page: Int = (task.migratedCount / pageSize.toLong()).toInt()
+    private var page: Int
 
     /**
      * 数据查询请求
@@ -86,10 +87,14 @@ class NodeIterator(
             .where(Node::projectId.name).isEqualTo(task.projectId)
             .and(Node::repoName.name).isEqualTo(task.repoName)
             .and(NodeDetail::folder.name).isEqualTo(false)
-        if (addition) {
+        if (task.state == MigrateRepoStorageTaskState.CORRECTING.name) {
             criteria.and(NodeDetail::createdDate.name).gt(task.startDate!!)
+            cursor = 0
+            page = 0
         } else {
             criteria.and(NodeDetail::createdDate.name).lte(task.startDate!!)
+            cursor = (task.migratedCount % pageSize.toLong()).toInt()
+            page = (task.migratedCount / pageSize.toLong()).toInt()
         }
         query = Query(criteria).with(Sort.by(Sort.Direction.ASC, ID))
         total = mongoTemplate.count(query, collectionName)
@@ -105,7 +110,7 @@ class NodeIterator(
         val node = data[cursor++]
 
         // 遍历到最后一个数据时尝试拉取新列表
-        if (cursor == data.size) {
+        if (cursor == pageSize) {
             data = nextPage()
             cursor = 0
         }
@@ -116,7 +121,7 @@ class NodeIterator(
     /**
      * 已经遍历的数量
      */
-    fun iteratedCount() = page.toLong() * pageSize.toLong() + cursor.toLong()
+    fun iteratedCount() = (page.toLong() - 1) * pageSize.toLong() + cursor.toLong()
 
     /**
      * 待迁移制品总数

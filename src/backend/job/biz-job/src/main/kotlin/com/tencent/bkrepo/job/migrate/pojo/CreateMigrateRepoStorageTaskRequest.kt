@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.pojo
 
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -39,5 +40,5 @@ data class CreateMigrateRepoStorageTaskRequest(
     @ApiModelProperty("目标存储key，为null时表示默认存储")
     val dstCredentialsKey: String?,
     @ApiModelProperty("操作用户")
-    val operator: String,
+    val operator: String = SYSTEM_USER,
 )

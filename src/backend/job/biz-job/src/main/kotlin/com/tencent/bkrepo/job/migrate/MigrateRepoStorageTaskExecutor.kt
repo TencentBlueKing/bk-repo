@@ -369,7 +369,7 @@ class MigrateRepoStorageTaskExecutor(
     private fun doCorrect(context: CorrectionContext) {
         with(context) {
             val startNanoTime = System.nanoTime()
-            val iterator = NodeIterator(task, mongoTemplate, true)
+            val iterator = NodeIterator(task, mongoTemplate)
             iterator.forEach { node ->
                 try {
                     correctNode(context, node)
