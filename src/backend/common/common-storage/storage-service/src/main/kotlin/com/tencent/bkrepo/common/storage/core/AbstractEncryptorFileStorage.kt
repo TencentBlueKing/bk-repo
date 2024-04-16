@@ -123,7 +123,7 @@ abstract class AbstractEncryptorFileStorage<Credentials : StorageCredentials, Cl
         path: String,
         name: String,
         fromCredentials: StorageCredentials,
-        toCredentials: StorageCredentials,
+        toCredentials: StorageCredentials
     ) {
         if (!fromCredentials.encrypt.enabled) {
             return super.copy(path, name, fromCredentials, toCredentials)

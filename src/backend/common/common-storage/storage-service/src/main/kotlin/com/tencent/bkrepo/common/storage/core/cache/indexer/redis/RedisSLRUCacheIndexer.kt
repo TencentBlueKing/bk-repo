@@ -45,12 +45,13 @@ class RedisSLRUCacheIndexer(
     cacheName: String,
     cacheDir: Path,
     fileLocator: FileLocator,
+    maxEvictCount: Int,
     redisTemplate: RedisTemplate<String, String>,
     private val capacity: Int = 0,
     private val listeners: MutableList<EldestRemovedListener<String, Long>> = ArrayList(),
     hashTag: String? = null,
     evict: Boolean = true,
-) : RedisCacheIndexer(cacheName, cacheDir, fileLocator, redisTemplate, hashTag, evict) {
+) : RedisCacheIndexer(cacheName, cacheDir, fileLocator, maxEvictCount, redisTemplate, hashTag, evict) {
 
     /**
      * 记录当前缓存的总权重

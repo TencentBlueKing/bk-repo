@@ -27,19 +27,14 @@
 
 package com.tencent.bkrepo.job.batch.context
 
-import com.tencent.bkrepo.job.MEMORY_CACHE_TYPE
 import com.tencent.bkrepo.job.batch.base.JobContext
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.LongAdder
 
 class NodeFolderJobContext(
-    // 缓存类型redis和内存：数据量级大的建议使用redis
-    var cacheType: String = MEMORY_CACHE_TYPE,
-    // 表对应项目记录： 主要用于redis缓存生成key使用
-    var projectMap: ConcurrentHashMap<String, MutableSet<String>> = ConcurrentHashMap(),
     // 用于内存缓存下存储目录统计信息
     var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap(),
-    var activeProjects: Set<String> = emptySet()
+    var activeProjects: Map<String, Boolean> = emptyMap()
 ) : JobContext() {
 
     data class FolderMetrics(

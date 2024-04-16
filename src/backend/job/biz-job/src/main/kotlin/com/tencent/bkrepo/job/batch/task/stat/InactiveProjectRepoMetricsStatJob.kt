@@ -47,7 +47,6 @@ class InactiveProjectRepoMetricsStatJob(
         projectId: String,
         context: ProjectRepoMetricsStatJobContext
     ): Boolean {
-        if (!context.statProjects.contains(projectId)) return true
-        return false
+        return context.statProjects[projectId] == null
     }
 }

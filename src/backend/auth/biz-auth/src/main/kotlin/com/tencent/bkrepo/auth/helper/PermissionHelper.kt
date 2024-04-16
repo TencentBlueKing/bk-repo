@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.helper
 import com.tencent.bkrepo.auth.constant.AUTH_ADMIN
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.account.ScopeRule
@@ -58,7 +59,8 @@ import java.time.LocalDateTime
 class PermissionHelper constructor(
     private val userDao: UserDao,
     private val roleRepository: RoleRepository,
-    private val permissionDao: PermissionDao
+    private val permissionDao: PermissionDao,
+    private val personalPathDao: PersonalPathDao
 ) {
     // check user is existed
     private fun checkUserExistBatch(idList: List<String>) {
@@ -337,7 +339,7 @@ class PermissionHelper constructor(
     fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
         with(request) {
             var roles = userRoles
-            if (resourceType != NODE.name) return false
+            if (resourceType != NODE.name || path == null) return false
             if (roles == null) {
                 val user = userDao.findFirstByUserId(uid) ?: run {
                     throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -355,8 +357,23 @@ class PermissionHelper constructor(
             noPermissionResult.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
             }
+            val personalPathCheck = checkPersonalPath(uid, projectId!!, repoName!!, path!!)
+            if (personalPathCheck != null) return personalPathCheck
         }
         return isProjectUser
+    }
+
+    private fun checkPersonalPath(userId: String, projectId: String, repoName: String, path: String): Boolean? {
+        // check personal path
+        val personalPath = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
+        if (personalPath != null && path.startsWith(personalPath.fullPath)) return true
+
+        // check personal exclude path
+        val personalExcludePath = personalPathDao.listByProjectAndRepoAndExcludeUser(userId, projectId, repoName)
+        personalExcludePath.forEach {
+            if (path.startsWith(it.fullPath)) return false
+        }
+        return null
     }
 
     fun isUserLocalProjectAdmin(userId: String, projectId: String?): Boolean {
@@ -365,9 +382,7 @@ class PermissionHelper constructor(
         roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
             roleIdArray.add(it.id!!)
         }
-        userDao.findFirstByUserIdAndRolesIn(userId, roleIdArray) ?: run {
-            return false
-        }
+        userDao.findFirstByUserIdAndRolesIn(userId, roleIdArray) ?: return false
         return true
     }
 

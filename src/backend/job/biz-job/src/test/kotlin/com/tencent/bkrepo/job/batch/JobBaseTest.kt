@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.job.config.JobConfig
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
 import org.springframework.context.annotation.ComponentScan
@@ -45,6 +46,7 @@ import org.springframework.test.context.TestPropertySource
     JobConfig::class,
     TaskSchedulingAutoConfiguration::class,
     ClusterProperties::class,
+    RedisAutoConfiguration::class,
     StorageAutoConfiguration::class,
 )
 @TestPropertySource(

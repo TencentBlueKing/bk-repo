@@ -32,9 +32,9 @@ import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageType
-import com.tencent.bkrepo.job.batch.task.other.FileSynchronizeJob
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.task.other.FileSynchronizeJob
 import com.tencent.bkrepo.job.config.properties.FileSystemStorageStatJobProperties
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory

@@ -27,12 +27,18 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.config.properties.ActiveProjectNodeFolderStatJobProperties
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 /**
  * 活跃项目下目录大小以及文件个数统计
@@ -40,16 +46,64 @@ import org.springframework.stereotype.Component
 @Component
 @EnableConfigurationProperties(ActiveProjectNodeFolderStatJobProperties::class)
 class ActiveProjectNodeFolderStatJob(
-    private val properties: ActiveProjectNodeFolderStatJobProperties,
-    private val redisTemplate: RedisTemplate<String, String>,
-    private val activeProjectService: ActiveProjectService
-): NodeFolderStatJob(properties, redisTemplate, activeProjectService) {
+    properties: ActiveProjectNodeFolderStatJobProperties,
+    executor: ThreadPoolTaskExecutor,
+    private val activeProjectService: ActiveProjectService,
+    private val mongoTemplate: MongoTemplate,
+    private val nodeFolderStat: NodeFolderStat,
+) : StatBaseJob(mongoTemplate, properties, executor) {
 
-    override fun statProjectCheck(
-        projectId: String,
-        context: NodeFolderJobContext
-    ): Boolean {
-        if (context.activeProjects.contains(projectId)) return true
-        return false
+    override fun doStart0(jobContext: JobContext) {
+        logger.info("start to do folder stat job for active projects")
+        require(jobContext is NodeFolderJobContext)
+        val extraCriteria = getExtraCriteria()
+        doStatStart(jobContext, jobContext.activeProjects.keys, extraCriteria)
+        logger.info("folder stat job for active projects finished")
+    }
+
+    fun getExtraCriteria(): Criteria {
+        return Criteria().and(FOLDER).`is`(false)
+    }
+
+    override fun runRow(row: StatNode, context: JobContext) {
+        require(context is NodeFolderJobContext)
+        val node = nodeFolderStat.buildNode(
+            id = row.id,
+            projectId = row.projectId,
+            repoName = row.repoName,
+            path = row.path,
+            fullPath = row.fullPath,
+            folder = row.folder,
+            size = row.size
+        )
+        nodeFolderStat.collectNode(node, context)
+    }
+
+    override fun createJobContext(): NodeFolderJobContext {
+        val temp = mutableMapOf<String, Boolean>()
+        activeProjectService.getActiveProjects().forEach {
+            temp[it] = true
+        }
+        return NodeFolderJobContext(
+            activeProjects = temp
+        )
+    }
+
+    /**
+     * 将memory缓存中属于projectId下的记录写入DB中
+     */
+    override fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {
+        require(context is NodeFolderJobContext)
+        logger.info("store memory cache to db with projectId $projectId")
+        nodeFolderStat.storeMemoryCacheToDB(context, collection, projectId)
+    }
+
+    /**
+     * 最长加锁时间
+     */
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ActiveProjectNodeFolderStatJob::class.java)
     }
 }

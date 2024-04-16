@@ -66,6 +66,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_UPDATE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_DELETE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_CREATE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_EDIT_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_PERSONAL_PATH
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
@@ -288,7 +289,8 @@ class AuthInterceptor(
             AUTH_API_USER_UPDATE_PREFIX,
             AUTH_API_USER_DELETE_PREFIX,
             AUTH_API_USER_ASSET_USER_GROUP_PREFIX,
-            AUTH_API_USER_BKIAMV3_PREFIX
+            AUTH_API_USER_BKIAMV3_PREFIX,
+            AUTH_API_PERMISSION_PERSONAL_PATH
         )
 
         private val anonymousAccessApiSet = setOf(

@@ -135,13 +135,13 @@ interface StorageCacheIndexer<K, V> {
     fun sync(): Int
 
     /**
-     * 执行缓存淘汰，单次淘汰的缓存条目达到限制[MAX_EVICT_COUNT]时候将会直接返回
+     * 执行缓存淘汰，单次淘汰的缓存条目达到限制[maxCount]时候将会直接返回
      *
      * @param maxCount 最大允许淘汰的数量
      *
      * @return 淘汰的数量
      */
-    fun evict(maxCount: Int = MAX_EVICT_COUNT): Int
+    fun evict(maxCount: Int): Int
 
     /**
      * 缓存是否已满
@@ -164,11 +164,4 @@ interface StorageCacheIndexer<K, V> {
      * @return 所有缓存淘汰监听器
      */
     fun getEldestRemovedListeners(): List<EldestRemovedListener<K, V>>
-
-    companion object {
-        /**
-         * 一次淘汰中最多淘汰的缓存条目数
-         */
-        const val MAX_EVICT_COUNT = 1000
-    }
 }

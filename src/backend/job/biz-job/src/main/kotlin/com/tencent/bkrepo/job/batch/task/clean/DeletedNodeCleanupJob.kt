@@ -156,10 +156,13 @@ class DeletedNodeCleanupJob(
         val query = Query.query(Criteria.where(ID).isEqualTo(node.id))
         var result: DeleteResult? = null
         try {
-            result = mongoTemplate.remove(query, collectionName)
             if (node.sha256.isNullOrEmpty() || node.sha256 == FAKE_SHA256) return
             val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
-            decrementFileReferences(node.sha256, credentialsKey)
+            if (!decrementFileReferences(node.sha256, credentialsKey)) {
+                logger.warn("Clean up node fail collection[$collectionName], node[$node]")
+                return
+            }
+            result = mongoTemplate.remove(query, collectionName)
         } catch (ignored: Exception) {
             logger.error("Clean up deleted node[$node] failed in collection[$collectionName].", ignored)
         }
@@ -167,7 +170,7 @@ class DeletedNodeCleanupJob(
         context.fileCount.addAndGet(result?.deletedCount ?: 0)
     }
 
-    private fun decrementFileReferences(sha256: String, credentialsKey: String?) {
+    private fun decrementFileReferences(sha256: String, credentialsKey: String?): Boolean {
         val collectionName = COLLECTION_FILE_REFERENCE + MongoShardingUtils.shardingSequence(sha256, SHARDING_COUNT)
         val criteria = buildCriteria(sha256, credentialsKey)
         criteria.and(FileReference::count.name).gt(0)
@@ -177,19 +180,20 @@ class DeletedNodeCleanupJob(
 
         if (result.modifiedCount == 1L) {
             logger.info("Decrement references of file [$sha256] on credentialsKey [$credentialsKey].")
-            return
+            return true
         }
 
         val newQuery = Query(buildCriteria(sha256, credentialsKey))
         mongoTemplate.findOne<FileReference>(newQuery, collectionName) ?: run {
             logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]")
-            return
+            return false
         }
 
         logger.error(
             "Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: " +
-                "reference count is 0."
+                    "reference count is 0."
         )
+        return false
     }
 
     private fun buildCriteria(
@@ -208,10 +212,10 @@ class DeletedNodeCleanupJob(
     private val credentialsKeyCache: LoadingCache<RepositoryId, Optional<String>> = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterWrite(30, TimeUnit.MINUTES)
-        .build(CacheLoader.from { key ->  Optional.ofNullable(loadcredentialsKey(key!!)) })
+        .build(CacheLoader.from { key -> Optional.ofNullable(loadCredentialsKey(key!!)) })
 
 
-    private fun loadcredentialsKey(repositoryId: RepositoryId): String? {
+    private fun loadCredentialsKey(repositoryId: RepositoryId): String? {
         val repo = repositoryClient.getRepoInfo(repositoryId.projectId, repositoryId.repoName).data
             ?: throw RepoNotFoundException("${repositoryId.projectId}/${repositoryId.repoName}")
         return repo.storageCredentialsKey
