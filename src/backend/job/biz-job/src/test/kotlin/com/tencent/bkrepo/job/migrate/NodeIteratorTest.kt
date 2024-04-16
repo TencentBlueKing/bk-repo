@@ -33,10 +33,9 @@ import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_SHA256
-import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
-import com.tencent.bkrepo.job.UT_USER
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildTask
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
@@ -71,7 +70,7 @@ class NodeIteratorTest @Autowired constructor(
     @Test
     @DisplayName("测试遍历待迁移制品")
     fun testMigratingIterate() {
-        val task = createTask(startDate)
+        val task = buildTask(startDate)
         testIterate(task, beforeStartDateCount)
         // continue migrate
         val continueTask = task.copy(migratedCount = migratedCount)
@@ -81,7 +80,7 @@ class NodeIteratorTest @Autowired constructor(
     @Test
     @DisplayName("测试遍历迁移过程中新增的制品")
     fun testCorrectingIterate() {
-        val task = createTask(startDate).copy(state = MigrateRepoStorageTaskState.CORRECTING.name)
+        val task = buildTask(startDate).copy(state = MigrateRepoStorageTaskState.CORRECTING.name)
         testIterate(task, afterStartDateCount)
         // continue correct，correct不支持从上次断点继续，会从头全量遍历
         val continueTask = task.copy(migratedCount = migratedCount)
@@ -97,22 +96,6 @@ class NodeIteratorTest @Autowired constructor(
             assertEquals(++count, iterator.iteratedCount())
         }
         assertEquals(totalCount, count)
-    }
-
-    private fun createTask(now: LocalDateTime = LocalDateTime.now()): MigrateRepoStorageTask {
-        return MigrateRepoStorageTask(
-            id = "",
-            createdBy = UT_USER,
-            createdDate = now,
-            lastModifiedBy = UT_USER,
-            lastModifiedDate = now,
-            startDate = now,
-            projectId = UT_PROJECT_ID,
-            repoName = UT_REPO_NAME,
-            srcStorageKey = "$UT_STORAGE_CREDENTIALS_KEY-src",
-            dstStorageKey = "$UT_STORAGE_CREDENTIALS_KEY-dst",
-            state = MigrateRepoStorageTaskState.MIGRATING.name,
-        )
     }
 
     private fun createNodes(startDate: LocalDateTime) {

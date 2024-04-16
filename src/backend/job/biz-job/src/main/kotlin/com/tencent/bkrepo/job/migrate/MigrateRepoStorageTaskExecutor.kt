@@ -40,7 +40,6 @@ import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
-import com.tencent.bkrepo.job.migrate.pojo.CorrectionContext
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECTING
@@ -57,6 +56,7 @@ import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -170,7 +170,7 @@ class MigrateRepoStorageTaskExecutor(
     }
 
     /**
-     * 执行迁移任务
+     * 执行迁移任务,对startTime之前创建的node进行迁移
      *
      * @param task 数据迁移任务
      *
@@ -179,7 +179,33 @@ class MigrateRepoStorageTaskExecutor(
     private fun migrate(task: MigrateRepoStorageTask): Boolean {
         val context = prepare(task) ?: return false
         return migrateExecutor.execute(context.task, PENDING.name, MIGRATE_FINISHED.name) {
-            doMigrate(context)
+            val projectId = context.task.projectId
+            val repoName = context.task.repoName
+            val taskId = context.task.id!!
+            val iterator = NodeIterator(context.task, mongoTemplate)
+            val totalCount = iterator.totalCount()
+
+            // 更新待迁移制品总数
+            migrateRepoStorageTaskDao.updateTotalCount(taskId, totalCount)
+            iterator.forEach { node ->
+                context.incTransferringCount()
+                transferDataExecutor.execute {
+                    try {
+                        // 迁移制品
+                        migrateNode(context, node)
+                    } finally {
+                        context.decTransferringCount()
+                        // 更新任务进度
+                        val iteratedCount = iterator.iteratedCount()
+                        if (iteratedCount % properties.updateProgressInterval == 0L) {
+                            logger.info("migrate repo[${projectId}/${repoName}], storage progress[$iteratedCount/$totalCount]")
+                            migrateRepoStorageTaskDao.updateMigratedCount(taskId, iteratedCount)
+                        }
+                    }
+                }
+            }
+            context.waitAllTransferFinished()
+            migrateRepoStorageTaskDao.updateMigratedCount(taskId, iterator.iteratedCount())
         }
     }
 
@@ -195,7 +221,7 @@ class MigrateRepoStorageTaskExecutor(
         if (!updateState(task, CORRECTING.name)) {
             return false
         }
-        val context = CorrectionContext(migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto())
+        val context = buildContext(migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto())
         return correctExecutor.execute(context.task, MIGRATE_FINISHED.name, CORRECT_FINISHED.name) {
             doCorrect(context)
         }
@@ -214,34 +240,33 @@ class MigrateRepoStorageTaskExecutor(
             return false
         }
         val updatedTask = migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto()
+        val context = buildContext(updatedTask)
         val projectId = updatedTask.projectId
         val repoName = updatedTask.repoName
         return migrateFailedNodeExecutor.execute(updatedTask, CORRECT_FINISHED.name, MIGRATING_FAILED_NODE.name) {
             while (true) {
-                var failedNode: TMigrateFailedNode? = null
-                try {
-                    failedNode = migrateFailedNodeDao.findOneToRetry(projectId, repoName) ?: break
-                    val node = Node(
-                        projectId = failedNode.projectId,
-                        repoName = failedNode.repoName,
-                        fullPath = failedNode.fullPath,
-                        size = failedNode.size,
-                        sha256 = failedNode.sha256,
-                        md5 = failedNode.md5,
-                    )
-                    correctNode(CorrectionContext(updatedTask), node)
-                    logger.info("migrate failed node[${failedNode.fullPath}] success, task[${projectId}/${repoName}]")
-                    migrateFailedNodeDao.removeById(failedNode.id!!)
-                } catch (e: Exception) {
-                    failedNode?.let {
-                        logger.error(
-                            "migrate failed node[${it.fullPath}] failed, " +
-                                    "retryTimes[${it.retryTimes}], task[${it.projectId}/${it.repoName}]"
-                        )
-                        migrateFailedNodeDao.incRetryTimes(it.projectId, it.repoName, it.fullPath)
+                val failedNode = migrateFailedNodeDao.findOneToRetry(projectId, repoName) ?: break
+                val node = Node(
+                    projectId = failedNode.projectId,
+                    repoName = failedNode.repoName,
+                    fullPath = failedNode.fullPath,
+                    size = failedNode.size,
+                    sha256 = failedNode.sha256,
+                    md5 = failedNode.md5,
+                )
+                context.incTransferringCount()
+                transferDataExecutor.execute {
+                    try {
+                        correctNode(context, node)
+                        val fullPath = failedNode.fullPath
+                        logger.info("migrate failed node[$fullPath] success, task[${projectId}/${repoName}]")
+                        migrateFailedNodeDao.removeById(failedNode.id!!)
+                    } finally {
+                        context.decTransferringCount()
                     }
                 }
             }
+            context.waitAllTransferFinished()
             if (!migrateFailedNodeDao.existsFailedNode(projectId, repoName)) {
                 migrateRepoStorageTaskDao.updateState(
                     updatedTask.id!!, updatedTask.state, MIGRATE_FAILED_NODE_FINISHED.name, updatedTask.lastModifiedDate
@@ -279,6 +304,7 @@ class MigrateRepoStorageTaskExecutor(
     ): Boolean {
         with(task) {
             logger.info("Start to $state task[$projectId/$repoName], srcKey[$srcStorageKey], dstKey[$dstStorageKey]")
+            val startNanoTime = System.nanoTime()
             executingTasks.getOrPut(state) { ConcurrentHashSet() }.add(id!!)
             try {
                 execute {
@@ -287,10 +313,12 @@ class MigrateRepoStorageTaskExecutor(
                         // 更新任务状态
                         if (state != dstState) {
                             migrateRepoStorageTaskDao.updateState(id, state, dstState, lastModifiedDate)
-                            logger.info("$state task[$projectId/$repoName] success")
+                            val elapsed = System.nanoTime() - startNanoTime
+                            logger.info("$state task[$projectId/$repoName] success, elapsed[$elapsed ns]")
                         }
                     } catch (exception: Exception) {
-                        logger.error("$state task[$projectId/$repoName] failed.", exception)
+                        val elapsed = System.nanoTime() - startNanoTime
+                        logger.error("$state task[$projectId/$repoName] failed, elapsed[$elapsed ns]", exception)
                     } finally {
                         executingTasks[state]!!.remove(id)
                     }
@@ -305,56 +333,13 @@ class MigrateRepoStorageTaskExecutor(
         }
     }
 
-    /**
-     * 对startTime之前创建的node执行迁移
-     */
-    private fun doMigrate(context: MigrationContext) {
-        with(context) {
-            val startNanoTime = System.nanoTime()
-            val iterator = NodeIterator(context.task, mongoTemplate)
-            // 更新待迁移制品总数
-            migrateRepoStorageTaskDao.updateTotalCount(task.id!!, iterator.totalCount())
-
-            iterator.forEach { node ->
-                try {
-                    // 迁移制品
-                    migrateNode(node, context.task.srcStorageKey, context.task.dstStorageKey)
-                    successCount.incrementAndGet()
-                } catch (e: Exception) {
-                    logger.error("Failed to migrate file[${node.sha256}], task[${task.projectId}/${task.repoName}]", e)
-                    saveMigrateFailedNode(task.id, node)
-                    failedCount.incrementAndGet()
-                } finally {
-                    totalCount.incrementAndGet()
-                }
-
-                val iteratedCount = iterator.iteratedCount()
-                // 更新任务进度
-                if (iteratedCount % properties.updateProgressInterval == 0L) {
-                    logger.info(
-                        "migrate repo[${task.projectId}/${task.repoName}]," +
-                                " storage progress[$iteratedCount/${iterator.totalCount()}]"
-                    )
-                    migrateRepoStorageTaskDao.updateMigratedCount(task.id, iteratedCount)
-                }
-            }
-
-            val migrateElapsed = System.nanoTime() - startNanoTime
-            logger.info(
-                "Complete migrate old files, " +
-                        "project: ${task.projectId}, repo: ${task.repoName}, key: ${task.dstStorageKey}, " +
-                        "total: $totalCount, success: $successCount, failed: $failedCount, duration $migrateElapsed ns"
-            )
-        }
-    }
-
-    private fun migrateNode(node: Node, srcStorageKey: String?, dstStorageKey: String?): Long {
-        val srcCredentials = getStorageCredentials(srcStorageKey)
-        val dstCredentials = getStorageCredentials(dstStorageKey)
+    private fun migrateNode(context: MigrationContext, node: Node): Long {
+        val srcStorageKey = context.task.srcStorageKey
+        val dstStorageKey = context.task.dstStorageKey
         val sha256 = node.sha256
 
         // 跨存储迁移数据
-        transferData(node, srcCredentials, dstCredentials)
+        transferData(context, node)
 
         // FileReferenceCleanupJob 会定期清理引用为0的文件数据，所以不需要删除文件数据
         // old引用计数 -1
@@ -368,37 +353,27 @@ class MigrateRepoStorageTaskExecutor(
         return node.size
     }
 
-    private fun doCorrect(context: CorrectionContext) {
+    private fun doCorrect(context: MigrationContext) {
         with(context) {
-            val startNanoTime = System.nanoTime()
             val iterator = NodeIterator(task, mongoTemplate)
             iterator.forEach { node ->
-                try {
-                    correctNode(context, node)
-                } catch (exception: Exception) {
-                    saveMigrateFailedNode(task.id!!, node)
-                    logger.error("Failed to correct file[$${node.sha256}].", exception)
-                    correctFailedCount.incrementAndGet()
-                } finally {
-                    correctTotalCount.incrementAndGet()
+                context.incTransferringCount()
+                transferDataExecutor.execute {
+                    try {
+                        correctNode(context, node)
+                    } finally {
+                        context.decTransferringCount()
+                    }
                 }
             }
-            val elapsed = System.nanoTime() - startNanoTime
-            logger.info(
-                "Complete check new created files, " +
-                        "projectId: ${task.projectId}, repoName: ${task.repoName}, key: ${task.dstStorageKey}, " +
-                        "total: $correctTotalCount, correct: $correctSuccessCount, migrate: $correctMigrateCount, " +
-                        "missing data: $dataMissingCount, failed: $correctFailedCount, duration $elapsed ns."
-            )
+            context.waitAllTransferFinished()
         }
     }
 
-    private fun correctNode(context: CorrectionContext, node: Node) {
-        val srcCredentials = getStorageCredentials(context.task.srcStorageKey)
-        val dstCredentials = getStorageCredentials(context.task.dstStorageKey)
+    private fun correctNode(context: MigrationContext, node: Node) {
         val sha256 = node.sha256
         // 文件已存在于目标存储则不处理
-        if (storageService.exist(sha256, dstCredentials)) {
+        if (storageService.exist(sha256, context.dstCredentials)) {
             return
         }
 
@@ -407,13 +382,11 @@ class MigrateRepoStorageTaskExecutor(
               可能由于在上传制品时使用的旧存储，而创建Node时由于会重新查一遍仓库的存储凭据而使用新存储
               这种情况会导致目标存储引用大于0但是文件不再目标存储，此时仅迁移存储不修改引用数
              */
-            transferData(node, srcCredentials, dstCredentials)
-            context.correctSuccessCount.incrementAndGet()
+            transferData(context, node)
             logger.info("Success to correct file[$sha256].")
         } else {
             // dst data和reference都不存在，migrate
-            migrateNode(node, context.task.srcStorageKey, context.task.dstStorageKey)
-            context.correctMigrateCount.incrementAndGet()
+            migrateNode(context, node)
             logger.info("Success to migrate file[$sha256].")
         }
     }
@@ -437,30 +410,27 @@ class MigrateRepoStorageTaskExecutor(
             repositoryClient.updateStorageCredentialsKey(task.projectId, task.repoName, task.dstStorageKey)
             logger.info("update repo[${task.projectId}/${task.repoName}] dstStorageKey[${task.dstStorageKey}]")
         }
-        return MigrationContext(migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto())
+        return buildContext(migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto())
     }
 
     /**
      * 执行数据迁移
      */
-    private fun transferData(
-        node: Node,
-        srcCredentials:
-        StorageCredentials,
-        dstCredentials: StorageCredentials
-    ) {
+    private fun transferData(context: MigrationContext, node: Node) {
         val sha256 = node.sha256
-        transferDataExecutor.execute {
-            retry(RETRY_COUNT) {
-                val throughput = measureThroughput {
-                    storageService.copy(sha256, srcCredentials, dstCredentials)
+        try {
+            val throughput = retry(RETRY_COUNT) {
+                measureThroughput {
+                    storageService.copy(sha256, context.srcCredentials, context.dstCredentials)
                     node.size
                 }
-                // 输出迁移速率
-                logger.info(
-                    "Success to transfer file[$sha256], $throughput, task[${node.projectId}/${node.repoName}]"
-                )
             }
+            // 输出迁移速率
+            logger.info("Success to transfer file[$sha256], $throughput, task[${node.projectId}/${node.repoName}]")
+        } catch (e: Exception) {
+            logger.error("transfer node[${node.projectId}/${node.repoName}/${node.fullPath}] failed, [$sha256]", e)
+            saveMigrateFailedNode(context.task.id!!, node)
+            throw e
         }
     }
 
@@ -478,21 +448,25 @@ class MigrateRepoStorageTaskExecutor(
     private fun saveMigrateFailedNode(taskId: String, node: Node) {
         val now = LocalDateTime.now()
         with(node) {
-            migrateFailedNodeDao.insert(
-                TMigrateFailedNode(
-                    id = null,
-                    createdDate = now,
-                    lastModifiedDate = now,
-                    taskId = taskId,
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = fullPath,
-                    sha256 = sha256,
-                    md5 = md5,
-                    size = size,
-                    retryTimes = 0
+            try {
+                migrateFailedNodeDao.insert(
+                    TMigrateFailedNode(
+                        id = null,
+                        createdDate = now,
+                        lastModifiedDate = now,
+                        taskId = taskId,
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = fullPath,
+                        sha256 = sha256,
+                        md5 = md5,
+                        size = size,
+                        retryTimes = 0
+                    )
                 )
-            )
+            } catch (e: DuplicateKeyException) {
+                migrateFailedNodeDao.incRetryTimes(node.projectId, node.repoName, node.fullPath)
+            }
         }
     }
 
@@ -521,6 +495,16 @@ class MigrateRepoStorageTaskExecutor(
         }
 
         return executor != null && executor.activeCount == executor.maximumPoolSize
+    }
+
+    private fun buildContext(task: MigrateRepoStorageTask): MigrationContext {
+        val srcCredentials = getStorageCredentials(task.srcStorageKey)
+        val dstCredentials = getStorageCredentials(task.dstStorageKey)
+        return MigrationContext(
+            task = task,
+            srcCredentials = srcCredentials,
+            dstCredentials = dstCredentials,
+        )
     }
 
     private fun buildThreadPoolExecutor(
