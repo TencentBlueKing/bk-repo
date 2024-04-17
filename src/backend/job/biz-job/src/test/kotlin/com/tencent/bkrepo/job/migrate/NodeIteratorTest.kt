@@ -36,6 +36,7 @@ import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildTask
+import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName

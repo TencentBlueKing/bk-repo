@@ -52,6 +52,8 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
+import com.tencent.bkrepo.job.migrate.utils.MigratedTaskNumberPriorityQueue
+import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -184,28 +186,35 @@ class MigrateRepoStorageTaskExecutor(
             val taskId = context.task.id!!
             val iterator = NodeIterator(context.task, mongoTemplate)
             val totalCount = iterator.totalCount()
+            val migratedNumberQueue = MigratedTaskNumberPriorityQueue()
+            var iteratedCount = 0L
 
             // 更新待迁移制品总数
             migrateRepoStorageTaskDao.updateTotalCount(taskId, totalCount)
             iterator.forEach { node ->
+                val taskNumber = ++iteratedCount
                 context.incTransferringCount()
                 transferDataExecutor.execute {
                     try {
                         // 迁移制品
                         migrateNode(context, node)
                     } finally {
+                        migratedNumberQueue.offer(taskNumber)
                         context.decTransferringCount()
+
                         // 更新任务进度
-                        val iteratedCount = iterator.iteratedCount()
-                        if (iteratedCount % properties.updateProgressInterval == 0L) {
-                            logger.info("migrate repo[${projectId}/${repoName}], storage progress[$iteratedCount/$totalCount]")
-                            migrateRepoStorageTaskDao.updateMigratedCount(taskId, iteratedCount)
+                        if (taskNumber % properties.updateProgressInterval == 0L) {
+                            val migratedCount = migratedNumberQueue.updateLeftMax()
+                            logger.info(
+                                "migrate repo[${projectId}/${repoName}], storage progress[$migratedCount/$totalCount]"
+                            )
+                            migrateRepoStorageTaskDao.updateMigratedCount(taskId, migratedCount)
                         }
                     }
                 }
             }
             context.waitAllTransferFinished()
-            migrateRepoStorageTaskDao.updateMigratedCount(taskId, iterator.iteratedCount())
+            migrateRepoStorageTaskDao.updateMigratedCount(taskId, iteratedCount)
         }
     }
 
