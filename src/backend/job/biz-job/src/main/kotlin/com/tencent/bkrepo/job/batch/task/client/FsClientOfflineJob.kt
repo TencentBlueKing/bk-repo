@@ -1,35 +1,37 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
- * A copy of the MIT License is included in this file.
+ *  A copy of the MIT License is included in this file.
  *
  *
- * Terms of the MIT License:
- * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *  Terms of the MIT License:
+ *  ---------------------------------------------------
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ *  documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ *  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ *  permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
- * the Software.
+ *  The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ *  the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
- * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ *  LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ *  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.other
+package com.tencent.bkrepo.job.batch.task.client
 
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.FsClientOfflineProperties
+import com.tencent.bkrepo.job.pojo.client.Client
+import com.tencent.bkrepo.job.pojo.client.DailyClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -55,9 +57,9 @@ class FsClientOfflineJob(
         val update = Update.update(Client::online.name, false)
 
         while (true) {
-            val clients = mongoTemplate.find(query, ClientDetail::class.java,COLLECTION)
+            val clients = mongoTemplate.find(query, Client::class.java, COLLECTION)
             for (client in clients) {
-                val dailyClientDetail = DailyClientDetail(
+                val dailyClient = DailyClient(
                     projectId = client.projectId,
                     repoName = client.repoName,
                     mountPoint = client.mountPoint,
@@ -69,7 +71,7 @@ class FsClientOfflineJob(
                     action = "finish",
                     time = LocalDateTime.now()
                 )
-                mongoTemplate.insert(dailyClientDetail, DAILY_COLLECTION)
+                mongoTemplate.insert(dailyClient, DAILY_COLLECTION)
             }
             val result = mongoTemplate.updateMulti(query, update, COLLECTION)
             logger.info("${result.modifiedCount} client(s) change to offline")
@@ -80,37 +82,6 @@ class FsClientOfflineJob(
             }
         }
     }
-
-    data class Client(
-        val online: Boolean,
-        val heartbeatTime: LocalDateTime
-    )
-
-    data class ClientDetail(
-        val projectId: String,
-        val repoName: String,
-        val mountPoint: String,
-        val userId: String,
-        val ip: String,
-        val version: String,
-        val os: String,
-        val arch: String,
-        val online: Boolean,
-        val heartbeatTime: LocalDateTime
-    )
-
-    data class DailyClientDetail(
-        val projectId: String,
-        val repoName: String,
-        val mountPoint: String,
-        val userId: String,
-        val ip: String,
-        val version: String,
-        val os: String,
-        val arch: String,
-        val action: String,
-        val time: LocalDateTime
-    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(FsClientOfflineJob::class.java)
