@@ -41,7 +41,8 @@ import okhttp3.Response
 class HeadObjectResponseHandler : HttpResponseHandler<CosObject>() {
     override fun handle(response: Response): CosObject {
         val eTag = response.header(Headers.ETAG)!!.trim('"')
-        val length = response.header(RESPONSE_SIZE)!!.toLong()
+        // 内部cos size是实际文件大小，腾讯云cos content-length是实际文件大小
+        val length = response.header(RESPONSE_SIZE)?.toLong() ?: response.header(Headers.CONTENT_LENGTH)!!.toLong()
         val crc64ecma = response.header(RESPONSE_CRC64)
         return CosObject(eTag, null, length, crc64ecma)
     }
