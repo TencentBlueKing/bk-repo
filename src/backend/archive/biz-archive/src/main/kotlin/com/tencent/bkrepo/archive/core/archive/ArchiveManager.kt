@@ -255,10 +255,13 @@ class ArchiveManager(
 
     fun getStorageCredentials(key: String?): StorageCredentials {
         return if (key == null) {
-            archiveProperties.cos
+            archiveProperties.defaultCredentials.cos
         } else {
-            val credential = archiveProperties.credentials[key]?.apply { this.key = key }
-            credential ?: archiveProperties.cos
+            val credentialsProperties = archiveProperties.extraCredentialsConfig[key]
+            if (credentialsProperties == null) {
+                return archiveProperties.defaultCredentials.cos
+            }
+            credentialsProperties.cos.apply { this.key = key }
         }
     }
 
