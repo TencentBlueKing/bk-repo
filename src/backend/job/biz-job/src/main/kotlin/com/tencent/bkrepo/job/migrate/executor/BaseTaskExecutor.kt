@@ -27,14 +27,10 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
-import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
@@ -49,13 +45,10 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
 import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 abstract class BaseTaskExecutor(
     protected val properties: MigrateRepoStorageProperties,
-    protected val storageProperties: StorageProperties,
     protected val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     protected val migrateFailedNodeDao: MigrateFailedNodeDao,
     private val fileReferenceClient: FileReferenceClient,
@@ -65,21 +58,6 @@ abstract class BaseTaskExecutor(
 
     @Value(SERVICE_INSTANCE_ID)
     protected lateinit var instanceId: String
-
-    /**
-     * 实际执行数据迁移的线程池
-     */
-    protected val transferDataExecutor: ThreadPoolExecutor by lazy {
-        ThreadPoolExecutor(
-            properties.nodeConcurrency,
-            properties.nodeConcurrency,
-            0L,
-            TimeUnit.MILLISECONDS,
-            SynchronousQueue(),
-            ThreadFactoryBuilder().setNameFormat("transfer-data-%d").build(),
-            ThreadPoolExecutor.CallerRunsPolicy()
-        )
-    }
 
     protected fun ThreadPoolExecutor.execute(
         task: MigrateRepoStorageTask,
@@ -139,7 +117,7 @@ abstract class BaseTaskExecutor(
         }
     }
 
-    protected fun migrateNode(context: MigrationContext, node: Node): Long {
+    protected fun migrateNode(context: MigrationContext, node: Node) {
         val srcStorageKey = context.task.srcStorageKey
         val dstStorageKey = context.task.dstStorageKey
         val sha256 = node.sha256
@@ -156,7 +134,6 @@ abstract class BaseTaskExecutor(
         if (fileReferenceClient.increment(sha256, dstStorageKey).data != true) {
             logger.error("Failed to increment file reference[$sha256] on storage[$dstStorageKey].")
         }
-        return node.size
     }
 
     protected fun updateState(task: MigrateRepoStorageTask, dstState: String): Boolean {
@@ -169,29 +146,6 @@ abstract class BaseTaskExecutor(
         }
         return true
     }
-
-    protected fun buildContext(task: MigrateRepoStorageTask): MigrationContext {
-        val srcCredentials = getStorageCredentials(task.srcStorageKey)
-        val dstCredentials = getStorageCredentials(task.dstStorageKey)
-        return MigrationContext(
-            task = task,
-            srcCredentials = srcCredentials,
-            dstCredentials = dstCredentials,
-        )
-    }
-
-    protected fun buildThreadPoolExecutor(
-        nameFormat: String,
-        size: Int = Runtime.getRuntime().availableProcessors(),
-    ) = ThreadPoolExecutor(
-        size,
-        size,
-        0L,
-        TimeUnit.MILLISECONDS,
-        SynchronousQueue(),
-        ThreadFactoryBuilder().setNameFormat(nameFormat).build(),
-        ThreadPoolExecutor.AbortPolicy()
-    )
 
     /**
      * 执行数据迁移
@@ -236,14 +190,6 @@ abstract class BaseTaskExecutor(
             } catch (e: DuplicateKeyException) {
                 migrateFailedNodeDao.incRetryTimes(node.projectId, node.repoName, node.fullPath)
             }
-        }
-    }
-
-    private fun getStorageCredentials(key: String?): StorageCredentials {
-        return if (key == null) {
-            storageProperties.defaultStorageCredentials()
-        } else {
-            RepositoryCommonUtils.getStorageCredentials(key)!!
         }
     }
 

@@ -25,17 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.migrate.executor
+package com.tencent.bkrepo.job.migrate.utils
 
-import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
-interface TaskExecutor {
-    /**
-     * 执行任务
-     *
-     * @param context 仓库存储迁移任务
-     *
-     * @return 是否开始执行
-     */
-    fun execute(context: MigrationContext): Boolean
+object MigrateRepoStorageUtils {
+    fun buildThreadPoolExecutor(
+        nameFormat: String,
+        size: Int = Runtime.getRuntime().availableProcessors(),
+    ) = ThreadPoolExecutor(
+        size,
+        size,
+        0L,
+        TimeUnit.MILLISECONDS,
+        SynchronousQueue(),
+        ThreadFactoryBuilder().setNameFormat(nameFormat).build(),
+        ThreadPoolExecutor.AbortPolicy()
+    )
 }

@@ -25,17 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.migrate.executor
+package com.tencent.bkrepo.job.migrate.utils
 
-import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
+import org.springframework.stereotype.Component
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
-interface TaskExecutor {
+@Component
+class TransferDataExecutor(
+    private val properties: MigrateRepoStorageProperties
+) {
+
     /**
-     * 执行任务
-     *
-     * @param context 仓库存储迁移任务
-     *
-     * @return 是否开始执行
+     * 实际执行数据迁移的线程池
      */
-    fun execute(context: MigrationContext): Boolean
+    private val transferDataExecutor: ThreadPoolExecutor by lazy {
+        ThreadPoolExecutor(
+            properties.nodeConcurrency,
+            properties.nodeConcurrency,
+            0L,
+            TimeUnit.MILLISECONDS,
+            SynchronousQueue(),
+            ThreadFactoryBuilder().setNameFormat("transfer-data-%d").build(),
+            ThreadPoolExecutor.CallerRunsPolicy()
+        )
+    }
+
+    fun execute(r: Runnable) = transferDataExecutor.execute(r)
 }

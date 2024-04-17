@@ -30,6 +30,8 @@ package com.tencent.bkrepo.job.migrate
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
@@ -50,6 +52,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_F
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
+import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -62,6 +65,7 @@ import java.time.LocalDateTime
 @Service
 class MigrateRepoStorageService(
     private val migrateRepoStorageProperties: MigrateRepoStorageProperties,
+    protected val storageProperties: StorageProperties,
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     private val executors: Map<String, TaskExecutor>,
     private val executingTaskRecorder: ExecutingTaskRecorder,
@@ -123,7 +127,7 @@ class MigrateRepoStorageService(
             else -> throw IllegalStateException("unsupported state[${task.state}], task[$projectId/$repoName]")
         }
 
-        return if (executor.execute(task)) {
+        return if (executor.execute(buildContext(task))) {
             task
         } else {
             null
@@ -158,6 +162,24 @@ class MigrateRepoStorageService(
                 // 任务之前在本实例内执行，但可能由于进程重启或其他原因而中断，需要重置状态
                 migrateRepoStorageTaskDao.save(it.copy(state = rollbackState))
             }
+        }
+    }
+
+    private fun buildContext(task: MigrateRepoStorageTask): MigrationContext {
+        val srcCredentials = getStorageCredentials(task.srcStorageKey)
+        val dstCredentials = getStorageCredentials(task.dstStorageKey)
+        return MigrationContext(
+            task = task,
+            srcCredentials = srcCredentials,
+            dstCredentials = dstCredentials,
+        )
+    }
+
+    private fun getStorageCredentials(key: String?): StorageCredentials {
+        return if (key == null) {
+            storageProperties.defaultStorageCredentials()
+        } else {
+            RepositoryCommonUtils.getStorageCredentials(key)!!
         }
     }
 

@@ -27,19 +27,19 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECTING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
+import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
+import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
@@ -48,16 +48,15 @@ import java.util.concurrent.ThreadPoolExecutor
 @Component
 class CorrectExecutor(
     properties: MigrateRepoStorageProperties,
-    storageProperties: StorageProperties,
     fileReferenceClient: FileReferenceClient,
     migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
+    private val transferDataExecutor: TransferDataExecutor,
     private val mongoTemplate: MongoTemplate,
 ) : BaseTaskExecutor(
     properties,
-    storageProperties,
     migrateRepoStorageTaskDao,
     migrateFailedNodeDao,
     fileReferenceClient,
@@ -71,18 +70,18 @@ class CorrectExecutor(
         buildThreadPoolExecutor("correct-repo-storage-%d")
     }
 
-    override fun execute(task: MigrateRepoStorageTask): Boolean {
-        require(task.state == MIGRATE_FINISHED.name)
+    override fun execute(context: MigrationContext): Boolean {
+        require(context.task.state == MIGRATE_FINISHED.name)
         if (correctExecutor.activeCount == correctExecutor.maximumPoolSize) {
             return false
         }
 
-        if (!updateState(task, CORRECTING.name)) {
+        if (!updateState(context.task, CORRECTING.name)) {
             return false
         }
-        val context = buildContext(migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto())
-        return correctExecutor.execute(context.task, MIGRATE_FINISHED.name, CORRECT_FINISHED.name) {
-            doCorrect(context)
+        val newContext = context.copy(task = migrateRepoStorageTaskDao.findById(context.task.id!!)!!.toDto())
+        return correctExecutor.execute(newContext.task, MIGRATE_FINISHED.name, CORRECT_FINISHED.name) {
+            doCorrect(newContext)
         }
     }
 

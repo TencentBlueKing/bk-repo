@@ -27,13 +27,12 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
+import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -43,7 +42,6 @@ import org.springframework.stereotype.Component
 @Component
 class FinishExecutor(
     properties: MigrateRepoStorageProperties,
-    storageProperties: StorageProperties,
     fileReferenceClient: FileReferenceClient,
     migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     migrateFailedNodeDao: MigrateFailedNodeDao,
@@ -52,7 +50,6 @@ class FinishExecutor(
     private val repositoryClient: RepositoryClient,
 ) : BaseTaskExecutor(
     properties,
-    storageProperties,
     migrateRepoStorageTaskDao,
     migrateFailedNodeDao,
     fileReferenceClient,
@@ -62,7 +59,8 @@ class FinishExecutor(
     /**
      * 迁移任务执行结束后对相关资源进行清理
      */
-    override fun execute(task: MigrateRepoStorageTask): Boolean {
+    override fun execute(context: MigrationContext): Boolean {
+        val task = context.task
         with(task) {
             if (!updateState(task, MigrateRepoStorageTaskState.FINISHING.name)) {
                 return false

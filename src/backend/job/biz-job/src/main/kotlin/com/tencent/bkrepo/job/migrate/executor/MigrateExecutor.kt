@@ -27,20 +27,20 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
+import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
 import com.tencent.bkrepo.job.migrate.utils.MigratedTaskNumberPriorityQueue
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
+import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -52,17 +52,16 @@ import java.util.concurrent.ThreadPoolExecutor
 @Component
 class MigrateExecutor(
     properties: MigrateRepoStorageProperties,
-    storageProperties: StorageProperties,
     fileReferenceClient: FileReferenceClient,
     migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
+    private val transferDataExecutor: TransferDataExecutor,
     private val repositoryClient: RepositoryClient,
     private val mongoTemplate: MongoTemplate
 ) : BaseTaskExecutor(
     properties,
-    storageProperties,
     migrateRepoStorageTaskDao,
     migrateFailedNodeDao,
     fileReferenceClient,
@@ -79,59 +78,66 @@ class MigrateExecutor(
     /**
      * 执行迁移任务,对startTime之前创建的node进行迁移
      *
-     * @param task 数据迁移任务
+     * @param context 数据迁移上下文
      *
      * @return 是否开始执行
      */
-    override fun execute(task: MigrateRepoStorageTask): Boolean {
+    override fun execute(context: MigrationContext): Boolean {
         if (migrateExecutor.activeCount == migrateExecutor.maximumPoolSize) {
             return false
         }
 
-        val context = prepare(task) ?: return false
-        return migrateExecutor.execute(context.task, PENDING.name, MIGRATE_FINISHED.name) {
-            val projectId = context.task.projectId
-            val repoName = context.task.repoName
-            val taskId = context.task.id!!
-            val iterator = NodeIterator(context.task, mongoTemplate)
-            val totalCount = iterator.totalCount()
-            val migratedNumberQueue = MigratedTaskNumberPriorityQueue()
-            var iteratedCount = 0L
+        val newContext = prepare(context) ?: return false
+        return migrateExecutor.execute(newContext.task, PENDING.name, MIGRATE_FINISHED.name) {
+            doMigrate(newContext)
+        }
+    }
 
-            // 更新待迁移制品总数
-            migrateRepoStorageTaskDao.updateTotalCount(taskId, totalCount)
-            iterator.forEach { node ->
-                val taskNumber = ++iteratedCount
-                context.incTransferringCount()
-                transferDataExecutor.execute {
-                    try {
-                        // 迁移制品
-                        migrateNode(context, node)
-                    } finally {
-                        // 保存完成的任务序号
-                        migratedNumberQueue.offer(taskNumber)
-                        context.decTransferringCount()
+    private fun doMigrate(context: MigrationContext) {
+        val projectId = context.task.projectId
+        val repoName = context.task.repoName
+        val taskId = context.task.id!!
+        val iterator = NodeIterator(context.task, mongoTemplate)
+        val totalCount = iterator.totalCount()
+        val migratedNumberQueue = MigratedTaskNumberPriorityQueue()
+        var iteratedCount = 0L
 
-                        // 更新任务进度
-                        if (taskNumber % properties.updateProgressInterval == 0L) {
-                            val migratedCount = migratedNumberQueue.updateLeftMax()
-                            logger.info(
-                                "migrate repo[${projectId}/${repoName}], storage progress[$migratedCount/$totalCount]"
-                            )
-                            migrateRepoStorageTaskDao.updateMigratedCount(taskId, migratedCount)
-                        }
+        // 更新待迁移制品总数
+        migrateRepoStorageTaskDao.updateTotalCount(taskId, totalCount)
+
+        // 遍历迁移制品
+        iterator.forEach { node ->
+            val taskNumber = ++iteratedCount
+            context.incTransferringCount()
+            transferDataExecutor.execute {
+                try {
+                    // 迁移制品
+                    migrateNode(context, node)
+                } finally {
+                    // 保存完成的任务序号
+                    migratedNumberQueue.offer(taskNumber)
+                    context.decTransferringCount()
+
+                    // 更新任务进度，用于进程重启时从断点继续迁移
+                    if (taskNumber % properties.updateProgressInterval == 0L) {
+                        val migratedCount = migratedNumberQueue.updateLeftMax()
+                        logger.info("migrate repo[${projectId}/${repoName}], progress[$migratedCount/$totalCount]")
+                        migrateRepoStorageTaskDao.updateMigratedCount(taskId, migratedCount)
                     }
                 }
             }
-            context.waitAllTransferFinished()
-            migrateRepoStorageTaskDao.updateMigratedCount(taskId, iteratedCount)
         }
+
+        // 等待所有数传输完成
+        context.waitAllTransferFinished()
+        migrateRepoStorageTaskDao.updateMigratedCount(taskId, iteratedCount)
     }
 
     /**
      * 做一些任务开始执行前的准备工作
      */
-    private fun prepare(task: MigrateRepoStorageTask): MigrationContext? {
+    private fun prepare(context: MigrationContext): MigrationContext? {
+        val task = context.task
         require(task.state == PENDING.name)
         if (!updateState(task, MIGRATING.name)) {
             return null
@@ -147,7 +153,7 @@ class MigrateExecutor(
             repositoryClient.updateStorageCredentialsKey(task.projectId, task.repoName, task.dstStorageKey)
             logger.info("update repo[${task.projectId}/${task.repoName}] dstStorageKey[${task.dstStorageKey}]")
         }
-        return buildContext(migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto())
+        return context.copy(task = migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto())
     }
 
     companion object {
