@@ -29,14 +29,30 @@ package com.tencent.bkrepo.job.migrate
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
+import com.tencent.bkrepo.job.migrate.executor.CorrectExecutor
+import com.tencent.bkrepo.job.migrate.executor.FinishExecutor
+import com.tencent.bkrepo.job.migrate.executor.MigrateExecutor
+import com.tencent.bkrepo.job.migrate.executor.MigrateFailedNodeExecutor
+import com.tencent.bkrepo.job.migrate.executor.TaskExecutor
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.CreateMigrateRepoStorageTaskRequest
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECTING
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.FINISHING
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
+import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -47,8 +63,12 @@ import java.time.LocalDateTime
 class MigrateRepoStorageService(
     private val migrateRepoStorageProperties: MigrateRepoStorageProperties,
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
-    private val executor: MigrateRepoStorageTaskExecutor,
+    private val executors: Map<String, TaskExecutor>,
+    private val executingTaskRecorder: ExecutingTaskRecorder,
 ) {
+    @Value(SERVICE_INSTANCE_ID)
+    protected lateinit var instanceId: String
+
     /**
      * 迁移仓库存储
      *
@@ -84,13 +104,6 @@ class MigrateRepoStorageService(
     }
 
     /**
-     * 回滚因进程重启或其他原因导致中断的任务状态
-     */
-    fun rollbackInterruptedTaskState() {
-        executor.rollbackInterruptedTaskState()
-    }
-
-    /**
      * 尝试从队列中取出一个任务执行
      *
      * @return 未执行任务时返回null，否则返回触发执行的任务
@@ -99,6 +112,17 @@ class MigrateRepoStorageService(
         val task = migrateRepoStorageTaskDao.executableTask()?.toDto()
             ?: migrateRepoStorageTaskDao.correctableTask(migrateRepoStorageProperties.correctInterval)?.toDto()
             ?: return null
+
+        val projectId = task.projectId
+        val repoName = task.repoName
+        val executor = when (task.state) {
+            PENDING.name -> executors[MigrateExecutor::class.simpleName]!!
+            MIGRATE_FINISHED.name -> executors[CorrectExecutor::class.simpleName]!!
+            CORRECT_FINISHED.name -> executors[MigrateFailedNodeExecutor::class.simpleName]!!
+            MIGRATE_FAILED_NODE_FINISHED.name -> executors[FinishExecutor::class.simpleName]!!
+            else -> throw IllegalStateException("unsupported state[${task.state}], task[$projectId/$repoName]")
+        }
+
         return if (executor.execute(task)) {
             task
         } else {
@@ -116,6 +140,25 @@ class MigrateRepoStorageService(
      */
     fun migrating(projectId: String, repoName: String): Boolean {
         return migrateRepoStorageTaskDao.exists(projectId, repoName)
+    }
+
+    /**
+     * 回滚因进程重启或其他原因导致中断的任务状态
+     */
+    fun rollbackInterruptedTaskState() {
+        migrateRepoStorageTaskDao.timeoutTasks(instanceId, migrateRepoStorageProperties.timeout).forEach {
+            if (executingTaskRecorder.executing(it.id!!)) {
+                val rollbackState = when (it.state) {
+                    MIGRATING.name -> PENDING.name
+                    CORRECTING.name -> MIGRATE_FINISHED.name
+                    MIGRATING_FAILED_NODE.name -> CORRECT_FINISHED.name
+                    FINISHING.name -> MIGRATE_FAILED_NODE_FINISHED.name
+                    else -> throw IllegalStateException("cant rollback state[${it.state}]")
+                }
+                // 任务之前在本实例内执行，但可能由于进程重启或其他原因而中断，需要重置状态
+                migrateRepoStorageTaskDao.save(it.copy(state = rollbackState))
+            }
+        }
     }
 
     companion object {

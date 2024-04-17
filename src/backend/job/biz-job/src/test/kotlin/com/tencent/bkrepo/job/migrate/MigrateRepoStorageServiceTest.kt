@@ -38,9 +38,6 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
     private val migrateRepoStorageService: MigrateRepoStorageService
 ) {
     @MockBean
-    private lateinit var migrateTaskExecutor: MigrateRepoStorageTaskExecutor
-
-    @MockBean
     private lateinit var repositoryClient: RepositoryClient
 
     @MockBean
