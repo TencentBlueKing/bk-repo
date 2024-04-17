@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
+import com.tencent.bkrepo.generic.artifact.resolveMetadata
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
@@ -55,6 +56,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.apache.pulsar.shade.org.eclipse.util.UrlEncoded
 import org.slf4j.LoggerFactory
@@ -256,7 +258,7 @@ class DeltaSyncService(
             token = bkBaseProperties.token,
             sql = sql,
         )
-        val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), query.toJsonString())
+        val requestBody = query.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
         val request = Request.Builder().url(url).post(requestBody).build()
         return queryHistorySpeed(request, sql, metrics)
     }
@@ -468,7 +470,7 @@ class DeltaSyncService(
                 uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256),
                 uploadMd5 = HeaderUtils.getHeader(HEADER_MD5),
                 expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
-                metadata = repository.resolveMetadata(request),
+                metadata = resolveMetadata(request),
                 contentLength = request.contentLengthLong,
                 emitter = emitter,
                 counterInputStream = counterInputStream,
