@@ -40,6 +40,7 @@ import com.tencent.bkrepo.job.service.SystemJobService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.cloud.client.ServiceInstance
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -66,7 +67,7 @@ class UserJobController(
 
     private val restTemplate = RestTemplate()
 
-    private val timeoutInSecond:Int = 10
+    private val timeoutInSecond:Int = 15
 
     private val jobServiceId:String = "bkrepo-job"
 
@@ -79,31 +80,51 @@ class UserJobController(
     @PutMapping("/update/{name}")
     @LogOperate(type = "JOB_STATUS_UPDATE")
     fun update(@PathVariable name: String, enabled: Boolean, running: Boolean): Response<Boolean> {
+        val instances = discoveryClient.getInstances(jobServiceId)
+        if (instances.size == 1) {
+            return ResponseBuilder.success(
+                standaloneUpdateJob(name, enabled, running))
+        } else {
+            return ResponseBuilder.success(
+                multipleUpdateJob(name, enabled, running, instances)
+            )
+        }
+    }
+
+    private fun standaloneUpdateJob(name: String, enabled: Boolean, running: Boolean) : Boolean{
+        return systemJobService.update(name, enabled, running)
+    }
+
+    private fun multipleUpdateJob(
+        name: String,
+        enabled: Boolean,
+        running: Boolean,
+        instances: List<ServiceInstance>
+    ): Boolean {
         val path = "/service/job/update/$name"
         val requestBody: MutableMap<String, Boolean> = HashMap()
         requestBody["running"] = running
         requestBody["enabled"] = enabled
         val results : MutableList<Boolean> = ArrayList()
-        val instances = discoveryClient.getInstances(jobServiceId)
         val countDownLatch = CountDownLatch(instances.size)
         instances.forEach {
-            instance ->
-                val targetUri =  instance.uri
-                val url = "$targetUri$path"
-                val headers = HttpHeaders()
-                headers.add(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
-                headers.add(MS_AUTH_HEADER_UID, SYSTEM_USER)
-                val httpEntity = HttpEntity<Any>(requestBody,headers)
-                val response = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, Response::class.java)
-                countDownLatch.countDown()
-                results.add(response.statusCode == HttpStatus.OK)
-                if (response.statusCode != HttpStatus.OK) {
-                    logger.error(
-                        "Instance has error, job:$name change running to $running, change enable to $enabled fail")
-                }
+                instance ->
+            val targetUri =  instance.uri
+            val url = "$targetUri$path"
+            val headers = HttpHeaders()
+            headers.add(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
+            headers.add(MS_AUTH_HEADER_UID, SYSTEM_USER)
+            val httpEntity = HttpEntity<Any>(requestBody,headers)
+            val response = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, Response::class.java)
+            countDownLatch.countDown()
+            results.add(response.statusCode == HttpStatus.OK)
+            if (response.statusCode != HttpStatus.OK) {
+                logger.error(
+                    "Instance has error, job:$name change running to $running, change enable to $enabled fail")
+            }
         }
         countDownLatch.await(timeoutInSecond.toLong(), TimeUnit.SECONDS)
-        return ResponseBuilder.success(results.size == instances.size && !results.contains(false))
+        return results.size == instances.size && !results.contains(false)
     }
 
     @PutMapping("/stop")
