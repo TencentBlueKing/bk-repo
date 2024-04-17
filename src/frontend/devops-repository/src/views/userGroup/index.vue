@@ -40,71 +40,43 @@
             theme="primary"
             width="800"
             class="update-role-group-dialog"
-            height-num="800"
+            height-num="603"
             :title="editRoleConfig.id ? $t('editUserGroupTitle') : $t('addUserGroupTitle')"
             @cancel="cancel">
-            <bk-process
-                style="margin-top: -10px; margin-bottom: 10px"
-                :list="loadingList"
-                :cur-process="loadingProcess"
-                :display-key="'content'"
-                @process-changed="changeEvent"
-                :controllable="true" />
-            <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm" v-if="loadingProcess === 1">
+            <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm">
                 <bk-form-item :label="$t('roleName')" :required="true" property="name" error-display-type="normal">
                     <bk-input v-model.trim="editRoleConfig.name" maxlength="32" show-word-limit></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('description')">
                     <bk-input type="textarea" v-model.trim="editRoleConfig.description" maxlength="200"></bk-input>
                 </bk-form-item>
-            </bk-form>
-            <div v-if="loadingProcess === 2" style="display: flex">
-                <div class="ml10 mr10 mt10" style="width: 50%; text-align: center">
-                    <div>
-                        <div style="align-items: center">
-                            <bk-input :type="'textarea'" :placeholder="$t('userGroupPlaceholder')" v-model="editRoleConfig.newUser" class="w350 usersTextarea" />
-                        </div>
-                        <div class="mt5" style="display: flex">
-                            <div class="mr10" style="text-align: left">
-                                <bk-button style="width: 240px" theme="primary" @click="parseFn">{{ $t('add') }}</bk-button>
-                            </div>
-                            <div style="text-align: left">
-                                <bk-button style="width: 110px" @click="editRoleConfig.newUser = ''">{{ $t('clear') }}</bk-button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="ml10 mr10 mt10" style="width: 50%;text-align: center">
-                    <div style="display: flex">
-                        <bk-input v-model="editRoleConfig.search" :placeholder="$t('search')" style="width: 280px" @change="filterUsers" />
-                        <bk-button class="ml10" theme="primary" @click="copy">{{ $t('copyAll') }}</bk-button>
-                    </div>
-                    <div v-show="editRoleConfig.users.length" class="mt10 update-user-list">
-                        <div class="pl10 pr10 update-user-item flex-between-center" v-for="(user, index) in editRoleConfig.users" :key="index">
+                <bk-form-item :label="$t('staffing')">
+                    <bk-button icon="plus" @click="showAddDialog">{{ $t('add') + $t('space') + $t('user') }}</bk-button>
+                    <div v-show="editRoleConfig.users.length" class="mt10 user-list">
+                        <div class="pl10 pr10 user-item flex-between-center" v-for="(user, index) in editRoleConfig.users" :key="index">
                             <div class="flex-align-center">
-                                <span class="update-user-name text-overflow" :title="user">{{ user }}</span>
+                                <span class="user-name text-overflow" :title="user">{{ user }}</span>
                             </div>
                             <Icon class="ml10 hover-btn" size="24" name="icon-delete" @click.native="deleteUser(index)" />
                         </div>
                     </div>
-                </div>
-            </div>
+                </bk-form-item>
+            </bk-form>
             <template #footer>
                 <bk-button @click="cancel">{{ $t('cancel') }}</bk-button>
-                <bk-button v-if="loadingProcess === 1" class="ml10" theme="primary" @click="next">{{ $t('next') }}</bk-button>
-                <bk-button v-if="loadingProcess === 2" class="ml10" theme="primary" @click="next">{{ $t('previous') }}</bk-button>
-                <bk-button v-if="loadingProcess === 2" class="ml10" theme="primary" @click="confirm">{{ $t('confirm') }}</bk-button>
+                <bk-button class="ml10" theme="primary" @click="confirm">{{ $t('confirm') }}</bk-button>
             </template>
         </canway-dialog>
+        <add-user-dialog ref="addUserDialog" :visible.sync="showAddUserDialog" @complete="handleAddUsers"></add-user-dialog>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
     import { mapState, mapActions } from 'vuex'
-    import { copyToClipboard } from '@/utils'
+    import AddUserDialog from '@/components/AddUserDialog/addUserDialog'
     export default {
         name: 'role',
-        components: { OperationList },
+        components: { AddUserDialog, OperationList },
         data () {
             return {
                 isLoading: false,
@@ -132,17 +104,8 @@
                         }
                     ]
                 },
-                loadingProcess: 1,
-                loadingList: [
-                    {
-                        content: this.$t('baseInfo'),
-                        isLoading: true
-                    },
-                    {
-                        content: this.$t('staffing'),
-                        isLoading: true
-                    }
-                ]
+                showAddUserDialog: false,
+                showData: {}
             }
         },
         computed: {
@@ -178,16 +141,19 @@
                 })
             },
             createRoleHandler () {
+                this.$refs.roleForm.clearError()
                 this.editRoleConfig = {
                     show: true,
                     loading: false,
                     id: '',
                     name: '',
                     description: '',
-                    users: []
+                    users: [],
+                    originUsers: []
                 }
             },
             editRoleHandler (row) {
+                this.$refs.roleForm.clearError()
                 const { name, description } = row
                 this.editRoleConfig = {
                     show: true,
@@ -200,7 +166,8 @@
                     originUsers: row.users
                 }
             },
-            confirm () {
+            async confirm () {
+                await this.$refs.roleForm.validate()
                 this.editRoleConfig.loading = true
                 const fn = this.editRoleConfig.id ? this.editRole : this.createRole
                 fn({
@@ -237,7 +204,6 @@
                     })
                     this.editRoleConfig.show = false
                     this.getRoleListHandler()
-                    this.loadingProcess = 1
                 }).finally(() => {
                     this.editRoleConfig.loading = false
                 })
@@ -260,32 +226,9 @@
                     }
                 })
             },
-            parseFn () {
-                const data = this.editRoleConfig.newUser
-                if (data !== '') {
-                    this.editRoleConfig.users = []
-                    const users = data.toString().replace(/\n/g, ',').replace(/\s/g, ',').split(',')
-                    for (let i = 0; i < users.length; i++) {
-                        users[i] = users[i].toString().trim()
-                        if (users[i] !== '') {
-                            this.editRoleConfig.users.push(users[i])
-                        }
-                    }
-                    this.editRoleConfig.users = Array.from(new Set(this.editRoleConfig.users))
-                    this.editRoleConfig.originUsers = this.editRoleConfig.users
-                    this.editRoleConfig.newUser = ''
-                }
-            },
             cancel () {
                 this.editRoleConfig.show = false
                 this.getRoleListHandler()
-                this.loadingProcess = 1
-            },
-            filterUsers () {
-                this.editRoleConfig.users = this.editRoleConfig.originUsers
-                if (this.editRoleConfig.search !== '') {
-                    this.editRoleConfig.users = this.editRoleConfig.users.filter(user => user.toLowerCase().includes(this.editRoleConfig.search.toLowerCase()))
-                }
             },
             deleteUser (index) {
                 const temp = []
@@ -297,34 +240,18 @@
                 this.editRoleConfig.users = temp
                 this.editRoleConfig.originUsers = temp
             },
-            async next () {
-                if (this.loadingProcess === 1) {
-                    await this.$refs.roleForm.validate()
-                    this.loadingProcess = 2
-                } else {
-                    this.loadingProcess = 1
+            showAddDialog () {
+                this.showAddUserDialog = true
+                this.$refs.addUserDialog.editUserConfig = {
+                    users: this.editRoleConfig.users,
+                    originUsers: this.editRoleConfig.originUsers,
+                    search: '',
+                    newUser: ''
                 }
             },
-            changeProcess () {
-                this.$refs.roleForm.validate(valid => {
-                    if (valid) {
-                        this.loadingProcess === 1 ? this.loadingProcess = 2 : this.loadingProcess = 1
-                    }
-                })
-            },
-            copy () {
-                const text = this.editRoleConfig.originUsers.join('\n')
-                copyToClipboard(text).then(() => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: this.$t('copy') + this.$t('space') + this.$t('success')
-                    })
-                }).catch(() => {
-                    this.$bkMessage({
-                        theme: 'error',
-                        message: this.$t('copy') + this.$t('space') + this.$t('fail')
-                    })
-                })
+            handleAddUsers (users) {
+                this.editRoleConfig.originUsers = users
+                this.editRoleConfig.users = users
             }
         }
     }
@@ -337,24 +264,6 @@
     ::v-deep .bk-table th {
         height: 44px;
     }
-    .user-list {
-        display: grid;
-        grid-template: auto / repeat(4, 1fr);
-        gap: 10px;
-        max-height: calc(100% - 154px);
-        overflow-y: auto;
-        .user-item {
-            margin-left: 10px;
-            margin-right: 10px;
-            height: 32px;
-            border: 1px solid var(--borderWeightColor);
-            background-color: var(--bgLighterColor);
-            .user-name {
-                max-width: 80px;
-                margin-left: 5px;
-            }
-        }
-    }
 }
 .update-role-group-dialog {
     .bk-dialog-body {
@@ -362,6 +271,22 @@
     }
     ::v-deep .usersTextarea .bk-textarea-wrapper .bk-form-textarea{
         height: 500px;
+    }
+    .user-list {
+        display: grid;
+        grid-template: auto / repeat(3, 1fr);
+        gap: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        .user-item {
+            height: 32px;
+            border: 1px solid var(--borderWeightColor);
+            background-color: var(--bgLighterColor);
+            .user-name {
+                max-width: 100px;
+                margin-left: 5px;
+            }
+        }
     }
     .update-user-list {
         display: grid;
