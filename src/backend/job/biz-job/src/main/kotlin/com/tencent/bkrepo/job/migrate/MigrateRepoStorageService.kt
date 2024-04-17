@@ -153,7 +153,7 @@ class MigrateRepoStorageService(
      */
     fun rollbackInterruptedTaskState() {
         migrateRepoStorageTaskDao.timeoutTasks(instanceId, migrateRepoStorageProperties.timeout).forEach {
-            if (executingTaskRecorder.executing(it.id!!)) {
+            if (!executingTaskRecorder.executing(it.id!!)) {
                 val rollbackState = when (it.state) {
                     MIGRATING.name -> PENDING.name
                     CORRECTING.name -> MIGRATE_FINISHED.name
@@ -163,6 +163,7 @@ class MigrateRepoStorageService(
                 }
                 // 任务之前在本实例内执行，但可能由于进程重启或其他原因而中断，需要重置状态
                 migrateRepoStorageTaskDao.save(it.copy(state = rollbackState))
+                logger.info("rollback task[${it.projectId}/${it.repoName}] state[${it.state}] to [$rollbackState]")
             }
         }
     }

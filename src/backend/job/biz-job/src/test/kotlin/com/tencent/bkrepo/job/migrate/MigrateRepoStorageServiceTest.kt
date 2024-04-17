@@ -27,7 +27,7 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 
-@DisplayName("Node遍历工具测试")
+@DisplayName("迁移服务测试")
 @DataMongoTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Import(
