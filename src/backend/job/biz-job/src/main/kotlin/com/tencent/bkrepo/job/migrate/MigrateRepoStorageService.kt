@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate
 
+import com.google.common.base.CaseFormat
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
@@ -119,13 +120,14 @@ class MigrateRepoStorageService(
 
         val projectId = task.projectId
         val repoName = task.repoName
-        val executor = when (task.state) {
-            PENDING.name -> executors[MigrateExecutor::class.simpleName]!!
-            MIGRATE_FINISHED.name -> executors[CorrectExecutor::class.simpleName]!!
-            CORRECT_FINISHED.name -> executors[MigrateFailedNodeExecutor::class.simpleName]!!
-            MIGRATE_FAILED_NODE_FINISHED.name -> executors[FinishExecutor::class.simpleName]!!
+        val executorName = when (task.state) {
+            PENDING.name -> MigrateExecutor::class.simpleName!!
+            MIGRATE_FINISHED.name -> CorrectExecutor::class.simpleName!!
+            CORRECT_FINISHED.name -> MigrateFailedNodeExecutor::class.simpleName!!
+            MIGRATE_FAILED_NODE_FINISHED.name -> FinishExecutor::class.simpleName!!
             else -> throw IllegalStateException("unsupported state[${task.state}], task[$projectId/$repoName]")
         }
+        val executor = executors[CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, executorName)]!!
 
         return if (executor.execute(buildContext(task))) {
             task

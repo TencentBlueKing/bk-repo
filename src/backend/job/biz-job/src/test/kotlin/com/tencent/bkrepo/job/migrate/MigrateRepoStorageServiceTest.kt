@@ -2,6 +2,7 @@ package com.tencent.bkrepo.job.migrate
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
@@ -9,6 +10,7 @@ import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
 import com.tencent.bkrepo.job.migrate.pojo.CreateMigrateRepoStorageTaskRequest
+import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildRepo
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
@@ -32,7 +34,9 @@ import org.springframework.context.annotation.Import
     MigrateRepoStorageService::class,
     MigrateRepoStorageTaskDao::class,
     MigrateRepoStorageProperties::class,
-    RepositoryCommonUtils::class
+    RepositoryCommonUtils::class,
+    ExecutingTaskRecorder::class,
+    StorageProperties::class,
 )
 class MigrateRepoStorageServiceTest @Autowired constructor(
     private val migrateRepoStorageService: MigrateRepoStorageService
