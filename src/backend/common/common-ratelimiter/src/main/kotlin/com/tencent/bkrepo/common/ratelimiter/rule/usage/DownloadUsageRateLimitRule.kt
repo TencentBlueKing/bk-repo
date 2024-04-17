@@ -30,7 +30,10 @@ package com.tencent.bkrepo.common.ratelimiter.rule.usage
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 
-class DownloadUsageRateLimitRule: UsageRateLimitRule() {
+/**
+ * 下载用量限流配置规则实现
+ */
+class DownloadUsageRateLimitRule : UsageRateLimitRule() {
 
     override fun addRateLimitRule(resourceLimit: ResourceLimit) {
         if (resourceLimit.resource.isBlank()) {

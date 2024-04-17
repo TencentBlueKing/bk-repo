@@ -36,10 +36,16 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
+/**
+ * url资源规则类
+ */
 open class UrlResourceLimitRule(
     private val root: UrlNode = UrlNode("/")
 ) {
 
+    /**
+     * 添加URL对应的规则
+     */
     open fun addUrlResourceLimit(resourceLimit: ResourceLimit) {
         if (resourceLimit.limitDimension != LimitDimension.URL
             && resourceLimit.limitDimension != LimitDimension.URL_TEMPLATE) {
@@ -52,6 +58,9 @@ open class UrlResourceLimitRule(
         addUrlNode(urlPath, resourceLimit)
     }
 
+    /**
+     * 将URL按照/拆分，存对应每级对应规则
+     */
     fun addUrlNode(
         urlPath: String,
         resourceLimit: ResourceLimit
@@ -89,6 +98,9 @@ open class UrlResourceLimitRule(
         }
     }
 
+    /**
+     * 根据资源获取对应规则
+     */
     open fun getUrlResourceLimit(resource: String): ResourceLimit? {
         if (resource.isBlank()) {
             return null
@@ -111,9 +123,9 @@ open class UrlResourceLimitRule(
         if (p.getResourceLimit() != null) {
             currentLimit = p.getResourceLimit()
         }
-        for(path in pathDirs) {
+        for (path in pathDirs) {
             val children = p.getEdges()
-            var matchedNode= children[path]
+            var matchedNode = children[path]
             if (matchedNode == null) {
                 val child = findInChildren(children, path)
                 if (child != null) {
@@ -131,12 +143,12 @@ open class UrlResourceLimitRule(
         return currentLimit
     }
 
+
     private fun findInChildren(
         children: ConcurrentHashMap<String, UrlNode>,
         path: String,
-
     ): UrlNode? {
-        children.entries.forEach {  entry ->
+        children.entries.forEach { entry ->
             val n = entry.value
             if (n.isPattern) {
                 if (Pattern.matches(n.pathDir, path)) {
@@ -147,9 +159,12 @@ open class UrlResourceLimitRule(
         return null
     }
 
+    /**
+     * 判断是否是模板
+     */
     private fun isUrlTemplateVariable(pathDir: String): Boolean {
         return pathDir.startsWith("{") && pathDir.endsWith("}") ||
-            pathDir =="*" || pathDir == "**"
+            pathDir == "*" || pathDir == "**"
     }
 
     private fun getPathDirPatten(pathDir: String): String {

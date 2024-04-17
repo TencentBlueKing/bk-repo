@@ -31,7 +31,10 @@ import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.UsageRateLimitRule
 
-class UserUploadUsageRateLimitRule: UsageRateLimitRule() {
+/**
+ * 用户上传用量限流配置规则实现
+ */
+class UserUploadUsageRateLimitRule : UsageRateLimitRule() {
 
     override fun addRateLimitRule(resourceLimit: ResourceLimit) {
         if (resourceLimit.resource.isBlank()) {

@@ -38,12 +38,15 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * 下载带宽限流器实现
+ */
 class DownloadBandwidthRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): BandwidthRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+) : BandwidthRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun getLimitDimensions(): List<LimitDimension> {
         return listOf(
@@ -60,6 +63,6 @@ class DownloadBandwidthRateLimiterService(
     }
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
-        return KEY_PREFIX +"downloadBandwidth:$resource"
+        return KEY_PREFIX + "downloadBandwidth:$resource"
     }
 }

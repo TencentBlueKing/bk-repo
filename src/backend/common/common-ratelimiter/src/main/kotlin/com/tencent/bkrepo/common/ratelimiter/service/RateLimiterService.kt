@@ -35,6 +35,9 @@ import javax.servlet.http.HttpServletRequest
 
 interface RateLimiterService {
 
+    /**
+     * 限流判断
+     */
     @Throws(AcquireLockFailedException::class, InvalidResourceException::class, OverloadException::class)
     fun limit(request: HttpServletRequest, applyPermits: Long? = null)
 

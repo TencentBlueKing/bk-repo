@@ -39,18 +39,21 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * 下载容量限流器实现
+ */
 class DownloadUsageRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): UsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+) : UsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
-       if (applyPermits == null) {
-           throw AcquireLockFailedException("response content is null")
-       }
-       return applyPermits
+        if (applyPermits == null) {
+            throw AcquireLockFailedException("response content is null")
+        }
+        return applyPermits
     }
 
     override fun getLimitDimensions(): List<LimitDimension> {
@@ -68,6 +71,6 @@ class DownloadUsageRateLimiterService(
     }
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
-        return KEY_PREFIX +"download:$resource"
+        return KEY_PREFIX + "download:$resource"
     }
 }

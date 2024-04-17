@@ -40,12 +40,15 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * 上传容量限流器实现
+ */
 open class UsageRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)  {
+) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun buildResource(request: HttpServletRequest): String {
         val (projectId, repoName) = getRepoInfo(request)
@@ -89,6 +92,6 @@ open class UsageRateLimiterService(
     }
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
-        return KEY_PREFIX+"upload:$resource"
+        return KEY_PREFIX + "upload:$resource"
     }
 }

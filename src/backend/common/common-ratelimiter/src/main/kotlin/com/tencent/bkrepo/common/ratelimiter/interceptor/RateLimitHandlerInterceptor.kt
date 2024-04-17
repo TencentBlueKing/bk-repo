@@ -39,13 +39,16 @@ import org.springframework.web.servlet.HandlerInterceptor
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
+/**
+ * 针对http请求添加限流拦截
+ */
 class RateLimitHandlerInterceptor(
     private val rateLimiterProperties: RateLimiterProperties,
     private val urlRateLimiterService: UrlRateLimiterService,
     private val usageRateLimiterService: UsageRateLimiterService,
     private val userUrlRateLimiterService: UserUrlRateLimiterService,
     private val userUsageRateLimiterService: UserUsageRateLimiterService
-): HandlerInterceptor {
+) : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         return try {
             if (rateLimiterProperties.enabled) {

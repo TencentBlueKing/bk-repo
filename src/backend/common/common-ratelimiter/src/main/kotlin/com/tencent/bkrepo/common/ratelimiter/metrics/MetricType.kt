@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.common.ratelimiter.metrics
 
+/**
+ * 指标类型
+ */
 enum class MetricType {
     TOTAL, // 总请求数量
     PASSED, // 通过数量

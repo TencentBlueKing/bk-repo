@@ -29,10 +29,19 @@ package com.tencent.bkrepo.common.ratelimiter.interceptor
 
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 
+/**
+ * 限流执行拦截器
+ */
 interface RateLimiterInterceptor {
 
+    /**
+     * 限流判断前处理
+     */
     fun beforeLimitCheck(resource: String)
 
+    /**
+     * 限流判断后处理
+     */
     fun afterLimitCheck(
         resource: String, resourceLimit: ResourceLimit?,
         result: Boolean, e: Exception?, applyPermits: Long

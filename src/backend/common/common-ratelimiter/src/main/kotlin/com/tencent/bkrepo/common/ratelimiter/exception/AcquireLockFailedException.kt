@@ -30,7 +30,10 @@ package com.tencent.bkrepo.common.ratelimiter.exception
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 
+/**
+ * 获取对应执行计划失败
+ */
 data class AcquireLockFailedException(
     val reason: String
-): ErrorCodeException(CommonMessageCode.ACQUIRE_LOCK_FAILED, reason)
+) : ErrorCodeException(CommonMessageCode.ACQUIRE_LOCK_FAILED, reason)
 

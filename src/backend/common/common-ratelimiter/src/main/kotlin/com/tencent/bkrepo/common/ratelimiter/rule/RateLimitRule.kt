@@ -27,11 +27,26 @@
 
 package com.tencent.bkrepo.common.ratelimiter.rule
 
+/**
+ * 限流配置规则处理
+ */
 interface RateLimitRule {
 
+    /**
+     * 获取资源对应的规则
+     * 优先查找resource， 如查不到对应规则，则通过extraResource查找
+     * resource一般是特定类型，如特定用户，特定URL，特定项目仓库等
+     * extraResource一般是某一类类型，如所有用户、URL模版、所有仓库等
+     */
     fun getRateLimitRule(resource: String, extraResource: List<String> = emptyList()): ResourceLimit?
 
+    /**
+     * 添加限流规则
+     */
     fun addRateLimitRule(resourceLimit: ResourceLimit)
 
+    /**
+     * 批量添加限流规则
+     */
     fun addRateLimitRules(resourceLimit: List<ResourceLimit>)
 }

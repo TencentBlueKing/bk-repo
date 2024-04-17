@@ -34,11 +34,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(prefix = "rate.limiter")
 data class RateLimiterProperties(
     var enabled: Boolean = false,
+    // 生效范围
     var scope: WorkScope = WorkScope.LOCAL,
     var dryRun: Boolean = false,
     // 配置规则刷新频率 单位为秒
     var refreshDuration: Long = 10L,
+    // 本地缓存限流算法实现的最大个数
     var cacheCapacity: Long = 1024L,
+    // 限流配置
     var rules: List<ResourceLimit> = mutableListOf(),
     // 等待时间，单位毫秒
     var sleepTime: Long = 10

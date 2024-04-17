@@ -29,6 +29,9 @@ package com.tencent.bkrepo.common.ratelimiter.interceptor
 
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 
+/**
+ * 限流拦截器链
+ */
 class RateLimiterInterceptorChain(
     private val interceptors: MutableList<RateLimiterInterceptor> = mutableListOf()
 ) {

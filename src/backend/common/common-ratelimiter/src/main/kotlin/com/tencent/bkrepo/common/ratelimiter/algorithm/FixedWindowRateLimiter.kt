@@ -35,11 +35,14 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 
+/**
+ * 单机固定窗口算法实现
+ */
 class FixedWindowRateLimiter(
     private val limit: Long,
     private val unit: TimeUnit,
     private val stopWatch: Stopwatch = Stopwatch.createStarted()
-): RateLimiter {
+) : RateLimiter {
 
     private val currentValue: AtomicLong = AtomicLong(0)
 

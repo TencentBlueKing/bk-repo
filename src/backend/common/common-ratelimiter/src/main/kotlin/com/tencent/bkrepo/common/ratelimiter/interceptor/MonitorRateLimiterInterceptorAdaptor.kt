@@ -31,9 +31,12 @@ import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import java.time.Duration
 
+/**
+ * 限流相关指标采集拦截器
+ */
 class MonitorRateLimiterInterceptorAdaptor(
     private val rateLimiterMetrics: RateLimiterMetrics
-    ): RateLimiterInterceptorAdapter() {
+) : RateLimiterInterceptorAdapter() {
 
     private val startTime: ThreadLocal<Long> = ThreadLocal()
 

@@ -40,12 +40,15 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * 上传带宽限流器实现
+ */
 open class BandwidthRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): AbstractBandwidthRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)  {
+) : AbstractBandwidthRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun buildResource(request: HttpServletRequest): String {
         val (projectId, _) = getRepoInfo(request)
@@ -84,6 +87,6 @@ open class BandwidthRateLimiterService(
     }
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
-        return KEY_PREFIX+"uploadBandwidth:$resource"
+        return KEY_PREFIX + "uploadBandwidth:$resource"
     }
 }

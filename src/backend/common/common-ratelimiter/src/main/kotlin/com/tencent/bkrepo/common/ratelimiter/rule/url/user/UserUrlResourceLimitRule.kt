@@ -38,10 +38,13 @@ import com.tencent.bkrepo.common.ratelimiter.utils.UrlUtils.getUserAndUrl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+/**
+ * 用户+url对应规则
+ */
 class UserUrlResourceLimitRule(
     private val root: UrlNode = UrlNode("/"),
     private var user: String = StringPool.POUND
-): UrlResourceLimitRule(root) {
+) : UrlResourceLimitRule(root) {
 
     override fun addUrlResourceLimit(resourceLimit: ResourceLimit) {
         if (resourceLimit.limitDimension !in userLimitDimensionList) {

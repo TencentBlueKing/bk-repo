@@ -44,6 +44,9 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import java.time.Duration
 
+/**
+ * 限流指标写入
+ */
 class RateLimiterMetrics(private val registry: MeterRegistry) {
 
     fun collectMetrics(
@@ -61,7 +64,8 @@ class RateLimiterMetrics(private val registry: MeterRegistry) {
                 getExceptionCounter(resource).increment(applyPermits.toDouble())
             }
             getLimitCheckDuration(resource).record(duration)
-        } catch (ignore: Exception) {}
+        } catch (ignore: Exception) {
+        }
 
     }
 

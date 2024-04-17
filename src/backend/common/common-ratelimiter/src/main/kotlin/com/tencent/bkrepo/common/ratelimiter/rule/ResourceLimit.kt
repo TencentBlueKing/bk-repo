@@ -31,11 +31,20 @@ import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import java.util.concurrent.TimeUnit
 
+/**
+ * 限流规则
+ */
 data class ResourceLimit(
+    // 算法选择
     var algo: Algorithms = Algorithms.FIXED_WINDOW,
+    // 资源标识
     var resource: String = "/",
+    // 限流维度
     var limitDimension: LimitDimension = LimitDimension.URL,
+    // 限流值
     var limit: Long = -1,
+    // 桶容量(令牌桶使用)
     var bucketCapacity: Long? = null,
+    // 限流时间单位
     var unit: TimeUnit = TimeUnit.SECONDS,
 )

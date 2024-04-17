@@ -32,7 +32,11 @@ import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import java.util.concurrent.ConcurrentHashMap
 
-open class UsageRateLimitRule: RateLimitRule {
+/**
+ * 上传用量限流配置规则实现
+ */
+open class UsageRateLimitRule : RateLimitRule {
+
 
     val usageLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
 

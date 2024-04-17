@@ -32,6 +32,9 @@ import org.springframework.util.StreamUtils
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 
+/**
+ * lua脚本加载
+ */
 object LuaScript {
     private val logger = LoggerFactory.getLogger(LuaScript::class.java)
     private const val FIX_WINDOW_RATE_LIMITER_FILE_PATH = "META-INF/fix-window-rate-limiter.lua"

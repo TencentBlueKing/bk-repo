@@ -36,12 +36,15 @@ import org.springframework.data.redis.core.script.DefaultRedisScript
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
+/**
+ * 分布式固定时间窗口算法实现
+ */
 class DistributedFixedWindowRateLimiter(
     private val key: String,
     private val limit: Long,
     private val limitUnit: TimeUnit,
     private val redisTemplate: RedisTemplate<String, String>,
-    ): RateLimiter {
+) : RateLimiter {
     override fun tryAcquire(permits: Long): Boolean {
         try {
             var acquireResult = false

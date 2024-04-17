@@ -31,9 +31,12 @@ import com.tencent.bkrepo.common.ratelimiter.constant.TRY_LOCK_TIMEOUT
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import java.util.concurrent.TimeUnit
 
+/**
+ * 单机令牌桶算法实现
+ */
 class TokenBucketRateLimiter(
     private val permitsPerSecond: Long,
-    ): RateLimiter {
+) : RateLimiter {
 
     private val guavaRateLimiter = com.google.common.util.concurrent.RateLimiter.create(permitsPerSecond.toDouble())
 

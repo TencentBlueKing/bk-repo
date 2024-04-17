@@ -34,24 +34,35 @@ import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.utils.UrlUtils
 import java.util.concurrent.ConcurrentHashMap
 
-class UserUrlRateLimitRule: RateLimitRule {
+/**
+ * 用户级别的URL限流配置规则实现
+ */
+class UserUrlRateLimitRule : RateLimitRule {
+    // 用户对应规则
     private val userLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
+
+    // 用户+指定url对应规则
     private val userUrlLimitRules: ConcurrentHashMap<String, UserUrlResourceLimitRule> = ConcurrentHashMap()
+
+    // 用户+某类url(模板)对应规则
     private val userUrlTemplateLimitRules: ConcurrentHashMap<String, UserUrlResourceLimitRule> = ConcurrentHashMap()
 
     override fun getRateLimitRule(resource: String, extraResource: List<String>): ResourceLimit? {
         if (resource.isBlank()) return null
         val (userId, url) = UrlUtils.getUserAndUrl(resource)
+        // 先通过用户+指定url查找
         var ruleLimit = userUrlLimitRules[userId]?.getUrlResourceLimit(url)
         if (ruleLimit == null && userUrlLimitRules.containsKey(StringPool.POUND)) {
             ruleLimit = userUrlLimitRules[StringPool.POUND]?.getUrlResourceLimit(url)
         }
         if (ruleLimit == null) {
+            // 再查找用户+某类url(模板)对应规则
             ruleLimit = userUrlTemplateLimitRules[userId]?.getUrlResourceLimit(url)
             if (ruleLimit == null && userUrlTemplateLimitRules.containsKey(StringPool.POUND)) {
                 ruleLimit = userUrlTemplateLimitRules[StringPool.POUND]?.getUrlResourceLimit(url)
             }
             if (ruleLimit == null) {
+                // 最后查找用户对应规则
                 ruleLimit = userLimitRules[userId]
                 if (ruleLimit == null && userLimitRules.containsKey(StringPool.POUND)) {
                     ruleLimit = userLimitRules[StringPool.POUND]
@@ -59,6 +70,7 @@ class UserUrlRateLimitRule: RateLimitRule {
             }
         }
         if (ruleLimit == null && extraResource.isNotEmpty()) {
+            // 用户+某类url(模板)对应规则判断
             val (userId, urlMapping) = UrlUtils.getUserAndUrl(extraResource.first())
             ruleLimit = userUrlTemplateLimitRules[userId]?.getUrlResourceLimit(urlMapping)
             if (ruleLimit == null && userUrlTemplateLimitRules.containsKey(StringPool.POUND)) {

@@ -35,18 +35,20 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
 import kotlin.system.measureTimeMillis
 
-
+/**
+ * 分布式令牌桶算法实现
+ */
 class DistributedTokenBucketRateLimiter(
     private val key: String,
     private val permitsPerSecond: Double,
     private val capacity: Long,
     private val redisTemplate: RedisTemplate<String, String>,
-): RateLimiter {
+) : RateLimiter {
     override fun tryAcquire(permits: Long): Boolean {
 
         try {
 
-            var acquireResult: Boolean = false
+            var acquireResult = false
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
                 val results = redisTemplate.execute(

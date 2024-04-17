@@ -39,17 +39,23 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.io.InputStream
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * 带宽限流器抽象实现
+ */
 abstract class AbstractBandwidthRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
         throw UnsupportedOperationException()
     }
 
+    /**
+     * 获取对应资源限流规则配置
+     */
     fun getBandwidthRateLimit(request: HttpServletRequest): ResourceLimit? {
         if (!rateLimiterProperties.enabled) {
             return null
@@ -67,7 +73,9 @@ abstract class AbstractBandwidthRateLimiterService(
         return resourceLimit
     }
 
-
+    /**
+     * 根据资源返回对应带限流实现的InputStream
+     */
     fun bandwidthRateLimit(
         request: HttpServletRequest,
         inputStream: InputStream,
@@ -117,7 +125,6 @@ abstract class AbstractBandwidthRateLimiterService(
         } catch (e: AcquireLockFailedException) {
             return
         }
-
     }
 
     companion object {

@@ -62,20 +62,26 @@ import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * 限流器抽象实现
+ */
 abstract class AbstractRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     private val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-): RateLimiterService {
+) : RateLimiterService {
 
+    // 资源对应限限流算法缓存
     private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
     private val interceptorChain: RateLimiterInterceptorChain =
         RateLimiterInterceptorChain(mutableListOf(MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics)))
 
+    // 限流规则配置
     var rateLimitRule: RateLimitRule? = null
 
+    // 当前限流规则配置hashcode
     var currentRuleHashCode: Int? = null
 
     init {
@@ -134,7 +140,7 @@ abstract class AbstractRateLimiterService(
     }
 
     override fun addInterceptor(interceptor: RateLimiterInterceptor) {
-            this.interceptorChain.addInterceptor(interceptor)
+        this.interceptorChain.addInterceptor(interceptor)
     }
 
     override fun addInterceptors(interceptors: List<RateLimiterInterceptor>) {
@@ -143,22 +149,46 @@ abstract class AbstractRateLimiterService(
         }
     }
 
+    /**
+     * 生成资源对应的唯一key
+     */
     abstract fun generateKey(resource: String, resourceLimit: ResourceLimit): String
 
+    /**
+     * 根据请求获取对应的资源，用于查找对应限流规则
+     */
     abstract fun buildResource(request: HttpServletRequest): String
 
+    /**
+     * 根据请求获取对应的模版资源，用于查找对应限流规则
+     */
     abstract fun buildResourceTemplate(request: HttpServletRequest): List<String>
 
+    /**
+     * 根据请求获取需要申请的许可数
+     */
     abstract fun applyPermits(request: HttpServletRequest, applyPermits: Long?): Long
 
+    /**
+     * 限流器实现对应的维度
+     */
     abstract fun getLimitDimensions(): List<LimitDimension>
 
+    /**
+     * 获取对应限流规则配置实现
+     */
     abstract fun getRateLimitRuleClass(): Class<out RateLimitRule>
 
+    /**
+     * 对请求进行过滤，不进行限流
+     */
     open fun ignoreRequest(request: HttpServletRequest): Boolean {
         return false
     }
 
+    /**
+     * 根据资源和限流规则生成对应限流算法
+     */
     open fun createAlgorithmOfRateLimiter(resource: String, resourceLimit: ResourceLimit): RateLimiter {
         if (resourceLimit.limit < 0) {
             throw InvalidResourceException("config limit is ${resourceLimit.limit}")
@@ -192,10 +222,10 @@ abstract class AbstractRateLimiterService(
     }
 
     fun getRepoInfo(request: HttpServletRequest): Pair<String?, String?> {
-        val projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) )
-            as LinkedHashMap<*,*>)["projectId"] as String?
-        val repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) )
-            as LinkedHashMap<*,*>)["repoName"] as String?
+        val projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
+            as LinkedHashMap<*, *>)["projectId"] as String?
+        val repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
+            as LinkedHashMap<*, *>)["repoName"] as String?
         if (projectId.isNullOrEmpty()) {
             throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
         }
@@ -203,6 +233,9 @@ abstract class AbstractRateLimiterService(
     }
 
     //TODO 配置异常需要处理
+    /**
+     * 配置规则刷新
+     */
     private fun refreshRateLimitRule() {
         if (!rateLimiterProperties.enabled) return
         val usageRuleConfigs = rateLimiterProperties.rules.filter {
@@ -233,6 +266,9 @@ abstract class AbstractRateLimiterService(
         logger.info("rules in ${this.javaClass.simpleName} for request has been refreshed!")
     }
 
+    /**
+     * 获取对应限流算法实现
+     */
     fun getAlgorithmOfRateLimiter(
         resource: String, resourceLimit: ResourceLimit
     ): RateLimiter {
@@ -252,6 +288,5 @@ abstract class AbstractRateLimiterService(
         private val logger: Logger = LoggerFactory.getLogger(AbstractRateLimiterService::class.java)
         val UPLOAD_REQUEST_METHOD = listOf(HttpMethod.POST.name, HttpMethod.PUT.name, HttpMethod.PATCH.name)
         val DOWNLOAD_REQUEST_METHOD = listOf(HttpMethod.GET.name)
-
     }
 }

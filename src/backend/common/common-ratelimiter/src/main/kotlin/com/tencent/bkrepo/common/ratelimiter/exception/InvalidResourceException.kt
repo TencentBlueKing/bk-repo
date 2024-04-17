@@ -30,7 +30,10 @@ package com.tencent.bkrepo.common.ratelimiter.exception
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 
+/**
+ * 资源无效异常
+ */
 data class InvalidResourceException(
     val reason: String
-): ErrorCodeException(CommonMessageCode.INVALID_CONFIG, reason)
+) : ErrorCodeException(CommonMessageCode.INVALID_CONFIG, reason)
 

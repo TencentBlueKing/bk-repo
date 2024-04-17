@@ -31,9 +31,14 @@ import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 
-class UrlRateLimitRule: RateLimitRule {
+/**
+ * URL限流配置规则实现
+ */
+class UrlRateLimitRule : RateLimitRule {
 
+    // 指定URL规则
     private val urlLimitRules: UrlResourceLimitRule = UrlResourceLimitRule()
+    // 某一类url对应规则
     private val urlTemplateLimitRules: UrlResourceLimitRule = UrlResourceLimitRule()
 
     override fun getRateLimitRule(resource: String, extraResource: List<String>): ResourceLimit? {

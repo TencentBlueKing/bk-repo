@@ -30,6 +30,9 @@ package com.tencent.bkrepo.common.ratelimiter.rule.url
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * url 节点
+ */
 class UrlNode(
     val pathDir: String,
     val isPattern: Boolean = false,
