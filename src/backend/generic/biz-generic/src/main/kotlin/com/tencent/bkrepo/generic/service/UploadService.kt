@@ -43,11 +43,13 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
+import com.tencent.bkrepo.generic.artifact.resolveMetadata
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
@@ -152,8 +154,10 @@ class UploadService(
                 sha256 = mergedFileInfo.sha256,
                 md5 = mergedFileInfo.md5,
                 size = mergedFileInfo.size,
-                overwrite = true,
-                operator = userId
+                overwrite = getBooleanHeader(HEADER_OVERWRITE),
+                operator = userId,
+                expires = getLongHeader(HEADER_EXPIRES),
+                nodeMetadata = resolveMetadata(HttpContextHolder.getRequest())
             )
         )
         logger.info("User[${SecurityUtils.getPrincipal()}] complete upload [$artifactInfo] success.")
