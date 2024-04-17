@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
-import com.tencent.bkrepo.common.api.constant.retry
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
@@ -68,28 +68,27 @@ abstract class BaseTaskExecutor(
         with(task) {
             logger.info("Start to $state task[$projectId/$repoName], srcKey[$srcStorageKey], dstKey[$dstStorageKey]")
             val startNanoTime = System.nanoTime()
-            executingTaskRecorder.record(id!!)
             try {
                 execute {
+                    executingTaskRecorder.record(id!!)
                     try {
                         command.run()
                         // 更新任务状态
                         if (state != dstState) {
                             migrateRepoStorageTaskDao.updateState(id, state, dstState, lastModifiedDate)
-                            val elapsed = System.nanoTime() - startNanoTime
-                            logger.info("$state task[$projectId/$repoName] success, elapsed[$elapsed ns]")
+                            val elapsed = HumanReadable.time(System.nanoTime() - startNanoTime)
+                            logger.info("$state task[$projectId/$repoName] success, elapsed[$elapsed]")
                         }
                     } catch (exception: Exception) {
-                        val elapsed = System.nanoTime() - startNanoTime
-                        logger.error("$state task[$projectId/$repoName] failed, elapsed[$elapsed ns]", exception)
+                        val elapsed = HumanReadable.time(System.nanoTime() - startNanoTime)
+                        logger.error("$state task[$projectId/$repoName] failed, elapsed[$elapsed]", exception)
                     } finally {
                         executingTaskRecorder.remove(id)
                     }
                 }
             } catch (e: RejectedExecutionException) {
                 // 回滚状态
-                executingTaskRecorder.remove(id)
-                migrateRepoStorageTaskDao.updateState(id, state, oldState, lastModifiedDate)
+                migrateRepoStorageTaskDao.updateState(id!!, state, oldState, lastModifiedDate)
                 return false
             }
             return true
@@ -140,35 +139,14 @@ abstract class BaseTaskExecutor(
         val updateResult = migrateRepoStorageTaskDao.updateState(
             task.id!!, task.state, dstState, task.lastModifiedDate, instanceId
         )
-        if (updateResult.modifiedCount == 0L) {
-            logger.info("task[${task.projectId}/${task.repoName}] was executing by other thread")
-            return false
-        }
-        return true
+        return updateResult.modifiedCount != 0L
     }
 
-    /**
-     * 执行数据迁移
-     */
-    private fun transferData(context: MigrationContext, node: Node) {
-        val sha256 = node.sha256
-        try {
-            val throughput = retry(RETRY_COUNT) {
-                measureThroughput {
-                    storageService.copy(sha256, context.srcCredentials, context.dstCredentials)
-                    node.size
-                }
-            }
-            // 输出迁移速率
-            logger.info("Success to transfer file[$sha256], $throughput, task[${node.projectId}/${node.repoName}]")
-        } catch (e: Exception) {
-            logger.error("transfer node[${node.projectId}/${node.repoName}/${node.fullPath}] failed, [$sha256]", e)
-            saveMigrateFailedNode(context.task.id!!, node)
-            throw e
+    protected fun saveMigrateFailedNode(taskId: String, node: Node) {
+        if (migrateFailedNodeDao.existsFailedNode(node.projectId, node.repoName, node.fullPath)) {
+            return
         }
-    }
 
-    private fun saveMigrateFailedNode(taskId: String, node: Node) {
         val now = LocalDateTime.now()
         with(node) {
             try {
@@ -187,14 +165,24 @@ abstract class BaseTaskExecutor(
                         retryTimes = 0
                     )
                 )
-            } catch (e: DuplicateKeyException) {
-                migrateFailedNodeDao.incRetryTimes(node.projectId, node.repoName, node.fullPath)
+            } catch (ignore: DuplicateKeyException) {
             }
         }
     }
 
+    /**
+     * 执行数据迁移
+     */
+    private fun transferData(context: MigrationContext, node: Node) {
+        val throughput = measureThroughput {
+            storageService.copy(node.sha256, context.srcCredentials, context.dstCredentials)
+            node.size
+        }
+        // 输出迁移速率
+        logger.info("Success to transfer file[${node.sha256}], $throughput, task[${node.projectId}/${node.repoName}]")
+    }
+
     companion object {
-        private const val RETRY_COUNT = 3
         private val logger = LoggerFactory.getLogger(BaseTaskExecutor::class.java)
     }
 }

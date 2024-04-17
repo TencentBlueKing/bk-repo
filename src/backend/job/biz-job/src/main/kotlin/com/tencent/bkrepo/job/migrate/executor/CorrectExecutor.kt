@@ -41,6 +41,7 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadP
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
 import com.tencent.bkrepo.repository.api.FileReferenceClient
+import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
@@ -93,6 +94,9 @@ class CorrectExecutor(
                 transferDataExecutor.execute {
                     try {
                         correctNode(context, node)
+                    } catch (e: Exception){
+                        saveMigrateFailedNode(task.id!!, node)
+                        logger.error("correct node[${node.fullPath}] failed, task[${task.projectId}/${task.repoName}]")
                     } finally {
                         context.decTransferringCount()
                     }
@@ -100,5 +104,9 @@ class CorrectExecutor(
             }
             context.waitAllTransferFinished()
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(CorrectExecutor::class.java)
     }
 }

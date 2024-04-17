@@ -113,6 +113,9 @@ class MigrateExecutor(
                 try {
                     // 迁移制品
                     migrateNode(context, node)
+                } catch (e: Exception) {
+                    saveMigrateFailedNode(taskId, node)
+                    logger.error("migrate node[${node.fullPath}] failed, task[$projectId/$repoName]", e)
                 } finally {
                     // 保存完成的任务序号
                     migratedNumberQueue.offer(taskNumber)

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.dao
 
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import org.springframework.data.domain.Sort
@@ -48,21 +49,28 @@ class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
         return findOne(query)
     }
 
-    fun existsFailedNode(projectId: String, repoName: String): Boolean {
+    fun existsFailedNode(projectId: String, repoName: String, fullPath: String? = null): Boolean {
         val criteria = Criteria
             .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
             .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
+        fullPath?.let { criteria.and(TMigrateFailedNode::fullPath.name).isEqualTo(it) }
         return exists(Query(criteria))
     }
 
-    fun incRetryTimes(projectId: String, repoName: String, fullPath: String) {
+    fun incRetryTimes(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        lastModifiedDate: LocalDateTime
+    ): UpdateResult {
         val criteria = Criteria
             .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
             .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
             .and(TMigrateFailedNode::fullPath.name).isEqualTo(fullPath)
+            .and(TMigrateFailedNode::lastModifiedDate.name).isEqualTo(lastModifiedDate)
         val update = Update()
             .inc(TMigrateFailedNode::retryTimes.name, 1)
             .set(TMigrateFailedNode::lastModifiedDate.name, LocalDateTime.now())
-        updateFirst(Query(criteria), update)
+        return updateFirst(Query(criteria), update)
     }
 }
