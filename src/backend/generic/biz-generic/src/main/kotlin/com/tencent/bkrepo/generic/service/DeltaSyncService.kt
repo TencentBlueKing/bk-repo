@@ -55,7 +55,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
-import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.apache.pulsar.shade.org.eclipse.util.UrlEncoded
