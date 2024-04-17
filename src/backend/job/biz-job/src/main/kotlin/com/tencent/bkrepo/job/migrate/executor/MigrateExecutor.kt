@@ -147,12 +147,12 @@ class MigrateExecutor(
         }
 
         val repo = repositoryClient.getRepoDetail(task.projectId, task.repoName).data!!
+        // 任务首次执行才更新仓库配置，从上次中断点继续执行时不需要重复更新
         if (repo.storageCredentials?.key != task.dstStorageKey) {
-            // 修改repository配置，保证之后上传的文件直接保存到新存储实例中，文件下载时，当前实例找不到的情况下会去默认存储找
-            // 任务首次执行才更新仓库配置，从上次中断点继续执行时不需要重复更新
             val startDate = LocalDateTime.now()
             migrateRepoStorageTaskDao.updateStartDate(task.id!!, startDate)
             logger.info("update migrate task of [${task.projectId}/${task.repoName}] startDate[$startDate]")
+            // 修改repository配置，保证之后上传的文件直接保存到新存储实例中，文件下载时，当前实例找不到的情况下会去默认存储找
             repositoryClient.updateStorageCredentialsKey(task.projectId, task.repoName, task.dstStorageKey)
             logger.info("update repo[${task.projectId}/${task.repoName}] dstStorageKey[${task.dstStorageKey}]")
         }

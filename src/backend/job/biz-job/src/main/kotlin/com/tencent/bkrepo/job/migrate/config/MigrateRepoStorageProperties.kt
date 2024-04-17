@@ -35,18 +35,18 @@ data class MigrateRepoStorageProperties(
     /**
      * 允许同时迁移的制品数量
      */
-    val nodeConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
+    var nodeConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
     /**
      * 更新进度间隔，指定每迁移多少个制品更新一次任务进度
      */
-    val updateProgressInterval: Int = 10,
+    var updateProgressInterval: Int = 10,
     /**
      * 从开始执行迁移任务到可执行数据矫正的时间间隔，用于等待传输中的制品完成传输，避免执行数据矫正时候还有数据在传输到旧存储中
      */
-    val correctInterval: Duration = Duration.ofHours(4L),
+    var correctInterval: Duration = Duration.ofHours(4L),
 
     /**
      * 任务执行超时时间，超时后会检查任务是否被中断
      */
-    val timeout: Duration = Duration.ofMinutes(10L),
+    var timeout: Duration = Duration.ofMinutes(10L),
 )
