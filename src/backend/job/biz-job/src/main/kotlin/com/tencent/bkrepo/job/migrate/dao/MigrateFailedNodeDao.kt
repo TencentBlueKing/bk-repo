@@ -35,6 +35,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
@@ -59,7 +60,9 @@ class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
             .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
             .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
             .and(TMigrateFailedNode::fullPath.name).isEqualTo(fullPath)
-        val update = Update().inc(TMigrateFailedNode::retryTimes.name, 1)
+        val update = Update()
+            .inc(TMigrateFailedNode::retryTimes.name, 1)
+            .set(TMigrateFailedNode::lastModifiedDate.name, LocalDateTime.now())
         updateFirst(Query(criteria), update)
     }
 }
