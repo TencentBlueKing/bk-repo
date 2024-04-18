@@ -38,6 +38,9 @@ import com.tencent.bkrepo.common.artifact.resolve.path.DefaultArtifactInfoResolv
 import com.tencent.bkrepo.common.artifact.resolve.path.ResolverMap
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
@@ -84,8 +87,18 @@ class ArtifactResolverConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ArtifactResourceWriter::class)
-    fun artifactResourceWriter(storageProperties: StorageProperties): ArtifactResourceWriter {
-        return DefaultArtifactResourceWriter(storageProperties)
+    fun artifactResourceWriter(
+        storageProperties: StorageProperties,
+        downloadUsageRateLimiterService: DownloadUsageRateLimiterService? = null,
+        userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService? = null,
+        downloadBandwidthRateLimiterService: DownloadBandwidthRateLimiterService? = null,
+        ): ArtifactResourceWriter {
+        return DefaultArtifactResourceWriter(
+            storageProperties,
+            downloadUsageRateLimiterService,
+            userDownloadUsageRateLimiterService,
+            downloadBandwidthRateLimiterService,
+        )
     }
 
     @Bean
