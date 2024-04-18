@@ -90,11 +90,11 @@ class NodeIterator(
             .and(NodeDetail::folder.name).isEqualTo(false)
             .and(Node::sha256.name).ne(FAKE_SHA256)
         if (task.state == MigrateRepoStorageTaskState.CORRECTING.name) {
-            criteria.and(NodeDetail::createdDate.name).gt(task.startDate!!)
+            criteria.and(NodeDetail::createdDate.name).gte(task.startDate!!)
             cursor = 0
             page = 0
         } else {
-            criteria.and(NodeDetail::createdDate.name).lte(task.startDate!!)
+            criteria.and(NodeDetail::createdDate.name).lt(task.startDate!!)
             cursor = (task.migratedCount % pageSize.toLong()).toInt()
             page = (task.migratedCount / pageSize.toLong()).toInt()
         }

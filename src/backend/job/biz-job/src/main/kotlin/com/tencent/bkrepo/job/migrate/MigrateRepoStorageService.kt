@@ -148,6 +148,10 @@ class MigrateRepoStorageService(
         return migrateRepoStorageTaskDao.exists(projectId, repoName)
     }
 
+    fun findTask(projectId: String, repoName: String): MigrateRepoStorageTask? {
+        return migrateRepoStorageTaskDao.find(projectId, repoName)?.toDto()
+    }
+
     /**
      * 回滚因进程重启或其他原因导致中断的任务状态
      */
@@ -162,7 +166,7 @@ class MigrateRepoStorageService(
                     else -> throw IllegalStateException("cant rollback state[${it.state}]")
                 }
                 // 任务之前在本实例内执行，但可能由于进程重启或其他原因而中断，需要重置状态
-                migrateRepoStorageTaskDao.save(it.copy(state = rollbackState))
+                migrateRepoStorageTaskDao.updateState(it.id, it.state, rollbackState, it.lastModifiedDate)
                 logger.info("rollback task[${it.projectId}/${it.repoName}] state[${it.state}] to [$rollbackState]")
             }
         }

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.migrate.utils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
@@ -40,14 +41,14 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import java.time.LocalDateTime
 
 object MigrateTestUtils {
-    fun buildTask(now: LocalDateTime = LocalDateTime.now()): MigrateRepoStorageTask {
+    fun buildTask(now: LocalDateTime = LocalDateTime.now(), startDate: LocalDateTime? = now): MigrateRepoStorageTask {
         return MigrateRepoStorageTask(
             id = "",
             createdBy = UT_USER,
             createdDate = now,
             lastModifiedBy = UT_USER,
             lastModifiedDate = now,
-            startDate = now,
+            startDate = startDate,
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             srcStorageKey = "$UT_STORAGE_CREDENTIALS_KEY-src",
@@ -56,7 +57,12 @@ object MigrateTestUtils {
         )
     }
 
-    fun buildRepo(projectId: String = UT_PROJECT_ID, repoName: String = UT_REPO_NAME) = RepositoryDetail(
+    fun buildRepo(
+        projectId: String = UT_PROJECT_ID,
+        repoName: String = UT_REPO_NAME,
+        oldCredentialsKey: String? = null,
+        storageCredentials: StorageCredentials? = null,
+    ) = RepositoryDetail(
         projectId = projectId,
         name = repoName,
         type = RepositoryType.GENERIC,
@@ -70,7 +76,7 @@ object MigrateTestUtils {
         lastModifiedDate = "",
         quota = null,
         used = null,
-        oldCredentialsKey = null,
-        storageCredentials = null,
+        oldCredentialsKey = oldCredentialsKey,
+        storageCredentials = storageCredentials,
     )
 }
