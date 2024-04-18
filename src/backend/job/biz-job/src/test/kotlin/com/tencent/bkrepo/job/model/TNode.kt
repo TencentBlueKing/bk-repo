@@ -25,51 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.migrate.pojo
+package com.tencent.bkrepo.job.model
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import java.util.concurrent.locks.Condition
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.time.LocalDateTime
 
-data class MigrationContext(
-    val task: MigrateRepoStorageTask,
-    val srcCredentials: StorageCredentials?,
-    val dstCredentials: StorageCredentials?,
-) {
-    private var transferringCount: Long = 0
-    private val lock: ReentrantLock = ReentrantLock()
-    private val condition: Condition = lock.newCondition()
-
-    fun transferring() = transferringCount
-
-    /**
-     * 增加传输中的制品数量
-     */
-    fun incTransferringCount() {
-        lock.withLock { transferringCount++ }
-    }
-
-    /**
-     * 减少传输中的制品数量
-     */
-    fun decTransferringCount() {
-        lock.withLock {
-            transferringCount--
-            if (transferringCount == 0L) {
-                condition.signalAll()
-            }
-        }
-    }
-
-    /**
-     * 等待所有数据传输完成
-     */
-    fun waitAllTransferFinished() {
-        lock.withLock {
-            while (transferringCount != 0L) {
-                condition.await()
-            }
-        }
-    }
-}
+data class TNode(
+    val id: String? = null,
+    val createdDate: LocalDateTime,
+    val folder: Boolean,
+    val projectId: String,
+    val repoName: String,
+    val fullPath: String,
+    val size: Long,
+    val sha256: String,
+    val md5: String,
+    val deleted: LocalDateTime? = null,
+)

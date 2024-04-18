@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Component
 class CorrectExecutor(
@@ -86,6 +87,11 @@ class CorrectExecutor(
         }
     }
 
+    override fun close(timeout: Long, unit: TimeUnit) {
+        correctExecutor.shutdown()
+        correctExecutor.awaitTermination(timeout, unit)
+    }
+
     private fun doCorrect(context: MigrationContext) {
         with(context) {
             val iterator = NodeIterator(task, mongoTemplate)
@@ -94,9 +100,11 @@ class CorrectExecutor(
                 transferDataExecutor.execute {
                     try {
                         correctNode(context, node)
-                    } catch (e: Exception){
+                    } catch (e: Exception) {
                         saveMigrateFailedNode(task.id!!, node)
-                        logger.error("correct node[${node.fullPath}] failed, task[${task.projectId}/${task.repoName}]")
+                        logger.error(
+                            "correct node[${node.fullPath}] failed, task[${task.projectId}/${task.repoName}]", e
+                        )
                     } finally {
                         context.decTransferringCount()
                     }

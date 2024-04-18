@@ -46,6 +46,7 @@ import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 abstract class BaseTaskExecutor(
     protected val properties: MigrateRepoStorageProperties,
@@ -99,6 +100,7 @@ abstract class BaseTaskExecutor(
         val sha256 = node.sha256
         // 文件已存在于目标存储则不处理
         if (storageService.exist(sha256, context.dstCredentials)) {
+            logger.info("file[$sha256] already exists in dst credentials[${context.task.dstStorageKey}]")
             return
         }
 
@@ -112,7 +114,6 @@ abstract class BaseTaskExecutor(
         } else {
             // dst data和reference都不存在，migrate
             migrateNode(context, node)
-            logger.info("Success to migrate file[$sha256].")
         }
     }
 
@@ -133,6 +134,7 @@ abstract class BaseTaskExecutor(
         if (fileReferenceClient.increment(sha256, dstStorageKey).data != true) {
             logger.error("Failed to increment file reference[$sha256] on storage[$dstStorageKey].")
         }
+        logger.info("Success to migrate file[$sha256].")
     }
 
     protected fun updateState(task: MigrateRepoStorageTask, dstState: String): Boolean {
@@ -169,6 +171,8 @@ abstract class BaseTaskExecutor(
             }
         }
     }
+
+    open fun close(timeout: Long, unit: TimeUnit) {}
 
     /**
      * 执行数据迁移

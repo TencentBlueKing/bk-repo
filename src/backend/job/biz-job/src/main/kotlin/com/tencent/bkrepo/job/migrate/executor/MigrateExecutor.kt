@@ -48,6 +48,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Component
 class MigrateExecutor(
@@ -83,6 +84,7 @@ class MigrateExecutor(
      * @return 是否开始执行
      */
     override fun execute(context: MigrationContext): Boolean {
+        require(context.task.state == PENDING.name)
         if (migrateExecutor.activeCount == migrateExecutor.maximumPoolSize) {
             return false
         }
@@ -91,6 +93,11 @@ class MigrateExecutor(
         return migrateExecutor.execute(newContext.task, PENDING.name, MIGRATE_FINISHED.name) {
             doMigrate(newContext)
         }
+    }
+
+    override fun close(timeout: Long, unit: TimeUnit) {
+        migrateExecutor.shutdown()
+        migrateExecutor.awaitTermination(timeout, unit)
     }
 
     private fun doMigrate(context: MigrationContext) {

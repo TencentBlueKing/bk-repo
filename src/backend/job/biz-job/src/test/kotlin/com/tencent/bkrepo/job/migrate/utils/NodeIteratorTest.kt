@@ -25,10 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.migrate
+package com.tencent.bkrepo.job.migrate.utils
 
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
@@ -37,7 +35,7 @@ import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildTask
-import com.tencent.bkrepo.job.migrate.utils.NodeIterator
+import com.tencent.bkrepo.job.model.TNode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
@@ -130,19 +128,4 @@ class NodeIteratorTest @Autowired constructor(
 
         mongoTemplate.insert(nodes, collectionName)
     }
-
-    @ShardingDocument("node")
-    private data class TNode(
-        var id: String? = null,
-        var createdDate: LocalDateTime,
-        var folder: Boolean,
-        @ShardingKey(count = 1)
-        val projectId: String,
-        val repoName: String,
-        val fullPath: String,
-        val size: Long,
-        val sha256: String,
-        val md5: String,
-        val deleted: LocalDateTime? = null,
-    )
 }

@@ -25,51 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.migrate.pojo
+package com.tencent.bkrepo.job.migrate.executor
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import java.util.concurrent.locks.Condition
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import com.tencent.bkrepo.job.UT_PROJECT_ID
+import com.tencent.bkrepo.job.UT_REPO_NAME
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import java.time.LocalDateTime
+import java.util.concurrent.TimeUnit
 
-data class MigrationContext(
-    val task: MigrateRepoStorageTask,
-    val srcCredentials: StorageCredentials?,
-    val dstCredentials: StorageCredentials?,
-) {
-    private var transferringCount: Long = 0
-    private val lock: ReentrantLock = ReentrantLock()
-    private val condition: Condition = lock.newCondition()
-
-    fun transferring() = transferringCount
-
-    /**
-     * 增加传输中的制品数量
-     */
-    fun incTransferringCount() {
-        lock.withLock { transferringCount++ }
+@DisplayName("结束任务执行器测试")
+class FinishExecutorTest @Autowired constructor(
+    private val executor: FinishExecutor,
+) : ExecutorBaseTest() {
+    @AfterAll
+    fun afterAll() {
+        executor.close(1L, TimeUnit.MINUTES)
     }
 
-    /**
-     * 减少传输中的制品数量
-     */
-    fun decTransferringCount() {
-        lock.withLock {
-            transferringCount--
-            if (transferringCount == 0L) {
-                condition.signalAll()
-            }
-        }
+    @BeforeEach
+    fun beforeEach() {
+        initMock()
     }
 
-    /**
-     * 等待所有数据传输完成
-     */
-    fun waitAllTransferFinished() {
-        lock.withLock {
-            while (transferringCount != 0L) {
-                condition.await()
-            }
-        }
+    @Test
+    fun testFinishTask() {
+        val task = createTask()
+        updateTask(task.id!!, MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED.name, LocalDateTime.now())
+        val context = buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
+        assertTrue(executor.execute(context))
+        assertFalse(migrateTaskService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
     }
 }

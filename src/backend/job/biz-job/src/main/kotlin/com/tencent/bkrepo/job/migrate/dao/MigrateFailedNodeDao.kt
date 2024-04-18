@@ -45,6 +45,7 @@ class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
             .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
             .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
             .and(TMigrateFailedNode::retryTimes.name).lt(maxRetryTimes)
+            .and(TMigrateFailedNode::migrating.name).isEqualTo(false)
         val query = Query(criteria).with(Sort.by(Sort.Order.asc(TMigrateFailedNode::retryTimes.name)))
         return findOne(query)
     }
@@ -71,6 +72,15 @@ class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
         val update = Update()
             .inc(TMigrateFailedNode::retryTimes.name, 1)
             .set(TMigrateFailedNode::lastModifiedDate.name, LocalDateTime.now())
+            .set(TMigrateFailedNode::migrating.name, true)
         return updateFirst(Query(criteria), update)
+    }
+
+    fun resetMigrating(projectId: String, repoName: String, fullPath: String) {
+        val criteria = Criteria
+            .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
+            .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
+            .and(TMigrateFailedNode::fullPath.name).isEqualTo(fullPath)
+        updateFirst(Query(criteria), Update.update(TMigrateFailedNode::migrating.name, false))
     }
 }

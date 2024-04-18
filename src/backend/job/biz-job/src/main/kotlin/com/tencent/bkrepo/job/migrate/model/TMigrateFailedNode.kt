@@ -57,6 +57,10 @@ data class TMigrateFailedNode(
      * 迁移重试次数
      */
     val retryTimes: Int,
+    /**
+     * 是否正在迁移中
+     */
+    val migrating: Boolean = false,
 ) {
     companion object {
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"

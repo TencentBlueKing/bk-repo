@@ -45,6 +45,7 @@ import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Component
 class MigrateFailedNodeExecutor(
@@ -92,6 +93,11 @@ class MigrateFailedNodeExecutor(
         }
     }
 
+    override fun close(timeout: Long, unit: TimeUnit) {
+        migrateFailedNodeExecutor.shutdown()
+        migrateFailedNodeExecutor.awaitTermination(timeout, unit)
+    }
+
     private fun doMigrate(context: MigrationContext) {
         val task = context.task
         val projectId = task.projectId
@@ -106,6 +112,7 @@ class MigrateFailedNodeExecutor(
                     logger.info("migrate failed node[${node.fullPath}] success, task[${projectId}/${repoName}]")
                     migrateFailedNodeDao.removeById(failedNode.id!!)
                 } catch (e: Exception) {
+                    migrateFailedNodeDao.resetMigrating(projectId, repoName, node.fullPath)
                     logger.error("migrate failed node[${node.fullPath}] failed, task[${projectId}/${repoName}]", e)
                 } finally {
                     context.decTransferringCount()
