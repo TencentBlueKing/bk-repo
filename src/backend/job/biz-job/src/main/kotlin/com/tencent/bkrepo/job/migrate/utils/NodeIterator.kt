@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.migrate.utils
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
@@ -87,6 +88,7 @@ class NodeIterator(
             .where(Node::projectId.name).isEqualTo(task.projectId)
             .and(Node::repoName.name).isEqualTo(task.repoName)
             .and(NodeDetail::folder.name).isEqualTo(false)
+            .and(Node::sha256.name).ne(FAKE_SHA256)
         if (task.state == MigrateRepoStorageTaskState.CORRECTING.name) {
             criteria.and(NodeDetail::createdDate.name).gt(task.startDate!!)
             cursor = 0

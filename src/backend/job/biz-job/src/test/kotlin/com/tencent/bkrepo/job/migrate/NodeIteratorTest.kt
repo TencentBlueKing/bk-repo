@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.migrate
 
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -103,22 +104,29 @@ class NodeIteratorTest @Autowired constructor(
         val before = startDate.minus(Duration.ofDays(1L))
         val after = startDate.plus(Duration.ofDays(1L))
         val nodes = ArrayList<TNode>()
+        val node = TNode(
+            id = null,
+            createdDate = before,
+            folder = false,
+            projectId = UT_PROJECT_ID,
+            repoName = UT_REPO_NAME,
+            fullPath = "/a/b/c.txt",
+            size = 100L,
+            sha256 = UT_SHA256,
+            md5 = UT_MD5,
+        )
 
         for (i in 0 until totalCount) {
             nodes.add(
-                TNode(
-                    id = null,
+                node.copy(
                     createdDate = if (i % 2 == 0L) before else after,
-                    folder = false,
-                    projectId = UT_PROJECT_ID,
-                    repoName = UT_REPO_NAME,
+                    size = i * 10L,
                     fullPath = "/a/b/c$i.txt",
-                    size = i * 100L,
-                    sha256 = UT_SHA256,
-                    md5 = UT_MD5
-                )
+                    deleted = if (i == totalCount - 1) LocalDateTime.now() else null
+                ),
             )
         }
+        nodes.add(node.copy(sha256 = FAKE_SHA256))
 
         mongoTemplate.insert(nodes, collectionName)
     }
@@ -135,5 +143,6 @@ class NodeIteratorTest @Autowired constructor(
         val size: Long,
         val sha256: String,
         val md5: String,
+        val deleted: LocalDateTime? = null,
     )
 }
