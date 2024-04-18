@@ -39,19 +39,28 @@ object LuaScript {
     private val logger = LoggerFactory.getLogger(LuaScript::class.java)
     private const val FIX_WINDOW_RATE_LIMITER_FILE_PATH = "META-INF/fix-window-rate-limiter.lua"
     private const val TOKEN_BUCKET_RATE_LIMITER_FILE_PATH = "META-INF/token-bucket-rate-limiter.lua"
+    private const val SLIDING_WINDOW_RATE_LIMITER_FILE_PATH = "META-INF/sliding-window-rate-limiter.lua"
+    private const val LEAKY_RATE_LIMITER_FILE_PATH = "META-INF/leaky-rate-limiter.lua"
 
     lateinit var fixWindowRateLimiterScript: String
     lateinit var tokenBucketRateLimiterScript: String
+    lateinit var slidingWindowRateLimiterScript: String
+    lateinit var leakyRateLimiterScript: String
 
     init {
         val fixWindowInput = Thread.currentThread().contextClassLoader
             .getResourceAsStream(FIX_WINDOW_RATE_LIMITER_FILE_PATH)
         val tokenBucketInput = Thread.currentThread().contextClassLoader
             .getResourceAsStream(TOKEN_BUCKET_RATE_LIMITER_FILE_PATH)
-
+        val slidingWindowInput = Thread.currentThread().contextClassLoader
+            .getResourceAsStream(SLIDING_WINDOW_RATE_LIMITER_FILE_PATH)
+        val leakyInput = Thread.currentThread().contextClassLoader
+            .getResourceAsStream(LEAKY_RATE_LIMITER_FILE_PATH)
         try {
             fixWindowRateLimiterScript = StreamUtils.copyToString(fixWindowInput, StandardCharsets.UTF_8)
             tokenBucketRateLimiterScript = StreamUtils.copyToString(tokenBucketInput, StandardCharsets.UTF_8)
+            slidingWindowRateLimiterScript = StreamUtils.copyToString(slidingWindowInput, StandardCharsets.UTF_8)
+            leakyRateLimiterScript = StreamUtils.copyToString(leakyInput, StandardCharsets.UTF_8)
         } catch (e: IOException) {
             logger.error("lua script Initialization failed, $e")
         }

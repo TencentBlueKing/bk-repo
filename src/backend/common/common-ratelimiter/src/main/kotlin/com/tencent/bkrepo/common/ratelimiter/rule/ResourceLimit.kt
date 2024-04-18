@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.ratelimiter.rule
 
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
+import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import java.util.concurrent.TimeUnit
 
 /**
@@ -43,8 +44,12 @@ data class ResourceLimit(
     var limitDimension: LimitDimension = LimitDimension.URL,
     // 限流值
     var limit: Long = -1,
-    // 桶容量(令牌桶使用)
-    var bucketCapacity: Long? = null,
     // 限流时间单位
     var unit: TimeUnit = TimeUnit.SECONDS,
+    // 桶容量(令牌桶和漏桶使用)
+    var capacity: Long? = null,
+    // 事件间隔(滑动窗口使用)
+    var interval: Long? = null,
+    // 生效范围
+    var scope: WorkScope = WorkScope.LOCAL,
 )

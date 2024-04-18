@@ -27,15 +27,12 @@
 
 package com.tencent.bkrepo.common.ratelimiter.config
 
-import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.rule.ResourceLimit
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "rate.limiter")
 data class RateLimiterProperties(
     var enabled: Boolean = false,
-    // 生效范围
-    var scope: WorkScope = WorkScope.LOCAL,
     var dryRun: Boolean = false,
     // 配置规则刷新频率 单位为秒
     var refreshDuration: Long = 10L,

@@ -84,7 +84,6 @@ abstract class AbstractBandwidthRateLimiterService(
             return null
         }
         val resource = buildResource(request)
-
         val resourceLimit = rateLimitRule?.getRateLimitRule(resource)
             ?: rateLimitRule?.getRateLimitRule(
                 resource,

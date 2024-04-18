@@ -33,28 +33,30 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
+import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
 /**
- * 分布式令牌桶算法实现
+ * 分布式滑动窗口算法实现
  */
-class DistributedTokenBucketRateLimiter(
+class DistributedSlidingWindowRateLimiter(
     private val key: String,
-    private val permitsPerSecond: Double,
-    private val capacity: Long,
+    private val limit: Long,
+    private val interval: Long,
+    private val limitUnit: TimeUnit,
     private val redisTemplate: RedisTemplate<String, String>,
 ) : RateLimiter {
     override fun tryAcquire(permits: Long): Boolean {
         try {
             var acquireResult = false
             val elapsedTime = measureTimeMillis {
-                val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
+                val redisScript = DefaultRedisScript(LuaScript.slidingWindowRateLimiterScript, List::class.java)
                 val results = redisTemplate.execute(
-                    redisScript, getKeys(key), permitsPerSecond.toString(), capacity.toString(), permits.toString()
+                    redisScript, getKeys(key), limit.toString(), (interval * limitUnit.toSeconds(1)).toString(), permits.toString()
                 )
                 acquireResult = results[0] == 1L
             }
-            logger.info("acquire distributed token bucket rateLimiter elapsed time: $elapsedTime")
+            logger.info("acquire distributed sliding window rateLimiter elapsed time: $elapsedTime")
             return acquireResult
         } catch (e: Exception) {
             e.printStackTrace()
@@ -63,11 +65,11 @@ class DistributedTokenBucketRateLimiter(
     }
 
     private fun getKeys(key: String): List<String> {
-        return listOf(key, "$key.timestamp")
+        return listOf(key)
     }
 
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(DistributedTokenBucketRateLimiter::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(DistributedSlidingWindowRateLimiter::class.java)
     }
 }

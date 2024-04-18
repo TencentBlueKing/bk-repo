@@ -36,9 +36,9 @@ import org.springframework.data.redis.core.script.DefaultRedisScript
 import kotlin.system.measureTimeMillis
 
 /**
- * 分布式令牌桶算法实现
+ * 分布式漏桶算法实现
  */
-class DistributedTokenBucketRateLimiter(
+class DistributedLeakyRateLimiter(
     private val key: String,
     private val permitsPerSecond: Double,
     private val capacity: Long,
@@ -48,13 +48,13 @@ class DistributedTokenBucketRateLimiter(
         try {
             var acquireResult = false
             val elapsedTime = measureTimeMillis {
-                val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
+                val redisScript = DefaultRedisScript(LuaScript.leakyRateLimiterScript, List::class.java)
                 val results = redisTemplate.execute(
                     redisScript, getKeys(key), permitsPerSecond.toString(), capacity.toString(), permits.toString()
                 )
                 acquireResult = results[0] == 1L
             }
-            logger.info("acquire distributed token bucket rateLimiter elapsed time: $elapsedTime")
+            logger.info("acquire distributed leaky rateLimiter elapsed time: $elapsedTime")
             return acquireResult
         } catch (e: Exception) {
             e.printStackTrace()
@@ -68,6 +68,6 @@ class DistributedTokenBucketRateLimiter(
 
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(DistributedTokenBucketRateLimiter::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(DistributedLeakyRateLimiter::class.java)
     }
 }

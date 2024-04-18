@@ -27,44 +27,67 @@
 
 package com.tencent.bkrepo.common.ratelimiter.algorithm
 
-import com.google.common.base.Stopwatch
 import com.tencent.bkrepo.common.ratelimiter.constant.TRY_LOCK_TIMEOUT
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
+import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 
 /**
- * 单机固定窗口算法实现
+ * 单机令牌桶算法实现
  */
-class FixedWindowRateLimiter(
+class SlidingWindowRateLimiter(
     private val limit: Long,
-    private val unit: TimeUnit,
-    private val stopWatch: Stopwatch = Stopwatch.createStarted()
+    private val interval: Long,
+    private val limitUnit: TimeUnit,
 ) : RateLimiter {
 
-    private var currentValue: Long = 0
+    private val queue = LinkedList<Long>()
+    private var counter: Long = 0
+    private var lastUpdate = System.currentTimeMillis()
     private val lock: Lock = ReentrantLock()
 
     override fun tryAcquire(permits: Long): Boolean {
-        // TODO 当剩余容量少于permit时，会导致一直获取不到
         try {
             if (!lock.tryLock(TRY_LOCK_TIMEOUT, TimeUnit.MILLISECONDS)) {
-                throw AcquireLockFailedException("fix window tryLock wait too long: $TRY_LOCK_TIMEOUT ms")
+                throw AcquireLockFailedException("sliding window tryLock wait too long: $TRY_LOCK_TIMEOUT ms")
             }
             try {
-                if (stopWatch.elapsed(TimeUnit.MILLISECONDS) > unit.toMillis(1)) {
-                    currentValue = 0
-                    stopWatch.reset()
-                }
-                if (currentValue + permits > limit) return false
-                currentValue += permits
-                return true
+                return allow(permits)
             } finally {
                 lock.unlock()
             }
         } catch (e: InterruptedException) {
-            throw AcquireLockFailedException("fix window tryLock is interrupted by lock timeout: $e")
+            throw AcquireLockFailedException("sliding window tryLock is interrupted by lock timeout: $e")
         }
     }
+
+    fun allow(permits: Long): Boolean {
+        val now = System.currentTimeMillis()
+        val slots = ((now - lastUpdate) / (interval / limitUnit.toMillis(1))).toInt()
+
+        // 移除过期的时间片
+        while (queue.size >= slots) {
+            val removed = queue.removeFirst()
+            counter -= removed
+        }
+
+        // 添加新的时间片
+        for (i in queue.size until slots) {
+            queue.addLast(0)
+        }
+
+        // 如果当前时间片的请求数量已经达到窗口大小，则拒绝请求
+        if (counter + permits > limit) {
+            return false
+        }
+
+        // 更新当前时间片的请求数量，并增加计数器
+        queue.addLast(queue.removeLast() + permits)
+        counter += permits
+        lastUpdate = now
+        return true
+    }
+
 }

@@ -29,9 +29,13 @@ package com.tencent.bkrepo.common.ratelimiter.service
 
 
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedFixedWindowRateLimiter
+import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedLeakyRateLimiter
+import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedSlidingWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedTokenBucketRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.FixedWindowRateLimiter
+import com.tencent.bkrepo.common.ratelimiter.algorithm.LeakyRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
+import com.tencent.bkrepo.common.ratelimiter.algorithm.SlidingWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.TokenBucketRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
@@ -195,7 +199,7 @@ abstract class AbstractRateLimiterService(
         }
         return when (resourceLimit.algo) {
             Algorithms.FIXED_WINDOW -> {
-                if (rateLimiterProperties.scope == WorkScope.LOCAL) {
+                if (resourceLimit.scope == WorkScope.LOCAL) {
                     FixedWindowRateLimiter(resourceLimit.limit, resourceLimit.unit)
                 } else {
                     DistributedFixedWindowRateLimiter(
@@ -204,16 +208,40 @@ abstract class AbstractRateLimiterService(
                 }
             }
             Algorithms.TOKEN_BUCKET -> {
-                if (rateLimiterProperties.scope == WorkScope.LOCAL) {
+                if (resourceLimit.scope == WorkScope.LOCAL) {
                     val permitsPerSecond = resourceLimit.limit / resourceLimit.unit.toSeconds(1)
                     TokenBucketRateLimiter(permitsPerSecond)
                 } else {
-                    if (resourceLimit.bucketCapacity == null || resourceLimit.bucketCapacity!! <= 0) {
+                    if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
                         throw AcquireLockFailedException("Resource limit config $resourceLimit is illegal")
                     }
                     val permitsPerSecond = resourceLimit.limit / resourceLimit.unit.toSeconds(1).toDouble()
                     DistributedTokenBucketRateLimiter(
-                        resource, permitsPerSecond, resourceLimit.bucketCapacity!!, redisTemplate!!
+                        resource, permitsPerSecond, resourceLimit.capacity!!, redisTemplate!!
+                    )
+                }
+            }
+            Algorithms.SLIDING_WINDOW -> {
+                val interval = resourceLimit.interval ?: 1
+                if (resourceLimit.scope == WorkScope.LOCAL) {
+                    SlidingWindowRateLimiter(resourceLimit.limit, interval, resourceLimit.unit)
+                } else {
+                    DistributedSlidingWindowRateLimiter(
+                        resource, resourceLimit.limit, interval, resourceLimit.unit, redisTemplate!!
+                    )
+                }
+            }
+            Algorithms.LEAKY_BUCKET -> {
+                if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
+                    throw AcquireLockFailedException("Resource limit config $resourceLimit is illegal")
+                }
+                val permitsPerSecond = resourceLimit.limit / resourceLimit.unit.toSeconds(1).toDouble()
+                if (resourceLimit.scope == WorkScope.LOCAL) {
+                    LeakyRateLimiter(permitsPerSecond, resourceLimit.capacity!!)
+                } else {
+
+                    DistributedLeakyRateLimiter(
+                        resource, permitsPerSecond, resourceLimit.capacity!!, redisTemplate!!
                     )
                 }
             }

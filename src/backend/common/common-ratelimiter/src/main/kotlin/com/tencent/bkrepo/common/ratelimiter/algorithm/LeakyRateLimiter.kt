@@ -27,47 +27,51 @@
 
 package com.tencent.bkrepo.common.ratelimiter.algorithm
 
+import com.tencent.bkrepo.common.ratelimiter.constant.TRY_LOCK_TIMEOUT
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
-import com.tencent.bkrepo.common.ratelimiter.redis.LuaScript
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.data.redis.core.script.DefaultRedisScript
-import kotlin.system.measureTimeMillis
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
+
 
 /**
- * 分布式令牌桶算法实现
+ * 单机令牌桶算法实现
  */
-class DistributedTokenBucketRateLimiter(
-    private val key: String,
+class LeakyRateLimiter(
     private val permitsPerSecond: Double,
     private val capacity: Long,
-    private val redisTemplate: RedisTemplate<String, String>,
 ) : RateLimiter {
+
+    // 计算的起始时间
+    private var lastLeakTime = System.currentTimeMillis()
+    private var water: Long = 0
+    private val lock: Lock = ReentrantLock()
+
+
     override fun tryAcquire(permits: Long): Boolean {
         try {
-            var acquireResult = false
-            val elapsedTime = measureTimeMillis {
-                val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
-                val results = redisTemplate.execute(
-                    redisScript, getKeys(key), permitsPerSecond.toString(), capacity.toString(), permits.toString()
-                )
-                acquireResult = results[0] == 1L
+            if (!lock.tryLock(TRY_LOCK_TIMEOUT, TimeUnit.MILLISECONDS)) {
+                throw AcquireLockFailedException("leaky tryLock wait too long: $TRY_LOCK_TIMEOUT ms")
             }
-            logger.info("acquire distributed token bucket rateLimiter elapsed time: $elapsedTime")
-            return acquireResult
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw AcquireLockFailedException("distributed lock acquire failed: $e")
+            try {
+                return allow(permits)
+            } finally {
+                lock.unlock()
+            }
+        } catch (e: InterruptedException) {
+            throw AcquireLockFailedException("leaky tryLock is interrupted by lock timeout: $e")
         }
     }
 
-    private fun getKeys(key: String): List<String> {
-        return listOf(key, "$key.timestamp")
-    }
-
-
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(DistributedTokenBucketRateLimiter::class.java)
+    fun allow(permits: Long): Boolean {
+        val now = System.currentTimeMillis()
+        val timeElapsed = now - lastLeakTime
+        water = Math.max(0, (water - timeElapsed * permitsPerSecond / 1000).toLong()) // 漏水
+        lastLeakTime = now
+        if (water + permits <= capacity) {
+            water += permits
+            return true
+        }
+        return false
     }
 }
