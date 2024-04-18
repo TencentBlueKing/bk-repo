@@ -36,6 +36,9 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.isRoot
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.fs.server.api.FsNodeClient
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
+import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.ConflictStrategy
@@ -57,6 +60,7 @@ import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeRestoreUpdate
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -69,6 +73,7 @@ open class NodeRestoreSupport(
 ) : NodeRestoreOperation {
 
     val nodeDao: NodeDao = nodeBaseService.nodeDao
+    val fsNodeClient: FsNodeClient = nodeBaseService.fsNodeClient
 
     override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         with(artifact) {
@@ -164,7 +169,25 @@ open class NodeRestoreSupport(
                 }
             }
             val query = nodeDeletedPointQuery(projectId, repoName, fullPath, deletedTime)
-            restoreCount += nodeDao.updateFirst(query, nodeRestoreUpdate()).modifiedCount
+            val option = FindAndModifyOptions()
+            option.returnNew(false)
+            val deletedNode = nodeDao.findAndModify(query, nodeRestoreUpdate(), option, TNode::class.java)
+            if (deletedNode?.sha256 == FAKE_SHA256 || deletedNode?.metadata?.find { it.key == FS_ATTR_KEY } != null) {
+                try {
+                    fsNodeClient.restoreBlockResources(
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = fullPath,
+                        nodeCreateDate = deletedNode.createdDate.toString(),
+                        nodeDeleteDate = deletedNode.deleted!!.toString()
+                    )
+                } catch (e: Exception) {
+                    logger.error("restore block resources failed: $projectId/$repoName/$fullPath", e)
+                    nodeDao.save(deletedNode)
+                    return
+                }
+            }
+            restoreCount += if (deletedNode != null) 1 else 0
         }
     }
 

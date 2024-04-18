@@ -48,4 +48,14 @@ class FsNodeDefaultImpl : FsNodeClient {
     ): Response<List<RegionResource>> {
         throw MethodNotAllowedException()
     }
+
+    override fun restoreBlockResources(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeCreateDate: String,
+        nodeDeleteDate: String
+    ): Response<Void> {
+        throw MethodNotAllowedException()
+    }
 }

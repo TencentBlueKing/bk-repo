@@ -86,6 +86,7 @@ class RouteConfiguration(
 
         "/service/block".nest {
             GET("/list$DEFAULT_MAPPING_URI", fsNodeHandler::listBlocks)
+            POST("/restore$DEFAULT_MAPPING_URI", fsNodeHandler::restoreBlock)
         }
 
         "/node".nest {
