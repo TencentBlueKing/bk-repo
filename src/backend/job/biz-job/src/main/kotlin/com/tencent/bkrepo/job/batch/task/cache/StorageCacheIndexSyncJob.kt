@@ -48,7 +48,7 @@ class StorageCacheIndexSyncJob(
     storageProperties: StorageProperties,
     clusterProperties: ClusterProperties,
     mongoTemplate: MongoTemplate,
-    storageCacheIndexProperties: StorageCacheIndexProperties,
+    storageCacheIndexProperties: StorageCacheIndexProperties?,
     indexerManager: StorageCacheIndexerManager?
 ) : StorageCacheIndexJob(
     properties,
