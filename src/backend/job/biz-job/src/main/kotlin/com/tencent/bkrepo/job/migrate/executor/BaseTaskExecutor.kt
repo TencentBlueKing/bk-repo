@@ -219,6 +219,7 @@ abstract class BaseTaskExecutor(
                         id = null,
                         createdDate = now,
                         lastModifiedDate = now,
+                        nodeId = node.id,
                         taskId = taskId,
                         projectId = projectId,
                         repoName = repoName,

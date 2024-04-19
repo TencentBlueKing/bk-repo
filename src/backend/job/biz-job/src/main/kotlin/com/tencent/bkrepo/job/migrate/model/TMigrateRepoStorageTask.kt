@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.model
 
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -59,6 +60,11 @@ data class TMigrateRepoStorageTask(
      * 已迁移的制品数
      */
     val migratedCount: Long = 0,
+
+    /**
+     * 已迁移的最后一个Node ID
+     */
+    val lastMigratedNodeId: String = MIN_OBJECT_ID,
 
     /**
      * 迁移任务所属项目

@@ -122,6 +122,7 @@ class MigrateFailedNodeExecutor(
     }
 
     private fun convert(failedNode: TMigrateFailedNode) = Node(
+        id = failedNode.nodeId,
         projectId = failedNode.projectId,
         repoName = failedNode.repoName,
         fullPath = failedNode.fullPath,

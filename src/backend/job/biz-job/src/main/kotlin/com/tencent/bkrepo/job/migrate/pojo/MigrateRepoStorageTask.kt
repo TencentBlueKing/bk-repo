@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.pojo
 
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -51,6 +52,8 @@ data class MigrateRepoStorageTask(
     val totalCount: Long? = null,
     @ApiModelProperty("已迁移的制品数")
     val migratedCount: Long = 0,
+    @ApiModelProperty("已迁移的最后一个Node ID")
+    val lastMigratedNodeId: String = MIN_OBJECT_ID,
     @ApiModelProperty("迁移任务所属项目")
     val projectId: String,
     @ApiModelProperty("迁移项目所属仓库")
@@ -74,6 +77,7 @@ data class MigrateRepoStorageTask(
             startDate = startDate,
             totalCount = totalCount,
             migratedCount = migratedCount,
+            lastMigratedNodeId = lastMigratedNodeId,
             projectId = projectId,
             repoName = repoName,
             srcStorageKey = srcStorageKey,

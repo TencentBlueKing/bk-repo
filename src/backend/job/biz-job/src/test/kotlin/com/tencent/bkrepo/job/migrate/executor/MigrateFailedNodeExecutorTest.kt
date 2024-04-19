@@ -122,6 +122,7 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
                 id = null,
                 createdDate = LocalDateTime.now(),
                 lastModifiedDate = LocalDateTime.now(),
+                nodeId = "",
                 taskId = taskId,
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,

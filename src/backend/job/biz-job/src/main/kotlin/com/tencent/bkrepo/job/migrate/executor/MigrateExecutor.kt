@@ -85,16 +85,16 @@ class MigrateExecutor(
         val repoName = context.task.repoName
         val taskId = context.task.id!!
         val iterator = NodeIterator(context.task, mongoTemplate)
-        val totalCount = iterator.totalCount()
+        val totalCount = iterator.totalCount
         val migratedNumberQueue = MigratedTaskNumberPriorityQueue()
-        var iteratedCount = 0L
+        var migratedCount = context.task.migratedCount
 
         // 更新待迁移制品总数
         migrateRepoStorageTaskDao.updateTotalCount(taskId, totalCount)
 
         // 遍历迁移制品
         iterator.forEach { node ->
-            val taskNumber = ++iteratedCount
+            val taskNumber = ++migratedCount
             context.incTransferringCount()
             transferDataExecutor.execute {
                 try {
@@ -105,12 +105,12 @@ class MigrateExecutor(
                     logger.error("migrate node[${node.fullPath}] failed, task[$projectId/$repoName]", e)
                 } finally {
                     // 保存完成的任务序号
-                    migratedNumberQueue.offer(taskNumber)
+                    migratedNumberQueue.offer(taskNumber, node.id)
                     // 更新任务进度，用于进程重启时从断点继续迁移
                     if (taskNumber % properties.updateProgressInterval == 0L) {
-                        val migratedCount = migratedNumberQueue.updateLeftMax()
-                        logger.info("migrate repo[${projectId}/${repoName}], progress[$migratedCount/$totalCount]")
-                        migrateRepoStorageTaskDao.updateMigratedCount(taskId, migratedCount)
+                        val migrated = migratedNumberQueue.updateLeftMax()
+                        logger.info("migrate repo[${projectId}/${repoName}], progress[${migrated.number}/$totalCount]")
+                        migrateRepoStorageTaskDao.updateMigratedCount(taskId, migrated.number, migrated.nodeId)
                     }
                     context.decTransferringCount()
                 }
@@ -119,7 +119,8 @@ class MigrateExecutor(
 
         // 等待所有数传输完成
         context.waitAllTransferFinished()
-        migrateRepoStorageTaskDao.updateMigratedCount(taskId, iteratedCount)
+        val migrated = migratedNumberQueue.updateLeftMax()
+        migrateRepoStorageTaskDao.updateMigratedCount(taskId, migrated.number, migrated.nodeId)
     }
 
     /**

@@ -39,16 +39,20 @@ import java.time.LocalDateTime
     CompoundIndex(name = FULL_PATH_IDX, def = FULL_PATH_IDX_DEF, unique = true)
 )
 data class TMigrateFailedNode(
-    var id: String? = null,
-    var createdDate: LocalDateTime,
-    var lastModifiedDate: LocalDateTime,
+    val id: String? = null,
+    val createdDate: LocalDateTime,
+    val lastModifiedDate: LocalDateTime,
 
+    /**
+     * 失败node id
+     */
+    val nodeId: String,
     /**
      * 迁移任务的id
      */
-    var taskId: String,
-    var projectId: String,
-    var repoName: String,
+    val taskId: String,
+    val projectId: String,
+    val repoName: String,
     val fullPath: String,
     val sha256: String,
     val md5: String,

@@ -27,8 +27,9 @@
 
 package com.tencent.bkrepo.job.migrate.utils
 
-import java.util.*
-import java.util.concurrent.atomic.AtomicLong
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
+import java.util.PriorityQueue
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -36,12 +37,12 @@ import kotlin.concurrent.withLock
  * 由于目前是多线程迁移，可能后提交的任务先完成，需要按顺序记录已完成的任务号用于后续断点重新迁移
  */
 class MigratedTaskNumberPriorityQueue {
-    private val q = PriorityQueue<Long>()
+    private val q = PriorityQueue<NodeNumber>()
     private val lock = ReentrantLock()
-    private val lastLeftMax = AtomicLong(0L)
+    private val lastLeftMax = AtomicReference(NodeNumber(0L, MIN_OBJECT_ID))
 
-    fun offer(e: Long) {
-        lock.withLock { q.offer(e) }
+    fun offer(number: Long, nodeId: String) {
+        lock.withLock { q.offer(NodeNumber(number, nodeId)) }
     }
 
     /**
@@ -51,11 +52,11 @@ class MigratedTaskNumberPriorityQueue {
      *
      * @return 最左连续序列的最大值
      */
-    fun updateLeftMax(): Long {
+    fun updateLeftMax(): NodeNumber {
         lock.withLock {
             var first = lastLeftMax.get()
             var second = q.peek()
-            while (second != null && second - first == 1L) {
+            while (second != null && second.number - first.number == 1L) {
                 first = q.poll()
                 second = q.peek()
             }
@@ -65,4 +66,12 @@ class MigratedTaskNumberPriorityQueue {
     }
 
     fun size(): Int = q.size
+
+    data class NodeNumber(val number: Long, val nodeId: String) : Comparable<NodeNumber> {
+        override fun compareTo(other: NodeNumber) = when {
+            number < other.number -> -1
+            number > other.number -> 1
+            else -> 0
+        }
+    }
 }

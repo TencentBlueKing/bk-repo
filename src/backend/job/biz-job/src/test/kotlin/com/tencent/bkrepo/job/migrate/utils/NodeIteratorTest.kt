@@ -57,14 +57,15 @@ class NodeIteratorTest @Autowired constructor(
 
     private val startDate = LocalDateTime.parse("2024-04-15T14:27:08.493", DateTimeFormatter.ISO_DATE_TIME)
     private val totalCount = 101L
-    private val beforeStartDateCount = 51L
-    private val afterStartDateCount = 50L
-    private val migratedCount = 23L
+    private val beforeStartDateCount = 75L
+    private val afterStartDateCount = totalCount - beforeStartDateCount
+    private val migratedCount = 31L
     private val collectionName = "node_1"
+    private lateinit var nodes: List<TNode>
 
     @BeforeAll
     fun beforeAll() {
-        createNodes(startDate)
+        nodes = createNodes(startDate)
     }
 
     @Test
@@ -73,7 +74,8 @@ class NodeIteratorTest @Autowired constructor(
         val task = buildTask(startDate)
         testIterate(task, beforeStartDateCount)
         // continue migrate
-        val continueTask = task.copy(migratedCount = migratedCount)
+        val lastMigratedNodeId = nodes[(migratedCount - 1).toInt()].id!!
+        val continueTask = task.copy(lastMigratedNodeId = lastMigratedNodeId, migratedCount = migratedCount)
         testIterate(continueTask, beforeStartDateCount, continueTask.migratedCount)
     }
 
@@ -89,16 +91,16 @@ class NodeIteratorTest @Autowired constructor(
 
     private fun testIterate(task: MigrateRepoStorageTask, totalCount: Long, iteratedCount: Long = 0L) {
         val iterator = NodeIterator(task, mongoTemplate, collectionName)
-        assertEquals(totalCount, iterator.totalCount())
+        assertEquals(totalCount, iterator.totalCount)
         var count = iteratedCount
         while (iterator.hasNext()) {
             iterator.next()
-            assertEquals(++count, iterator.iteratedCount())
+            count++
         }
         assertEquals(totalCount, count)
     }
 
-    private fun createNodes(startDate: LocalDateTime) {
+    private fun createNodes(startDate: LocalDateTime): List<TNode> {
         val before = startDate.minus(Duration.ofDays(1L))
         val after = startDate.plus(Duration.ofDays(1L))
         val nodes = ArrayList<TNode>()
@@ -117,7 +119,7 @@ class NodeIteratorTest @Autowired constructor(
         for (i in 0 until totalCount) {
             nodes.add(
                 node.copy(
-                    createdDate = if (i % 2 == 0L) before else after,
+                    createdDate = if (i < beforeStartDateCount) before else after,
                     size = i * 10L,
                     fullPath = "/a/b/c$i.txt",
                     deleted = if (i == totalCount - 1) LocalDateTime.now() else null
@@ -126,6 +128,6 @@ class NodeIteratorTest @Autowired constructor(
         }
         nodes.add(node.copy(sha256 = FAKE_SHA256))
 
-        mongoTemplate.insert(nodes, collectionName)
+        return mongoTemplate.insert(nodes, collectionName).toList()
     }
 }
