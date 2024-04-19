@@ -46,7 +46,7 @@ import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
-import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
+import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageTaskUtils
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -71,7 +71,7 @@ class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val clusterProperties: ClusterProperties,
     private val repositoryClient: RepositoryClient,
-    private val migrateRepoStorageService: MigrateRepoStorageService,
+    private val migrateTaskUtils: MigrateRepoStorageTaskUtils,
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
 
     data class Node(
@@ -125,7 +125,7 @@ class DeletedNodeCleanupJob(
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is DeletedNodeCleanupJobContext)
         // 仓库正在迁移时删除node会导致迁移任务分页查询数据重复或缺失，需要等迁移完后再执行清理
-        if (migrateRepoStorageService.migrating(row.projectId, row.repoName)) {
+        if (migrateTaskUtils.migrating(row.projectId, row.repoName)) {
             logger.info("repo[${row.projectId}/${row.repoName}] storage was migrating, skip clean node[${row.sha256}]")
             return
         }

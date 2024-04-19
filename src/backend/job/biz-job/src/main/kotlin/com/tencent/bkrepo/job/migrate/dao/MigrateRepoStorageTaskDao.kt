@@ -82,7 +82,9 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
     }
 
     fun updateMigratedCount(id: String, count: Long, lastMigratedNodeId: String): UpdateResult {
-        val criteria = Criteria.where(ID).isEqualTo(id)
+        val criteria = Criteria
+            .where(ID).isEqualTo(id)
+            .and(TMigrateRepoStorageTask::migratedCount.name).lt(count)
         val update = Update()
             .set(TMigrateRepoStorageTask::migratedCount.name, count)
             .set(TMigrateRepoStorageTask::lastMigratedNodeId.name, lastMigratedNodeId)

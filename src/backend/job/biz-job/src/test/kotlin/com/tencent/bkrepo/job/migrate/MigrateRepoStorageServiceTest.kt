@@ -47,6 +47,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
+import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageTaskUtils
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildRepo
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildTask
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -86,12 +87,14 @@ import java.time.LocalDateTime
     RepositoryCommonUtils::class,
     ExecutingTaskRecorder::class,
     StorageProperties::class,
+    MigrateRepoStorageTaskUtils::class,
 )
 class MigrateRepoStorageServiceTest @Autowired constructor(
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     private val migrateRepoStorageService: MigrateRepoStorageService,
     private val executingTaskRecorder: ExecutingTaskRecorder,
     private val properties: MigrateRepoStorageProperties,
+    private val migrateRepoStorageTaskUtils: MigrateRepoStorageTaskUtils,
 ) {
     @Value(ActuatorConfiguration.SERVICE_INSTANCE_ID)
     private lateinit var instanceId: String
@@ -191,6 +194,12 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         assertNotNull(task)
     }
 
+    @Test
+    fun testMigrateTaskUtils() {
+        migrateRepoStorageService.createTask(buildCreateRequest())
+        assertTrue(migrateRepoStorageTaskUtils.migrating(UT_PROJECT_ID, UT_REPO_NAME))
+    }
+
     private fun buildCreateRequest(dstKey: String? = UT_STORAGE_CREDENTIALS_KEY) = CreateMigrateRepoStorageTaskRequest(
         projectId = UT_PROJECT_ID,
         repoName = UT_REPO_NAME,
@@ -198,7 +207,7 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
     )
 
     private fun initMock() {
-        whenever(repositoryClient.getRepoDetail(anyString(), anyString(),  anyOrNull())).thenReturn(
+        whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyOrNull())).thenReturn(
             Response(0, "", buildRepo())
         )
         whenever(storageCredentialsClient.findByKey(anyString()))

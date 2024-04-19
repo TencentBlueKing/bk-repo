@@ -33,7 +33,8 @@ import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.batch.JobBaseTest
-import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
+import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageTaskUtils
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -55,14 +56,17 @@ class NodeCommonUtilsTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
     @MockBean
-    lateinit var migrateRepoStorageService: MigrateRepoStorageService
+    lateinit var migrateRepoStorageTaskUtils: MigrateRepoStorageTaskUtils
+
+    @BeforeAll
+    fun beforeAll() {
+        NodeCommonUtils.mongoTemplate = mongoTemplate
+        NodeCommonUtils.migrateTaskUtils = migrateRepoStorageTaskUtils
+    }
 
     @Test
     fun `throw IllegalStateException when repo was migrating`() {
-        whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
-        NodeCommonUtils.mongoTemplate = mongoTemplate
-        NodeCommonUtils.migrateRepoStorageService = migrateRepoStorageService
-
+        whenever(migrateRepoStorageTaskUtils.migrating(anyString(), anyString())).thenReturn(true)
         val node = NodeCommonUtils.Node(
             "",
             UT_PROJECT_ID,
