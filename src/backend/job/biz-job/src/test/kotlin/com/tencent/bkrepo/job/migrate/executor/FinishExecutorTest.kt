@@ -32,11 +32,12 @@ import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -51,6 +52,7 @@ class FinishExecutorTest @Autowired constructor(
 
     @BeforeEach
     fun beforeEach() {
+        migrateRepoStorageTaskDao.remove(Query())
         initMock()
     }
 
@@ -59,7 +61,7 @@ class FinishExecutorTest @Autowired constructor(
         val task = createTask()
         updateTask(task.id!!, MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED.name, LocalDateTime.now())
         val context = buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
-        assertTrue(executor.execute(context))
+        assertNotNull(executor.execute(context))
         assertFalse(migrateTaskService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
     }
 }

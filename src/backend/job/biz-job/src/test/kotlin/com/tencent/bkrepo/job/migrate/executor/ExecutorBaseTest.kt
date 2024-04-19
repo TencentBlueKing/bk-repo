@@ -83,7 +83,7 @@ import java.time.LocalDateTime
     StorageProperties::class,
 )
 @ComponentScan(basePackages = ["com.tencent.bkrepo.job.migrate"])
-abstract class ExecutorBaseTest {
+open class ExecutorBaseTest {
     @Autowired
     protected lateinit var migrateRepoStorageProperties: MigrateRepoStorageProperties
 

@@ -32,9 +32,6 @@ import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
@@ -76,31 +73,14 @@ class MigrateExecutor(
         buildThreadPoolExecutor("migrate-repo-storage-%d")
     }
 
-    /**
-     * 执行迁移任务,对startTime之前创建的node进行迁移
-     *
-     * @param context 数据迁移上下文
-     *
-     * @return 是否开始执行
-     */
-    override fun execute(context: MigrationContext): Boolean {
-        require(context.task.state == PENDING.name)
-        if (migrateExecutor.activeCount == migrateExecutor.maximumPoolSize) {
-            return false
-        }
-
-        val newContext = prepare(context) ?: return false
-        return migrateExecutor.execute(newContext.task, PENDING.name, MIGRATE_FINISHED.name) {
-            doMigrate(newContext)
-        }
-    }
+    override fun executor() = migrateExecutor
 
     override fun close(timeout: Long, unit: TimeUnit) {
         migrateExecutor.shutdown()
         migrateExecutor.awaitTermination(timeout, unit)
     }
 
-    private fun doMigrate(context: MigrationContext) {
+    override fun doExecute(context: MigrationContext) {
         val projectId = context.task.projectId
         val repoName = context.task.repoName
         val taskId = context.task.id!!
@@ -146,12 +126,8 @@ class MigrateExecutor(
     /**
      * 做一些任务开始执行前的准备工作
      */
-    private fun prepare(context: MigrationContext): MigrationContext? {
+    override fun prepare(context: MigrationContext): MigrationContext {
         val task = context.task
-        require(task.state == PENDING.name)
-        if (!updateState(task, MIGRATING.name)) {
-            return null
-        }
 
         val repo = repositoryClient.getRepoDetail(task.projectId, task.repoName).data!!
         // 任务首次执行才更新仓库配置，从上次中断点继续执行时不需要重复更新

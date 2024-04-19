@@ -74,9 +74,8 @@ class CorrectExecutorTest @Autowired constructor(
         // 创建任务
         var task = createTask()
         updateTask(task.id!!, MIGRATE_FINISHED.name, now)
-        val context = buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
+        val context = executor.execute(buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!))!!
         // 执行任务
-        assertTrue(executor.execute(context))
         Thread.sleep(100L)
         assertTrue(executingTaskRecorder.executing(task.id!!))
 
@@ -102,8 +101,7 @@ class CorrectExecutorTest @Autowired constructor(
         // 执行任务
         val task = createTask()
         updateTask(task.id!!, MIGRATE_FINISHED.name, now)
-        val context = buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
-        assertTrue(executor.execute(context))
+        val context = executor.execute(buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!))!!
 
         // 等待任务执行完
         Thread.sleep(1000L)

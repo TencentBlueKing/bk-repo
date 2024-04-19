@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.pojo
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -68,8 +69,14 @@ data class MigrationContext(
     fun waitAllTransferFinished() {
         lock.withLock {
             while (transferringCount != 0L) {
+                logger.info("wait task[${task.projectId}/${task.repoName}] transfer finished, state[${task.state}]")
                 condition.await()
             }
+            logger.info("task[${task.projectId}/${task.repoName}] transfer finished, state[${task.state}]")
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(MigrationContext::class.java)
     }
 }

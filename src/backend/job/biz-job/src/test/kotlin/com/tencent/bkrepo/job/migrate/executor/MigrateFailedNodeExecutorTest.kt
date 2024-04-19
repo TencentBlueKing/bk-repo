@@ -72,14 +72,14 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
         // 创建任务
         var task = createTask()
         updateTask(task.id!!, CORRECT_FINISHED.name, LocalDateTime.now())
-        val context = buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
+
 
         // 创建待迁移的失败节点
         createFailedNode(task.id!!)
         assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
 
         // 执行任务
-        assertTrue(executor.execute(context))
+        val context = executor.execute(buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!))!!
 
         // 任务执行中
         Thread.sleep(500L)
@@ -103,11 +103,10 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
         // 创建任务
         var task = createTask()
         updateTask(task.id!!, CORRECT_FINISHED.name, LocalDateTime.now())
-        val context = buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
         createFailedNode(task.id!!)
 
         // 执行任务
-        assertTrue(executor.execute(context))
+        val context = executor.execute(buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!))!!
 
         // 等待任务执行结束
         Thread.sleep(3000L)

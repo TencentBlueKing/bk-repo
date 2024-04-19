@@ -32,10 +32,7 @@ import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
@@ -71,34 +68,14 @@ class MigrateFailedNodeExecutor(
         buildThreadPoolExecutor("migrate-failed-node-%d")
     }
 
-    /**
-     * 迁移migrate与correct两个过程中迁移失败的node，再次失败后需要手动排查原因进行迁移
-     *
-     * @param context 数据迁移上下文
-     *
-     * @return 是否开始执行
-     */
-    override fun execute(context: MigrationContext): Boolean {
-        if (migrateFailedNodeExecutor.activeCount == migrateFailedNodeExecutor.maximumPoolSize) {
-            return false
-        }
-
-        require(context.task.state == CORRECT_FINISHED.name)
-        if (!updateState(context.task, MIGRATING_FAILED_NODE.name)) {
-            return false
-        }
-        val newContext = context.copy(task = migrateRepoStorageTaskDao.findById(context.task.id!!)!!.toDto())
-        return migrateFailedNodeExecutor.execute(newContext.task, CORRECT_FINISHED.name, MIGRATING_FAILED_NODE.name) {
-            doMigrate(newContext)
-        }
-    }
+    override fun executor() = migrateFailedNodeExecutor
 
     override fun close(timeout: Long, unit: TimeUnit) {
         migrateFailedNodeExecutor.shutdown()
         migrateFailedNodeExecutor.awaitTermination(timeout, unit)
     }
 
-    private fun doMigrate(context: MigrationContext) {
+    override fun doExecute(context: MigrationContext) {
         val task = context.task
         val projectId = task.projectId
         val repoName = task.repoName

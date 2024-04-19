@@ -31,8 +31,8 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.FINISHING
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.repository.api.FileReferenceClient
@@ -60,18 +60,14 @@ class FinishExecutor(
     /**
      * 迁移任务执行结束后对相关资源进行清理
      */
-    override fun execute(context: MigrationContext): Boolean {
-        require(context.task.state == MIGRATE_FAILED_NODE_FINISHED.name)
-        val task = context.task
-        with(task) {
-            if (!updateState(task, FINISHING.name)) {
-                return false
-            }
-            logger.info("migrate finished, task[$task]")
+    override fun execute(context: MigrationContext): MigrationContext? {
+        val newContext = checkExecutable(context, MIGRATE_FAILED_NODE_FINISHED.name, FINISHING.name) ?: return null
+        with(newContext.task) {
+            logger.info("migrate finished, task[${newContext.task}]")
             repositoryClient.unsetOldStorageCredentialsKey(projectId, repoName)
             migrateRepoStorageTaskDao.removeById(id!!)
             logger.info("clean migrate task[${projectId}/${repoName}] success")
-            return true
+            return context
         }
     }
 

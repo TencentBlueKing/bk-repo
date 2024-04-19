@@ -36,6 +36,13 @@ import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECTING
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
@@ -59,6 +66,61 @@ abstract class BaseTaskExecutor(
 
     @Value(SERVICE_INSTANCE_ID)
     protected lateinit var instanceId: String
+
+    protected open fun executor(): ThreadPoolExecutor? = null
+
+    override fun execute(context: MigrationContext): MigrationContext? {
+        val startState = context.task.state
+        val (executingState, finishedState) = when (startState) {
+            PENDING.name -> Pair(MIGRATING.name, MIGRATE_FINISHED.name)
+            MIGRATE_FINISHED.name -> Pair(CORRECTING.name, CORRECT_FINISHED.name)
+            // 迁移失败节点时会在根据最终是否还存在失败节点判断是否要转移到结束状态
+            CORRECT_FINISHED.name -> Pair(MIGRATING_FAILED_NODE.name, MIGRATING_FAILED_NODE.name)
+            else -> throw IllegalStateException("unsupported state[$startState]")
+        }
+
+        val newContext = checkExecutable(context, startState, executingState)?.let { prepare(it) } ?: return null
+        val newTask = newContext.task
+        val executed = executor()?.execute(newTask, startState, finishedState) { doExecute(newContext) }
+        return if (executed == true) {
+            newContext
+        } else {
+            null
+        }
+    }
+
+    protected open fun prepare(context: MigrationContext): MigrationContext {
+        return context
+    }
+
+    protected open fun doExecute(context: MigrationContext) {}
+
+    /**
+     * 检查任务是否可执行
+     *
+     * @param context 待检查任务上下文
+     * @param requiredSrcState 期望的源状态
+     * @param executingState 目标状态
+     *
+     * @return 更新后的任务上下文，如果不可执行则返回null
+     */
+    protected fun checkExecutable(
+        context: MigrationContext,
+        requiredSrcState: String,
+        executingState: String
+    ): MigrationContext? {
+        val task = context.task
+        require(task.state == requiredSrcState)
+        val executor = executor()
+        if (executor != null && executor.activeCount == executor.maximumPoolSize) {
+            return null
+        }
+
+        if (!updateState(task, executingState)) {
+            return null
+        }
+        return context.copy(task = migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto())
+    }
 
     protected fun ThreadPoolExecutor.execute(
         task: MigrateRepoStorageTask,

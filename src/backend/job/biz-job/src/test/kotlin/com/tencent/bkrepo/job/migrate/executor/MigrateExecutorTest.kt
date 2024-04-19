@@ -44,13 +44,12 @@ class MigrateExecutorTest @Autowired constructor(
 
     @Test
     fun migrateSuccess() {
-        val context = buildContext(createTask())
         // 创建node用于模拟遍历迁移
         val nodeCount = 5L
         for (i in 0 until nodeCount) {
             createNode()
         }
-        assertTrue(executor.execute(context))
+        val context = executor.execute(buildContext(createTask()))!!
 
         // 确认任务执行中
         var task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
@@ -73,10 +72,9 @@ class MigrateExecutorTest @Autowired constructor(
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then {
             throw FileNotFoundException()
         }
-        val context = buildContext(createTask())
         // 创建node用于模拟遍历迁移
         createNode()
-        assertTrue(executor.execute(context))
+        val context = executor.execute(buildContext(createTask()))!!
 
         // 等待任务执行完
         Thread.sleep(1000L)

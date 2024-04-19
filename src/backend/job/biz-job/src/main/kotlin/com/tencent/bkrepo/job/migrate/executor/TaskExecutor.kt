@@ -35,7 +35,7 @@ interface TaskExecutor {
      *
      * @param context 仓库存储迁移任务
      *
-     * @return 是否开始执行
+     * @return 触发执行成功返回执行上下文，否则返回null
      */
-    fun execute(context: MigrationContext): Boolean
+    fun execute(context: MigrationContext): MigrationContext?
 }

@@ -37,7 +37,7 @@ enum class MigrateRepoStorageTaskState {
     PENDING,
 
     /**
-     * 执行迁移中
+     * 执行迁移中，对startTime之前创建的node进行迁移
      */
     MIGRATING,
 
@@ -58,7 +58,7 @@ enum class MigrateRepoStorageTaskState {
     CORRECT_FINISHED,
 
     /**
-     * 尝试重新传输迁移失败的node，前面两个过程中迁移失败的node重新完成迁移后即可结束整个迁移流程
+     * 尝试重新传输迁移失败的node，前面两个过程中迁移失败的node重新完成迁移后即可结束整个迁移流程，再次失败后需要手动排查原因进行迁移
      */
     MIGRATING_FAILED_NODE,
 

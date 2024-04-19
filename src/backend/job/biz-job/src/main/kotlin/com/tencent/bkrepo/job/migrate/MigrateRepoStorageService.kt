@@ -129,7 +129,7 @@ class MigrateRepoStorageService(
         }
         val executor = executors[CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, executorName)]!!
 
-        return if (executor.execute(buildContext(task))) {
+        return if (executor.execute(buildContext(task)) != null) {
             task
         } else {
             null

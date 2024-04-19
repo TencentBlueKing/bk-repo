@@ -45,8 +45,10 @@ import com.tencent.bkrepo.job.migrate.pojo.CreateMigrateRepoStorageTaskRequest
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
+import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildRepo
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildTask
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -200,7 +202,7 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         )
         whenever(storageCredentialsClient.findByKey(anyString()))
             .thenReturn(Response(0, data = FileSystemCredentials()))
-        whenever(mockMigrateExecutor.execute(any())).thenReturn(true)
-        whenever(mockCorrectExecutor.execute(any())).thenReturn(true)
+        whenever(mockMigrateExecutor.execute(any())).thenReturn(MigrationContext(buildTask(), null, null))
+        whenever(mockCorrectExecutor.execute(any())).thenReturn(MigrationContext(buildTask(), null, null))
     }
 }
