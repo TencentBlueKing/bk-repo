@@ -36,10 +36,13 @@ import kotlin.concurrent.withLock
 /**
  * 由于目前是多线程迁移，可能后提交的任务先完成，需要按顺序记录已完成的任务号用于后续断点重新迁移
  */
-class MigratedTaskNumberPriorityQueue {
+class MigratedTaskNumberPriorityQueue(
+    initNumber: Long = 0L,
+    initId: String = MIN_OBJECT_ID
+) {
     private val q = PriorityQueue<NodeNumber>()
     private val lock = ReentrantLock()
-    private val lastLeftMax = AtomicReference(NodeNumber(0L, MIN_OBJECT_ID))
+    private val lastLeftMax = AtomicReference(NodeNumber(initNumber, initId))
 
     fun offer(number: Long, nodeId: String) {
         lock.withLock { q.offer(NodeNumber(number, nodeId)) }

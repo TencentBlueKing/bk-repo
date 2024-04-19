@@ -165,8 +165,7 @@ open class ExecutorBaseTest {
             folder = false,
         )
         val sharding = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
-        mongoTemplate.insert(node, "node_$sharding")
-        return node
+        return mongoTemplate.insert(node, "node_$sharding")
     }
 
     protected fun removeNodes() {

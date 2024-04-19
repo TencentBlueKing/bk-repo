@@ -2,7 +2,12 @@ package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
+import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
+import com.tencent.bkrepo.job.UT_USER
+import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
+import com.tencent.bkrepo.job.model.TNode
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -18,6 +23,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
 import java.io.FileNotFoundException
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 @DisplayName("迁移执行器测试")
@@ -52,19 +58,51 @@ class MigrateExecutorTest @Autowired constructor(
         val context = executor.execute(buildContext(createTask()))!!
 
         // 确认任务执行中
-        var task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
+        val task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
         assertEquals(MigrateRepoStorageTaskState.MIGRATING.name, task.state)
         assertNotNull(task.startDate)
         assertTrue(executingTaskRecorder.executing(task.id!!))
 
         // 等待任务执行结束
-        Thread.sleep(2000L)
+        Thread.sleep(1000L)
         context.waitAllTransferFinished()
-        task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
-        assertFalse(executingTaskRecorder.executing(task.id!!))
-        assertEquals(nodeCount, task.totalCount)
-        assertEquals(nodeCount, task.migratedCount)
-        assertEquals(MigrateRepoStorageTaskState.MIGRATE_FINISHED.name, task.state)
+        assertTaskFinished(task.id!!, nodeCount)
+    }
+
+    @Test
+    fun testContinueMigrate() {
+        // 创建node用于模拟遍历迁移
+        val nodeCount = 50L
+        val migratedCount = 23L
+        val nodes = ArrayList<TNode>()
+        for (i in 0 until nodeCount) {
+            nodes.add(createNode())
+        }
+        // 创建任务
+        val now = LocalDateTime.now()
+        val task = migrateRepoStorageTaskDao.insert(
+            TMigrateRepoStorageTask(
+                id = null,
+                createdBy = UT_USER,
+                createdDate = now,
+                lastModifiedBy = UT_USER,
+                lastModifiedDate = now,
+                startDate = now,
+                totalCount = nodeCount,
+                migratedCount = migratedCount,
+                lastMigratedNodeId = nodes[migratedCount.toInt() - 1].id!!,
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                srcStorageKey = null,
+                dstStorageKey = UT_STORAGE_CREDENTIALS_KEY,
+                state = MigrateRepoStorageTaskState.PENDING.name,
+            )
+        ).toDto()
+        // 执行任务
+        val context = executor.execute(buildContext(task))!!
+        Thread.sleep(1000L)
+        context.waitAllTransferFinished()
+        assertTaskFinished(task.id!!, nodeCount)
     }
 
     @Test
@@ -80,5 +118,14 @@ class MigrateExecutorTest @Autowired constructor(
         Thread.sleep(1000L)
         context.waitAllTransferFinished()
         assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
+    }
+
+    private fun assertTaskFinished(taskId: String, totalCount: Long) {
+        Thread.sleep(1000L)
+        val task = migrateRepoStorageTaskDao.findById(taskId)!!.toDto()
+        assertFalse(executingTaskRecorder.executing(task.id!!))
+        assertEquals(totalCount, task.totalCount)
+        assertEquals(totalCount, task.migratedCount)
+        assertEquals(MigrateRepoStorageTaskState.MIGRATE_FINISHED.name, task.state)
     }
 }

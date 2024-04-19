@@ -116,10 +116,13 @@ abstract class BaseTaskExecutor(
             return null
         }
 
-        if (!updateState(task, executingState)) {
+        val updateResult = migrateRepoStorageTaskDao.updateState(
+            task.id!!, task.state, executingState, task.lastModifiedDate, instanceId
+        )
+        if (updateResult.modifiedCount == 0L) {
             return null
         }
-        return context.copy(task = migrateRepoStorageTaskDao.findById(task.id!!)!!.toDto())
+        return context.copy(task = migrateRepoStorageTaskDao.findById(task.id)!!.toDto())
     }
 
     protected fun ThreadPoolExecutor.execute(
@@ -197,13 +200,6 @@ abstract class BaseTaskExecutor(
             logger.error("Failed to increment file reference[$sha256] on storage[$dstStorageKey].")
         }
         logger.info("Success to migrate file[$sha256].")
-    }
-
-    protected fun updateState(task: MigrateRepoStorageTask, dstState: String): Boolean {
-        val updateResult = migrateRepoStorageTaskDao.updateState(
-            task.id!!, task.state, dstState, task.lastModifiedDate, instanceId
-        )
-        return updateResult.modifiedCount != 0L
     }
 
     protected fun saveMigrateFailedNode(taskId: String, node: Node) {

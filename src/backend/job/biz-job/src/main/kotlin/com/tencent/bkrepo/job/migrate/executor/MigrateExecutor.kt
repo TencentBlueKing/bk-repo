@@ -81,13 +81,14 @@ class MigrateExecutor(
     }
 
     override fun doExecute(context: MigrationContext) {
-        val projectId = context.task.projectId
-        val repoName = context.task.repoName
-        val taskId = context.task.id!!
-        val iterator = NodeIterator(context.task, mongoTemplate)
+        val task = context.task
+        val projectId = task.projectId
+        val repoName = task.repoName
+        val taskId = task.id!!
+        val iterator = NodeIterator(task, mongoTemplate)
         val totalCount = iterator.totalCount
-        val migratedNumberQueue = MigratedTaskNumberPriorityQueue()
-        var migratedCount = context.task.migratedCount
+        val migratedNumberQueue = MigratedTaskNumberPriorityQueue(task.migratedCount, task.lastMigratedNodeId)
+        var migratedCount = task.migratedCount
 
         // 更新待迁移制品总数
         migrateRepoStorageTaskDao.updateTotalCount(taskId, totalCount)
