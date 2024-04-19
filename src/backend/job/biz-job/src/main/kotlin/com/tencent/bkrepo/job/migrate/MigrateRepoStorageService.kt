@@ -55,6 +55,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -70,6 +71,7 @@ class MigrateRepoStorageService(
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     private val executors: Map<String, TaskExecutor>,
     private val executingTaskRecorder: ExecutingTaskRecorder,
+    private val repositoryClient: RepositoryClient,
 ) {
     @Value(SERVICE_INSTANCE_ID)
     protected lateinit var instanceId: String
@@ -85,7 +87,7 @@ class MigrateRepoStorageService(
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, "$projectId/$repoName")
             }
             val now = LocalDateTime.now()
-            val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
+            val repo = repositoryClient.getRepoDetail(projectId, repoName).data!!
             if (repo.storageCredentials?.key == dstCredentialsKey) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "src key cant be same as dst key")
             }

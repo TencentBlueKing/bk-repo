@@ -63,6 +63,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -197,7 +198,7 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
     )
 
     private fun initMock() {
-        whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyString())).thenReturn(
+        whenever(repositoryClient.getRepoDetail(anyString(), anyString(),  anyOrNull())).thenReturn(
             Response(0, "", buildRepo())
         )
         whenever(storageCredentialsClient.findByKey(anyString()))
