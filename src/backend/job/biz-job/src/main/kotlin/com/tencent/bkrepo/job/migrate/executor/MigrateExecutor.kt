@@ -106,14 +106,13 @@ class MigrateExecutor(
                 } finally {
                     // 保存完成的任务序号
                     migratedNumberQueue.offer(taskNumber)
-                    context.decTransferringCount()
-
                     // 更新任务进度，用于进程重启时从断点继续迁移
                     if (taskNumber % properties.updateProgressInterval == 0L) {
                         val migratedCount = migratedNumberQueue.updateLeftMax()
                         logger.info("migrate repo[${projectId}/${repoName}], progress[$migratedCount/$totalCount]")
                         migrateRepoStorageTaskDao.updateMigratedCount(taskId, migratedCount)
                     }
+                    context.decTransferringCount()
                 }
             }
         }
