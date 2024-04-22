@@ -31,10 +31,17 @@
 
 package com.tencent.bkrepo.fs.server.model
 
+import com.tencent.bkrepo.fs.server.model.TDailyClient.Companion.DAILY_CLIENT_IDX
+import com.tencent.bkrepo.fs.server.model.TDailyClient.Companion.DAILY_CLIENT_IDX_DEF
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 @Document("daily_client")
+@CompoundIndexes(
+    CompoundIndex(name = DAILY_CLIENT_IDX, def = DAILY_CLIENT_IDX_DEF, background = true)
+)
 data class TDailyClient(
     val id: String? = null,
     val projectId: String,
@@ -48,4 +55,9 @@ data class TDailyClient(
     // 包含3个动作 上下线和心跳,心跳一天仅记录最近一条，{start, finish, working}
     val action: String,
     val time: LocalDateTime
-)
+) {
+    companion object {
+        const val DAILY_CLIENT_IDX = "daily_client_idx"
+        const val DAILY_CLIENT_IDX_DEF = "{'projectId': 1, 'repoName': 1,'mountPoint':1, 'ip': 1}"
+    }
+}
