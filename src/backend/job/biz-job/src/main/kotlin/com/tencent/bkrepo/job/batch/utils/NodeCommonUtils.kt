@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.SHARDING_COUNT
-import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageTaskUtils
+import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
 import java.time.LocalDateTime
@@ -24,11 +24,11 @@ import java.util.function.Consumer
 @Component
 class NodeCommonUtils(
     mongoTemplate: MongoTemplate,
-    migrateTaskUtils: MigrateRepoStorageTaskUtils,
+    migrateRepoStorageService: MigrateRepoStorageService,
 ) {
     init {
         Companion.mongoTemplate = mongoTemplate
-        Companion.migrateTaskUtils = migrateTaskUtils
+        Companion.migrateRepoStorageService = migrateRepoStorageService
     }
 
     data class Node(
@@ -44,7 +44,7 @@ class NodeCommonUtils(
 
     companion object {
         lateinit var mongoTemplate: MongoTemplate
-        lateinit var migrateTaskUtils: MigrateRepoStorageTaskUtils
+        lateinit var migrateRepoStorageService: MigrateRepoStorageService
         private const val COLLECTION_NAME_PREFIX = "node_"
         private val workPool = ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
@@ -74,7 +74,7 @@ class NodeCommonUtils(
                     .distinctBy { it.projectId + it.repoName }
                     .any {
                         // node正在迁移时无法判断是否存在于存储[storageCredentialsKey]上
-                        if (migrateTaskUtils.migrating(it.projectId, it.repoName)) {
+                        if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
                             throw IllegalStateException("repo[${it.projectId}/${it.repoName}] was migrating")
                         }
                         val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
