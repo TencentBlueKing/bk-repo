@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
@@ -140,12 +141,18 @@ class RepositoryServiceImpl(
         return convertToDetail(tRepository, storageCredentials)
     }
 
-    override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String) {
-        repositoryDao.findByNameAndType(projectId, repoName, null)?.run {
-            oldCredentialsKey = credentialsKey
-            credentialsKey = storageCredentialsKey
-            repositoryDao.save(this)
+    override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String?) {
+        val repo = repositoryDao.findByNameAndType(projectId, repoName, null)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "$projectId/$repoName")
+        if (repo.credentialsKey != storageCredentialsKey) {
+            repo.oldCredentialsKey = repo.credentialsKey
+            repo.credentialsKey = storageCredentialsKey
+            repositoryDao.save(repo)
         }
+    }
+
+    override fun unsetOldStorageCredentialsKey(projectId: String, repoName: String) {
+        repositoryDao.unsetOldCredentialsKey(projectId, repoName)
     }
 
     override fun listRepo(projectId: String, name: String?, type: String?, display: Boolean?): List<RepositoryInfo> {
@@ -237,15 +244,14 @@ class RepositoryServiceImpl(
             Preconditions.checkArgument(checkCategory(category, configuration), this::configuration.name)
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             // 确保项目一定存在
-            if (!projectService.checkExist(projectId)) {
-                throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, projectId)
-            }
+            val project = projectService.getProjectInfo(projectId)
+                ?: throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, projectId)
             // 确保同名仓库不存在
             if (checkExist(projectId, name)) {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
             }
             // 解析存储凭证
-            val credentialsKey = determineStorageKey(this)
+            val credentialsKey = determineStorageKey(this, project.credentialsKey)
             // 确保存储凭证Key一定存在
             credentialsKey?.takeIf { it.isNotBlank() }?.let {
                 storageCredentialService.findByKey(it) ?: throw ErrorCodeException(
@@ -610,9 +616,10 @@ class RepositoryServiceImpl(
      * 1. 如果请求指定了storageCredentialsKey，则使用指定的
      * 2. 如果没有指定，则根据仓库名称进行匹配storageCredentialsKey
      * 3. 如果配有匹配到，则根据仓库类型进行匹配storageCredentialsKey
-     * 3. 如果以上都没匹配，则使用全局默认storageCredentialsKey
+     * 4. 如果项目配置了默认存储凭据，则使用项目指定的
+     * 5. 如果以上都没匹配，则使用全局默认storageCredentialsKey
      */
-    fun determineStorageKey(request: RepoCreateRequest): String? {
+    fun determineStorageKey(request: RepoCreateRequest, projectCredentialsKey: String? = null): String? {
         with(repositoryProperties) {
             return if (!request.storageCredentialsKey.isNullOrBlank()) {
                 request.storageCredentialsKey
@@ -620,6 +627,8 @@ class RepositoryServiceImpl(
                 repoStorageMapping.names[request.name]
             } else if (repoStorageMapping.types.containsKey(request.type)) {
                 repoStorageMapping.types[request.type]
+            } else if (!projectCredentialsKey.isNullOrEmpty()) {
+                projectCredentialsKey
             } else {
                 defaultStorageCredentialsKey
             }

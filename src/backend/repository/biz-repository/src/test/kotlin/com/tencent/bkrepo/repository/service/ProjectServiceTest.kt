@@ -32,16 +32,21 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.repository.UT_PROJECT_DESC
 import com.tencent.bkrepo.repository.UT_PROJECT_DISPLAY
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
+import com.tencent.bkrepo.repository.UT_REGION
+import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.ProjectDao
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -58,7 +63,8 @@ import org.springframework.data.mongodb.core.query.Query
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ProjectServiceTest @Autowired constructor(
     private val projectService: ProjectService,
-    private val projectDao: ProjectDao
+    private val projectDao: ProjectDao,
+    private val storageCredentialService: StorageCredentialService,
 ) : ServiceBaseTest() {
 
     @BeforeAll
@@ -169,6 +175,50 @@ class ProjectServiceTest @Autowired constructor(
         removeAllProject()
         request = ProjectCreateRequest(UT_PROJECT_ID, "123-abc", UT_PROJECT_DESC, true, UT_USER)
         projectService.createProject(request)
+    }
+
+    @Test
+    @DisplayName("测试非法存储凭据")
+    fun `should throw exception with illegal credentials key`() {
+        val request = ProjectCreateRequest(
+            UT_PROJECT_ID,
+            UT_PROJECT_DISPLAY,
+            UT_PROJECT_DESC,
+            true,
+            UT_USER,
+            emptyList(),
+            UT_STORAGE_CREDENTIALS_KEY
+        )
+
+        // 创建失败
+        assertThrows<ErrorCodeException> { projectService.createProject(request) }
+
+        // 创建成功
+        storageCredentialService.create(
+            UT_USER,
+            StorageCredentialsCreateRequest(
+                key = UT_STORAGE_CREDENTIALS_KEY,
+                credentials = FileSystemCredentials(),
+                region = UT_REGION
+            )
+        )
+
+        val project = projectService.createProject(request)
+        Assertions.assertEquals(UT_STORAGE_CREDENTIALS_KEY, project.credentialsKey)
+
+        // 更新失败
+        assertThrows<ErrorCodeException> {
+            projectService.updateProject(UT_USER, ProjectUpdateRequest(credentialsKey = "notExistsKey"))
+        }
+
+        // 更新成功
+        projectService.updateProject(UT_PROJECT_ID, ProjectUpdateRequest(credentialsKey = UT_STORAGE_CREDENTIALS_KEY))
+        Assertions.assertEquals(
+            UT_STORAGE_CREDENTIALS_KEY, projectService.getProjectInfo(UT_PROJECT_ID)!!.credentialsKey
+        )
+        // 取消项目存储凭据设置
+        projectService.updateProject(UT_PROJECT_ID, ProjectUpdateRequest(useDefaultCredentialsKey = true))
+        Assertions.assertEquals(null, projectService.getProjectInfo(UT_PROJECT_ID)!!.credentialsKey)
     }
 
     @Test

@@ -49,4 +49,6 @@ data class ProjectCreateRequest(
     val operator: String = SYSTEM_USER,
     @ApiModelProperty("项目元数据", required = false)
     val metadata: List<ProjectMetadata> = emptyList(),
+    @ApiModelProperty("项目新建仓库默认使用的存储", required = false)
+    val credentialsKey: String? = null,
 ) : ProjectRequest

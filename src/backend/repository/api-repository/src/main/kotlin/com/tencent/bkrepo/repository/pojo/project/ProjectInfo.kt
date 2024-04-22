@@ -54,4 +54,6 @@ data class ProjectInfo(
     val rbacFlag: Boolean = false,
     @ApiModelProperty("项目元数据")
     val metadata: List<ProjectMetadata> = emptyList(),
+    @ApiModelProperty("项目新建仓库默认使用的存储")
+    val credentialsKey: String? = null,
 )

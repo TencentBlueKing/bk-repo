@@ -55,4 +55,8 @@ data class TProject(
     var displayName: String,
     var description: String,
     var metadata: List<ProjectMetadata> = emptyList(),
+    /**
+     * 项目新建仓库默认使用的存储凭据，为null时表示未配置，将会使用全局默认存储凭据
+     */
+    var credentialsKey: String? = null,
 )
