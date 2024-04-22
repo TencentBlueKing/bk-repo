@@ -861,5 +861,11 @@
     "mavenArtifactIdPlaceholder":"请输入制品 ArtifactId",
     "fileNamePlaceholder":"请输入文件名称",
     "composerInputLabel":"制品包名称",
-    "composerInputPlaceholder":"请输入制品包名称"
+    "composerInputPlaceholder":"请输入制品包名称",
+    "staffing":"人员配置",
+    "next": "下一步",
+    "previous": "上一步",
+    "copyAll": "复制全部",
+    "clear": "清空",
+    "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割"
 }
