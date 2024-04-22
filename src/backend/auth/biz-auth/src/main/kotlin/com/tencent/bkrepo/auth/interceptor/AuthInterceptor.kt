@@ -107,7 +107,7 @@ class AuthInterceptor(
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val authHeader = request.getHeader(AUTHORIZATION).orEmpty()
-        val authFailStr = String.format(AUTH_FAILED_RESPONSE, authHeader)
+        var authFailStr = String.format(AUTH_FAILED_RESPONSE, authHeader)
         try {
             // basic认证
             if (authHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
@@ -116,6 +116,7 @@ class AuthInterceptor(
 
             // platform认证
             if (authHeader.startsWith(PLATFORM_AUTH_HEADER_PREFIX)) {
+                authFailStr = String.format(AUTH_FAILED_RESPONSE, "illegal AUTHORIZATION")
                 return checkUserFromPlatform(request, authHeader)
             }
 
