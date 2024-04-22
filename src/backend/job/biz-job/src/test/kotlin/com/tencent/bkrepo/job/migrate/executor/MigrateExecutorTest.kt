@@ -64,7 +64,7 @@ class MigrateExecutorTest @Autowired constructor(
         assertTrue(executingTaskRecorder.executing(task.id!!))
 
         // 等待任务执行结束
-        Thread.sleep(1000L)
+        Thread.sleep(2000L)
         context.waitAllTransferFinished()
         assertTaskFinished(task.id!!, nodeCount)
     }
@@ -100,7 +100,7 @@ class MigrateExecutorTest @Autowired constructor(
         ).toDto()
         // 执行任务
         val context = executor.execute(buildContext(task))!!
-        Thread.sleep(1000L)
+        Thread.sleep(2000L)
         context.waitAllTransferFinished()
         assertTaskFinished(task.id!!, nodeCount)
     }

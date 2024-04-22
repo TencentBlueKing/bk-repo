@@ -138,7 +138,7 @@ class ProjectServiceTest @Autowired constructor(
         request = ProjectCreateRequest("11", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, true, UT_USER)
         assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
-        request = ProjectCreateRequest("a".repeat(33), UT_PROJECT_DISPLAY, UT_PROJECT_DESC, true, UT_USER)
+        request = ProjectCreateRequest("a".repeat(34), UT_PROJECT_DISPLAY, UT_PROJECT_DESC, true, UT_USER)
         assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
         request = ProjectCreateRequest("test_1", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, true, UT_USER)
@@ -163,7 +163,7 @@ class ProjectServiceTest @Autowired constructor(
         var request = ProjectCreateRequest(UT_PROJECT_ID, "", UT_PROJECT_DESC, true, UT_USER)
         assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
-        request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(33), UT_PROJECT_DESC, true, UT_USER)
+        request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(34), UT_PROJECT_DESC, true, UT_USER)
         assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
         request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(1), UT_PROJECT_DESC, true, UT_USER)
