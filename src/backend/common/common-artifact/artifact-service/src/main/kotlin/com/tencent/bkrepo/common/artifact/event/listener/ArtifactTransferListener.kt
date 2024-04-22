@@ -57,6 +57,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.NoSuchFileException
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
 import java.util.concurrent.LinkedBlockingQueue
@@ -161,18 +162,25 @@ class ArtifactTransferListener(
         resource.artifactMap.filter { it.value is FileArtifactInputStream }
             .map { it.value as FileArtifactInputStream }
             .forEach {
-                val attr = Files.readAttributes(
-                    it.file.toPath(),
-                    BasicFileAttributes::class.java,
-                    LinkOption.NOFOLLOW_LINKS
-                )
-                // nfs不支持读取文件更新atime,所以这里用当前时间替换。
-                val intervalOfMillis = System.currentTimeMillis() - attr.lastModifiedTime().toMillis()
-                val intervalOfDays = intervalOfMillis / MILLIS_OF_DAY + 1
-                if (logger.isDebugEnabled && intervalOfDays > 30) {
-                    logger.debug("File[${it.file}] since last access more than 30d.")
+                val attr = try {
+                    Files.readAttributes(
+                        it.file.toPath(),
+                        BasicFileAttributes::class.java,
+                        LinkOption.NOFOLLOW_LINKS
+                    )
+                } catch (ignore: NoSuchFileException) {
+                    logger.warn("File[${it.file}] is not exist")
+                    null
                 }
-                accessTimeDs.record(intervalOfDays.toDouble())
+                if (attr != null) {
+                    // nfs不支持读取文件更新atime,所以这里用当前时间替换。
+                    val intervalOfMillis = System.currentTimeMillis() - attr.lastModifiedTime().toMillis()
+                    val intervalOfDays = intervalOfMillis / MILLIS_OF_DAY + 1
+                    if (logger.isDebugEnabled && intervalOfDays > 30) {
+                        logger.debug("File[${it.file}] since last access more than 30d.")
+                    }
+                    accessTimeDs.record(intervalOfDays.toDouble())
+                }
             }
     }
 
