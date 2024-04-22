@@ -163,6 +163,9 @@ abstract class BaseTaskExecutor(
 
     protected fun correctNode(context: MigrationContext, node: Node) {
         val sha256 = node.sha256
+        val task = context.task
+        val projectId = node.projectId
+        val repoName = node.repoName
         // 文件已存在于目标存储则不处理
         if (storageService.exist(sha256, context.dstCredentials)) {
             logger.info("file[$sha256] already exists in dst credentials[${context.task.dstStorageKey}]")
@@ -175,10 +178,11 @@ abstract class BaseTaskExecutor(
               这种情况会导致目标存储引用大于0但是文件不再目标存储，此时仅迁移存储不修改引用数
              */
             transferData(context, node)
-            logger.info("Success to correct file[$sha256].")
+            logger.info("correct success, transfer file[$sha256], task[$projectId/$repoName], state[${task.state}]")
         } else {
             // dst data和reference都不存在，migrate
             migrateNode(context, node)
+            logger.info("correct success, migrate file[$sha256], task[$projectId/$repoName], state[${task.state}]")
         }
     }
 
@@ -199,7 +203,6 @@ abstract class BaseTaskExecutor(
         if (fileReferenceClient.increment(sha256, dstStorageKey).data != true) {
             logger.error("Failed to increment file reference[$sha256] on storage[$dstStorageKey].")
         }
-        logger.info("Success to migrate file[$sha256].")
     }
 
     protected fun saveMigrateFailedNode(taskId: String, node: Node) {
