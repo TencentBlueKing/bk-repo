@@ -866,5 +866,8 @@
     "previous": "Previous",
     "copyAll": "Copy All",
     "clear": "Clear",
-    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space"
+    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
+    "downloadHistory": "Download History(Last Year)",
+    "downloadDate": "Download Date",
+    "downloader": "Downloader"
 }

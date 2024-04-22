@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
@@ -56,12 +57,14 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BATCH_M
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.generic.model.GenericPageRequest
 import com.tencent.bkrepo.generic.pojo.BatchDownloadPaths
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.CompressedFileService
 import com.tencent.bkrepo.generic.service.DownloadService
+import com.tencent.bkrepo.generic.service.GenericDownloadRecordService
 import com.tencent.bkrepo.generic.service.UploadService
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -83,6 +86,7 @@ class GenericController(
     private val downloadService: DownloadService,
     private val permissionManager: PermissionManager,
     private val compressedFileService: CompressedFileService,
+    private val genericDownloadRecordService: GenericDownloadRecordService
 ) {
 
     @PutMapping(GENERIC_MAPPING_URI)
@@ -218,5 +222,14 @@ class GenericController(
         val pageRequest = Pages.ofRequest(queryModel.page.pageNumber, queryModel.page.pageSize)
         val page = Pages.ofResponse(pageRequest, 0L, downloadService.search(queryModel))
         return ResponseBuilder.success(page)
+    }
+
+    @ApiOperation("分页查询下载历史")
+    @PostMapping("/download/record/page")
+    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
+    fun getDownloadRecord(
+        @RequestBody genericPageRequest: GenericPageRequest
+    ): Response<Page<TOperateLog>> {
+        return ResponseBuilder.success(genericDownloadRecordService.getRecord(genericPageRequest))
     }
 }

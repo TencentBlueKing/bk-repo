@@ -867,5 +867,8 @@
     "previous": "上一步",
     "copyAll": "复制全部",
     "clear": "清空",
-    "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割"
+    "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割",
+    "downloadHistory": "下载历史(最近一年)",
+    "downloadDate": "下载时间",
+    "downloader": "下载用户"
 }
