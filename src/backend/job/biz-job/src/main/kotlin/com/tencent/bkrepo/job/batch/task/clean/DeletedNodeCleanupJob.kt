@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.NAME
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -58,9 +59,9 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
-import kotlin.reflect.KClass
 import java.util.Optional
 import java.util.concurrent.TimeUnit
+import kotlin.reflect.KClass
 
 /**
  * 清理被标记为删除的node，同时减少文件引用
@@ -88,6 +89,13 @@ class DeletedNodeCleanupJob(
         val sha256: String,
         val credentialsKey: String?,
         val count: String
+    )
+
+    data class Repository(
+        val id: String,
+        val projectId: String,
+        val name: String,
+        val credentialsKey: String?
     )
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(28)
@@ -191,7 +199,7 @@ class DeletedNodeCleanupJob(
 
         logger.error(
             "Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: " +
-                    "reference count is 0."
+                "reference count is 0."
         )
         return false
     }
@@ -217,8 +225,21 @@ class DeletedNodeCleanupJob(
 
     private fun loadCredentialsKey(repositoryId: RepositoryId): String? {
         val repo = repositoryClient.getRepoInfo(repositoryId.projectId, repositoryId.repoName).data
-            ?: throw RepoNotFoundException("${repositoryId.projectId}/${repositoryId.repoName}")
-        return repo.storageCredentialsKey
+        return if (repo == null) {
+            val deletedRepo = getDeletedRepoInfo(repositoryId.projectId, repositoryId.repoName)
+                ?: throw RepoNotFoundException("${repositoryId.projectId}/${repositoryId.repoName}")
+            deletedRepo.credentialsKey
+        } else {
+            repo.storageCredentialsKey
+        }
+    }
+
+    private fun getDeletedRepoInfo(projectId: String, repoName: String): Repository? {
+        val query = Query(
+            Criteria.where(DELETED_DATE).ne(null)
+                .and(PROJECT).isEqualTo(projectId).and(NAME).isEqualTo(repoName)
+        )
+        return mongoTemplate.findOne(query, Repository::class.java)
     }
 
     data class RepositoryId(val projectId: String, val repoName: String) {
