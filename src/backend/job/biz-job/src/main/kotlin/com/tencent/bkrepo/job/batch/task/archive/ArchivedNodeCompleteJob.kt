@@ -82,18 +82,7 @@ class ArchivedNodeCompleteJob(
 
     override fun run(row: ArchivedNodeRestoreJob.ArchiveFile, collectionName: String, context: NodeContext) {
         with(row) {
-            val pendingNodes = listNode(sha256, storageCredentialsKey)
-            if (pendingNodes.isEmpty()) {
-                logger.info("$sha256($storageCredentialsKey) no nodes need to be archived.")
-                val archiveFileRequest = ArchiveFileRequest(
-                    sha256 = sha256,
-                    storageCredentialsKey = storageCredentialsKey,
-                    operator = SYSTEM_USER,
-                )
-                archiveClient.complete(archiveFileRequest)
-                return
-            }
-            pendingNodes.forEach {
+            listNode(sha256, storageCredentialsKey).forEach {
                 val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
                 archiveNode(it.projectId, it.repoName, it.fullPath, sha256, repo.storageCredentials)
                 context.count.incrementAndGet()
