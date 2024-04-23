@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.archive.config
 
-import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 import java.time.Duration
@@ -11,33 +10,20 @@ import java.time.Duration
 @ConfigurationProperties("archive")
 data class ArchiveProperties(
     /**
-     * 默认归档存储配置
+     * 归档实例配置
      * */
     @NestedConfigurationProperty
-    val cos: InnerCosCredentials = InnerCosCredentials(),
+    var defaultCredentials: ArchiveCredentialsProperties = ArchiveCredentialsProperties(),
 
     /**
      * 额外存储配置
      * */
-    var credentials: Map<String, InnerCosCredentials> = mutableMapOf(),
+    var extraCredentialsConfig: Map<String, ArchiveCredentialsProperties> = mutableMapOf(),
+
     /**
      * 工作路径
      * */
     var workDir: String = System.getProperty("java.io.tmpdir"),
-
-    /**
-     * 恢复出的临时副本的有效时长，单位为“天”
-     * */
-    var days: Int = 1,
-    /**
-     * 恢复模式
-     * */
-    var tier: String = "Standard",
-
-    /**
-     * 恢复数量限制
-     * */
-    var restoreLimit: Int = 1000,
 
     /**
      * 任务拉取时间
