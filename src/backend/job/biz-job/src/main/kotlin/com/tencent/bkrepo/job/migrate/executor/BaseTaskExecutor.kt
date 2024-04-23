@@ -80,8 +80,7 @@ abstract class BaseTaskExecutor(
         }
 
         val newContext = checkExecutable(context, startState, executingState)?.let { prepare(it) } ?: return null
-        val newTask = newContext.task
-        val executed = executor()?.execute(newTask, startState, finishedState) { doExecute(newContext) }
+        val executed = executor()?.execute(newContext.task, startState, finishedState) { doExecute(newContext) }
         return if (executed == true) {
             newContext
         } else {
@@ -109,20 +108,17 @@ abstract class BaseTaskExecutor(
         requiredSrcState: String,
         executingState: String
     ): MigrationContext? {
-        val task = context.task
-        require(task.state == requiredSrcState)
-        val executor = executor()
-        if (executor != null && executor.activeCount == executor.maximumPoolSize) {
-            return null
-        }
+        with(context.task) {
+            require(state == requiredSrcState)
+            val executor = executor()
+            if (executor != null && executor.activeCount == executor.maximumPoolSize) {
+                return null
+            }
 
-        val updateResult = migrateRepoStorageTaskDao.updateState(
-            task.id!!, task.state, executingState, task.lastModifiedDate, instanceId
-        )
-        if (updateResult.modifiedCount == 0L) {
-            return null
+            return migrateRepoStorageTaskDao
+                .updateState(id!!, state, executingState, lastModifiedDate, instanceId)
+                ?.let { context.copy(task = it.toDto()) }
         }
-        return context.copy(task = migrateRepoStorageTaskDao.findById(task.id)!!.toDto())
     }
 
     protected fun ThreadPoolExecutor.execute(

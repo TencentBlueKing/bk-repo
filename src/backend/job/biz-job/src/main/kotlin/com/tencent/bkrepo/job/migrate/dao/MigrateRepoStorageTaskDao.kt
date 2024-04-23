@@ -33,6 +33,7 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTABLE_STATE
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTING_STATE
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -56,12 +57,13 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         return findOne(Query(criteria))
     }
 
-    fun updateStartDate(id: String, startDate: LocalDateTime) {
+    fun updateStartDate(id: String, startDate: LocalDateTime): TMigrateRepoStorageTask? {
         val criteria = Criteria.where(ID).isEqualTo(id)
         val update = Update()
             .set(TMigrateRepoStorageTask::startDate.name, startDate)
             .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())
-        updateFirst(Query(criteria), update)
+        val options = FindAndModifyOptions().returnNew(true)
+        return findAndModify(Query(criteria), update, options, TMigrateRepoStorageTask::class.java)
     }
 
     fun updateState(
@@ -70,7 +72,7 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         targetState: String,
         lastModifiedDate: LocalDateTime,
         instanceId: String? = null,
-    ): UpdateResult {
+    ): TMigrateRepoStorageTask? {
         val criteria = Criteria.where(ID).isEqualTo(id)
             .and(TMigrateRepoStorageTask::state.name).isEqualTo(sourceState)
             .and(TMigrateRepoStorageTask::lastModifiedDate.name).isEqualTo(lastModifiedDate)
@@ -78,7 +80,8 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
             .set(TMigrateRepoStorageTask::state.name, targetState)
             .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TMigrateRepoStorageTask::executingOn.name, instanceId)
-        return updateFirst(Query(criteria), update)
+        val options  = FindAndModifyOptions().returnNew(true)
+        return findAndModify(Query(criteria), update, options, TMigrateRepoStorageTask::class.java)
     }
 
     fun updateMigratedCount(id: String, count: Long, lastMigratedNodeId: String): UpdateResult {
