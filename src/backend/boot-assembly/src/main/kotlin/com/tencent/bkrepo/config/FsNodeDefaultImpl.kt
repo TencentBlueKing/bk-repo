@@ -58,4 +58,8 @@ class FsNodeDefaultImpl : FsNodeClient {
     ): Response<Void> {
         throw MethodNotAllowedException()
     }
+
+    override fun deleteBlockResources(projectId: String, repoName: String, fullPath: String) {
+        throw MethodNotAllowedException()
+    }
 }

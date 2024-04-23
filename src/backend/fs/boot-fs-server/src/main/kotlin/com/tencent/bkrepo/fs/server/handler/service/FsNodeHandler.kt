@@ -29,6 +29,7 @@ package com.tencent.bkrepo.fs.server.handler.service
 
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.fs.server.request.service.DeleteBlocksRequest
 import com.tencent.bkrepo.fs.server.request.service.ListBlocksRequest
 import com.tencent.bkrepo.fs.server.request.service.RestoreBlocksRequest
 import com.tencent.bkrepo.fs.server.service.BlockNodeService
@@ -62,5 +63,13 @@ class FsNodeHandler(
             blockNodeService.restoreBlocks(projectId, repoName, fullPath, nodeCreateDate, nodeDeleteDate)
             return ReactiveResponseBuilder.success()
         }
+    }
+
+    suspend fun deleteBlock(request: ServerRequest): ServerResponse {
+        with(DeleteBlocksRequest(request)) {
+            blockNodeService.deleteBlocks(projectId, repoName, fullPath)
+            return ReactiveResponseBuilder.success()
+        }
+
     }
 }

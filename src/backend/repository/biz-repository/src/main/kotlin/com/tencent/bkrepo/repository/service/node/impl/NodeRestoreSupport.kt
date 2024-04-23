@@ -161,8 +161,7 @@ open class NodeRestoreSupport(
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
-                        val query = nodeQuery(projectId, repoName, fullPath)
-                        nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(operator))
+                        deleteExistedNode(node, operator)
                         conflictCount += 1
                     }
                     ConflictStrategy.FAILED -> throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
@@ -188,6 +187,19 @@ open class NodeRestoreSupport(
                 }
             }
             restoreCount += if (deletedNode != null) 1 else 0
+        }
+    }
+
+    private fun deleteExistedNode(
+        node: TNode,
+        userId: String
+    ) {
+        with(node) {
+            val query = nodeQuery(projectId, repoName, fullPath)
+            if (node.sha256 == FAKE_SHA256 || node.metadata?.find { it.key == FS_ATTR_KEY } != null) {
+                fsNodeClient.deleteBlockResources(projectId, repoName, fullPath)
+            }
+            nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(userId))
         }
     }
 
