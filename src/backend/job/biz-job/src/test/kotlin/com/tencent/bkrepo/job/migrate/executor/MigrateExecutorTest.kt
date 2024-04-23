@@ -61,10 +61,10 @@ class MigrateExecutorTest @Autowired constructor(
         val task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
         assertEquals(MigrateRepoStorageTaskState.MIGRATING.name, task.state)
         assertNotNull(task.startDate)
-        assertTrue(executingTaskRecorder.executing(task.id!!))
 
         // 等待任务执行结束
-        Thread.sleep(2000L)
+        Thread.sleep(500L)
+        assertTrue(executingTaskRecorder.executing(task.id!!))
         context.waitAllTransferFinished()
         assertTaskFinished(task.id!!, nodeCount)
     }
