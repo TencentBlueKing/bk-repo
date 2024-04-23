@@ -80,7 +80,7 @@ class MigrateFailedNodeExecutor(
         val projectId = task.projectId
         val repoName = task.repoName
         while (true) {
-            val failedNode = findFailedNode(projectId, repoName) ?: break
+            val failedNode = migrateFailedNodeDao.findOneToRetry(projectId, repoName) ?: break
             val node = convert(failedNode)
             context.incTransferringCount()
             transferDataExecutor.execute {
@@ -104,20 +104,6 @@ class MigrateFailedNodeExecutor(
             logger.info("migrate all failed node success, task[${projectId}/${repoName}]")
         } else {
             logger.error("task[${projectId}/${repoName}] still contain migrate failed node that must migrate manually")
-        }
-    }
-
-    private fun findFailedNode(projectId: String, repoName: String): TMigrateFailedNode? {
-        while (true) {
-            val failedNode = migrateFailedNodeDao.findOneToRetry(projectId, repoName) ?: return null
-            val updateResult = migrateFailedNodeDao.incRetryTimes(
-                projectId, repoName, failedNode.fullPath, failedNode.lastModifiedDate
-            )
-            if (updateResult.modifiedCount == 1L) {
-                return failedNode
-            } else {
-                continue
-            }
         }
     }
 

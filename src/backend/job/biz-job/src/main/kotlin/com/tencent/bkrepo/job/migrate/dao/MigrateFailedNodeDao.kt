@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.job.migrate.dao
 
-import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -46,8 +46,12 @@ class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
             .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
             .and(TMigrateFailedNode::retryTimes.name).lt(maxRetryTimes)
             .and(TMigrateFailedNode::migrating.name).isEqualTo(false)
+        val update = Update()
+            .inc(TMigrateFailedNode::retryTimes.name, 1)
+            .set(TMigrateFailedNode::lastModifiedDate.name, LocalDateTime.now())
+            .set(TMigrateFailedNode::migrating.name, true)
         val query = Query(criteria).with(Sort.by(Sort.Order.asc(TMigrateFailedNode::retryTimes.name)))
-        return findOne(query)
+        return findAndModify(query, update, FindAndModifyOptions().returnNew(true), TMigrateFailedNode::class.java)
     }
 
     fun existsFailedNode(projectId: String, repoName: String, fullPath: String? = null): Boolean {
@@ -56,24 +60,6 @@ class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
             .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
         fullPath?.let { criteria.and(TMigrateFailedNode::fullPath.name).isEqualTo(it) }
         return exists(Query(criteria))
-    }
-
-    fun incRetryTimes(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        lastModifiedDate: LocalDateTime
-    ): UpdateResult {
-        val criteria = Criteria
-            .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
-            .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
-            .and(TMigrateFailedNode::fullPath.name).isEqualTo(fullPath)
-            .and(TMigrateFailedNode::lastModifiedDate.name).isEqualTo(lastModifiedDate)
-        val update = Update()
-            .inc(TMigrateFailedNode::retryTimes.name, 1)
-            .set(TMigrateFailedNode::lastModifiedDate.name, LocalDateTime.now())
-            .set(TMigrateFailedNode::migrating.name, true)
-        return updateFirst(Query(criteria), update)
     }
 
     fun resetMigrating(projectId: String, repoName: String, fullPath: String) {
