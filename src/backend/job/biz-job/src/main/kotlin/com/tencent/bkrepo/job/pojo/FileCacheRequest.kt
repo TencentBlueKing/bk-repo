@@ -33,6 +33,8 @@ data class FileCacheRequest(
     var repoName: String = "",
     // 路径前缀匹配
     var pathPrefix: List<String> = emptyList(),
+    // 文件后缀
+    var fileExtension: List<String> = emptyList(),
     // 保留最近多少天内访问
     var days: Int = 30,
     var size: Long = 10,

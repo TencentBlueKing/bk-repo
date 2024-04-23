@@ -48,6 +48,7 @@ class FileCacheServiceImp constructor(
             projectId = fileCacheRequest.projectId,
             repoName = fileCacheRequest.repoName,
             pathPrefix = fileCacheRequest.pathPrefix,
+            fileExtension = fileCacheRequest.fileExtension,
             size = fileCacheRequest.size,
             days = fileCacheRequest.days
         )
@@ -78,6 +79,7 @@ class FileCacheServiceImp constructor(
             projectId = fileCacheRequest.projectId,
             repoName = fileCacheRequest.repoName,
             pathPrefix = fileCacheRequest.pathPrefix,
+            fileExtension = fileCacheRequest.fileExtension,
             size = fileCacheRequest.size,
             days = fileCacheRequest.days
         )
