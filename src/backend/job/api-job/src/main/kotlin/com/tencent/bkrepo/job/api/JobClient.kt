@@ -31,10 +31,12 @@ import com.tencent.bkrepo.common.api.constant.JOB_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.job.pojo.JobDetail
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 
-@FeignClient(JOB_SERVICE_NAME)
+@Primary
+@FeignClient(JOB_SERVICE_NAME, contextId = "JobClient")
 @RequestMapping("/service/job")
 interface JobClient {
 
