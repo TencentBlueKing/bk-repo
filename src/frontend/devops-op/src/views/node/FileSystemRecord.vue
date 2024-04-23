@@ -99,7 +99,7 @@ export default {
         pageNumber: 1,
         ip: '',
         version: '',
-        startTime: '',
+        startTime: new Date(),
         endTime: ''
       },
       clients: []
