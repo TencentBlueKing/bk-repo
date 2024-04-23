@@ -33,13 +33,17 @@ package com.tencent.bkrepo.common.service.util
 
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import org.springframework.beans.BeansException
 import org.springframework.cloud.sleuth.Tracer
 
 object ResponseBuilder {
 
-    fun <T> build(code: Int, message: String?, data: T?) =
-        Response(code, message, data, getTraceId())
+    fun <T> build(code: Int, message: String?, data: T?): Response<T> {
+        TraceHeaderUtils.setResponseHeader()
+        return Response(code, message, data, getTraceId())
+    }
+
 
     /**
      * 创建确定类型的[Response]，规避Jackson序列化时不包含类型信息问题
@@ -48,7 +52,10 @@ object ResponseBuilder {
         data: T,
         message: String? = null,
         code: Int = CommonMessageCode.SUCCESS.getCode()
-    ): Response<T> = object : Response<T>(code, message, data) {}
+    ): Response<T> {
+        TraceHeaderUtils.setResponseHeader()
+        return Response<T>(code, message, data)
+    }
 
     fun success() = build(CommonMessageCode.SUCCESS.getCode(), null, null)
 
