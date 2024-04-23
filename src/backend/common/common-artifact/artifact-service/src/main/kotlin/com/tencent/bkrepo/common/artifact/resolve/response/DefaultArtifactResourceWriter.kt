@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils.isClientBroken
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -68,6 +69,7 @@ open class DefaultArtifactResourceWriter(
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
         responseRateLimitCheck()
+        TraceHeaderUtils.setResponseHeader()
         return if (resource.containsMultiArtifact()) {
             writeMultiArtifact(resource)
         } else {
