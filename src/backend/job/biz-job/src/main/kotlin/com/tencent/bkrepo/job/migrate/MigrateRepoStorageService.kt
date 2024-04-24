@@ -139,7 +139,7 @@ class MigrateRepoStorageService(
     }
 
     /**
-     * 指定仓库是否正在迁移中，除PENDING状态外的其他状态都表示处于迁移中
+     * 指定仓库是否正在迁移中，startDate不为null时表示正在迁移中
      *
      * @param projectId 项目id
      * @param repoName 仓库名

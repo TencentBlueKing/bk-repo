@@ -51,7 +51,8 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
     }
 
     fun migrating(projectId: String, repoName: String): Boolean {
-        val criteria = buildCriteria(projectId, repoName).and(TMigrateRepoStorageTask::state.name).ne(PENDING.name)
+        val criteria = buildCriteria(projectId, repoName)
+            .and(TMigrateRepoStorageTask::startDate.name).ne(null)
         return exists(Query(criteria))
     }
 
