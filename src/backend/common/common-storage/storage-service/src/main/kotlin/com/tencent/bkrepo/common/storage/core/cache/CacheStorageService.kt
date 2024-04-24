@@ -226,12 +226,14 @@ class CacheStorageService(
         toCredentials: StorageCredentials?
     ) {
         val path = fileLocator.locate(digest)
-        if (doExist(path, digest, fromCredentials!!)) {
-            super.copy(digest, fromCredentials, toCredentials)
+        val from = getCredentialsOrDefault(fromCredentials)
+        val to = getCredentialsOrDefault(toCredentials)
+        if (doExist(path, digest, from)) {
+            super.copy(digest, from, to)
         } else {
-            val cacheFile = getCacheClient(fromCredentials).load(path, digest)
-                ?: throw FileNotFoundException(Paths.get(fromCredentials.cache.path, path, digest).toString())
-            fileStorage.store(path, digest, cacheFile, toCredentials!!)
+            val cacheFile = getCacheClient(from).load(path, digest)
+                ?: throw FileNotFoundException(Paths.get(from.cache.path, path, digest).toString())
+            fileStorage.store(path, digest, cacheFile, to)
         }
     }
 
