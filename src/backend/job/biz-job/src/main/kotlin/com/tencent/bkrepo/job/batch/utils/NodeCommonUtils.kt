@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.exception.RepoMigratingException
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
@@ -75,7 +76,7 @@ class NodeCommonUtils(
                     .any {
                         // node正在迁移时无法判断是否存在于存储[storageCredentialsKey]上
                         if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
-                            throw IllegalStateException("repo[${it.projectId}/${it.repoName}] was migrating")
+                            throw RepoMigratingException("repo[${it.projectId}/${it.repoName}] was migrating")
                         }
                         val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
                         repo.storageCredentials?.key == storageCredentialsKey
