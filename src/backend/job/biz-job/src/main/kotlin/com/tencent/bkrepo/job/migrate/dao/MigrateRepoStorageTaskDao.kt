@@ -33,6 +33,7 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTABLE_STATE
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTING_STATE
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -46,15 +47,16 @@ import java.time.LocalDateTime
 @Repository
 class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
     fun exists(projectId: String, repoName: String): Boolean {
-        val criteria = TMigrateRepoStorageTask::projectId.isEqualTo(projectId)
-            .and(TMigrateRepoStorageTask::repoName.name).isEqualTo(repoName)
+        return exists(Query(buildCriteria(projectId, repoName)))
+    }
+
+    fun migrating(projectId: String, repoName: String): Boolean {
+        val criteria = buildCriteria(projectId, repoName).and(TMigrateRepoStorageTask::state.name).ne(PENDING.name)
         return exists(Query(criteria))
     }
 
     fun find(projectId: String, repoName: String): TMigrateRepoStorageTask? {
-        val criteria = TMigrateRepoStorageTask::projectId.isEqualTo(projectId)
-            .and(TMigrateRepoStorageTask::repoName.name).isEqualTo(repoName)
-        return findOne(Query(criteria))
+        return findOne(Query(buildCriteria(projectId, repoName)))
     }
 
     fun updateStartDate(id: String, startDate: LocalDateTime): TMigrateRepoStorageTask? {
@@ -80,7 +82,7 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
             .set(TMigrateRepoStorageTask::state.name, targetState)
             .set(TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TMigrateRepoStorageTask::executingOn.name, instanceId)
-        val options  = FindAndModifyOptions().returnNew(true)
+        val options = FindAndModifyOptions().returnNew(true)
         return findAndModify(Query(criteria), update, options, TMigrateRepoStorageTask::class.java)
     }
 
@@ -123,4 +125,8 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
             .and(TMigrateRepoStorageTask::startDate.name).lte(beforeDateTime)
         return findOne(Query(criteria))
     }
+
+    private fun buildCriteria(projectId: String, repoName: String) =
+        TMigrateRepoStorageTask::projectId.isEqualTo(projectId)
+            .and(TMigrateRepoStorageTask::repoName.name).isEqualTo(repoName)
 }

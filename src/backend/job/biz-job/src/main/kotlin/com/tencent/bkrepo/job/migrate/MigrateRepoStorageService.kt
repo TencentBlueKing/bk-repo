@@ -139,7 +139,7 @@ class MigrateRepoStorageService(
     }
 
     /**
-     * 是否存在指定仓库的迁移任务
+     * 指定仓库是否正在迁移中，除PENDING状态外的其他状态都表示处于迁移中
      *
      * @param projectId 项目id
      * @param repoName 仓库名
@@ -147,7 +147,7 @@ class MigrateRepoStorageService(
      * @return 是否正在迁移
      */
     fun migrating(projectId: String, repoName: String): Boolean {
-        return migrateRepoStorageTaskDao.exists(projectId, repoName)
+        return migrateRepoStorageTaskDao.migrating(projectId, repoName)
     }
 
     fun findTask(projectId: String, repoName: String): MigrateRepoStorageTask? {
