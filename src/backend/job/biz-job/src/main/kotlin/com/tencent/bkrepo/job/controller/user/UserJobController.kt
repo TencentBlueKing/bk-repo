@@ -40,6 +40,7 @@ import com.tencent.bkrepo.job.service.SystemJobService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.client.ServiceInstance
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.http.HttpEntity
@@ -71,6 +72,10 @@ class UserJobController(
 
     private val jobServiceId:String = "bkrepo-job"
 
+    @Value("\${spring.cloud.client.ip-address}")
+    private val ipAddress:String = ""
+
+
     @GetMapping("/detail")
     @LogOperate(type = "JOB_LIST")
     fun detail(): Response<List<JobDetail>> {
@@ -81,11 +86,11 @@ class UserJobController(
     @LogOperate(type = "JOB_STATUS_UPDATE")
     fun update(@PathVariable name: String, enabled: Boolean, running: Boolean): Response<Boolean> {
         val instances = discoveryClient.getInstances(jobServiceId)
-        if (instances.size == 1) {
-            return ResponseBuilder.success(
+        return if (instances.size == 1) {
+            ResponseBuilder.success(
                 standaloneUpdateJob(name, enabled, running))
         } else {
-            return ResponseBuilder.success(
+            ResponseBuilder.success(
                 multipleUpdateJob(name, enabled, running, instances)
             )
         }
@@ -109,19 +114,23 @@ class UserJobController(
         val countDownLatch = CountDownLatch(instances.size)
         instances.forEach {
                 instance ->
-            val targetUri =  instance.uri
-            val url = "$targetUri$path"
-            val headers = HttpHeaders()
-            headers.add(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
-            headers.add(MS_AUTH_HEADER_UID, SYSTEM_USER)
-            val httpEntity = HttpEntity<Any>(requestBody,headers)
-            val response = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, Response::class.java)
-            countDownLatch.countDown()
-            results.add(response.statusCode == HttpStatus.OK)
-            if (response.statusCode != HttpStatus.OK) {
-                logger.error(
-                    "Instance has error, job:$name change running to $running, change enable to $enabled fail")
+            if (instance.host.equals(ipAddress)) {
+                results.add(systemJobService.update(name, enabled, running))
+            } else {
+                val targetUri =  instance.uri
+                val url = "$targetUri$path"
+                val headers = HttpHeaders()
+                headers.add(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
+                headers.add(MS_AUTH_HEADER_UID, SYSTEM_USER)
+                val httpEntity = HttpEntity<Any>(requestBody,headers)
+                val response = restTemplate.exchange(url, HttpMethod.PUT, httpEntity, Response::class.java)
+                results.add(response.statusCode == HttpStatus.OK)
+                if (response.statusCode != HttpStatus.OK) {
+                    logger.error(
+                        "Instance has error, job:$name change running to $running, change enable to $enabled fail")
+                }
             }
+            countDownLatch.countDown()
         }
         countDownLatch.await(timeoutInSecond.toLong(), TimeUnit.SECONDS)
         return results.size == instances.size && !results.contains(false)
