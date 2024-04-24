@@ -25,31 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.other
+package com.tencent.bkrepo.job.exception
 
-import com.tencent.bkrepo.job.batch.base.DefaultContextJob
-import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.MigrateRepoStorageJobProperties
-import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.stereotype.Component
-
-@Component
-@EnableConfigurationProperties(MigrateRepoStorageJobProperties::class)
-class MigrateRepoStorageJob(
-    properties: MigrateRepoStorageJobProperties,
-    private val migrateRepoStorageService: MigrateRepoStorageService
-) : DefaultContextJob(properties) {
-    override fun doStart0(jobContext: JobContext) {
-        migrateRepoStorageService.rollbackInterruptedTaskState()
-        while (true) {
-            val executedTask = migrateRepoStorageService.tryExecuteTask() ?: break
-            logger.info("execute migrate task[$executedTask]")
-        }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(MigrateRepoStorageJob::class.java)
-    }
-}
+class RepoMigratingException(msg: String): IllegalStateException(msg)

@@ -48,6 +48,7 @@ import com.tencent.bkrepo.job.batch.context.FileJobContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
+import com.tencent.bkrepo.job.exception.RepoMigratingException
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -145,7 +146,11 @@ class FileReferenceCleanupJob(
             }
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
-            throw JobExecuteException("Failed to delete file[$sha256] on [$storageCredentials].", e)
+            if (e is RepoMigratingException) {
+                logger.info(e.message)
+            } else {
+                throw JobExecuteException("Failed to delete file[$sha256] on [${storageCredentials?.key}].", e)
+            }
         }
     }
 
