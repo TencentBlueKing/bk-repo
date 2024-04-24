@@ -33,7 +33,6 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTABLE_STATE
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTING_STATE
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -51,7 +50,8 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
     }
 
     fun migrating(projectId: String, repoName: String): Boolean {
-        val criteria = buildCriteria(projectId, repoName).and(TMigrateRepoStorageTask::state.name).ne(PENDING.name)
+        val criteria = buildCriteria(projectId, repoName)
+            .and(TMigrateRepoStorageTask::startDate.name).ne(null)
         return exists(Query(criteria))
     }
 

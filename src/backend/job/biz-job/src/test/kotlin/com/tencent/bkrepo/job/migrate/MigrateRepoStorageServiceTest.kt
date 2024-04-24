@@ -193,6 +193,16 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         assertNotNull(task)
     }
 
+    @Test
+    fun testMigrating() {
+        val task = migrateRepoStorageService.createTask(buildCreateRequest())
+        assertFalse(migrateRepoStorageService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
+
+        // 模拟从MIGRATING回滚到PENDING状态
+        migrateRepoStorageTaskDao.updateStartDate(task.id!!, LocalDateTime.now())
+        assertTrue(migrateRepoStorageService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
+    }
+
     private fun buildCreateRequest(dstKey: String? = UT_STORAGE_CREDENTIALS_KEY) = CreateMigrateRepoStorageTaskRequest(
         projectId = UT_PROJECT_ID,
         repoName = UT_REPO_NAME,
