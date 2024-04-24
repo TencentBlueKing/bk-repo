@@ -33,7 +33,6 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTABLE_STATE
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTING_STATE
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
