@@ -121,10 +121,10 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         assertThrows<ErrorCodeException> { migrateRepoStorageService.createTask(request) }
 
         // 创建成功
-        assertFalse(migrateRepoStorageService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
+        assertNull(migrateRepoStorageService.findTask(UT_PROJECT_ID, UT_REPO_NAME))
         val task = migrateRepoStorageService.createTask(request.copy(dstCredentialsKey = UT_STORAGE_CREDENTIALS_KEY))
         assertEquals(PENDING.name, task.state)
-        assertTrue(migrateRepoStorageService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
+        assertNotNull(migrateRepoStorageService.findTask(UT_PROJECT_ID, UT_REPO_NAME))
     }
 
     @Test
@@ -167,6 +167,7 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
     @Test
     fun testTryExecuteTask() {
         migrateRepoStorageService.createTask(buildCreateRequest())
+        assertFalse(migrateRepoStorageService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
 
         // 成功执行
         var task = migrateRepoStorageService.tryExecuteTask()
@@ -181,6 +182,7 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         )
         task = migrateRepoStorageService.tryExecuteTask()
         assertNull(task)
+        assertTrue(migrateRepoStorageService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
 
         // 达到时间间隔
         migrateRepoStorageTaskDao.updateFirst(

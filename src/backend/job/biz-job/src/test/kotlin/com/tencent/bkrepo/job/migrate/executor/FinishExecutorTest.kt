@@ -31,8 +31,8 @@ import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -62,6 +62,6 @@ class FinishExecutorTest @Autowired constructor(
         updateTask(task.id!!, MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED.name, LocalDateTime.now())
         val context = buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
         assertNotNull(executor.execute(context))
-        assertFalse(migrateTaskService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
+        assertNull(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME))
     }
 }
