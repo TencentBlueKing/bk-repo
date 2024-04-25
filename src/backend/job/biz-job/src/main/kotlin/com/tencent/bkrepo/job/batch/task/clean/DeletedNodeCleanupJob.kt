@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.NAME
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -46,6 +47,7 @@ import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
+import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -57,9 +59,9 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
-import kotlin.reflect.KClass
 import java.util.Optional
 import java.util.concurrent.TimeUnit
+import kotlin.reflect.KClass
 
 /**
  * 清理被标记为删除的node，同时减少文件引用
@@ -69,7 +71,8 @@ import java.util.concurrent.TimeUnit
 class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val clusterProperties: ClusterProperties,
-    private val repositoryClient: RepositoryClient
+    private val repositoryClient: RepositoryClient,
+    private val migrateRepoStorageService: MigrateRepoStorageService,
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
 
     data class Node(
@@ -86,6 +89,13 @@ class DeletedNodeCleanupJob(
         val sha256: String,
         val credentialsKey: String?,
         val count: String
+    )
+
+    data class Repository(
+        val id: String,
+        val projectId: String,
+        val name: String,
+        val credentialsKey: String?
     )
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(28)
@@ -122,6 +132,12 @@ class DeletedNodeCleanupJob(
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is DeletedNodeCleanupJobContext)
+        // 仓库正在迁移时删除node会导致迁移任务分页查询数据重复或缺失，需要等迁移完后再执行清理
+        if (migrateRepoStorageService.migrating(row.projectId, row.repoName)) {
+            logger.info("repo[${row.projectId}/${row.repoName}] storage was migrating, skip clean node[${row.sha256}]")
+            return
+        }
+
         if (row.folder) {
             cleanupFolderNode(context, row.id, collectionName)
         } else {
@@ -183,7 +199,7 @@ class DeletedNodeCleanupJob(
 
         logger.error(
             "Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: " +
-                    "reference count is 0."
+                "reference count is 0."
         )
         return false
     }
@@ -209,8 +225,21 @@ class DeletedNodeCleanupJob(
 
     private fun loadCredentialsKey(repositoryId: RepositoryId): String? {
         val repo = repositoryClient.getRepoInfo(repositoryId.projectId, repositoryId.repoName).data
-            ?: throw RepoNotFoundException("${repositoryId.projectId}/${repositoryId.repoName}")
-        return repo.storageCredentialsKey
+        return if (repo == null) {
+            val deletedRepo = getDeletedRepoInfo(repositoryId.projectId, repositoryId.repoName)
+                ?: throw RepoNotFoundException("${repositoryId.projectId}/${repositoryId.repoName}")
+            deletedRepo.credentialsKey
+        } else {
+            repo.storageCredentialsKey
+        }
+    }
+
+    private fun getDeletedRepoInfo(projectId: String, repoName: String): Repository? {
+        val query = Query(
+            Criteria.where(DELETED_DATE).ne(null)
+                .and(PROJECT).isEqualTo(projectId).and(NAME).isEqualTo(repoName)
+        )
+        return mongoTemplate.findOne(query, Repository::class.java)
     }
 
     data class RepositoryId(val projectId: String, val repoName: String) {

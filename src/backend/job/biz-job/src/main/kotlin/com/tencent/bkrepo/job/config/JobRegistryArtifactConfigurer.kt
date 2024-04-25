@@ -46,5 +46,5 @@ class JobRegistryArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
 
     override fun getAuthSecurityCustomizer() =
-        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/job") }
+        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/job").includePattern("/api/**") }
 }

@@ -122,12 +122,20 @@ class KubernetesDispatcher(
         }
         val limitCpu = hard["limits.cpu"]!!.number.toDouble()
         val limitMem = hard["limits.memory"]!!.number.toLong()
-        val usedCpu = used["limits.cpu"]!!.number.toDouble()
-        val usedMem = used["limits.memory"]!!.number.toLong()
-        val availableCpu = limitCpu - usedCpu
-        val availableMem = limitMem - usedMem
+        val jobs = batchV1Api.listNamespacedJob(
+            k8sProps.namespace,
+            null, null, null,
+            null, null, null,
+            null, null, null, null
+        )
+        val executingJobCount = jobs.items.filter {
+            (it.status?.failed ?: 0) == 0 && (it.status?.succeeded ?: 0) == 0
+        }.size
         val requireCpuPerTask = k8sProps.limitCpu
         val requireMemPerTask = k8sProps.limitMem
+        val availableCpu = limitCpu - executingJobCount * requireCpuPerTask
+        val availableMem = limitMem - executingJobCount * requireMemPerTask
+
         return if (availableCpu < requireCpuPerTask || availableMem < requireMemPerTask) {
             0
         } else {
@@ -206,8 +214,8 @@ class KubernetesDispatcher(
     private fun resolveCreateJobFailed(e: ApiException, subtask: SubScanTask): Boolean {
         // 处理job名称冲突的情况
         if (e.code == HttpStatus.CONFLICT.value) {
+            logger.warn("${subtask.trace()} job already exists, try to clean")
             val cleaned = cleanJob(jobName(subtask))
-            logger.warn("${subtask.trace()} job already exists, cleaned[$cleaned]")
             return cleaned
         }
 
@@ -219,18 +227,36 @@ class KubernetesDispatcher(
         logger.info("cleaning job[$jobName]")
         return ignoreApiException {
             val namespace = executionCluster.kubernetesProperties.namespace
-            batchV1Api.deleteNamespacedJob(
-                jobName,
-                namespace,
-                null,
-                null,
-                0,
-                null,
-                "Foreground",
-                null
-            )
-            logger.info("job[$jobName] clean success")
-            true
+            var retryTimes = 1
+            var deleted = false
+            while (true) {
+                batchV1Api.deleteNamespacedJob(
+                    jobName,
+                    namespace,
+                    null,
+                    null,
+                    0,
+                    null,
+                    "Foreground",
+                    null
+                )
+                try {
+                    batchV1Api.readNamespacedJob(jobName, namespace, null, null, null)
+                } catch (e: ApiException) {
+                    deleted = (e.code == HttpStatus.NOT_FOUND.value)
+                }
+
+                // 删除失败时进行重试
+                if (!deleted && retryTimes < MAX_RETRY_TIMES) {
+                    logger.info("job[$jobName] still exists after cleaning, retry times[$retryTimes]")
+                    Thread.sleep(retryTimes * 1000L)
+                    retryTimes++
+                } else {
+                    break
+                }
+            }
+            logger.info("job[$jobName] clean result[$deleted]")
+            deleted
         }
     }
 

@@ -135,7 +135,7 @@ class FileCoreProcessor(
         }
         logger.info("Request $request files to archive or restore.")
         val req = request.toInt()
-        val deadLine = LocalDateTime.now().minusHours(COS_RESTORE_MIN_HOUR)
+        val deadLine = LocalDateTime.now().minusMinutes(COS_RESTORE_MIN_MINUTES)
         val criteria = where(TArchiveFile::status).isEqualTo(ArchiveStatus.WAIT_TO_RESTORE)
             .and(TArchiveFile::lastModifiedDate.name).lt(deadLine)
         val query = Query.query(criteria)
@@ -222,6 +222,6 @@ class FileCoreProcessor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(FileCoreProcessor::class.java)
-        private const val COS_RESTORE_MIN_HOUR = 3L
+        private const val COS_RESTORE_MIN_MINUTES = 1L
     }
 }

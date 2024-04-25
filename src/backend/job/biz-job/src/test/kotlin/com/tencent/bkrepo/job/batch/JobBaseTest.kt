@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.job.config.JobConfig
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
@@ -45,7 +46,8 @@ import org.springframework.test.context.TestPropertySource
     JobConfig::class,
     TaskSchedulingAutoConfiguration::class,
     ClusterProperties::class,
-    RedisAutoConfiguration::class
+    RedisAutoConfiguration::class,
+    StorageAutoConfiguration::class,
 )
 @TestPropertySource(
     locations = [
@@ -57,4 +59,3 @@ import org.springframework.test.context.TestPropertySource
 @SpringBootConfiguration
 @EnableAutoConfiguration
 open class JobBaseTest
-

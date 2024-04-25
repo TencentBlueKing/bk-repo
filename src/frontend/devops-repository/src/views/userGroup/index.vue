@@ -22,7 +22,8 @@
                 <template #default="{ row }">{{row.description || '/'}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('user')" show-overflow-tooltip>
-                <template #default="{ row }">{{row.users || '/'}}</template>
+                <template #default="{ row }">
+                    <span class="hover-btn">{{row.users.length ? row.users : '/'}}</span></template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
@@ -37,8 +38,9 @@
         <canway-dialog
             v-model="editRoleConfig.show"
             theme="primary"
-            width="500"
-            height-num="301"
+            width="800"
+            class="update-role-group-dialog"
+            height-num="603"
             :title="editRoleConfig.id ? $t('editUserGroupTitle') : $t('addUserGroupTitle')"
             @cancel="cancel">
             <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm">
@@ -48,15 +50,16 @@
                 <bk-form-item :label="$t('description')">
                     <bk-input type="textarea" v-model.trim="editRoleConfig.description" maxlength="200"></bk-input>
                 </bk-form-item>
-                <bk-form-item :label="$t('user')" property="users" error-display-type="normal">
-                    <bk-tag-input
-                        v-model="editRoleConfig.users"
-                        :placeholder="$t('enterPlaceHolder') + $t('parseTip')"
-                        trigger="focus"
-                        :paste-fn="parseFn"
-                        :has-delete-icon="true"
-                        allow-create>
-                    </bk-tag-input>
+                <bk-form-item :label="$t('staffing')">
+                    <bk-button icon="plus" @click="showAddDialog">{{ $t('add') + $t('space') + $t('user') }}</bk-button>
+                    <div v-show="editRoleConfig.users.length" class="mt10 user-list">
+                        <div class="pl10 pr10 user-item flex-between-center" v-for="(user, index) in editRoleConfig.users" :key="index">
+                            <div class="flex-align-center">
+                                <span class="user-name text-overflow" :title="user">{{ user }}</span>
+                            </div>
+                            <Icon class="ml10 hover-btn" size="24" name="icon-delete" @click.native="deleteUser(index)" />
+                        </div>
+                    </div>
                 </bk-form-item>
             </bk-form>
             <template #footer>
@@ -64,14 +67,16 @@
                 <bk-button class="ml10" theme="primary" @click="confirm">{{ $t('confirm') }}</bk-button>
             </template>
         </canway-dialog>
+        <add-user-dialog ref="addUserDialog" :visible.sync="showAddUserDialog" @complete="handleAddUsers"></add-user-dialog>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
     import { mapState, mapActions } from 'vuex'
+    import AddUserDialog from '@/components/AddUserDialog/addUserDialog'
     export default {
         name: 'role',
-        components: { OperationList },
+        components: { AddUserDialog, OperationList },
         data () {
             return {
                 isLoading: false,
@@ -84,7 +89,10 @@
                     name: '',
                     users: [],
                     description: '',
-                    id: ''
+                    id: '',
+                    search: '',
+                    newUser: '',
+                    originUsers: []
                 },
                 users: [],
                 rules: {
@@ -95,7 +103,9 @@
                             trigger: 'blur'
                         }
                     ]
-                }
+                },
+                showAddUserDialog: false,
+                showData: {}
             }
         },
         computed: {
@@ -131,18 +141,19 @@
                 })
             },
             createRoleHandler () {
-                this.$refs.roleForm && this.$refs.roleForm.clearError()
+                this.$refs.roleForm.clearError()
                 this.editRoleConfig = {
                     show: true,
                     loading: false,
                     id: '',
                     name: '',
                     description: '',
-                    users: []
+                    users: [],
+                    originUsers: []
                 }
             },
             editRoleHandler (row) {
-                this.$refs.roleForm && this.$refs.roleForm.clearError()
+                this.$refs.roleForm.clearError()
                 const { name, description } = row
                 this.editRoleConfig = {
                     show: true,
@@ -151,7 +162,8 @@
                     users: row.users,
                     id: row.id,
                     name,
-                    description
+                    description,
+                    originUsers: row.users
                 }
             },
             async confirm () {
@@ -167,7 +179,7 @@
                         projectId: this.projectId,
                         admin: false,
                         description: this.editRoleConfig.description,
-                        userIds: this.editRoleConfig.users
+                        userIds: this.editRoleConfig.originUsers
                     }
                 }).then(res => {
                     if (!this.editRoleConfig.id && this.editRoleConfig.users.length > 0) {
@@ -214,19 +226,32 @@
                     }
                 })
             },
-            parseFn (data) {
-                if (data !== '') {
-                    const users = data.toString().split(',')
-                    for (let i = 0; i < users.length; i++) {
-                        users[i] = users[i].toString().trim()
-                        this.editRoleConfig.users.push(users[i])
-                    }
-                    this.editRoleConfig.user = Array.from(new Set(this.editRoleConfig.users))
-                }
-            },
             cancel () {
                 this.editRoleConfig.show = false
                 this.getRoleListHandler()
+            },
+            deleteUser (index) {
+                const temp = []
+                for (let i = 0; i < this.editRoleConfig.users.length; i++) {
+                    if (i !== index) {
+                        temp.push(this.editRoleConfig.users[i])
+                    }
+                }
+                this.editRoleConfig.users = temp
+                this.editRoleConfig.originUsers = temp
+            },
+            showAddDialog () {
+                this.showAddUserDialog = true
+                this.$refs.addUserDialog.editUserConfig = {
+                    users: this.editRoleConfig.users,
+                    originUsers: this.editRoleConfig.originUsers,
+                    search: '',
+                    newUser: ''
+                }
+            },
+            handleAddUsers (users) {
+                this.editRoleConfig.originUsers = users
+                this.editRoleConfig.users = users
             }
         }
     }
@@ -239,16 +264,45 @@
     ::v-deep .bk-table th {
         height: 44px;
     }
-    .repo-quota {
-        display: block;
-        margin-right: 20%;
-        ::v-deep .bk-tooltip-ref {
-            display: block;
+}
+.update-role-group-dialog {
+    .bk-dialog-body {
+        height: 500px;
+    }
+    ::v-deep .usersTextarea .bk-textarea-wrapper .bk-form-textarea{
+        height: 500px;
+    }
+    .user-list {
+        display: grid;
+        grid-template: auto / repeat(3, 1fr);
+        gap: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        .user-item {
+            height: 32px;
+            border: 1px solid var(--borderWeightColor);
+            background-color: var(--bgLighterColor);
+            .user-name {
+                max-width: 100px;
+                margin-left: 5px;
+            }
         }
     }
-    .create-user {
-        flex: 1;
-        justify-content: flex-end;
+    .update-user-list {
+        display: grid;
+        grid-template: auto / repeat(1, 1fr);
+        gap: 10px;
+        max-height: 500px;
+        overflow-y: auto;
+        .update-user-item {
+            height: 32px;
+            border: 1px solid var(--borderWeightColor);
+            background-color: var(--bgLighterColor);
+            .update-user-name {
+                max-width: 100px;
+                margin-left: 5px;
+            }
+        }
     }
 }
 </style>

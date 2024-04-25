@@ -45,6 +45,8 @@ class ArchiveServiceImpl(
                 af.status = if (af.status == ArchiveStatus.COMPLETED) ArchiveStatus.ARCHIVED else ArchiveStatus.CREATED
                 archiveFileRepository.save(af)
             } else {
+                val properties = archiveProperties.extraCredentialsConfig[archiveCredentialsKey]
+                    ?: archiveProperties.defaultCredentials
                 val archiveFile = TArchiveFile(
                     createdBy = operator,
                     createdDate = LocalDateTime.now(),
@@ -56,7 +58,7 @@ class ArchiveServiceImpl(
                     status = ArchiveStatus.CREATED,
                     archiver = EmptyArchiver.NAME,
                     archiveCredentialsKey = archiveCredentialsKey,
-                    storageClass = storageClass,
+                    storageClass = properties.storageClass,
                 )
                 archiveFileRepository.save(archiveFile)
                 SpringContextUtils.publishEvent(FileEntityEvent(sha256, archiveFile))
@@ -82,17 +84,20 @@ class ArchiveServiceImpl(
 
     override fun restore(request: ArchiveFileRequest) {
         with(request) {
+            val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
+                ?: throw ArchiveFileNotFound(sha256)
+            val properties = archiveProperties.extraCredentialsConfig[af.archiveCredentialsKey]
+                ?: archiveProperties.defaultCredentials
             // 取回限制
             val midnight = LocalDateTime.now().toLocalDate().atStartOfDay()
             val count = archiveFileRepository.countByLastModifiedDateAfterAndStatus(
                 midnight,
                 ArchiveStatus.WAIT_TO_RESTORE,
             )
-            if (count > archiveProperties.restoreLimit) {
+            if (count > properties.restoreLimit) {
                 throw ErrorCodeException(ArchiveMessageCode.RESTORE_COUNT_LIMIT)
             }
-            val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
-                ?: throw ArchiveFileNotFound(sha256)
+
             // 只有已经完成归档的文件才允许恢复
             if (af.status == ArchiveStatus.COMPLETED) {
                 af.lastModifiedBy = operator
@@ -101,8 +106,8 @@ class ArchiveServiceImpl(
                 val key = archiveManager.getKey(sha256, af.archiver)
                 storageService.restore(
                     key,
-                    archiveProperties.days,
-                    archiveProperties.tier,
+                    properties.days,
+                    properties.tier.name,
                     archiveManager.getStorageCredentials(af.archiveCredentialsKey),
                 )
                 archiveFileRepository.save(af)
