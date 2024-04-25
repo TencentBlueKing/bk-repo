@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.task.clean
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.google.common.util.concurrent.UncheckedExecutionException
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
@@ -48,7 +49,7 @@ import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.findOne
@@ -71,8 +72,8 @@ import kotlin.reflect.KClass
 class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val clusterProperties: ClusterProperties,
-    private val repositoryClient: RepositoryClient,
     private val migrateRepoStorageService: MigrateRepoStorageService,
+    private val storageCredentialsClient: StorageCredentialsClient
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
 
     data class Node(
@@ -165,10 +166,16 @@ class DeletedNodeCleanupJob(
         var result: DeleteResult? = null
         try {
             if (node.sha256.isNullOrEmpty() || node.sha256 == FAKE_SHA256) return
-            val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
-            if (!decrementFileReferences(node.sha256, credentialsKey)) {
-                logger.warn("Clean up node fail collection[$collectionName], node[$node]")
-                return
+            try {
+                val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
+                if (!decrementFileReferences(node.sha256, credentialsKey)) {
+                    logger.warn("Clean up node fail collection[$collectionName], node[$node]")
+                    return
+                }
+            } catch (e: UncheckedExecutionException) {
+                require(e.cause is RepoNotFoundException)
+                logger.warn("repo ${node.projectId}|${node.repoName} was deleted!")
+                handleNodeWithUnknownRepo(node.sha256)
             }
             result = mongoTemplate.remove(query, collectionName)
         } catch (ignored: Exception) {
@@ -224,22 +231,30 @@ class DeletedNodeCleanupJob(
 
 
     private fun loadCredentialsKey(repositoryId: RepositoryId): String? {
-        val repo = repositoryClient.getRepoInfo(repositoryId.projectId, repositoryId.repoName).data
-        return if (repo == null) {
-            val deletedRepo = getDeletedRepoInfo(repositoryId.projectId, repositoryId.repoName)
-                ?: throw RepoNotFoundException("${repositoryId.projectId}/${repositoryId.repoName}")
-            deletedRepo.credentialsKey
-        } else {
-            repo.storageCredentialsKey
-        }
+        val repo = getRepoInfo(repositoryId.projectId, repositoryId.repoName)
+            ?: throw RepoNotFoundException("${repositoryId.projectId}/${repositoryId.repoName}")
+        return repo.credentialsKey
     }
 
-    private fun getDeletedRepoInfo(projectId: String, repoName: String): Repository? {
-        val query = Query(
-            Criteria.where(DELETED_DATE).ne(null)
-                .and(PROJECT).isEqualTo(projectId).and(NAME).isEqualTo(repoName)
-        )
+    private fun getRepoInfo(projectId: String, repoName: String): Repository? {
+        val query = Query(Criteria.where(PROJECT).isEqualTo(projectId).and(NAME).isEqualTo(repoName))
         return mongoTemplate.findOne(query, Repository::class.java)
+    }
+
+    private fun handleNodeWithUnknownRepo(sha256: String) {
+        val credentials = storageCredentialsClient.list().data
+        val defaultCredentials = storageCredentialsClient.findByKey().data
+        if (credentials.isNullOrEmpty() && defaultCredentials == null) return
+        val keySet = mutableSetOf<String?>()
+        if (!credentials.isNullOrEmpty()) {
+            keySet.addAll(credentials.map { it.key })
+        }
+        if (defaultCredentials != null) {
+            keySet.add(defaultCredentials.key)
+        }
+        keySet.forEach {
+            decrementFileReferences(sha256, it)
+        }
     }
 
     data class RepositoryId(val projectId: String, val repoName: String) {
