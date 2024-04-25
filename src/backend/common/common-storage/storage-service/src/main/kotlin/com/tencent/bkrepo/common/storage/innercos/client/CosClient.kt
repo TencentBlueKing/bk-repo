@@ -109,6 +109,12 @@ class CosClient(val credentials: InnerCosCredentials) {
     private val config: ClientConfig = ClientConfig(credentials)
 
     /**
+     * 分片上传使用的执行器
+     */
+    private val uploadThreadPool = Executors.newFixedThreadPool(config.uploadWorkers)
+
+
+    /**
      * 分块下载使用的执行器。可以为null,为null则不使用分块下载
      * */
     private val downloadThreadPool: ThreadPoolExecutor? = if (config.downloadWorkers > 0) {
@@ -288,7 +294,7 @@ class CosClient(val credentials: InnerCosCredentials) {
             while (factory.hasMoreRequests()) {
                 val getObjectRequest = factory.nextDownloadPartRequest()
                 val downloadRequest = fromClient.buildHttpRequest(getObjectRequest)
-                val future = executors.submit(multipartMigrate(key, uploadId, partNumber, downloadRequest))
+                val future = uploadThreadPool.submit(multipartMigrate(key, uploadId, partNumber, downloadRequest))
                 futureList.add(future)
                 partNumber++
             }
@@ -346,7 +352,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         val futureList = mutableListOf<Future<PartETag>>()
         while (factory.hasMoreRequests()) {
             val uploadPartRequest = factory.nextUploadPartRequest()
-            val future = executors.submit(uploadPart(uploadPartRequest))
+            val future = uploadThreadPool.submit(uploadPart(uploadPartRequest))
             futureList.add(future)
         }
         // 等待所有完成
@@ -626,7 +632,6 @@ class CosClient(val credentials: InnerCosCredentials) {
 
     companion object {
         private val logger = LogFactory.getLog(CosClient::class.java)
-        private val executors = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
         private val cleanerExecutors = Executors.newSingleThreadScheduledExecutor()
         private const val RETRY_COUNT = 5
         private const val SLOW_LOG_SPEED_IGNORE_FILESIZE_FACTOR = 5L
