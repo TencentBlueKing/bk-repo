@@ -42,6 +42,7 @@ import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
 import com.tencent.bkrepo.job.migrate.executor.TaskExecutor
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.CreateMigrateRepoStorageTaskRequest
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
@@ -166,13 +167,13 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
 
     @Test
     fun testTryExecuteTask() {
-        migrateRepoStorageService.createTask(buildCreateRequest())
+        var task: MigrateRepoStorageTask? = migrateRepoStorageService.createTask(buildCreateRequest())
+        val taskId = task!!.id!!
         assertFalse(migrateRepoStorageService.migrating(UT_PROJECT_ID, UT_REPO_NAME))
 
         // 成功执行
-        var task = migrateRepoStorageService.tryExecuteTask()
+        task = migrateRepoStorageService.tryExecuteTask()
         assertNotNull(task)
-        val taskId = task!!.id!!
 
         // 未达到migrate与correct时间间隔时不执行
         migrateRepoStorageTaskDao.updateFirst(

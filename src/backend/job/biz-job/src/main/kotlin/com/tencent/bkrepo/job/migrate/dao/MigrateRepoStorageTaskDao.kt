@@ -30,7 +30,6 @@ package com.tencent.bkrepo.job.migrate.dao
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTABLE_STATE
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTING_STATE
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
 import org.springframework.data.mongodb.core.FindAndModifyOptions
@@ -107,9 +106,9 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         return updateFirst(Query(criteria), update)
     }
 
-    fun executableTask(): TMigrateRepoStorageTask? {
-        val criteria = TMigrateRepoStorageTask::state.inValues(EXECUTABLE_STATE)
-        val update = Update.update(TMigrateRepoStorageTask::executingOn.name, null)
+    fun executableTask(state: String): TMigrateRepoStorageTask? {
+        val criteria = TMigrateRepoStorageTask::state.isEqualTo(state)
+        val update = Update.update(TMigrateRepoStorageTask::state.name, state)
         val options = FindAndModifyOptions().returnNew(true)
         return findAndModify(Query(criteria), update, options, TMigrateRepoStorageTask::class.java)
     }
