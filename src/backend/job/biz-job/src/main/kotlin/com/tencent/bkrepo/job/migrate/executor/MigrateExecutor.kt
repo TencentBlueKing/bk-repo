@@ -95,16 +95,19 @@ class MigrateExecutor(
 
         // 遍历迁移制品
         iterator.forEach { node ->
+            logger.info("submit node[${node.fullPath}] to thread pool, task[$projectId/$repoName]")
             val taskNumber = ++migratedCount
             context.incTransferringCount()
             transferDataExecutor.execute {
                 try {
+                    logger.info("migrate node[${node.fullPath}] start, task[$projectId/$repoName]")
                     // 迁移制品
                     migrateNode(context, node)
                 } catch (e: Exception) {
                     saveMigrateFailedNode(taskId, node)
                     logger.error("migrate node[${node.fullPath}] failed, task[$projectId/$repoName]", e)
                 } finally {
+                    logger.info("migrate node[${node.fullPath}] finished, task[$projectId/$repoName]")
                     // 保存完成的任务序号
                     migratedNumberQueue.offer(taskNumber, node.id)
                     // 更新任务进度，用于进程重启时从断点继续迁移

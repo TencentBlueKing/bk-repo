@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.utils
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
@@ -37,6 +38,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -102,11 +104,16 @@ class NodeIterator(
     }
 
     private fun nextPage(): List<Node> {
+        val startTime = System.nanoTime()
         val query = Query(buildCriteria(lastNodeId)).limit(pageSize).with(Sort.by(Sort.Direction.ASC, ID))
         val result = mongoTemplate.find(query, Node::class.java, collectionName)
         if (result.isNotEmpty()) {
             lastNodeId = result.last().id
         }
+
+        // 输出查询耗时
+        val elapsed = System.nanoTime() - startTime
+        logger.info("query next page elapsed[${HumanReadable.time(elapsed)}], task[${task.projectId}/${task.repoName}]")
         return result
     }
 
@@ -123,5 +130,9 @@ class NodeIterator(
         }
         lastId?.let { criteria.and(ID).gt(ObjectId(it)) }
         return criteria
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(NodeIterator::class.java)
     }
 }
