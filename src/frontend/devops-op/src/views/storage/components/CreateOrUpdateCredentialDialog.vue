@@ -68,7 +68,17 @@
           <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
         </el-tooltip>
       </el-form-item>
-      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="线程数" prop="download.workers" required>
+      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="上传线程数" prop="upload.workers" required>
+        <el-input-number v-model="credential.upload.workers" controls-position="right" :min="0" :max="1024" />
+        <el-tooltip
+          effect="dark"
+          content="分片上传并发数，增加并发以增加带宽利用率（因为可能存在单连接限速的情况），但是数值不是越大越好，当上行带宽打满，再增加并发数，反而导致单连接的速度下降。"
+          placement="top-start"
+        >
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="下载线程数" prop="download.workers" required>
         <el-input-number v-model="credential.download.workers" controls-position="right" :min="0" :max="1024" />
         <el-tooltip
           effect="dark"
