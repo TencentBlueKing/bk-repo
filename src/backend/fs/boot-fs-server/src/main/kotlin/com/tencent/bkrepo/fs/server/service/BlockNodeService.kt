@@ -30,6 +30,7 @@ package com.tencent.bkrepo.fs.server.service
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.model.TBlockNode
+import java.time.LocalDateTime
 
 /**
  * 块服务
@@ -72,5 +73,13 @@ interface BlockNodeService {
         repoName: String,
         fullPath: String,
         dstFullPath: String
+    )
+
+    suspend fun restoreBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeCreateDate: LocalDateTime,
+        nodeDeleteDate: LocalDateTime
     )
 }

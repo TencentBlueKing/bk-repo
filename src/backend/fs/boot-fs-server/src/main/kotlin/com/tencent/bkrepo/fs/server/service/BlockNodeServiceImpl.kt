@@ -108,6 +108,23 @@ class BlockNodeServiceImpl(
         logger.info("Move node[$projectId/$repoName$fullPath] to node[$projectId/$repoName$dstFullPath] success.")
     }
 
+    override suspend fun restoreBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeCreateDate: LocalDateTime,
+        nodeDeleteDate: LocalDateTime
+    ) {
+        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
+            .and(TBlockNode::projectId.name).isEqualTo(projectId)
+            .and(TBlockNode::repoName.name).isEqualTo(repoName)
+            .and(TBlockNode::createdDate).gt(nodeCreateDate).lt(nodeDeleteDate)
+        val update = Update().set(TBlockNode::deleted.name, null)
+        val result = blockNodeRepository.updateMulti(Query(criteria), update)
+        logger.info("Restore ${result.modifiedCount} blocks node[$projectId/$repoName$fullPath] " +
+            "between $nodeCreateDate and $nodeDeleteDate success.")
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(BlockNodeServiceImpl::class.java)
     }

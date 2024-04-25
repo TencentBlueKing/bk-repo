@@ -122,8 +122,8 @@ class MigrateExecutorTest @Autowired constructor(
 
     private fun assertTaskFinished(taskId: String, totalCount: Long) {
         Thread.sleep(1000L)
+        assertFalse(executingTaskRecorder.executing(taskId))
         val task = migrateRepoStorageTaskDao.findById(taskId)!!.toDto()
-        assertFalse(executingTaskRecorder.executing(task.id!!))
         assertEquals(totalCount, task.totalCount)
         assertEquals(totalCount, task.migratedCount)
         assertEquals(MigrateRepoStorageTaskState.MIGRATE_FINISHED.name, task.state)

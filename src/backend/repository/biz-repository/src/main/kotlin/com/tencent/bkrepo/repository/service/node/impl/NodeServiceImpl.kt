@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -72,7 +73,8 @@ class NodeServiceImpl(
     override val messageSupplier: MessageSupplier,
     override val servicePermissionClient: ServicePermissionClient,
     override val routerControllerClient: RouterControllerClient,
-    override val routerControllerProperties: RouterControllerProperties
+    override val routerControllerProperties: RouterControllerProperties,
+    override val fsNodeClient: FsNodeClient
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -84,7 +86,8 @@ class NodeServiceImpl(
     messageSupplier,
     servicePermissionClient,
     routerControllerClient,
-    routerControllerProperties
+    routerControllerProperties,
+    fsNodeClient
 ) {
 
     override fun computeSize(
