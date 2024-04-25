@@ -107,9 +107,9 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         return updateFirst(Query(criteria), update)
     }
 
-    fun executableTask(): TMigrateRepoStorageTask? {
-        val criteria = TMigrateRepoStorageTask::state.inValues(EXECUTABLE_STATE)
-        val update = Update.update(TMigrateRepoStorageTask::executingOn.name, null)
+    fun executableTask(state: String): TMigrateRepoStorageTask? {
+        val criteria = TMigrateRepoStorageTask::state.isEqualTo(state)
+        val update = Update.update(TMigrateRepoStorageTask::state.name, state)
         val options = FindAndModifyOptions().returnNew(true)
         return findAndModify(Query(criteria), update, options, TMigrateRepoStorageTask::class.java)
     }
