@@ -156,12 +156,13 @@ open class ExecutorBaseTest {
         repoName: String = UT_REPO_NAME,
         createDate: LocalDateTime = LocalDateTime.now(),
         sha256: String = UT_SHA256,
+        fullPath: String = "/a/b/c.txt"
     ): TNode {
         val node = TNode(
             id = null,
             projectId = UT_PROJECT_ID,
             repoName = repoName,
-            fullPath = "/a/b/c.txt",
+            fullPath = fullPath,
             size = 100L,
             sha256 = sha256,
             md5 = UT_MD5,
