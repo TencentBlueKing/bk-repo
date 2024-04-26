@@ -152,14 +152,18 @@ open class ExecutorBaseTest {
         task, null, FileSystemCredentials(key = UT_STORAGE_CREDENTIALS_KEY)
     )
 
-    protected fun createNode(repoName: String = UT_REPO_NAME, createDate: LocalDateTime = LocalDateTime.now()): TNode {
+    protected fun createNode(
+        repoName: String = UT_REPO_NAME,
+        createDate: LocalDateTime = LocalDateTime.now(),
+        sha256: String = UT_SHA256,
+    ): TNode {
         val node = TNode(
             id = null,
             projectId = UT_PROJECT_ID,
             repoName = repoName,
             fullPath = "/a/b/c.txt",
             size = 100L,
-            sha256 = UT_SHA256,
+            sha256 = sha256,
             md5 = UT_MD5,
             createdDate = createDate,
             folder = false,
