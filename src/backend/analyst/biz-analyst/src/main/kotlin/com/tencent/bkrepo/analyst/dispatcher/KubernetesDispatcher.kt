@@ -230,17 +230,17 @@ class KubernetesDispatcher(
             var retryTimes = 1
             var deleted = false
             while (true) {
-                batchV1Api.deleteNamespacedJob(
-                    jobName,
-                    namespace,
-                    null,
-                    null,
-                    0,
-                    null,
-                    "Foreground",
-                    null
-                )
                 try {
+                    batchV1Api.deleteNamespacedJob(
+                        jobName,
+                        namespace,
+                        null,
+                        null,
+                        0,
+                        null,
+                        "Foreground",
+                        null
+                    )
                     batchV1Api.readNamespacedJob(jobName, namespace, null, null, null)
                 } catch (e: ApiException) {
                     deleted = (e.code == HttpStatus.NOT_FOUND.value)
