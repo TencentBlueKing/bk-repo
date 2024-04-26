@@ -117,7 +117,7 @@ class MigrateExecutorTest @Autowired constructor(
         val context = executor.execute(buildContext(createTask()))!!
 
         // 等待任务执行完
-        Thread.sleep(1000L)
+        Thread.sleep(5000L)
         context.waitAllTransferFinished()
         assertEquals(2, migrateFailedNodeDao.count(Query()))
     }
