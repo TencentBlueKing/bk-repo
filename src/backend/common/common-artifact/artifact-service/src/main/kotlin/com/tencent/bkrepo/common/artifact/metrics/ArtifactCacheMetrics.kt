@@ -66,7 +66,13 @@ class ArtifactCacheMetrics(
         try {
             addMetrics(resource)
         } catch (e: Exception) {
-            logger.error("record artifact cache metrics failed", e)
+            val msg = "record artifact cache metrics failed"
+            if (e is NoSuchFileException) {
+                // 缓存文件可能已经被清理导致出现NoSuchFileException异常
+                logger.warn(msg, e)
+            } else {
+                logger.error(msg, e)
+            }
         }
     }
 
