@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.OutputStream
+import java.nio.file.DirectoryIteratorException
 import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -85,9 +86,10 @@ fun Path.delete(): Boolean {
                 return true
             }
         }
-    } catch (e: FileSystemException) {
+    } catch (e: DirectoryIteratorException) {
         // 子目录已经被其他进程删除时会报该错误
-        if (e.message?.contains("Stale file handle") == true) {
+        val cause = e.cause
+        if (cause is FileSystemException && cause.message?.contains("Stale file handle") == true) {
             logger.warn("delete dir[$this] failed", e)
         } else {
             throw e
