@@ -36,6 +36,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 class S3WebConfig : WebMvcConfigurer {
 
     override fun configureContentNegotiation(configurer: ContentNegotiationConfigurer) {
-        configurer.defaultContentType(MediaType.APPLICATION_XML)
+        configurer.defaultContentType(MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON)
     }
 }
