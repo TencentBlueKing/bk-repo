@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.job.migrate.utils
 
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -126,7 +125,6 @@ class NodeIteratorTest @Autowired constructor(
                 ),
             )
         }
-        nodes.add(node.copy(sha256 = FAKE_SHA256))
 
         return mongoTemplate.insert(nodes, collectionName).toList()
     }

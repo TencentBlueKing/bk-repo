@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
@@ -112,12 +113,13 @@ class MigrateExecutorTest @Autowired constructor(
         }
         // 创建node用于模拟遍历迁移
         createNode()
+        createNode(sha256 = FAKE_SHA256, fullPath = "/a/b/d.txt")
         val context = executor.execute(buildContext(createTask()))!!
 
         // 等待任务执行完
         Thread.sleep(1000L)
         context.waitAllTransferFinished()
-        assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
+        assertEquals(2, migrateFailedNodeDao.count(Query()))
     }
 
     private fun assertTaskFinished(taskId: String, totalCount: Long) {
