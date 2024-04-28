@@ -40,4 +40,4 @@ const val ID = "_id"
 /**
  * id索引名
  */
-const val INDEX_ID = "_id_"
+const val ID_IDX = "_id_"
