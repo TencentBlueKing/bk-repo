@@ -36,3 +36,8 @@ const val MIN_OBJECT_ID = "000000000000000000000000"
  * 数据库字段
  */
 const val ID = "_id"
+
+/**
+ * id索引名
+ */
+const val INDEX_ID = "_id_"

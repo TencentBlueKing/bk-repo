@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.migrate.utils
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.constant.INDEX_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
@@ -81,7 +82,7 @@ class NodeIterator(
 
     init {
         lastNodeId = task.lastMigratedNodeId
-        totalCount = mongoTemplate.count(Query(buildCriteria()), collectionName)
+        totalCount = mongoTemplate.count(Query(buildCriteria()).withHint(INDEX_ID), collectionName)
         data = nextPage()
     }
 
@@ -104,7 +105,10 @@ class NodeIterator(
 
     private fun nextPage(): List<Node> {
         val startTime = System.nanoTime()
-        val query = Query(buildCriteria(lastNodeId)).limit(pageSize).with(Sort.by(Sort.Direction.ASC, ID))
+        val query = Query(buildCriteria(lastNodeId))
+            .withHint(INDEX_ID)
+            .limit(pageSize)
+            .with(Sort.by(Sort.Direction.ASC, ID))
         val result = mongoTemplate.find(query, Node::class.java, collectionName)
         if (result.isNotEmpty()) {
             lastNodeId = result.last().id
