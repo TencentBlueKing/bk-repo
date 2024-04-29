@@ -82,7 +82,7 @@ class NodeIterator(
 
     init {
         lastNodeId = task.lastMigratedNodeId
-        totalCount = mongoTemplate.count(Query(buildCriteria()).withHint(ID_IDX), collectionName)
+        totalCount = mongoTemplate.count(Query(buildCriteria()), collectionName)
         data = nextPage()
     }
 
