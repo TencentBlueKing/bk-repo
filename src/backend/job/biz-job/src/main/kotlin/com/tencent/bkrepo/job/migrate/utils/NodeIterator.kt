@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.ID_IDX
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
@@ -81,9 +82,16 @@ class NodeIterator(
     private var data: List<Node>
 
     init {
-        lastNodeId = task.lastMigratedNodeId
+        // 查询第一个node id
+        lastNodeId = initLastNodeId()
+        // 查询总数
         totalCount = mongoTemplate.count(Query(buildCriteria()), collectionName)
-        data = nextPage()
+        // 查询第一页数据
+        data = if (totalCount == 0L) {
+            emptyList()
+        } else {
+            nextPage()
+        }
     }
 
     override fun hasNext() = cursor != data.size
@@ -132,6 +140,19 @@ class NodeIterator(
         }
         lastId?.let { criteria.and(ID).gt(ObjectId(it)) }
         return criteria
+    }
+
+    private fun initLastNodeId(): String {
+        return if (task.lastMigratedNodeId == MIN_OBJECT_ID) {
+            val query = Query(buildCriteria()).with(Sort.by(Sort.Direction.ASC, ID))
+            // 找到第一个node
+            mongoTemplate.findOne(query, Node::class.java, collectionName)?.id?.let {
+                // 获取一个比其小的id
+                ObjectId(ObjectId(it).timestamp - 1, 0).toHexString()
+            } ?: MIN_OBJECT_ID
+        } else {
+            task.lastMigratedNodeId
+        }
     }
 
     companion object {
