@@ -70,11 +70,11 @@ class UserJobController(
 
     private val timeoutInSecond:Int = 15
 
-    private val jobServiceId:String = "bkrepo-job"
-
     @Value("\${spring.cloud.client.ip-address}")
     private val ipAddress:String = ""
 
+    @Value("\${service.prefix}")
+    private val serviceId:String = ""
 
     @GetMapping("/detail")
     @LogOperate(type = "JOB_LIST")
@@ -85,6 +85,7 @@ class UserJobController(
     @PutMapping("/update/{name}")
     @LogOperate(type = "JOB_STATUS_UPDATE")
     fun update(@PathVariable name: String, enabled: Boolean, running: Boolean): Response<Boolean> {
+        val jobServiceId = serviceId + "job"
         val instances = discoveryClient.getInstances(jobServiceId)
         return if (instances.size == 1) {
             ResponseBuilder.success(
