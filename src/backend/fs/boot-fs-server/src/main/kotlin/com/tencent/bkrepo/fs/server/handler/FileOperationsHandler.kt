@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.fs.server.handler
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -45,6 +47,7 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.slf4j.LoggerFactory
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import org.springframework.http.HttpHeaders
@@ -81,7 +84,12 @@ class FileOperationsHandler(
             if (node?.folder == true || node == null) {
                 throw NodeNotFoundException(this.toString())
             }
-            val range = request.resolveRange(node.size)
+            val range = try {
+                request.resolveRange(node.size)
+            } catch (e: IllegalArgumentException) {
+                logger.info("read file[$projectId/$repoName$fullPath] failed: ${e.message}")
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, HttpHeaders.RANGE)
+            }
             val artifactInputStream = fileOperationService.read(node, range) ?: throw ArtifactNotFoundException(
                 this.toString()
             )
@@ -141,5 +149,9 @@ class FileOperationsHandler(
         val flushRequest = FlushRequest(request)
         fileOperationService.flush(flushRequest, user)
         return ReactiveResponseBuilder.success(blockNode)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FileOperationsHandler::class.java)
     }
 }

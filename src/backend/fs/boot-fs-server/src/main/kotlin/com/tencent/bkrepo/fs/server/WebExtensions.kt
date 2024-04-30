@@ -67,6 +67,7 @@ fun ServerRequest.useRequestParam(param: String, consumer: (x: String) -> Unit) 
  * @param request http server request
  * @param total 文件总长度
  * @return range 文件请求范围
+ * @throws IllegalArgumentException
  * */
 fun ServerRequest.resolveRange(total: Long): Range {
     val httpRange = headers().range().firstOrNull()
