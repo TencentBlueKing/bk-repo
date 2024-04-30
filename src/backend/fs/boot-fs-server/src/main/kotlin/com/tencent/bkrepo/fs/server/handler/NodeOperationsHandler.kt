@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.fs.server.handler
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
 import com.tencent.bkrepo.fs.server.api.NodeClient
 import com.tencent.bkrepo.fs.server.api.RGenericClient
@@ -62,6 +64,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
@@ -229,7 +232,12 @@ class NodeOperationsHandler(
                 fullPath = fullPath,
                 category = category
             ) ?: return ServerResponse.notFound().buildAndAwait()
-            val range = request.resolveRange(nodeDetail.size)
+            val range = try {
+                request.resolveRange(nodeDetail.size)
+            } catch (e: IllegalArgumentException) {
+                logger.info("read file[$projectId/$repoName$fullPath] failed: ${e.message}")
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, HttpHeaders.RANGE)
+            }
             val blocks = fileNodeService.info(nodeDetail, range)
             val newBlocks = OverlayRangeUtils.build(blocks, range)
             return ReactiveResponseBuilder.success(newBlocks)
