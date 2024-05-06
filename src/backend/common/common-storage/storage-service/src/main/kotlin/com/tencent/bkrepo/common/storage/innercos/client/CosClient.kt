@@ -285,7 +285,7 @@ class CosClient(val credentials: InnerCosCredentials) {
             val uploadId = initiateMultipartUpload(key, null)
             val cosObject = fromClient.headObject(HeadObjectRequest(key))
             val length = cosObject.length!!
-            val crc64 = cosObject.crc64ecma!!
+            val crc64 = cosObject.crc64ecma
             if (length == 0L) {
                 return putObject(PutObjectRequest(key, StringPool.EMPTY.byteInputStream(), length))
             }
@@ -302,8 +302,12 @@ class CosClient(val credentials: InnerCosCredentials) {
             try {
                 val partETagList = futureList.map { it.get() }
                 val response = completeMultipartUpload(key, uploadId, partETagList)
-                if (response.crc64ecma != crc64) {
-                    throw InnerCosException("$crc64 not match response: ${response.crc64ecma}")
+                val dstObject = headObject(HeadObjectRequest(key))
+                // 部分历史文件没有crc64, 此时只校验文件长度
+                if (crc64 != null && dstObject.crc64ecma != crc64 || dstObject.length != length) {
+                    throw InnerCosException("check crc64 or length failed: " +
+                        "src file[crc64=$crc64, length=$length], " +
+                        "dst file[crc64=${dstObject.crc64ecma}, length=${dstObject.length}]")
                 }
                 return response
             } catch (exception: InnerCosException) {
