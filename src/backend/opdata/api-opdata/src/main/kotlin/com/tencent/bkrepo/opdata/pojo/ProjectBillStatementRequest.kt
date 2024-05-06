@@ -29,6 +29,7 @@ package com.tencent.bkrepo.opdata.pojo
 
 data class ProjectBillStatementRequest(
     val limitSize: Long = 1024 * 1024 * 1024L,
+    val bgNames: List<String> = emptyList(),
     val startDate: String,
     val endDate: String
 )

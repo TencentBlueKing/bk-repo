@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.repository.api.cluster.ClusterNodeClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -60,6 +61,7 @@ abstract class EdgeNodeBaseService(
     override val routerControllerClient: RouterControllerClient,
     override val servicePermissionClient: ServicePermissionClient,
     override val routerControllerProperties: RouterControllerProperties,
+    override val fsNodeClient: FsNodeClient,
     open val clusterProperties: ClusterProperties
 ) : NodeBaseService(
     nodeDao,
@@ -72,7 +74,8 @@ abstract class EdgeNodeBaseService(
     messageSupplier,
     servicePermissionClient,
     routerControllerClient,
-    routerControllerProperties
+    routerControllerProperties,
+    fsNodeClient
 ) {
 
     val centerNodeClient: ClusterNodeClient by lazy {

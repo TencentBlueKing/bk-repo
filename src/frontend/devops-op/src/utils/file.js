@@ -1,3 +1,9 @@
+/**
+ * 自动转换到最大单位（例:1024,B-》1.00KB）
+ * @param size
+ * @param unit 参数单位
+ * @returns {string|*}
+ */
 export function convertFileSize(size, unit = 'B') {
   const arr = ['B', 'KB', 'MB', 'GB', 'TB']
   const index = arr.findIndex(v => v === unit)
@@ -8,6 +14,12 @@ export function convertFileSize(size, unit = 'B') {
   }
 }
 
+/**
+ * 转换大小到目标单位大小（忽略单位，例:1024B，KB-》1）
+ * @param size
+ * @param unit
+ * @returns {number}
+ */
 export function formatFileSize(size, unit = 'GB') {
   const arrays = ['B', 'KB', 'MB', 'GB', 'TB']
   let index

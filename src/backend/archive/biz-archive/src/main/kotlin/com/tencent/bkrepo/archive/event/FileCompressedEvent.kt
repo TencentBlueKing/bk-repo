@@ -9,5 +9,6 @@ data class FileCompressedEvent(
     val sha256: String,
     val uncompressed: Long,
     val compressed: Long,
+    val archiver: String,
     val throughput: Throughput,
 )

@@ -34,7 +34,6 @@ package com.tencent.bkrepo.opdata.handler.impl
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
@@ -45,9 +44,7 @@ import org.springframework.stereotype.Component
  * Node数量统计
  */
 @Component
-class NodeNumHandler(
-    statDateModel: StatDateModel
-) : QueryHandler, BaseHandler(statDateModel) {
+class NodeNumHandler : QueryHandler, BaseHandler() {
 
     override val metric: Metrics get() = Metrics.NODENUM
 

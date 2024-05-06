@@ -97,9 +97,13 @@ class StorageCredentialServiceImpl(
             cache = cache.copy(
                 loadCacheFirst = request.credentials.cache.loadCacheFirst,
                 expireDays = request.credentials.cache.expireDays,
-                expireDuration = request.credentials.cache.expireDuration
+                expireDuration = request.credentials.cache.expireDuration,
+                maxSize = request.credentials.cache.maxSize,
             )
-            upload = upload.copy(localPath = request.credentials.upload.localPath)
+            upload = upload.copy(
+                localPath = request.credentials.upload.localPath,
+                workers = request.credentials.upload.workers
+            )
             compress = compress.copy(
                 path = request.credentials.compress.path,
                 ratio = request.credentials.compress.ratio

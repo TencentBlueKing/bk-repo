@@ -47,7 +47,13 @@ interface FileStorage {
      * @param file 文件
      * @param storageCredentials 存储凭证
      */
-    fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials)
+    fun store(
+        path: String,
+        name: String,
+        file: File,
+        storageCredentials: StorageCredentials,
+        storageClass: String? = null,
+    )
 
     /**
      * 保存数据流
@@ -57,7 +63,13 @@ interface FileStorage {
      * @param size 流长度，通过inputStream取得的长度不准确，可以出现int溢出
      * @param storageCredentials 存储凭证
      */
-    fun store(path: String, name: String, inputStream: InputStream, size: Long, storageCredentials: StorageCredentials)
+    fun store(
+        path: String,
+        name: String,
+        inputStream: InputStream,
+        size: Long,
+        storageCredentials: StorageCredentials,
+    )
 
     /**
      * 加载数据流
@@ -93,7 +105,12 @@ interface FileStorage {
      * @param fromCredentials 源存储凭证
      * @param toCredentials 目的存储凭证
      */
-    fun copy(path: String, name: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials)
+    fun copy(
+        path: String,
+        name: String,
+        fromCredentials: StorageCredentials,
+        toCredentials: StorageCredentials,
+    )
 
     /**
      * 在不同存储实例之间移动文件
@@ -110,8 +127,18 @@ interface FileStorage {
         toPath: String,
         toName: String,
         fromCredentials: StorageCredentials,
-        toCredentials: StorageCredentials
+        toCredentials: StorageCredentials,
     )
+
+    /**
+     * 检查文件是否恢复
+     * */
+    fun checkRestore(path: String, name: String, storageCredentials: StorageCredentials): Boolean
+
+    /**
+     * 恢复文件
+     * */
+    fun restore(path: String, name: String, days: Int, tier: String, storageCredentials: StorageCredentials)
 
     /**
      * 获取存储的临时目录，默认实现返回`java.io.tmpdir`目录

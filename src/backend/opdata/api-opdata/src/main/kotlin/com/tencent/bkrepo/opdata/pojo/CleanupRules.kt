@@ -27,17 +27,21 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-data class CleanupRules(
+class CleanupRules(
     // 特殊项目仓库的保留周期
     var specialRepoRules: Map<String, String> = emptyMap(),
     // bg下仓库标准保留周期
     var bgRepoRules: Map<String, String> = emptyMap(),
     // 默认仓库名
-    var defaultRepoName: String = "",
+    var defaultRepos: List<String> = emptyList(),
     // bg默认清理策略
     var cleanupType: String = "retentionDays",
     // bg默认清理时间
     var cleanupValue: String = "",
     // 清理策略是否开启
-    var enable: Boolean = false
+    var enable: Boolean = false,
+    // 关联仓库（根据关联仓库去更新默认仓库清理策略）
+    var relatedRepo: String = "",
+    // 当开启后，对已经设置清理策略的仓库也进行策略更新
+    var forceRefresh: Boolean = false,
 )

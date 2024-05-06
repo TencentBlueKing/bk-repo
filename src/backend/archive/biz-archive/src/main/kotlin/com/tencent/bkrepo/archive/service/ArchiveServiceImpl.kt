@@ -4,16 +4,17 @@ import com.tencent.bkrepo.archive.ArchiveFileNotFound
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.ArchiveMessageCode
-import com.tencent.bkrepo.archive.constant.XZ_SUFFIX
+import com.tencent.bkrepo.archive.core.FileEntityEvent
+import com.tencent.bkrepo.archive.core.archive.ArchiveManager
+import com.tencent.bkrepo.archive.core.archive.EmptyArchiver
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.storage.innercos.client.CosClient
-import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
-import com.tencent.bkrepo.common.storage.innercos.request.RestoreObjectRequest
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.common.storage.core.StorageService
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -25,9 +26,10 @@ import org.springframework.stereotype.Service
 class ArchiveServiceImpl(
     private val archiveProperties: ArchiveProperties,
     private val archiveFileRepository: ArchiveFileRepository,
+    private val archiveManager: ArchiveManager,
+    private val storageService: StorageService,
 ) : ArchiveService {
 
-    private val cosClient = CosClient(archiveProperties.cos)
     override fun archive(request: CreateArchiveFileRequest) {
         // created
         with(request) {
@@ -43,6 +45,8 @@ class ArchiveServiceImpl(
                 af.status = if (af.status == ArchiveStatus.COMPLETED) ArchiveStatus.ARCHIVED else ArchiveStatus.CREATED
                 archiveFileRepository.save(af)
             } else {
+                val properties = archiveProperties.extraCredentialsConfig[archiveCredentialsKey]
+                    ?: archiveProperties.defaultCredentials
                 val archiveFile = TArchiveFile(
                     createdBy = operator,
                     createdDate = LocalDateTime.now(),
@@ -52,8 +56,12 @@ class ArchiveServiceImpl(
                     storageCredentialsKey = storageCredentialsKey,
                     size = size,
                     status = ArchiveStatus.CREATED,
+                    archiver = EmptyArchiver.NAME,
+                    archiveCredentialsKey = archiveCredentialsKey,
+                    storageClass = properties.storageClass,
                 )
                 archiveFileRepository.save(archiveFile)
+                SpringContextUtils.publishEvent(FileEntityEvent(sha256, archiveFile))
             }
             logger.info("Archive file $sha256 in $storageCredentialsKey.")
         }
@@ -65,10 +73,10 @@ class ArchiveServiceImpl(
                 sha256,
                 storageCredentialsKey,
             ) ?: return
-            val key = "$sha256$XZ_SUFFIX"
-            val deleteObjectRequest = DeleteObjectRequest(key)
-            cosClient.deleteObject(deleteObjectRequest)
-            logger.info("Success delete $key on archive cos.")
+            val key = archiveManager.getKey(sha256, archiveFile.archiver)
+            val credentials = archiveManager.getStorageCredentials(archiveFile.archiveCredentialsKey)
+            storageService.delete(key, credentials)
+            logger.info("Success delete $key on ${credentials.key}.")
             archiveFileRepository.delete(archiveFile)
             logger.info("Delete archive file $sha256 in $storageCredentialsKey.")
         }
@@ -76,29 +84,32 @@ class ArchiveServiceImpl(
 
     override fun restore(request: ArchiveFileRequest) {
         with(request) {
+            val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
+                ?: throw ArchiveFileNotFound(sha256)
+            val properties = archiveProperties.extraCredentialsConfig[af.archiveCredentialsKey]
+                ?: archiveProperties.defaultCredentials
             // 取回限制
             val midnight = LocalDateTime.now().toLocalDate().atStartOfDay()
             val count = archiveFileRepository.countByLastModifiedDateAfterAndStatus(
                 midnight,
                 ArchiveStatus.WAIT_TO_RESTORE,
             )
-            if (count > archiveProperties.restoreLimit) {
+            if (count > properties.restoreLimit) {
                 throw ErrorCodeException(ArchiveMessageCode.RESTORE_COUNT_LIMIT)
             }
-            val af = archiveFileRepository.findBySha256AndStorageCredentialsKey(sha256, storageCredentialsKey)
-                ?: throw ArchiveFileNotFound(sha256)
+
             // 只有已经完成归档的文件才允许恢复
             if (af.status == ArchiveStatus.COMPLETED) {
                 af.lastModifiedBy = operator
                 af.lastModifiedDate = LocalDateTime.now()
                 af.status = ArchiveStatus.WAIT_TO_RESTORE
-                val key = "${sha256}$XZ_SUFFIX"
-                val restoreRequest = RestoreObjectRequest(
-                    key = key,
-                    days = archiveProperties.days,
-                    tier = archiveProperties.tier,
+                val key = archiveManager.getKey(sha256, af.archiver)
+                storageService.restore(
+                    key,
+                    properties.days,
+                    properties.tier.name,
+                    archiveManager.getStorageCredentials(af.archiveCredentialsKey),
                 )
-                cosClient.restoreObject(restoreRequest)
                 archiveFileRepository.save(af)
                 logger.info("Restore archive file $sha256 in $storageCredentialsKey.")
             }
@@ -117,6 +128,7 @@ class ArchiveServiceImpl(
             size = af.size,
             storageCredentialsKey = af.storageCredentialsKey,
             status = af.status,
+            archiver = af.archiver,
         )
     }
 

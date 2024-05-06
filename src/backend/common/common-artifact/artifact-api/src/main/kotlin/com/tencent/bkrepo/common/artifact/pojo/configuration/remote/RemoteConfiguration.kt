@@ -42,6 +42,11 @@ data class RemoteConfiguration(
     var network: RemoteNetworkConfiguration = RemoteNetworkConfiguration(),
     var cache: RemoteCacheConfiguration = RemoteCacheConfiguration()
 ) : RepositoryConfiguration() {
+
+    override fun toString(): String {
+        return url + super.toString()
+    }
+
     companion object {
         const val type = "remote"
     }

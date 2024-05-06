@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Principal(PrincipalType.ADMIN)
@@ -20,8 +19,8 @@ class SystemAdminController(
     private val compressService: CompressService,
 ) {
     @PutMapping("/stop")
-    fun stop(@RequestParam jobName: String) {
-        systemAdminService.stop(jobName)
+    fun stop() {
+        systemAdminService.stop()
     }
 
     @PostMapping("/compress/update")

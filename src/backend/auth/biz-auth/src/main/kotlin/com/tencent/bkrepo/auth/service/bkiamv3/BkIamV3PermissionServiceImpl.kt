@@ -32,6 +32,7 @@ import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
 import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.dao.repository.AccountRepository
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
@@ -54,6 +55,7 @@ open class BkIamV3PermissionServiceImpl(
     roleRepository: RoleRepository,
     accountRepository: AccountRepository,
     permissionDao: PermissionDao,
+    personalPathDao: PersonalPathDao,
     repoClient: RepositoryClient,
     projectClient: ProjectClient
 ) : PermissionServiceImpl(
@@ -61,6 +63,7 @@ open class BkIamV3PermissionServiceImpl(
     accountRepository,
     permissionDao,
     userDao,
+    personalPathDao,
     repoClient,
     projectClient
 ) {

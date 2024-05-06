@@ -31,10 +31,17 @@
 
 package com.tencent.bkrepo.fs.server.model
 
+import com.tencent.bkrepo.fs.server.model.TClient.Companion.CLIENT_IDX
+import com.tencent.bkrepo.fs.server.model.TClient.Companion.CLIENT_IDX_DEF
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 @Document("client")
+@CompoundIndexes(
+    CompoundIndex(name = CLIENT_IDX, def = CLIENT_IDX_DEF, background = true)
+)
 data class TClient(
     val id: String? = null,
     val projectId: String,
@@ -47,4 +54,9 @@ data class TClient(
     val arch: String,
     var online: Boolean,
     var heartbeatTime: LocalDateTime
-)
+) {
+    companion object {
+        const val CLIENT_IDX = "client_idx"
+        const val CLIENT_IDX_DEF = "{'projectId': 1, 'repoName': 1,'mountPoint':1, 'ip': 1}"
+    }
+}

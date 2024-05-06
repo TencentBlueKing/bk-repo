@@ -86,6 +86,8 @@ class RouteConfiguration(
 
         "/service/block".nest {
             GET("/list$DEFAULT_MAPPING_URI", fsNodeHandler::listBlocks)
+            POST("/restore$DEFAULT_MAPPING_URI", fsNodeHandler::restoreBlock)
+            DELETE("/delete$DEFAULT_MAPPING_URI", fsNodeHandler::deleteBlock)
         }
 
         "/node".nest {
@@ -119,6 +121,7 @@ class RouteConfiguration(
 
         "/service/client".nest {
             GET("/list", clientHandler::listClients)
+            GET("/daily/list", clientHandler::listDailyClients)
         }
 
         accept(APPLICATION_OCTET_STREAM).nest {

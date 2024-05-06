@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
-import com.tencent.bkrepo.common.storage.core.cache.indexer.EldestRemovedListener
+import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.EldestRemovedListener
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
@@ -55,7 +55,7 @@ class RedisLRUCacheIndexerTest : RedisCacheIndexerTest<RedisLRUCacheIndexer>() {
     }
 
     override fun createIndexer(cacheName: String, cacheDir: Path): RedisLRUCacheIndexer {
-        return RedisLRUCacheIndexer(cacheName, cacheDir, redisTemplate, 0)
+        return RedisLRUCacheIndexer(cacheName, cacheDir, fileLocator, 1000, redisTemplate, 0)
     }
 
     /**

@@ -41,7 +41,6 @@ import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.extension.UsageComputerExtension
-import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectBill
 import com.tencent.bkrepo.opdata.pojo.ProjectBillStatement
@@ -54,6 +53,7 @@ import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
 import com.tencent.bkrepo.opdata.util.MetricsHandlerThreadPoolExecutor
+import com.tencent.bkrepo.opdata.util.StatDateUtil
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_BG_NAME
@@ -78,7 +78,6 @@ import java.util.concurrent.TimeUnit
 @Service
 class ProjectMetricsService (
     private val projectMetricsRepository: ProjectMetricsRepository,
-    private val statDateModel: StatDateModel,
     private val projectClient: ProjectClient,
     private val jobClient: JobClient,
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
@@ -182,6 +181,7 @@ class ProjectMetricsService (
         // 导出
         val includeColumns = mutableSetOf(
             ProjectBillStatement::projectId.name,
+            ProjectBillStatement::bgName.name,
             ProjectBillStatement::enabled.name,
             ProjectBillStatement::capSize.name,
             ProjectBillStatement::pipelineCapSize.name,
@@ -227,13 +227,17 @@ class ProjectMetricsService (
         futureList.forEach {
             try {
                 val bill = it.get()
-                result.add(convertToProjectBillStatement(
+                val projectBill = convertToProjectBillStatement(
+                    bgNames = billStatementRequest.bgNames,
                     projectId = bill.projectId,
                     totalCost = bill.totalCost,
                     startDate = startDate,
                     endDate = endDate,
                     list = projectUsages,
-                ))
+                )
+                if (projectBill != null) {
+                    result.add(projectBill)
+                }
             } catch (e: Exception) {
                 logger.warn("get bill result error : $e")
             }
@@ -243,14 +247,24 @@ class ProjectMetricsService (
 
     private fun convertToProjectBillStatement(
         projectId: String,
+        bgNames: List<String>,
         totalCost: Double,
         startDate: LocalDateTime,
         endDate: LocalDateTime,
         list: List<ProjectMetrics>
-    ): ProjectBillStatement {
-        val currentProjectMetric = list.firstOrNull { it.projectId == projectId }
+    ): ProjectBillStatement? {
+
+        val currentProjectMetric = list.firstOrNull { it.projectId == projectId}
+        if (
+            bgNames.isNotEmpty() &&
+            !currentProjectMetric?.bgName.isNullOrEmpty() &&
+            !bgNames.contains(currentProjectMetric?.bgName)
+        )  {
+            return null
+        }
         return ProjectBillStatement(
             projectId = projectId,
+            bgName = currentProjectMetric?.bgName,
             enabled = currentProjectMetric?.enabled,
             capSize = currentProjectMetric?.capSize ?: 0,
             pipelineCapSize = currentProjectMetric?.pipelineCapSize ?: 0,
@@ -308,7 +322,7 @@ class ProjectMetricsService (
      */
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INIT_DELAY, timeUnit = TimeUnit.MINUTES)
     fun loadCache() {
-        val createdDate = statDateModel.getShedLockInfo()
+        val createdDate = StatDateUtil.getStatDate()
         val cacheDateList = listOf(
             createdDate,
             createdDate.minusDays(1).toLocalDate().atStartOfDay(),
@@ -339,7 +353,7 @@ class ProjectMetricsService (
 
     private fun getProjectMetrics(metricsRequest: ProjectMetricsRequest): List<ProjectMetrics> {
         val createdDate = if (metricsRequest.default) {
-            statDateModel.getShedLockInfo()
+            StatDateUtil.getStatDate()
         } else {
             LocalDate.now().minusDays(metricsRequest.minusDay).atStartOfDay()
         }

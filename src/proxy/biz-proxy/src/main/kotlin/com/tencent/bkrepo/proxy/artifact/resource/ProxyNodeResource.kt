@@ -30,6 +30,7 @@ package com.tencent.bkrepo.proxy.artifact.resource
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.manager.ProxyBlobCacheWriter
 import com.tencent.bkrepo.common.artifact.manager.resource.AbstractNodeResource
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
@@ -61,7 +62,7 @@ class ProxyNodeResource(
 
     override fun exists(): Boolean {
         return try {
-            blobReplicaClient.check(sha256, storageKey).data ?: false
+            blobReplicaClient.check(sha256, storageKey, RepositoryType.GENERIC.name).data ?: false
         } catch (exception: Exception) {
             logger.error("Failed to check blob data[$sha256] in remote node.", exception)
             false

@@ -827,7 +827,7 @@
     "createPermNameTip": "请输入权限名称",
     "createPathsTip": "请添加路径",
     "createUsersTip": "请添加用户",
-    "cleanConfigTip": "请填写正确的输入",
+    "cleanConfigTip": "请填写正确的输入(流水线仓需预留至少60天，自定义仓需预留至少30天)",
     "cleanupStrategy": "清理策略",
     "retentionDays":"保留天数",
     "retentionDate":"保留日期",
@@ -861,5 +861,11 @@
     "mavenArtifactIdPlaceholder":"请输入制品 ArtifactId",
     "fileNamePlaceholder":"请输入文件名称",
     "composerInputLabel":"制品包名称",
-    "composerInputPlaceholder":"请输入制品包名称"
+    "composerInputPlaceholder":"请输入制品包名称",
+    "staffing":"人员配置",
+    "next": "下一步",
+    "previous": "上一步",
+    "copyAll": "复制全部",
+    "clear": "清空",
+    "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割"
 }

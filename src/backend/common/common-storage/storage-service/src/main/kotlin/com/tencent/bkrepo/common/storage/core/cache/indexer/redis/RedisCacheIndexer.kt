@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.common.storage.core.cache.indexer.redis
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer
+import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.util.existReal
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
@@ -39,12 +41,15 @@ import java.util.concurrent.Semaphore
 abstract class RedisCacheIndexer(
     protected val cacheName: String,
     protected val cacheDir: Path,
+    protected val fileLocator: FileLocator,
+    protected val maxEvictCount: Int = 1000,
     protected val redisTemplate: RedisTemplate<String, String>,
     /**
      * 作为hash tag使用，未设置时使用cacheName作为hash tag
      */
-    protected val hashTag: String? = null
-) {
+    protected val hashTag: String? = null,
+    protected val evict: Boolean = true,
+) : StorageCacheIndexer<String, Long> {
 
     // 需要增加hash tag后缀以支持Redis集群模式
     protected val keyPrefix = if (hashTag == null) {
@@ -61,9 +66,10 @@ abstract class RedisCacheIndexer(
     /**
      * 用于执行缓存淘汰的线程池
      */
-    private val evictExecutor = Executors.newSingleThreadExecutor(
-        ThreadFactoryBuilder().setNameFormat("storage-cache-indexer-evict-redis-%d").build()
-    )
+    private val evictExecutor by lazy {
+        val threadFactory = ThreadFactoryBuilder().setNameFormat("storage-cache-indexer-evict-redis-%d").build()
+        Executors.newSingleThreadExecutor(threadFactory)
+    }
 
     /**
      * 用于通知淘汰线程开始淘汰缓存的信号量
@@ -74,22 +80,25 @@ abstract class RedisCacheIndexer(
 
 
     init {
-        // 无限循环执行缓存清理，缓存满时通过信号量通知开始淘汰
-        evictExecutor.execute {
-            while (true) {
-                evictSemaphore.acquire()
-                try {
-                    evict()
-                } catch (e: Exception) {
-                    logger.error("evict failed", e)
+        if (evict) {
+            // 无限循环执行缓存清理，缓存满时通过信号量通知开始淘汰
+            evictExecutor.execute {
+                while (true) {
+                    evictSemaphore.acquire()
+                    try {
+                        evict(maxEvictCount)
+                    } catch (e: Exception) {
+                        logger.error("evict failed", e)
+                    }
+                    evictSemaphore.drainPermits()
                 }
-                evictSemaphore.drainPermits()
             }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
-    protected fun sync(hashKey: String) {
+    protected fun sync(hashKey: String): Int {
+        var count = 0
         var cursor = 0L
         do {
             val result = redisTemplate.execute(hscanScript, listOf(firstKey, hashKey), cursor.toString())
@@ -98,44 +107,42 @@ abstract class RedisCacheIndexer(
             val data = result[1] as List<String>
             for (i in data.indices step 2) {
                 val key = data[i]
-                if (!cacheDir.resolve(key).existReal()) {
+                val dirPath = fileLocator.locate(key).trimStart('/')
+                val cacheFilePath = cacheDir.resolve(dirPath).resolve(key)
+                if (!cacheFilePath.existReal()) {
                     logger.info("$key cache file was not exists and will be removed")
                     remove(key)
+                    count++
                 }
             }
         } while (cursor != 0L)
+        return count
     }
 
-    private fun evict() {
+    override fun evict(maxCount: Int): Int {
         logger.info("start evict $cacheName")
         var count = 0
         while (shouldEvict()) {
             count++
             evictEldest()
-            if (count > MAX_EVICT_COUNT) {
-                logger.info("evict $cacheName exceed max count[${MAX_EVICT_COUNT}]")
+            if (count > maxCount) {
+                logger.info("evict $cacheName exceed max count[$maxCount]")
                 break
             }
         }
         if (count > 0) {
             logger.info("$count key was evicted")
         }
+        return count
     }
 
     protected open fun score(score: Double? = null) = score?.toString() ?: System.currentTimeMillis().toString()
 
     protected abstract fun evictEldest()
     protected abstract fun shouldEvict(): Boolean
-    abstract fun remove(key: String): Long?
 
     companion object {
         private val logger = LoggerFactory.getLogger(RedisCacheIndexer::class.java)
-
-        /**
-         * 一次淘汰中最多淘汰的缓存条目数
-         */
-        private const val MAX_EVICT_COUNT = 1000
-
         private const val SCRIPT_SIMPLE_GET = "return redis.call('GET', KEYS[2])"
         private const val SCRIPT_HSCAN = "return redis.call('HSCAN', KEYS[2], ARGV[1])"
     }

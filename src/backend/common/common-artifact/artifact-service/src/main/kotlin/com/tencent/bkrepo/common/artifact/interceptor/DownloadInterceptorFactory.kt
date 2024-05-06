@@ -58,6 +58,7 @@ class DownloadInterceptorFactory(
         private val logger = LoggerFactory.getLogger(DownloadInterceptorFactory::class.java)
         private lateinit var properties: DownloadInterceptorProperties
         private const val ANDROID_APP_USER_AGENT = "BKCI_APP"
+        private const val ANDROID_APP_USER_AGENT_NEW = "BK_CI APP"
         private const val IOS_APP_USER_AGENT = "com.apple.appstored"
         private const val INTERCEPTORS = "interceptors"
         private const val TYPE = "type"
@@ -120,8 +121,9 @@ class DownloadInterceptorFactory(
             }
             val userAgent = HeaderUtils.getHeader(HttpHeaders.USER_AGENT) ?: return DownloadInterceptorType.WEB
             logger.debug("download user agent: $userAgent")
+            val android = userAgent.contains(ANDROID_APP_USER_AGENT) || userAgent.contains(ANDROID_APP_USER_AGENT_NEW)
             return when {
-                userAgent.contains(ANDROID_APP_USER_AGENT) -> DownloadInterceptorType.MOBILE
+                android -> DownloadInterceptorType.MOBILE
                 userAgent.contains(IOS_APP_USER_AGENT) -> DownloadInterceptorType.MOBILE
                 else -> DownloadInterceptorType.WEB
             }

@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.interceptor
 
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_AVAILABLE
 import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_EXT_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_INFO_PREFIX
@@ -65,6 +66,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_UPDATE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_DELETE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_CREATE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_EDIT_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_PERSONAL_PATH
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
@@ -105,7 +107,7 @@ class AuthInterceptor(
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val authHeader = request.getHeader(AUTHORIZATION).orEmpty()
-        val authFailStr = String.format(AUTH_FAILED_RESPONSE, authHeader)
+        var authFailStr = String.format(AUTH_FAILED_RESPONSE, authHeader)
         try {
             // basic认证
             if (authHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
@@ -114,6 +116,7 @@ class AuthInterceptor(
 
             // platform认证
             if (authHeader.startsWith(PLATFORM_AUTH_HEADER_PREFIX)) {
+                authFailStr = String.format(AUTH_FAILED_RESPONSE, "illegal AUTHORIZATION")
                 return checkUserFromPlatform(request, authHeader)
             }
 
@@ -287,10 +290,12 @@ class AuthInterceptor(
             AUTH_API_USER_UPDATE_PREFIX,
             AUTH_API_USER_DELETE_PREFIX,
             AUTH_API_USER_ASSET_USER_GROUP_PREFIX,
-            AUTH_API_USER_BKIAMV3_PREFIX
+            AUTH_API_USER_BKIAMV3_PREFIX,
+            AUTH_API_PERMISSION_PERSONAL_PATH
         )
 
         private val anonymousAccessApiSet = setOf(
+            AUTH_API_PERMISSION_AVAILABLE,
             AUTH_CLUSTER_PERMISSION_CHECK_PREFIX,
             AUTH_CLUSTER_TOKEN_INFO_PREFIX,
             AUTH_CLUSTER_TOKEN_DELETE_PREFIX,

@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.indexer
 
+import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.EldestRemovedListener
+
 /**
  * 存储缓存索引管理器，维护一份硬盘缓存文件的索引，根据特定策略对索引进行淘汰同时删除硬盘上的缓存文件
  */
@@ -127,8 +129,19 @@ interface StorageCacheIndexer<K, V> {
 
     /**
      * 同步策略中存储的缓存索引条目与实际磁盘缓存条目
+     *
+     * @return 存在于索引但不存在对应缓存文件的条目数
      */
-    fun sync()
+    fun sync(): Int
+
+    /**
+     * 执行缓存淘汰，单次淘汰的缓存条目达到限制[maxCount]时候将会直接返回
+     *
+     * @param maxCount 最大允许淘汰的数量
+     *
+     * @return 淘汰的数量
+     */
+    fun evict(maxCount: Int): Int
 
     /**
      * 缓存是否已满
@@ -151,17 +164,4 @@ interface StorageCacheIndexer<K, V> {
      * @return 所有缓存淘汰监听器
      */
     fun getEldestRemovedListeners(): List<EldestRemovedListener<K, V>>
-}
-
-/**
- * 缓存淘汰回调
- */
-interface EldestRemovedListener<K, V> {
-    /**
-     * 缓存淘汰回调
-     *
-     * @param key 被淘汰的缓存key
-     * @param value 被淘汰的缓存value
-     */
-    fun onEldestRemoved(key: K, value: V)
 }

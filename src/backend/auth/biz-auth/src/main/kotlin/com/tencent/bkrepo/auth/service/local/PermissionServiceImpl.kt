@@ -37,6 +37,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.auth.dao.repository.AccountRepository
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.PermissionHelper
 import com.tencent.bkrepo.auth.helper.UserHelper
+import com.tencent.bkrepo.auth.model.TPersonalPath
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
@@ -64,6 +66,7 @@ import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -73,13 +76,15 @@ open class PermissionServiceImpl constructor(
     private val account: AccountRepository,
     private val permissionDao: PermissionDao,
     private val userDao: UserDao,
+    private val personalPathDao: PersonalPathDao,
     val repoClient: RepositoryClient,
     val projectClient: ProjectClient
 ) : PermissionService {
 
-    private val permHelper by lazy { PermissionHelper(userDao, roleRepository, permissionDao) }
+    private val permHelper by lazy { PermissionHelper(userDao, roleRepository, permissionDao, personalPathDao) }
 
     private val userHelper by lazy { UserHelper(userDao, roleRepository) }
+
 
     override fun deletePermission(id: String): Boolean {
         logger.info("delete  permission  repoName: [$id]")
@@ -195,10 +200,10 @@ open class PermissionServiceImpl constructor(
                 // check repo read action
                 if (permHelper.checkRepoReadAction(request, roles)) return true
                 //  check project user
-                val isProjectUser = isUserLocalProjectUser(uid, request.projectId!!)
+                val isProjectUser = isUserLocalProjectUser(uid, projectId!!)
                 if (permHelper.checkProjectReadAction(request, isProjectUser)) return true
                 // check node action
-                if (isNodeNeedLocalCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
+                if (needNodeCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
                     return true
                 }
             }
@@ -261,8 +266,7 @@ open class PermissionServiceImpl constructor(
         val roles = user.roles
 
         // 用户为系统管理员、项目管理员、项目用户
-        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)
-        ) {
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
             return getAllRepoByProjectId(projectId)
         }
 
@@ -294,12 +298,14 @@ open class PermissionServiceImpl constructor(
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
-        if (user.admin || isUserLocalAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)
-        ) {
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
         }
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
-        return permHelper.getNoPermissionPathFromConfig(userId, user.roles, projectPermission)
+        val configPath = permHelper.getNoPermissionPathFromConfig(userId, user.roles, projectPermission)
+        val personalPath = personalPathDao.listByProjectAndRepoAndExcludeUser(userId, projectId, repoName)
+            .map { it.fullPath }
+        return (configPath + personalPath).distinct()
     }
 
     fun getAllRepoByProjectId(projectId: String): List<String> {
@@ -350,6 +356,32 @@ open class PermissionServiceImpl constructor(
                 && permHelper.updatePermissionById(request.permissionId, TPermission::roles.name, request.roles)
     }
 
+    override fun getOrCreatePersonalPath(projectId: String, repoName: String): String {
+        val userId = SecurityUtils.getUserId()
+        val personalPath = "$defaultPersonalPrefix/$userId"
+        personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName) ?: run {
+            logger.info("personal path [$projectId, $repoName, $personalPath ] not exist , create")
+            val personalPathData =
+                TPersonalPath(
+                    projectId = projectId,
+                    repoName = repoName,
+                    userId = userId,
+                    fullPath = personalPath
+                )
+            try {
+                personalPathDao.insert(personalPathData)
+            } catch (exception: RuntimeException) {
+                logger.error("create personal path error [$projectId, $repoName, $personalPath ,$exception]")
+            }
+
+        }
+        return personalPath
+    }
+
+    override fun getPathCheckConfig(): Boolean {
+        return true
+    }
+
     fun isUserLocalProjectAdmin(userId: String, projectId: String?): Boolean {
         return permHelper.isUserLocalProjectAdmin(userId, projectId)
     }
@@ -358,20 +390,22 @@ open class PermissionServiceImpl constructor(
         return permHelper.isUserLocalProjectUser(userId, projectId)
     }
 
-    fun isUserLocalAdmin(userId: String): Boolean {
-        return permHelper.isUserLocalAdmin(userId)
+    fun isUserSystemAdmin(userId: String): Boolean {
+        val user = userDao.findFirstByUserId(userId) ?: return false
+        return user.admin
     }
 
     fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
         return permHelper.checkNodeAction(request, userRoles, isProjectUser)
     }
 
-    fun isNodeNeedLocalCheck(projectId: String, repoName: String): Boolean {
+    fun needNodeCheck(projectId: String, repoName: String): Boolean {
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
         return projectPermission.isNotEmpty()
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(PermissionServiceImpl::class.java)
+        private const val defaultPersonalPrefix = "/Personal"
     }
 }

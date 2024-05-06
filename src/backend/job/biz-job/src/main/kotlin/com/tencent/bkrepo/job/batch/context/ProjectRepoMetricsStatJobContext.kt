@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.job.batch.context
 
-import com.tencent.bkrepo.job.batch.stat.ProjectRepoMetricsStatJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.task.stat.ProjectRepoMetricsStatJob
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import com.tencent.bkrepo.job.pojo.project.TRepoMetrics
 import java.time.LocalDateTime
@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.LongAdder
 data class ProjectRepoMetricsStatJobContext(
     var metrics: ConcurrentHashMap<String, ProjectMetrics> = ConcurrentHashMap(),
     var statDate: LocalDateTime,
-    var statProjects: Set<String> = emptySet()
+    var statProjects: Map<String, Boolean> = emptyMap()
 ) : JobContext() {
 
     override fun toString(): String {

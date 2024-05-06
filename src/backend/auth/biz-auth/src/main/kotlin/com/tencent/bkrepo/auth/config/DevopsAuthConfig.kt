@@ -56,6 +56,12 @@ class DevopsAuthConfig {
     var enableSuperAdmin: Boolean = false
 
     /**
+     * 是否开启目录权限校验
+     */
+    @Value("\${auth.devops.enablePathCheck: false}")
+    var enablePathCheck: Boolean = false
+
+    /**
      * 蓝盾平台appId集合
      */
     @Value("\${auth.devops.appIdSet:}")

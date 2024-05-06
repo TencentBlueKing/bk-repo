@@ -55,7 +55,11 @@ const val DELETED_DATE = "deleted"
 const val FULL_PATH = "fullPath"
 const val PATH = "path"
 const val LAST_MODIFIED_BY = "lastModifiedBy"
+const val KEY = "key"
+const val RECORD_RESERVE_DAYS = "recordReserveDays"
+const val REPLICA_TYPE = "replicaType"
 const val NAME = "name"
+const val SIZE = "size"
 
 /**
  * 缓存类型

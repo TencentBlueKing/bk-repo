@@ -33,7 +33,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  * 非活跃项目仓库指标统计任务配置项
  */
 @ConfigurationProperties("job.inactive-project-repo-metrics-stat")
-data class InactiveProjectRepoMetricsStatJobProperties(
+class InactiveProjectRepoMetricsStatJobProperties(
     override var enabled: Boolean = true,
-    override var cron: String = "0 0 1 * * ?",
-) : MongodbJobProperties()
+    override var cron: String = "0 0 0/6 * * ?",
+) : ProjectRepoMetricsStatJobProperties()

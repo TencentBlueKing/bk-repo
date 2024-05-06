@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
@@ -36,6 +37,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.batch.task.clean.FileReferenceCleanupJob
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
@@ -64,9 +66,12 @@ import org.springframework.data.mongodb.core.query.Query
 import java.util.concurrent.atomic.AtomicInteger
 import org.springframework.cloud.sleuth.Tracer
 import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findOne
+import org.springframework.data.mongodb.core.insert
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.redis.core.RedisTemplate
 
 @DisplayName("文件引用清理Job测试")
 @DataMongoTest
@@ -89,6 +94,9 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @Autowired
     lateinit var mongoTemplate: MongoTemplate
+
+    @Autowired
+    lateinit var redisTemplate: RedisTemplate<String, String>
 
     @Autowired
     lateinit var fileReferenceCleanupJob: FileReferenceCleanupJob
@@ -213,6 +221,44 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         val query = Query.query(Criteria.where("sha256").isEqualTo("0"))
         val find = mongoTemplate.findOne<Map<String, Any?>>(query, collectionName)
         Assertions.assertEquals(1L, find?.get("count"))
+    }
+
+    @Test
+    fun ignoreStorageCredentialsKeysTest() {
+        val doc = Document(
+            mutableMapOf(
+                "sha256" to "0",
+                "credentialsKey" to null,
+                "count" to 0,
+            ) as Map<String, Any>?,
+        )
+        val doc2 = Document(
+            mutableMapOf(
+                "sha256" to "1",
+                "credentialsKey" to "key1",
+                "count" to 0,
+            ) as Map<String, Any>?,
+        )
+        val doc3 = Document(
+            mutableMapOf(
+                "sha256" to "2",
+                "credentialsKey" to "key2",
+                "count" to 0,
+            ) as Map<String, Any>?,
+        )
+        val doc4 = Document(
+            mutableMapOf(
+                "sha256" to "0",
+                "count" to 0,
+            ) as Map<String, Any>?,
+        )
+        val collectionName = fileReferenceCleanupJob.collectionNames().first()
+        mongoTemplate.insert(listOf(doc, doc2, doc3, doc4), collectionName)
+        fileReferenceCleanupJobProperties.ignoredStorageCredentialsKeys = setOf(DEFAULT_KEY, "key1")
+        val query = fileReferenceCleanupJob.buildQuery()
+        val finds = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
+        Assertions.assertEquals(1, finds.size)
+        Assertions.assertEquals("key2", finds.first()["credentialsKey"])
     }
 
     private fun insertMany(num: Int, collectionName: String) {

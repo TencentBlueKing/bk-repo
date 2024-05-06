@@ -15,5 +15,5 @@ data class Component(
     /**
      * 漏洞列表
      */
-    val vulnerabilities: MutableList<Vulnerability> = ArrayList()
+    val vulnerabilities: MutableSet<Vulnerability> = HashSet()
 )

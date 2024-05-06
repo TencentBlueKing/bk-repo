@@ -32,9 +32,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(value = "job.artifact-cleanup")
 data class ArtifactCleanupJobProperties(
     override var enabled: Boolean = false,
-    // 如配置项目，则只清理该项目下的仓库
+    // 如配置项目，则不清理该项目下的仓库
     var projectList: List<String> = listOf(),
-    // 如配置仓库，则只清理该仓库下的仓库
+    // 如配置仓库，则不清理改清理该仓库下的仓库
     var repoList: List<String> = listOf(),
+    // 微服务调用超时后等待时间， 防止并发过大导致db压力过大
+    var sleepSeconds: Long = 20,
     override var cron: String = "0 0 0 * * ?"
 ): MongodbJobProperties()

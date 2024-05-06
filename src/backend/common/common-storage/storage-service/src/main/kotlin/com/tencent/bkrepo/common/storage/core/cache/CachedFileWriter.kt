@@ -44,6 +44,7 @@ import java.nio.file.Path
  * @param cachePath 缓存路径
  * @param filename 缓存文件名称
  * @param tempPath 临时路径
+ * @param listener 缓存写入过程监听器
  *
  * 处理逻辑：
  * 1. 在[tempPath]下原子创建锁文件[filename].locked
@@ -62,6 +63,7 @@ class CachedFileWriter(
     private val cachePath: Path,
     private val filename: String,
     tempPath: Path,
+    private val listener: CacheFileWriterListener? = null,
 ) : StreamReadListener {
 
     private val taskId = StringPool.randomStringByLongValue(prefix = CACHE_PREFIX, suffix = CACHE_SUFFIX)
@@ -169,6 +171,7 @@ class CachedFileWriter(
         try {
             if (!cacheFilePath.existReal()) {
                 Files.move(tempFilePath, cacheFilePath)
+                listener?.onCacheFileWritten(filename, cacheFilePath)
                 logger.info("Success cache file $filename")
             }
         } catch (ignore: FileAlreadyExistsException) {

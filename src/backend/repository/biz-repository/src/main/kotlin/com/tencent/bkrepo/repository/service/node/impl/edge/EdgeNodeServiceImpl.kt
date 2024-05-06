@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -82,7 +83,8 @@ class EdgeNodeServiceImpl(
     override val servicePermissionClient: ServicePermissionClient,
     override val clusterProperties: ClusterProperties,
     override val routerControllerClient: RouterControllerClient,
-    override val routerControllerProperties: RouterControllerProperties
+    override val routerControllerProperties: RouterControllerProperties,
+    override val fsNodeClient: FsNodeClient
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -95,10 +97,17 @@ class EdgeNodeServiceImpl(
     routerControllerClient,
     servicePermissionClient,
     routerControllerProperties,
-    clusterProperties,
+    fsNodeClient,
+    clusterProperties
 ) {
-    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean, before: LocalDateTime): NodeSizeInfo {
-        return NodeStatsSupport(this).computeSize(artifact, estimated, before)
+    override fun computeSize(
+        artifact: ArtifactInfo, estimated: Boolean
+    ): NodeSizeInfo {
+        return NodeStatsSupport(this).computeSize(artifact, estimated)
+    }
+
+    override fun computeSizeBeforeClean(artifact: ArtifactInfo, before: LocalDateTime): NodeSizeInfo {
+        return NodeStatsSupport(this).computeSizeBeforeClean(artifact, before)
     }
 
     override fun aggregateComputeSize(criteria: Criteria): Long {

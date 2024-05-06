@@ -43,14 +43,17 @@ interface PermissionService {
      * 校验平台账号权限
      */
     fun checkPlatformPermission(request: CheckPermissionRequest): Boolean
+
     /**
      * 校验普通账号权限
      */
     fun checkPermission(request: CheckPermissionRequest): Boolean
+
     /**
      * 获取有权限的仓库列表
      */
     fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String>
+
     /**
      * 获取权限详情
      */
@@ -82,4 +85,7 @@ interface PermissionService {
 
     fun updatePermissionDeployInRepo(request: UpdatePermissionDeployInRepoRequest): Boolean
 
+    fun getPathCheckConfig(): Boolean
+
+    fun getOrCreatePersonalPath(projectId: String, repoName: String): String
 }

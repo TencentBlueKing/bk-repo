@@ -1,5 +1,7 @@
 import request from '@/utils/request'
 
+export const DEFAULT_PAGE_SIZE = 10
+
 const PREFIX_REPOSITORY = '/repository/api/repo'
 
 export const REPO_TYPE_GENERIC = 'GENERIC'
@@ -34,5 +36,34 @@ export function listRepositories(projectId) {
   return request({
     url: `${PREFIX_REPOSITORY}/list/${projectId}`,
     method: 'get'
+  })
+}
+
+export function pageRepositories(body) {
+  return request({
+    url: `${PREFIX_REPOSITORY}/page/${body.projectId}/${body.pageNumber}/${DEFAULT_PAGE_SIZE}`,
+    method: 'get',
+    params: {
+      name: body.repoName === '' ? null : body.repoName,
+      type: body.type === '' ? null : body.type
+    }
+  })
+}
+
+export function updateRepoQuota(body) {
+  return request({
+    url: `${PREFIX_REPOSITORY}/quota/${body.projectId}/${body.name}`,
+    method: 'post',
+    params: {
+      quota: body.quota
+    }
+  })
+}
+
+export function updateRepoCleanConfig(body) {
+  return request({
+    url: `${PREFIX_REPOSITORY}/update/${body.projectId}/${body.name}`,
+    method: 'post',
+    data: body
   })
 }

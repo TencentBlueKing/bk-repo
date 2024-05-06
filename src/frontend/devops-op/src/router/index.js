@@ -22,6 +22,8 @@ export const ROUTER_NAME_SHED_LOCK = 'Shedlock'
 export const ROUTER_NAME_PROJECT_METRICS = 'ProjectMetrics'
 export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
 export const ROUTER_NAME_FILE_CACHE = 'FileCache'
+export const ROUTER_NAME_FILE_SYSTEM_RECORD = 'FileSystemRecord'
+export const ROUTER_NAME_REPO_CONFIG = 'RepoConfig'
 
 Vue.use(Router)
 
@@ -146,6 +148,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_FILE_SYSTEM,
         meta: { title: '客户端管理', icon: 'file' },
         component: () => import('@/views/node/FileSystem')
+      },
+      {
+        path: 'fileSystemRecord',
+        name: ROUTER_NAME_FILE_SYSTEM_RECORD,
+        meta: { title: '客户端统计', icon: 'file' },
+        component: () => import('@/views/node/FileSystemRecord')
       },
       {
         path: 'emptyFolder',
@@ -290,6 +298,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_JOB,
         meta: { title: '任务管理', icon: 'cc-process' },
         component: () => import('@/views/job/index')
+      }
+    ]
+  },
+  {
+    path: '/repo-config',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_REPO_CONFIG,
+        meta: { title: 'REPO配置管理', icon: 'permission' },
+        component: () => import('@/views/repoConfig/index')
       }
     ]
   },

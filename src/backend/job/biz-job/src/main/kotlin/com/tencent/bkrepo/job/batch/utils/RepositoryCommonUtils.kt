@@ -26,8 +26,8 @@ class RepositoryCommonUtils(
         private lateinit var storageCredentialsClient: StorageCredentialsClient
         private lateinit var repositoryClient: RepositoryClient
         private val repositoryCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(60, TimeUnit.SECONDS)
+            .maximumSize(10000)
+            .expireAfterWrite(5, TimeUnit.MINUTES)
             .build<RepositoryId, RepositoryDetail>()
 
         private val storageCredentialsCache = CacheBuilder.newBuilder()

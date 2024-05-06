@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.type.schedule
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -65,18 +66,17 @@ class ScheduledReplicaJobExecutor(
         var status = ExecutionStatus.SUCCESS
         var errorReason: String? = null
         var recordId: String? = null
+        var replicaOverview: ReplicaOverview? = null
         try {
             // 查询同步对象
             val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
             // 开启新的同步记录
             val taskRecord = replicaRecordService.startNewRecord(task.key).apply { recordId = id }
             val result = task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
-            result.forEach {
-                if (it.status == ExecutionStatus.FAILED) {
-                    status = ExecutionStatus.FAILED
-                    errorReason = "部分数据同步失败"
-                }
-            }
+            val resultsSummary = getResultsSummary(result)
+            status = resultsSummary.status
+            errorReason = resultsSummary.errorReason
+            replicaOverview = resultsSummary.replicaOverview
         } catch (exception: Exception) {
             logger.error("提交同步任务失败", exception)
             // 记录异常
@@ -84,7 +84,7 @@ class ScheduledReplicaJobExecutor(
             errorReason = exception.message.orEmpty()
         } finally {
             // 保存结果
-            replicaRecordService.completeRecord(recordId!!, status, errorReason)
+            replicaRecordService.completeRecord(recordId!!, status, errorReason, replicaOverview)
             logger.info("Replica task[$taskId], record[$recordId] finished")
         }
     }

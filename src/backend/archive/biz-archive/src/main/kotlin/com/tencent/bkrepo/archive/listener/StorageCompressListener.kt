@@ -32,6 +32,7 @@ class StorageCompressListener(val archiveMetrics: ArchiveMetrics) {
                 logger.info("File[$sha256] compress info: $compressInfo.")
                 // 释放存储
                 archiveMetrics.getSizeCounter(ArchiveMetrics.Action.STORAGE_FREE, key).increment(freeSize.toDouble())
+                archiveMetrics.getCounter(ArchiveMetrics.Action.STORAGE_FREE, key).increment()
             }
             archiveMetrics.getCounter(ArchiveMetrics.Action.COMPRESSED, key).increment() // 压缩个数
             archiveMetrics.getSizeCounter(ArchiveMetrics.Action.COMPRESSED, key)
@@ -51,6 +52,7 @@ class StorageCompressListener(val archiveMetrics: ArchiveMetrics) {
             val allocateSize = uncompressed - compressed
             archiveMetrics.getSizeCounter(ArchiveMetrics.Action.STORAGE_ALLOCATE, key)
                 .increment(allocateSize.toDouble()) // 新增存储
+            archiveMetrics.getCounter(ArchiveMetrics.Action.STORAGE_ALLOCATE, key).increment() // 新增存储个数
             archiveMetrics.getCounter(ArchiveMetrics.Action.UNCOMPRESSED, key).increment() // 解压个数
             archiveMetrics.getSizeCounter(ArchiveMetrics.Action.UNCOMPRESSED, key)
                 .increment(throughput.bytes.toDouble()) // 解压吞吐
