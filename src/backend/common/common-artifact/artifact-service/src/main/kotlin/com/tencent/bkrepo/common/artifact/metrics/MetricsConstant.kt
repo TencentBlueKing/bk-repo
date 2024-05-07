@@ -63,3 +63,9 @@ const val ASYNC_TASK_ACTIVE_COUNT_DESC = "异步任务实时数量"
 
 const val ASYNC_TASK_QUEUE_SIZE = "async.task.queue.size"
 const val ASYNC_TASK_QUEUE_SIZE_DESC = "异步任务队列大小"
+
+
+const val ARTIFACT_RECEIVE_RATE_RECORD = "artifact.receive.rate.record"
+const val ARTIFACT_RECEIVE_RATE_RECORD_DESC = "构建上传速率记录"
+const val ARTIFACT_RESPONSE_RATE_RECORD = "artifact.response.rate.record"
+const val ARTIFACT_RESPONSE_RATE_RECORD_DESC = "构建下载速率记录"
