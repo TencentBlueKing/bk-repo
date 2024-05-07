@@ -45,6 +45,7 @@ dependencies {
 
     api("org.springframework.boot:spring-boot-starter-aop")
     api("io.micrometer:micrometer-registry-prometheus")
+    api("io.prometheus:simpleclient_pushgateway")
     api("org.influxdb:influxdb-java")
     api("org.apache.commons:commons-text")
 
