@@ -16,7 +16,7 @@
                 <span class="ml5">Artifact Hub</span>
             </a> -->
             <bk-select
-                ref="porjectSelect"
+                ref="projectSelect"
                 class="ml20 bkre-project-select"
                 :value="projectId"
                 searchable
@@ -24,12 +24,13 @@
                 :placeholder="$t('inputProject')"
                 @change="changeProject"
                 size="small"
-                :enable-virtual-scroll="projectList && projectList.length > 3000"
-                :list="projectList">
-                <bk-option v-for="option in projectList"
-                    :key="option.id"
-                    :id="option.id"
-                    :name="option.name">
+                :remote-method="getProjectList"
+                :enable-virtual-scroll="originProjectList && originProjectList.length > 3000"
+                :list="originProjectList">
+                <bk-option v-for="option in originProjectList"
+                    :key="option.name"
+                    :id="option.name"
+                    :name="option.displayName">
                 </bk-option>
                 <div slot="extension" style="cursor: pointer;" class="flex-align-center">
                     <div @click="createProject" class="hover-extent">
@@ -108,26 +109,28 @@
                 curLang: {
                     id: '',
                     icon: ''
-                }
+                },
+                originProjectList: []
             }
         },
         computed: {
-            ...mapState(['projectList', 'userInfo']),
+            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             }
         },
         created () {
+            this.getProjectList(null)
             this.language = cookies.get('blueking_language') || 'zh-cn'
             this.curLang = this.icons.find(item => item.id === this.language) || { id: 'zh-cn', icon: 'chinese' }
             this.$nextTick(() => {
                 if (this.language !== 'zh-cn') {
-                    this.$refs.porjectSelect.$el.style.width = '400px'
+                    this.$refs.projectSelect.$el.style.width = '400px'
                 }
             })
         },
         methods: {
-            ...mapActions(['checkPM', 'getPermissionUrl']),
+            ...mapActions(['checkPM', 'getPermissionUrl', 'queryProjectListByPage']),
             changeProject (projectId) {
                 localStorage.setItem('projectId', projectId)
                 if (this.projectId === projectId) return
@@ -179,6 +182,12 @@
             manageProject () {
                 this.$router.replace({
                     name: 'projectManage'
+                })
+            },
+            getProjectList (keyword) {
+                const displayNameMatch = keyword || null
+                this.queryProjectListByPage({ keyword: displayNameMatch }).then(res => {
+                    this.originProjectList = res
                 })
             }
         }

@@ -43,5 +43,16 @@ export default {
             url = url + '?sortProperty=' + sortProperty + '&direction=' + direction
         }
         return Vue.prototype.$ajax.get(url)
+    },
+    // 分页查询项目列表
+    queryProjectListByPage (_, { keyword, page = 1, size = 20 }) {
+        const url = `${prefix}/project/list`
+        return Vue.prototype.$ajax.get(url, {
+            params: {
+                displayNameMatch: keyword,
+                pageNumber: page,
+                pageSize: size
+            }
+        })
     }
 }

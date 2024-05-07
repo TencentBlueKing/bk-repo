@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.model
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -52,6 +53,7 @@ data class TProject(
     var lastModifiedDate: LocalDateTime,
 
     var name: String,
+    @Indexed
     var displayName: String,
     var description: String,
     var metadata: List<ProjectMetadata> = emptyList(),

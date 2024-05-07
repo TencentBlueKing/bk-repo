@@ -133,6 +133,11 @@ class ProjectServiceImpl(
                 query.with(Sort.by(Sort.Direction.valueOf(it.first), it.second))
             }
         }
+        if (!option?.displayNameMatch.isNullOrEmpty()) {
+            val criteria = TProject::displayName
+                .regex(".*${EscapeUtils.escapeRegex(option?.displayNameMatch!!)}.*", "i")
+            query.addCriteria(criteria)
+        }
         val projectList = if (option?.pageNumber == null && option?.pageSize == null) {
             projectDao.find(query)
         } else {
