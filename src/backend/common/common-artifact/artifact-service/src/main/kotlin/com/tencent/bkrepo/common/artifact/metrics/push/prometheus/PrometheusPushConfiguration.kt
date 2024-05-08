@@ -25,9 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.prometheus
+package com.tencent.bkrepo.common.artifact.metrics.push.prometheus
 
-import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.PushGateway
 import org.slf4j.LoggerFactory
@@ -35,38 +34,56 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties
 import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties.Pushgateway
 import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusPushGatewayManager
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.env.Environment
 import java.net.MalformedURLException
 import java.net.URL
 import java.time.Duration
 
 
 @Configuration
-class PrometheusPushGatewayConfiguration {
+class PrometheusPushConfiguration {
 
-    @Value("\${token:}")
+    @Value("\${prometheus.push.custom.bktoken:}")
     private val token: String = ""
 
+    @Value(SERVICE_NAME)
+    private lateinit var serviceName: String
+
     @Bean
+    @ConditionalOnProperty(value = ["management.metrics.export.prometheus.pushgateway.enabled"])
     fun prometheusPushGatewayManager(
         collectorRegistry: CollectorRegistry?,
         prometheusProperties: PrometheusProperties,
-        environment: Environment
     ): PrometheusPushGatewayManager? {
         val properties = prometheusProperties.pushgateway
         val pushRate: Duration = properties.pushRate
-        val job = getJob(properties, environment)
+        val job = getJob(properties)
         val pushGateway: PushGateway = initializePushGateway(properties.baseUrl)
         pushGateway.setConnectionFactory(BkHttpConnectionFactory(token = token)) // 蓝鲸监控的Token
         val groupingKey = properties.groupingKey
         val shutdownOperation = properties.shutdownOperation
-
         return PrometheusPushGatewayManager(
             pushGateway, collectorRegistry, pushRate, job, groupingKey, shutdownOperation
         )
     }
+
+    @Bean
+    @ConditionalOnProperty(value = ["prometheus.push.custom.enabled"])
+    fun PrometheusDrive(
+        prometheusProperties: PrometheusProperties,
+    ): PrometheusDrive {
+        val properties = prometheusProperties.pushgateway
+        val groupingKey = properties.groupingKey
+        val job = getJob(properties)
+        val pushDrive = PrometheusPush(
+            job, groupingKey, properties.baseUrl,
+            token, properties.username, properties.password
+        )
+        return PrometheusDrive(pushDrive = pushDrive)
+    }
+
 
     private fun initializePushGateway(url: String): PushGateway {
         return try {
@@ -79,13 +96,14 @@ class PrometheusPushGatewayConfiguration {
         }
     }
 
-    private fun getJob(properties: Pushgateway, environment: Environment): String {
+    private fun getJob(properties: Pushgateway): String {
         var job = properties.job
-        job = job ?: environment.getProperty("spring.application.name")
-        return job ?: UNKNOWN
+        job = job ?: serviceName
+        return job
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PrometheusPushGatewayConfiguration::class.java)
+        private val logger = LoggerFactory.getLogger(PrometheusPushConfiguration::class.java)
+        private const val SERVICE_NAME = "\${service.prefix:}\${spring.application.name}\${service.suffix:}"
     }
 }

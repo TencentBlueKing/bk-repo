@@ -25,22 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.prometheus
+package com.tencent.bkrepo.common.artifact.metrics.push.custom.base
 
-import io.prometheus.client.exporter.HttpConnectionFactory
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
+import com.tencent.bkrepo.common.artifact.metrics.push.custom.enums.DataModel
+import io.prometheus.client.CollectorRegistry
 
+class MetricsDataBuilder(
+    private var registry: CollectorRegistry,
+    private var name: String = "",
+    private var help: String = "",
+    private var labels: MutableMap<String, String> = mutableMapOf(),
+    private var dataModel: DataModel? = null,
+) {
 
-class BkHttpConnectionFactory(
-    private var token: String? = null,
-) : HttpConnectionFactory {
+    fun buildMetricData(): MetricsData {
+        return MetricsData(registry, name, help, labels, dataModel)
+    }
 
-    @Throws(IOException::class)
-    override fun create(url: String?): HttpURLConnection? {
-        val httpURLConnection = URL(url).openConnection() as HttpURLConnection
-        httpURLConnection.setRequestProperty("X-BK-TOKEN", token)
-        return httpURLConnection
+    fun name(name: String): MetricsDataBuilder {
+        this.name = name
+        return this
+    }
+
+    fun help(help: String): MetricsDataBuilder {
+        this.help = help
+        return this
+    }
+
+    fun labels(labels: MutableMap<String, String>): MetricsDataBuilder {
+        this.labels = labels
+        return this
+    }
+
+    fun dataModel(dataModel: DataModel?): MetricsDataBuilder {
+        this.dataModel = dataModel
+        return this
     }
 }

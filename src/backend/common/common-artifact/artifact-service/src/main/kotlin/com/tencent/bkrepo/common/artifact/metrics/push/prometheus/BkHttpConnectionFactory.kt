@@ -25,33 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.prometheus
+package com.tencent.bkrepo.common.artifact.metrics.push.prometheus
 
-import io.prometheus.client.CollectorRegistry
-import io.prometheus.client.exporter.PushGateway
+import io.prometheus.client.exporter.HttpConnectionFactory
 import java.io.IOException
+import java.io.UnsupportedEncodingException
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.Base64
 
-class PrometheusPush(
-    private val jobName: String? = null,
-    uri: String? = null,
-    bkToken: String? = null,
-) {
 
-    private var pushGW: PushGateway = PushGateway(uri)
-    var errMsg: String? = null
+class BkHttpConnectionFactory(
+    private var token: String? = null,
+    private var authName: String? = null,
+    private var authPasswd: String? = null,
+) : HttpConnectionFactory {
 
-    init {
-        pushGW.setConnectionFactory(BkHttpConnectionFactory(bkToken))
+    @Throws(IOException::class)
+    override fun create(url: String?): HttpURLConnection? {
+        val httpURLConnection = URL(url).openConnection() as HttpURLConnection
+        httpURLConnection.setRequestProperty("X-BK-TOKEN", token)
+        if (authName != null && authPasswd != null) {
+            val basicAuthHeader = encode(authName!!, authPasswd!!)
+            httpURLConnection.setRequestProperty("Authorization", basicAuthHeader)
+        }
+        return httpURLConnection
     }
 
-    fun push(registry: CollectorRegistry?): Boolean {
-        var bRet = true
-        try {
-            pushGW.pushAdd(registry, jobName)
-        } catch (e: IOException) {
-            bRet = false
-            errMsg = e.message
+    private fun encode(user: String, password: String): String? {
+        return try {
+            val credentialsBytes = "$user:$password".toByteArray(charset("UTF-8"))
+            val encoded: String = Base64.getEncoder().encodeToString(credentialsBytes)
+            String.format("Basic %s", encoded)
+        } catch (e: UnsupportedEncodingException) {
+            throw IllegalArgumentException(e)
         }
-        return bRet
     }
 }

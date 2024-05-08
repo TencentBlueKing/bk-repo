@@ -31,24 +31,18 @@
 
 package com.tencent.bkrepo.common.artifact.metrics.export
 
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_RECEIVE_RATE_RECORD
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_RECEIVE_RATE_RECORD_DESC
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_RESPONSE_RATE_RECORD
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_RESPONSE_RATE_RECORD_DESC
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord.Companion.RECEIVE
-import com.tencent.bkrepo.common.artifact.metrics.prometheus.PrometheusDrive
-import io.micrometer.core.instrument.Tag
-import io.micrometer.core.instrument.Tags
-import io.micrometer.core.instrument.Timer
+import com.tencent.bkrepo.common.artifact.metrics.push.custom.CustomMetricsExporter
+import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsItem
+import com.tencent.bkrepo.common.artifact.metrics.push.custom.enums.TypeOfMetricsItem
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.temporal.ChronoUnit
+import org.springframework.stereotype.Component
 import java.util.Queue
 
-
-class PrometheusMetricsExporter(
-    private val drive: PrometheusDrive = PrometheusDrive()
+@Component
+class ArtifactMetricsExporter(
+    private val customMetricsExporter: CustomMetricsExporter? = null
 ) {
 
     fun export(queue: Queue<ArtifactTransferRecord>) {
@@ -57,39 +51,32 @@ class PrometheusMetricsExporter(
         }
         val count: Int = queue.size
         for (i in 0 until count) {
-
-
             val item = queue.poll()
-
-            val tags = Tags.of(
-                Tag.of("storage", item.storage),
-                Tag.of("elapsed", item.elapsed.toString()),
-                Tag.of("bytes", item.bytes.toString()),
-                Tag.of("average", item.average.toString()),
-                Tag.of("sha256", item.sha256),
-                Tag.of("clientIp", item.clientIp),
-                Tag.of("project", item.project),
-                Tag.of("repoName", item.repoName),
-//                Tag.of("fullPath", item.fullPath),
-            )
-//            val timer = if (item.type == RECEIVE) {
-//                Timer.builder(ARTIFACT_RECEIVE_RATE_RECORD)
-//                    .description(ARTIFACT_RECEIVE_RATE_RECORD_DESC)
-//                    .tags(tags)
-//                    .register()
-//            } else {
-//                Timer.builder(ARTIFACT_RESPONSE_RATE_RECORD)
-//                    .description(ARTIFACT_RESPONSE_RATE_RECORD_DESC)
-//                    .tags(tags)
-//                    .register()
-//            }
-//            timer.record(Duration.of(item.elapsed, ChronoUnit.NANOS))
+            val labels = convertRecordToMap(item)
+            val type = if (item.type == RECEIVE) {
+                TypeOfMetricsItem.ARTIFACT_TRANSFER_RECEIVE_RATE
+            } else {
+                TypeOfMetricsItem.ARTIFACT_TRANSFER_RESPONSE_RATE
+            }
+            val metricItem = MetricsItem(type, item.elapsed.toDouble(), labels)
+            customMetricsExporter?.reportMetrics(metricItem)
         }
-        drive.push()
     }
 
+    private fun convertRecordToMap(record: ArtifactTransferRecord): MutableMap<String, String> {
+        val labels = mutableMapOf<String, String>()
+        labels[ArtifactTransferRecord::fullPath.name] = record.fullPath
+        labels[ArtifactTransferRecord::storage.name] = record.storage
+        labels[ArtifactTransferRecord::bytes.name] = record.bytes.toString()
+        labels[ArtifactTransferRecord::average.name] = record.average.toString()
+        labels[ArtifactTransferRecord::sha256.name] = record.sha256
+        labels[ArtifactTransferRecord::clientIp.name] = record.clientIp
+        labels[ArtifactTransferRecord::repoName.name] = record.repoName
+        labels[ArtifactTransferRecord::project.name] = record.project
+        return labels
+    }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PrometheusMetricsExporter::class.java)
+        private val logger = LoggerFactory.getLogger(ArtifactMetricsExporter::class.java)
     }
 }

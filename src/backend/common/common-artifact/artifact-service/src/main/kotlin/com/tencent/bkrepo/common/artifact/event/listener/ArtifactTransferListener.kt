@@ -42,7 +42,7 @@ import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecordLog
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
-import com.tencent.bkrepo.common.artifact.metrics.export.PrometheusMetricsExporter
+import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
@@ -73,7 +73,7 @@ class ArtifactTransferListener(
     private val commonTagProvider: ObjectProvider<CommonTagProvider>,
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
     private val artifactCacheMetrics: ArtifactCacheMetrics,
-    private val prometheusMetricsExporter: ObjectProvider<PrometheusMetricsExporter>,
+    private val prometheusMetricsExporter: ObjectProvider<ArtifactMetricsExporter>,
 ) {
 
     private var queue = LinkedBlockingQueue<ArtifactTransferRecord>(QUEUE_LIMIT)
@@ -96,7 +96,8 @@ class ArtifactTransferListener(
                 sha256 = artifactFile.getFileSha256(),
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
-                clientIp = clientIp
+                clientIp = clientIp,
+                fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
@@ -135,6 +136,7 @@ class ArtifactTransferListener(
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
+                fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)

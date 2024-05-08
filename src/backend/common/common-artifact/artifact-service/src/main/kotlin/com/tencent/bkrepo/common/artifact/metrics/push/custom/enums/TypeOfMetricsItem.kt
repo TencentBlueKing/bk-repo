@@ -25,32 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.prometheus
+package com.tencent.bkrepo.common.artifact.metrics.push.custom.enums
 
-import io.prometheus.client.CollectorRegistry
-import org.slf4j.LoggerFactory
+enum class TypeOfMetricsItem(val displayName: String, val help: String, val dataModel: DataModel) {
+    /**
+     * 制品上传速率
+     */
+    ARTIFACT_TRANSFER_RECEIVE_RATE(
+        "artifact_transfer_receive_rate",
+        "artifact transfer receive rate",
+        DataModel.DATAMODEL_SUMMARY
+    ),
 
-class PrometheusDrive(
-    var registry: CollectorRegistry = CollectorRegistry(),
-) {
-    private var pushDrive: PrometheusPush? = null
-
-    private var errMsg: String? = null
-
-    fun createPushDrive(jobName: String?, uri: String?, bkToken: String?) {
-        pushDrive = PrometheusPush(jobName, uri, bkToken)
-    }
-
-    fun push(): Boolean {
-        val bRet = pushDrive!!.push(registry)
-        if (!bRet) {
-            errMsg = pushDrive!!.errMsg
-            logger.warn("fail to push data, errmsg: $errMsg")
-        }
-        return bRet
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(PrometheusDrive::class.java)
-    }
+    /**
+     * 制品下载速率
+     */
+    ARTIFACT_TRANSFER_RESPONSE_RATE(
+        "artifact_transfer_response_rate",
+        "artifact transfer receive rate",
+        DataModel.DATAMODEL_SUMMARY
+    ),
 }
