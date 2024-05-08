@@ -165,6 +165,7 @@ class UserController @Autowired constructor(
     fun updateUserInfoById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         preCheckContextUser(uid)
         if (request.admin != null && request.admin) {
+            preCheckUserAdmin()
             preCheckPlatformPermission()
         }
         userService.updateUserById(uid, request)
