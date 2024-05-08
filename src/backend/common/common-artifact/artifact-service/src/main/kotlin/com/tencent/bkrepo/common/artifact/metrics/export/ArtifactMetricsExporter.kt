@@ -56,7 +56,7 @@ class ArtifactMetricsExporter(
             } else {
                 TypeOfMetricsItem.ARTIFACT_TRANSFER_RESPONSE_RATE
             }
-            val metricItem = MetricsItem(type, item.elapsed.toDouble(), labels)
+            val metricItem = MetricsItem(type, item.average.toDouble(), labels)
             customMetricsExporter?.reportMetrics(metricItem)
         }
     }
@@ -66,11 +66,12 @@ class ArtifactMetricsExporter(
         labels[ArtifactTransferRecord::fullPath.name] = record.fullPath
         labels[ArtifactTransferRecord::storage.name] = record.storage
         labels[ArtifactTransferRecord::bytes.name] = record.bytes.toString()
-        labels[ArtifactTransferRecord::average.name] = record.average.toString()
         labels[ArtifactTransferRecord::sha256.name] = record.sha256
         labels[ArtifactTransferRecord::clientIp.name] = record.clientIp
         labels[ArtifactTransferRecord::repoName.name] = record.repoName
         labels[ArtifactTransferRecord::project.name] = record.project
+        labels[ArtifactTransferRecord::elapsed.name] = record.elapsed.toString()
+
         return labels
     }
 

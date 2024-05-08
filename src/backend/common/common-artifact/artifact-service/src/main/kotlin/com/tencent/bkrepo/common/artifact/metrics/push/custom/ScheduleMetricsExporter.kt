@@ -55,6 +55,7 @@ class ScheduleMetricsExporter(
         if (queue.isEmpty()) {
             return
         }
+        logger.debug("start to export metric data to prometheus server")
         val count = queue.size
         for (i in 0 until count) {
             val item: MetricsItem = queue.poll()
