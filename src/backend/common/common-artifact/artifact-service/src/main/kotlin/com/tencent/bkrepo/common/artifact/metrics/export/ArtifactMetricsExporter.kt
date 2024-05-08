@@ -37,10 +37,8 @@ import com.tencent.bkrepo.common.artifact.metrics.push.custom.CustomMetricsExpor
 import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.artifact.metrics.push.custom.enums.TypeOfMetricsItem
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import java.util.Queue
 
-@Component
 class ArtifactMetricsExporter(
     private val customMetricsExporter: CustomMetricsExporter? = null
 ) {

@@ -30,14 +30,15 @@ package com.tencent.bkrepo.common.artifact.metrics.push.custom
 import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.artifact.metrics.push.prometheus.PrometheusDrive
 import io.prometheus.client.CollectorRegistry
-import org.springframework.scheduling.TaskScheduler
+import org.slf4j.LoggerFactory
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.time.Duration
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class ScheduleMetricsExporter(
     private val registry: CollectorRegistry,
-    private var drive: PrometheusDrive,
-    scheduler: TaskScheduler,
+    private val drive: PrometheusDrive,
+    private val scheduler: ThreadPoolTaskScheduler,
     pushRate: Duration = Duration.ofSeconds(30),
 ) {
     var queue: ConcurrentLinkedQueue<MetricsItem> = ConcurrentLinkedQueue()
@@ -57,18 +58,19 @@ class ScheduleMetricsExporter(
         val count = queue.size
         for (i in 0 until count) {
             val item: MetricsItem = queue.poll()
-            val data = MetricsDataManager.createMetricsData(
-                item.type, item.labels, registry
-            )
+            var data = MetricsDataManager.getMetricsData(item.type)
+            if (data == null) {
+                data = MetricsDataManager.createMetricsData(
+                    item.type, item.labels, registry
+                )
+            }
+            data.setLabelValue(item.labels)
             data.updateValue(item.value)
         }
-        drive.push()
+        drive.push(registry)
     }
 
     companion object {
-        /**
-         * 队列大小限制
-         */
-        private const val QUEUE_LIMIT = 4096
+        private val logger = LoggerFactory.getLogger(ScheduleMetricsExporter::class.java)
     }
 }

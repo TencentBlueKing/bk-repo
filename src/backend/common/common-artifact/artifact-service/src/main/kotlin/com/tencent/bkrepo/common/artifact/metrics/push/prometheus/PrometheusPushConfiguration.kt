@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.metrics.push.prometheus
 
+import com.tencent.bkrepo.common.artifact.metrics.push.custom.CustomMetricsExporter
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.PushGateway
 import org.slf4j.LoggerFactory
@@ -37,6 +38,7 @@ import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusPush
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.net.MalformedURLException
 import java.net.URL
 import java.time.Duration
@@ -82,6 +84,16 @@ class PrometheusPushConfiguration {
             token, properties.username, properties.password
         )
         return PrometheusDrive(pushDrive = pushDrive)
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = ["prometheus.push.custom.enabled"])
+    fun customMetricsExporter(
+        drive: PrometheusDrive,
+        prometheusProperties: PrometheusProperties,
+        scheduler: ThreadPoolTaskScheduler,
+    ): CustomMetricsExporter {
+        return CustomMetricsExporter(CollectorRegistry(), drive, prometheusProperties, scheduler)
     }
 
 

@@ -31,11 +31,10 @@ import io.prometheus.client.CollectorRegistry
 import org.slf4j.LoggerFactory
 
 class PrometheusDrive(
-    var registry: CollectorRegistry = CollectorRegistry(),
     private var pushDrive: PrometheusPush,
     private var errMsg: String? = null
 ) {
-    fun push(): Boolean {
+    fun push(registry: CollectorRegistry): Boolean {
         val bRet = pushDrive.push(registry)
         if (!bRet) {
             errMsg = pushDrive.errMsg

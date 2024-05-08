@@ -31,19 +31,29 @@ import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsData
 import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsDataBuilder
 import com.tencent.bkrepo.common.artifact.metrics.push.custom.enums.TypeOfMetricsItem
 import io.prometheus.client.CollectorRegistry
+import java.util.concurrent.ConcurrentHashMap
+
 
 object MetricsDataManager {
+
+    private val metricsDataCache: ConcurrentHashMap<TypeOfMetricsItem, MetricsData> = ConcurrentHashMap()
+
+    fun getMetricsData(typeOfMI: TypeOfMetricsItem): MetricsData? {
+        return metricsDataCache[typeOfMI]
+    }
 
     fun createMetricsData(
         typeOfMI: TypeOfMetricsItem,
         labels: MutableMap<String, String>,
         registry: CollectorRegistry
     ): MetricsData {
-        return MetricsDataBuilder(registry)
+        val metricsData = MetricsDataBuilder(registry)
             .name(typeOfMI.displayName)
             .help(typeOfMI.help)
             .labels(labels)
             .dataModel(typeOfMI.dataModel)
             .buildMetricData()
+        metricsDataCache[typeOfMI] = metricsData
+        return metricsData
     }
 }

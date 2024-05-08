@@ -30,20 +30,17 @@ package com.tencent.bkrepo.common.artifact.metrics.push.custom
 import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.artifact.metrics.push.prometheus.PrometheusDrive
 import io.prometheus.client.CollectorRegistry
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties
 import org.springframework.scheduling.TaskScheduler
-import org.springframework.stereotype.Component
-import java.time.Duration
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 
-@Component
-@ConditionalOnProperty(value = ["prometheus.push.custom.enabled"])
 class CustomMetricsExporter(
-    private val scheduler: TaskScheduler,
     private val registry: CollectorRegistry,
     private var drive: PrometheusDrive,
-    private var pushRate: Duration = Duration.ofSeconds(30),
+    private var prometheusProperties: PrometheusProperties,
+    private val scheduler: ThreadPoolTaskScheduler,
     private var scheduleMetricsExporter: ScheduleMetricsExporter = ScheduleMetricsExporter(
-        registry, drive, scheduler, pushRate
+        registry, drive, scheduler, prometheusProperties.pushgateway.pushRate
     )
 ) {
 
