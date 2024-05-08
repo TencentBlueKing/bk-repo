@@ -78,7 +78,7 @@ class FileNotFoundAutoFixStrategy(
         }
 
         // 所有存储都找不到时表示源文件丢失，删除failedNode以使迁移任务继续执行
-        logger.error("node[$fullPath] was lost, delete migrate failed node, task[$projectId/$repoName]")
+        logger.error("node[$fullPath] lost!!!, delete migrate failed node, task[$projectId/$repoName]")
         migrateFailedNodeDao.remove(projectId, repoName, fullPath)
         return true
     }
@@ -116,23 +116,25 @@ class FileNotFoundAutoFixStrategy(
         migrateFailedNode: TMigrateFailedNode,
         oldCredentials: StorageCredentials
     ): Boolean {
-        with(migrateFailedNode) {
-            val allCredentials = storageCredentialsClient.list().data!! + storageProperties.defaultStorageCredentials()
-            allCredentials.forEach { credentials ->
-                val key = credentials.key
-                try {
-                    // 可能文件还存在于缓存中，因此使用load而不是exists判断文件是否存在
-                    val ais = storageService.load(sha256, Range.full(size), credentials)
-                    if (ais != null) {
-                        ais.close()
-                        // 尝试从其他存储复制到当前存储
-                        storageService.copy(sha256, credentials, oldCredentials)
-                        logger.info("copy [$fullPath] from credentials[$key] success, task[$projectId/$repoName]")
-                        return true
-                    }
-                } catch (e: Exception) {
-                    logger.error("check node[$fullPath] in $key failed, task[$projectId/ $repoName]", e)
+        val projectId = migrateFailedNode.projectId
+        val repoName = migrateFailedNode.repoName
+        val fullPath = migrateFailedNode.fullPath
+
+        val allCredentials = storageCredentialsClient.list().data!! + storageProperties.defaultStorageCredentials()
+        allCredentials.forEach { credentials ->
+            val key = credentials.key
+            try {
+                // 可能文件还存在于缓存中，因此使用load而不是exists判断文件是否存在
+                val ais = storageService.load(migrateFailedNode.sha256, Range.full(migrateFailedNode.size), credentials)
+                if (ais != null) {
+                    ais.close()
+                    // 尝试从其他存储复制到当前存储
+                    storageService.copy(migrateFailedNode.sha256, credentials, oldCredentials)
+                    logger.info("copy [$fullPath] from credentials[$key] success, task[$projectId/$repoName]")
+                    return true
                 }
+            } catch (e: Exception) {
+                logger.error("check node[$fullPath] in $key failed, task[$projectId/ $repoName]", e)
             }
         }
         return false
