@@ -156,7 +156,9 @@ open class ExecutorBaseTest {
         repoName: String = UT_REPO_NAME,
         createDate: LocalDateTime = LocalDateTime.now(),
         sha256: String = UT_SHA256,
-        fullPath: String = "/a/b/c.txt"
+        fullPath: String = "/a/b/c.txt",
+        archived: Boolean = false,
+        compressed: Boolean = false,
     ): TNode {
         val node = TNode(
             id = null,
@@ -168,6 +170,8 @@ open class ExecutorBaseTest {
             md5 = UT_MD5,
             createdDate = createDate,
             folder = false,
+            archived = archived,
+            compressed = compressed,
         )
         val sharding = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
         return mongoTemplate.insert(node, "node_$sharding")
