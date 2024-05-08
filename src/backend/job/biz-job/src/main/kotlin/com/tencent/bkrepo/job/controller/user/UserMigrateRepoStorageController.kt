@@ -27,7 +27,11 @@
 
 package com.tencent.bkrepo.job.controller.user
 
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -35,9 +39,11 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.migrate.pojo.CreateMigrateRepoStorageTaskRequest
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -52,5 +58,15 @@ class UserMigrateRepoStorageController(
     ): Response<MigrateRepoStorageTask> {
         val task = migrateRepoStorageService.createTask(request.copy(operator = SecurityUtils.getUserId()))
         return ResponseBuilder.success(task)
+    }
+
+    @GetMapping("/tasks")
+    fun tasks(
+        @RequestParam(required = false) state: String? = null,
+        @RequestParam(required = false, defaultValue = "$DEFAULT_PAGE_NUMBER") pageNumber: Int = DEFAULT_PAGE_NUMBER,
+        @RequestParam(required = false, defaultValue = "$DEFAULT_PAGE_SIZE") pageSize: Int = DEFAULT_PAGE_SIZE,
+    ): Response<Page<MigrateRepoStorageTask>> {
+        val page = migrateRepoStorageService.findTask(state, Pages.ofRequest(pageNumber, pageSize))
+        return ResponseBuilder.success(page)
     }
 }
