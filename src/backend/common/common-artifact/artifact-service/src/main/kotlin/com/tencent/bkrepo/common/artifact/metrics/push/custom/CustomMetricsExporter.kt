@@ -42,7 +42,9 @@ class CustomMetricsExporter(
     private val registry: CollectorRegistry,
     private var drive: PrometheusDrive,
     private var pushRate: Duration = Duration.ofSeconds(30),
-    private var scheduleMetricsExporter: ScheduleMetricsExporter = ScheduleMetricsExporter(registry, drive, scheduler, pushRate)
+    private var scheduleMetricsExporter: ScheduleMetricsExporter = ScheduleMetricsExporter(
+        registry, drive, scheduler, pushRate
+    )
 ) {
 
     fun reportMetrics(item: MetricsItem) {

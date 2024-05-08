@@ -71,7 +71,7 @@ class PrometheusPushConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = ["prometheus.push.custom.enabled"])
-    fun PrometheusDrive(
+    fun prometheusDrive(
         prometheusProperties: PrometheusProperties,
     ): PrometheusDrive {
         val properties = prometheusProperties.pushgateway
