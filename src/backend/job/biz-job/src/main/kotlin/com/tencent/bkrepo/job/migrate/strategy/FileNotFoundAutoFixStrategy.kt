@@ -36,7 +36,9 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.task.archive.ArchivedNodeRestoreJob
 import com.tencent.bkrepo.job.batch.task.archive.NodeCompressedJob
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
+import com.tencent.bkrepo.job.migrate.dao.ArchiveMigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
+import com.tencent.bkrepo.job.migrate.model.TArchiveMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
@@ -54,6 +56,7 @@ class FileNotFoundAutoFixStrategy(
     private val storageService: StorageService,
     private val storageProperties: StorageProperties,
     private val migrateFailedNodeDao: MigrateFailedNodeDao,
+    private val archiveMigrateFailedNodeDao: ArchiveMigrateFailedNodeDao,
 ) : MigrateFailedNodeAutoFixStrategy {
     override fun fix(failedNode: TMigrateFailedNode): Boolean {
         val projectId = failedNode.projectId
@@ -65,9 +68,10 @@ class FileNotFoundAutoFixStrategy(
             // 只处理源文件不存在的情况，文件存在时直接返回
             return false
         }
+        val node = findNode(projectId, repoName, fullPath)
 
         // 检查是否被归档或压缩
-        if (archivedOrCompressed(projectId, repoName, fullPath)) {
+        if (archivedOrCompressed(node)) {
             logger.info("node[$fullPath] was archived or compressed, task[$projectId/$repoName]")
             return false
         }
@@ -77,14 +81,14 @@ class FileNotFoundAutoFixStrategy(
             return true
         }
 
-        // 所有存储都找不到时表示源文件丢失，删除failedNode以使迁移任务继续执行
-        logger.error("node[$fullPath] lost!!!, delete migrate failed node, task[$projectId/$repoName]")
+        // 所有存储都找不到时表示源文件丢失，归档failedNode以使迁移任务继续执行
+        logger.error("node[$fullPath], sha256[$sha256] lost!!!, archive migrate failed node, task[$projectId/$repoName]")
+        archiveMigrateFailedNodeDao.insert(TArchiveMigrateFailedNode.convert(failedNode.taskId, node))
         migrateFailedNodeDao.remove(projectId, repoName, fullPath)
         return true
     }
 
-    private fun archivedOrCompressed(projectId: String, repoName: String, fullPath: String): Boolean {
-        val node = findNode(projectId, repoName, fullPath)
+    private fun archivedOrCompressed(node: Node): Boolean {
         // node已经被归档或压缩，需要先恢复到原存储再迁移
         if (node.archived == true || node.compressed == true) {
             return true
@@ -96,7 +100,7 @@ class FileNotFoundAutoFixStrategy(
             ArchivedNodeRestoreJob.ArchiveFile::class.java, "archive_file"
         )
         if (archivedFile != null) {
-            logger.info("node[${node.fullPath}] exists archived file, task[$projectId/$repoName]")
+            logger.info("node[${node.fullPath}] exists archived file, task[${node.projectId}/${node.repoName}]")
             return true
         }
 
@@ -106,7 +110,7 @@ class FileNotFoundAutoFixStrategy(
             NodeCompressedJob.CompressFile::class.java, "compress_file"
         )
         if (compressedFile != null) {
-            logger.info("node[${node.fullPath}] exists compressed file, task[$projectId/$repoName]")
+            logger.info("node[${node.fullPath}] exists compressed file, task[${node.projectId}/${node.repoName}]")
             return true
         }
         return false
