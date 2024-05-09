@@ -25,15 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.prometheus
+package com.tencent.bkrepo.common.metrics
 
-import com.tencent.bkrepo.common.artifact.metrics.push.custom.CustomMetricsExporter
+import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
+import com.tencent.bkrepo.common.metrics.push.custom.base.BkHttpConnectionFactory
+import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusDrive
+import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusPush
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.PushGateway
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties
-import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties.Pushgateway
 import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusPushGatewayManager
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
@@ -43,9 +45,8 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.time.Duration
 
-
 @Configuration
-class PrometheusPushConfiguration {
+class CustomMetricsPushAutoConfiguration {
 
     @Value("\${prometheus.push.custom.bktoken:}")
     private val token: String = ""
@@ -108,14 +109,14 @@ class PrometheusPushConfiguration {
         }
     }
 
-    private fun getJob(properties: Pushgateway): String {
+    private fun getJob(properties: PrometheusProperties.Pushgateway): String {
         var job = properties.job
         job = job ?: serviceName
         return job
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PrometheusPushConfiguration::class.java)
+        private val logger = LoggerFactory.getLogger(CustomMetricsPushAutoConfiguration::class.java)
         private const val SERVICE_NAME = "\${service.prefix:}\${spring.application.name}\${service.suffix:}"
     }
 }

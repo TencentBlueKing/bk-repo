@@ -25,7 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.custom.enums
+package com.tencent.bkrepo.common.metrics.push.custom.enums
+
+import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
 
 enum class TypeOfMetricsItem(val displayName: String, val help: String, val dataModel: DataModel) {
     /**
@@ -45,4 +47,5 @@ enum class TypeOfMetricsItem(val displayName: String, val help: String, val data
         "artifact transfer receive rate",
         DataModel.DATAMODEL_GAUGE,
     ),
+
 }

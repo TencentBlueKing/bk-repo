@@ -25,39 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.custom
+package com.tencent.bkrepo.common.metrics.push.custom.base
 
-import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsData
-import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsDataBuilder
-import com.tencent.bkrepo.common.artifact.metrics.push.custom.enums.TypeOfMetricsItem
 import io.prometheus.client.CollectorRegistry
-import java.util.concurrent.ConcurrentHashMap
+import org.slf4j.LoggerFactory
 
-
-object MetricsDataManager {
-
-    private val metricsDataCache: ConcurrentHashMap<TypeOfMetricsItem, MetricsData> = ConcurrentHashMap()
-
-    fun getMetricsData(typeOfMI: TypeOfMetricsItem): MetricsData? {
-        return metricsDataCache[typeOfMI]
+class PrometheusDrive(
+    private var pushDrive: PrometheusPush,
+    private var errMsg: String? = null
+) {
+    fun push(registry: CollectorRegistry): Boolean {
+        val bRet = pushDrive.push(registry)
+        if (!bRet) {
+            errMsg = pushDrive.errMsg
+            logger.error("fail to push data, errmsg: $errMsg")
+        }
+        return bRet
     }
 
-    fun createMetricsData(
-        typeOfMI: TypeOfMetricsItem,
-        labels: MutableMap<String, String>,
-        registry: CollectorRegistry
-    ): MetricsData {
-        val metricsData = MetricsDataBuilder(registry)
-            .name(typeOfMI.displayName)
-            .help(typeOfMI.help)
-            .labels(labels)
-            .dataModel(typeOfMI.dataModel)
-            .buildMetricData()
-        metricsDataCache[typeOfMI] = metricsData
-        return metricsData
-    }
-
-    fun clear() {
-        metricsDataCache.clear()
+    companion object {
+        private val logger = LoggerFactory.getLogger(PrometheusDrive::class.java)
     }
 }

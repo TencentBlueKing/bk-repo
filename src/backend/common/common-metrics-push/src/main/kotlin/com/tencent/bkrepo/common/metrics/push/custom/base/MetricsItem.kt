@@ -25,9 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.custom.base
+package com.tencent.bkrepo.common.metrics.push.custom.base
 
-import com.tencent.bkrepo.common.artifact.metrics.push.custom.enums.TypeOfMetricsItem
+import com.tencent.bkrepo.common.metrics.push.custom.enums.TypeOfMetricsItem
 
 data class MetricsItem(
     val type: TypeOfMetricsItem,

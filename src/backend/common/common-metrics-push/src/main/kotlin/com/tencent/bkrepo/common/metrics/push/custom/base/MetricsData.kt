@@ -25,9 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.custom.base
+package com.tencent.bkrepo.common.metrics.push.custom.base
 
-import com.tencent.bkrepo.common.artifact.metrics.push.custom.enums.DataModel
+import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.Counter
 import io.prometheus.client.Gauge

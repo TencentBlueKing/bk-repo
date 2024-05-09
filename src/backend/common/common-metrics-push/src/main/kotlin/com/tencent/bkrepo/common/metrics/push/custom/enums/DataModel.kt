@@ -25,25 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.prometheus
+package com.tencent.bkrepo.common.metrics.push.custom.enums
 
-import io.prometheus.client.CollectorRegistry
-import org.slf4j.LoggerFactory
-
-class PrometheusDrive(
-    private var pushDrive: PrometheusPush,
-    private var errMsg: String? = null
-) {
-    fun push(registry: CollectorRegistry): Boolean {
-        val bRet = pushDrive.push(registry)
-        if (!bRet) {
-            errMsg = pushDrive.errMsg
-            logger.warn("fail to push data, errmsg: $errMsg")
-        }
-        return bRet
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(PrometheusDrive::class.java)
-    }
+enum class DataModel {
+    DATAMODEL_COUNTER,
+    DATAMODEL_GAUGE,
+    DATAMODEL_HISTOGRAM,
+    DATAMODEL_SUMMARY
 }

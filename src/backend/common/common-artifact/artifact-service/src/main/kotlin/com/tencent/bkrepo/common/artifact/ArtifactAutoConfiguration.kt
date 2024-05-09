@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
 import com.tencent.bkrepo.common.artifact.interceptor.ArtifactDownloadInterceptorConfiguration
 import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
-import com.tencent.bkrepo.common.artifact.metrics.push.prometheus.PrometheusPushConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
 import com.tencent.bkrepo.common.artifact.repository.ArtifactContextConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.ArtifactResolverConfiguration
@@ -73,6 +72,5 @@ import org.springframework.context.annotation.PropertySource
     ArtifactClusterConfiguration::class,
     CnsConfiguration::class,
     ArtifactRouterControllerConfiguration::class,
-    PrometheusPushConfiguration::class
 )
 class ArtifactAutoConfiguration

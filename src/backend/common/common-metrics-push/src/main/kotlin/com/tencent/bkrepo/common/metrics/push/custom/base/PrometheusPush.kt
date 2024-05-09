@@ -25,40 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.custom.base
+package com.tencent.bkrepo.common.metrics.push.custom.base
 
-import com.tencent.bkrepo.common.artifact.metrics.push.custom.enums.DataModel
+import com.tencent.bkrepo.common.metrics.push.custom.base.BkHttpConnectionFactory
 import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.exporter.PushGateway
 
-class MetricsDataBuilder(
-    private var registry: CollectorRegistry,
-    private var name: String = "",
-    private var help: String = "",
-    private var labels: MutableMap<String, String> = mutableMapOf(),
-    private var dataModel: DataModel? = null,
+class PrometheusPush(
+    private val jobName: String,
+    private val groupingKey: Map<String, String>? = null,
+    uri: String,
+    bkToken: String? = null,
+    user: String? = null,
+    password: String? = null,
 ) {
 
-    fun buildMetricData(): MetricsData {
-        return MetricsData(registry, name, help, labels, dataModel)
+    private var pushGW: PushGateway = PushGateway(uri)
+    var errMsg: String? = null
+
+    init {
+        pushGW.setConnectionFactory(BkHttpConnectionFactory(bkToken, user, password))
     }
 
-    fun name(name: String): MetricsDataBuilder {
-        this.name = name
-        return this
-    }
-
-    fun help(help: String): MetricsDataBuilder {
-        this.help = help
-        return this
-    }
-
-    fun labels(labels: MutableMap<String, String>): MetricsDataBuilder {
-        this.labels = labels
-        return this
-    }
-
-    fun dataModel(dataModel: DataModel?): MetricsDataBuilder {
-        this.dataModel = dataModel
-        return this
+    fun push(registry: CollectorRegistry?): Boolean {
+        var bRet = true
+        try {
+            pushGW.pushAdd(registry, jobName, groupingKey)
+        } catch (e: Exception) {
+            bRet = false
+            errMsg = e.message
+        }
+        return bRet
     }
 }

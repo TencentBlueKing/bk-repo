@@ -25,11 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.custom.enums
+package com.tencent.bkrepo.common.metrics.push.custom
 
-enum class DataModel {
-    DATAMODEL_COUNTER,
-    DATAMODEL_GAUGE,
-    DATAMODEL_HISTOGRAM,
-    DATAMODEL_SUMMARY
+import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsData
+import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsDataBuilder
+import com.tencent.bkrepo.common.metrics.push.custom.enums.TypeOfMetricsItem
+import io.prometheus.client.CollectorRegistry
+import java.util.concurrent.ConcurrentHashMap
+
+
+object MetricsDataManager {
+
+    private val metricsDataCache: ConcurrentHashMap<TypeOfMetricsItem, MetricsData> = ConcurrentHashMap()
+
+    fun getMetricsData(typeOfMI: TypeOfMetricsItem): MetricsData? {
+        return metricsDataCache[typeOfMI]
+    }
+
+    fun createMetricsData(
+        typeOfMI: TypeOfMetricsItem,
+        labels: MutableMap<String, String>,
+        registry: CollectorRegistry
+    ): MetricsData {
+        val metricsData = MetricsDataBuilder(registry)
+            .name(typeOfMI.displayName)
+            .help(typeOfMI.help)
+            .labels(labels)
+            .dataModel(typeOfMI.dataModel)
+            .buildMetricData()
+        metricsDataCache[typeOfMI] = metricsData
+        return metricsData
+    }
+
+    fun clear() {
+        metricsDataCache.clear()
+    }
 }

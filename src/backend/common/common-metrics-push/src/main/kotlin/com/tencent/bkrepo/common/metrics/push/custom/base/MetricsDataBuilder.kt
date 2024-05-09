@@ -25,25 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.custom
+package com.tencent.bkrepo.common.metrics.push.custom.base
 
-import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsItem
-import com.tencent.bkrepo.common.artifact.metrics.push.prometheus.PrometheusDrive
+import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
 import io.prometheus.client.CollectorRegistry
-import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 
-class CustomMetricsExporter(
-    private val registry: CollectorRegistry,
-    private var drive: PrometheusDrive,
-    private var prometheusProperties: PrometheusProperties,
-    private val scheduler: ThreadPoolTaskScheduler,
-    private var scheduleMetricsExporter: ScheduleMetricsExporter = ScheduleMetricsExporter(
-        registry, drive, scheduler, prometheusProperties.pushgateway.pushRate
-    )
+class MetricsDataBuilder(
+    private var registry: CollectorRegistry,
+    private var name: String = "",
+    private var help: String = "",
+    private var labels: MutableMap<String, String> = mutableMapOf(),
+    private var dataModel: DataModel? = null,
 ) {
 
-    fun reportMetrics(item: MetricsItem) {
-        scheduleMetricsExporter.queue.offer(item)
+    fun buildMetricData(): MetricsData {
+        return MetricsData(registry, name, help, labels, dataModel)
+    }
+
+    fun name(name: String): MetricsDataBuilder {
+        this.name = name
+        return this
+    }
+
+    fun help(help: String): MetricsDataBuilder {
+        this.help = help
+        return this
+    }
+
+    fun labels(labels: MutableMap<String, String>): MetricsDataBuilder {
+        this.labels = labels
+        return this
+    }
+
+    fun dataModel(dataModel: DataModel?): MetricsDataBuilder {
+        this.dataModel = dataModel
+        return this
     }
 }

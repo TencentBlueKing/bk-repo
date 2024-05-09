@@ -25,40 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics.push.prometheus
+package com.tencent.bkrepo.common.metrics.push.custom
 
-import io.prometheus.client.exporter.HttpConnectionFactory
-import java.io.IOException
-import java.io.UnsupportedEncodingException
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.Base64
+import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
+import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusDrive
+import io.prometheus.client.CollectorRegistry
+import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 
+class CustomMetricsExporter(
+    private val registry: CollectorRegistry,
+    private var drive: PrometheusDrive,
+    private var prometheusProperties: PrometheusProperties,
+    private val scheduler: ThreadPoolTaskScheduler,
+    private var scheduleMetricsExporter: ScheduleMetricsExporter = ScheduleMetricsExporter(
+        registry, drive, scheduler, prometheusProperties.pushgateway.pushRate
+    )
+) {
 
-class BkHttpConnectionFactory(
-    private var token: String? = null,
-    private var authName: String? = null,
-    private var authPasswd: String? = null,
-) : HttpConnectionFactory {
-
-    @Throws(IOException::class)
-    override fun create(url: String?): HttpURLConnection? {
-        val httpURLConnection = URL(url).openConnection() as HttpURLConnection
-        httpURLConnection.setRequestProperty("X-BK-TOKEN", token)
-        if (authName != null && authPasswd != null) {
-            val basicAuthHeader = encode(authName!!, authPasswd!!)
-            httpURLConnection.setRequestProperty("Authorization", basicAuthHeader)
-        }
-        return httpURLConnection
-    }
-
-    private fun encode(user: String, password: String): String? {
-        return try {
-            val credentialsBytes = "$user:$password".toByteArray(charset("UTF-8"))
-            val encoded: String = Base64.getEncoder().encodeToString(credentialsBytes)
-            String.format("Basic %s", encoded)
-        } catch (e: UnsupportedEncodingException) {
-            throw IllegalArgumentException(e)
-        }
+    fun reportMetrics(item: MetricsItem) {
+        scheduleMetricsExporter.queue.offer(item)
     }
 }

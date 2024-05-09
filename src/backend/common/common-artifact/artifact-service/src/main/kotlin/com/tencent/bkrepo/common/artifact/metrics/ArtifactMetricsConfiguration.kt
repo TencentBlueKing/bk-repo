@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
-import com.tencent.bkrepo.common.artifact.metrics.push.custom.CustomMetricsExporter
+import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import org.springframework.beans.factory.ObjectProvider
