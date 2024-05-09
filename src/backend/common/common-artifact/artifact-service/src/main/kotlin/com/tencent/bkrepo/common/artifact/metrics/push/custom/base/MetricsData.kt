@@ -38,7 +38,6 @@ class MetricsData(
     private var registry: CollectorRegistry,
     private var name: String = "",
     private var help: String = "",
-    private var unit: String = "",
     private val labels: MutableMap<String, String> = mutableMapOf(),
     private var dataModel: DataModel? = null,
     private var counter: Counter? = null,
@@ -96,37 +95,37 @@ class MetricsData(
 
     private fun createCounter(labelNames: Array<String>) {
         counter = if (labelNames.isNotEmpty()) {
-            Counter.build().name(name).help(help).unit(unit).labelNames(*labelNames)
+            Counter.build().name(name).help(help).labelNames(*labelNames)
                 .register(registry)
         } else {
-            Counter.build().name(name).help(help).unit(unit).register(registry)
+            Counter.build().name(name).help(help).register(registry)
         }
     }
 
     private fun createGauge(labelNames: Array<String>) {
         gauge = if (labelNames.isNotEmpty()) {
-            Gauge.build().name(name).help(help).unit(unit).labelNames(*labelNames)
+            Gauge.build().name(name).help(help).labelNames(*labelNames)
                 .register(registry)
         } else {
-            Gauge.build().name(name).help(help).unit(unit).register(registry)
+            Gauge.build().name(name).help(help).register(registry)
         }
     }
 
     private fun createHistogram(labelNames: Array<String>) {
         histogram = if (labelNames.isNotEmpty()) {
-            Histogram.build().name(name).help(help).unit(unit).labelNames(*labelNames)
+            Histogram.build().name(name).help(help).labelNames(*labelNames)
                 .register(registry)
         } else {
-            Histogram.build().name(name).help(help).unit(unit).register(registry)
+            Histogram.build().name(name).help(help).register(registry)
         }
     }
 
     private fun createSummary(labelNames: Array<String>) {
         summary = if (labelNames.isNotEmpty()) {
-            Summary.build().name(name).help(help).unit(unit).labelNames(*labelNames)
+            Summary.build().name(name).help(help).labelNames(*labelNames)
                 .register(registry)
         } else {
-            Summary.build().name(name).help(help).unit(unit).register(registry)
+            Summary.build().name(name).help(help).register(registry)
         }
     }
 

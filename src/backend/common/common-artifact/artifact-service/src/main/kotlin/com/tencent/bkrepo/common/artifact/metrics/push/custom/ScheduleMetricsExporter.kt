@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.metrics.push.custom
 
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.artifact.metrics.push.prometheus.PrometheusDrive
 import io.prometheus.client.CollectorRegistry
@@ -68,6 +69,7 @@ class ScheduleMetricsExporter(
             data.setLabelValue(item.labels)
             data.updateValue(item.value)
         }
+        logger.debug("metrics: ${registry.metricFamilySamples().iterator().toJsonString()}")
         drive.push(registry)
     }
 

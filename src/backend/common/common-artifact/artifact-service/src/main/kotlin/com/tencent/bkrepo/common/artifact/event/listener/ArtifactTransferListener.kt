@@ -97,7 +97,7 @@ class ArtifactTransferListener(
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
-                fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
+                fullPath = getFullPath(),
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
@@ -136,7 +136,7 @@ class ArtifactTransferListener(
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
-                fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
+                fullPath = getFullPath(),
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
@@ -155,6 +155,15 @@ class ArtifactTransferListener(
                 )
             }
             queue.offer(record)
+        }
+    }
+
+    private fun getFullPath(): String {
+        val artifactInfo = ArtifactContextHolder.getArtifactInfo()
+        return if (artifactInfo != null) {
+            ArtifactContextHolder.getNodeDetail(artifactInfo)?.fullPath ?: UNKNOWN
+        } else {
+            UNKNOWN
         }
     }
 
