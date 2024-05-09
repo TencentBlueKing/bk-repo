@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.common.metrics.push.custom.enums
 
-import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
-
 enum class TypeOfMetricsItem(val displayName: String, val help: String, val dataModel: DataModel) {
     /**
      * 制品上传速率

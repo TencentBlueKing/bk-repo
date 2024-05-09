@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.metrics.push.custom.base
 
-import com.tencent.bkrepo.common.metrics.push.custom.base.BkHttpConnectionFactory
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.PushGateway
 
