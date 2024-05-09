@@ -97,7 +97,7 @@ class ArtifactTransferListener(
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
-                fullPath = getFullPath(),
+                fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)

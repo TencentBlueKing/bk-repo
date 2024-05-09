@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.metrics.export
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord.Companion.RECEIVE
 import com.tencent.bkrepo.common.artifact.metrics.push.custom.CustomMetricsExporter
@@ -50,6 +51,7 @@ class ArtifactMetricsExporter(
         val count: Int = queue.size
         for (i in 0 until count) {
             val item = queue.poll()
+            if (item.project == StringPool.UNKNOWN || item.fullPath == StringPool.UNKNOWN) continue
             val labels = convertRecordToMap(item)
             val type = if (item.type == RECEIVE) {
                 TypeOfMetricsItem.ARTIFACT_TRANSFER_RECEIVE_RATE
