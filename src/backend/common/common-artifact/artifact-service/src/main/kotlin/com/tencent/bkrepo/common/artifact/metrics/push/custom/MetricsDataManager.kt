@@ -56,4 +56,8 @@ object MetricsDataManager {
         metricsDataCache[typeOfMI] = metricsData
         return metricsData
     }
+
+    fun clear() {
+        metricsDataCache.clear()
+    }
 }

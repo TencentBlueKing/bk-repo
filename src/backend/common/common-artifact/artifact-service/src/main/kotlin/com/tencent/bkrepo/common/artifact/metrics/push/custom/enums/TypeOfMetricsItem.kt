@@ -34,7 +34,7 @@ enum class TypeOfMetricsItem(val displayName: String, val help: String, val data
     ARTIFACT_TRANSFER_RECEIVE_RATE(
         "artifact_transfer_receive_rate",
         "artifact transfer receive rate",
-        DataModel.DATAMODEL_SUMMARY,
+        DataModel.DATAMODEL_GAUGE,
     ),
 
     /**
@@ -43,6 +43,6 @@ enum class TypeOfMetricsItem(val displayName: String, val help: String, val data
     ARTIFACT_TRANSFER_RESPONSE_RATE(
         "artifact_transfer_response_rate",
         "artifact transfer receive rate",
-        DataModel.DATAMODEL_SUMMARY,
+        DataModel.DATAMODEL_GAUGE,
     ),
 }

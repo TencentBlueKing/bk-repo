@@ -75,6 +75,8 @@ class ScheduleMetricsExporter(
         }
         logger.debug("metrics: ${registry.metricFamilySamples().iterator().toJsonString()}")
         drive.push(registry)
+        registry.clear()
+        MetricsDataManager.clear()
     }
 
     companion object {
