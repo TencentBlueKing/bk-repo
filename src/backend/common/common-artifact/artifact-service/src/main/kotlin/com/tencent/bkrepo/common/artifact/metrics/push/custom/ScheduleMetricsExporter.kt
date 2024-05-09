@@ -60,14 +60,18 @@ class ScheduleMetricsExporter(
         val count = queue.size
         for (i in 0 until count) {
             val item: MetricsItem = queue.poll()
-            var data = MetricsDataManager.getMetricsData(item.type)
-            if (data == null) {
-                data = MetricsDataManager.createMetricsData(
-                    item.type, item.labels, registry
-                )
+            try {
+                var data = MetricsDataManager.getMetricsData(item.type)
+                if (data == null) {
+                    data = MetricsDataManager.createMetricsData(
+                        item.type, item.labels, registry
+                    )
+                }
+                data.setLabelValue(item.labels)
+                data.updateValue(item.value)
+            } catch (e: Exception) {
+                logger.warn("set metrics for item $item error: ${e.message}")
             }
-            data.setLabelValue(item.labels)
-            data.updateValue(item.value)
         }
         logger.debug("metrics: ${registry.metricFamilySamples().iterator().toJsonString()}")
         drive.push(registry)
