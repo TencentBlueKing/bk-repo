@@ -77,10 +77,11 @@ class MigrateFailedNodeService(
      */
     @Async
     fun autoFix(projectId: String, repoName: String) {
-        val pageRequest = Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE)
+        var pageRequest = Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE)
         var failedNodes = migrateFailedNodeDao.page(projectId, repoName, pageRequest)
         while (failedNodes.isNotEmpty()) {
             failedNodes.forEach { autoFix(it) }
+            pageRequest = pageRequest.withPage(pageRequest.pageNumber + 1)
             failedNodes = migrateFailedNodeDao.page(projectId, repoName, pageRequest)
         }
     }

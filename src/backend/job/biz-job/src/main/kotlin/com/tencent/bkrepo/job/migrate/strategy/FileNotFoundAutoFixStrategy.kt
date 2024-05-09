@@ -83,7 +83,7 @@ class FileNotFoundAutoFixStrategy(
 
         // 所有存储都找不到时表示源文件丢失，归档failedNode以使迁移任务继续执行
         logger.error("node[$fullPath], sha256[$sha256] lost!!!, archive migrate failed node, task[$projectId/$repoName]")
-        archiveMigrateFailedNodeDao.insert(TArchiveMigrateFailedNode.convert(failedNode.taskId, node))
+        archiveMigrateFailedNodeDao.insert(TArchiveMigrateFailedNode.convert(failedNode))
         migrateFailedNodeDao.remove(projectId, repoName, fullPath)
         return true
     }

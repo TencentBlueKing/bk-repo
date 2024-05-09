@@ -27,12 +27,8 @@
 
 package com.tencent.bkrepo.job.migrate.pojo
 
-import java.time.LocalDateTime
-
 data class Node(
     val id: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedDate: LocalDateTime,
     val projectId: String,
     val repoName: String,
     val fullPath: String,

@@ -31,7 +31,6 @@ import com.tencent.bkrepo.job.migrate.model.TArchiveMigrateFailedNode.Companion.
 import com.tencent.bkrepo.job.migrate.model.TArchiveMigrateFailedNode.Companion.FULL_PATH_IDX_DEF
 import com.tencent.bkrepo.job.migrate.model.TArchiveMigrateFailedNode.Companion.SHA256_IDX
 import com.tencent.bkrepo.job.migrate.model.TArchiveMigrateFailedNode.Companion.SHA256_IDX_DEF
-import com.tencent.bkrepo.job.migrate.pojo.Node
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -55,14 +54,6 @@ data class TArchiveMigrateFailedNode(
      */
     val nodeId: String,
     /**
-     * node创建时间
-     */
-    val nodeCreatedDate: LocalDateTime,
-    /**
-     * node最后修改时间
-     */
-    val nodeLastModifiedDate: LocalDateTime,
-    /**
      * 迁移任务的id
      */
     val taskId: String,
@@ -79,25 +70,20 @@ data class TArchiveMigrateFailedNode(
         const val SHA256_IDX = "sha256_idx"
         const val SHA256_IDX_DEF = "{'sha256': 1}"
 
-        fun convert(taskId: String, node: Node): TArchiveMigrateFailedNode {
-            with(node) {
-                val now = LocalDateTime.now()
-                return TArchiveMigrateFailedNode(
-                    id = null,
-                    createdDate = now,
-                    lastModifiedDate = now,
-                    nodeId = id,
-                    nodeCreatedDate = createdDate,
-                    nodeLastModifiedDate = lastModifiedDate,
-                    taskId = taskId,
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = fullPath,
-                    sha256 = sha256,
-                    md5 = md5,
-                    size = size,
-                )
-            }
+        fun convert(node: TMigrateFailedNode) = with(node) {
+            TArchiveMigrateFailedNode(
+                id = id,
+                createdDate = createdDate,
+                lastModifiedDate = lastModifiedDate,
+                nodeId = nodeId,
+                taskId = taskId,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                sha256 = sha256,
+                md5 = md5,
+                size = size,
+            )
         }
     }
 }
