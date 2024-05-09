@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.common.metrics.push.custom.base
 
-import com.tencent.bkrepo.common.metrics.push.custom.enums.TypeOfMetricsItem
+import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
 
 data class MetricsItem(
-    val type: TypeOfMetricsItem,
+    val name: String,
+    val help: String,
+    val dataModel: DataModel,
     val value: Double = 0.0,
     val labels: MutableMap<String, String> = mutableMapOf(),
 )

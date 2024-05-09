@@ -25,41 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.metrics.push.custom
+package com.tencent.bkrepo.fs.server.request
 
-import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsData
-import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsDataBuilder
-import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
-import io.prometheus.client.CollectorRegistry
-import java.util.concurrent.ConcurrentHashMap
-
-
-object MetricsDataManager {
-
-    private val metricsDataCache: ConcurrentHashMap<String, MetricsData> = ConcurrentHashMap()
-
-    fun getMetricsData(metricsName: String): MetricsData? {
-        return metricsDataCache[metricsName]
-    }
-
-    fun createMetricsData(
-        name: String = "",
-        help: String = "",
-        dataModel: DataModel = DataModel.DATAMODEL_GAUGE,
-        labels: MutableMap<String, String>,
-        registry: CollectorRegistry
-    ): MetricsData {
-        val metricsData = MetricsDataBuilder(registry)
-            .name(name)
-            .help(help)
-            .labels(labels)
-            .dataModel(dataModel)
-            .buildMetricData()
-        metricsDataCache[name] = metricsData
-        return metricsData
-    }
-
-    fun clear() {
-        metricsDataCache.clear()
-    }
-}
+data class MetricsContent(
+    val metricName: String,
+    val metricHelp: String,
+    val metricDataModel: String,
+    val value: String,
+    val labels: MutableMap<String, String> = mutableMapOf(),
+)

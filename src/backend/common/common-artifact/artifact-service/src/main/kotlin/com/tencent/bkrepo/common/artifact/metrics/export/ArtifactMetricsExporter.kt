@@ -58,7 +58,7 @@ class ArtifactMetricsExporter(
             } else {
                 TypeOfMetricsItem.ARTIFACT_TRANSFER_RESPONSE_RATE
             }
-            val metricItem = MetricsItem(type, item.average.toDouble(), labels)
+            val metricItem = MetricsItem(type.displayName, type.help, type.dataModel, item.average.toDouble(), labels)
             customMetricsExporter?.reportMetrics(metricItem)
         }
     }

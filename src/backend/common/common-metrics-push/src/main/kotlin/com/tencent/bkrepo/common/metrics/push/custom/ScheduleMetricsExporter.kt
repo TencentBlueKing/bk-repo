@@ -48,10 +48,6 @@ class ScheduleMetricsExporter(
         scheduler.scheduleAtFixedRate(this::exportMetricsData, pushRate)
     }
 
-    fun reportMetrics(item: MetricsItem) {
-        queue.offer(item)
-    }
-
     private fun exportMetricsData() {
         if (queue.isEmpty()) {
             return
@@ -61,10 +57,10 @@ class ScheduleMetricsExporter(
         for (i in 0 until count) {
             val item: MetricsItem = queue.poll()
             try {
-                var data = MetricsDataManager.getMetricsData(item.type)
+                var data = MetricsDataManager.getMetricsData(item.name)
                 if (data == null) {
                     data = MetricsDataManager.createMetricsData(
-                        item.type, item.labels, registry
+                        item.name, item.help, item.dataModel, item.labels, registry
                     )
                 }
                 data.setLabelValue(item.labels)

@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
 import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
 import com.tencent.bkrepo.fs.server.pojo.DailyClientListRequest
+import com.tencent.bkrepo.fs.server.request.ClientPushMetricsRequest
 import com.tencent.bkrepo.fs.server.service.ClientService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import kotlinx.coroutines.reactor.awaitSingle
@@ -92,5 +93,11 @@ class ClientHandler(
             actions = request.queryParam(DailyClientListRequest::actions.name).get().split(",")
         )
         return ReactiveResponseBuilder.success(clientService.listDailyClients(listRequest))
+    }
+
+    suspend fun pushMetrics(request: ServerRequest): ServerResponse {
+        val pushMetricsRequest = request.bodyToMono(ClientPushMetricsRequest::class.java).awaitSingle()
+        clientService.pushMetrics(pushMetricsRequest)
+        return ReactiveResponseBuilder.success()
     }
 }
