@@ -25,21 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.model
+package com.tencent.bkrepo.job.migrate.executor.handler
 
-import java.time.LocalDateTime
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.Node
 
-data class TNode(
-    val id: String? = null,
-    val createdDate: LocalDateTime,
-    val folder: Boolean,
-    val projectId: String,
-    val repoName: String,
-    val fullPath: String,
-    val size: Long,
-    val sha256: String,
-    val md5: String,
-    val deleted: LocalDateTime? = null,
-    val archived: Boolean? = null,
-    val compressed: Boolean? = null,
-)
+/**
+ * 迁移失败处理器
+ */
+interface MigrateFailedHandler {
+    /**
+     * 处理迁移异常
+     *
+     * @param task 迁移任务
+     * @param node 迁移失败的node
+     * @param e 迁移异常
+     */
+    fun handle(task: MigrateRepoStorageTask, node: Node, e: Exception)
+}

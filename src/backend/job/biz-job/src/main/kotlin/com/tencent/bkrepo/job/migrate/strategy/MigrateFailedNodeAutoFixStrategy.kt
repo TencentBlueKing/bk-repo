@@ -25,21 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.model
+package com.tencent.bkrepo.job.migrate.strategy
 
-import java.time.LocalDateTime
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 
-data class TNode(
-    val id: String? = null,
-    val createdDate: LocalDateTime,
-    val folder: Boolean,
-    val projectId: String,
-    val repoName: String,
-    val fullPath: String,
-    val size: Long,
-    val sha256: String,
-    val md5: String,
-    val deleted: LocalDateTime? = null,
-    val archived: Boolean? = null,
-    val compressed: Boolean? = null,
-)
+/**
+ * 迁移失败的node自动修复策略
+ */
+interface MigrateFailedNodeAutoFixStrategy {
+    /**
+     * 修复迁移失败的node
+     *
+     * @param failedNode 迁移失败的node
+     *
+     * @return 是否修复成功
+     */
+    fun fix(failedNode: TMigrateFailedNode): Boolean
+}

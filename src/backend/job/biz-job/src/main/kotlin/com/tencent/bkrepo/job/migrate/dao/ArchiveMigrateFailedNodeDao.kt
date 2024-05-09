@@ -25,21 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.model
+package com.tencent.bkrepo.job.migrate.dao
 
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.job.migrate.model.TArchiveMigrateFailedNode
+import org.springframework.stereotype.Repository
 
-data class TNode(
-    val id: String? = null,
-    val createdDate: LocalDateTime,
-    val folder: Boolean,
-    val projectId: String,
-    val repoName: String,
-    val fullPath: String,
-    val size: Long,
-    val sha256: String,
-    val md5: String,
-    val deleted: LocalDateTime? = null,
-    val archived: Boolean? = null,
-    val compressed: Boolean? = null,
-)
+@Repository
+class ArchiveMigrateFailedNodeDao : SimpleMongoDao<TArchiveMigrateFailedNode>()
