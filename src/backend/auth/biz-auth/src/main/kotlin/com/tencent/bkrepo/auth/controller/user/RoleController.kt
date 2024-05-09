@@ -102,7 +102,7 @@ class RoleController @Autowired constructor(
     fun detail(@PathVariable id: String): Response<Role?> {
         val role = roleService.detail(id) ?: return ResponseBuilder.success(null)
         preCheckProjectAdmin(role.projectId)
-        return ResponseBuilder.success(roleService.detail(id))
+        return ResponseBuilder.success(role)
     }
 
     @ApiOperation("根据角色ID与项目Id查询角色")
