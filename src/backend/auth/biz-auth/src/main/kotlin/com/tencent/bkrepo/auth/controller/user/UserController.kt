@@ -92,6 +92,7 @@ class UserController @Autowired constructor(
     @ApiOperation("创建用户")
     @PostMapping("/create")
     fun createUser(@RequestBody request: CreateUserRequest): Response<Boolean> {
+        preCheckUserAdmin()
         // 限制创建为admin用户
         request.admin = false
         userService.createUser(request)
@@ -127,6 +128,7 @@ class UserController @Autowired constructor(
     @ApiOperation("用户列表")
     @GetMapping("/list")
     fun listUser(@RequestBody rids: List<String>?): Response<List<UserResult>> {
+        preCheckUserAdmin()
         val result = userService.listUser(rids.orEmpty()).map {
             UserResult(it.userId, it.name)
         }
@@ -175,6 +177,7 @@ class UserController @Autowired constructor(
     @ApiOperation("新增用户所属角色")
     @PostMapping("/role/{uid}/{rid}")
     fun addUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
+        preCheckContextUser(uid)
         val result = userService.addUserToRole(uid, rid)
         return ResponseBuilder.success(result)
     }
@@ -182,6 +185,7 @@ class UserController @Autowired constructor(
     @ApiOperation("删除用户所属角色")
     @DeleteMapping("/role/{uid}/{rid}")
     fun removeUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
+        preCheckContextUser(uid)
         val result = userService.removeUserFromRole(uid, rid)
         return ResponseBuilder.success(result)
     }
@@ -189,6 +193,7 @@ class UserController @Autowired constructor(
     @ApiOperation("批量新增用户所属角色")
     @PatchMapping("/role/add/{rid}")
     fun addUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
+        preCheckUserAdmin()
         userService.addUserToRoleBatch(request, rid)
         return ResponseBuilder.success(true)
     }
@@ -196,6 +201,7 @@ class UserController @Autowired constructor(
     @ApiOperation("批量删除用户所属角色")
     @PatchMapping("/role/delete/{rid}")
     fun deleteUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
+        preCheckUserAdmin()
         userService.removeUserFromRoleBatch(request, rid)
         return ResponseBuilder.success(true)
     }
@@ -314,6 +320,7 @@ class UserController @Autowired constructor(
         @RequestParam admin: Boolean?,
         @RequestParam locked: Boolean?
     ): Response<Page<UserInfo>> {
+        preCheckUserAdmin()
         val result = userService.userPage(pageNumber, pageSize, user, admin, locked)
         return ResponseBuilder.success(result)
     }
@@ -371,6 +378,7 @@ class UserController @Autowired constructor(
         @RequestParam userName: String? = null,
         @RequestParam asstUser: String,
     ): Response<List<UserInfo>> {
+        preCheckContextUser(asstUser)
         val result = userService.getRelatedUserById(asstUser)
         return ResponseBuilder.success(result)
     }
