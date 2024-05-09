@@ -138,7 +138,7 @@ class FileNotFoundAutoFixStrategy(
                     return true
                 }
             } catch (e: Exception) {
-                logger.error("check node[$fullPath] in $key failed, task[$projectId/ $repoName]", e)
+                logger.error("copy node[$fullPath] from $key failed, task[$projectId/ $repoName]", e)
             }
         }
         return false
