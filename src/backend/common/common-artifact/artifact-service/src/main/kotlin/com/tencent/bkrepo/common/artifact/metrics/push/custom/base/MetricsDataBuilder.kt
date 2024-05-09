@@ -34,12 +34,13 @@ class MetricsDataBuilder(
     private var registry: CollectorRegistry,
     private var name: String = "",
     private var help: String = "",
+    private var unit: String = "",
     private var labels: MutableMap<String, String> = mutableMapOf(),
     private var dataModel: DataModel? = null,
 ) {
 
     fun buildMetricData(): MetricsData {
-        return MetricsData(registry, name, help, labels, dataModel)
+        return MetricsData(registry, name, help, unit, labels, dataModel)
     }
 
     fun name(name: String): MetricsDataBuilder {
@@ -49,6 +50,11 @@ class MetricsDataBuilder(
 
     fun help(help: String): MetricsDataBuilder {
         this.help = help
+        return this
+    }
+
+    fun unit(unit: String): MetricsDataBuilder {
+        this.unit = unit
         return this
     }
 

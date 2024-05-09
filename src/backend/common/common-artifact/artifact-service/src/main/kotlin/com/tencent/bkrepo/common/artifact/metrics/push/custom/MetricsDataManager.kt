@@ -50,6 +50,7 @@ object MetricsDataManager {
         val metricsData = MetricsDataBuilder(registry)
             .name(typeOfMI.displayName)
             .help(typeOfMI.help)
+            .unit(typeOfMI.unit)
             .labels(labels)
             .dataModel(typeOfMI.dataModel)
             .buildMetricData()

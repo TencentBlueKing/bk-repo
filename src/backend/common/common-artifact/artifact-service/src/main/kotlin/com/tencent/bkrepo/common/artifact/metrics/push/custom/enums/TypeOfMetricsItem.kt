@@ -27,14 +27,15 @@
 
 package com.tencent.bkrepo.common.artifact.metrics.push.custom.enums
 
-enum class TypeOfMetricsItem(val displayName: String, val help: String, val dataModel: DataModel) {
+enum class TypeOfMetricsItem(val displayName: String, val help: String, val dataModel: DataModel, val unit: String) {
     /**
      * 制品上传速率
      */
     ARTIFACT_TRANSFER_RECEIVE_RATE(
         "artifact_transfer_receive_rate",
         "artifact transfer receive rate",
-        DataModel.DATAMODEL_GAUGE
+        DataModel.DATAMODEL_GAUGE,
+        "binBps"
     ),
 
     /**
@@ -43,6 +44,7 @@ enum class TypeOfMetricsItem(val displayName: String, val help: String, val data
     ARTIFACT_TRANSFER_RESPONSE_RATE(
         "artifact_transfer_response_rate",
         "artifact transfer receive rate",
-        DataModel.DATAMODEL_GAUGE
+        DataModel.DATAMODEL_GAUGE,
+        "binBps"
     ),
 }
