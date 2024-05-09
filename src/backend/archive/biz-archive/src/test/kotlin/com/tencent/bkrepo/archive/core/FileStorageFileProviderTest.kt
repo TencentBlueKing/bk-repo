@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.archive.core
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.archive.core.provider.FileStorageFileProvider
+import com.tencent.bkrepo.archive.core.provider.FileTask
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
@@ -57,12 +59,13 @@ class FileStorageFileProviderTest {
         val list = Collections.synchronizedList(mutableListOf<String>())
         for (i in 1..5) {
             Files.deleteIfExists(Paths.get(tempDir).resolve("$i"))
-            fp.get("$i", Range.FULL_RANGE, InnerCosCredentials()).subscribe { list.add(it.name) }
+            val task = FileTask("$i", Range.FULL_RANGE, InnerCosCredentials())
+            fp.get(task).subscribe { list.add(it.name) }
         }
         // 最高优先级，插队下载
         Files.deleteIfExists(Paths.get(tempDir).resolve("100"))
-        fp.get("100", Range.FULL_RANGE, InnerCosCredentials(), Ordered.HIGHEST_PRECEDENCE)
-            .subscribe { list.add(it.name) }
+        val task = FileTask("100", Range.FULL_RANGE, InnerCosCredentials(), Ordered.HIGHEST_PRECEDENCE)
+        fp.get(task).subscribe { list.add(it.name) }
         // 等待异步执行
         Thread.sleep(2000)
         Assertions.assertEquals("100", list[1])
@@ -86,7 +89,7 @@ class FileStorageFileProviderTest {
         }
         repeat(3) {
             Files.deleteIfExists(tempPath.resolve("$it"))
-            fp.get("$it", Range.FULL_RANGE, InnerCosCredentials()).subscribe()
+            fp.get(FileTask("$it", Range.FULL_RANGE, InnerCosCredentials())).subscribe()
         }
         Thread.sleep(1000)
         // 删除目录 不健康
@@ -95,7 +98,7 @@ class FileStorageFileProviderTest {
         Thread.sleep(2000)
         repeat(3) {
             Files.deleteIfExists(tempPath.resolve("$it"))
-            fp.get("$it", Range.FULL_RANGE, InnerCosCredentials()).subscribe()
+            fp.get(FileTask("$it", Range.FULL_RANGE, InnerCosCredentials())).subscribe()
         }
         Thread.sleep(2000)
         // 再次恢复目录健康

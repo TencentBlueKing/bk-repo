@@ -1,7 +1,8 @@
-package com.tencent.bkrepo.archive.core
+package com.tencent.bkrepo.archive.core.provider
 
+import com.tencent.bkrepo.archive.core.DiskHealthObserver
+import com.tencent.bkrepo.archive.core.createPriorityMono
 import com.tencent.bkrepo.common.api.constant.retry
-import com.tencent.bkrepo.common.api.concurrent.PriorityRunnableWrapper
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -15,7 +16,6 @@ import java.nio.file.Path
 import java.time.Duration
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.system.measureNanoTime
 
@@ -33,7 +33,6 @@ class FileStorageFileProvider(
     private var activeStatus = AtomicBoolean(true)
     private val lock = ReentrantLock()
     private val available = lock.newCondition()
-    private val seq = AtomicInteger()
 
     init {
         require(lowWaterMark < highWaterMark)
@@ -62,25 +61,23 @@ class FileStorageFileProvider(
             }
     }
 
-    override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials, priority: Int): Mono<File> {
-        logger.info("Prepare[$priority] download $sha256 on ${storageCredentials.key}")
-        val filePath = fileDir.resolve(sha256)
-        if (Files.exists(filePath)) {
-            return Mono.just(filePath.toFile())
-        }
-        return Mono.create {
-            val task = PriorityRunnableWrapper(priority) {
-                try {
-                    logger.info("Start run task[$priority].")
-                    val file = doDownload(sha256, storageCredentials, filePath, range)
-                    it.success(file)
-                } catch (e: Exception) {
-                    it.error(e)
-                    throw e
-                }
+    override fun get(param: FileTask): Mono<File> {
+        with(param) {
+            logger.info("Prepare[$priority] download $sha256 on ${storageCredentials.key}")
+            val filePath = fileDir.resolve(sha256)
+            if (Files.exists(filePath)) {
+                return Mono.just(filePath.toFile())
             }
-            executor.execute(task)
+            return createPriorityMono(executor, priority) {
+                logger.info("Start run task[$priority].")
+                val file = doDownload(sha256, storageCredentials, filePath, range)
+                file
+            }
         }
+    }
+
+    override fun key(param: FileTask): String {
+        return param.sha256
     }
 
     private fun doDownload(
@@ -99,10 +96,6 @@ class FileStorageFileProvider(
             check(range.length == length) { "File[$filePath] broken,require ${range.length},but actual $length." }
         }
         return file
-    }
-
-    override fun get(sha256: String, range: Range, storageCredentials: StorageCredentials): Mono<File> {
-        return get(sha256, range, storageCredentials, seq.getAndIncrement())
     }
 
     private fun download(sha256: String, range: Range, storageCredentials: StorageCredentials, filePath: Path) {

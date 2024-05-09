@@ -3,9 +3,11 @@ package com.tencent.bkrepo.archive.core.compress
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
+import com.tencent.bkrepo.archive.core.provider.FileProviderFactory
+import com.tencent.bkrepo.archive.core.provider.FileTask
 import com.tencent.bkrepo.archive.event.StorageFileCompressedEvent
 import com.tencent.bkrepo.archive.event.StorageFileUncompressedEvent
-import com.tencent.bkrepo.archive.core.PriorityFileProvider
+import com.tencent.bkrepo.archive.core.provider.PriorityFileProvider
 import com.tencent.bkrepo.archive.core.TaskResult
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
@@ -51,17 +53,23 @@ class BDZipManager(
         ThreadFactoryBuilder().setNameFormat("bd-worker-%d").build(),
         PriorityBlockingQueue(),
     )
-
     val bigFileWorkThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
         archiveProperties.gc.bigFileCompressPoolSize,
         ThreadFactoryBuilder().setNameFormat("bd-worker2-%d").build(),
     )
-    private val checksumProvider = ChecksumFileProvider(
-        workDir.resolve(SIGN_DIR),
-        fileProvider,
-        archiveProperties.gc.signFileCacheTime,
-        workThreadPool,
-    )
+    private val cachePath = workDir.resolve(CACHE_DIR)
+    private val expire = archiveProperties.gc.cacheExpireTime
+    private val checksumProvider = FileProviderFactory.createBuilder<FileTask>()
+        .from(ChecksumFileProvider(fileProvider, workThreadPool, workDir.resolve(SIGN_DIR)))
+        .enableCache(expire, cachePath)
+        .concurrent()
+        .build()
+
+    private val cacheFileProvider = FileProviderFactory.createBuilder<FileTask>()
+        .from(fileProvider)
+        .enableCache(expire, cachePath)
+        .concurrent()
+        .build()
     private val bdCompressor = BDCompressor(
         archiveProperties.gc.ratio,
         workThreadPool,
@@ -72,7 +80,7 @@ class BDZipManager(
     private val prioritySeq = AtomicInteger(Int.MIN_VALUE)
 
     init {
-        val dirs = listOf(SIGN_DIR, COMPRESS_DIR, UNCOMPRESS_DIR)
+        val dirs = listOf(SIGN_DIR, COMPRESS_DIR, UNCOMPRESS_DIR, CACHE_DIR)
         dirs.forEach {
             val filePath = workDir.resolve(it)
             if (!Files.exists(filePath)) {
@@ -148,9 +156,11 @@ class BDZipManager(
         val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
         val workDir = Paths.get(workDir.toString(), COMPRESS_DIR, sha256)
         val uncompressedSize = file.uncompressedSize
-        val srcFile = fileProvider.get(sha256, Range.full(uncompressedSize), credentials)
+        val srcFileTask = FileTask(sha256, Range.full(uncompressedSize), credentials)
+        val srcFile = fileProvider.get(srcFileTask)
         val baseRange = if (baseSize == null) Range.FULL_RANGE else Range.full(baseSize)
-        val checksumFile = checksumProvider.get(baseSha256, baseRange, credentials)
+        val checksumFileTask = FileTask(baseSha256, baseRange, credentials)
+        val checksumFile = checksumProvider.get(checksumFileTask)
         val begin = System.nanoTime()
         val ret = bdCompressor.compress(srcFile, checksumFile, sha256, baseSha256, workDir)
             .doOnSuccess {
@@ -197,6 +207,17 @@ class BDZipManager(
         }
         val file = fileStack.pop()
         logger.info("Start uncompress file [${file.sha256}].")
+        compressFileRepository.findBySha256AndStorageCredentialsKey(
+            file.baseSha256,
+            file.storageCredentialsKey,
+        )?.let {
+            if (it.status == CompressStatus.UNCOMPRESSING || it.status == CompressStatus.WAIT_TO_UNCOMPRESS) {
+                // base文件正在解压
+                logger.info("Base file[${it.sha256}] is uncompressing.")
+                sink.success(TaskResult.OK)
+                return
+            }
+        }
         val tryLock = compressFileDao.optimisticLock(
             file,
             TCompressFile::status.name,
@@ -212,16 +233,17 @@ class BDZipManager(
         val storageCredentialsKey = file.storageCredentialsKey
         val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
         val bdFileName = sha256.plus(BD_FILE_SUFFIX)
-        val bdFile = fileProvider.get(
+        val bdFileTask = FileTask(
             bdFileName,
             Range.full(file.compressedSize),
             credentials,
             prioritySeq.getAndIncrement(),
         )
+        val bdFile = fileProvider.get(bdFileTask)
         val baseSize = file.baseSize
         val baseRange = if (baseSize == null) Range.FULL_RANGE else Range.full(baseSize)
-        val baseFile =
-            fileProvider.get(file.baseSha256, baseRange, credentials, prioritySeq.getAndIncrement())
+        val baseFileTask = FileTask(file.baseSha256, baseRange, credentials, prioritySeq.getAndIncrement())
+        val baseFile = cacheFileProvider.get(baseFileTask)
         val begin = System.nanoTime()
         val fileWorkDir = Paths.get(workDir.toString(), UNCOMPRESS_DIR, sha256)
         bdUncompressor.patch(bdFile, baseFile, sha256, fileWorkDir)
@@ -267,6 +289,7 @@ class BDZipManager(
         private val logger = LoggerFactory.getLogger(BDZipManager::class.java)
         private const val BD_FILE_SUFFIX = ".bd"
         private const val SIGN_DIR = "sign"
+        private const val CACHE_DIR = "cache"
         private const val COMPRESS_DIR = "compress"
         private const val UNCOMPRESS_DIR = "uncompress"
     }
