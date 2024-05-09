@@ -34,7 +34,6 @@ package com.tencent.bkrepo.auth.interceptor
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_EXT_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
@@ -121,7 +120,7 @@ class AuthInterceptor(
     }
 
     private fun checkUserFromBasic(request: HttpServletRequest, authHeader: String): Boolean {
-        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
+        val userAccess = userAccessApiSet.any { request.requestURI.startsWith(it) }
         val encodedCredentials = authHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
         val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
         val parts = decodedHeader.split(COLON)
@@ -188,8 +187,8 @@ class AuthInterceptor(
     }
 
     private fun setAuthAttribute(userId: String, appId: String, request: HttpServletRequest) {
-        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
-        val anonymousAccess = anonymousAccessApiSet.any { request.requestURI.contains(it) }
+        val userAccess = userAccessApiSet.any { request.requestURI.startsWith(it) }
+        val anonymousAccess = anonymousAccessApiSet.any { request.requestURI.startsWith(it) }
         val userInfo = userService.getUserInfoById(userId)
         val isAdmin: Boolean = userInfo?.admin ?: false
         if (userId.isNotEmpty() && userInfo == null && userId != ANONYMOUS_USER) {
@@ -242,7 +241,6 @@ class AuthInterceptor(
             AUTH_API_ROLE_PREFIX,
             AUTH_API_PERMISSION_PREFIX,
             AUTH_API_OAUTH_PREFIX,
-            AUTH_API_EXT_PERMISSION_PREFIX,
 
         )
 
