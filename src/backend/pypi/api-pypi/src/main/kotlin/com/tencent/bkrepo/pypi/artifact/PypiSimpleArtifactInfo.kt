@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,21 +31,20 @@
 
 package com.tencent.bkrepo.pypi.artifact
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import com.tencent.bkrepo.pypi.constants.REMOTE_HTML_CACHE_FULL_PATH
 
-open class PypiArtifactInfo(
+class PypiSimpleArtifactInfo(
     projectId: String,
     repoName: String,
-    artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-    companion object {
-        const val PYPI_PACKAGES_MAPPING_URI = "/{projectId}/{repoName}/packages/**"
-        const val PYPI_ROOT_POST_URI = "/{projectId}/{repoName}"
+    val packageName: String?
+) : PypiArtifactInfo(projectId, repoName, StringPool.EMPTY) {
 
-        // RPM 产品接口
-        const val PYPI_EXT_DETAIL = "/version/detail/{projectId}/{repoName}"
-        const val PYPI_EXT_PACKAGE_DELETE = "/package/delete/{projectId}/{repoName}"
-        const val PYPI_EXT_VERSION_DELETE = "/version/delete/{projectId}/{repoName}"
-        const val PYPI_EXT_PACKAGE_LIST = "/version/page/{projectId}/{repoName}"
+    override fun getArtifactName(): String {
+        return packageName ?: StringPool.SLASH
     }
+
+    override fun getArtifactFullPath() = if (packageName == null) "/$REMOTE_HTML_CACHE_FULL_PATH" else
+        throw MethodNotAllowedException("Information about version-index cache file is not available")
 }

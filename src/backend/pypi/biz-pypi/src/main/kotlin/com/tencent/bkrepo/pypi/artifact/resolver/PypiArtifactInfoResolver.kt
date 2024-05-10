@@ -29,9 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi
+package com.tencent.bkrepo.pypi.artifact.resolver
 
-const val REMOTE_HTML_CACHE_FULL_PATH = "remoteHtml.html"
-const val FLUSH_CACHE_EXPIRE = 60 * 24
-const val XML_RPC_URI = "RPC2"
-const val XML_RPC_OPERATION_OR = "or"
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import org.springframework.stereotype.Component
+import javax.servlet.http.HttpServletRequest
+
+@Component
+@Resolver(PypiArtifactInfo::class)
+class PypiArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): PypiArtifactInfo {
+        return PypiArtifactInfo(projectId, repoName, artifactUri)
+    }
+}
