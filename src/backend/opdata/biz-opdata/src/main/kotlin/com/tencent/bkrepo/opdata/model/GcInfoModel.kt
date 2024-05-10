@@ -78,6 +78,7 @@ class GcInfoModel @Autowired constructor(
         logger.info("Start update gc metrics.")
         // 遍历节点表
         val criteria = Criteria.where("compressed").isEqualTo(true)
+            .and("deleted").isEqualTo(null)
         val query = Query(criteria)
         val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
         forEachCollectionAsync {
