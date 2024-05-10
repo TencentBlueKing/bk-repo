@@ -45,6 +45,12 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.time.Duration
 
+/**
+ * https://prometheus.io/docs/practices/pushing/#should-i-be-using-the-pushgateway
+ * 官方推荐使用拉的方式
+ * 目前只针对特殊指标
+ */
+
 @Configuration
 class CustomMetricsPushAutoConfiguration {
 

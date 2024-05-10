@@ -34,16 +34,22 @@ class MetricsDataBuilder(
     private var registry: CollectorRegistry,
     private var name: String = "",
     private var help: String = "",
+    private var keepHistory: Boolean = true,
     private var labels: MutableMap<String, String> = mutableMapOf(),
     private var dataModel: DataModel? = null,
 ) {
 
     fun buildMetricData(): MetricsData {
-        return MetricsData(registry, name, help, labels, dataModel)
+        return MetricsData(registry, name, help, labels, keepHistory, dataModel)
     }
 
     fun name(name: String): MetricsDataBuilder {
         this.name = name
+        return this
+    }
+
+    fun keepHistory(keepHistory: Boolean): MetricsDataBuilder {
+        this.keepHistory = keepHistory
         return this
     }
 

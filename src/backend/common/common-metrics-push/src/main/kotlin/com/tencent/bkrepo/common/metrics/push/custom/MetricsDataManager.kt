@@ -45,6 +45,7 @@ object MetricsDataManager {
     fun createMetricsData(
         name: String = "",
         help: String = "",
+        keepHistory: Boolean = true,
         dataModel: DataModel = DataModel.DATAMODEL_GAUGE,
         labels: MutableMap<String, String>,
         registry: CollectorRegistry
@@ -52,6 +53,7 @@ object MetricsDataManager {
         val metricsData = MetricsDataBuilder(registry)
             .name(name)
             .help(help)
+            .keepHistory(keepHistory)
             .labels(labels)
             .dataModel(dataModel)
             .buildMetricData()
@@ -59,7 +61,9 @@ object MetricsDataManager {
         return metricsData
     }
 
-    fun clear() {
-        metricsDataCache.clear()
+    fun clearMetricsHistory() {
+        metricsDataCache.values.forEach {
+            it.clearHistory()
+        }
     }
 }

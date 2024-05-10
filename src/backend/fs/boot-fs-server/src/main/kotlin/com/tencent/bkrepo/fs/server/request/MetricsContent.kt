@@ -32,5 +32,6 @@ data class MetricsContent(
     val metricHelp: String,
     val metricDataModel: String,
     val value: String,
+    val keepHistory: Boolean = true,
     val labels: MutableMap<String, String> = mutableMapOf(),
 )

@@ -60,7 +60,7 @@ class ScheduleMetricsExporter(
                 var data = MetricsDataManager.getMetricsData(item.name)
                 if (data == null) {
                     data = MetricsDataManager.createMetricsData(
-                        item.name, item.help, item.dataModel, item.labels, registry
+                        item.name, item.help, item.keepHistory, item.dataModel, item.labels, registry
                     )
                 }
                 data.setLabelValue(item.labels)
@@ -70,9 +70,10 @@ class ScheduleMetricsExporter(
             }
         }
         logger.debug("metrics: ${registry.metricFamilySamples().iterator().toJsonString()}")
-        drive.push(registry)
-        registry.clear()
-        MetricsDataManager.clear()
+        val pushResult = drive.push(registry)
+        if (pushResult) {
+            MetricsDataManager.clearMetricsHistory()
+        }
     }
 
     companion object {

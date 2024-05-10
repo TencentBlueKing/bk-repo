@@ -39,6 +39,7 @@ class MetricsData(
     private var name: String = "",
     private var help: String = "",
     private val labels: MutableMap<String, String> = mutableMapOf(),
+    private var keepHistory: Boolean = true,
     private var dataModel: DataModel? = null,
     private var counter: Counter? = null,
     private var gauge: Gauge? = null,
@@ -77,6 +78,19 @@ class MetricsData(
             }
         }
     }
+
+    fun clearHistory() {
+        if (keepHistory) return
+        when (dataModel) {
+            DataModel.DATAMODEL_COUNTER -> clearHistoryCounter()
+            DataModel.DATAMODEL_GAUGE -> clearHistoryGauge()
+            DataModel.DATAMODEL_HISTOGRAM -> clearHistoryHistogram()
+            DataModel.DATAMODEL_SUMMARY -> clearHistorySummary()
+            else -> {
+            }
+        }
+    }
+
 
     private fun initialize() {
         var labelNames = arrayOf<String>()
@@ -159,5 +173,25 @@ class MetricsData(
         } else {
             summary?.observe(value)
         }
+    }
+
+    private fun clearHistoryCounter() {
+        if (keepHistory) return
+        counter?.clear()
+    }
+
+    private fun clearHistoryGauge() {
+        if (keepHistory) return
+        gauge?.clear()
+    }
+
+    private fun clearHistoryHistogram() {
+        if (keepHistory) return
+        histogram?.clear()
+    }
+
+    private fun clearHistorySummary() {
+        if (keepHistory) return
+        summary?.clear()
     }
 }

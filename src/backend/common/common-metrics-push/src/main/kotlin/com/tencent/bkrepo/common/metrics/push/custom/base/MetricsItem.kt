@@ -33,6 +33,7 @@ data class MetricsItem(
     val name: String,
     val help: String,
     val dataModel: DataModel,
+    val keepHistory: Boolean = true,
     val value: Double = 0.0,
     val labels: MutableMap<String, String> = mutableMapOf(),
 )
