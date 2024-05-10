@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.metrics.push.custom.base
 
 import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
+import io.prometheus.client.Collector
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.Counter
 import io.prometheus.client.Gauge
@@ -91,6 +92,29 @@ class MetricsData(
         }
     }
 
+    fun noLabelsChild(): Boolean {
+        return when (dataModel) {
+            DataModel.DATAMODEL_COUNTER -> noLabelsChildCounter()
+            DataModel.DATAMODEL_GAUGE -> noLabelsChildGauge()
+            DataModel.DATAMODEL_HISTOGRAM -> noLabelsChildHistogram()
+            DataModel.DATAMODEL_SUMMARY -> noLabelsChildSummary()
+            else -> {
+                true
+            }
+        }
+    }
+
+    fun getCollector(): Collector? {
+        return when (dataModel) {
+            DataModel.DATAMODEL_COUNTER -> counter
+            DataModel.DATAMODEL_GAUGE -> gauge
+            DataModel.DATAMODEL_HISTOGRAM -> histogram
+            DataModel.DATAMODEL_SUMMARY -> summary
+            else -> {
+                null
+            }
+        }
+    }
 
     private fun initialize() {
         var labelNames = arrayOf<String>()
@@ -193,5 +217,21 @@ class MetricsData(
     private fun clearHistorySummary() {
         if (keepHistory) return
         summary?.clear()
+    }
+
+    private fun noLabelsChildCounter(): Boolean {
+        return counter?.collect().isNullOrEmpty()
+    }
+
+    private fun noLabelsChildGauge(): Boolean {
+        return gauge?.collect().isNullOrEmpty()
+    }
+
+    private fun noLabelsChildHistogram(): Boolean {
+        return histogram?.collect().isNullOrEmpty()
+    }
+
+    private fun noLabelsChildSummary(): Boolean {
+        return summary?.collect().isNullOrEmpty()
     }
 }

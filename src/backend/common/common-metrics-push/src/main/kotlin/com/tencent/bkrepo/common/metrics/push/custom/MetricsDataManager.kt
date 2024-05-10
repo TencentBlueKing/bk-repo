@@ -66,4 +66,15 @@ object MetricsDataManager {
             it.clearHistory()
         }
     }
+
+    fun removeEmptyMetrics(registry: CollectorRegistry) {
+        val iterator = metricsDataCache.entries.iterator()
+        while (iterator.hasNext()) {
+            val metric = iterator.next()
+            if (metric.value.noLabelsChild()) {
+                registry.unregister(metric.value.getCollector())
+                iterator.remove()
+            }
+        }
+    }
 }

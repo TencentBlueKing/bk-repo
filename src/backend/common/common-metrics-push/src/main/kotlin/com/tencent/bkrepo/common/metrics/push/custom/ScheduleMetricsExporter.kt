@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.metrics.push.custom
 
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.metrics.push.custom.MetricsDataManager.removeEmptyMetrics
 import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusDrive
 import io.prometheus.client.CollectorRegistry
@@ -69,6 +70,8 @@ class ScheduleMetricsExporter(
                 logger.warn("set metrics for item $item error: ${e.message}")
             }
         }
+        // 上报前清除没有数据的指标
+        removeEmptyMetrics(registry)
         logger.debug("metrics: ${registry.metricFamilySamples().iterator().toJsonString()}")
         val pushResult = drive.push(registry)
         if (pushResult) {
