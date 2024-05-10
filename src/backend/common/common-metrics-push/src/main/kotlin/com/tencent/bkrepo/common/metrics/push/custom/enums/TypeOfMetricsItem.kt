@@ -46,7 +46,7 @@ enum class TypeOfMetricsItem(
      */
     ARTIFACT_TRANSFER_RESPONSE_RATE(
         "artifact_transfer_response_rate",
-        "artifact transfer receive rate",
+        "artifact transfer response rate",
         DataModel.DATAMODEL_GAUGE,
         false,
     ),

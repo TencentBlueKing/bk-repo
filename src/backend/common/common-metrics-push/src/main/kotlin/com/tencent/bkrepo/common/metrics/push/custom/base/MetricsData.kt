@@ -221,17 +221,25 @@ class MetricsData(
 
     private fun noLabelsChildCounter(): Boolean {
         return counter?.collect().isNullOrEmpty()
+            || (counter?.collect()?.size == 1
+            && counter?.collect()?.firstOrNull()?.samples?.size == 0)
     }
 
     private fun noLabelsChildGauge(): Boolean {
         return gauge?.collect().isNullOrEmpty()
+            || (gauge?.collect()?.size == 1
+            && gauge?.collect()?.firstOrNull()?.samples?.size == 0)
     }
 
     private fun noLabelsChildHistogram(): Boolean {
         return histogram?.collect().isNullOrEmpty()
+            || (histogram?.collect()?.size == 1
+            && histogram?.collect()?.firstOrNull()?.samples?.size == 0)
     }
 
     private fun noLabelsChildSummary(): Boolean {
         return summary?.collect().isNullOrEmpty()
+            || (summary?.collect()?.size == 1
+            && summary?.collect()?.firstOrNull()?.samples?.size == 0)
     }
 }
