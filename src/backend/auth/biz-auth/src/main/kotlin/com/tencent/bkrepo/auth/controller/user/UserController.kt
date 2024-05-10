@@ -128,7 +128,9 @@ class UserController @Autowired constructor(
     @ApiOperation("用户列表")
     @GetMapping("/list")
     fun listUser(@RequestBody rids: List<String>?): Response<List<UserResult>> {
-        preCheckUserAdmin()
+        if (rids != null && rids.isNotEmpty()) {
+            preCheckUserAdmin()
+        }
         val result = userService.listUser(rids.orEmpty()).map {
             UserResult(it.userId, it.name)
         }
