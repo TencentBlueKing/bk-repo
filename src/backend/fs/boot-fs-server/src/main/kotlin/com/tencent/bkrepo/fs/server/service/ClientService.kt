@@ -132,7 +132,8 @@ class ClientService(
                 newLabels.putAll(it.labels)
                 newLabels["clientIp"] = ip
                 val metricItem = MetricsItem(
-                    it.metricName, it.metricHelp, DataModel.valueOf(it.metricDataModel), it.keepHistory, it.value.toDouble(), newLabels
+                    it.metricName, it.metricHelp, DataModel.valueOf(it.metricDataModel),
+                    it.keepHistory, it.value.toDouble(), newLabels
                 )
                 customMetricsExporter?.reportMetrics(metricItem)
             }

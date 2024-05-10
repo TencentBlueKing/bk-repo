@@ -27,7 +27,10 @@
 
 package com.tencent.bkrepo.common.metrics.push.custom.enums
 
-enum class TypeOfMetricsItem(val displayName: String, val help: String, val dataModel: DataModel, val keepHistory: Boolean) {
+enum class TypeOfMetricsItem(
+    val displayName: String, val help: String,
+    val dataModel: DataModel, val keepHistory: Boolean
+) {
     /**
      * 制品上传速率
      */
