@@ -69,6 +69,7 @@ class ArchiveInfoModel @Autowired constructor(
         logger.info("Start update archive metrics.")
         // 遍历节点表
         val criteria = Criteria.where("archived").isEqualTo(true)
+            .and("deleted").isEqualTo(null)
         val query = Query(criteria)
         val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
         GcInfoModel.forEachCollectionAsync {
