@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.job.migrate.executor.handler
 
-import com.sun.org.slf4j.internal.LoggerFactory
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.Node
+import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Component
 import java.io.FileNotFoundException
