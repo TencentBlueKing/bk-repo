@@ -68,7 +68,7 @@ class StorageRollbackJob(
         return StoreRecord(
             id = row[ID].toString(),
             createdDate = TimeUtils.parseMongoDateTimeStr(row[StoreRecord::createdDate.name].toString())!!,
-            lastModifiedDate = TimeUtils.parseMongoDateTimeStr(row[StoreRecord::createdDate.name].toString())!!,
+            lastModifiedDate = TimeUtils.parseMongoDateTimeStr(row[StoreRecord::lastModifiedDate.name].toString())!!,
             sha256 = row[StoreRecord::sha256.name].toString(),
             credentialsKey = row[StoreRecord::credentialsKey.name]?.toString(),
         )
