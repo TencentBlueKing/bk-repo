@@ -38,6 +38,7 @@ import java.time.LocalDateTime
 @Document("store_record")
 @CompoundIndexes(
     CompoundIndex(name = "sha256_idx", def = "{'sha256': 1}", background = true),
+    CompoundIndex(name = "lastModifiedDate_idx", def = "{'lastModifiedDate': 1}", background = true),
 )
 data class TStoreRecord(
     val id: String? = null,
