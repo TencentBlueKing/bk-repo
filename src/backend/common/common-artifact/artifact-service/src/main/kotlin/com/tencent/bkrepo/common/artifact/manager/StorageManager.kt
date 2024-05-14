@@ -80,6 +80,7 @@ class StorageManager(
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
     ): NodeDetail {
+        // 存储失败后会根据存储记录通过定时任务StorageRollbackJob进行回滚清理冗余存储
         val storingRecord = storeRecordClient.recordStoring(request.sha256!!, storageCredentials?.key).data!!
         storageService.store(request.sha256!!, artifactFile, storageCredentials)
         val node = nodeClient.createNode(request).data!!
