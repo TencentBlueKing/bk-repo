@@ -102,7 +102,7 @@ class StorageRollbackJob(
 
         // 处理结束后删除存储记录
         logger.info("finish rollback file[${row.sha256}] of storage[${row.credentialsKey}]")
-        mongoTemplate.remove(Query(Criteria.where(ID).isEqualTo(row.id)))
+        mongoTemplate.remove(Query(Criteria.where(ID).isEqualTo(row.id)), COLLECTION_NAME)
     }
 
     data class FileReference(
