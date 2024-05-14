@@ -41,5 +41,5 @@ data class RepoListOption(
     @ApiModelProperty("是否可展示的仓库", required = false)
     val display: Boolean? = true,
     @ApiModelProperty("包含的仓库列表，不受display限制", required = false)
-    val include: Set<String>? = null,
+    val include: String? = null,
 )

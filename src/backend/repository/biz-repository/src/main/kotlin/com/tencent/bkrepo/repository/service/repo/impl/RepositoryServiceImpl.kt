@@ -205,9 +205,11 @@ class RepositoryServiceImpl(
         val originNames = originResults.map { it.name }.toSet()
         var includeResults = emptyList<RepositoryInfo>()
         if (names.isNotEmpty() && option.include != null) {
-            val inValues = names.intersect(option.include!!).minus(originNames)
+            logger.info("aaaaa")
+            val inValues = names.intersect(setOf(option.include!!)).minus(originNames)
             val includeCriteria = where(TRepository::projectId).isEqualTo(projectId)
                 .and(TRepository::name).inValues(inValues)
+            logger.info(includeCriteria.toJsonString())
             includeResults = repositoryDao.find(Query(includeCriteria)).map { convertToInfo(it)!! }
         }
         return originResults + includeResults
