@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.monitor.Throughput
-import java.util.concurrent.atomic.AtomicBoolean
 import org.slf4j.LoggerFactory
 import kotlin.system.measureNanoTime
 
@@ -53,7 +52,6 @@ abstract class AbstractStorageService : CompressSupport() {
         digest: String,
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
-        cancel: AtomicBoolean?,
         storageClass: String?,
     ): Int {
         val path = fileLocator.locate(digest)
@@ -65,7 +63,7 @@ abstract class AbstractStorageService : CompressSupport() {
             } else {
                 val size = artifactFile.getSize()
                 val nanoTime = measureNanoTime {
-                    doStore(path, digest, artifactFile, credentials, cancel, storageClass)
+                    doStore(path, digest, artifactFile, credentials, storageClass)
                 }
                 val throughput = Throughput(size, nanoTime)
                 logger.info("Success to store artifact file [$digest], $throughput.")

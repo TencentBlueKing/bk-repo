@@ -41,13 +41,13 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.StoreRecordClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 存储管理类
@@ -66,6 +66,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
+    private val storeRecordClient: StoreRecordClient,
     private val nodeResourceFactoryImpl: NodeResourceFactoryImpl,
     private val pluginManager: PluginManager,
 ) {
@@ -79,23 +80,11 @@ class StorageManager(
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
     ): NodeDetail {
-        val cancel = AtomicBoolean(false)
-        val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials, cancel)
-        try {
-            return nodeClient.createNode(request).data!!
-        } catch (exception: Exception) {
-            // 当文件有创建，则删除文件
-            if (affectedCount == 1) {
-                try {
-                    cancel.set(true)
-                    storageService.delete(request.sha256!!, storageCredentials)
-                } catch (exception: Exception) {
-                    logger.error("Failed to delete new created file[${request.sha256}]", exception)
-                }
-            }
-            // 异常往上抛
-            throw exception
-        }
+        val storingRecord = storeRecordClient.recordStoring(request.sha256!!, storageCredentials?.key).data!!
+        storageService.store(request.sha256!!, artifactFile, storageCredentials)
+        val node = nodeClient.createNode(request).data!!
+        storeRecordClient.storeFinished(storingRecord.id)
+        return node
     }
 
     /**

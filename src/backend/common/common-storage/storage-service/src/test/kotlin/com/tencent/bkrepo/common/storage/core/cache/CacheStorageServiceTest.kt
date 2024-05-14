@@ -48,7 +48,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
@@ -58,7 +57,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.io.File
 import java.nio.charset.Charset
 import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.random.Random
 import org.springframework.util.StreamUtils
@@ -224,16 +222,6 @@ internal class CacheStorageServiceTest {
 
         // check cache
         Assertions.assertFalse(cacheClient.exist(path, sha256))
-    }
-
-    @Test
-    fun cancelStoreTest() {
-        val size = 1024L
-        val artifactFile = createTempArtifactFile(size)
-        val sha256 = artifactFile.getFileSha256()
-        val cancel = AtomicBoolean(false)
-        cancel.set(true)
-        assertDoesNotThrow { storageService.store(sha256, artifactFile, null, cancel) }
     }
 
     @Test

@@ -61,7 +61,6 @@ interface StorageService :
         digest: String,
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
-        cancel: AtomicBoolean? = null,
         storageClass: String? = null,
     ): Int
 
