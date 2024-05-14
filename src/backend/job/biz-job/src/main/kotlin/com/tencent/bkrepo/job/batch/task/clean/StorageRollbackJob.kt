@@ -29,8 +29,11 @@ package com.tencent.bkrepo.job.batch.task.clean
 
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.StorageRollbackJobProperties
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
@@ -51,6 +54,8 @@ import java.time.LocalDateTime
 @EnableConfigurationProperties(StorageRollbackJobProperties::class)
 class StorageRollbackJob(
     private val properties: StorageRollbackJobProperties,
+    private val storageProperties: StorageProperties,
+    private val storageService: StorageService,
 ) : DefaultContextMongoDbJob<StoreRecord>(properties) {
     override fun collectionNames() = listOf(COLLECTION_NAME)
 
@@ -78,15 +83,21 @@ class StorageRollbackJob(
         val sharding = HashShardingUtils.shardingSequenceFor(row.sha256, SHARDING_COUNT)
         val fileRefCollectionName = "$COLLECTION_PREFIX$sharding"
         val fileReferenceExists = mongoTemplate.exists(Query(fileReferenceCriteria), fileRefCollectionName)
+        val credentials = row.credentialsKey
+            ?.let { RepositoryCommonUtils.getStorageCredentials(it) }
+            ?: storageProperties.defaultStorageCredentials()
 
         if (fileReferenceExists) {
             // 文件引用存在时不需要回滚，此时删除store record
             logger.info("file reference[${row.sha256}] of storage[${row.credentialsKey}] exists, skip rollback")
-        } else {
+        } else if (storageService.exist(row.sha256, credentials)) {
             // 文件引用不存在时表示制品存储成功后node未成功创建，此时需要删除冗余存储
             // 创建一个计数为0的引用，FileReferenceCleanupJob中会清理该文件
             logger.info("create count 0 reference[${row.sha256}] of storage[${row.credentialsKey}]")
             mongoTemplate.insert(FileReference(null, row.sha256, row.credentialsKey, 0))
+        } else {
+            // 引用与文件都不存在时表示文件未成功存储，不需要回滚
+            logger.warn("file[${row.sha256}] of storage[${row.credentialsKey}] not exists, skip rollback")
         }
 
         // 处理结束后删除存储记录
