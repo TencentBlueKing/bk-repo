@@ -85,4 +85,25 @@ interface FileReferenceService {
      * @param sha256 所引用文件的sha256
      */
     fun get(credentialsKey: String?, sha256: String): FileReference
+
+    /**
+     * 判断引用是否存在
+     *
+     * @param sha256 所引用文件的sha256
+     * @param credentialsKey 文件所在存储实例
+     *
+     * @return 是否存在
+     */
+    fun exists(sha256: String, credentialsKey: String?): Boolean
+
+    /**
+     * 创建引用
+     *
+     * @param sha256 所引用文件的sha256
+     * @param credentialsKey 文件所在存储实例
+     * @param count 引用数
+     *
+     * @return 创建成功的引用
+     */
+    fun create(sha256: String, credentialsKey: String?, count: Long = 0L): FileReference
 }

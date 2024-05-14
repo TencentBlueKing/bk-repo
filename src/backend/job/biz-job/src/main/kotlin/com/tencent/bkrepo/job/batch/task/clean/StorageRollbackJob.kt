@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.job.batch.task.clean
 
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
@@ -36,7 +35,7 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.StorageRollbackJobProperties
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.pojo.file.StoreRecord
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -56,6 +55,7 @@ class StorageRollbackJob(
     private val properties: StorageRollbackJobProperties,
     private val storageProperties: StorageProperties,
     private val storageService: StorageService,
+    private val fileReferenceClient: FileReferenceClient,
 ) : DefaultContextMongoDbJob<StoreRecord>(properties) {
     override fun collectionNames() = listOf(COLLECTION_NAME)
 
@@ -78,23 +78,18 @@ class StorageRollbackJob(
 
     override fun run(row: StoreRecord, collectionName: String, context: JobContext) {
         logger.info("start rollback file[${row.sha256}] of storage[${row.credentialsKey}]")
-        val fileReferenceCriteria = FileReference::sha256.isEqualTo(row.sha256)
-            .and(FileReference::credentialsKey.name).isEqualTo(row.credentialsKey)
-        val sharding = HashShardingUtils.shardingSequenceFor(row.sha256, SHARDING_COUNT)
-        val fileRefCollectionName = "$COLLECTION_PREFIX$sharding"
-        val fileReferenceExists = mongoTemplate.exists(Query(fileReferenceCriteria), fileRefCollectionName)
         val credentials = row.credentialsKey
             ?.let { RepositoryCommonUtils.getStorageCredentials(it) }
             ?: storageProperties.defaultStorageCredentials()
 
-        if (fileReferenceExists) {
+        if (fileReferenceClient.exists(row.sha256, row.credentialsKey).data!!) {
             // 文件引用存在时不需要回滚，此时删除store record
             logger.info("file reference[${row.sha256}] of storage[${row.credentialsKey}] exists, skip rollback")
         } else if (storageService.exist(row.sha256, credentials)) {
             // 文件引用不存在时表示制品存储成功后node未成功创建，此时需要删除冗余存储
             // 创建一个计数为0的引用，FileReferenceCleanupJob中会清理该文件
             logger.info("create count 0 reference[${row.sha256}] of storage[${row.credentialsKey}] to rollback storage")
-            mongoTemplate.insert(FileReference(null, row.sha256, row.credentialsKey, 0L))
+            fileReferenceClient.create(row.sha256, row.credentialsKey)
         } else {
             // 引用与文件都不存在时表示文件未成功存储，不需要回滚
             logger.info("file[${row.sha256}] of storage[${row.credentialsKey}] not exists, skip rollback")
@@ -105,16 +100,8 @@ class StorageRollbackJob(
         mongoTemplate.remove(Query(Criteria.where(ID).isEqualTo(row.id)), COLLECTION_NAME)
     }
 
-    data class FileReference(
-        val id: String? = null,
-        val sha256: String,
-        val credentialsKey: String? = null,
-        val count: Long
-    )
-
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java)
         private const val COLLECTION_NAME = "store_record"
-        private const val COLLECTION_PREFIX = "file_reference_"
     }
 }

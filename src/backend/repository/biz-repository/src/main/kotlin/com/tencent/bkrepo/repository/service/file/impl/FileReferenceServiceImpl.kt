@@ -128,6 +128,23 @@ class FileReferenceServiceImpl(
         return convert(tFileReference)
     }
 
+    override fun exists(sha256: String, credentialsKey: String?): Boolean {
+        return fileReferenceDao.exists(buildQuery(sha256, credentialsKey))
+    }
+
+    override fun create(sha256: String, credentialsKey: String?, count: Long): FileReference {
+        val ref = fileReferenceDao.insert(
+            TFileReference(
+                id = null,
+                sha256 = sha256,
+                credentialsKey = credentialsKey,
+                count = count
+            )
+        )
+        logger.info("create count[$count] reference of file [$sha256] on credentialsKey [$credentialsKey].")
+        return convert(ref)
+    }
+
     private fun convert(tFileReference: TFileReference): FileReference {
         return tFileReference.run { FileReference(sha256, credentialsKey, count) }
     }

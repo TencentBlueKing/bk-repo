@@ -2,8 +2,10 @@ package com.tencent.bkrepo.repository.api
 
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.file.FileReference
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -11,6 +13,13 @@ import org.springframework.web.bind.annotation.RequestParam
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "FileReferenceClient")
 @RequestMapping("/service/fileReference")
 interface FileReferenceClient {
+
+    @PostMapping("/create")
+    fun create(
+        @RequestParam sha256: String,
+        @RequestParam credentialsKey: String?,
+        @RequestParam(required = false, defaultValue = "0") count: Long = 0L,
+    ): Response<FileReference>
 
     @PutMapping("/decrement")
     fun decrement(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Response<Boolean>
@@ -20,4 +29,7 @@ interface FileReferenceClient {
 
     @GetMapping("/count")
     fun count(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Response<Long>
+
+    @GetMapping("/exists")
+    fun exists(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Response<Boolean>
 }
