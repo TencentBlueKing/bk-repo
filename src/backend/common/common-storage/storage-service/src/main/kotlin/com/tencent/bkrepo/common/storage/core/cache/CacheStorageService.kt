@@ -147,6 +147,7 @@ class CacheStorageService(
         val size = File(cacheFilePath).length()
         fileStorage.delete(path, filename, credentials)
         getCacheClient(credentials).delete(path, filename)
+        getStagingClient(credentials).delete(path, filename)
         cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)
     }
 
