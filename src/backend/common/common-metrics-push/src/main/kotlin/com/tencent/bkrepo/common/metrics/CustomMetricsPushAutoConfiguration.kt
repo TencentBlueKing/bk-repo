@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.base.BkHttpConnectionFactory
 import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusDrive
 import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusPush
+import com.tencent.bkrepo.common.metrics.push.custom.config.CustomPushConfig
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.PushGateway
 import org.slf4j.LoggerFactory
@@ -38,6 +39,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties
 import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusPushGatewayManager
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
@@ -52,10 +54,9 @@ import java.time.Duration
  */
 
 @Configuration
+@EnableConfigurationProperties(CustomPushConfig::class)
 class CustomMetricsPushAutoConfiguration {
 
-    @Value("\${prometheus.push.custom.bktoken:}")
-    private val token: String = ""
 
     @Value(SERVICE_NAME)
     private lateinit var serviceName: String
@@ -65,12 +66,13 @@ class CustomMetricsPushAutoConfiguration {
     fun prometheusPushGatewayManager(
         collectorRegistry: CollectorRegistry?,
         prometheusProperties: PrometheusProperties,
+        customPushConfig: CustomPushConfig
     ): PrometheusPushGatewayManager? {
         val properties = prometheusProperties.pushgateway
         val pushRate: Duration = properties.pushRate
         val job = getJob(properties)
         val pushGateway: PushGateway = initializePushGateway(properties.baseUrl)
-        pushGateway.setConnectionFactory(BkHttpConnectionFactory(token = token)) // 蓝鲸监控的Token
+        pushGateway.setConnectionFactory(BkHttpConnectionFactory(token = customPushConfig.bktoken)) // 蓝鲸监控的Token
         val groupingKey = properties.groupingKey
         val shutdownOperation = properties.shutdownOperation
         return PrometheusPushGatewayManager(
@@ -79,28 +81,30 @@ class CustomMetricsPushAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = ["prometheus.push.custom.enabled"])
+    @ConditionalOnProperty(value = ["management.metrics.custom.enabled"])
     fun prometheusDrive(
         prometheusProperties: PrometheusProperties,
+        customPushConfig: CustomPushConfig
     ): PrometheusDrive {
         val properties = prometheusProperties.pushgateway
         val groupingKey = properties.groupingKey
         val job = getJob(properties)
         val pushDrive = PrometheusPush(
             job, groupingKey, properties.baseUrl,
-            token, properties.username, properties.password
+            customPushConfig.bktoken, properties.username, properties.password
         )
         return PrometheusDrive(pushDrive = pushDrive)
     }
 
     @Bean
-    @ConditionalOnProperty(value = ["prometheus.push.custom.enabled"])
+    @ConditionalOnProperty(value = ["management.metrics.custom.enabled"])
     fun customMetricsExporter(
         drive: PrometheusDrive,
         prometheusProperties: PrometheusProperties,
         scheduler: ThreadPoolTaskScheduler,
+        customPushConfig: CustomPushConfig,
     ): CustomMetricsExporter {
-        return CustomMetricsExporter(CollectorRegistry(), drive, prometheusProperties, scheduler)
+        return CustomMetricsExporter(customPushConfig, CollectorRegistry(), drive, prometheusProperties, scheduler)
     }
 
 

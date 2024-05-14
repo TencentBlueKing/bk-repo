@@ -25,28 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.metrics.push.custom
+package com.tencent.bkrepo.common.metrics.push.custom.config
 
-import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
-import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusDrive
-import com.tencent.bkrepo.common.metrics.push.custom.config.CustomPushConfig
-import io.prometheus.client.CollectorRegistry
-import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import com.tencent.bkrepo.common.api.constant.StringPool
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-class CustomMetricsExporter(
-    private val customPushConfig: CustomPushConfig,
-    private val registry: CollectorRegistry,
-    private var drive: PrometheusDrive,
-    private var prometheusProperties: PrometheusProperties,
-    private val scheduler: ThreadPoolTaskScheduler,
-    private var scheduleMetricsExporter: ScheduleMetricsExporter = ScheduleMetricsExporter(
-        registry, drive, scheduler, prometheusProperties.pushgateway.pushRate
-    )
-) {
-
-    fun reportMetrics(item: MetricsItem) {
-        if (!customPushConfig.enabled) return
-        scheduleMetricsExporter.queue.offer(item)
-    }
-}
+@ConfigurationProperties("management.metrics.custom")
+data class CustomPushConfig(
+    var enabled: Boolean = false,
+    /**
+     * token
+     * */
+    var bktoken: String = StringPool.EMPTY,
+)

@@ -131,10 +131,14 @@ class ClientService(
                 val newLabels = mutableMapOf<String, String>()
                 newLabels.putAll(it.labels)
                 newLabels["clientIp"] = ip
-                val metricItem = MetricsItem(
-                    it.metricName, it.metricHelp, DataModel.valueOf(it.metricDataModel),
-                    it.keepHistory, it.value.toDouble(), newLabels
-                )
+                val metricItem = try {
+                    MetricsItem(
+                        it.metricName, it.metricHelp, DataModel.valueOf(it.metricDataModel),
+                        it.keepHistory, it.value.toDouble(), newLabels
+                    )
+                } catch (e: Exception) {
+                    throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID, it)
+                }
                 customMetricsExporter?.reportMetrics(metricItem)
             }
         }
