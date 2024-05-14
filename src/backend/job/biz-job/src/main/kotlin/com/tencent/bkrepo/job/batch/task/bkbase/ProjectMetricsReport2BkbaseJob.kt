@@ -61,7 +61,7 @@ import kotlin.reflect.KClass
 class ProjectMetricsReport2BkbaseJob(
     val properties: ProjectMetricsReport2BkbaseJobProperties,
     val messageSupplier: MessageSupplier
-) : DefaultContextMongoDbJob<TProjectMetrics>(properties) {
+) : DefaultContextMongoDbJob<TProjectMetrics>(properties)  {
     override fun collectionNames(): List<String> {
         return listOf(COLLECTION_NAME_PROJECT_METRICS)
     }
@@ -109,30 +109,18 @@ class ProjectMetricsReport2BkbaseJob(
         current: TProjectMetrics, project: ProjectInfo, statTime: LocalDateTime
     ): ProjectMetrics {
         val pipelineCapSize = filterByRepoName(current, PIPELINE)
-        val pipelineNodeNum = filterByRepoName(current, PIPELINE, "num")
         val customCapSize = filterByRepoName(current, CUSTOM)
-        val customNodeNum = filterByRepoName(current, CUSTOM, "num")
-
         val helmRepoCapSize = filterByRepoType(current, RepositoryType.HELM.name)
-        val helmRepoNodeNum = filterByRepoType(current, RepositoryType.HELM.name, "num")
-
         val dockerRepoCapSize = filterByRepoType(current, RepositoryType.DOCKER.name)
-        val dockerRepoNodeNum = filterByRepoType(current, RepositoryType.DOCKER.name, "num")
-
-
         return ProjectMetrics(
             projectId = current.projectId,
             nodeNum = current.nodeNum,
             capSize = current.capSize,
             createdDate = statTime,
             pipelineCapSize = pipelineCapSize,
-            pipelineNodeNum = pipelineNodeNum,
             customCapSize = customCapSize,
-            customNodeNum = customNodeNum,
             helmRepoCapSize = helmRepoCapSize,
-            helmRepoNodeNum = helmRepoNodeNum,
             dockerRepoCapSize = dockerRepoCapSize,
-            dockerRepoNodeNum = dockerRepoNodeNum,
             bgName = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_BG_NAME }?.value as? String,
             deptName = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_DEPT_NAME }?.value as? String,
             centerName = project.metadata.firstOrNull { it.key == ProjectMetadata.KEY_CENTER_NAME }?.value as? String,
@@ -143,28 +131,18 @@ class ProjectMetricsReport2BkbaseJob(
     }
 
 
-    private fun filterByRepoName(metric: TProjectMetrics?, repoName: String, target: String = "size"): Long {
-        val repoMetrics = metric?.repoMetrics?.firstOrNull { it.repoName == repoName }
-        return if (target == "size") {
-            repoMetrics?.size
-        } else {
-            repoMetrics?.num
-        } ?: 0
+    private fun filterByRepoName(metric: TProjectMetrics?, repoName: String): Long {
+        return metric?.repoMetrics?.firstOrNull { it.repoName == repoName }?.size ?: 0
     }
 
-
-    private fun filterByRepoType(metric: TProjectMetrics?, repoType: String, target: String = "size"): Long {
-        var resultOfType: Long = 0
+    private fun filterByRepoType(metric: TProjectMetrics?, repoType: String): Long {
+        var sizeOfRepoType: Long = 0
         metric?.repoMetrics?.forEach { repo ->
             if (repo.type == repoType) {
-                resultOfType += if (target == "size") {
-                    repo.size
-                } else {
-                    repo.num
-                }
+                sizeOfRepoType += repo.size
             }
         }
-        return resultOfType
+        return sizeOfRepoType
     }
 
     data class ProjectMetrics(
@@ -177,13 +155,9 @@ class ProjectMetricsReport2BkbaseJob(
         var nodeNum: Long,
         var capSize: Long,
         var pipelineCapSize: Long = 0,
-        var pipelineNodeNum: Long = 0,
         var customCapSize: Long = 0,
-        var customNodeNum: Long = 0,
         var helmRepoCapSize: Long = 0,
-        var helmRepoNodeNum: Long = 0,
         var dockerRepoCapSize: Long = 0,
-        var dockerRepoNodeNum: Long = 0,
         val createdDate: LocalDateTime,
         val active: Boolean = true
     )
