@@ -93,14 +93,15 @@ class StorageRollbackJob(
         } else if (storageService.exist(row.sha256, credentials)) {
             // 文件引用不存在时表示制品存储成功后node未成功创建，此时需要删除冗余存储
             // 创建一个计数为0的引用，FileReferenceCleanupJob中会清理该文件
-            logger.info("create count 0 reference[${row.sha256}] of storage[${row.credentialsKey}]")
-            mongoTemplate.insert(FileReference(null, row.sha256, row.credentialsKey, 0))
+            logger.info("create count 0 reference[${row.sha256}] of storage[${row.credentialsKey}] to rollback storage")
+            mongoTemplate.insert(FileReference(null, row.sha256, row.credentialsKey, 0L))
         } else {
             // 引用与文件都不存在时表示文件未成功存储，不需要回滚
-            logger.warn("file[${row.sha256}] of storage[${row.credentialsKey}] not exists, skip rollback")
+            logger.info("file[${row.sha256}] of storage[${row.credentialsKey}] not exists, skip rollback")
         }
 
         // 处理结束后删除存储记录
+        logger.info("finish rollback file[${row.sha256}] of storage[${row.credentialsKey}]")
         mongoTemplate.remove(Query(Criteria.where(ID).isEqualTo(row.id)))
     }
 
