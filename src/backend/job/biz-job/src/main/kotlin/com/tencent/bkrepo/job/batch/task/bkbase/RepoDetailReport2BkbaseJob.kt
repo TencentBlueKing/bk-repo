@@ -69,8 +69,9 @@ class RepoDetailReport2BkbaseJob(
 
     override fun run(row: TProjectMetrics, collectionName: String, context: JobContext) {
         val repoDetails = calculateRepoStorage(row)
-        if (repoDetails.isEmpty()) return
-        messageSupplier.delegateToSupplier(repoDetails, topic = TOPIC, binderType = BinderType.KAFKA)
+        repoDetails.forEach {
+            messageSupplier.delegateToSupplier(it, topic = TOPIC, binderType = BinderType.KAFKA)
+        }
     }
 
     override fun mapToEntity(row: Map<String, Any?>): TProjectMetrics {
