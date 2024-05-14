@@ -32,23 +32,12 @@ enum class TypeOfMetricsItem(
     val dataModel: DataModel, val keepHistory: Boolean
 ) {
     /**
-     * 制品上传速率
+     * 制品传输速率
      */
-    ARTIFACT_TRANSFER_RECEIVE_RATE(
-        "artifact_transfer_receive_rate",
-        "artifact transfer receive rate",
+    ARTIFACT_TRANSFER_RATE(
+        "artifact_transfer_rate",
+        "artifact transfer rate",
         DataModel.DATAMODEL_GAUGE,
         false,
     ),
-
-    /**
-     * 制品下载速率
-     */
-    ARTIFACT_TRANSFER_RESPONSE_RATE(
-        "artifact_transfer_response_rate",
-        "artifact transfer response rate",
-        DataModel.DATAMODEL_GAUGE,
-        false,
-    ),
-
 }

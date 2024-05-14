@@ -33,7 +33,6 @@ package com.tencent.bkrepo.common.artifact.metrics.export
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
-import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord.Companion.RECEIVE
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.metrics.push.custom.enums.TypeOfMetricsItem
@@ -53,14 +52,10 @@ class ArtifactMetricsExporter(
             val item = queue.poll()
             if (item.project == StringPool.UNKNOWN || item.fullPath == StringPool.UNKNOWN) continue
             val labels = convertRecordToMap(item)
-            val type = if (item.type == RECEIVE) {
-                TypeOfMetricsItem.ARTIFACT_TRANSFER_RECEIVE_RATE
-            } else {
-                TypeOfMetricsItem.ARTIFACT_TRANSFER_RESPONSE_RATE
-            }
+            val metrics = TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE
             val metricItem = MetricsItem(
-                type.displayName, type.help,
-                type.dataModel, type.keepHistory, item.average.toDouble(), labels
+                metrics.displayName, metrics.help,
+                metrics.dataModel, metrics.keepHistory, item.average.toDouble(), labels
             )
             customMetricsExporter?.reportMetrics(metricItem)
         }
@@ -76,7 +71,7 @@ class ArtifactMetricsExporter(
         labels[ArtifactTransferRecord::repoName.name] = record.repoName
         labels[ArtifactTransferRecord::project.name] = record.project
         labels[ArtifactTransferRecord::elapsed.name] = record.elapsed.toString()
-
+        labels[ArtifactTransferRecord::type.name] = record.type
         return labels
     }
 
