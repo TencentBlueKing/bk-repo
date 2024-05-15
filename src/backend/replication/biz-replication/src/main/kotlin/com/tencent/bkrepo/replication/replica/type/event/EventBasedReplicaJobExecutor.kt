@@ -94,47 +94,35 @@ class EventBasedReplicaJobExecutor(
     }
 
     private fun pathCheck(event: ArtifactEvent, task: ReplicaTaskDetail): Boolean {
-        when (event.type) {
-            EventType.NODE_CREATED -> {
-                task.objects.forEach {
-                    it.pathConstraints?.forEach {
-                        if (it.path.isNullOrEmpty()) {
-                            return false
-                        }
-                        val fullPath = PathUtils.toFullPath(it.path!!)
-                        if (event.resourceKey == fullPath) return true
-                        val ancestorFolder = PathUtils.resolveAncestor(event.resourceKey)
-                        for (folder in ancestorFolder) {
-                            if (PathUtils.toFullPath(folder) == fullPath) {
-                                return true
-                            }
-                        }
-                    }
+        if (event.type != EventType.NODE_CREATED) return false
+        task.objects.forEach {
+            it.pathConstraints?.forEach {
+                if (it.path.isNullOrEmpty()) {
+                    return false
                 }
-                return false
+                val fullPath = PathUtils.toFullPath(it.path!!)
+                if (event.resourceKey == fullPath) return true
+                val ancestorFolder = PathUtils.resolveAncestor(event.resourceKey)
+                val existPath = ancestorFolder.firstOrNull { PathUtils.toFullPath(it) == fullPath }
+                if (existPath != null) return true
             }
-            else -> return false
         }
+        return false
     }
 
     private fun packageCheck(event: ArtifactEvent, task: ReplicaTaskDetail): Boolean {
-        when (event.type) {
-            EventType.VERSION_CREATED, EventType.VERSION_UPDATED -> {
-                val packageKey = event.data["packageKey"].toString()
-                val packageVersion = event.data["packageVersion"].toString()
-                task.objects.forEach {
-                    it.packageConstraints?.forEach {
-                        if (packageKey == it.packageKey) {
-                            if (it.versions.isNullOrEmpty() || it.versions!!.contains(packageVersion)) {
-                                return true
-                            }
-                        }
-                    }
+        if (event.type != EventType.VERSION_CREATED && event.type != EventType.VERSION_UPDATED) return false
+        val packageKey = event.data["packageKey"].toString()
+        val packageVersion = event.data["packageVersion"].toString()
+        task.objects.forEach {
+            it.packageConstraints?.forEach {
+                if (packageKey != it.packageKey) return false
+                if (it.versions.isNullOrEmpty() || it.versions!!.contains(packageVersion)) {
+                    return true
                 }
-                return false
             }
-            else -> return false
         }
+        return false
     }
 
     companion object {
