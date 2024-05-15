@@ -73,10 +73,9 @@ class ScheduleMetricsExporter(
         // 上报前清除没有数据的指标
         removeEmptyMetrics(registry)
         logger.debug("metrics: ${registry.metricFamilySamples().iterator().toJsonString()}")
-        val pushResult = drive.push(registry)
-        if (pushResult) {
-            MetricsDataManager.clearMetricsHistory()
-        }
+        drive.push(registry)
+        // 不管是否成功都清除，避免异常情况下占用内存过多
+        MetricsDataManager.clearMetricsHistory()
     }
 
     companion object {
