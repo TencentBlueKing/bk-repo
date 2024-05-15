@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.pojo.file.FileReference
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -133,15 +134,18 @@ class FileReferenceServiceImpl(
     }
 
     override fun create(sha256: String, credentialsKey: String?, count: Long): FileReference {
-        val ref = fileReferenceDao.insert(
-            TFileReference(
-                id = null,
-                sha256 = sha256,
-                credentialsKey = credentialsKey,
-                count = count
-            )
-        )
-        logger.info("create count[$count] reference of file [$sha256] on credentialsKey [$credentialsKey].")
+        val query = buildQuery(sha256, credentialsKey)
+        val update = Update().inc(TFileReference::count.name, count)
+        val option = FindAndModifyOptions().upsert(true).returnNew(true)
+
+        val ref = try {
+            fileReferenceDao.findAndModify(query, update, option, TFileReference::class.java)!!
+        } catch (exception: DuplicateKeyException) {
+            // retry because upsert operation is not atomic
+            fileReferenceDao.findAndModify(query, update, option, TFileReference::class.java)!!
+        }
+
+        logger.info("create reference of file [$sha256] on credentialsKey [$credentialsKey].")
         return convert(ref)
     }
 

@@ -121,6 +121,21 @@ class FileReferenceServiceTest @Autowired constructor(
         }
     }
 
+    @Test
+    fun testCreateFileReference() {
+        val sha256 = uniqueId()
+        // ref not exists
+        assertFalse(fileReferenceService.exists(sha256, null))
+        var ref = fileReferenceService.create(sha256, null)
+        assertEquals(0L, ref.count)
+
+        // ref already exists
+        assertTrue(fileReferenceService.exists(sha256, null))
+        fileReferenceService.increment(sha256, null)
+        ref = fileReferenceService.create(sha256, null)
+        assertEquals(1L, ref.count)
+    }
+
     private fun createReference(repoName: String = UT_REPO_NAME) {
         val createRequest = NodeCreateRequest(
             projectId = UT_PROJECT_ID,
