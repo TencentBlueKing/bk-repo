@@ -144,18 +144,14 @@ class OciBlobServiceImpl(
                 buildSessionIdLocationForUpload(this, domain)
                 return
             }
-            // 当mount仓库和当前仓库不在一个存储实例时，需要将文件进行拷贝
+            // 当mount仓库和当前仓库不在一个存储实例时，直接上传
             val mountRepo = repoClient.getRepoDetail(mountProjectId, mountRepoName).data
                 ?: throw RepoNotFoundException("$mountProjectId|$mountRepoName")
             val currentRepo = repoClient.getRepoDetail(projectId, repoName).data
                 ?: throw RepoNotFoundException("$projectId|$repoName")
             if (mountRepo.storageCredentials?.key != currentRepo.storageCredentials?.key) {
-                try {
-                    storageService.copy(ociDigest.hex, mountRepo.storageCredentials, currentRepo.storageCredentials)
-                } catch (e: Exception) {
-                    buildSessionIdLocationForUpload(this, domain)
-                    return
-                }
+                buildSessionIdLocationForUpload(this, domain)
+                return
             }
 
             // 用于新版本 blobs 路径区分
