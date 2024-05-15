@@ -46,6 +46,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import kotlin.reflect.KClass
 
 /**
@@ -97,6 +98,7 @@ class RepoDetailReport2BkbaseJob(
         current: TProjectMetrics
     ): List<RepoDetail> {
         val result = mutableListOf<RepoDetail>()
+        val reportDate = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
         current.repoMetrics.forEach {
             try {
                 val repo = RepositoryCommonUtils.getRepositoryDetail(current.projectId, it.repoName)
@@ -109,7 +111,8 @@ class RepoDetailReport2BkbaseJob(
                         repoType = it.type,
                         createdDate = repo.createdDate,
                         createdBy = repo.createdBy,
-                        quota = repo.quota
+                        quota = repo.quota,
+                        reportDate = reportDate
                     )
                 )
             } catch (e: RepoNotFoundException) {
@@ -128,7 +131,8 @@ class RepoDetailReport2BkbaseJob(
         var createdDate: String,
         var createdBy: String,
         var cleanupStrategy: String? = null,
-        var quota: Long? = null
+        var quota: Long? = null,
+        var reportDate: LocalDateTime,
     )
 
     companion object {
