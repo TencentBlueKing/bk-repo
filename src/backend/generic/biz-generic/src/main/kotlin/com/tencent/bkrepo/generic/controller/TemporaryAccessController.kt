@@ -96,10 +96,11 @@ class TemporaryAccessController(
     @GetMapping("/download/$GENERIC_MAPPING_URI")
     fun downloadByToken(
         artifactInfo: GenericArtifactInfo,
-        @RequestParam token: String
+        @RequestParam token: String,
+        @RequestParam userId: String?
     ) {
-        val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD)
-        temporaryAccessService.download(artifactInfo)
+        val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD, userId)
+        temporaryAccessService.download(artifactInfo, tokenInfo.createdBy)
         temporaryAccessService.decrementPermits(tokenInfo)
     }
 
