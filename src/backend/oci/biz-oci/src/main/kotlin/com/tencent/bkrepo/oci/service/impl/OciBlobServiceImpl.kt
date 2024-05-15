@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -68,7 +69,8 @@ class OciBlobServiceImpl(
     private val repoClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val ociOperationService: OciOperationService,
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val storageService: StorageService,
 ) : OciBlobService {
 
     override fun startUploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
@@ -142,6 +144,20 @@ class OciBlobServiceImpl(
                 buildSessionIdLocationForUpload(this, domain)
                 return
             }
+            // 当mount仓库和当前仓库不在一个存储实例时，需要将文件进行拷贝
+            val mountRepo = repoClient.getRepoDetail(mountProjectId, mountRepoName).data
+                ?: throw RepoNotFoundException("$mountProjectId|$mountRepoName")
+            val currentRepo = repoClient.getRepoDetail(projectId, repoName).data
+                ?: throw RepoNotFoundException("$projectId|$repoName")
+            if (mountRepo.storageCredentials?.key != currentRepo.storageCredentials?.key) {
+                try {
+                    storageService.copy(ociDigest.hex, mountRepo.storageCredentials, currentRepo.storageCredentials)
+                } catch (e: Exception) {
+                    buildSessionIdLocationForUpload(this, domain)
+                    return
+                }
+            }
+
             // 用于新版本 blobs 路径区分
             val metadata: MutableList<MetadataModel> = mutableListOf(
                 MetadataModel(key = BLOB_PATH_VERSION_KEY, value = BLOB_PATH_VERSION_VALUE, system = true)
@@ -159,7 +175,7 @@ class OciBlobServiceImpl(
             val blobLocation = OciLocationUtils.blobLocation(ociDigest, this)
             val responseProperty = ResponseProperty(
                 location = blobLocation,
-                status =  HttpStatus.CREATED
+                status = HttpStatus.CREATED
             )
             OciResponseUtils.buildUploadResponse(
                 domain = domain,
@@ -174,7 +190,7 @@ class OciBlobServiceImpl(
         val responseProperty = ResponseProperty(
             uuid = uuidCreated,
             location = OciLocationUtils.blobUUIDLocation(uuidCreated, artifactInfo),
-            status =  HttpStatus.ACCEPTED,
+            status = HttpStatus.ACCEPTED,
             contentLength = 0
         )
         OciResponseUtils.buildUploadResponse(
