@@ -115,11 +115,6 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @BeforeEach
     fun beforeEach() {
-        val tracer = mockk<OtelTracer>()
-        mockkObject(SpringContextUtils.Companion)
-        every { SpringContextUtils.getBean<Tracer>() } returns tracer
-        every { tracer.currentSpan() } returns null
-        every { SpringContextUtils.publishEvent(any()) } returns Unit
         Mockito.`when`(storageService.exist(anyString(), any())).thenReturn(true)
         val credentials = InnerCosCredentials()
         Mockito.`when`(storageCredentialsClient.findByKey(anyString())).thenReturn(
