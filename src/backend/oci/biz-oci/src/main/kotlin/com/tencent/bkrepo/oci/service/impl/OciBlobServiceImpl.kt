@@ -70,7 +70,6 @@ class OciBlobServiceImpl(
     private val nodeClient: NodeClient,
     private val ociOperationService: OciOperationService,
     private val permissionManager: PermissionManager,
-    private val storageService: StorageService,
 ) : OciBlobService {
 
     override fun startUploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
