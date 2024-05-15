@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.RepoDetailReport2BkbaseJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
@@ -42,11 +41,13 @@ import com.tencent.bkrepo.job.pojo.project.TRepoMetrics
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
 
 /**
@@ -101,7 +102,12 @@ class RepoDetailReport2BkbaseJob(
         val reportDate = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
         current.repoMetrics.forEach {
             try {
-                val repo = RepositoryCommonUtils.getRepositoryDetail(current.projectId, it.repoName)
+                val query = Query(
+                    where(RepoInfo::projectId).isEqualTo(current.projectId)
+                        .and(RepoInfo::name.name).isEqualTo(it.repoName)
+                )
+                val repo = mongoTemplate.find(query, RepoInfo::class.java, COLLECTION_NAME_REPOSITORY).firstOrNull()
+                    ?: throw RepoNotFoundException("${current.projectId}/${it.repoName}")
                 result.add(
                     RepoDetail(
                         projectId = current.projectId,
@@ -109,7 +115,7 @@ class RepoDetailReport2BkbaseJob(
                         repoUsage = it.size,
                         nodeNum = it.num,
                         repoType = it.type,
-                        createdDate = repo.createdDate,
+                        createdDate = repo.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                         createdBy = repo.createdBy,
                         quota = repo.quota,
                         reportDate = reportDate
@@ -135,9 +141,18 @@ class RepoDetailReport2BkbaseJob(
         var reportDate: LocalDateTime,
     )
 
+    data class RepoInfo(
+        var projectId: String,
+        var name: String,
+        var createdDate: LocalDateTime,
+        var createdBy: String,
+        var quota: Long? = null
+    )
+
     companion object {
         private val logger = LoggerFactory.getLogger(RepoDetailReport2BkbaseJob::class.java)
         private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
+        private const val COLLECTION_NAME_REPOSITORY = "repository"
         private const val TOPIC = "bkbase-bkrepo-repo-detail"
     }
 }
