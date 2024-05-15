@@ -32,6 +32,6 @@ import org.springframework.scheduling.annotation.Scheduled
 
 @ConfigurationProperties("job.repo-detail-report")
 class RepoDetailReport2BkbaseJobProperties(
-    override var enabled: Boolean = true,
+    override var enabled: Boolean = false,
     override var cron: String = Scheduled.CRON_DISABLED,
 ) : MongodbJobProperties(enabled)
