@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,36 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.common.metrics.push.custom.enums
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
-
-@ConfigurationProperties("management.metrics")
-data class ArtifactMetricsProperties(
-    /**
-     * 需要监控的仓库
-     * */
-    var includeRepositories: List<String> = emptyList(),
-
-    /**
-     * 最大meter数量
-     * */
-    var maxMeters: Int = -1,
-    /**
-     * 是否通过日志清洗获取传输指标数据
-     */
-    var collectByLog: Boolean = false,
-    /**
-     * 直方图le的最大值
-     */
-    var maxLe: Double = DataSize.ofMegabytes(100).toBytes().toDouble(),
-    /**
-     * 是否开启缓存使用情况统计
-     */
-    var enableArtifactCacheMetrics: Boolean = false,
-    /**
-     * 是否使用influxdb存储指标数据
-     */
-    var useInfluxDb: Boolean = true,
-)
+enum class DataModel {
+    DATAMODEL_COUNTER,
+    DATAMODEL_GAUGE,
+    DATAMODEL_HISTOGRAM,
+    DATAMODEL_SUMMARY
+}

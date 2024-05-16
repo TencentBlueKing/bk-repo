@@ -29,41 +29,8 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
-
-import org.influxdb.annotation.Column
-import org.influxdb.annotation.Measurement
-import org.influxdb.annotation.TimeColumn
-import java.time.Instant
-
-@Measurement(name = "artifact_transfer_record")
-data class ArtifactTransferRecord(
-    @TimeColumn
-    @Column(name = "time")
-    val time: Instant,
-    @Column(name = "type", tag = true)
-    val type: String,
-    @Column(name = "storage", tag = true)
-    val storage: String,
-    @Column(name = "elapsed")
-    val elapsed: Long,
-    @Column(name = "bytes")
-    val bytes: Long,
-    @Column(name = "average")
-    val average: Long,
-    @Column(name = "sha256")
-    val sha256: String,
-    @Column(name = "clientIp")
-    val clientIp: String,
-    @Column(name = "project")
-    val project: String,
-    @Column(name = "repoName")
-    val repoName: String,
-    @Column(name = "fullPath")
-    val fullPath: String
-) {
-    companion object {
-        const val RECEIVE = "RECEIVE"
-        const val RESPONSE = "RESPONSE"
-    }
+dependencies {
+    api(project(":common:common-service"))
+    api("io.micrometer:micrometer-registry-prometheus")
+    api("io.prometheus:simpleclient_pushgateway")
 }
