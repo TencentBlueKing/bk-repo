@@ -146,8 +146,10 @@ class ArtifactPreloadPlanServiceImpl(
         val pathNotMatch = !strategy.fullPathRegex.toRegex().matches(node.fullPath)
         val createTimeNotMatch = Duration.between(createdDateTime, now).seconds > strategy.recentSeconds
         if (sizeNotMatch || pathNotMatch || createTimeNotMatch) {
-            logger.info("${node.projectId}/${node.repoName}${node.fullPath} not match preload strategy, " +
-                    "node size[${node.size}], node createdDateTime[$createdDateTime]")
+            logger.info(
+                "${node.projectId}/${node.repoName}${node.fullPath} not match preload strategy, " +
+                        "node size[${node.size}], node createdDateTime[$createdDateTime]"
+            )
             return null
         }
 
