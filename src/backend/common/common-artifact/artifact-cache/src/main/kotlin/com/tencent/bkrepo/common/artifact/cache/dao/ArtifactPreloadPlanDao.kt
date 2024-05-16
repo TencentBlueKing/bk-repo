@@ -55,6 +55,10 @@ class ArtifactPreloadPlanDao : SimpleMongoDao<TArtifactPreloadPlan>() {
         return remove(Query(buildCriteria(projectId, repoName)))
     }
 
+    fun remove(id: String): DeleteResult {
+        return remove(Query(Criteria.where(ID).isEqualTo(id)))
+    }
+
     fun listReadyPlans(limit: Int): List<TArtifactPreloadPlan> {
         val now = System.currentTimeMillis()
         val criteria = Criteria.where(TArtifactPreloadPlan::status.name)
