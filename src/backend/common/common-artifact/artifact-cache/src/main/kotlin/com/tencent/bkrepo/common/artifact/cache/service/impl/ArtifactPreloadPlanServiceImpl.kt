@@ -81,7 +81,8 @@ class ArtifactPreloadPlanServiceImpl(
         val nodes = res.data?.records ?: return
         if (nodes.size >= MAX_PAGE_SIZE) {
             // 限制查询出来的最大node数量，避免预加载计划创建时间过久
-            throw RuntimeException("exceed max page size[$MAX_PAGE_SIZE]")
+            logger.warn("nodes of sha256[$sha256] exceed max page size[$MAX_PAGE_SIZE]")
+            return
         }
         // node属于同一项目仓库的概率较大，缓存避免频繁查询策略
         val strategyCache = HashMap<String, List<ArtifactPreloadStrategy>>()

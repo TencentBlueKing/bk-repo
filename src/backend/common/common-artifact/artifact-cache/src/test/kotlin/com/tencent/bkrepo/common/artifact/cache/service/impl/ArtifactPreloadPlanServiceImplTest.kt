@@ -174,7 +174,9 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
                 Pages.ofResponse(Pages.ofRequest(0, 2000), nodes.size.toLong(), nodes)
             )
         )
-        assertThrows<RuntimeException> { preloadPlanService.generatePlan(null, UT_SHA256) }
+        preloadPlanService.generatePlan(null, UT_SHA256)
+        val plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
+        assertEquals(0, plans.size)
     }
 
     @Test
