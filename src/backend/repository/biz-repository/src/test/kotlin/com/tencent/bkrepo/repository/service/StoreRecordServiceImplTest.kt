@@ -47,7 +47,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 @DataMongoTest
 @Import(StoreRecordServiceImpl::class, StoreRecordDao::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class StoreRecordServiceTest @Autowired constructor(
+class StoreRecordServiceImplTest @Autowired constructor(
     private val storeRecordService: StoreRecordService,
     private val storeRecordDao: StoreRecordDao,
 ) {

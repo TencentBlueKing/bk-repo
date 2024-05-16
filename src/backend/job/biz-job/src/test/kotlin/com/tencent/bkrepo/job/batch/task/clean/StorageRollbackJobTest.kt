@@ -43,7 +43,6 @@ import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_USER
 import com.tencent.bkrepo.job.batch.JobBaseTest
-import com.tencent.bkrepo.job.config.properties.StorageRollbackJobProperties
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -61,7 +60,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -92,7 +90,6 @@ class StorageRollbackJobTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
     private val storageManager: StorageManager,
     private val storageRollbackJob: StorageRollbackJob,
-    private val storageRollbackJobProperties: StorageRollbackJobProperties,
 ) : JobBaseTest() {
     @MockBean
     lateinit var expiredFileResolver: FileExpireResolver
