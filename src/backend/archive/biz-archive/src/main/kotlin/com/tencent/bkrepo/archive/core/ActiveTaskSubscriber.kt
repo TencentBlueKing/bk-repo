@@ -7,6 +7,7 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.Duration
 import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeoutException
 import java.util.function.Consumer
 import java.util.function.Function
 
@@ -45,12 +46,14 @@ class ActiveTaskSubscriber<T, R>(
         // 尝试获取许可，成功则继续执行
         if (semaphore.tryAcquire()) {
             accept.apply(value.obj)
-                .onErrorResume { Mono.empty() }
+                .timeout(Duration.ofDays(TASK_TIMEOUT_OF_DAYS), Mono.error(TimeoutException("task timeout")))
+                .doOnError { logger.error("Failed to execute task [${value.priority}]", it) }
                 .doFinally {
                     logger.info("Finish execute task[${value.priority}]")
                     semaphore.release()
                     subscription?.request(1)
                 }
+                .onErrorResume { Mono.empty() }
                 .subscribe()
         } else {
             // 如果许可已被占用，则执行预先设计的降级
@@ -61,5 +64,6 @@ class ActiveTaskSubscriber<T, R>(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveTaskSubscriber::class.java)
+        private const val TASK_TIMEOUT_OF_DAYS = 1L // 1day
     }
 }
