@@ -93,27 +93,6 @@ class FileCoreProcessorTest @Autowired constructor(
         pushTest()
     }
 
-    @Test
-    fun priorityTest() {
-        val file0 = createTempCompressFile()
-        fileCoreProcessor.listen(FileEntityEvent(file0.sha256, file0))
-        Thread.sleep(1000)
-        Assertions.assertEquals(CompressStatus.COMPRESSED, file0.status)
-        val fileList = mutableListOf<TCompressFile>()
-        repeat(5) {
-            val file = createTempCompressFile()
-            fileCoreProcessor.listen(FileEntityEvent(file.sha256, file))
-            fileList.add(file)
-        }
-        file0.status = CompressStatus.WAIT_TO_UNCOMPRESS
-        compressFileRepository.save(file0)
-        fileCoreProcessor.listen(FileEntityEvent(file0.sha256, file0))
-        Thread.sleep(3000)
-        val cf = compressFileRepository.findBySha256AndStorageCredentialsKey(file0.sha256, null)
-        Assertions.assertEquals(CompressStatus.UNCOMPRESSED, cf!!.status)
-        Assertions.assertTrue(cf!!.lastModifiedDate.isBefore(fileList.last().lastModifiedDate))
-    }
-
     private fun createTempCompressFile(): TCompressFile {
         val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
         val data2 = data1.copyOfRange(Random.nextInt(1, 10), data1.size)

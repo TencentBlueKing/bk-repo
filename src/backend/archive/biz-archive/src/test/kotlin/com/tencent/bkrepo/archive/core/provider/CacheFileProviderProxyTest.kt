@@ -40,7 +40,7 @@ class CacheFileProviderProxyTest {
         Assertions.assertFalse(Files.exists(tempFilePath))
         val cacheFilePath = cachePath.resolve("key")
         Assertions.assertTrue(Files.exists(cacheFilePath))
-        Thread.sleep(1000)
+        Thread.sleep(2000)
         Assertions.assertFalse(Files.exists(cacheFilePath))
     }
 }

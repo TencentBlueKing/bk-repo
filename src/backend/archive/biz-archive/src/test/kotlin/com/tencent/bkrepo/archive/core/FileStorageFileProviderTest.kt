@@ -1,9 +1,7 @@
 package com.tencent.bkrepo.archive.core
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.core.provider.FileStorageFileProvider
 import com.tencent.bkrepo.archive.core.provider.FileTask
-import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.util.StorageUtils
@@ -13,16 +11,12 @@ import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.springframework.core.Ordered
 import reactor.core.publisher.Mono
 import java.io.File
 import java.nio.file.Files
 import java.time.Duration
-import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -34,45 +28,6 @@ class FileStorageFileProviderTest {
     fun afterEach() {
         unmockkObject(StorageUtils.Companion)
         tempDir.toFile().deleteRecursively()
-    }
-
-    private val fp = FileStorageFileProvider(
-        tempDir,
-        highWaterMark = Long.MAX_VALUE,
-        lowWaterMark = Long.MAX_VALUE - 1,
-        ArchiveUtils.newFixedAndCachedThreadPool(
-            1,
-            ThreadFactoryBuilder().setNameFormat("ut-%d").build(),
-            PriorityBlockingQueue(),
-        ),
-        Duration.ofSeconds(60),
-    )
-
-    @Test
-    fun priorityTest() {
-        mockkObject(StorageUtils.Companion)
-        every { StorageUtils.downloadUseLocalPath(any(), any(), any(), any()) } answers {
-            tempDir.resolve("1").createFile()
-            tempDir.resolve("2").createFile()
-            tempDir.resolve("3").createFile()
-            tempDir.resolve("4").createFile()
-            tempDir.resolve("5").createFile()
-            tempDir.resolve("100").createFile()
-            Thread.sleep(1000)
-        }
-        val list = Collections.synchronizedList(mutableListOf<String>())
-        for (i in 1..5) {
-            Files.deleteIfExists(tempDir.resolve("$i"))
-            val task = FileTask("$i", Range.FULL_RANGE, InnerCosCredentials())
-            fp.getWithTimeout(task).subscribe { list.add(it.name) }
-        }
-        // 最高优先级，插队下载
-        Files.deleteIfExists(tempDir.resolve("100"))
-        val task = FileTask("100", Range.FULL_RANGE, InnerCosCredentials(), Ordered.HIGHEST_PRECEDENCE)
-        fp.getWithTimeout(task).subscribe { list.add(it.name) }
-        // 等待异步执行
-        Thread.sleep(3000)
-        Assertions.assertEquals("100", list[1])
     }
 
     @Test

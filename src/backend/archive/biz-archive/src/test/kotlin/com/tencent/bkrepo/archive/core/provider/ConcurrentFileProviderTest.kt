@@ -16,12 +16,13 @@ class ConcurrentFileProviderTest {
         val getCount = AtomicInteger()
         every { fp.get(any()) } answers {
             getCount.incrementAndGet()
+            Thread.sleep(1000)
             Mono.just(File(""))
         }
         every { fp.key(any()) } returns "key"
         val provider = ConcurrentFileProvider(fp)
         val threads = mutableListOf<Thread>()
-        repeat(3) { idx ->
+        repeat(10) { idx ->
             thread {
                 provider.get(idx).subscribe { println("Get $idx") }
             }.apply {
