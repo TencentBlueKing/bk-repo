@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.artifact.metrics.export
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
@@ -69,7 +70,7 @@ class ArtifactMetricsExporter(
         labels[ArtifactTransferRecord::sha256.name] = record.sha256
         labels[ArtifactTransferRecord::clientIp.name] = record.clientIp
         labels[ArtifactTransferRecord::repoName.name] = record.repoName
-        labels[ArtifactTransferRecord::project.name] = record.project
+        labels[PROJECT_ID] = record.project
         labels[ArtifactTransferRecord::elapsed.name] = record.elapsed.toString()
         labels[ArtifactTransferRecord::type.name] = record.type
         return labels
