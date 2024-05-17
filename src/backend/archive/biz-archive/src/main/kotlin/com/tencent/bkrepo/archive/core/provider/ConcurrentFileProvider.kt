@@ -5,6 +5,7 @@ import reactor.core.publisher.BaseSubscriber
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoSink
 import java.io.File
+import java.lang.IllegalStateException
 import java.util.concurrent.ConcurrentHashMap
 
 class ConcurrentFileProvider<T>(
@@ -17,32 +18,56 @@ class ConcurrentFileProvider<T>(
         return Mono.create { sink ->
             val key = provider.key(param)
             var create = false
-            val subscriber = sinksMap.computeIfAbsent(key) {
-                logger.info("Initialize $key")
-                create = true
-                SinkListSubscriber(mutableListOf())
+            var added = false
+            var subscriber: SinkListSubscriber? = null
+            var retry = 0
+            while (!added && retry++ < MAX_RETRY_TIMES) {
+                logger.info("Start init $key")
+                subscriber = sinksMap.computeIfAbsent(key) {
+                    logger.info("Initialize $key")
+                    create = true
+                    SinkListSubscriber(key)
+                }
+                added = subscriber.add(sink)
             }
-            subscriber.sinkList.add(sink)
+            if (!added) {
+                sink.error(IllegalStateException("Can't init $key"))
+            }
             if (create) {
-                provider.get(param).doFinally {
-                    logger.info("Remove $key")
-                }.subscribe(subscriber)
+                provider.get(param).subscribe(subscriber!!)
             }
         }
     }
 
-    private inner class SinkListSubscriber(val sinkList: MutableList<MonoSink<File>>) :
-        BaseSubscriber<File>() {
+    private inner class SinkListSubscriber(val key: String) : BaseSubscriber<File>() {
+        private val sinkList = mutableListOf<MonoSink<File>>()
         override fun hookOnNext(value: File) {
-            sinkList.forEach { it.success(value) }
+            synchronized(this) {
+                sinksMap.remove(key)
+                logger.info("Finished $key")
+                sinkList.forEach { it.success(value) }
+            }
         }
 
         override fun hookOnError(throwable: Throwable) {
-            sinkList.forEach { it.error(throwable) }
+            synchronized(this) {
+                sinkList.forEach { it.error(throwable) }
+            }
+        }
+
+        fun add(item: MonoSink<File>): Boolean {
+            synchronized(this) {
+                if (!sinksMap.containsKey(key)) {
+                    return false
+                }
+                sinkList.add(item)
+                return true
+            }
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ConcurrentFileProvider::class.java)
+        private const val MAX_RETRY_TIMES = 3
     }
 }

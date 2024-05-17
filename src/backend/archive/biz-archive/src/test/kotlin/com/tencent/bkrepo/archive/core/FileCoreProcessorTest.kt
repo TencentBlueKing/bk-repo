@@ -11,9 +11,11 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
@@ -26,6 +28,7 @@ import kotlin.random.Random
 @DataMongoTest
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
 @TestPropertySource(locations = ["classpath:file-core-processor.properties"])
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FileCoreProcessorTest @Autowired constructor(
     private val fileCoreProcessor: FileCoreProcessor,
     private val storageService: StorageService,
@@ -41,9 +44,14 @@ class FileCoreProcessorTest @Autowired constructor(
     @MockBean
     lateinit var repositoryClient: RepositoryClient
 
-    @BeforeEach
-    fun beforeEach() {
+    @BeforeAll
+    fun beforeAll() {
         initMock()
+    }
+
+    @AfterAll
+    fun afterAll() {
+        fileCoreProcessor.shutdown()
     }
 
     @Test

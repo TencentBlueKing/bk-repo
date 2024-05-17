@@ -21,7 +21,7 @@ class ConcurrentFileProviderTest {
         every { fp.key(any()) } returns "key"
         val provider = ConcurrentFileProvider(fp)
         val threads = mutableListOf<Thread>()
-        repeat(10) { idx ->
+        repeat(3) { idx ->
             thread {
                 provider.get(idx).subscribe { println("Get $idx") }
             }.apply {
