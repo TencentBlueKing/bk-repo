@@ -236,7 +236,7 @@ class UserRepositoryController(
             description = request.description,
             configuration = request.configuration,
             operator = userId,
-            display = request.display,
+            display = request.display
         )
         repositoryService.updateRepo(repoUpdateRequest)
         return ResponseBuilder.success()

@@ -1,5 +1,11 @@
 <template>
     <div class="permission-container" v-bkloading="{ isLoading }">
+        <div style="margin-bottom: 10px;font-size: larger;">
+            <span>{{ $t('rootDirectoryPermission') }}</span>
+            <bk-switcher style="margin-right: auto;" size="small" theme="primary" v-model="rootDirectoryPermission" @change="updateRepo" />
+            <span style="margin-right: auto;margin-left: 5px" size="small" theme="primary">{{ $t('rootDirectoryPermissionTip') }}</span>
+        </div>
+        <bk-divider align="left" />
         <div class="mb10 flex-between-center">
             <bk-button icon="plus" theme="primary" @click="showCreatePermission">{{ $t('add') }}</bk-button>
             <bk-link theme="primary" @click="showUserGroup" style="margin-right: auto;margin-left: 10px">{{ $t('userGroup') }}</bk-link>
@@ -38,6 +44,9 @@
     export default {
         name: 'permissionConfig',
         components: { createPermission },
+        props: {
+            baseData: Object
+        },
         data () {
             return {
                 isLoading: false,
@@ -50,7 +59,9 @@
                     users: [],
                     includePattern: [],
                     name: ''
-                }
+                },
+                rootDirectoryPermission: false,
+                id: ''
             }
         },
         computed: {
@@ -62,8 +73,15 @@
             }
         },
         watch: {
-            baseData () {
-                this.repoInfo = this.baseData
+            baseData: {
+                handler (val) {
+                    if (!val.rootDirectoryPermission) {
+                        val.rootDirectoryPermission = false
+                    }
+                    this.repoInfo = val
+                },
+                deep: true,
+                immediate: true
             }
         },
         created () {
@@ -76,12 +94,29 @@
                     this.permissionListPages = res
                 })
             })
+            const body = {
+                repoConfig: {
+                    projectId: this.projectId,
+                    repoName: this.repoName
+                }
+            }
+            this.getRootPermission({
+                body: body
+            }).then((res) => {
+                if (res.length > 0) {
+                    this.id = res[0].id
+                    this.rootDirectoryPermission = res[0].status
+                }
+            })
         },
         methods: {
             ...mapActions([
                 'listPermissionDeployInRepo',
                 'deletePermission',
-                'getProjectRoleList'
+                'getProjectRoleList',
+                'getRootPermission',
+                'createRootPermission',
+                'updateRootPermission'
             ]),
             deletePerm (row) {
                 this.$confirm({
@@ -145,6 +180,26 @@
                 this.$router.push({
                     name: 'userGroup'
                 })
+            },
+            updateRepo () {
+                if (this.id !== '') {
+                    this.updateRootPermission({
+                        id: this.id,
+                        status: this.rootDirectoryPermission
+                    })
+                } else {
+                    const body = {
+                        projectId: this.projectId,
+                        repoName: this.repoName,
+                        status: this.rootDirectoryPermission
+                    }
+                    this.createRootPermission({
+                        body: body
+                    }).then(res => {
+                        console.log(res)
+                        this.id = res.id
+                    })
+                }
             }
         }
     }

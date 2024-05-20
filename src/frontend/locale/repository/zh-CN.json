@@ -867,5 +867,7 @@
     "previous": "上一步",
     "copyAll": "复制全部",
     "clear": "清空",
-    "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割"
+    "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割",
+    "rootDirectoryPermission": "根目录权限：",
+    "rootDirectoryPermissionTip": "打开之后普通用户仅有授权目录的访问权限"
 }
