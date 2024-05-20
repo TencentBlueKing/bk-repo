@@ -44,8 +44,6 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.util.existReal
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.junit.jupiter.api.AfterEach
@@ -60,7 +58,6 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.util.unit.DataSize
 import java.time.LocalDateTime
 import kotlin.contracts.ExperimentalContracts
@@ -75,12 +72,6 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     private val preloadStrategyService: ArtifactPreloadStrategyServiceImpl,
     private val preloadPlanService: ArtifactPreloadPlanServiceImpl,
 ) : ArtifactPreloadBaseServiceTest(properties, storageService, fileLocator, storageProperties) {
-
-    @MockBean
-    lateinit var repositoryClient: RepositoryClient
-
-    @MockBean
-    lateinit var nodeClient: NodeClient
 
     @BeforeAll
     fun before() {
