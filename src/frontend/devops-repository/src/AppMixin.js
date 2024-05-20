@@ -1,7 +1,8 @@
-import Vue from 'vue'
-import { mapState, mapMutations } from 'vuex'
+import { rootPath } from '@blueking/sub-saas'
 import ConfirmDialog from '@repository/components/ConfirmDialog'
 import GlobalUploadViewport from '@repository/components/GlobalUploadViewport'
+import Vue from 'vue'
+import { mapMutations, mapState } from 'vuex'
 export default {
     name: 'App',
     components: { ConfirmDialog, GlobalUploadViewport },
@@ -61,7 +62,7 @@ export default {
                 })
 
                 window.globalVue.$on('change::$routePath', data => { // 蓝鲸Devops切换路径
-                    this.$router.push({ name: data.routePath.englishName, path: data.routePath.path.replace(/^\/[a-zA-Z]+/, '/ui') })
+                    this.$router.push({ name: data.routePath.englishName, path: data.routePath.path.replace(/^\/[a-zA-Z]+/, `${rootPath}/ui`) })
                 })
 
                 window.globalVue.$on('order::backHome', data => { // 蓝鲸Devops选择项目时切换
