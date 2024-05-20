@@ -58,7 +58,10 @@ class ScheduledTaskConfigurer(
             val taskScheduler = builder.build()
             taskScheduler.initialize()
             Companion.taskRegistrar.setTaskScheduler(taskScheduler)
-            ServiceShutdownHook.add { jobs.forEach { it.stop(it.batchJobProperties.stopTimeout, true) } }
+            ServiceShutdownHook.add {
+                cleanScheduledTask()
+                jobs.forEach { it.stop(it.batchJobProperties.stopTimeout, true) }
+            }
         }
         jobs.filter { it.batchJobProperties.enabled }.forEach {
             val properties = it.batchJobProperties
@@ -114,9 +117,14 @@ class ScheduledTaskConfigurer(
         val scheduledTaskSet = mutableSetOf<ScheduledTask>()
         private val logger = LoggerFactory.getLogger(ScheduledTaskConfigurer::class.java)
 
-        fun reloadScheduledTask() {
-            scheduledTaskSet.forEach { it.cancel() }
+        fun cleanScheduledTask() {
+            scheduledTaskSet.forEach { it.cancel(false) }
             scheduledTaskSet.clear()
+            logger.info("Clean scheduled task")
+        }
+
+        fun reloadScheduledTask() {
+            cleanScheduledTask()
             scheduledTaskConfigurer.configureTasks(taskRegistrar)
             logger.info("Reload scheduled task")
         }

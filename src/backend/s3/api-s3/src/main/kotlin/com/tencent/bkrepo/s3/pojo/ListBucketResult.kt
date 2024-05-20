@@ -31,6 +31,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -64,7 +65,8 @@ data class ListBucketResult(
         maxKeys: Int,
         prefix: String,
         folders: List<String>?,
-        delimiter: String
+        delimiter: String,
+        currentNode: Map<String, Any?>? = null
     ) : this(
         name = repoName,
         prefix = prefix,
@@ -74,25 +76,39 @@ data class ListBucketResult(
         nextMarker = if (data.pageNumber.toLong() < data.totalPages) (data.pageNumber + 1).toString() else null,
         maxKeys = maxKeys,
         isTruncated = data.pageNumber.toLong() < data.totalPages,
-        contents = convertToContents(data.records)
+        contents = convertToContents(data.records, currentNode)
     )
 
     companion object {
 
         private val emptyMD5 = StringPool.EMPTY.md5()
-        private fun convertToContents(nodeDetailList: List<Map<String, Any?>>): List<Content> {
-            return nodeDetailList.map {
+        private fun convertToContents(
+            nodeDetailList: List<Map<String, Any?>>,
+            currentNode: Map<String, Any?>?
+        ): List<Content> {
+            val list = if (currentNode == null) {
+                nodeDetailList
+            } else {
+                nodeDetailList.plus(currentNode)
+            }
+            return list.map {
                 val owner = it[NodeDetail::createdBy.name].toString()
                 val folder = it[NodeDetail::folder.name].toString().toBoolean()
+                val key = if (folder) {
+                    it[NodeDetail::fullPath.name].toString()
+                        .removePrefix(StringPool.SLASH).ensureSuffix(StringPool.SLASH)
+                } else {
+                    it[NodeDetail::fullPath.name].toString().removePrefix(StringPool.SLASH)
+                }
                 Content(
-                    key = it[NodeDetail::fullPath.name].toString().removePrefix(StringPool.SLASH),
+                    key = key,
                     lastModified = it[NodeDetail::lastModifiedDate.name].toString(),
                     eTag = if (folder) {
                         "\"$emptyMD5\""
                     } else {
                         "\"${it[NodeDetail::md5.name].toString()}\""
                     },
-                    size = it[NodeDetail::size.name].toString().toLong(),
+                    size = if (folder) 0 else it[NodeDetail::size.name].toString().toLong(),
                     storageClass = "STANDARD",
                     owner = Owner(owner, owner)
                 )

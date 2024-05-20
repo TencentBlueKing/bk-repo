@@ -5,5 +5,7 @@
   - [后端部署](/install/binary/backend)
 - 容器化部署
   - [Helm Charts部署](/install/helm.md)
+- proxy部署
+  - [说明](/install/proxy.md)
 - [repo.env配置项](/install/env.md)
 - [源码编译](/install/compile.md)

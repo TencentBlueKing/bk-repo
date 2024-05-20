@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.pypi.artifact.repository
 
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -38,12 +40,12 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.pypi.FLUSH_CACHE_EXPIRE
-import com.tencent.bkrepo.pypi.REMOTE_HTML_CACHE_FULL_PATH
-import com.tencent.bkrepo.pypi.XML_RPC_URI
+import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
+import com.tencent.bkrepo.pypi.constants.FLUSH_CACHE_EXPIRE
+import com.tencent.bkrepo.pypi.constants.REMOTE_HTML_CACHE_FULL_PATH
+import com.tencent.bkrepo.pypi.constants.XML_RPC_URI
 import com.tencent.bkrepo.pypi.exception.PypiRemoteSearchException
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -83,18 +85,13 @@ class PypiRemoteRepository : RemoteRepository() {
     }
 
     override fun query(context: ArtifactQueryContext): Any? {
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "text/html"
-        if (context.artifactInfo.getArtifactFullPath() == "/") {
-            val cacheHtml = getCacheHtml(context) ?: "Can not cache remote html"
-            response.setContentLength(cacheHtml.length)
-            response.writer.print(cacheHtml)
-        } else {
-            val responseStr = remoteRequest(context) ?: ""
-            response.setContentLength(responseStr.length)
-            response.writer.print(responseStr)
+        return when (val artifactInfo = context.artifactInfo) {
+            is PypiSimpleArtifactInfo -> {
+                if (artifactInfo.packageName == null) getCacheHtml(context) ?: "Can not cache remote html"
+                else remoteRequest(context) ?: ""
+            }
+            else -> throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
         }
-        return null
     }
 
     fun remoteRequest(context: ArtifactQueryContext): String? {
@@ -165,9 +162,7 @@ class PypiRemoteRepository : RemoteRepository() {
      * 需要单独给fullpath赋值。
      */
     fun getNodeCreateRequest(context: ArtifactQueryContext, artifactFile: ArtifactFile): NodeCreateRequest {
-        return super.buildCacheNodeCreateRequest(context, artifactFile).copy(
-            fullPath = "/$REMOTE_HTML_CACHE_FULL_PATH"
-        )
+        return super.buildCacheNodeCreateRequest(context, artifactFile)
     }
 
     /**

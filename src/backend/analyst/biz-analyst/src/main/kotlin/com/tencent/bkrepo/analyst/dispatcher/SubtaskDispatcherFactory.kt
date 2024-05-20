@@ -10,11 +10,9 @@ import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration
-import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.statemachine.StateMachine
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 
@@ -28,8 +26,7 @@ class SubtaskDispatcherFactory(
     @Qualifier(TaskStateMachineConfiguration.STATE_MACHINE_ID_SUB_SCAN_TASK)
     private val subtaskStateMachine: StateMachine,
     private val temporaryScanTokenService: TemporaryScanTokenService,
-    private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>,
-    private val lockOperation: LockOperation,
+    private val redisOperation: RedisOperation,
     private val executor: ThreadPoolTaskExecutor,
 ) {
     fun create(executionClusterName: String): SubtaskDispatcher {
@@ -43,6 +40,7 @@ class SubtaskDispatcherFactory(
                     subtaskStateMachine,
                     temporaryScanTokenService,
                     executor,
+                    redisOperation
                 )
             }
 
@@ -53,7 +51,7 @@ class SubtaskDispatcherFactory(
                     temporaryScanTokenService,
                     subScanTaskDao,
                     scannerService,
-                    lockOperation
+                    redisOperation
                 )
             }
 
@@ -65,8 +63,8 @@ class SubtaskDispatcherFactory(
                     subtaskStateMachine,
                     temporaryScanTokenService,
                     executor,
+                    redisOperation,
                     subScanTaskDao,
-                    redisTemplate,
                 )
             }
 

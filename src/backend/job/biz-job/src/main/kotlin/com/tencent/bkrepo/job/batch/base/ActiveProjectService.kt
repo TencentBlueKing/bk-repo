@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job.batch.base
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
@@ -37,6 +40,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.ne
 import org.springframework.data.mongodb.core.query.not
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -45,7 +49,8 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class ActiveProjectService(
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
+    private val redisTemplate: RedisTemplate<String, String>,
 ) {
     private var activeProjects = mutableSetOf<String>()
 
@@ -53,22 +58,29 @@ class ActiveProjectService(
 
     private var uploadActiveProjects = mutableSetOf<String>()
 
+    private var moveCopyActiveProjects = mutableSetOf<String>()
+
+
     private var activeUsers = mutableSetOf<String>()
 
     fun getActiveProjects(): MutableSet<String> {
-        return activeProjects
+        return getValue(ACTIVE_PROJECTS, activeProjects)
     }
 
     fun getDownloadActiveProjects(): MutableSet<String> {
-        return downloadActiveProjects
+        return getValue(DOWNLOAD_ACTIVE_PROJECTS, downloadActiveProjects)
     }
 
     fun getUploadActiveProjects(): MutableSet<String> {
-        return uploadActiveProjects
+        return getValue(UPLOAD_ACTIVE_PROJECTS, uploadActiveProjects)
     }
 
     fun getActiveUsers(): Set<String> {
-        return activeUsers
+        return getValue(ACTIVE_USERS, activeUsers)
+    }
+
+    fun getMoveCopyActiveProjects(): Set<String> {
+        return getValue(MOVE_COPY_ACTIVE_PROJECTS, moveCopyActiveProjects)
     }
 
     private fun findDistinct(field: String, criteria: Criteria): MutableSet<String> {
@@ -93,6 +105,7 @@ class ActiveProjectService(
      */
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INITIAL_DELAY, timeUnit = TimeUnit.MINUTES)
     fun refreshActiveProjects() {
+        logger.info("start to refresh active projects and users")
         val criteriaList = IGNORE_PROJECT_PREFIX_LIST.mapTo(ArrayList()) { prefix ->
             TOperateLog::projectId.not().regex("^$prefix")
         }
@@ -100,25 +113,66 @@ class ActiveProjectService(
         fun buildTypesCriteriaList(types: List<String>): List<Criteria> {
             return ArrayList(criteriaList).apply { add(TOperateLog::type.inValues(types)) }
         }
-
-        // all
-        activeProjects = findDistinct(TOperateLog::projectId.name, Criteria().andOperator(criteriaList))
+        moveCopyActiveProjects = findDistinct(
+            TOperateLog::projectId.name,
+        Criteria().andOperator(buildTypesCriteriaList(MOVE_COPY_EVENTS))
+        )
+        storeValue(MOVE_COPY_ACTIVE_PROJECTS, moveCopyActiveProjects)
 
         // download event
         downloadActiveProjects = findDistinct(
             TOperateLog::projectId.name,
             Criteria().andOperator(buildTypesCriteriaList(DOWNLOAD_EVENTS))
         )
+        storeValue(DOWNLOAD_ACTIVE_PROJECTS, downloadActiveProjects)
 
         // upload event
         uploadActiveProjects = findDistinct(
             TOperateLog::projectId.name,
             Criteria().andOperator(buildTypesCriteriaList(UPLOAD_EVENTS))
         )
+        storeValue(UPLOAD_ACTIVE_PROJECTS, uploadActiveProjects)
+
+
+        activeProjects = downloadActiveProjects.union(uploadActiveProjects)
+            .union(moveCopyActiveProjects).toMutableSet()
+        storeValue(ACTIVE_PROJECTS, activeProjects)
 
         // active users
         activeUsers = findDistinct(TOperateLog::userId.name, TOperateLog::userId.ne(""))
+        storeValue(ACTIVE_USERS, activeUsers)
+
         logger.info("refresh active projects and users success")
+    }
+
+    private fun buildRedisKey(key: String): String {
+        return JOB_KEY_PREFIX + key
+    }
+
+    private fun storeValue(key: String, value: Set<String>) {
+        try {
+            if (value.isEmpty()) {
+                redisTemplate.opsForValue().set(buildRedisKey(key), StringPool.EMPTY)
+            } else {
+                redisTemplate.opsForValue().set(buildRedisKey(key), value.toJsonString())
+            }
+        } catch (e: Exception) {
+            logger.warn("store active projects error: ${e.message}")
+        }
+    }
+
+    private fun getValue(key: String, cacheValue: MutableSet<String>): MutableSet<String> {
+        if (cacheValue.isNotEmpty()) return cacheValue
+        try {
+            val valueStr = redisTemplate.opsForValue().get(buildRedisKey(key))
+            if (valueStr.isNullOrEmpty()) {
+                return mutableSetOf()
+            }
+            return valueStr.readJsonString<Set<String>>().toMutableSet()
+        } catch (e: Exception) {
+            logger.warn("get active projects from redis error:${e.message}")
+            return mutableSetOf()
+        }
     }
 
     companion object {
@@ -133,6 +187,16 @@ class ActiveProjectService(
         private val UPLOAD_EVENTS = listOf(
             EventType.NODE_CREATED.name, EventType.VERSION_CREATED.name
         )
+        private val MOVE_COPY_EVENTS = listOf(
+            EventType.NODE_MOVED.name, EventType.NODE_COPIED.name
+        )
+        private const val JOB_KEY_PREFIX = "job:projectOrUser:"
+        private const val ACTIVE_USERS = "activeUsers"
+        private const val ACTIVE_PROJECTS = "activeProjects"
+        private const val UPLOAD_ACTIVE_PROJECTS = "uploadActiveProjects"
+        private const val DOWNLOAD_ACTIVE_PROJECTS = "downloadActiveProjects"
+        private const val MOVE_COPY_ACTIVE_PROJECTS = "moveCopyActiveProjects"
+
     }
 }
 

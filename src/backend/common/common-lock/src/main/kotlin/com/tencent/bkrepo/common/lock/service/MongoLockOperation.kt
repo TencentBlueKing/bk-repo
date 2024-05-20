@@ -42,7 +42,7 @@ class MongoLockOperation(
      * mongodb实现的锁不支持重入
      */
     override fun acquireLock(lockKey: String, lock: Any): Boolean {
-        return (lock as MongoDistributedLock).acquireLock(lockKey, LockOperation.EXPIRED_TIME_IN_SECONDS)
+        return (lock as MongoDistributedLock).acquireLock(lockKey, EXPIRED_TIME_IN_MILLIS_SECONDS)
     }
 
     override fun close(lockKey: String, lock: Any) {
@@ -52,5 +52,6 @@ class MongoLockOperation(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(MongoLockOperation::class.java)
+        const val EXPIRED_TIME_IN_MILLIS_SECONDS: Long = 60 * 60 * 1000
     }
 }

@@ -2,6 +2,10 @@ dependencies {
     implementation(project(":common:common-security")) {
         exclude(module = "common-service")
     }
+    implementation(project(":common:common-metrics-push")) {
+        exclude(module = "common-service")
+    }
+
     implementation(project(":common:common-storage:storage-service"))
     implementation(project(":common:common-mongo-reactive"))
     implementation("io.jsonwebtoken:jjwt-api")

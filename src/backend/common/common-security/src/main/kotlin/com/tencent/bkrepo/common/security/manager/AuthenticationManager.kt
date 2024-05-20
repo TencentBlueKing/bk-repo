@@ -29,23 +29,30 @@ package com.tencent.bkrepo.common.security.manager
 
 import com.tencent.bkrepo.auth.api.ServiceAccountClient
 import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
-/**
- * 认证管理器
- */
 @Component
-class AuthenticationManager(
-    private val serviceUserClient: ServiceUserClient,
-    private val serviceAccountClient: ServiceAccountClient,
-    private val serviceOauthAuthorizationClient: ServiceOauthAuthorizationClient
-) {
+class AuthenticationManager {
+    @Autowired
+    private lateinit var serviceUserClient: ServiceUserClient
+
+    @Autowired
+    private lateinit var serviceAccountClient: ServiceAccountClient
+
+    @Autowired
+    private lateinit var serviceOauthAuthorizationClient: ServiceOauthAuthorizationClient
+
+    @Autowired
+    private lateinit var serviceTemporaryTokenClient: ServiceTemporaryTokenClient
 
     /**
      * 校验普通用户类型账户
@@ -118,4 +125,7 @@ class AuthenticationManager(
         return serviceAccountClient.findSecretKey(appId, accessKey).data
     }
 
+    fun getTokenInfo(token: String): TemporaryTokenInfo? {
+        return serviceTemporaryTokenClient.getTokenInfo(token).data
+    }
 }

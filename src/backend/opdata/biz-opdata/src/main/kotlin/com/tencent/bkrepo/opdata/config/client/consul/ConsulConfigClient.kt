@@ -33,6 +33,7 @@ import com.ecwid.consul.v1.kv.model.PutParams
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.opdata.config.client.ConfigClient
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 import com.tencent.bkrepo.opdata.pojo.config.ConfigItem
@@ -82,6 +83,31 @@ class ConsulConfigClient(
         client.setKVValue(consulConfigKey, yaml.dumpAsMap(config), properties.aclToken, putParams)
     }
 
+    override fun get(appName: String, targetProfile: String, key: String): String {
+        // 当前仅支持
+        if (properties.format != ConsulConfigProperties.Format.YAML) {
+            logger.error("consul config format: ${properties.format} not support")
+            throw SystemErrorException()
+        }
+
+        // 读取配置index，用于更新时执行cas校验，避免覆盖其他更新
+        val consulConfigKey = getConsulConfigKey(appName, targetProfile)
+        val getConfigResponse = client.getKVValue(consulConfigKey, this.properties.aclToken, QueryParams.DEFAULT)
+
+        // 解析YAML
+        val putParams = PutParams()
+        val yaml = Yaml()
+        val config = if (getConfigResponse.value == null) {
+            putParams.cas = 0
+            HashMap<String, Any?>()
+        } else {
+            putParams.cas = getConfigResponse.consulIndex
+            yaml.load(getConfigResponse.value.decodedValue)
+        }
+
+        return getVal(config, key)
+    }
+
     private fun putVal(map: MutableMap<String, Any?>, key: String, value: Any?) {
         val keys = key.split(".")
         var currentMap = map
@@ -97,6 +123,24 @@ class ConsulConfigClient(
                 currentMap = currentVal as MutableMap<String, Any?>
             }
         }
+    }
+
+    private fun getVal(map: MutableMap<String, Any?>, key: String):String {
+        val keys = key.split(".")
+        var currentMap = map
+        for (i in keys.indices) {
+            if (i == keys.size - 1) {
+                return currentMap[keys[i]]?.toJsonString() ?: "";
+            } else {
+                val currentKey = keys[i]
+                val currentVal = currentMap.getOrPut(currentKey) { HashMap<String, Any?>(1) }
+                if (currentVal != null && currentVal !is Map<*, *>) {
+                    throw BadRequestException(OpDataMessageCode.ConfigValueTypeInvalid)
+                }
+                currentMap = currentVal as MutableMap<String, Any?>
+            }
+        }
+        return ""
     }
 
     /**

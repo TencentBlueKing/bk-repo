@@ -54,6 +54,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -84,7 +85,8 @@ class ProjectServiceImpl(
     private val projectDao: ProjectDao,
     private val servicePermissionClient: ServicePermissionClient,
     private val projectMetricsRepository: ProjectMetricsRepository,
-    private val serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
+    private val serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient,
+    private val storageCredentialService: StorageCredentialService,
 ) : ProjectService {
 
     @Autowired
@@ -200,6 +202,7 @@ class ProjectServiceImpl(
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now(),
                 metadata = metadata,
+                credentialsKey = credentialsKey,
             )
             return try {
                 projectDao.insert(project)
@@ -235,11 +238,18 @@ class ProjectServiceImpl(
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
             }
         }
+        request.credentialsKey?.let { checkCredentialsKey(it) }
         val query = Query.query(Criteria.where(TProject::name.name).`is`(name))
         val update = Update().apply {
             request.displayName?.let { this.set(TProject::displayName.name, it) }
             request.description?.let { this.set(TProject::description.name, it) }
         }
+        if (request.credentialsKey != null) {
+            update.set(TProject::credentialsKey.name, request.credentialsKey)
+        } else if (request.useDefaultCredentialsKey == true) {
+            update.set(TProject::credentialsKey.name, null)
+        }
+
         if (request.metadata.isNotEmpty()) {
             // 直接使用request的metadata，不存在于request的metadata会被删除，存在的会被覆盖
             update.set(TProject::metadata.name, request.metadata)
@@ -265,14 +275,19 @@ class ProjectServiceImpl(
             ) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
             }
+            credentialsKey?.let { checkCredentialsKey(it) }
         }
+    }
+
+    private fun checkCredentialsKey(key: String) {
+        storageCredentialService.findByKey(key) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, key)
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectServiceImpl::class.java)
-        private const val PROJECT_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
+        private const val PROJECT_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,99}"
         private const val DISPLAY_NAME_LENGTH_MIN = 2
-        private const val DISPLAY_NAME_LENGTH_MAX = 32
+        private const val DISPLAY_NAME_LENGTH_MAX = 100
 
         private fun convert(tProject: TProject?): ProjectInfo? {
             return convert(tProject, false)
@@ -288,7 +303,8 @@ class ProjectServiceImpl(
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                    metadata = it.metadata
+                    metadata = it.metadata,
+                    credentialsKey = it.credentialsKey,
                 )
             }
         }

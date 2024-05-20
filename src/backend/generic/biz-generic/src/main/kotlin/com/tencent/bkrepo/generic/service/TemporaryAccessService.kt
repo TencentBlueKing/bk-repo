@@ -37,32 +37,46 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
+import com.tencent.bkrepo.generic.artifact.GenericChunkedArtifactInfo
 import com.tencent.bkrepo.generic.config.GenericProperties
+import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
+import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
 import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyContext
 import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyExtension
+import com.tencent.bkrepo.generic.pojo.ChunkedMetrics
+import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
+import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.time.LocalDateTime
@@ -78,8 +92,9 @@ class TemporaryAccessService(
     private val genericProperties: GenericProperties,
     private val pluginManager: PluginManager,
     private val deltaSyncService: DeltaSyncService,
-    private val permissionManager: PermissionManager
-) {
+    private val permissionManager: PermissionManager,
+    private val storageService: StorageService,
+    ) {
 
     /**
      * 上传
@@ -100,6 +115,7 @@ class TemporaryAccessService(
         with(artifactInfo) {
             val repo = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            HttpContextHolder.getRequest().setAttribute(REPO_KEY, repo)
             val context = ArtifactDownloadContext(repo)
             ArtifactContextHolder.getRepository(repo.category).download(context)
         }
@@ -238,6 +254,37 @@ class TemporaryAccessService(
         deltaSyncService.uploadSignFile(signFile, artifactInfo, md5)
     }
 
+
+    fun getUuidForChunkedUpload(artifactInfo: GenericChunkedArtifactInfo, artifactFile: ArtifactFile) {
+        with(artifactInfo) {
+            val result = repositoryClient.getRepoDetail(projectId, repoName).data
+                ?: throw RepoNotFoundException(repoName)
+            val uuidCreated =  storageService.createAppendId(result.storageCredentials)
+            val responseProperty = ChunkedResponseProperty(
+                uuid = uuidCreated,
+                status = HttpStatus.ACCEPTED,
+                contentLength = 0
+            )
+            uploadResponse(
+                responseProperty,
+                HttpContextHolder.getResponse()
+            )
+        }
+    }
+
+    fun uploadArtifact(artifactInfo: GenericChunkedArtifactInfo, artifactFile: ArtifactFile) {
+        val context = ArtifactUploadContext(artifactFile)
+        val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
+        if (uploadType.isNullOrEmpty() || uploadType != CHUNKED_UPLOAD)
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "Missing expected chunked upload header!")
+        ArtifactContextHolder.getRepository().upload(context)
+    }
+
+    fun reportChunkedMetrics(metrics: ChunkedMetrics) {
+        logger.info(metrics.toJsonString().replace(System.lineSeparator(), ""))
+    }
+
+
     /**
      * 根据token生成url
      */
@@ -354,6 +401,7 @@ class TemporaryAccessService(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(TemporaryAccessService::class.java)
         private const val TEMPORARY_DOWNLOAD_ENDPOINT = "/temporary/download"
         private const val TEMPORARY_UPLOAD_ENDPOINT = "/temporary/upload"
     }

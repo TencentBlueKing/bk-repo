@@ -46,6 +46,8 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation.match
 import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import java.time.LocalDateTime
 
 /**
  * 节点统计接口
@@ -56,12 +58,11 @@ open class NodeStatsSupport(
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
 
-    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
-        val projectId = artifact.projectId
-        val repoName = artifact.repoName
-        val fullPath = artifact.getArtifactFullPath()
-        val node = nodeDao.findNode(projectId, repoName, fullPath)
-            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+    override fun computeSize(
+        artifact: ArtifactInfo,
+        estimated: Boolean
+    ): NodeSizeInfo {
+        val node = getNodeInfo(artifact)
         // 节点为文件直接返回
         if (!node.folder) {
             return NodeSizeInfo(subNodeCount = 0, subNodeWithoutFolderCount = 0, size = node.size)
@@ -70,21 +71,68 @@ open class NodeStatsSupport(
             return computeEstimatedSize(node)
         }
         val listOption = NodeListOption(includeFolder = true, deep = true)
-        val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, node.fullPath, listOption)
-        val count = nodeDao.count(Query(criteria))
+        val criteria = NodeQueryHelper.nodeListCriteria(
+            artifact.projectId,
+            artifact.repoName,
+            artifact.getArtifactFullPath(),
+            listOption)
         val listOptionWithOutFolder = NodeListOption(includeFolder = false, deep = true)
         val criteriaWithOutFolder = NodeQueryHelper.nodeListCriteria(
-            projectId, repoName, node.fullPath, listOptionWithOutFolder
+            artifact.projectId,
+            artifact.repoName,
+            artifact.getArtifactFullPath(),
+            listOptionWithOutFolder
         )
+        val nodeSizeInfo = accurateSizeCalculate(criteria, criteriaWithOutFolder)
+        nodeDao.setSizeAndNodeNumOfFolder(
+                artifact.projectId,
+                artifact.repoName,
+                artifact.getArtifactFullPath(),
+                size = nodeSizeInfo.size,
+                nodeNum = nodeSizeInfo.subNodeWithoutFolderCount)
+        return nodeSizeInfo
+    }
+
+    override fun computeSizeBeforeClean(artifact: ArtifactInfo, before: LocalDateTime): NodeSizeInfo {
+        val nodeInfo = getNodeInfo(artifact)
+        if (!nodeInfo.folder) {
+            return NodeSizeInfo(subNodeCount = 0, subNodeWithoutFolderCount = 0, size = nodeInfo.size)
+        }
+        val listOption = NodeListOption(includeFolder = true, deep = true)
+        val withoutFolderListOption = NodeListOption(includeFolder = false, deep = true)
+        val timeCriteria =  Criteria().orOperator(
+            Criteria().and(TNode::lastAccessDate).lt(before).and(TNode::lastModifiedDate).lt(before),
+            Criteria().and(TNode::lastAccessDate).`is`(null).and(TNode::lastModifiedDate).lt(before),
+        )
+        val criteria = NodeQueryHelper.nodeListCriteria(
+            artifact.projectId,
+            artifact.repoName,
+            artifact.getArtifactFullPath(),
+            listOption).andOperator(timeCriteria)
+        val criteriaWithOutFolder = NodeQueryHelper.nodeListCriteria(
+            artifact.projectId,
+            artifact.repoName,
+            artifact.getArtifactFullPath(),
+            withoutFolderListOption).andOperator(timeCriteria)
+        return accurateSizeCalculate(criteria, criteriaWithOutFolder)
+    }
+    
+    private fun getNodeInfo(artifact: ArtifactInfo): TNode {
+        val projectId = artifact.projectId
+        val repoName = artifact.repoName
+        val fullPath = artifact.getArtifactFullPath()
+        val node = nodeDao.findNode(projectId, repoName, fullPath)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+        return node
+    }
+
+    /**
+     * 计算大小
+     */
+    private fun accurateSizeCalculate(criteria: Criteria, criteriaWithOutFolder: Criteria):NodeSizeInfo {
+        val count = nodeDao.count(Query(criteria))
         val countWithOutFolder = nodeDao.count(Query(criteriaWithOutFolder))
         val size = aggregateComputeSize(criteriaWithOutFolder)
-        nodeDao.setSizeAndNodeNumOfFolder(
-            projectId = projectId,
-            repoName = repoName,
-            fullPath = fullPath,
-            size = size,
-            nodeNum = countWithOutFolder
-        )
         return NodeSizeInfo(subNodeCount = count, subNodeWithoutFolderCount = countWithOutFolder, size = size)
     }
 

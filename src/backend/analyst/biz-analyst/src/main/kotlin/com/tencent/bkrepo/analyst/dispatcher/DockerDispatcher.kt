@@ -41,14 +41,13 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.createContainer
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.removeContainer
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.statemachine.StateMachine
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.ObjectProvider
-import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.net.InetAddress
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 class DockerDispatcher(
     executionCluster: DockerExecutionCluster,
@@ -57,11 +56,12 @@ class DockerDispatcher(
     subtaskStateMachine: StateMachine,
     temporaryScanTokenService: TemporaryScanTokenService,
     executor: ThreadPoolTaskExecutor,
+    redisOperation: RedisOperation,
     private val subScanTaskDao: SubScanTaskDao,
-    private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>
 ) : SubtaskPushDispatcher<DockerExecutionCluster>(
     executionCluster,
     scannerProperties,
+    redisOperation,
     scanService,
     subtaskStateMachine,
     temporaryScanTokenService,
@@ -107,9 +107,7 @@ class DockerDispatcher(
                 cmd = command
             )
             dockerClient.startContainerCmd(containerId).exec()
-            redisTemplate.ifAvailable
-                ?.opsForValue()
-                ?.set(containerIdKey(subtask.taskId), containerId, 1, TimeUnit.DAYS)
+            redisOperation.set(containerIdKey(subtask.taskId), containerId, Duration.ofDays(1).seconds)
         } catch (e: Exception) {
             logger.error("dispatch subtask[${subtask.taskId}] failed", e)
             return false
@@ -118,10 +116,7 @@ class DockerDispatcher(
     }
 
     override fun clean(subtask: SubScanTask, subtaskStatus: String): Boolean {
-        redisTemplate.ifAvailable
-            ?.opsForValue()
-            ?.get(containerIdKey(subtask.taskId))
-            ?.let { dockerClient.removeContainer(it) }
+        redisOperation.get(containerIdKey(subtask.taskId))?.let { dockerClient.removeContainer(it) }
         return true
     }
 

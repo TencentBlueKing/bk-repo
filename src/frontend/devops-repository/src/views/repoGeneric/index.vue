@@ -57,7 +57,7 @@
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
-                        <bk-button class="ml10" v-if="(userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
+                        <bk-button class="ml10" v-if="repoName !== 'pipeline' && (userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
                             key.folder === true
                         ))" @click="clean">
                             {{ $t('clean') }}
@@ -214,26 +214,26 @@
     </div>
 </template>
 <script>
-    import OperationList from '@repository/components/OperationList'
     import Breadcrumb from '@repository/components/Breadcrumb'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import Loading from '@repository/components/Loading/loading'
     import MoveSplitBar from '@repository/components/MoveSplitBar'
+    import OperationList from '@repository/components/OperationList'
     import RepoTree from '@repository/components/RepoTree'
-    import ScanTag from '@repository/views/repoScan/scanTag'
+    import { getIconName } from '@repository/store/publicEnum'
+    import { convertFileSize, debounce, formatDate } from '@repository/utils'
+    import { beforeMonths, beforeYears } from '@repository/utils/date'
+    import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import metadataTag from '@repository/views/repoCommon/metadataTag'
+    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
     import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
     import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
-    import previewBasicFileDialog from './previewBasicFileDialog'
-    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import ScanTag from '@repository/views/repoScan/scanTag'
+    import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
-    import { convertFileSize, formatDate, debounce } from '@repository/utils'
-    import { beforeMonths, beforeYears } from '@repository/utils/date'
-    import { customizeDownloadFile } from '@repository/utils/downloadFile'
-    import { getIconName } from '@repository/store/publicEnum'
-    import { mapState, mapMutations, mapActions } from 'vuex'
-    import Loading from '@repository/components/Loading/loading'
-    import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
+    import previewBasicFileDialog from './previewBasicFileDialog'
 
     export default {
         name: 'repoGeneric',
@@ -354,7 +354,7 @@
             // 前端隐藏report仓库/log仓库
             if (MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log')) {
                 next({
-                    name: 'repoList',
+                    name: 'repositories',
                     params: {
                         projectId: to.params.projectId
                     }
@@ -552,13 +552,15 @@
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
-                        v.nodeMetadata.forEach(item => {
-                            metadataLabelList.forEach(ele => {
-                                if (ele.labelKey === item.key) {
-                                    item.display = ele.display
-                                }
+                        if (v.nodeMetadata) {
+                            v.nodeMetadata.forEach(item => {
+                                metadataLabelList.forEach(ele => {
+                                    if (ele.labelKey === item.key) {
+                                        item.display = ele.display
+                                    }
+                                })
                             })
-                        })
+                        }
 
                         return {
                             metadata: {},
@@ -805,18 +807,11 @@
             async deleteRes ({ name, folder, fullPath }) {
                 if (!fullPath) return
                 let totalRecords
-                let totalFolderNum
                 if (folder) {
                     totalRecords = await this.getMultiFileNumOfFolder({
                         projectId: this.projectId,
                         repoName: this.repoName,
                         paths: [fullPath]
-                    })
-                    totalFolderNum = await this.getMultiFolderNumOfFolder({
-                        projectId: this.projectId,
-                        repoName: this.repoName,
-                        paths: [fullPath],
-                        isFolder: true
                     })
                 }
                 this.$confirm({
@@ -830,7 +825,7 @@
                             fullPath
                         }).then(res => {
                             this.refreshNodeChange()
-                            if (folder && totalRecords === res.deletedNumber - totalFolderNum) {
+                            if (folder && totalRecords === res.deletedNumber) {
                                 this.$bkMessage({
                                     theme: 'success',
                                     message: this.$t('delete') + this.$t('space') + this.$t('success')
@@ -841,7 +836,7 @@
                                     message: this.$t('delete') + this.$t('space') + this.$t('success')
                                 })
                             } else {
-                                const failNum = folder ? totalRecords + totalFolderNum - res.deletedNumber : 1
+                                const failNum = folder ? totalRecords - res.deletedNumber : 1
                                 this.$bkMessage({
                                     theme: 'error',
                                     message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
@@ -1090,12 +1085,6 @@
                     projectId: this.projectId,
                     repoName: this.repoName,
                     paths: paths
-                })
-                const folderNum = await this.getMultiFolderNumOfFolder({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    paths: paths,
-                    isFolder: true
                 }).catch(e => {
                     if (e.status === 403) {
                         this.getPermissionUrl({
@@ -1140,13 +1129,13 @@
                             paths
                         }).then(res => {
                             this.refreshNodeChange()
-                            if (res.deletedNumber === totalRecords + folderNum) {
+                            if (res.deletedNumber === totalRecords) {
                                 this.$bkMessage({
                                     theme: 'success',
                                     message: this.$t('delete') + this.$t('space') + this.$t('success')
                                 })
                             } else {
-                                const failNum = totalRecords + folderNum - res.deletedNumber
+                                const failNum = totalRecords - res.deletedNumber
                                 this.$bkMessage({
                                     theme: 'error',
                                     message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
@@ -1394,7 +1383,7 @@
         }
     }
     .repo-generic-main {
-        height: calc(100% - 100px);
+        height: calc(100% - 70px);
         .repo-generic-side {
             height: 100%;
             overflow: hidden;

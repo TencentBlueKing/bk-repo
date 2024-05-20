@@ -32,10 +32,16 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
+import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.dao.repository.AccountRepository
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
@@ -43,66 +49,57 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.repository.AccountRepository
-import com.tencent.bkrepo.auth.repository.PermissionRepository
-import com.tencent.bkrepo.auth.repository.RoleRepository
-import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.MongoTemplate
 
 /**
  * 对接devops权限
  */
 class DevopsPermissionServiceImpl constructor(
-    userRepository: UserRepository,
     roleRepository: RoleRepository,
     accountRepository: AccountRepository,
-    permissionRepository: PermissionRepository,
-    mongoTemplate: MongoTemplate,
+    permissionDao: PermissionDao,
+    userDao: UserDao,
+    personalPathDao: PersonalPathDao,
     private val devopsAuthConfig: DevopsAuthConfig,
     private val devopsPipelineService: DevopsPipelineService,
     private val devopsProjectService: DevopsProjectService,
-    repositoryClient: RepositoryClient,
+    repoClient: RepositoryClient,
     projectClient: ProjectClient,
     bkIamV3Service: BkIamV3Service
 ) : BkIamV3PermissionServiceImpl(
-    userRepository,
+    bkIamV3Service,
+    userDao,
     roleRepository,
     accountRepository,
-    permissionRepository,
-    mongoTemplate,
-    bkIamV3Service,
-    repositoryClient,
-    projectClient
+    permissionDao,
+    personalPathDao,
+    repoClient,
+    projectClient,
 ) {
+
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         // 用户为系统管理员，或者当前项目管理员
-        if (super.isUserLocalAdmin(userId) || super.isUserLocalProjectAdmin(userId, projectId)) {
-            return getAllRepoByProjectId(projectId)
-        }
+        if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)
+            || isDevopsProjectMember(userId, projectId, READ.name)
+        ) return getAllRepoByProjectId(projectId)
 
-        // devops 体系
-        if (checkDevopsProjectPermission(userId, projectId, READ.name)) {
-            return getAllRepoByProjectId(projectId)
-        }
         return super.listPermissionRepo(projectId, userId, appId)
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
 
         // 校验平台账号操作范围
-        if (!super.checkPlatformPermission(request)) return false
+        if (!checkPlatformPermission(request)) return false
 
         // bkiamv3权限校验
-        if (super.matchBkiamv3Cond(request)) {
+        if (matchBkiamv3Cond(request)) {
             // 当有v3权限时，返回成功；如没有v3权限则按devops账号体系继续进行判断
-            if (super.checkBkIamV3Permission(request)) return true
+            if (checkBkIamV3Permission(request)) return true
         }
 
         return checkDevopsPermission(request)
@@ -119,10 +116,14 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
-        if (checkDevopsProjectPermission(userId, projectId, MANAGE.name)) {
+        if (isDevopsProjectAdmin(userId, projectId)) {
             return emptyList()
         }
         return super.listNoPermissionPath(userId, projectId, repoName)
+    }
+
+    override fun getPathCheckConfig(): Boolean {
+        return devopsAuthConfig.enablePathCheck
     }
 
     private fun parsePipelineId(path: String): String? {
@@ -139,19 +140,30 @@ class DevopsPermissionServiceImpl constructor(
         with(request) {
             logger.debug("check devops permission request [$request]")
 
-            if (super.isUserLocalAdmin(uid) || super.isUserLocalProjectAdmin(uid, projectId!!)) {
+            if (isUserSystemAdmin(uid)) return true
+
+            //user is not local admin, not in project
+            if (projectId == null) return false
+
+            if (isUserLocalProjectAdmin(uid, projectId) || isDevopsProjectAdmin(uid, projectId!!)) {
+                logger.debug("user is devops/local project admin [$uid, $projectId]")
                 return true
             }
+
+
             // project权限
             if (resourceType == PROJECT.name) {
-                return checkDevopsProjectPermission(uid, projectId!!, action)
-                        || super.checkBkIamV3ProjectPermission(projectId!!, uid, action)
+                if (action == MANAGE.name) {
+                    return isDevopsProjectAdmin(uid, projectId!!)
+                }
+                return isDevopsProjectMember(uid, projectId!!, action)
+                        || checkBkIamV3ProjectPermission(projectId!!, uid, action)
             }
 
             // repo或者node权限
             val pass = when (repoName) {
                 CUSTOM, LOG -> {
-                    checkDevopsProjectPermission(uid, projectId!!, action)
+                    checkDevopsCustomPermission(request)
                 }
                 PIPELINE -> {
                     checkDevopsPipelineOrProjectPermission(request)
@@ -164,7 +176,7 @@ class DevopsPermissionServiceImpl constructor(
                 }
             }
 
-            if (!pass && matchDevopsCond(request.appId)) {
+            if (!pass && matchDevopsCond(appId)) {
                 logger.warn("devops forbidden [$request]")
             } else {
                 logger.debug("devops pass [$request]")
@@ -173,14 +185,32 @@ class DevopsPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkRepoNotInDevops(request: CheckPermissionRequest): Boolean {
+    private fun checkDevopsCustomPermission(request: CheckPermissionRequest): Boolean {
+        logger.debug("check devops custom permission request [$request]")
         with(request) {
-            if (resourceType == NODE.name && super.isNodeNeedLocalCheck(projectId!!, repoName!!)) {
-                return checkDevopsProjectPermission(uid, projectId!!, action) && super.checkPermission(request)
+            if (needCheckPathPermission(resourceType, projectId!!, repoName!!)) {
+                val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action)
+                return checkNodeAction(request, null, isDevopsProjectMember)
+            }
+            return isDevopsProjectMember(uid, projectId!!, action)
+        }
+    }
+
+    private fun checkRepoNotInDevops(request: CheckPermissionRequest): Boolean {
+        logger.debug("check repo not in devops request [$request]")
+        with(request) {
+            if (needCheckPathPermission(resourceType, projectId!!, repoName!!)) {
+                val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action) ||
+                        isUserLocalProjectUser(uid, projectId!!)
+                return checkNodeAction(request, null, isDevopsProjectMember)
             } else {
-                return super.checkPermission(request) || checkDevopsProjectPermission(uid, projectId!!, action)
+                return super.checkPermission(request) || isDevopsProjectMember(uid, projectId!!, action)
             }
         }
+    }
+
+    private fun needCheckPathPermission(resourceType: String, projectId: String, repoName: String): Boolean {
+        return devopsAuthConfig.enablePathCheck && resourceType == NODE.name && needNodeCheck(projectId, repoName)
     }
 
     private fun checkDevopsPipelineOrProjectPermission(request: CheckPermissionRequest): Boolean {
@@ -189,7 +219,7 @@ class DevopsPermissionServiceImpl constructor(
             val pipelinePass = checkDevopsPipelinePermission(uid, projectId!!, path, resourceType, action)
             if (!pipelinePass) {
                 logger.warn("devops pipeline permission check fail [$request]")
-                projectPass = checkDevopsProjectPermission(uid, projectId!!, action)
+                projectPass = isDevopsProjectMember(uid, projectId!!, action)
                 if (projectPass) logger.warn("devops pipeline permission widen to project permission [$request]")
             }
             return pipelinePass || projectPass
@@ -208,7 +238,7 @@ class DevopsPermissionServiceImpl constructor(
         action: String
     ): Boolean {
         return when (resourceType) {
-            REPO.name -> checkDevopsProjectPermission(uid, projectId, action)
+            REPO.name -> isDevopsProjectMember(uid, projectId, action)
             NODE.name -> {
                 val pipelineId = parsePipelineId(path ?: return false) ?: return false
                 pipelinePermission(uid, projectId, pipelineId, action)
@@ -217,12 +247,14 @@ class DevopsPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkDevopsProjectPermission(userId: String, projectId: String, action: String): Boolean {
-        logger.debug("checkDevopsProjectPermission: [$userId,$projectId,$action]")
-        return when (action) {
-            MANAGE.name -> devopsProjectService.isProjectManager(userId, projectId)
-            else -> devopsProjectService.isProjectMember(userId, projectId, action)
-        }
+    private fun isDevopsProjectMember(userId: String, projectId: String, action: String): Boolean {
+        logger.debug("isDevopsProjectMember: [$userId,$projectId,$action]")
+        return devopsProjectService.isProjectMember(userId, projectId, action)
+    }
+
+    private fun isDevopsProjectAdmin(userId: String, projectId: String): Boolean {
+        logger.debug("isDevopsProjectAdmin: [$userId,$projectId]")
+        return devopsProjectService.isProjectManager(userId, projectId)
     }
 
     private fun pipelinePermission(userId: String, projectId: String, pipelineId: String, action: String): Boolean {

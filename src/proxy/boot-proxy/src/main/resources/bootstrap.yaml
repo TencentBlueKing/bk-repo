@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: proxy
+  cloud:
+    consul:
+      enabled: false
+
+server:
+  port: 80

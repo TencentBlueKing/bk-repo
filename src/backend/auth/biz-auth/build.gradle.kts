@@ -43,4 +43,5 @@ dependencies {
     implementation("org.apache.httpcomponents:httpclient")
     implementation("com.tencent.bk.sdk:crypto-java-sdk")
     implementation("io.micrometer:micrometer-registry-prometheus")
+    api(project(":router-controller:api-router-controller"))
 }

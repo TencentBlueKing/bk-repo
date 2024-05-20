@@ -31,8 +31,10 @@ import com.tencent.bkrepo.common.api.constant.FS_SERVER_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
@@ -48,4 +50,20 @@ interface FsNodeClient {
         @RequestParam startPos: Long,
         @RequestParam endPos: Long
     ): Response<List<RegionResource>>
+
+    @PostMapping("/restore/{projectId}/{repoName}")
+    fun restoreBlockResources(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String,
+        @RequestParam nodeCreateDate: String,
+        @RequestParam nodeDeleteDate: String,
+    ): Response<Void>
+
+    @DeleteMapping("/delete/{projectId}/{repoName}")
+    fun deleteBlockResources(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String
+    )
 }

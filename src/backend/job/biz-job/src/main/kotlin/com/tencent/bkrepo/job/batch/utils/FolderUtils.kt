@@ -60,20 +60,24 @@ object FolderUtils {
         }.toString()
     }
 
-    /**
-     * 从缓存key中解析出节点信息
-     */
-    fun extractFolderInfoFromCacheKey(key: String): FolderInfo? {
+    fun extractFolderInfoFromCacheKey(key: String, runCollection: Boolean = false): FolderInfo? {
         val values = key.split(StringPool.COLON)
         return try {
-            FolderInfo(
-                projectId = values[1],
-                repoName = values[2],
-                fullPath = values[3]
-            )
+            if (runCollection) {
+                FolderInfo(
+                    projectId = values[1],
+                    repoName = values[2],
+                    fullPath = values[3]
+                )
+            } else {
+                FolderInfo(
+                    projectId = values[0],
+                    repoName = values[1],
+                    fullPath = values[2]
+                )
+            }
         } catch (e: Exception) {
             null
         }
     }
-
 }

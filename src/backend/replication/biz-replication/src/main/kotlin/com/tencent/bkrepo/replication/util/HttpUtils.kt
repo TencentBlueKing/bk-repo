@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.replication.util
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter.addParams
+import com.tencent.bkrepo.common.api.util.UrlFormatter.addParams
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import okhttp3.Request
@@ -92,13 +92,5 @@ object HttpUtils {
         } catch (exception: IOException) {
             throw exception
         }
-    }
-
-    /**
-     * 从Content-Range头中解析出起始位置
-     */
-    fun getRangeInfo(range: String): Pair<Long, Long> {
-        val values = range.split("-")
-        return Pair(values[0].toLong(), values[1].toLong())
     }
 }

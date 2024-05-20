@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.FS_SERVER_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.fs.server.pojo.ClientDetail
+import com.tencent.bkrepo.fs.server.pojo.DailyClientDetail
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -50,4 +51,18 @@ interface FsClientClient {
         @RequestParam ip: String?,
         @RequestParam version: String?,
     ): Response<Page<ClientDetail>>
+
+    @GetMapping("/daily/list")
+    fun listDailyClients(
+        @RequestParam projectId: String?,
+        @RequestParam repoName: String?,
+        @RequestParam pageNumber: Int?,
+        @RequestParam pageSize: Int?,
+        @RequestParam ip: String?,
+        @RequestParam version: String?,
+        @RequestParam startTime: String?,
+        @RequestParam endTime: String?,
+        @RequestParam mountPoint: String?,
+        @RequestParam actions: String
+    ): Response<Page<DailyClientDetail>>
 }

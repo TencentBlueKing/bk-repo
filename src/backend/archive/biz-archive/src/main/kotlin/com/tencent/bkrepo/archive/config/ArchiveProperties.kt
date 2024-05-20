@@ -1,58 +1,59 @@
 package com.tencent.bkrepo.archive.config
 
-import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
-import org.springframework.util.unit.DataSize
+import java.time.Duration
 
 /**
  * 归档服务配置
  * */
 @ConfigurationProperties("archive")
 data class ArchiveProperties(
+    /**
+     * 归档实例配置
+     * */
     @NestedConfigurationProperty
-    val cos: InnerCosCredentials = InnerCosCredentials(),
+    var defaultCredentials: ArchiveCredentialsProperties = ArchiveCredentialsProperties(),
+
+    /**
+     * 额外存储配置
+     * */
+    var extraCredentialsConfig: Map<String, ArchiveCredentialsProperties> = mutableMapOf(),
+
     /**
      * 工作路径
      * */
     var workDir: String = System.getProperty("java.io.tmpdir"),
 
     /**
-     * 恢复出的临时副本的有效时长，单位为“天”
+     * 任务拉取时间
      * */
-    var days: Int = 1,
-    /**
-     * 恢复模式
-     * */
-    var tier: String = "Standard",
-
-    var queryLimit: Int = 1000,
+    var pullInterval: Duration = Duration.ofMinutes(1),
 
     /**
-     * 磁盘可用空间阈值
+     * 最大同时归档数
      * */
-    var threshold: DataSize = DataSize.ofMegabytes(10),
-    /**
-     * io thread num
-     * */
-    var ioThreads: Int = Runtime.getRuntime().availableProcessors(),
-    /**
-     * compress thread num
-     * */
-    var compressThreads: Int = 2,
+    var maxConcurrency: Int = Runtime.getRuntime().availableProcessors(),
 
     /**
-     * xz memory limit
+     * 归档线程数
      * */
-    var xzMemoryLimit: DataSize = DataSize.ofGigabytes(1),
-
-    /**
-     * 恢复数量限制
-     * */
-    var restoreLimit: Int = 1000,
+    var threads: Int = 2,
 
     /**
      * gc 压缩相关配置
+     * */
+    @NestedConfigurationProperty
+    val gc: GcProperties = GcProperties(),
+
+    /**
+     * 文件下载配置
+     * */
+    @NestedConfigurationProperty
+    val download: DownloadProperties = DownloadProperties(),
+
+    /**
+     * 归档压缩配置
      * */
     @NestedConfigurationProperty
     val compress: CompressProperties = CompressProperties(),

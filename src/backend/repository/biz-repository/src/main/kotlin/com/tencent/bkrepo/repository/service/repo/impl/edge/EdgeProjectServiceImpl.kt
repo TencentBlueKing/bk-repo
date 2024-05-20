@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
@@ -50,12 +51,14 @@ class EdgeProjectServiceImpl(
     servicePermissionClient: ServicePermissionClient,
     serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient,
     clusterProperties: ClusterProperties,
-    projectMetricsRepository: ProjectMetricsRepository
+    projectMetricsRepository: ProjectMetricsRepository,
+    storageCredentialService: StorageCredentialService,
 ) : ProjectServiceImpl(
     projectDao,
     servicePermissionClient,
     projectMetricsRepository,
-    serviceBkiamV3ResourceClient
+    serviceBkiamV3ResourceClient,
+    storageCredentialService
 ) {
 
     private val centerProjectClient: ClusterProjectClient by lazy {

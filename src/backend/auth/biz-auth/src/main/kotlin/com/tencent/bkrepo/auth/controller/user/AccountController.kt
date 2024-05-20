@@ -68,6 +68,7 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "ACCOUNT_LIST")
     fun listAccount(): Response<List<Account>> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         val accountList = accountService.listAccount()
         return ResponseBuilder.success(accountList)
     }
@@ -89,6 +90,7 @@ class AccountController @Autowired constructor(
     @GetMapping("/detail/{appId}")
     fun getAccountDetail(@PathVariable appId: String): Response<Account> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         return ResponseBuilder.success(accountService.findAccountByAppId(appId))
     }
 
@@ -97,6 +99,7 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "ACCOUNT_CREATE")
     fun createAccount(@RequestBody request: CreateAccountRequest): Response<Account> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         return ResponseBuilder.success(accountService.createAccount(request))
     }
 
@@ -105,6 +108,7 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "ACCOUNT_UPDATE")
     fun updateAccount(@RequestBody request: UpdateAccountRequest): Response<Boolean> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         accountService.updateAccount(request)
         return ResponseBuilder.success(true)
     }
@@ -114,6 +118,7 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "ACCOUNT_DELETE")
     fun deleteAccount(@PathVariable appId: String): Response<Boolean> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         accountService.deleteAccount(appId)
         return ResponseBuilder.success(true)
     }
@@ -122,6 +127,7 @@ class AccountController @Autowired constructor(
     @DeleteMapping("/uninstall/{appId}")
     fun uninstallAccount(@PathVariable appId: String): Response<Boolean> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         accountService.uninstallAccount(appId)
         return ResponseBuilder.success(true)
     }
@@ -130,6 +136,7 @@ class AccountController @Autowired constructor(
     @GetMapping("/credential/list/{appId}")
     fun getCredential(@PathVariable appId: String): Response<List<CredentialSet>> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         val credential = accountService.listCredentials(appId)
         return ResponseBuilder.success(credential)
     }
@@ -142,6 +149,7 @@ class AccountController @Autowired constructor(
         @RequestParam type: AuthorizationGrantType?
     ): Response<CredentialSet> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         val result = accountService.createCredential(appId, type ?: AuthorizationGrantType.PLATFORM)
         return ResponseBuilder.success(result)
     }
@@ -151,6 +159,7 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "KEYS_DELETE")
     fun deleteCredential(@PathVariable appId: String, @PathVariable accesskey: String): Response<Boolean> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         val result = accountService.deleteCredential(appId, accesskey)
         return ResponseBuilder.success(result)
     }
@@ -164,6 +173,7 @@ class AccountController @Autowired constructor(
         @PathVariable status: CredentialStatus
     ): Response<Boolean> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         accountService.updateCredentialStatus(appId, accesskey, status)
         return ResponseBuilder.success(true)
     }
@@ -171,6 +181,7 @@ class AccountController @Autowired constructor(
     @ApiOperation("校验ak/sk")
     @GetMapping("/credential/{accesskey}/{secretkey}")
     fun checkCredential(@PathVariable accesskey: String, @PathVariable secretkey: String): Response<String?> {
+        preCheckUserAdmin()
         val result = accountService.checkCredential(accesskey, secretkey)
         return ResponseBuilder.success(result)
     }

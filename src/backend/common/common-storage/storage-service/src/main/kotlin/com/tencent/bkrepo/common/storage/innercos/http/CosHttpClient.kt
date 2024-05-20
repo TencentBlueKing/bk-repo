@@ -53,18 +53,22 @@ object CosHttpClient {
         .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
         .build()
 
-    fun <T> execute(request: Request, handler: HttpResponseHandler<T>): T {
-        val response = try {
+    fun request(request: Request): Response {
+        return try {
             client.newCall(request).execute()
         } catch (exception: IOException) {
             val message = buildMessage(request)
             throw InnerCosException("Failed to execute http request: $message", exception)
         }
+    }
+
+    fun <T> execute(request: Request, handler: HttpResponseHandler<T>): T {
+        val response = request(request)
         return resolveResponse(request, response, handler)
     }
 
     private fun <T> resolveResponse(request: Request, response: Response, handler: HttpResponseHandler<T>): T {
-        response.useOnCondition(!handler.keepConnection()) {
+        response.useOnCondition(!handler.keepConnection(response)) {
             try {
                 if (it.isSuccessful) {
                     return handler.handle(it)
@@ -74,7 +78,7 @@ object CosHttpClient {
                         return handle404Result
                     }
                 }
-                throw IOException("Response status error")
+                throw IOException("Response status error: ${it.code}")
             } catch (exception: IOException) {
                 val message = buildMessage(request, it)
                 throw InnerCosException("Failed to execute http request: $message", exception)

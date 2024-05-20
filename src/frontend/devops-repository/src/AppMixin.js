@@ -41,7 +41,7 @@ export default {
         goHome (projectId) {
             const params = projectId ? { projectId } : {}
             this.$router.replace({
-                name: 'repoList',
+                name: 'repositories',
                 params
             })
         },

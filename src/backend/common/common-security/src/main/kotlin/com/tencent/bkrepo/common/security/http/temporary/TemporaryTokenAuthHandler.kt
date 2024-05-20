@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.common.security.http.temporary
 
-import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
@@ -42,7 +41,6 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.slf4j.LoggerFactory
 import javax.servlet.http.HttpServletRequest
 
@@ -52,8 +50,6 @@ import javax.servlet.http.HttpServletRequest
 open class TemporaryTokenAuthHandler(
     private val authenticationManager: AuthenticationManager
 ) : HttpAuthHandler {
-
-    private val temporaryTokenClient by lazy { SpringContextUtils.getBean<ServiceTemporaryTokenClient>() }
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty().trim()
@@ -71,7 +67,7 @@ open class TemporaryTokenAuthHandler(
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
         require(authCredentials is TemporaryTokenAuthCredentials)
         val token = authCredentials.token
-        val tokenInfo = temporaryTokenClient.getTokenInfo(token).data ?: return ANONYMOUS_USER
+        val tokenInfo = authenticationManager.getTokenInfo(token) ?: return ANONYMOUS_USER
         val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
             .takeIf { it.isNotEmpty() }?.apply { checkUserId(this) } ?: ANONYMOUS_USER
         if (!tokenInfo.authorizedUserList.contains(userId)) {

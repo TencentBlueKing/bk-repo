@@ -39,6 +39,9 @@ import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistReques
 import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
+import com.tencent.bkrepo.common.storage.innercos.request.MigrateObjectRequest
+import com.tencent.bkrepo.common.storage.innercos.request.RestoreObjectRequest
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -48,8 +51,8 @@ import java.io.InputStream
  */
 open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredentials, CosClient>() {
 
-    override fun store(path: String, name: String, file: File, client: CosClient) {
-        client.putFileObject(name, file)
+    override fun store(path: String, name: String, file: File, client: CosClient, storageClass: String?) {
+        client.putFileObject(name, file, storageClass)
     }
 
     override fun store(path: String, name: String, inputStream: InputStream, size: Long, client: CosClient) {
@@ -79,20 +82,31 @@ open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredential
             return client.checkObjectExist(CheckObjectExistRequest(name))
         } catch (ignored: IOException) {
             // return false if error
+            logger.error("check file[$path/$name] exists in cos failed", ignored)
             false
         }
     }
 
     override fun copy(path: String, name: String, fromClient: CosClient, toClient: CosClient) {
-        try {
-            require(fromClient.credentials.region == toClient.credentials.region)
-            require(fromClient.credentials.secretId == toClient.credentials.secretId)
-            require(fromClient.credentials.secretKey == toClient.credentials.secretKey)
-            require(fromClient.credentials.encrypt == toClient.credentials.encrypt)
-        } catch (ignored: IllegalArgumentException) {
-            throw IllegalArgumentException("Unsupported to copy object between different cos app id")
+        val sameCos = fromClient.credentials.region == toClient.credentials.region &&
+            fromClient.credentials.secretId == toClient.credentials.secretId &&
+            fromClient.credentials.secretKey == toClient.credentials.secretKey &&
+            fromClient.credentials.encrypt == toClient.credentials.encrypt
+        if (sameCos) {
+            toClient.copyObject(CopyObjectRequest(fromClient.credentials.bucket, name, name))
+        } else {
+            toClient.migrateObject(MigrateObjectRequest(fromClient, name))
         }
-        toClient.copyObject(CopyObjectRequest(fromClient.credentials.bucket, name, name))
+    }
+
+    override fun checkRestore(path: String, name: String, client: CosClient): Boolean {
+        val checkObjectExistRequest = CheckObjectExistRequest(name)
+        return client.checkObjectRestore(checkObjectExistRequest)
+    }
+
+    override fun restore(path: String, name: String, days: Int, tier: String, client: CosClient) {
+        val restoreRequest = RestoreObjectRequest(name, days, tier)
+        client.restoreObject(restoreRequest)
     }
 
     override fun onCreateClient(credentials: InnerCosCredentials): CosClient {
@@ -101,5 +115,9 @@ open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredential
         require(credentials.region.isNotBlank())
         require(credentials.bucket.isNotBlank())
         return CosClient(credentials)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(InnerCosFileStorage::class.java)
     }
 }

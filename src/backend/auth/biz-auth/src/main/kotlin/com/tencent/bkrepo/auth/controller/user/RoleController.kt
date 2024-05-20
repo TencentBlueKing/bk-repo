@@ -65,7 +65,7 @@ class RoleController @Autowired constructor(
     @ApiOperation("创建角色")
     @PostMapping("/create")
     fun createRole(@RequestBody request: CreateRoleRequest): Response<String?> {
-        isContextUserProjectAdmin(request.projectId)
+        preCheckProjectAdmin(request.projectId)
         val id = roleService.createRole(request)
         return ResponseBuilder.success(id)
     }
@@ -73,6 +73,7 @@ class RoleController @Autowired constructor(
     @ApiOperation("创建项目管理员")
     @PostMapping("/create/project/manage/{projectId}")
     fun createProjectManage(@PathVariable projectId: String): Response<String?> {
+        preCheckProjectAdmin(projectId)
         val request = buildProjectAdminRequest(projectId)
         val id = roleService.createRole(request)
         return ResponseBuilder.success(id)
@@ -81,6 +82,7 @@ class RoleController @Autowired constructor(
     @ApiOperation("创建仓库管理员")
     @PostMapping("/create/repo/manage/{projectId}/{repoName}")
     fun createRepoManage(@PathVariable projectId: String, @PathVariable repoName: String): Response<String?> {
+        preCheckProjectAdmin(projectId)
         val request = buildRepoAdminRequest(projectId, repoName)
         val id = roleService.createRole(request)
         return ResponseBuilder.success(id)
@@ -90,7 +92,7 @@ class RoleController @Autowired constructor(
     @DeleteMapping("/delete/{id}")
     fun deleteRole(@PathVariable id: String): Response<Boolean> {
         val role = roleService.detail(id) ?: return ResponseBuilder.success(false)
-        isContextUserProjectAdmin(role.projectId)
+        preCheckProjectAdmin(role.projectId)
         roleService.deleteRoleById(id)
         return ResponseBuilder.success(true)
     }
@@ -98,12 +100,15 @@ class RoleController @Autowired constructor(
     @ApiOperation("根据主键id查询角色详情")
     @GetMapping("/detail/{id}")
     fun detail(@PathVariable id: String): Response<Role?> {
-        return ResponseBuilder.success(roleService.detail(id))
+        val role = roleService.detail(id) ?: return ResponseBuilder.success(null)
+        preCheckProjectAdmin(role.projectId)
+        return ResponseBuilder.success(role)
     }
 
     @ApiOperation("根据角色ID与项目Id查询角色")
     @GetMapping("/detail/{rid}/{projectId}")
     fun detailByProject(@PathVariable rid: String, @PathVariable projectId: String): Response<Role?> {
+        preCheckProjectAdmin(projectId)
         val result = roleService.detail(rid, projectId)
         return ResponseBuilder.success(result)
     }
@@ -115,6 +120,7 @@ class RoleController @Autowired constructor(
         @PathVariable projectId: String,
         @PathVariable repoName: String
     ): Response<Role?> {
+        preCheckProjectAdmin(projectId)
         val result = roleService.detail(rid, projectId, repoName)
         return ResponseBuilder.success(result)
     }
@@ -122,6 +128,8 @@ class RoleController @Autowired constructor(
     @ApiOperation("查询用户组下用户列表")
     @GetMapping("/users/{id}")
     fun listUserByRole(@PathVariable id: String): Response<Set<UserResult>> {
+        val role = roleService.detail(id) ?: return ResponseBuilder.success(emptySet())
+        preCheckProjectAdmin(role.projectId)
         return ResponseBuilder.success(roleService.listUserByRoleId(id))
     }
 
@@ -133,7 +141,7 @@ class RoleController @Autowired constructor(
         @RequestBody updateRoleRequest: UpdateRoleRequest
     ): Response<Boolean> {
         val role = roleService.detail(id) ?: return ResponseBuilder.success(false)
-        isContextUserProjectAdmin(role.projectId)
+        preCheckProjectAdmin(role.projectId)
         return ResponseBuilder.success(roleService.updateRoleInfo(id, updateRoleRequest))
     }
 
@@ -141,7 +149,7 @@ class RoleController @Autowired constructor(
     fun allRole(
         @PathVariable projectId: String
     ): Response<List<Role>> {
-        isContextUserProjectAdmin(projectId)
+        preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(roleService.listRoleByProject(projectId))
     }
 }

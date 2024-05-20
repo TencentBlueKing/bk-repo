@@ -51,5 +51,6 @@ enum class Metrics {
     REPONODENUM,
     REPONODESIZE,
     GCINFO,
-    ARCHIVEDiNFO
+    ARCHIVEDiNFO,
+    PROJECTTRAFFIC,
 }

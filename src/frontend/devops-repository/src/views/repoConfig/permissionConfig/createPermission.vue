@@ -7,7 +7,7 @@
         ref="permDialog"
         @confirm="confirm"
         @cancel="cancel">
-        <bk-form class="mb20 plan-form" :label-width="120" :model="permissionForm" :rules="rules" ref="permissionForm">
+        <bk-form class="mb20 permission-form" :label-width="120" :model="permissionForm" :rules="rules" ref="permissionForm">
             <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
                 <bk-input class="w480" v-model.trim="permissionForm.name"></bk-input>
             </bk-form-item>
@@ -20,15 +20,16 @@
                     </node-table>
                 </template>
             </bk-form-item>
-            <bk-form-item :label="$t('user')" property="users" error-display-type="normal">
-                <bk-tag-input
-                    class="w480"
-                    v-model="permissionForm.users"
-                    :placeholder="$t('enterPlaceHolder')"
-                    trigger="focus"
-                    :has-delete-icon="true"
-                    allow-create>
-                </bk-tag-input>
+            <bk-form-item :label="$t('staffing')">
+                <bk-button icon="plus" @click="showAddDialog">{{ $t('add') + $t('space') + $t('user') }}</bk-button>
+                <div v-show="permissionForm.users.length" class="mt10 user-list">
+                    <div class="pl10 pr10 user-item flex-between-center" v-for="(user, index) in permissionForm.users" :key="index">
+                        <div class="flex-align-center">
+                            <span class="user-name text-overflow" :title="user">{{ user }}</span>
+                        </div>
+                        <Icon class="ml10 hover-btn" size="24" name="icon-delete" @click.native="deleteUser(index)" />
+                    </div>
+                </div>
             </bk-form-item>
             <bk-form-item :label="$t('associatedUseGroup')" property="roles" error-display-type="normal">
                 <bk-tag-input
@@ -41,16 +42,18 @@
                 </bk-tag-input>
             </bk-form-item>
         </bk-form>
+        <add-user-dialog ref="addUserDialog" :visible.sync="showAddUserDialog" @complete="handleAddUsers"></add-user-dialog>
     </canway-dialog>
 </template>
 
 <script>
     import nodeTable from '@/views/repoConfig/permissionConfig/nodeTable'
+    import AddUserDialog from '@/components/AddUserDialog/addUserDialog'
     import { mapActions, mapState } from 'vuex'
 
     export default {
         name: 'createPermission',
-        components: { nodeTable },
+        components: { nodeTable, AddUserDialog },
         props: {
             permissionForm: {
                 type: Object,
@@ -88,7 +91,9 @@
                             trigger: 'blur'
                         }
                     ]
-                }
+                },
+                showAddUserDialog: false,
+                showData: {}
             }
         },
         computed: {
@@ -142,7 +147,6 @@
                         body: body
                     }).then(() => {
                         this.reset()
-                        this.$emit('refresh')
                     })
                 } else {
                     const body = {
@@ -157,7 +161,6 @@
                         body: body
                     }).then(() => {
                         this.reset()
-                        this.$emit('refresh')
                     })
                 }
             },
@@ -173,11 +176,60 @@
                 this.type = 'create'
                 this.$refs.pathConfig.replicaTaskObjects = []
                 this.$refs.permissionForm.clearError()
+                this.$emit('refresh')
+            },
+            parseFn (data) {
+                if (data !== '') {
+                    const users = data.toString().split(',')
+                    for (let i = 0; i < users.length; i++) {
+                        users[i] = users[i].toString().trim()
+                        this.permissionForm.users.push(users[i])
+                    }
+                    this.permissionForm.user = Array.from(new Set(this.permissionForm.users))
+                }
+            },
+            deleteUser (index) {
+                const temp = []
+                for (let i = 0; i < this.permissionForm.users.length; i++) {
+                    if (i !== index) {
+                        temp.push(this.permissionForm.users[i])
+                    }
+                }
+                this.permissionForm.users = temp
+            },
+            showAddDialog () {
+                this.showAddUserDialog = true
+                this.$refs.addUserDialog.editUserConfig = {
+                    users: this.permissionForm.users,
+                    originUsers: this.permissionForm.users,
+                    search: '',
+                    newUser: ''
+                }
+            },
+            handleAddUsers (users) {
+                this.permissionForm.users = users
             }
         }
     }
 </script>
 
-<style scoped>
-
+<style lang="scss" scoped>
+.permission-form {
+    .user-list {
+        display: grid;
+        grid-template: auto / repeat(3, 1fr);
+        gap: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        .user-item {
+            height: 32px;
+            border: 1px solid var(--borderWeightColor);
+            background-color: var(--bgLighterColor);
+            .user-name {
+                max-width: 100px;
+                margin-left: 5px;
+            }
+        }
+    }
+}
 </style>

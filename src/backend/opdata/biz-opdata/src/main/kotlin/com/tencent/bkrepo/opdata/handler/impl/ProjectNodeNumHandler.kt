@@ -33,7 +33,6 @@ package com.tencent.bkrepo.opdata.handler.impl
 
 import com.tencent.bkrepo.opdata.config.OpProjectMetricsProperties
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.StatDateModel
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import org.springframework.stereotype.Component
@@ -43,9 +42,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ProjectNodeNumHandler(
-    statDateModel: StatDateModel,
     private val opProjectMetricsProperties: OpProjectMetricsProperties,
-) : QueryHandler, BaseHandler(statDateModel) {
+) : QueryHandler, BaseHandler() {
 
     override val metric: Metrics get() = Metrics.PROJECTNODENUM
 

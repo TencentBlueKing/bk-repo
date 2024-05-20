@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.base
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.job.config.JobProperties
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
 import net.javacrumbs.shedlock.core.LockConfiguration
@@ -37,6 +38,7 @@ import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import net.javacrumbs.shedlock.core.SimpleLock
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.system.measureNanoTime
@@ -48,13 +50,10 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     /**
      * 锁名称
      */
-    open fun getLockName(): String = getJobName()
+    open fun getLockName(): String = generateLockName()
 
     /**
      * 返回任务名称
-     *
-     * 与job在配置中心的配置前缀保持一致，前缀规则为job.[Class.getSimpleNameq]去掉最后job的后缀
-     * 例： NodeCopyJob 配置为 job.NodeCopy
      */
     fun getJobName(): String = javaClass.simpleName
 
@@ -108,6 +107,12 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     var lastBeginTime: LocalDateTime? = null
     var lastEndTime: LocalDateTime? = null
     var lastExecuteTime: Long? = null
+
+    @Value("\${spring.cloud.client.ip-address}")
+    private lateinit var host: String
+
+    @Autowired
+    private lateinit var jobProperties: JobProperties
 
     open fun start(): Boolean {
         if (!shouldExecute()) {
@@ -194,7 +199,7 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         if (inProcess && force) {
             logger.info("Force stop job [${getJobName()}] and unlock.")
             failover()
-            lock?.unlockQuietly()
+            lock?.doUnlock()
         }
         stop = true
     }
@@ -250,7 +255,19 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      * 判断当前节点是否执行该任务
      */
     open fun shouldExecute(): Boolean {
-        return batchJobProperties.enabled
+        // job是否允许在该节点执行
+        val isJobAffinityNode =
+            batchJobProperties.affinityNodeIps.isEmpty() || host in batchJobProperties.affinityNodeIps
+
+        // 节点是否允许执行该Job
+        val nodeAffinityJobs = jobProperties.nodeAffinityJobs[host]
+        val isNodeAffinityJob = nodeAffinityJobs.isNullOrEmpty() || getJobName() in nodeAffinityJobs
+
+        // 是否允许执行Job
+        if (!isJobAffinityNode || !isNodeAffinityJob) {
+            logger.info("job[${getJobName()}] cannot be executed on node[$host] due to affinity")
+        }
+        return batchJobProperties.enabled && isJobAffinityNode && isNodeAffinityJob
     }
 
     /**
@@ -260,18 +277,32 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         try {
             block()
         } finally {
-            unlockQuietly()
+            doUnlock()
         }
     }
 
     /**
      * 静默释放锁
      * */
-    private fun SimpleLock.unlockQuietly() {
+    private fun SimpleLock.doUnlock() {
         try {
             unlock()
-        } catch (ignore: Exception) {
-            // ignore
+        } catch (e: Exception) {
+            logger.error("Unlock failed", e)
+        }
+    }
+
+    private fun generateLockName(): String {
+        val lockName = if (batchJobProperties.lockName.isNullOrEmpty()) {
+            getJobName()
+        } else {
+            batchJobProperties.lockName!!
+        }
+
+        return if (jobProperties.lockNamePrefix.isNullOrEmpty()) {
+            lockName
+        } else {
+            jobProperties.lockNamePrefix + lockName
         }
     }
 

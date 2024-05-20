@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.model
 
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
@@ -58,5 +59,9 @@ data class TReplicaRecord(
     /**
      * 错误原因
      */
-    var errorReason: String? = null
+    var errorReason: String? = null,
+    /**
+     * 执行结果总览
+     */
+    var replicaOverview: ReplicaOverview? = null
 )

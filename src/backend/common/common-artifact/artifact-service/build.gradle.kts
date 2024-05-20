@@ -34,6 +34,7 @@ dependencies {
     api(project(":auth:api-auth"))
     api(project(":replication:api-replication"))
     api(project(":fs:api-fs-server"))
+    api(project(":router-controller:api-router-controller"))
     api(project(":archive:api-archive"))
     api(project(":common:common-service"))
     api(project(":common:common-security"))
@@ -41,6 +42,7 @@ dependencies {
     api(project(":common:common-storage:storage-service"))
     api(project(":common:common-operate:operate-service"))
     api(project(":common:common-stream"))
+    api(project(":common:common-metrics-push"))
 
     api("org.springframework.boot:spring-boot-starter-aop")
     api("io.micrometer:micrometer-registry-prometheus")

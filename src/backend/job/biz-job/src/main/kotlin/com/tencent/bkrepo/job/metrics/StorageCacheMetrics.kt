@@ -45,10 +45,10 @@ class StorageCacheMetrics(
      * 设置当前缓存总大小，由于目前只有Job服务在清理缓存时会统计，因此只有Job服务会调用该方法
      */
     fun setCacheSize(storageKey: String, size: Long) {
-        cacheSizeMap.getOrPut(storageKey) { size }
+        cacheSizeMap[storageKey] = size
         Gauge.builder(CACHE_SIZE, cacheSizeMap) { cacheSizeMap.getOrDefault(storageKey, 0L).toDouble() }
             .baseUnit(BaseUnits.BYTES)
-            .tag("storageKey", storageKey)
+            .tag(TAG_STORAGE_KEY, storageKey)
             .description("storage cache total size")
             .register(registry)
     }
@@ -57,15 +57,16 @@ class StorageCacheMetrics(
      * 设置当前缓存总数，由于目前只有Job服务在清理缓存时会统计，因此只有Job服务会调用该方法
      */
     fun setCacheCount(storageKey: String, count: Long) {
-        cacheCountMap.getOrPut(storageKey) { count }
+        cacheCountMap[storageKey] = count
         Gauge.builder(CACHE_COUNT, cacheCountMap) { cacheCountMap.getOrDefault(storageKey, 0L).toDouble() }
-            .tag("storageKey", storageKey)
+            .tag(TAG_STORAGE_KEY, storageKey)
             .description("storage cache total count")
             .register(registry)
     }
 
     companion object {
-        private const val CACHE_SIZE = "storage.cache.size"
-        private const val CACHE_COUNT = "storage.cache.count"
+        const val CACHE_SIZE = "storage.cache.size"
+        const val CACHE_COUNT = "storage.cache.count"
+        const val TAG_STORAGE_KEY = "storageKey"
     }
 }

@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.controller.OpenResource
+import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -57,7 +58,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping(AUTH_API_PERMISSION_PREFIX)
 class PermissionController @Autowired constructor(
-    private val permissionService: PermissionService
+    private val permissionService: PermissionService,
 ) : OpenResource(permissionService) {
 
     @ApiOperation("创建权限")
@@ -86,20 +87,23 @@ class PermissionController @Autowired constructor(
         @RequestParam userId: String,
         @RequestParam appId: String?
     ): Response<List<String>> {
+        preCheckContextUser(userId)
         return ResponseBuilder.success(permissionService.listPermissionRepo(projectId, userId, appId))
     }
 
     @ApiOperation("list有权限项目")
     @GetMapping("/project/list")
     fun listPermissionProject(@RequestParam userId: String): Response<List<String>> {
+        preCheckContextUser(userId)
         return ResponseBuilder.success(permissionService.listPermissionProject(userId))
     }
 
     @ApiOperation("权限列表")
     @GetMapping("/list")
-    fun listPermission(@RequestParam projectId: String,
-                       @RequestParam repoName: String?,
-                       @RequestParam resourceType: String?
+    fun listPermission(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String?,
+        @RequestParam resourceType: String
     ): Response<List<Permission>> {
         preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(permissionService.listPermission(projectId, repoName, resourceType))
@@ -111,6 +115,7 @@ class PermissionController @Autowired constructor(
         @RequestParam projectId: String,
         @RequestParam repoName: String
     ): Response<List<Permission>> {
+        preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(permissionService.listBuiltinPermission(projectId, repoName))
     }
 
@@ -129,6 +134,7 @@ class PermissionController @Autowired constructor(
     @ApiOperation("更新权限权限绑定repo")
     @PutMapping("/repo")
     fun updatePermissionRepo(@RequestBody request: UpdatePermissionRepoRequest): Response<Boolean> {
+        preCheckUserAdmin()
         return ResponseBuilder.success(permissionService.updateRepoPermission(request))
     }
 
@@ -159,5 +165,21 @@ class PermissionController @Autowired constructor(
     ): Response<Boolean> {
         preCheckProjectAdmin(request.projectId)
         return ResponseBuilder.success(permissionService.updatePermissionDeployInRepo(request))
+    }
+
+    @ApiOperation("查询是否限制权限配置页，用于前端展示")
+    @GetMapping("/permission/available")
+    fun getRepoPermissionEnabled(): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.getPathCheckConfig())
+    }
+
+    @ApiOperation("创建或查询私有目录")
+    @PostMapping("/personal/path")
+    fun getOrCreatePersonalPath(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String
+    ): Response<String> {
+        preCheckUserInProject(AuthPermissionType.REPO, projectId, repoName)
+        return ResponseBuilder.success(permissionService.getOrCreatePersonalPath(projectId, repoName))
     }
 }

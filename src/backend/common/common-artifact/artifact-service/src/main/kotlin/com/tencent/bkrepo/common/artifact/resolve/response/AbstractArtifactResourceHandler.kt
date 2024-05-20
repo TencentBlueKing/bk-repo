@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -53,13 +52,14 @@ abstract class AbstractArtifactResourceHandler(
      * 获取动态buffer size
      * @param totalSize 数据总大小
      */
-    protected  fun getBufferSize(totalSize: Int): Int {
-        val bufferSize = storageProperties.response.bufferSize.toBytes().toInt()
-        return when {
-            bufferSize < 0 || totalSize < 0 -> STREAM_BUFFER_SIZE
-            totalSize < bufferSize -> totalSize
-            else -> bufferSize
+    protected fun getBufferSize(totalSize: Long): Int {
+        if (totalSize == 0L) {
+            // buffer size 不能为0，否则会导致流io空转。
+            return 1
         }
+        val bufferSize = storageProperties.response.bufferSize.toBytes().toInt()
+        require(totalSize > 0 && bufferSize > 0)
+        return totalSize.coerceAtMost(bufferSize.toLong()).toInt()
     }
 
     /**
@@ -105,7 +105,7 @@ abstract class AbstractArtifactResourceHandler(
                 recordAbleInputStream.rateLimit(responseRateLimitWrapper(storageProperties.response.rateLimit)).use {
                     it.copyTo(
                         out = response.outputStream,
-                        bufferSize = getBufferSize(inputStream.range.length.toInt())
+                        bufferSize = getBufferSize(inputStream.range.length)
                     )
                 }
             }

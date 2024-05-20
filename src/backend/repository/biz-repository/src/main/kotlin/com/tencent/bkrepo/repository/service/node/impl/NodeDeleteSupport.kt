@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
@@ -41,7 +42,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildDeletedEvent
+import com.tencent.bkrepo.repository.util.NodeEventFactory.buildNodeCleanEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
@@ -61,6 +64,8 @@ open class NodeDeleteSupport(
 
     val nodeDao: NodeDao = nodeBaseService.nodeDao
     val quotaService: QuotaService = nodeBaseService.quotaService
+    val routerControllerClient: RouterControllerClient = nodeBaseService.routerControllerClient
+    val routerControllerProperties: RouterControllerProperties = nodeBaseService.routerControllerProperties
 
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
         with(deleteRequest) {
@@ -160,13 +165,17 @@ open class NodeDeleteSupport(
         path: String
     ): NodeDeleteResult {
         val option = NodeListOption(includeFolder = false, deep = true)
+        val timeCriteria = Criteria().orOperator(
+            Criteria().and(TNode::lastAccessDate).lt(date).and(TNode::lastModifiedDate).lt(date),
+            Criteria().and(TNode::lastAccessDate).`is`(null).and(TNode::lastModifiedDate).lt(date),
+        )
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
-            .and(TNode::lastModifiedDate).lt(date)
+            .andOperator(timeCriteria)
         val query = Query(criteria)
         val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName)
-/*        publishEvent(buildNodeCleanEvent(
+        publishEvent(buildNodeCleanEvent(
             projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString())
-        )*/
+        )
         return nodeDeleteResult
     }
 
@@ -194,9 +203,20 @@ open class NodeDeleteSupport(
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }
-            deletedSize = nodeBaseService.aggregateComputeSize(criteria.and(TNode::deleted).isEqualTo(deleteTime))
+            var deletedCriteria = criteria.and(TNode::deleted).isEqualTo(deleteTime)
+            fullPaths?.let {
+                // 节点删除接口返回的数据排除目录
+                deletedCriteria = deletedCriteria.and(TNode::folder).isEqualTo(false)
+                deletedNum = nodeDao.count(Query(deletedCriteria))
+            }
+            deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
             quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
-            fullPaths?.forEach { publishEvent(buildDeletedEvent(projectId, repoName, it, operator)) }
+            fullPaths?.forEach {
+                if (routerControllerProperties.enabled) {
+                    routerControllerClient.removeNodes(projectId, repoName, it)
+                }
+                publishEvent(buildDeletedEvent(projectId, repoName, it, operator))
+            }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[$resourceKey] by [$operator] error: [${exception.message}]")
         }
@@ -206,6 +226,7 @@ open class NodeDeleteSupport(
         )
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
+
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeDeleteSupport::class.java)

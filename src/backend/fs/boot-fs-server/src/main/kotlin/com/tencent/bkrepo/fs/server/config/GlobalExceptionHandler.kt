@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.fs.server.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.fs.server.utils.LocaleMessageUtils
+import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.SpringContextUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.BeansException
@@ -56,6 +57,7 @@ class GlobalExceptionHandler : ErrorWebExceptionHandler {
         }
         val bodyBytes = JsonUtils.objectMapper.writeValueAsBytes(body)
         val res = exchange.response.bufferFactory().wrap(bodyBytes)
+        exchange.response.headers[ReactiveResponseBuilder.TRACE_ID] = SpringContextUtils.getTraceId()
         return exchange.response.writeWith(Mono.just(res))
     }
 

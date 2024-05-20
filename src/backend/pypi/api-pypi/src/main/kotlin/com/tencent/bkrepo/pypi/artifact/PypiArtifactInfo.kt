@@ -33,7 +33,7 @@ package com.tencent.bkrepo.pypi.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 
-class PypiArtifactInfo(
+open class PypiArtifactInfo(
     projectId: String,
     repoName: String,
     artifactUri: String
@@ -41,9 +41,6 @@ class PypiArtifactInfo(
     companion object {
         const val PYPI_PACKAGES_MAPPING_URI = "/{projectId}/{repoName}/packages/**"
         const val PYPI_ROOT_POST_URI = "/{projectId}/{repoName}"
-        const val PYPI_MIGRATE_URL = "/{projectId}/{repoName}/migrate/url"
-        const val PYPI_MIGRATE_RESULT = "/{projectId}/{repoName}/migrate/result"
-        const val PYPI_SIMPLE_MAPPING_INSTALL_URI = "/{projectId}/{repoName}/simple/**"
 
         // RPM 产品接口
         const val PYPI_EXT_DETAIL = "/version/detail/{projectId}/{repoName}"

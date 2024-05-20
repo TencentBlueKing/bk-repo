@@ -1,5 +1,6 @@
 package com.tencent.com.bkrepo.fs.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -8,6 +9,8 @@ import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.model.TBlockNode
 import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
 import com.tencent.bkrepo.fs.server.service.BlockNodeService
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.com.bkrepo.fs.UT_PROJECT_ID
 import com.tencent.com.bkrepo.fs.UT_REPO_NAME
 import com.tencent.com.bkrepo.fs.UT_USER
@@ -75,6 +78,7 @@ class BlockNodeServiceTest {
     @Test
     fun testListRangeBlockNodes() {
         runBlocking {
+            val createdDate = LocalDateTime.now().minusSeconds(1).toString()
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
             createBlockNode(10)
@@ -85,7 +89,8 @@ class BlockNodeServiceTest {
                 range = range,
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
-                fullPath = "/file"
+                fullPath = "/file",
+                createdDate = createdDate
             )
             Assertions.assertEquals(2, blocks.size)
             Assertions.assertEquals(20, blocks.first().startPos)
@@ -97,6 +102,7 @@ class BlockNodeServiceTest {
     @Test
     fun testDeleteBlocks() {
         runBlocking {
+            val createdDate = LocalDateTime.now().minusSeconds(1).toString()
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
             createBlockNode(startPos = 10)
@@ -105,7 +111,8 @@ class BlockNodeServiceTest {
                 Range.full(Long.MAX_VALUE),
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
-                "/file"
+                "/file",
+                createdDate
             )
             Assertions.assertEquals(2, blocks0.size)
             // 删除所有分块
@@ -118,7 +125,8 @@ class BlockNodeServiceTest {
                 Range.full(Long.MAX_VALUE),
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
-                "/file"
+                "/file",
+                createdDate
             )
             // 所有分块已被删除
             Assertions.assertEquals(0, blocks1.size)
@@ -129,8 +137,24 @@ class BlockNodeServiceTest {
     @Test
     fun testMoveNode() {
         runBlocking {
+            val createdDate = LocalDateTime.now().minusSeconds(1).toString()
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
+            val nodeInfo = NodeInfo(
+                createdBy = UT_USER,
+                createdDate = createdDate,
+                lastModifiedBy = UT_USER,
+                lastModifiedDate = createdDate,
+                folder = false,
+                path = StringPool.ROOT,
+                name = "newFile",
+                fullPath = "/newFile",
+                size = 21,
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME
+            )
+            Mockito.`when`(rRepositoryClient.getNodeDetail(any(), any(), any()))
+                .thenReturn(Mono.just(successResponse(NodeDetail(nodeInfo))))
             createBlockNode(startPos = 10)
             createBlockNode(startPos = 20)
             val fullPath = "/file"
@@ -140,14 +164,16 @@ class BlockNodeServiceTest {
                 Range.full(Long.MAX_VALUE),
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
-                newFullPath
+                newFullPath,
+                createdDate
             )
             Assertions.assertEquals(2, blocks.size)
             val blocks1 = blockNodeService.listBlocks(
                 Range.full(Long.MAX_VALUE),
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
-                fullPath
+                fullPath,
+                createdDate
             )
             Assertions.assertEquals(0, blocks1.size)
         }

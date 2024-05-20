@@ -29,17 +29,24 @@ package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
+import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
@@ -47,17 +54,25 @@ import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
+import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
+import com.tencent.bkrepo.helm.constants.NODE_METADATA
+import com.tencent.bkrepo.helm.constants.NODE_METADATA_NAME
+import com.tencent.bkrepo.helm.constants.NODE_METADATA_VERSION
 import com.tencent.bkrepo.helm.constants.NODE_NAME
 import com.tencent.bkrepo.helm.constants.NODE_SHA256
+import com.tencent.bkrepo.helm.constants.PROJECT_ID
 import com.tencent.bkrepo.helm.constants.PROV
+import com.tencent.bkrepo.helm.constants.REPO_NAME
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
+import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
@@ -66,6 +81,8 @@ import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -76,9 +93,115 @@ class ChartRepositoryServiceImpl(
     private val helmOperationService: HelmOperationService
 ) : AbstractChartService(), ChartRepositoryService {
 
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
+        return queryLatestIndex(artifactInfo) { chartListSearch(artifactInfo, startTime) }
+    }
+
+    private fun chartListSearch(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
+        val indexYamlMetadata = if (!exist(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fullPath = HelmUtils.getIndexCacheYamlFullPath()
+            )
+        ) {
+            HelmUtils.initIndexYamlMetadata()
+        } else {
+            queryOriginalIndexYaml()
+        }
+        val startDate = startTime ?: LocalDateTime.MIN
+        return ResponseEntity.ok().body(
+            ChartParserUtil.searchJson(indexYamlMetadata, artifactInfo.getArtifactFullPath(), startDate)
+        )
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    override fun isExists(artifactInfo: HelmArtifactInfo) {
+        val response = HttpContextHolder.getResponse()
+        val status: HttpStatus = with(artifactInfo) {
+            val projectId = Rule.QueryRule(PROJECT_ID, projectId)
+            val repoName = Rule.QueryRule(REPO_NAME, repoName)
+            val urlList = this.getArtifactFullPath().trimStart('/').split("/").filter { it.isNotBlank() }
+            val rule: Rule? = when (urlList.size) {
+                // query with name
+                1 -> {
+                    val name = Rule.QueryRule(NODE_METADATA_NAME, urlList[0])
+                    Rule.NestedRule(mutableListOf(repoName, projectId, name))
+                }
+                // query with name and version
+                2 -> {
+                    val name = Rule.QueryRule(NODE_METADATA_NAME, urlList[0])
+                    val version = Rule.QueryRule(NODE_METADATA_VERSION, urlList[1])
+                    Rule.NestedRule(mutableListOf(repoName, projectId, name, version))
+                }
+                else -> {
+                    null
+                }
+            }
+            if (rule != null) {
+                val queryModel = QueryModel(
+                    page = PageLimit(CURRENT_PAGE, SIZE),
+                    sort = Sort(listOf(NAME), Sort.Direction.ASC),
+                    select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_FULL_PATH, NODE_METADATA),
+                    rule = rule
+                )
+                val nodeList: List<Map<String, Any?>>? = nodeClient.queryWithoutCount(queryModel).data?.records
+                if (nodeList.isNullOrEmpty()) HttpStatus.NOT_FOUND else HttpStatus.OK
+            } else {
+                HttpStatus.NOT_FOUND
+            }
+        }
+        response.status = status.value()
+    }
+
+    override fun detailVersion(
+        userId: String,
+        artifactInfo: HelmArtifactInfo,
+        packageKey: String,
+        version: String
+    ): PackageVersionInfo {
+        with(artifactInfo) {
+            val name = PackageKeys.resolveHelm(packageKey)
+            val fullPath = String.format("/%s-%s.tgz", name, version)
+            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
+                logger.warn("node [$fullPath] don't found.")
+                throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, fullPath, "$projectId|$repoName")
+            }
+            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
+                logger.warn("packageKey [$packageKey] don't found.")
+                throw PackageNotFoundException(packageKey)
+            }
+            val basicInfo = ObjectBuilderUtil.buildBasicInfo(nodeDetail, packageVersion)
+            return PackageVersionInfo(basicInfo, packageVersion.packageMetadata)
+        }
+    }
+
+    override fun getRegistryDomain(): HelmDomainInfo {
+        return HelmDomainInfo(UrlFormatter.formatHost(helmProperties.domain))
+    }
+
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
         helmOperationService.checkNodePermission(INDEX_YAML, PermissionAction.READ)
-        lockAction(artifactInfo.projectId, artifactInfo.repoName) { downloadIndex(artifactInfo) }
+        queryLatestIndex(artifactInfo) { downloadIndex(artifactInfo) }
+    }
+
+    private fun <T> queryLatestIndex(
+        artifactInfo: HelmArtifactInfo,
+        action: () -> T
+    ): T {
+        return if (helmChartEventRecordDao.checkIndexExpiredStatus(artifactInfo.projectId, artifactInfo.repoName)) {
+            lockAction(artifactInfo.projectId, artifactInfo.repoName) {
+                val exist = helmChartEventRecordDao.checkIndexExpiredStatus(
+                    artifactInfo.projectId, artifactInfo.repoName
+                )
+                if (exist) {
+                    regenerateIndex(artifactInfo, false)
+                }
+                action()
+            }
+        } else {
+            action()
+        }
     }
 
     private fun downloadIndex(artifactInfo: HelmArtifactInfo) {
@@ -183,7 +306,7 @@ class ChartRepositoryServiceImpl(
                     chartMetadata.digest = it[NODE_SHA256] as String
                     ChartParserUtil.addIndexEntries(indexYamlMetadata, chartMetadata)
                 } catch (ex: HelmFileNotFoundException) {
-                    logger.error(
+                    logger.warn(
                         "generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
                             "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
                     )
@@ -244,9 +367,7 @@ class ChartRepositoryServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     override fun updatePackageForRemote(artifactInfo: HelmArtifactInfo) {
-        helmOperationService.lockAction(artifactInfo.projectId, artifactInfo.repoName) {
-            helmOperationService.updatePackageForRemote(artifactInfo.projectId, artifactInfo.repoName)
-        }
+        helmOperationService.updatePackageForRemote(artifactInfo.projectId, artifactInfo.repoName)
     }
 
     @Permission(ResourceType.NODE, PermissionAction.READ)
@@ -309,5 +430,7 @@ class ChartRepositoryServiceImpl(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(ChartRepositoryServiceImpl::class.java)
+        const val CURRENT_PAGE = 0
+        const val SIZE = 5
     }
 }
