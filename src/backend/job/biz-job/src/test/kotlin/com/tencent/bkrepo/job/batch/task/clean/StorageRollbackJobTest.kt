@@ -176,7 +176,7 @@ class StorageRollbackJobTest @Autowired constructor(
     fun `test create node timeout but success`() {
         // mock
         whenever(nodeClient.createNode(any())).then {
-            fileReferenceClient.create(it.getArgument<NodeCreateRequest>(0).sha256!!, null, 1L)
+            fileReferenceClient.increment(it.getArgument<NodeCreateRequest>(0).sha256!!, null, 1L)
             throw RuntimeException()
         }
 
@@ -291,7 +291,7 @@ class StorageRollbackJobTest @Autowired constructor(
             )
             Response(code = 0, data = exists)
         }
-        whenever(fileReferenceClient.create(anyString(), anyOrNull(), any())).then {
+        whenever(fileReferenceClient.increment(anyString(), anyOrNull(), any())).then {
             val sha256 = it.getArgument<String>(0)
             val sequence = HashShardingUtils.shardingSequenceFor(sha256, SHARDING_COUNT)
             val collectionName = "file_reference_$sequence"
@@ -302,7 +302,7 @@ class StorageRollbackJobTest @Autowired constructor(
         }
         whenever(nodeClient.createNode(any())).then {
             val sha256 = it.getArgument<NodeCreateRequest>(0).sha256!!
-            fileReferenceClient.create(sha256, null, 1)
+            fileReferenceClient.increment(sha256, null, 1)
             Response(code = 0, data = buildNodeDetail(sha256))
         }
     }

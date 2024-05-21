@@ -42,7 +42,6 @@ import com.tencent.bkrepo.repository.pojo.file.FileReference
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -79,9 +78,9 @@ class FileReferenceServiceImpl(
         }
     }
 
-    override fun increment(sha256: String, credentialsKey: String?): Boolean {
+    override fun increment(sha256: String, credentialsKey: String?, inc: Long): Boolean {
         val query = buildQuery(sha256, credentialsKey)
-        val update = Update().inc(TFileReference::count.name, 1)
+        val update = Update().inc(TFileReference::count.name, inc)
         try {
             fileReferenceDao.upsert(query, update)
         } catch (exception: DuplicateKeyException) {
@@ -131,22 +130,6 @@ class FileReferenceServiceImpl(
 
     override fun exists(sha256: String, credentialsKey: String?): Boolean {
         return fileReferenceDao.exists(buildQuery(sha256, credentialsKey))
-    }
-
-    override fun create(sha256: String, credentialsKey: String?, count: Long): FileReference {
-        val query = buildQuery(sha256, credentialsKey)
-        val update = Update().inc(TFileReference::count.name, count)
-        val option = FindAndModifyOptions().upsert(true).returnNew(true)
-
-        val ref = try {
-            fileReferenceDao.findAndModify(query, update, option, TFileReference::class.java)!!
-        } catch (exception: DuplicateKeyException) {
-            // retry because upsert operation is not atomic
-            fileReferenceDao.findAndModify(query, update, option, TFileReference::class.java)!!
-        }
-
-        logger.info("create reference of file [$sha256] on credentialsKey [$credentialsKey].")
-        return convert(ref)
     }
 
     private fun convert(tFileReference: TFileReference): FileReference {

@@ -88,7 +88,7 @@ class StorageRollbackJob(
             // 文件存在但是引用不存在时表示制品存储成功后node未成功创建，此时需要删除垃圾文件
             // 创建一个计数为0的引用，FileReferenceCleanupJob中会清理该文件
             logger.info("create count 0 reference[${row.sha256}] of storage[${row.credentialsKey}] to rollback storage")
-            fileReferenceClient.create(row.sha256, row.credentialsKey)
+            fileReferenceClient.increment(row.sha256, row.credentialsKey, 0L)
         }
 
         // 处理结束后删除存储记录
