@@ -61,6 +61,8 @@ import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
+import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
@@ -380,6 +382,10 @@ open class PermissionServiceImpl constructor(
 
     override fun getPathCheckConfig(): Boolean {
         return true
+    }
+
+    override fun listExternalRoleByProject(projectId: String, source: RoleSource): List<ExternalRoleResult> {
+        return emptyList()
     }
 
     fun isUserLocalProjectAdmin(userId: String, projectId: String?): Boolean {

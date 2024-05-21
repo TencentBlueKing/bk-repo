@@ -75,7 +75,9 @@ class RoleServiceImpl constructor(
 
     override fun detail(rid: String, projectId: String, repoName: String): Role? {
         logger.debug("get  role  detail rid : [$rid,$projectId,$repoName]")
-        val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
+        val result =
+            roleRepository.findFirstByTypeAndRoleIdAndProjectIdAndRepoName(RoleType.REPO, rid, projectId, repoName)
+                ?: return null
         return transfer(result)
     }
 
@@ -111,7 +113,7 @@ class RoleServiceImpl constructor(
     override fun listRoleByProject(projectId: String, repoName: String?): List<Role> {
         logger.debug("list role by project ,[$projectId , $repoName]")
         repoName?.let {
-            return roleRepository.findByProjectIdAndRepoNameAndType(projectId, repoName, RoleType.REPO)
+            return roleRepository.findByTypeAndProjectIdAndRepoName(RoleType.REPO, projectId, repoName)
                 .map { transfer(it) }
         }
         return roleRepository.findByTypeAndProjectIdAndAdminAndRoleIdNotIn(
@@ -149,7 +151,8 @@ class RoleServiceImpl constructor(
             projectId = tRole.projectId,
             admin = tRole.admin,
             users = users,
-            description = tRole.description
+            description = tRole.description,
+            source = tRole.source
         )
     }
 

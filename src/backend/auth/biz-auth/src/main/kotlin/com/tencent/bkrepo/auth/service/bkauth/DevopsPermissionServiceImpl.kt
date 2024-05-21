@@ -49,6 +49,8 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
+import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -124,6 +126,13 @@ class DevopsPermissionServiceImpl constructor(
 
     override fun getPathCheckConfig(): Boolean {
         return devopsAuthConfig.enablePathCheck
+    }
+
+    override fun listExternalRoleByProject(projectId: String, source: RoleSource): List<ExternalRoleResult> {
+        if (source == RoleSource.DEVOPS) {
+            return devopsProjectService.listRoleAndUserByProject(projectId)
+        }
+        return emptyList()
     }
 
     private fun parsePipelineId(path: String): String? {

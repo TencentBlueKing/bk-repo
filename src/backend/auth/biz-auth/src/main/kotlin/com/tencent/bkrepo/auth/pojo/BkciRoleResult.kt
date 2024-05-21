@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,32 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.pojo
 
-import com.tencent.bkrepo.auth.pojo.enums.RoleType
-import com.tencent.bkrepo.auth.pojo.role.RoleSource
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
+import com.fasterxml.jackson.annotation.JsonProperty
 
-/**
- * 角色
- */
-@Document("role")
-@CompoundIndexes(
-    CompoundIndex(name = "roleId_idx", def = "{'roleId': 1}", background = true),
-    CompoundIndex(name = "type_idx", def = "{'type': 1}", background = true),
-    CompoundIndex(name = "projectId_idx", def = "{'projectId': 1}", background = true),
-    CompoundIndex(name = "repoName_idx", def = "{'repoName': 1}", background = true)
-)
-data class TRole(
-    val id: String? = null,
-    val roleId: String,
-    val type: RoleType,
-    var name: String,
-    val projectId: String,
-    val repoName: String? = null,
-    val admin: Boolean = false,
-    var description: String? = null,
-    var source: RoleSource? = null
+data class BkciRoleResult(
+    @JsonProperty("display_name")
+    val displayName: String,
+    @JsonProperty("role_id")
+    val roleId: Long,
+    @JsonProperty("role_name")
+    val roleName: String,
+    @JsonProperty("user_id_list")
+    val userIdList: List<String>,
+    @JsonProperty("type")
+    val type: String
 )

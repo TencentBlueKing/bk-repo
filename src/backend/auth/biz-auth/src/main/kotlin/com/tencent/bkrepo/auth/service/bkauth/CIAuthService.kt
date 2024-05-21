@@ -37,6 +37,8 @@ import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.pojo.BkciAuthCheckResponse
 import com.tencent.bkrepo.auth.pojo.BkciAuthListResponse
+import com.tencent.bkrepo.auth.pojo.BkciRoleListResponse
+import com.tencent.bkrepo.auth.pojo.BkciRoleResult
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
@@ -226,6 +228,21 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
             return responseObject.data
         } catch (exception: Exception) {
             logger.error("getProjectListByUser error: ", exception)
+            emptyList()
+        }
+    }
+
+    fun getRoleAndUserByProject(projectCode: String): List<BkciRoleResult> {
+        return try {
+            val url = "${devopsAuthConfig.getBkciAuthServer()}/api/open/service/auth/projects/$projectCode/users"
+            val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
+                .get().build()
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
+            val responseObject = objectMapper.readValue<BkciRoleListResponse>(apiResponse.content)
+            logger.debug("getRoleAndUserByProject, requestUrl: [$url], result : [${apiResponse.content}]")
+            return responseObject.data
+        } catch (exception: Exception) {
+            logger.error("getRoleAndUserByProject error: ", exception)
             emptyList()
         }
     }

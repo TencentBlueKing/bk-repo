@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.service.bkauth
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
+import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
@@ -57,5 +58,13 @@ class DevopsProjectService @Autowired constructor(private val ciAuthService: CIA
 
     fun listProjectByUser(user: String): List<String> {
         return ciAuthService.getProjectListByUser(user)
+    }
+
+    fun listRoleAndUserByProject(projectCode: String): List<ExternalRoleResult> {
+        val externalRoleList = mutableListOf<ExternalRoleResult>()
+        ciAuthService.getRoleAndUserByProject(projectCode).forEach {
+            externalRoleList.add(ExternalRoleResult(it.displayName, it.roleId.toString(), it.userIdList))
+        }
+        return externalRoleList
     }
 }
