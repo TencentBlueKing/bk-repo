@@ -24,6 +24,7 @@ const createRouter = () => {
         base: rootPath,
         routes: routerArr
     })
+    console.log(rootPath, rootPath, router, 'sub saas root path')
     connectToMain(router)
     return router
 }
