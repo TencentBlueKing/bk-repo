@@ -61,12 +61,12 @@ open class OciArtifactInfo(
 
         // tags get
         const val TAGS_LIST_SUFFIX = "/tags/list"
+        const val TAGS_LIST_URL = "/v2/{projectId}/{repoName}/**/tags/list"
         // Retrieve a sorted, json list of repositories available in the registry.
         const val DOCKER_CATALOG_SUFFIX = "/v2/_catalog"
 
         // version详情获取
         const val OCI_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
-
 
         // 额外的package或者version 删除接口
         const val OCI_PACKAGE_DELETE_URL = "/package/delete/{projectId}/{repoName}"

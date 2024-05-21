@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.api.util.AuthenticationUtil
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
@@ -56,14 +57,12 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.oci.constant.CATALOG_REQUEST
 import com.tencent.bkrepo.oci.constant.DOCKER_DISTRIBUTION_MANIFEST_V2
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
-import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
 import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.OciMessageCode
@@ -339,8 +338,9 @@ class OciRegistryRemoteRepository(
      */
     private fun createTagListUrl(property: RemoteRequestProperty): String {
         with(property) {
-            val url = UriBuilder.fromUri(url)
-                .path(OCI_API_PREFIX)
+            val baseUrl = URL(url)
+            val v2Url = URL(baseUrl, OCI_FILTER_ENDPOINT + baseUrl.path)
+            val url = UriBuilder.fromUri(v2Url.toString())
                 .path(imageName)
                 .path(TAGS_LIST_SUFFIX)
                 .build().toString()

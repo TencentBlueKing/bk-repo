@@ -68,6 +68,7 @@ abstract class CleanupSupport : HealthCheckSupport() {
             fileLocator,
             credentials,
             fileExpireResolver,
+            publisher
         )
         FileSystemClient(path).walk(visitor)
         return visitor.result

@@ -17,6 +17,10 @@
                         <span v-if="detail.basic.groupId" class="ml5 repo-tag"> {{ detail.basic.groupId }} </span>
                     </span>
                 </div>
+                <div v-if="detail.basic.platform" class="package-platform grid-item">
+                    <label>OS/ARCH</label>
+                    <span class="flex-1 text-overflow" :title="detail.basic.platform.join()">{{ detail.basic.platform.join() }}</span>
+                </div>
                 <div class="grid-item"
                     v-for="{ name, label, value } in detailInfoMap"
                     :key="name">
@@ -291,6 +295,15 @@
                     if (this.repoType === 'docker') {
                         this.selectedHistory = res.history[0] || {}
                     }
+                    // rpm仓库因为版本详情页的使用指引，需要获取当前版本详情的fullPath，用于替换使用指引的变量值
+                    if (this.repoType === 'rpm') {
+                        this.$router.replace({
+                            query: {
+                                ...this.$route.query,
+                                packageFullPath: this.detail?.basic?.fullPath
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -335,6 +348,7 @@
                 }
             }
             .package-name,
+            .package-platform,
             .package-description {
                 grid-column: 1 / 3;
             }

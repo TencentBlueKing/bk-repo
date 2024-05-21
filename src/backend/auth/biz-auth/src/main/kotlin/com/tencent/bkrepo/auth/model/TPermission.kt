@@ -37,7 +37,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 /**
- * 角色
+ * 权限
  */
 @Document("permission")
 @CompoundIndexes(

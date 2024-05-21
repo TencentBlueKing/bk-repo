@@ -33,7 +33,7 @@ import org.springframework.web.reactive.function.server.buildAndAwait
 
 object ReactiveResponseBuilder {
 
-    const val TRACE_ID = "TRACE-ID"
+    const val TRACE_ID = "X-BKREPO-RID"
     suspend fun <T> success(data: T): ServerResponse = ok().bodyValueAndAwait(ResponseBuilder.success(data))
     suspend fun success(): ServerResponse = ok().buildAndAwait()
 

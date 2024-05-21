@@ -44,7 +44,9 @@
     },
     "remoteClusterIds": ["651095dfe0524ce9b3ab53d13532361c","329fbcda45944fb9ae5c2573acd7bd2a"],
     "enabled": true,
-    "description": "test replica task"
+    "description": "test replica task",
+    "record" : true,
+    "recordReserveDays" : 30
   }
   ```
 
@@ -61,6 +63,8 @@
   |remoteClusterIds|list|是|无|远程集成节点id|the remote cluster node ids|
   |enabled|bool|是|true|计划是否启动|do task enabled|
   |description|sting|否|无|描述|description|
+  |record|bool|是|true|是否记录分发详细日志|is record replica detail|
+  |recordReserveDays|long|是|30|分发详细日志保留天数|replica detail reserve days|
   
 - replicaTaskObjects对象说明
 
@@ -132,6 +136,8 @@
       "nextExecutionTime": "2020-03-17T12:00:00.000",
       "executionTimes": 5,
       "enabled": true,
+      "record" : true,
+      "recordReserveDays" : 30,
       "createdBy" : "system",
       "createdDate" : "2020-03-16T12:13:03.371",
       "lastModifiedBy" : "system",
@@ -195,6 +201,8 @@
       "nextExecutionTime": "2020-03-17T12:00:00.000",
       "executionTimes": 5,
       "enabled": true,
+      "record" : true,
+      "recordReserveDays" : 30,
       "createdBy" : "system",
       "createdDate" : "2020-03-16T12:13:03.371",
       "lastModifiedBy" : "system",
@@ -204,7 +212,7 @@
   }
   ```
 
-- data字段说明
+ data字段说明
 
   |字段|类型|说明|Description|
   |---|---|---|---|
@@ -222,6 +230,8 @@
   |nextExecutionTime|date|下次执行时间|task next execution time|
   |executionTimes|long|执行次数|execution times|
   |enabled|bool|是|true|计划是否启动|do task enabled|
+  |record|bool|是否记录分发详细日志|is record replica detail|
+  |recordReserveDays|long|分发详细日志保留天数|replica detail reserve days|
   |createdBy|string|创建者|create user|
   |createdDate|string|创建时间|create time|
   |lastModifiedBy|string|上次修改者|last modify user|
@@ -528,7 +538,9 @@
       }
     ],
     "remoteClusterIds": ["651095dfe0524ce9b3ab53d13532361c","329fbcda45944fb9ae5c2573acd7bd2a"],
-    "description": "test replica task"
+    "description": "test replica task",
+    "record" : true,
+    "recordReserveDays" : 30
   }
   ```
 
@@ -543,6 +555,8 @@
   |replicaTaskObjects|object|是|无|同步对象信息|replication object info|
   |remoteClusterIds|list|是|无|远程集成节点id|the remote cluster node ids|
   |description|sting|否|无|描述|description|
+  |record|bool|是|true|是否记录分发详细日志|is record replica detail|
+  |recordReserveDays|long|是|30|分发详细日志保留天数|replica detail reserve days|
   
 - replicaTaskObjects对象说明
 

@@ -31,40 +31,40 @@ import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.dao.PermissionDao
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
+import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.dao.repository.AccountRepository
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.pojo.enums.ActionTypeMapping
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.repository.AccountRepository
-import com.tencent.bkrepo.auth.repository.PermissionRepository
-import com.tencent.bkrepo.auth.repository.RoleRepository
-import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.convertActionType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.MongoTemplate
 
 /**
  * 对接蓝鲸权限中心V3 RBAC
  */
 open class BkIamV3PermissionServiceImpl(
-    userRepository: UserRepository,
+    private val bkiamV3Service: BkIamV3Service,
+    userDao: UserDao,
     roleRepository: RoleRepository,
     accountRepository: AccountRepository,
-    permissionRepository: PermissionRepository,
-    mongoTemplate: MongoTemplate,
-    private val bkiamV3Service: BkIamV3Service,
-    repositoryClient: RepositoryClient,
+    permissionDao: PermissionDao,
+    personalPathDao: PersonalPathDao,
+    repoClient: RepositoryClient,
     projectClient: ProjectClient
 ) : PermissionServiceImpl(
-    userRepository,
     roleRepository,
     accountRepository,
-    permissionRepository,
-    mongoTemplate,
-    repositoryClient,
+    permissionDao,
+    userDao,
+    personalPathDao,
+    repoClient,
     projectClient
 ) {
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
@@ -148,13 +148,13 @@ open class BkIamV3PermissionServiceImpl(
                 convertActionType(ResourceType.PROJECT.name, action)
             } catch (e: IllegalArgumentException) {
                 ActionTypeMapping.PROJECT_MANAGE.id()
-                                                  },
+            },
             resourceId = projectId,
             appId = null
         )
     }
 
-    private fun listV3PermissionRepo(projectId: String, userId: String) : List<String> {
+    private fun listV3PermissionRepo(projectId: String, userId: String): List<String> {
         val pList = bkiamV3Service.listPermissionResources(
             userId = userId,
             projectId = projectId,
@@ -168,7 +168,7 @@ open class BkIamV3PermissionServiceImpl(
         }
     }
 
-    private fun listV3PermissionProject(userId: String) : List<String> {
+    private fun listV3PermissionProject(userId: String): List<String> {
         val pList = bkiamV3Service.listPermissionResources(
             userId = userId,
             resourceType = ResourceType.PROJECT.id(),
@@ -184,7 +184,7 @@ open class BkIamV3PermissionServiceImpl(
     private fun mergeResult(
         list: List<String>,
         v3list: List<String>
-    ) : List<String> {
+    ): List<String> {
         val set = mutableSetOf<String>()
         set.addAll(list)
         set.addAll(v3list)

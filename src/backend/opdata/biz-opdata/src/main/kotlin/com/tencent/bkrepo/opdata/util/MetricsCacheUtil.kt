@@ -61,7 +61,7 @@ class MetricsCacheUtil(
                 }
             }
             CacheBuilder.newBuilder()
-                .maximumSize(5)
+                .maximumSize(50)
                 .expireAfterWrite(30, TimeUnit.MINUTES)
                 .build(cacheLoader)
         }

@@ -73,9 +73,20 @@
           {{ scope.row.online ? "是":"否" }}
         </template>
       </el-table-column>
-      <el-table-column prop="heartbeatTime" label="心跳时间">
+      <el-table-column prop="heartbeatTime" label="心跳时间" width="200">
         <template slot-scope="scope">
           <span>{{ formatNormalDate(scope.row.heartbeatTime) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="record" label="记录">
+        <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="primary"
+            @click="showRecord(scope.row)"
+          >
+            查看历史
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -89,6 +100,7 @@
         @current-change="handleCurrentChange"
       />
     </div>
+    <file-system-status-record-dialog :visible.sync="showDialog" :param="param" />
   </div>
 </template>
 <script>
@@ -96,9 +108,11 @@ import { queryFileSystemClient } from '@/api/fileSystem'
 import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import { formatNormalDate } from '@/utils/date'
+import FileSystemStatusRecordDialog from '@/views/node/components/FileSystemStatusRecordDialog'
 
 export default {
   name: 'FileSystem',
+  components: { FileSystemStatusRecordDialog },
   data() {
     return {
       loading: false,
@@ -111,7 +125,8 @@ export default {
         pageNumber: 1,
         online: '',
         ip: '',
-        version: ''
+        version: '',
+        mountPoint: ''
       },
       clients: [],
       options: [{
@@ -120,7 +135,9 @@ export default {
       }, {
         value: 'false',
         label: '否'
-      }]
+      }],
+      showDialog: false,
+      param: undefined
     }
   },
   mounted() {
@@ -218,6 +235,11 @@ export default {
     },
     filterFunction(value, row) {
       return row.online === value
+    },
+    showRecord(row) {
+      console.log(row)
+      this.param = row
+      this.showDialog = true
     }
   }
 }

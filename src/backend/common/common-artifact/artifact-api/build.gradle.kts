@@ -33,4 +33,5 @@ dependencies {
     api(project(":common:common-api"))
     api("com.tencent.devops:devops-boot-starter-plugin")
     compileOnly("com.google.guava:guava")
+    implementation("org.apache.commons:commons-lang3")
 }

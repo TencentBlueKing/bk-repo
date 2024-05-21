@@ -141,7 +141,21 @@ class S3ObjectService(
                 }
             }
         val data = nodeClient.search(queryBuilder.build()).data!!
-        return ListBucketResult(repoName, data, maxKeys, prefix, folders, delimiter)
+        val currentNode = if (data.pageNumber.toLong() == data.totalPages || data.totalPages == 0L) {
+            nodeClient.getNodeDetail(projectId, repoName, PathUtils.normalizeFullPath(queryPrefix)).data?.run {
+                mapOf(
+                    NodeDetail::createdBy.name to createdBy,
+                    NodeDetail::folder.name to folder,
+                    NodeDetail::fullPath.name to fullPath,
+                    NodeDetail::lastModifiedDate.name to lastModifiedDate,
+                    NodeDetail::md5.name to md5,
+                    NodeDetail::size.name to size
+                )
+            }
+        } else {
+            null
+        }
+        return ListBucketResult(repoName, data, maxKeys, prefix, folders, delimiter, currentNode)
     }
 
     fun copyObject(artifactInfo: S3ArtifactInfo): CopyObjectResult {

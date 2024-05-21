@@ -29,12 +29,20 @@ package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
 import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.api.constant.JOB_LOGGER_NAME
+import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventData
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import java.io.IOException
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -53,6 +61,7 @@ class CleanupFileVisitor(
     private val fileLocator: FileLocator,
     private val credentials: StorageCredentials,
     private val fileExpireResolver: FileExpireResolver,
+    private val publisher: ApplicationEventPublisher,
 ) : ArtifactFileVisitor() {
 
     val result = CleanupResult()
@@ -72,6 +81,7 @@ class CleanupFileVisitor(
                     result.cleanupFile += 1
                     result.cleanupSize += size
                     deleted = true
+                    onFileCleaned(filePath, size)
                     logger.info("Clean up file[$filePath], size[$size], summary: $result")
                 }
             }
@@ -81,10 +91,13 @@ class CleanupFileVisitor(
         } finally {
             result.totalFile += 1
             result.totalSize += size
-            if(!isTempFile && !deleted) {
+            if (!isTempFile && !deleted) {
                 // 仅统计非temp目录下未被清理的文件
                 result.rootDirNotDeletedFile += 1
                 result.rootDirNotDeletedSize += size
+            }
+            if (!deleted) {
+                onFileSurvived(filePath)
             }
         }
         return FileVisitResult.CONTINUE
@@ -105,16 +118,24 @@ class CleanupFileVisitor(
         }
         // 由于支持删除上传路径，所以这里即使是空目录，也需要判断过期时间。
         if (fileExpireResolver.isExpired(dirPath.toFile())) {
-            Files.newDirectoryStream(dirPath).use {
-                if (!it.iterator().hasNext()) {
-                    Files.delete(dirPath)
-                    logger.info("Clean up folder[$dirPath].")
-                    result.cleanupFolder += 1
-                }
-            }
+            deleteEmptyFolder(dirPath)
         }
         result.totalFolder += 1
         return FileVisitResult.CONTINUE
+    }
+
+    private fun deleteEmptyFolder(dirPath: Path) {
+        Files.newDirectoryStream(dirPath).use {
+            if (!it.iterator().hasNext()) {
+                try {
+                    Files.delete(dirPath)
+                    logger.info("Clean up folder[$dirPath].")
+                    result.cleanupFolder += 1
+                } catch (ignore: DirectoryNotEmptyException) {
+                    logger.warn("Directory [$dirPath] is not empty!")
+                }
+            }
+        }
     }
 
     override fun needWalk(): Boolean {
@@ -160,6 +181,30 @@ class CleanupFileVisitor(
      * */
     private fun isNFSTempFile(filePath: Path): Boolean {
         return filePath.fileName.toString().startsWith(NFS_TEMP_FILE_PREFIX)
+    }
+
+    private fun onFileCleaned(filePath: Path, size: Long) {
+        val fileName = filePath.fileName.toString()
+        val event = FileDeletedEvent(
+            credentials = credentials,
+            rootPath = rootPath.toString(),
+            fullPath = filePath.toString(),
+        )
+        if (rootPath == credentials.cache.path.toPath() && filePath.fileName.toString().length == SHA256_STR_LENGTH) {
+            val data = CacheFileEventData(credentials, fileName, filePath.toString(), size)
+            publisher.publishEvent(CacheFileDeletedEvent(data))
+        }
+
+        publisher.publishEvent(event)
+    }
+
+    private fun onFileSurvived(filePath: Path) {
+        val event = FileSurvivedEvent(
+            credentials = credentials,
+            rootPath = rootPath.toString(),
+            fullPath = filePath.toString(),
+        )
+        publisher.publishEvent(event)
     }
 
     companion object {

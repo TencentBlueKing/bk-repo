@@ -68,6 +68,35 @@ open class ArtifactUploadContext : ArtifactContext {
         this.artifactFileMap = artifactFileMap
     }
 
+    constructor(
+        repo: RepositoryDetail,
+        artifactFileMap: ArtifactFileMap,
+        artifactInfo: ArtifactInfo? = null
+    ) : super(repo, artifactInfo) {
+        this.artifactFileMap = artifactFileMap
+    }
+
+    override fun copy(
+        repositoryDetail: RepositoryDetail,
+        instantiation: ((ArtifactInfo) -> ArtifactContext)?
+    ): ArtifactContext {
+        return super.copy(repositoryDetail) { artifactInfo ->
+            if (artifactFile != null) {
+                javaClass.getConstructor(
+                    RepositoryDetail::class.java,
+                    ArtifactFile::class.java,
+                    ArtifactInfo::class.java
+                ).newInstance(repositoryDetail, artifactFile, artifactInfo)
+            } else {
+                javaClass.getConstructor(
+                    RepositoryDetail::class.java,
+                    ArtifactFileMap::class.java,
+                    ArtifactInfo::class.java
+                ).newInstance(repositoryDetail, artifactFileMap, artifactInfo)
+            }
+        }
+    }
+
     /**
      * 根据[name]获取构件文件[ArtifactFile]
      *

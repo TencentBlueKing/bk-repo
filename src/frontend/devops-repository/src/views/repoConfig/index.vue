@@ -218,7 +218,7 @@
             }
         },
         computed: {
-            ...mapState(['domain', 'userInfo']),
+            ...mapState(['domain', 'userInfo', 'permissionConfig']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -232,10 +232,15 @@
                 return ['maven', 'pypi', 'npm', 'composer', 'nuget'].includes(this.repoType)
             },
             showCleanConfigTab () {
-                return ['docker', 'generic', 'helm'].includes(this.repoType)
+                return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
             },
             showPermissionConfigTab () {
-                return ['generic'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage) && !(['pipeline', 'custom'].includes(this.repoName))
+                if (this.permissionConfig === true) {
+                    return ['generic'].includes(this.repoType)
+                        && (this.userInfo.admin || this.userInfo.manage)
+                } else {
+                    return false
+                }
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo

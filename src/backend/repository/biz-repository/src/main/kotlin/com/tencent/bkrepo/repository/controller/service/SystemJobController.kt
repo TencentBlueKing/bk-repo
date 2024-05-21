@@ -37,20 +37,15 @@ import com.tencent.bkrepo.repository.job.PackageDownloadsMigrationJob
 import com.tencent.bkrepo.repository.job.PackageVersionCorrectionJob
 import com.tencent.bkrepo.repository.job.RepoUsedVolumeSynJob
 import com.tencent.bkrepo.repository.job.RootNodeCleanupJob
-import com.tencent.bkrepo.repository.job.StorageInstanceMigrationJob
-import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDateTime
 
 @Principal(type = PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/api/job")
 class SystemJobController(
-    private val storageInstanceMigrationJob: StorageInstanceMigrationJob,
     private val rootNodeCleanupJob: RootNodeCleanupJob,
     private val deletedNodeCleanupJob: DeletedNodeCleanupJob,
     private val nodeDeletedCorrectionJob: NodeDeletedCorrectionJob,
@@ -58,32 +53,6 @@ class SystemJobController(
     private val packageVersionCorrectionJob: PackageVersionCorrectionJob,
     private val repoUsedVolumeSynJob: RepoUsedVolumeSynJob
 ) {
-
-    /**
-     *
-     * @param projectId 项目id
-     * @param repoName 仓库名称
-     * @param newKey 需要迁移的新实例的key
-     * @param failedPointId 上次失败节点的id
-     * @param skipPage 为了找到失败节p点，需要跳过多少页
-     * @param preStartTime 上次的失败的开始时间
-     * */
-    @PostMapping("/migrate/storage/{projectId}/{repoName}/{newKey}")
-    fun migrate(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-        @PathVariable newKey: String,
-        @RequestParam failedPointId: String? = null,
-        @RequestParam skipPage: Int? = null,
-        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-        @RequestParam preStartTime: LocalDateTime? = null
-    ): Response<Void> {
-        storageInstanceMigrationJob.migrate(
-            projectId,
-            repoName, newKey, failedPointId, skipPage, preStartTime
-        )
-        return ResponseBuilder.success()
-    }
 
     @PostMapping("/correct/node")
     fun correctNode(): Response<Void> {

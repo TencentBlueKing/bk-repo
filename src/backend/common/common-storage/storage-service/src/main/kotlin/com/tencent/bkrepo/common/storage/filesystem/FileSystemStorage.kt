@@ -39,14 +39,16 @@ import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import java.io.File
 import java.io.InputStream
+import java.nio.file.Files
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 /**
  * 文件系统存储
  */
 open class FileSystemStorage : AbstractEncryptorFileStorage<FileSystemCredentials, FileSystemClient>() {
 
-    override fun store(path: String, name: String, file: File, client: FileSystemClient) {
+    override fun store(path: String, name: String, file: File, client: FileSystemClient, storageClass: String?) {
         file.inputStream().use {
             client.store(path, name, it, file.length())
         }
@@ -75,5 +77,18 @@ open class FileSystemStorage : AbstractEncryptorFileStorage<FileSystemCredential
     override fun getTempPath(storageCredentials: StorageCredentials): String {
         require(storageCredentials is FileSystemCredentials)
         return Paths.get(storageCredentials.path, TEMP).toString()
+    }
+
+    override fun move(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromClient: FileSystemClient,
+        toClient: FileSystemClient,
+    ) {
+        val fromFullPath = Paths.get(fromClient.root, fromPath, fromName)
+        val toFullPath = Paths.get(toClient.root, toPath, toName)
+        Files.move(fromFullPath, toFullPath, StandardCopyOption.REPLACE_EXISTING)
     }
 }

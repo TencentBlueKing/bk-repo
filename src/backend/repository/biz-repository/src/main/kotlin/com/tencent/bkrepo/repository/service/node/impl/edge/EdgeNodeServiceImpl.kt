@@ -29,10 +29,12 @@ package com.tencent.bkrepo.repository.service.node.impl.edge
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -60,6 +62,7 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
@@ -79,6 +82,9 @@ class EdgeNodeServiceImpl(
     override val messageSupplier: MessageSupplier,
     override val servicePermissionClient: ServicePermissionClient,
     override val clusterProperties: ClusterProperties,
+    override val routerControllerClient: RouterControllerClient,
+    override val routerControllerProperties: RouterControllerProperties,
+    override val fsNodeClient: FsNodeClient
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -88,11 +94,20 @@ class EdgeNodeServiceImpl(
     quotaService,
     repositoryProperties,
     messageSupplier,
+    routerControllerClient,
     servicePermissionClient,
-    clusterProperties,
+    routerControllerProperties,
+    fsNodeClient,
+    clusterProperties
 ) {
-    override fun computeSize(artifact: ArtifactInfo, estimated: Boolean): NodeSizeInfo {
+    override fun computeSize(
+        artifact: ArtifactInfo, estimated: Boolean
+    ): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact, estimated)
+    }
+
+    override fun computeSizeBeforeClean(artifact: ArtifactInfo, before: LocalDateTime): NodeSizeInfo {
+        return NodeStatsSupport(this).computeSizeBeforeClean(artifact, before)
     }
 
     override fun aggregateComputeSize(criteria: Criteria): Long {

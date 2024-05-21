@@ -40,6 +40,8 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.fs.server.api.FsClientClient
 import com.tencent.bkrepo.fs.server.pojo.ClientDetail
 import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
+import com.tencent.bkrepo.fs.server.pojo.DailyClientDetail
+import com.tencent.bkrepo.fs.server.pojo.DailyClientListRequest
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -68,4 +70,31 @@ class FsClientController(
             request.version
         )
     }
+
+    @GetMapping("/daily/list")
+    fun getDailyClients(request: DailyClientListRequest): Response<Page<DailyClientDetail>> {
+        if (request.projectId.isNullOrBlank()) {
+            permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+        } else {
+            permissionManager.checkProjectPermission(PermissionAction.READ, request.projectId!!)
+        }
+        var action = ""
+        if (!request.actions.isEmpty()) {
+            request.actions.forEach { action = action + "," + it }
+            action = action.substring(1)
+        }
+        return fsClientClient.listDailyClients(
+            request.projectId,
+            request.repoName,
+            request.pageNumber,
+            request.pageSize,
+            request.ip,
+            request.version,
+            request.startTime,
+            request.endTime,
+            request.mountPoint,
+            action
+        )
+    }
+
 }

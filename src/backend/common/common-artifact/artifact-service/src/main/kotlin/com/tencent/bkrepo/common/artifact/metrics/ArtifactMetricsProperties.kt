@@ -53,4 +53,8 @@ data class ArtifactMetricsProperties(
      * 是否开启缓存使用情况统计
      */
     var enableArtifactCacheMetrics: Boolean = false,
+    /**
+     * 是否使用influxdb存储指标数据
+     */
+    var useInfluxDb: Boolean = true,
 )

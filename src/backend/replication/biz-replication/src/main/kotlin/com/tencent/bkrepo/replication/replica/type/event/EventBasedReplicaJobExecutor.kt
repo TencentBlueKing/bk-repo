@@ -28,9 +28,12 @@
 package com.tencent.bkrepo.replication.replica.type.event
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -55,14 +58,71 @@ class EventBasedReplicaJobExecutor(
      * 执行同步
      */
     fun execute(taskDetail: ReplicaTaskDetail, event: ArtifactEvent) {
+        if (!replicaObjectCheck(taskDetail, event)) return
         val task = taskDetail.task
         val taskRecord: ReplicaRecordInfo = replicaRecordService.findOrCreateLatestRecord(task.key)
         try {
-            task.remoteClusters.map { submit(taskDetail, taskRecord, it, event) }.map { it.get() }
+            val results = task.remoteClusters.map { submit(taskDetail, taskRecord, it, event) }.map { it.get() }
+            val replicaOverview = getResultsSummary(results).replicaOverview
+            taskRecord.replicaOverview?.let { overview ->
+                replicaOverview.success += overview.success
+                replicaOverview.failed += overview.failed
+                replicaOverview.conflict += overview.conflict
+            }
+            replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
             logger.info("Replica ${event.getFullResourceKey()} completed.")
         } catch (exception: Exception) {
             logger.error("Replica ${event.getFullResourceKey()}} failed: $exception", exception)
         }
+    }
+
+
+    /**
+     * 判断分发配置内容是否与待分发事件匹配
+     */
+    private fun replicaObjectCheck(task: ReplicaTaskDetail, event: ArtifactEvent): Boolean {
+        if (!task.task.enabled) return false
+        return when (task.task.replicaObjectType) {
+            ReplicaObjectType.PATH -> {
+                pathCheck(event, task)
+            }
+            ReplicaObjectType.PACKAGE -> {
+                packageCheck(event, task)
+            }
+            else -> true
+        }
+    }
+
+    private fun pathCheck(event: ArtifactEvent, task: ReplicaTaskDetail): Boolean {
+        if (event.type != EventType.NODE_CREATED) return false
+        task.objects.forEach {
+            it.pathConstraints?.forEach {
+                if (it.path.isNullOrEmpty()) {
+                    return false
+                }
+                val fullPath = PathUtils.toFullPath(it.path!!)
+                if (event.resourceKey == fullPath) return true
+                val ancestorFolder = PathUtils.resolveAncestor(event.resourceKey)
+                val existPath = ancestorFolder.firstOrNull { PathUtils.toFullPath(it) == fullPath }
+                if (existPath != null) return true
+            }
+        }
+        return false
+    }
+
+    private fun packageCheck(event: ArtifactEvent, task: ReplicaTaskDetail): Boolean {
+        if (event.type != EventType.VERSION_CREATED && event.type != EventType.VERSION_UPDATED) return false
+        val packageKey = event.data["packageKey"].toString()
+        val packageVersion = event.data["packageVersion"].toString()
+        task.objects.forEach {
+            it.packageConstraints?.forEach {
+                if (packageKey != it.packageKey) return false
+                if (it.versions.isNullOrEmpty() || it.versions!!.contains(packageVersion)) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     companion object {

@@ -150,6 +150,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
                     " X_FORWARDED_FOR: $xForwardedFor, range: $range"
             )
             ArtifactMetrics.getDownloadFailedCounter().increment()
+        } catch (exception: ArtifactNotFoundException){
+            throw exception
         } catch (exception: Exception) {
             this.onDownloadFailed(context, exception)
         } finally {

@@ -31,14 +31,13 @@ import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
+import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
@@ -59,8 +58,12 @@ import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
 import com.tencent.bkrepo.repository.util.RepoEventFactory
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 @Conditional(CommitEdgeCenterCondition::class)
@@ -87,7 +90,7 @@ class CommitEdgeCenterRepositoryServiceImpl(
     projectMetricsRepository
 ) {
 
-    override fun determineStorageKey(request: RepoCreateRequest): String? {
+    override fun determineStorageKey(request: RepoCreateRequest, projectCredentialsKey: String?): String? {
         return repositoryProperties.defaultStorageCredentialsKey
     }
 
@@ -142,19 +145,14 @@ class CommitEdgeCenterRepositoryServiceImpl(
     override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {
         repoDeleteRequest.apply {
             val repository = checkRepository(projectId, name)
-            if (repoDeleteRequest.forced) {
-                nodeService.deleteByPath(projectId, name, PathUtils.ROOT, operator)
-            } else {
-                val artifactInfo = DefaultArtifactInfo(projectId, name, PathUtils.ROOT)
-                nodeService.countFileNode(artifactInfo).takeIf { it == 0L } ?: throw ErrorCodeException(
-                    ArtifactMessageCode.REPOSITORY_CONTAINS_FILE
-                )
-                nodeService.deleteByPath(projectId, name, PathUtils.ROOT, operator)
-            }
+            clearRepo(projectId, name, repository.type.supportPackage, forced, operator)
             val clusterNames = repository.clusterNames.orEmpty().toMutableSet()
             clusterNames.remove(SecurityUtils.getClusterName() ?: clusterProperties.self.name)
             if (clusterNames.isEmpty()) {
-                repositoryDao.deleteById(repository.id)
+                repositoryDao.updateFirst(
+                    Query(Criteria.where(AbstractMongoDao.ID).isEqualTo(repository.id!!)),
+                    Update().set(TRepository::deleted.name, LocalDateTime.now()),
+                )
             } else {
                 repository.clusterNames = clusterNames
                 repositoryDao.save(repository)

@@ -44,7 +44,7 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     PROJECT_EXISTED("artifact.project.existed"),
     REPOSITORY_NOT_FOUND("artifact.repository.not-found"),
     REPOSITORY_EXISTED("artifact.repository.existed"),
-    REPOSITORY_CONTAINS_FILE("artifact.repository.not-empty"),
+    REPOSITORY_CONTAINS_ARTIFACT("artifact.repository.not-empty"),
     FOLDER_CONTAINS_FILE("artifact.folder.not-empty"),
     NODE_NOT_FOUND("artifact.node.not-found"),
     NODE_PATH_INVALID("artifact.node.path.invalid"),
@@ -69,6 +69,8 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     NODE_CREATE_TIMEOUT("artifact.node.create.timeout"),
     SIZE_CHECK_FAILED("artifact.size.check-failed"),
     NODE_LINK_FOLDER_UNSUPPORTED("artifact.node.link-folder-unsupported"),
+    ARTIFACT_PRELOAD_STRATEGY_NOT_FOUND("artifact.preload-strategy.not-found"),
+    ARTIFACT_PRELOAD_STRATEGY_EXCEED_MAX_COUNT("artifact.preload-strategy.exceed-max-count")
     ;
 
     override fun getBusinessCode() = ordinal + 1

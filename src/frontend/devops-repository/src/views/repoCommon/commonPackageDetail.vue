@@ -444,7 +444,7 @@
         }
     }
     .common-version-main {
-        height: calc(100% - 100px);
+        height: calc(100% - 70px);
         .common-version {
             width: 250px;
             height: 100%;

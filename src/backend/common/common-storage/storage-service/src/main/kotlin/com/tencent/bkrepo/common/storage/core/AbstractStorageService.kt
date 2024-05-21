@@ -54,6 +54,7 @@ abstract class AbstractStorageService : CompressSupport() {
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
         cancel: AtomicBoolean?,
+        storageClass: String?,
     ): Int {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
@@ -63,7 +64,9 @@ abstract class AbstractStorageService : CompressSupport() {
                 0
             } else {
                 val size = artifactFile.getSize()
-                val nanoTime = measureNanoTime { doStore(path, digest, artifactFile, credentials, cancel) }
+                val nanoTime = measureNanoTime {
+                    doStore(path, digest, artifactFile, credentials, cancel, storageClass)
+                }
                 val throughput = Throughput(size, nanoTime)
                 logger.info("Success to store artifact file [$digest], $throughput.")
                 1
@@ -108,7 +111,11 @@ abstract class AbstractStorageService : CompressSupport() {
         }
     }
 
-    override fun copy(digest: String, fromCredentials: StorageCredentials?, toCredentials: StorageCredentials?) {
+    override fun copy(
+        digest: String,
+        fromCredentials: StorageCredentials?,
+        toCredentials: StorageCredentials?
+    ) {
         val path = fileLocator.locate(digest)
         val from = getCredentialsOrDefault(fromCredentials)
         val to = getCredentialsOrDefault(toCredentials)
@@ -130,6 +137,28 @@ abstract class AbstractStorageService : CompressSupport() {
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?) = SynchronizeResult()
+
+    override fun checkRestore(digest: String, storageCredentials: StorageCredentials?): Boolean {
+        val path = fileLocator.locate(digest)
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        try {
+            return doCheckRestore(path, digest, credentials)
+        } catch (exception: Exception) {
+            logger.error("Failed to check file [$digest] restore on [${credentials.key}]", exception)
+            throw StorageErrorException(StorageMessageCode.QUERY_ERROR)
+        }
+    }
+
+    override fun restore(digest: String, days: Int, tier: String, storageCredentials: StorageCredentials?) {
+        val path = fileLocator.locate(digest)
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        try {
+            doRestore(path, digest, days, tier, credentials)
+        } catch (exception: Exception) {
+            logger.error("Failed to restore file [$digest] on [${credentials.key}]", exception)
+            throw StorageErrorException(StorageMessageCode.QUERY_ERROR)
+        }
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractStorageService::class.java)

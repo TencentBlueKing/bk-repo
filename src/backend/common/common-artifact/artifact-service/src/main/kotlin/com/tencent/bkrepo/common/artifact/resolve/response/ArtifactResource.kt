@@ -53,7 +53,11 @@ class ArtifactResource(
     /**
      * 是否返回Content-Disposition头
      */
-    var useDisposition: Boolean = false
+    var useDisposition: Boolean = false,
+    /**
+     * 下载多个文件时不为空，表示所有下载的节点信息
+     */
+    val nodes: List<NodeDetail> = emptyList(),
 ) {
     /**
      * 编码类型

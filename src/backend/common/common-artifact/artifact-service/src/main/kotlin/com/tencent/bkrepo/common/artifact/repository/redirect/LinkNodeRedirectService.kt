@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
+import com.google.common.net.UrlEscapers
 import com.tencent.bkrepo.common.api.constant.ACCESS_FROM_API
 import com.tencent.bkrepo.common.api.constant.HEADER_ACCESS_FROM
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
@@ -78,7 +79,8 @@ class LinkNodeRedirectService(
         }
 
         // 设置重定向地址
-        redirectUrlBuilder.append("/generic/$targetProjectId/$targetRepoName/$targetFullPath")
+        val escapedTargetFullPath = UrlEscapers.urlPathSegmentEscaper().escape(targetFullPath)
+        redirectUrlBuilder.append("/generic/$targetProjectId/$targetRepoName/$escapedTargetFullPath")
         context.response.setHeader(HttpHeaders.LOCATION, redirectUrlBuilder.toString())
         context.response.status = HttpStatus.MOVED_PERMANENTLY.value
     }

@@ -44,7 +44,7 @@ import org.springframework.context.annotation.Import
     ArtifactWebHookListener::class,
     ArtifactTransferListener::class,
     ArtifactDownloadListener::class,
-    WebHookService::class
+    WebHookService::class,
 )
 @EnableConfigurationProperties(ArtifactEventProperties::class)
 class ArtifactEventConfiguration

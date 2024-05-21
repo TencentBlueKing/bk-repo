@@ -4,23 +4,27 @@
 /scripts                @owenlxu
 /support-files          @owenlxu
 /src/gateway            @owenlxu
-/src/backend/auth       @owenlxu
+/src/backend/auth       @owenlxu @yaoxuwan
 /src/backend/oci        @zacYL
-/src/backend/rds        @zacYL
 /src/backend/helm       @zacYL
 /src/backend/rpm        @zacYL
 /src/backend/maven      @zacYL
-/src/backend/replication      @zacYL @felixncheng
+/src/backend/replication      @zacYL @cnlkl
 /src/backend/boot-assembly    @felixncheng
-/src/backend/buildSrc   @felixncheng
-/src/backend/generic    @felixncheng @yaoxuwan
-/src/backend/common     @felixncheng @yaoxuwan @cnlkl
-/src/backend/repository @felixncheng @yaoxuwan
-/src/backend/npm        @felixncheng
-/src/backend/webhook    @yaoxuwan
-/src/backend/pypi       @yaoxuwan
-/src/backend/composer       @yaoxuwan
+/src/backend/archive          @felixncheng
+/src/backend/git              @felixncheng
+/src/backend/buildSrc   @felixncheng @cnlkl
+/src/backend/lfs        @yaoxuwan
+/src/backend/repository @yaoxuwan @cnlkl
+/src/backend/webhook    @yaoxuwan @zacYL
+/src/backend/pypi       @yaoxuwan @zacYL
+/src/backend/composer   @yaoxuwan @zacYL
+/src/backend/npm        @cnlkl
+/src/backend/generic    @cnlkl @yaoxuwan @felixncheng
+/src/backend/common     @cnlkl @yaoxuwan @felixncheng
 /src/backend/analysis-executor    @cnlkl
 /src/backend/analysis   @cnlkl
-/src/backend/opdata     @cnlkl
+/src/backend/ddc        @cnlkl
+/src/backend/svn        @cnlkl
+/src/backend/opdata     @cnlkl @owenlxu
 /src/frontend           @cnlkl

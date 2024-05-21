@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import com.tencent.bkrepo.opdata.pojo.ProjectBillStatementRequest
 import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
@@ -96,6 +97,15 @@ class ProjectController(
     @Principal(PrincipalType.ADMIN)
     fun downloadProjectCapSizeMetrics(metricsRequest: ProjectMetricsRequest) {
         projectMetricsService.download(metricsRequest)
+    }
+
+    /**
+     * 获取项目账单明细
+     */
+    @GetMapping("/bill/statement/download")
+    @Principal(PrincipalType.ADMIN)
+    fun downloadProjectBillStatement(billStatementRequest: ProjectBillStatementRequest) {
+        projectMetricsService.downloadBillStatement(billStatementRequest)
     }
 
     /**
