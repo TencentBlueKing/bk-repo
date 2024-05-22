@@ -107,29 +107,30 @@ class UserHelper constructor(
         logger.info("create role request:[$request] ")
         val role = when (request.type) {
             RoleType.REPO -> {
+                require(request.roleId != null)
                 roleRepository.findFirstByTypeAndRoleIdAndProjectIdAndRepoName(
-                    RoleType.REPO,
-                    request.roleId!!,
-                    request.projectId,
-                    request.repoName!!
+                    type = RoleType.REPO,
+                    roleId = request.roleId,
+                    projectId = request.projectId,
+                    repoName = request.repoName!!
                 )
             }
             RoleType.PROJECT -> {
                 if (request.source == null) {
                     roleRepository.findFirstByTypeAndProjectIdAndName(
-                        RoleType.PROJECT,
-                        request.projectId,
-                        request.name
+                        type = RoleType.PROJECT,
+                        projectId = request.projectId,
+                        name = request.name
                     )
                 } else {
+                    require(request.roleId != null)
                     roleRepository.findFirstByTypeAndRoleIdAndProjectIdAndSource(
-                        RoleType.PROJECT,
-                        request.roleId!!,
-                        request.projectId,
-                        request.source
+                        type = RoleType.PROJECT,
+                        roleId = request.roleId,
+                        projectId = request.projectId,
+                        source = request.source
                     )
                 }
-
             }
         }
 
