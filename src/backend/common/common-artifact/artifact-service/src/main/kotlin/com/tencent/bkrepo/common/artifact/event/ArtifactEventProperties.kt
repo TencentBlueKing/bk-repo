@@ -38,6 +38,8 @@ data class ArtifactEventProperties(
     var filterProjectRepoKey: List<String> = emptyList(),
     // 是否上报节点更新访问时间事件
     var reportAccessDateEvent: Boolean = false,
+    // 导出到消息队列时的topic
+    var topic: String? = null,
     // 更新访问时间频率， 当时间间隔小于该值时不更新, 默认1天
     var accessDateDuration: Duration = Duration.ofDays(1),
     // 是否消费上报节点更新访问时间事件去更新对应访问时间

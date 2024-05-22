@@ -44,5 +44,6 @@ class NodeUpdateAccessDateEvent(
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
-    userId = userId
+    userId = userId,
+    data = mapOf("accessDate" to accessDate)
 )

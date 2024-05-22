@@ -108,11 +108,12 @@ class ArtifactDownloadListener(
         }
         if (!artifactEventProperties.reportAccessDateEvent) {
             logger.info(
-                "mock update node [${nodeDetail.nodeInfo.id}] " +
+                "mock update node [${nodeDetail.fullPath}] " +
                     "access time [${nodeDetail.projectId}/${nodeDetail.repoName}]"
             )
             return
         }
+        if (artifactEventProperties.topic.isNullOrEmpty()) return
         val event = buildNodeUpdateAccessDateEvent(
             projectId = nodeDetail.projectId,
             repoName = nodeDetail.repoName,
@@ -120,7 +121,7 @@ class ArtifactDownloadListener(
         )
         messageSupplier.delegateToSupplier(
             data = event,
-            topic = event.topic,
+            topic = artifactEventProperties.topic!!,
             key = event.getFullResourceKey(),
         )
     }

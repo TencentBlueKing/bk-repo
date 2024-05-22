@@ -30,29 +30,29 @@ package com.tencent.bkrepo.repository.listener
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.artifact.event.node.NodeUpdateAccessDateEvent
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import org.slf4j.LoggerFactory
-import org.springframework.context.event.EventListener
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
-import org.springframework.scheduling.annotation.Async
+import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.function.Consumer
 
 
 /**
- * 用于更新节点访问时间
+ * 消费基于MQ传递的事件去更新对应access date
  */
-@Component
+@Component("nodeUpdateAccessDate")
 class NodeUpdateAccessDateEventListener(
     private val nodeDao: NodeDao,
     private val artifactEventProperties: ArtifactEventProperties,
-) {
+) : Consumer<Message<ArtifactEvent>> {
 
     /**
      * 允许接收的事件类型
@@ -61,13 +61,14 @@ class NodeUpdateAccessDateEventListener(
         EventType.NODE_UPDATE_ACCESS_DATE,
     )
 
-
-    @Async
-    @EventListener(ArtifactEvent::class)
-    fun handle(event: ArtifactEvent) {
-        if (!acceptTypes.contains(event.type)) {
+    override fun accept(message: Message<ArtifactEvent>) {
+        if (!acceptTypes.contains(message.payload.type)) {
             return
         }
+        doUpdateAccessDate(message.payload)
+    }
+
+    private fun doUpdateAccessDate(event: ArtifactEvent) {
         if (!filter(event)) return
         try {
             updateAccessDate(event)
@@ -78,23 +79,42 @@ class NodeUpdateAccessDateEventListener(
 
     private fun filter(event: ArtifactEvent): Boolean {
         if (!artifactEventProperties.consumeAccessDateEvent) return false
+        if (artifactEventProperties.consumeProjectRepoKey.isEmpty()) return true
         // 当为空的情况下更新所有事件
         val projectRepoKey = "${event.projectId}/${event.repoName}"
+        var result = false
         artifactEventProperties.consumeProjectRepoKey.forEach {
             val regex = Regex(it.replace("*", ".*"))
             if (regex.matches(projectRepoKey)) {
-                return false
+                result = true
             }
         }
-        return true
+        return result
     }
 
     private fun updateAccessDate(event: ArtifactEvent) {
-        require(event is NodeUpdateAccessDateEvent)
-        val query = Query(where(TNode::id).isEqualTo(event.resourceKey))
-        val accessDate = LocalDateTime.parse(event.accessDate, DateTimeFormatter.ISO_DATE_TIME)
+        val accessDateStr = event.data["accessDate"].toString()
+        val query = Query(
+            where(TNode::projectId).isEqualTo(event.projectId)
+                .and(ID).isEqualTo(event.resourceKey)
+                .and(TNode::deleted.name).isEqualTo(null)
+        )
+        val node = nodeDao.findOne(query) ?: return
+        val accessDate = LocalDateTime.parse(accessDateStr, DateTimeFormatter.ISO_DATE_TIME)
+        // 避免消息堆积过多导致同一个节点同一时间出现多个更新事件
+        if (!durationCheck(node.lastAccessDate, node.lastModifiedDate, accessDate)) return
+        logger.info("update node [${node.fullPath}] access time in [${node.projectId}/${node.repoName}]")
         val update = Update().set(TNode::lastAccessDate.name, accessDate)
         nodeDao.updateFirst(query, update)
+    }
+
+    private fun durationCheck(
+        lastAccessDate: LocalDateTime?,
+        lastModifiedDate: LocalDateTime,
+        accessDate: LocalDateTime
+    ): Boolean {
+        val temp = lastAccessDate ?: lastModifiedDate
+        return accessDate.minusMinutes(artifactEventProperties.accessDateDuration.toMinutes()).isAfter(temp)
     }
 
     companion object {
