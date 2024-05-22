@@ -237,12 +237,13 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
             val url = "${devopsAuthConfig.getBkciAuthServer()}/api/open/service/auth/projects/$projectCode/users"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .get().build()
+            logger.debug("getRoleAndUserByProject, requestUrl: [$url]")
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciRoleListResponse>(apiResponse.content)
             logger.debug("getRoleAndUserByProject, requestUrl: [$url], result : [${apiResponse.content}]")
             return responseObject.data
         } catch (exception: Exception) {
-            logger.error("getRoleAndUserByProject error: ", exception)
+            logger.error("getRoleAndUserByProject error : ", exception)
             emptyList()
         }
     }
