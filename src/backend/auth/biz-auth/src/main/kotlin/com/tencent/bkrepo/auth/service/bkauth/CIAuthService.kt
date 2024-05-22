@@ -234,7 +234,7 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
 
     fun getRoleAndUserByProject(projectCode: String): List<BkciRoleResult> {
         return try {
-            val url = "${devopsAuthConfig.getBkciAuthServer()}/api/open/service/auth/projects/$projectCode/users"
+            val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/$projectCode/users"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .get().build()
             logger.debug("getRoleAndUserByProject, requestUrl: [$url]")
