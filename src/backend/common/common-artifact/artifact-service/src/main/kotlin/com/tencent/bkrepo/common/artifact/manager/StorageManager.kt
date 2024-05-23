@@ -40,8 +40,8 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.StoreRecordClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory
 class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
-    private val storeRecordClient: StoreRecordClient,
+    private val fileReferenceClient: FileReferenceClient,
     private val nodeResourceFactoryImpl: NodeResourceFactoryImpl,
     private val pluginManager: PluginManager,
 ) {
@@ -80,12 +80,22 @@ class StorageManager(
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
     ): NodeDetail {
-        // 存储失败后会根据存储记录通过定时任务StorageRollbackJob进行回滚清理冗余存储
-        val storingRecord = storeRecordClient.recordStoring(request.sha256!!, storageCredentials?.key).data!!
-        storageService.store(request.sha256!!, artifactFile, storageCredentials)
-        val node = nodeClient.createNode(request).data!!
-        storeRecordClient.storeFinished(storingRecord.id)
-        return node
+        val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials)
+        try {
+            return nodeClient.createNode(request).data!!
+        } catch (exception: Exception) {
+            // 当文件有创建，则删除文件
+            if (affectedCount == 1) {
+                try {
+                    fileReferenceClient.increment(request.sha256!!, storageCredentials?.key, 0L)
+                } catch (exception: Exception) {
+                    // 创建引用失败后会通过定时任务StorageReconcileJob清理垃圾文件
+                    logger.error("Failed to create ref for new created file[${request.sha256}]", exception)
+                }
+            }
+            // 异常往上抛
+            throw exception
+        }
     }
 
     /**
