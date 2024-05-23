@@ -30,11 +30,13 @@ package com.tencent.bkrepo.auth.dao
 
 import com.tencent.bkrepo.auth.model.TRepoAuthConfig
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
@@ -48,15 +50,14 @@ class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
     }
 
     fun upsertProjectRepo(projectId: String, repoName: String, status: Boolean): String {
+        val query = Query.query(
+            Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId)
+                .and(TRepoAuthConfig::repoName.name).`is`(repoName)
+        )
         val options = FindAndModifyOptions().returnNew(true).upsert(true)
-        return this.findAndModify(
-            Query.query(
-                Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId)
-                    .and(TRepoAuthConfig::repoName.name).`is`(repoName)
-            ),
-            Update.update(TRepoAuthConfig::accessControl.name, status),
-            options,
-            TRepoAuthConfig::class.java
-        )!!.id!!
+        val update = Update().set(TRepoAuthConfig::accessControl.name, status)
+            .set(TRepoAuthConfig::lastModifiedBy.name, SecurityUtils.getUserId())
+            .set(TRepoAuthConfig::lastModifiedDate.name, LocalDateTime.now())
+        return this.findAndModify(query, update, options, TRepoAuthConfig::class.java)!!.id!!
     }
 }
