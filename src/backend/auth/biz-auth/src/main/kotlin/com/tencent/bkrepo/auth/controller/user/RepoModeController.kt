@@ -29,7 +29,6 @@
 package com.tencent.bkrepo.auth.controller.user
 
 import com.tencent.bkrepo.auth.controller.OpenResource
-import com.tencent.bkrepo.auth.model.TRepoAuthConfig
 import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
 import com.tencent.bkrepo.auth.pojo.repoAuthConfig.RepoAuthStatusRequest
 import com.tencent.bkrepo.auth.service.PermissionService
@@ -39,7 +38,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/mode/repo/")
+@RequestMapping("/api/mode/repo")
 class RepoModeController(
     private val repoModeService: RepoModeService,
     permissionService: PermissionService
