@@ -29,19 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.response.handler
+package com.tencent.bkrepo.common.storage.innercos.request
 
-import com.tencent.bkrepo.common.storage.innercos.RESPONSE_LAST_MODIFIED
-import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.ETAG
-import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
-import com.tencent.bkrepo.common.storage.innercos.response.CopyObjectResponse
-import okhttp3.Response
+import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import okhttp3.RequestBody
 
-class CopyObjectResponseHandler : HttpResponseHandler<CopyObjectResponse>() {
-    override fun handle(response: Response): CopyObjectResponse {
-        val result = readXmlToMap(response)
-        val eTag = (result[ETAG].toString()).trim('"')
-        val lastModified = result[RESPONSE_LAST_MODIFIED].toString()
-        return CopyObjectResponse(eTag, lastModified)
+data class ListObjectsRequest(
+    val prefix: String? = null,
+    val marker: String? = null,
+    val maxKeys: Int = 1000,
+) : CosRequest(HttpMethod.GET, ROOT) {
+
+    init {
+        check(maxKeys <= 1000)
+        prefix?.let { parameters["prefix"] = prefix }
+        marker?.let { parameters["marker"] = marker }
+        parameters["max-keys"] = maxKeys.toString()
     }
+
+    override fun buildRequestBody(): RequestBody? = null
 }
