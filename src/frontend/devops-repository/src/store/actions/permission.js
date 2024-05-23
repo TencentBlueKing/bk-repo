@@ -309,24 +309,18 @@ export default {
             commit('SET_REPO_PERMISSION_LIMIT', res)
         })
     },
-    // 获取权限当前repo的根目录权限
+    // 获取当前repo的根目录权限
     getRootPermission (_, { body }) {
         return Vue.prototype.$ajax.post(
             `${authPrefix}/rootPermission/query`,
             body
         )
     },
-    // 创建当前根目录权限
-    createRootPermission (_, { body }) {
+    // 创建或更新当前根目录权限
+    createOrUpdateRootPermission (_, { body }) {
         return Vue.prototype.$ajax.post(
-            `${authPrefix}/rootPermission/create`,
+            `${authPrefix}/rootPermission/upsert`,
             body
-        )
-    },
-    // 更新根目录权限
-    updateRootPermission (_, { id, status }) {
-        return Vue.prototype.$ajax.put(
-            `${authPrefix}/rootPermission/update/${id}/${status}`
         )
     }
 }

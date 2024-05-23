@@ -41,9 +41,11 @@ interface RootDirectoryPermissionService {
 
     fun modifyPermission(id: String, status: Boolean)
 
+    fun createOrUpdatePermission(updateRequest: UpdateRootDirectoryPermissionRequest): Boolean
+
     fun getPermissionByStatus(status: Boolean): List<TRootDirectoryPermission>
 
     fun getPermissionByRepoConfig(projectId: String, repoName: String) : List<TRootDirectoryPermission>
 
-    fun checkPermission(id: String): Boolean
+    fun checkPermissionExist(id: String): Boolean
 }

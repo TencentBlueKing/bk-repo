@@ -73,6 +73,20 @@ class RootDirectoryPermissionServiceImpl (
         )
     }
 
+    override fun createOrUpdatePermission(updateRequest: UpdateRootDirectoryPermissionRequest): Boolean {
+        if (!checkPermissionExist(updateRequest.projectId, updateRequest.repoName)) {
+            createPermission(updateRequest)
+        } else {
+            rootDirectoryPermissionDao.updateMulti(
+                Query.query(
+                    Criteria.where(TRootDirectoryPermission::projectId.name).`is`(updateRequest.projectId)
+                        .and(TRootDirectoryPermission::repoName.name).`is`(updateRequest.repoName)),
+                Update.update(TRootDirectoryPermission::status.name, updateRequest.status)
+            )
+        }
+        return true
+    }
+
     override fun getPermissionByStatus(status: Boolean): List<TRootDirectoryPermission> {
         return rootDirectoryPermissionDao.find(
             Query.query(where(TRootDirectoryPermission::status).isEqualTo(status))
@@ -87,8 +101,19 @@ class RootDirectoryPermissionServiceImpl (
         )
     }
 
-    override fun checkPermission(id: String): Boolean {
-        rootDirectoryPermissionDao.findById(id)?.let { return  true }
-        return false
+    override fun checkPermissionExist(id: String): Boolean {
+        return rootDirectoryPermissionDao.exists(
+            Query.query(
+                Criteria.where(TRootDirectoryPermission::id.name).`is`(id)
+            )
+        )
+    }
+
+    private fun checkPermissionExist(projectId: String, repoName: String): Boolean {
+        return rootDirectoryPermissionDao.exists(
+            Query.query(
+                Criteria.where(TRootDirectoryPermission::projectId.name).`is`(projectId)
+                    .and(TRootDirectoryPermission::repoName.name).`is`(repoName))
+        )
     }
 }

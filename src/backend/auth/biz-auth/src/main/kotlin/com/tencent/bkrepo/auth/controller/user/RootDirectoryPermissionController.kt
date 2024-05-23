@@ -59,6 +59,7 @@ class RootDirectoryPermissionController(
         @RequestBody queryRequest: QueryRootDirectoryPermissionRequest
     ): Response<List<TRootDirectoryPermission>> {
         queryRequest.repoConfig?.let {
+            permissionManager.checkRepoPermission(PermissionAction.MANAGE, it.projectId, it.repoName)
             val result = rootDirectoryPermissionService.getPermissionByRepoConfig(it.projectId, it.repoName)
             return ResponseBuilder.success(result)
         }
@@ -69,7 +70,7 @@ class RootDirectoryPermissionController(
         return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "param repoConfig or status must have one")
     }
 
-    @PostMapping("/create")
+    @PostMapping("/upsert")
     fun creatPermission(
         @RequestAttribute userId: String,
         @RequestBody updateRequest: CreateRootDirectoryPermissionRequest
@@ -83,23 +84,10 @@ class RootDirectoryPermissionController(
                 status = it.status,
                 updateAt = LocalDateTime.now()
             )
-            rootDirectoryPermissionService.createPermission(request)
+            rootDirectoryPermissionService.createOrUpdatePermission(request)
             return ResponseBuilder.success(
                 rootDirectoryPermissionService.getPermissionByRepoConfig(it.projectId,it.repoName)[0])
         }
     }
 
-    @PutMapping("/update/{id}/{status}")
-    fun updatePermission(
-        @RequestAttribute userId: String,
-        @PathVariable id: String,
-        @PathVariable status: Boolean,
-    ): Response<Boolean> {
-        if (rootDirectoryPermissionService.checkPermission(id)) {
-            rootDirectoryPermissionService.modifyPermission(id, status)
-            return ResponseBuilder.success(true)
-        } else {
-            return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id not existed")
-        }
-    }
 }

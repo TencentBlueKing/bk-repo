@@ -60,8 +60,7 @@
                     includePattern: [],
                     name: ''
                 },
-                rootDirectoryPermission: false,
-                id: ''
+                rootDirectoryPermission: false
             }
         },
         computed: {
@@ -75,9 +74,6 @@
         watch: {
             baseData: {
                 handler (val) {
-                    if (!val.rootDirectoryPermission) {
-                        val.rootDirectoryPermission = false
-                    }
                     this.repoInfo = val
                 },
                 deep: true,
@@ -115,8 +111,7 @@
                 'deletePermission',
                 'getProjectRoleList',
                 'getRootPermission',
-                'createRootPermission',
-                'updateRootPermission'
+                'createOrUpdateRootPermission'
             ]),
             deletePerm (row) {
                 this.$confirm({
@@ -182,24 +177,14 @@
                 })
             },
             updateRepo () {
-                if (this.id !== '') {
-                    this.updateRootPermission({
-                        id: this.id,
-                        status: this.rootDirectoryPermission
-                    })
-                } else {
-                    const body = {
-                        projectId: this.projectId,
-                        repoName: this.repoName,
-                        status: this.rootDirectoryPermission
-                    }
-                    this.createRootPermission({
-                        body: body
-                    }).then(res => {
-                        console.log(res)
-                        this.id = res.id
-                    })
+                const body = {
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    status: this.rootDirectoryPermission
                 }
+                this.createOrUpdateRootPermission({
+                    body: body
+                })
             }
         }
     }
