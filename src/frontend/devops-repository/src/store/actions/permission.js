@@ -325,7 +325,6 @@ export default {
     createOrUpdateRootPermission (_, { body }) {
         return Vue.prototype.$ajax.post(
             `${authPrefix}/mode/repo/toggle`,
-            `${authPrefix}/mode/repo/toggle`,
             body
         )
     }
