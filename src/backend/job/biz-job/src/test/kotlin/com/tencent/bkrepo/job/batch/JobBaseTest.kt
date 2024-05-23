@@ -29,14 +29,23 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
+import com.tencent.bkrepo.job.batch.file.ExpireFileResolverConfig
 import com.tencent.bkrepo.job.config.JobConfig
+import com.tencent.bkrepo.job.config.ScheduledTaskConfigurer
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
+import org.springframework.cloud.sleuth.Tracer
+import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 import org.springframework.context.annotation.ComponentScan
+import org.springframework.context.annotation.FilterType
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 
@@ -52,10 +61,27 @@ import org.springframework.test.context.TestPropertySource
 @TestPropertySource(
     locations = [
         "classpath:bootstrap-ut.properties",
-        "classpath:job-ut.properties"
-    ]
+        "classpath:job-ut.properties",
+    ],
 )
-@ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
+@ComponentScan(
+    basePackages = ["com.tencent.bkrepo.job"],
+    excludeFilters = [
+        ComponentScan.Filter(
+            type = FilterType.ASSIGNABLE_TYPE,
+            value = [ScheduledTaskConfigurer::class, ExpireFileResolverConfig::class],
+        ),
+    ],
+)
 @SpringBootConfiguration
 @EnableAutoConfiguration
-open class JobBaseTest
+class JobBaseTest {
+
+    fun initMock() {
+        val tracer = mockk<OtelTracer>()
+        mockkObject(SpringContextUtils)
+        every { SpringContextUtils.getBean<Tracer>() } returns tracer
+        every { tracer.currentSpan() } returns null
+        every { SpringContextUtils.publishEvent(any()) } returns Unit
+    }
+}

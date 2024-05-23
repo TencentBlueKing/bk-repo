@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.innercos
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.AbstractEncryptorFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
@@ -39,12 +40,16 @@ import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistReques
 import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
+import com.tencent.bkrepo.common.storage.innercos.request.ListObjectsRequest
 import com.tencent.bkrepo.common.storage.innercos.request.MigrateObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.RestoreObjectRequest
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.stream.Stream
 
 /**
  * 内部cos文件存储实现类
@@ -107,6 +112,12 @@ open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredential
     override fun restore(path: String, name: String, days: Int, tier: String, client: CosClient) {
         val restoreRequest = RestoreObjectRequest(name, days, tier)
         client.restoreObject(restoreRequest)
+    }
+
+    override fun listAll(path: String, client: CosClient): Stream<Path> {
+        val keyPrefix = if (path == StringPool.ROOT) null else path
+        val listObjectsRequest = ListObjectsRequest(prefix = keyPrefix)
+        return client.listObjects(listObjectsRequest).map { Paths.get(it) }
     }
 
     override fun onCreateClient(credentials: InnerCosCredentials): CosClient {

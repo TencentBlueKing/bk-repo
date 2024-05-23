@@ -47,6 +47,8 @@ import org.springframework.retry.support.RetryTemplate
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.nio.file.Path
+import java.util.stream.Stream
 
 /**
  * 文件存储抽象模板类
@@ -192,6 +194,11 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         restore(path, name, days, tier, client)
     }
 
+    override fun listAll(path: String, storageCredentials: StorageCredentials): Stream<Path> {
+        val client = getClient(storageCredentials)
+        return listAll(path, client)
+    }
+
     private fun getClient(storageCredentials: StorageCredentials): Client {
         return if (storageCredentials == storageProperties.defaultStorageCredentials()) {
             defaultClient
@@ -227,6 +234,10 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
 
     open fun restore(path: String, name: String, days: Int, tier: String, client: Client) {
         throw UnsupportedOperationException("Restore operation unsupported")
+    }
+
+    open fun listAll(path: String, client: Client): Stream<Path> {
+        throw UnsupportedOperationException("ListAll operation unsupported")
     }
 
     companion object {
