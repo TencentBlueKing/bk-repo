@@ -29,9 +29,9 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.rootdirectorypermission
+package com.tencent.bkrepo.auth.pojo.repoAuthConfig
 
-data class CreateRootDirectoryPermissionRequest(
+data class RepoAuthStatusRequest(
     val status: Boolean,
     val projectId: String,
     val repoName: String

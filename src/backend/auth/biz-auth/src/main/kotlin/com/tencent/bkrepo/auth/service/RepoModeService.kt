@@ -29,14 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.rootdirectorypermission
 
-import java.time.LocalDateTime
+package com.tencent.bkrepo.auth.service
 
-data class UpdateRootDirectoryPermissionRequest(
-    val status: Boolean,
-    val projectId: String,
-    val repoName: String,
-    val userId: String,
-    val updateAt: LocalDateTime
-)
+
+import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
+
+interface RepoModeService {
+
+    fun createOrUpdateConfig(projectId: String, repoName: String, status: Boolean): RepoModeStatus
+
+    fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus
+
+}

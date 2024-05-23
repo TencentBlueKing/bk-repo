@@ -29,23 +29,23 @@
  * SOFTWARE.
  */
 
+package com.tencent.bkrepo.auth.model
 
-package com.tencent.bkrepo.auth.service
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-import com.tencent.bkrepo.auth.model.TRootDirectoryPermission
-import com.tencent.bkrepo.auth.pojo.rootdirectorypermission.UpdateRootDirectoryPermissionRequest
-
-interface RootDirectoryPermissionService {
-
-    fun createPermission(updateRequest: UpdateRootDirectoryPermissionRequest): Boolean
-
-    fun modifyPermission(id: String, status: Boolean)
-
-    fun createOrUpdatePermission(updateRequest: UpdateRootDirectoryPermissionRequest): Boolean
-
-    fun getPermissionByStatus(status: Boolean): List<TRootDirectoryPermission>
-
-    fun getPermissionByRepoConfig(projectId: String, repoName: String) : List<TRootDirectoryPermission>
-
-    fun checkPermissionExist(id: String): Boolean
-}
+@Document("repo_auth_mode")
+@CompoundIndexes(
+    CompoundIndex(name = "path_idx", def = "{'projectId': 1, 'repoName': 1}", background = true, unique = true),
+    CompoundIndex(name = "status_idx", def = "{'status': 1}", background = true)
+)
+data class TRepoAuthConfig(
+    var id: String? = null,
+    var projectId: String,
+    var repoName: String,
+    var accessControl: Boolean,
+    var lastModifiedBy: String,
+    val lastModifiedDate: LocalDateTime
+)

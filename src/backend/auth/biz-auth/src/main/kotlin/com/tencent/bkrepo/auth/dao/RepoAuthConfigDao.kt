@@ -28,9 +28,36 @@
 
 package com.tencent.bkrepo.auth.dao
 
-import com.tencent.bkrepo.auth.model.TRootDirectoryPermission
+import com.tencent.bkrepo.auth.model.TPermission
+import com.tencent.bkrepo.auth.model.TRepoAuthConfig
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
 
 @Repository
-class RootDirectoryPermissionDao : SimpleMongoDao<TRootDirectoryPermission>()
+class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
+    fun findOneByProjectRepo(projectId: String, repoName: String): TRepoAuthConfig? {
+        return this.findOne(
+            Query.query(
+                Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId)
+                    .and(TRepoAuthConfig::repoName.name).`is`(repoName)
+            )
+        )
+    }
+
+    fun upsertProjectRepo(projectId: String, repoName: String, status: Boolean): String {
+        val options = FindAndModifyOptions().returnNew(true).upsert(true)
+        return this.findAndModify(
+            Query.query(
+                Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId)
+                    .and(TRepoAuthConfig::repoName.name).`is`(repoName)
+            ),
+            Update.update(TRepoAuthConfig::accessControl.name, status),
+            options,
+            TRepoAuthConfig::class.java
+        )!!.id!!
+    }
+}

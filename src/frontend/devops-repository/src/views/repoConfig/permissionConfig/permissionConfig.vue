@@ -90,19 +90,12 @@
                     this.permissionListPages = res
                 })
             })
-            const body = {
-                repoConfig: {
-                    projectId: this.projectId,
-                    repoName: this.repoName
-                }
-            }
             this.getRootPermission({
-                body: body
+                projectId: this.projectId,
+                repoName: this.repoName
             }).then((res) => {
-                if (res.length > 0) {
-                    this.id = res[0].id
-                    this.rootDirectoryPermission = res[0].status
-                }
+                this.id = res.id
+                this.rootDirectoryPermission = res.status
             })
         },
         methods: {

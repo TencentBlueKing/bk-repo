@@ -867,6 +867,6 @@
     "copyAll": "Copy All",
     "clear": "Clear",
     "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
-    "rootDirectoryPermission": "Root Directory Permission:",
-    "rootDirectoryPermissionTip": "After opening, ordinary users only have access rights to the authorized directory."
+    "rootDirectoryPermission": "Access Control:",
+    "rootDirectoryPermissionTip": "After Open, Access the resource in the repo need auth."
 }

@@ -29,14 +29,36 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.rootdirectorypermission
+package com.tencent.bkrepo.auth.service.impl
 
-data class QueryRootDirectoryPermissionRequest(
-    val status: Boolean?,
-    val repoConfig: RepoConfig?
-)
+import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
+import com.tencent.bkrepo.auth.model.TRepoAuthConfig
+import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
+import com.tencent.bkrepo.auth.service.RepoModeService
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.stereotype.Service
 
-data class RepoConfig(
-    val projectId: String,
-    val repoName: String
-)
+@Service
+class RepoModeServiceImpl(
+    private val repoAuthConfigDao: RepoAuthConfigDao
+) : RepoModeService {
+
+    override fun createOrUpdateConfig(projectId: String, repoName: String, status: Boolean): RepoModeStatus {
+        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, status)
+        return RepoModeStatus(id, status)
+    }
+
+
+    override fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus {
+        val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName)
+        if (result != null) {
+            return RepoModeStatus(result.id!!, result.accessControl)
+        }
+        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, false)
+        return RepoModeStatus(id, false)
+    }
+
+
+}
