@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.dao.RootDirectoryPermissionDao
 import com.tencent.bkrepo.auth.model.TRootDirectoryPermission
 import com.tencent.bkrepo.auth.pojo.rootdirectorypermission.UpdateRootDirectoryPermissionRequest
 import com.tencent.bkrepo.auth.service.RootDirectoryPermissionService
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.where
@@ -67,7 +68,9 @@ class RootDirectoryPermissionServiceImpl (
         findAndModifyOptions.upsert(true)
         rootDirectoryPermissionDao.findAndModify(
             Query.query(where(TRootDirectoryPermission::id).isEqualTo(id)),
-            Update.update(TRootDirectoryPermission::status.name, status),
+            Update.update(TRootDirectoryPermission::status.name, status)
+                .set(TRootDirectoryPermission::updateAt.name, LocalDateTime.now())
+                .set(TRootDirectoryPermission::updatedBy.name,SecurityUtils.getUserId()),
             findAndModifyOptions,
             TRootDirectoryPermission::class.java
         )
@@ -77,11 +80,13 @@ class RootDirectoryPermissionServiceImpl (
         if (!checkPermissionExist(updateRequest.projectId, updateRequest.repoName)) {
             createPermission(updateRequest)
         } else {
-            rootDirectoryPermissionDao.updateMulti(
+            rootDirectoryPermissionDao.upsert(
                 Query.query(
                     Criteria.where(TRootDirectoryPermission::projectId.name).`is`(updateRequest.projectId)
                         .and(TRootDirectoryPermission::repoName.name).`is`(updateRequest.repoName)),
                 Update.update(TRootDirectoryPermission::status.name, updateRequest.status)
+                    .set(TRootDirectoryPermission::updateAt.name,LocalDateTime.now())
+                    .set(TRootDirectoryPermission::updatedBy.name,updateRequest.userId)
             )
         }
         return true
