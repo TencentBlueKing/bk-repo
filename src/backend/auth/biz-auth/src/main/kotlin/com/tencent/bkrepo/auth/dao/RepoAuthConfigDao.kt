@@ -28,7 +28,6 @@
 
 package com.tencent.bkrepo.auth.dao
 
-import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.model.TRepoAuthConfig
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.data.mongodb.core.FindAndModifyOptions

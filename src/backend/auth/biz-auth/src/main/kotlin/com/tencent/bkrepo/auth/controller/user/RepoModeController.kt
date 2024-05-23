@@ -30,7 +30,7 @@ package com.tencent.bkrepo.auth.controller.user
 
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
-import com.tencent.bkrepo.auth.pojo.repoAuthConfig.RepoAuthStatusRequest
+import com.tencent.bkrepo.auth.pojo.authconfig.RepoAuthStatusRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RepoModeService
 import com.tencent.bkrepo.common.api.pojo.Response

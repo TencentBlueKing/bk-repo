@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.repoAuthConfig
+package com.tencent.bkrepo.auth.pojo.authconfig
 
 data class RepoAuthStatusRequest(
     val status: Boolean,
