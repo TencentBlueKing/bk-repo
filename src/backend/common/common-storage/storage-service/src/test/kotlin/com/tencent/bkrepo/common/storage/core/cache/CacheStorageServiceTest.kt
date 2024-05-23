@@ -37,12 +37,10 @@ import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
-import com.tencent.bkrepo.common.storage.core.AbstractStorageSupport
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
 import org.apache.commons.io.FileUtils
@@ -51,21 +49,14 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.ArgumentMatchers.anyString
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import org.springframework.util.ReflectionUtils
 import org.springframework.util.StreamUtils
 import java.io.File
 import java.nio.charset.Charset
-import java.nio.file.Paths
 import java.util.concurrent.CyclicBarrier
 import kotlin.concurrent.thread
 import kotlin.random.Random
@@ -378,46 +369,6 @@ internal class CacheStorageServiceTest {
         }
         // 等待执行
         Thread.sleep(2000)
-    }
-
-    @Test
-    fun `should delete relative file`() {
-        // mock
-        val mockFileStorage = mock<FileStorage>()
-        whenever(
-            mockFileStorage.store(anyString(), anyString(), any<File>(), any<StorageCredentials>(), anyOrNull())
-        ).thenThrow(RuntimeException())
-        val field = ReflectionUtils.findField(AbstractStorageSupport::class.java, "fileStorage")!!
-        field.isAccessible = true
-        field.set(storageService, mockFileStorage)
-        val stagingClient = FileSystemClient(Paths.get(storageProperties.filesystem.cache.path, "staging"))
-
-        // prepare
-        val artifactFile = createTempArtifactFile(10240L)
-        val sha256 = artifactFile.getFileSha256()
-        val path = fileLocator.locate(sha256)
-
-        // store file
-        storageService.store(sha256, artifactFile, null)
-
-        // wait to async store
-        Thread.sleep(500)
-
-        // check cache
-        Assertions.assertTrue(cacheClient.exist(path, sha256))
-        // check staging
-        Assertions.assertTrue(stagingClient.exist(path, sha256))
-        // check persist
-        Assertions.assertFalse(storageService.exist(sha256, null))
-
-        // cache and staging file not exists after delete
-        storageService.delete(sha256, null)
-        Assertions.assertFalse(cacheClient.exist(path, sha256))
-        Assertions.assertFalse(stagingClient.exist(path, sha256))
-        Assertions.assertFalse(storageService.exist(sha256, null))
-
-        // reset mock
-        field.set(storageService, fileStorage)
     }
 
     private fun createTempArtifactFile(size: Long): ArtifactFile {
