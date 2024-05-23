@@ -67,7 +67,7 @@ class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
     private val fileReferenceClient: FileReferenceClient,
-    private val nodeResourceFactoryImpl: NodeResourceFactoryImpl,
+    private val nodeResourceFactory: NodeResourceFactory,
     private val pluginManager: PluginManager,
 ) {
 
@@ -84,9 +84,10 @@ class StorageManager(
         try {
             return nodeClient.createNode(request).data!!
         } catch (exception: Exception) {
-            // 当文件有创建，则删除文件
             if (affectedCount == 1) {
                 try {
+                    // 当createNode调用超时，实际node和引用创建成功时不会做任何改变
+                    // 当文件创建成功，但是node创建失败时，则创建一个计数为0的fileReference用于清理任务清理垃圾文件
                     fileReferenceClient.increment(request.sha256!!, storageCredentials?.key, 0L)
                 } catch (exception: Exception) {
                     // 创建引用失败后会通过定时任务StorageReconcileJob清理垃圾文件
@@ -124,7 +125,7 @@ class StorageManager(
         if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         }
-        val nodeResource = nodeResourceFactoryImpl.getNodeResource(node, range, storageCredentials)
+        val nodeResource = nodeResourceFactory.getNodeResource(node, range, storageCredentials)
         return nodeResource.getArtifactInputStream()
     }
 
