@@ -186,10 +186,11 @@ class PermissionHelper constructor(
         return request.projectId != null && request.action == READ.name && isProjectUser
     }
 
-    fun getNoPermissionPathFromConfig(
+    fun getPermissionPathFromConfig(
         userId: String,
         roles: List<String>,
-        config: List<TPermission>
+        config: List<TPermission>,
+        include: Boolean
     ): List<String> {
         val excludePath = mutableListOf<String>()
         val includePath = mutableListOf<String>()
@@ -220,6 +221,9 @@ class PermissionHelper constructor(
                     excludePath.addAll(it.includePattern)
                 }
             }
+        }
+        if (include) {
+            return includePath.distinct()
         }
         val filterPath = includePath.distinct()
         return excludePath.distinct().filter { !filterPath.contains(it) }
@@ -336,16 +340,14 @@ class PermissionHelper constructor(
         return permissionDao.updateById(id, key, value)
     }
 
-    fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
+    fun checkNodeActionWithOutCtrl(
+        request: CheckPermissionRequest,
+        userRoles: List<String>?,
+        isProjectUser: Boolean
+    ): Boolean {
         with(request) {
-            var roles = userRoles
             if (resourceType != NODE.name || path == null) return false
-            if (roles == null) {
-                val user = userDao.findFirstByUserId(uid) ?: run {
-                    throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-                }
-                roles = user.roles
-            }
+            val roles = getUserRoles(uid, userRoles)
             val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
             result.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
@@ -361,6 +363,29 @@ class PermissionHelper constructor(
             if (personalPathCheck != null) return personalPathCheck
         }
         return isProjectUser
+    }
+
+    fun checkNodeActionWithCtrl(request: CheckPermissionRequest, userRoles: List<String>?): Boolean {
+        with(request) {
+            if (resourceType != NODE.name || path == null) return false
+            val roles = getUserRoles(uid, userRoles)
+            val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
+            result.forEach {
+                if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
+            }
+            return false
+        }
+    }
+
+    private fun getUserRoles(userId: String, userRoles: List<String>?): List<String> {
+        var roles = userRoles
+        if (roles == null) {
+            val user = userDao.findFirstByUserId(userId) ?: run {
+                throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+            }
+            roles = user.roles
+        }
+        return roles
     }
 
     private fun checkPersonalPath(userId: String, projectId: String, repoName: String, path: String): Boolean? {

@@ -65,9 +65,19 @@ interface PermissionService {
     fun listPermissionProject(userId: String): List<String>
 
     /**
-     * 获取有权限路径列表
+     * 获取无权限路径列表
      */
     fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String>
+
+    /**
+     * 获取有权限路径列表
+     */
+    fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>
+
+    /**
+     * 查询是否开启仓库访问限制
+     */
+    fun checkRepoAccessControl(projectId: String, repoName: String): Boolean
 
     fun createPermission(request: CreatePermissionRequest): Boolean
 
