@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.cache.service.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
@@ -40,15 +41,20 @@ import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
+import com.tencent.bkrepo.common.storage.util.createFile
+import com.tencent.bkrepo.common.storage.util.delete
 import com.tencent.bkrepo.common.storage.util.existReal
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.contracts.ExperimentalContracts
@@ -94,16 +100,16 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
         val cacheFile = deleteCache(storageProperties.defaultStorageCredentials(), UT_SHA256).toFile()
 
         // 加载缓存成功
-        Assertions.assertTrue(preloadPlanExecutor.execute(buildPlan()))
+        assertTrue(preloadPlanExecutor.execute(buildPlan()))
         Thread.sleep(1000L)
-        Assertions.assertTrue(cacheFile.exists())
+        assertTrue(cacheFile.exists())
         deleteCache(storageProperties.defaultStorageCredentials(), UT_SHA256)
         Assertions.assertFalse(cacheFile.exists())
 
         // 计划超时，加载失败
         properties.planTimeout = Duration.ofSeconds(1L)
         val plan = buildPlan(executeTime = System.currentTimeMillis() - 2000)
-        Assertions.assertTrue(preloadPlanExecutor.execute(plan))
+        assertTrue(preloadPlanExecutor.execute(plan))
         Thread.sleep(1000L)
         Assertions.assertFalse(cacheFile.exists())
         properties.planTimeout = Duration.ofHours(1L)
@@ -113,7 +119,7 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
     fun testExecutorFull() {
         properties.preloadConcurrency = 1
         val plan = buildPlan()
-        Assertions.assertTrue(preloadPlanExecutor.execute(plan))
+        assertTrue(preloadPlanExecutor.execute(plan))
         preloadPlanExecutor.execute(plan)
         preloadPlanExecutor.execute(plan)
         Assertions.assertFalse(preloadPlanExecutor.execute(plan))
@@ -123,17 +129,31 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
     @Test
     fun testLoadCacheSuccess() {
         require(storageService is CacheStorageService)
-        // 缓存已经存在
-        Assertions.assertTrue(preloadPlanExecutor.execute(buildPlan()))
+        val cacheRootPath = storageProperties.defaultStorageCredentials().cache.path
+        val path = fileLocator.locate(UT_SHA256)
+        val cachePath = Paths.get(cacheRootPath, path, UT_SHA256)
+        var mtime = Files.getLastModifiedTime(cachePath)
+
+        // 缓存已经存在,仅更新mtime
+        assertTrue(preloadPlanExecutor.execute(buildPlan()))
         Thread.sleep(1000L)
+        assertTrue(Files.getLastModifiedTime(cachePath) > mtime)
+        mtime = Files.getLastModifiedTime(cachePath)
 
         // 确认缓存被删除
-        val cachePath = deleteCache(storageProperties.defaultStorageCredentials(), UT_SHA256)
+        deleteCache(storageProperties.defaultStorageCredentials(), UT_SHA256)
+
+        // 缓存锁文件已存在，跳过预加载
+        val cacheFileLock = Paths.get(cacheRootPath, StringPool.TEMP, "$UT_SHA256.locked")
+        cacheFileLock.createFile()
+        assertTrue(preloadPlanExecutor.execute(buildPlan()))
+        Thread.sleep(1000L)
+        cacheFileLock.delete()
 
         // 加载缓存
         preloadPlanExecutor.execute(buildPlan())
         Thread.sleep(1000L)
-        Assertions.assertTrue(cachePath.existReal())
+        assertTrue(cachePath.existReal())
     }
 
     private fun buildPlan(executeTime: Long = System.currentTimeMillis() - 1000) = ArtifactPreloadPlan(
