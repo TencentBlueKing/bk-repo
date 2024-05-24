@@ -310,10 +310,10 @@ open class PermissionServiceImpl constructor(
         return (configPath + personalPath).distinct()
     }
 
-    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
+    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
         if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
-            return emptyList()
+            return null
         }
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
         val configPath = permHelper.getPermissionPathFromConfig(userId, user.roles, projectPermission, true)

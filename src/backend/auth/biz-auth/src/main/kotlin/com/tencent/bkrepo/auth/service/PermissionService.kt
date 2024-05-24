@@ -72,7 +72,7 @@ interface PermissionService {
     /**
      * 获取有权限路径列表
      */
-    fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>
+    fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>?
 
     /**
      * 查询是否开启仓库访问限制

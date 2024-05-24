@@ -55,16 +55,19 @@ class ServicePermissionController @Autowired constructor(
      */
     override fun listPermissionPath(userId: String, projectId: String, repoName: String): Response<ListPathResult> {
         val repoAccessControl = permissionService.checkRepoAccessControl(projectId, repoName)
-        return if (repoAccessControl) {
+        if (repoAccessControl) {
             val permissionPath = permissionService.listPermissionPath(userId, projectId, repoName)
-            val status = permissionPath.isNotEmpty()
-            val result = ListPathResult(status = status, path = mapOf(OperationType.IN to permissionPath))
-            ResponseBuilder.success(result)
+            if (permissionPath == null) {
+                val result = ListPathResult(status = false, path = mapOf(OperationType.IN to emptyList()))
+                return ResponseBuilder.success(result)
+            }
+            val result = ListPathResult(status = true, path = mapOf(OperationType.IN to permissionPath!!))
+            return ResponseBuilder.success(result)
         } else {
             val permissionPath = permissionService.listNoPermissionPath(userId, projectId, repoName)
             val status = permissionPath.isNotEmpty()
             val result = ListPathResult(status = status, path = mapOf(OperationType.NIN to permissionPath))
-            ResponseBuilder.success(result)
+            return ResponseBuilder.success(result)
         }
     }
 
