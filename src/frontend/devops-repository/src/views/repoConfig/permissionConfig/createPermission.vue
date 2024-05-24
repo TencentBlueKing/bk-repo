@@ -20,8 +20,11 @@
                     </node-table>
                 </template>
             </bk-form-item>
+            <!--            <bk-form-item label="蓝盾用户组导入">-->
+            <!--                <bk-button icon="plus" @click="showImportDialog">{{ '导入用户' }}</bk-button>-->
+            <!--            </bk-form-item>-->
             <bk-form-item :label="$t('staffing')">
-                <bk-button icon="plus" @click="showAddDialog">{{ $t('add') + $t('space') + $t('user') }}</bk-button>
+                <bk-button icon="plus" @click="showImportDialog">{{ $t('add') + $t('space') + $t('user') }}</bk-button>
                 <div v-show="permissionForm.users.length" class="mt10 user-list">
                     <div class="pl10 pr10 user-item flex-between-center" v-for="(user, index) in permissionForm.users" :key="index">
                         <div class="flex-align-center">
@@ -43,17 +46,19 @@
             </bk-form-item>
         </bk-form>
         <add-user-dialog ref="addUserDialog" :visible.sync="showAddUserDialog" @complete="handleAddUsers"></add-user-dialog>
+        <import-user-dialog :visible.sync="showImportUserDialog" @complete="handleAddUsers"></import-user-dialog>
     </canway-dialog>
 </template>
 
 <script>
     import nodeTable from '@/views/repoConfig/permissionConfig/nodeTable'
     import AddUserDialog from '@/components/AddUserDialog/addUserDialog'
+    import importUserDialog from '@/views/repoConfig/permissionConfig/importUserDialog.vue'
     import { mapActions, mapState } from 'vuex'
 
     export default {
         name: 'createPermission',
-        components: { nodeTable, AddUserDialog },
+        components: { nodeTable, AddUserDialog, importUserDialog },
         props: {
             permissionForm: {
                 type: Object,
@@ -93,7 +98,8 @@
                     ]
                 },
                 showAddUserDialog: false,
-                showData: {}
+                showData: {},
+                showImportUserDialog: false
             }
         },
         computed: {
@@ -206,8 +212,17 @@
                     newUser: ''
                 }
             },
+            showImportDialog () {
+                this.showImportUserDialog = true
+                this.$refs.addUserDialog.editUserConfig = {
+                    users: this.permissionForm.users,
+                    originUsers: this.permissionForm.users,
+                    search: '',
+                    newUser: ''
+                }
+            },
             handleAddUsers (users) {
-                this.permissionForm.users = users
+                this.permissionForm.users = Array.from(new Set(this.permissionForm.users.concat(users)))
             }
         }
     }

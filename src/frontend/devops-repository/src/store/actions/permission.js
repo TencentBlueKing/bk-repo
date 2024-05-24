@@ -308,5 +308,9 @@ export default {
         return Vue.prototype.$ajax.get(`${authPrefix}/permission/permission/available`).then(res => {
             commit('SET_REPO_PERMISSION_LIMIT', res)
         })
+    },
+    // 获取蓝盾传输的用户组
+    getUserGroupByBk (_, { projectId }) {
+        return Vue.prototype.$ajax.get(`${authPrefix}/external/group/${projectId}/DEVOPS`)
     }
 }

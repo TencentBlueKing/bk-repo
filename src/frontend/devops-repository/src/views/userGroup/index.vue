@@ -50,6 +50,30 @@
                 <bk-form-item :label="$t('description')">
                     <bk-input type="textarea" v-model.trim="editRoleConfig.description" maxlength="200"></bk-input>
                 </bk-form-item>
+                <bk-form-item :label="$t('bkciUserGroup')">
+                    <div style="display: flex">
+                        <bk-button icon="plus" @click="getUserFromBk">{{ $t('import') }}</bk-button>
+                        <bk-select style="width: 360px;margin-left: 10px"
+                            searchable
+                            multiple
+                            selected-style="checkbox"
+                            @change="changeOp"
+                            v-if="openImport">
+                            <bk-option v-for="option in importDate"
+                                :key="option.roleId"
+                                :id="option.roleId"
+                                :name="option.name">
+                            </bk-option>
+                        </bk-select>
+                    </div>
+                    <div v-show="importUsers.length" class="mt10 user-list">
+                        <div class="pl10 pr10 user-item flex-between-center" v-for="(user, index) in importUsers" :key="index">
+                            <div class="flex-align-center">
+                                <span class="user-name text-overflow" :title="user">{{ user }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </bk-form-item>
                 <bk-form-item :label="$t('staffing')">
                     <bk-button icon="plus" @click="showAddDialog">{{ $t('add') + $t('space') + $t('user') }}</bk-button>
                     <div v-show="editRoleConfig.users.length" class="mt10 user-list">
@@ -105,7 +129,10 @@
                     ]
                 },
                 showAddUserDialog: false,
-                showData: {}
+                showData: {},
+                openImport: false,
+                importUsers: [],
+                importDate: []
             }
         },
         computed: {
@@ -130,7 +157,8 @@
                 'createRole',
                 'editRole',
                 'deleteRole',
-                'getProjectUserList'
+                'getProjectUserList',
+                'getUserGroupByBk'
             ]),
             getRoleListHandler () {
                 this.isLoading = true
@@ -169,6 +197,8 @@
             async confirm () {
                 await this.$refs.roleForm.validate()
                 this.editRoleConfig.loading = true
+                let users = this.editRoleConfig.originUsers.concat(this.importUsers)
+                users = new Array(new Set(users))
                 const fn = this.editRoleConfig.id ? this.editRole : this.createRole
                 fn({
                     id: this.editRoleConfig.id,
@@ -179,7 +209,7 @@
                         projectId: this.projectId,
                         admin: false,
                         description: this.editRoleConfig.description,
-                        userIds: this.editRoleConfig.originUsers
+                        userIds: users
                     }
                 }).then(res => {
                     if (!this.editRoleConfig.id && this.editRoleConfig.users.length > 0) {
@@ -194,6 +224,7 @@
                                 message: (this.editRoleConfig.id ? this.$t('editUserGroupTitle') : this.$t('addUserGroupTitle')) + this.$t('space') + this.$t('success')
                             })
                             this.editRoleConfig.show = false
+                            this.openImport = false
                             this.getRoleListHandler()
                         })
                         return
@@ -228,6 +259,7 @@
             },
             cancel () {
                 this.editRoleConfig.show = false
+                this.openImport = false
                 this.getRoleListHandler()
             },
             deleteUser (index) {
@@ -252,6 +284,24 @@
             handleAddUsers (users) {
                 this.editRoleConfig.originUsers = users
                 this.editRoleConfig.users = users
+            },
+            changeOp (newVal, oldVal) {
+                this.importUsers = []
+                for (let i = 0; i < this.importDate.length; i++) {
+                    if (newVal.includes(this.importDate[i].roleId)) {
+                        console.log(this.importDate[i].userList)
+                        this.importUsers = this.importUsers.concat(this.importDate[i].userList)
+                    }
+                }
+                this.importUsers = Array.from(new Set(this.importUsers))
+            },
+            getUserFromBk () {
+                this.openImport = true
+                this.getUserGroupByBk({
+                    projectId: this.projectId
+                }).then(res => {
+                    this.importDate = res
+                })
             }
         }
     }
