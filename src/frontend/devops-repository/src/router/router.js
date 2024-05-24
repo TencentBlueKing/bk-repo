@@ -36,7 +36,7 @@ const userGroup = () => import('@repository/views/userGroup')
 
 const routes = [
     {
-        path: '/ui/:projectId/preview',
+        path: '/:projectId/preview',
         component: repoPreview,
         children: [
             {
@@ -46,11 +46,11 @@ const routes = [
         ]
     },
     {
-        path: '/ui/:projectId/oauth/authorize',
+        path: '/:projectId/oauth/authorize',
         component: oauth
     },
     {
-        path: '/ui/:projectId',
+        path: '/:projectId',
         component: repoHome,
         redirect: { name: 'repositories' },
         children: [

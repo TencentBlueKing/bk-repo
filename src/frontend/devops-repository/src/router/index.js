@@ -1,4 +1,5 @@
-import { connectToMain, rootPath } from '@blueking/sub-saas'
+import { routeBase } from '@/utils'
+import { connectToMain, rootPath, subEnv } from '@blueking/sub-saas'
 import Vue from 'vue'
 import Router from 'vue-router'
 import routerArr from './router'
@@ -21,10 +22,10 @@ Vue.use(Router)
 const createRouter = () => {
     const router = new Router({
         mode: 'history',
-        base: rootPath,
+        base: routeBase,
         routes: routerArr
     })
-    console.log(rootPath, rootPath, router, 'sub saas root path')
+    console.log(rootPath, routeBase, subEnv)
     connectToMain(router)
     return router
 }

@@ -1,4 +1,4 @@
-import { rootPath } from '@blueking/sub-saas'
+import { routeBase } from '@/utils'
 import axios from 'axios'
 import Vue from 'vue'
 const request = axios.create({
@@ -34,7 +34,7 @@ request.interceptors.response.use(response => {
         }
     } else if (status === 440) {
         const projectId = localStorage.getItem('projectId')
-        const path = rootPath + '/ui/' + projectId + '/440/' + message
+        const path = routeBase + projectId + '/440/' + message
         window.repositoryVue.$router.push({ path: path, replace: true })
     }
     return Promise.reject({ status, message }) // eslint-disable-line
