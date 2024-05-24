@@ -1,5 +1,5 @@
-import { routeBase } from '@/utils'
 import { connectToMain, rootPath, subEnv } from '@blueking/sub-saas'
+import { routeBase } from '@repository/utils'
 import Vue from 'vue'
 import Router from 'vue-router'
 import routerArr from './router'

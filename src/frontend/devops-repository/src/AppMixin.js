@@ -1,7 +1,7 @@
 
-import { routeBase } from '@/utils'
 import ConfirmDialog from '@repository/components/ConfirmDialog'
 import GlobalUploadViewport from '@repository/components/GlobalUploadViewport'
+import { routeBase } from '@repository/utils'
 import Vue from 'vue'
 import { mapMutations, mapState } from 'vuex'
 export default {

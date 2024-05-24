@@ -1,4 +1,4 @@
-import { routeBase } from '@/utils'
+import { routeBase } from '@repository/utils'
 import axios from 'axios'
 import Vue from 'vue'
 const request = axios.create({
