@@ -41,7 +41,7 @@ data class MigrateRepoStorageProperties(
     /**
      * 允许同时迁移的小文件数量
      */
-    var smallNodeConcurrenCy: Int = Runtime.getRuntime().availableProcessors() * 2,
+    var smallNodeConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
 
     /**
      * 小于该大小的文件属于小文件
