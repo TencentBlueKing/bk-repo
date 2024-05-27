@@ -35,6 +35,7 @@ import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildTask
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.ensureNodeIndex
 import com.tencent.bkrepo.job.model.TNode
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -68,6 +69,7 @@ class NodeIteratorTest @Autowired constructor(
 
     @BeforeAll
     fun beforeAll() {
+        mongoTemplate.ensureNodeIndex(collectionName)
         nodes = createNodes(startDate)
     }
 
