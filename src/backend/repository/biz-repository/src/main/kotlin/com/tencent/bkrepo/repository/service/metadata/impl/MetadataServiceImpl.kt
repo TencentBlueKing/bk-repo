@@ -34,12 +34,16 @@ package com.tencent.bkrepo.repository.service.metadata.impl
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.constant.CUSTOM
+import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -52,6 +56,7 @@ import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataDeletedEvent
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataSavedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.devops.api.http.HttpHeaders
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
@@ -91,6 +96,7 @@ class MetadataServiceImpl(
                 metadata,
                 MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
             )
+            checkIfUpdatePipelineMetadata(node, newMetadata)
             checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
             node.metadata = if (replace) {
                 newMetadata
@@ -145,6 +151,18 @@ class MetadataServiceImpl(
         }
     }
 
+    private fun checkIfUpdatePipelineMetadata(node: TNode, newMetadata: MutableList<TMetadata>) {
+        val pipelineSource = node.repoName == PIPELINE || node.repoName == CUSTOM
+        val pipelineMetadataKey = newMetadata.find {
+            PIPELINE_METADATA.any { m -> m.equals(it.key, true) }
+        } != null
+        if (!node.folder && pipelineSource && pipelineMetadataKey) {
+            logger.warn("User[${SecurityUtils.getPrincipal()}] try to update pipeline metadata, " +
+                "artifact[${node.projectId}/${node.repoName}${node.fullPath}], " +
+                "user agent[${HeaderUtils.getHeader(HttpHeaders.USER_AGENT)}]")
+        }
+    }
+
     /**
      * 检查是否有更新允许用户添加的系统元数据
      */
@@ -152,6 +170,7 @@ class MetadataServiceImpl(
         oldMetadata: MutableList<TMetadata>,
         newMetadata: MutableList<TMetadata>
     ) {
+
         val oldAllowUserAddSystemMetadata =
             oldMetadata.map { it.key }.intersectIgnoreCase(repositoryProperties.allowUserAddSystemMetadata)
         val newAllowUserAddSystemMetadata =
@@ -171,5 +190,13 @@ class MetadataServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(MetadataServiceImpl::class.java)
+        private const val METADATA_PROJECT_ID = "projectId"
+        private const val METADATA_PIPELINE_ID = "pipelineId"
+        private const val METADATA_BUILD_ID = "buildId"
+        private const val METADATA_BUILD_NO = "buildNo"
+        private const val METADATA_TASK_ID = "taskId"
+        private val PIPELINE_METADATA = listOf(
+            METADATA_PROJECT_ID, METADATA_PIPELINE_ID, METADATA_BUILD_ID, METADATA_BUILD_NO, METADATA_TASK_ID
+        )
     }
 }

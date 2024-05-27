@@ -29,6 +29,7 @@ package com.tencent.bkrepo.generic.artifact
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
@@ -63,6 +64,7 @@ import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -100,6 +102,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.devops.api.http.HttpHeaders
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
@@ -129,6 +132,8 @@ class GenericLocalRepository(
         super.onUploadBefore(context)
         // 若不允许覆盖, 提前检查节点是否存在
         checkNodeExist(context)
+        // 检查是否是覆盖流水线构件
+        checkIfOverwritePipelineArtifact(context)
         // 校验sha256
         val calculatedSha256 = context.getArtifactSha256()
         val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
@@ -230,6 +235,21 @@ class GenericLocalRepository(
                 nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
                 }
+            }
+        }
+    }
+
+    private fun checkIfOverwritePipelineArtifact(context: ArtifactUploadContext) {
+        val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
+        val pipelineSource = context.repoName == PIPELINE || context.repoName == CUSTOM
+        if (!overwrite && !pipelineSource) {
+            return
+        }
+        with(context.artifactInfo) {
+            nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data?.let {
+                logger.warn("User[${SecurityUtils.getPrincipal()}] try to overwrite " +
+                    "pipeline artifact[$projectId/$repoName${getArtifactFullPath()}], " +
+                    "user agent[${HeaderUtils.getHeader(HttpHeaders.USER_AGENT)}]")
             }
         }
     }
