@@ -38,8 +38,8 @@ import java.time.LocalDateTime
 
 @Document("repo_auth_mode")
 @CompoundIndexes(
-    CompoundIndex(name = "path_idx", def = "{'projectId': 1, 'repoName': 1}", background = true, unique = true),
-    CompoundIndex(name = "status_idx", def = "{'status': 1}", background = true)
+    CompoundIndex(name = "repo_idx", def = "{'projectId': 1, 'repoName': 1}", background = true, unique = true),
+    CompoundIndex(name = "access_ctrl_idx", def = "{'accessControl': 1}", background = true)
 )
 data class TRepoAuthConfig(
     var id: String? = null,
