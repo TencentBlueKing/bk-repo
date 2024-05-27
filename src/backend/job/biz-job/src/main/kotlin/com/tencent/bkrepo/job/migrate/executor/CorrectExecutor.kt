@@ -82,7 +82,7 @@ class CorrectExecutor(
             val iterator = NodeIterator(task, mongoTemplate)
             iterator.forEach { node ->
                 context.incTransferringCount()
-                transferDataExecutor.execute {
+                transferDataExecutor.execute(node) {
                     try {
                         correctNode(context, node)
                     } catch (e: Exception) {
