@@ -1,19 +1,20 @@
 <template>
     <div class="bkrepo-main flex-column">
-        <Header v-if="!ciMode" />
+        <Header v-if="!ciMode && !isSubSaas" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
         <GlobalUploadViewport />
-        <Login v-if="!ciMode" />
+        <Login v-if="!ciMode && !isSubSaas" />
     </div>
 </template>
 
 <script>
+    import { subEnv } from '@blueking/sub-saas'
+    import mixin from '@repository/AppMixin'
     import Header from '@repository/components/Header'
     import Login from '@repository/components/Login'
-    import { mapActions } from 'vuex'
     import cookies from 'js-cookie'
-    import mixin from '@repository/AppMixin'
+    import { mapActions } from 'vuex'
     export default {
         components: { Header, Login },
         mixins: [mixin],
@@ -22,11 +23,16 @@
                 ciMode: MODE_CONFIG === 'ci'
             }
         },
+        computed: {
+            isSubSaas () {
+                return subEnv
+            }
+        },
         created () {
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
             this.getPermissionDialogConfig()
-            if (this.ciMode) {
+            if (!this.isSubSaas && this.ciMode) {
                 this.loadDevopsUtils('/ui/devops-utils.js')
                 // 请求管理员信息
                 this.ajaxUserInfo().then((userInfo) => {

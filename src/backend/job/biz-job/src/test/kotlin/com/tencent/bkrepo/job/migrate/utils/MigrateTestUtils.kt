@@ -131,7 +131,13 @@ object MigrateTestUtils {
             compressed = compressed,
         )
         val sharding = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
-        return insert(node, "node_$sharding")
+        val collectionName = "node_$sharding"
+        ensureNodeIndex(collectionName)
+        return insert(node, collectionName)
+    }
+
+    fun MongoTemplate.ensureNodeIndex(collectionName: String) {
+        indexOps(collectionName).ensureIndex(TNode.pathIndex())
     }
 
     fun MongoTemplate.removeNodes() {

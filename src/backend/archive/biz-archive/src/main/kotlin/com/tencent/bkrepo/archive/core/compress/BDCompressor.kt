@@ -1,8 +1,7 @@
 package com.tencent.bkrepo.archive.core.compress
 
-import com.tencent.bkrepo.common.api.concurrent.PriorityRunnableWrapper
+import com.tencent.bkrepo.archive.core.mapPriority
 import com.tencent.bkrepo.common.bksync.file.BDUtils
-import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import org.slf4j.LoggerFactory
 import reactor.core.publisher.Mono
@@ -17,7 +16,6 @@ class BDCompressor(
     private val bigFileCompressPool: Executor,
     private val bigChecksumFileThreshold: Long,
 ) {
-
     private val seq = AtomicInteger(0)
 
     /**
@@ -30,32 +28,21 @@ class BDCompressor(
         destKey: String,
         workDir: Path,
     ): Mono<File> {
-        return Mono.zip(checksumFile, srcFile) { checksum, src ->
-            compress(src, checksum, srcKey, destKey, workDir)
-        }.flatMap { it }
+        return Mono.zip(checksumFile, srcFile).mapPriority(executor, seq.getAndIncrement()) {
+            compress(it.t2, it.t1, srcKey, destKey, workDir)
+        }
     }
 
-    private fun compress(src: File, checksum: File, srcKey: String, destKey: String, workDir: Path): Mono<File> {
-        return Mono.create {
-            val wrapper = PriorityRunnableWrapper(seq.getAndIncrement()) {
-                try {
-                    val start = System.nanoTime()
-                    val file = BDUtils.deltaByChecksumFile(src, checksum, srcKey, destKey, workDir, ratio)
-                    val nanos = System.nanoTime() - start
-                    val throughput = Throughput(src.length(), nanos)
-                    logger.info("Success to bd compress $srcKey,$throughput.")
-                    it.success(file)
-                } catch (e: TooLowerReuseRateException) {
-                    logger.info("File[$srcKey] duplication rate detected is too low.")
-                    it.error(e)
-                } catch (e: Exception) {
-                    logger.error("Failed to bd compress $srcKey", e)
-                    it.error(e)
-                } finally {
-                    src.delete()
-                }
-            }
-            chooseScheduler(checksum.length()).execute(wrapper)
+    private fun compress(src: File, checksum: File, srcKey: String, destKey: String, workDir: Path): File {
+        try {
+            val start = System.nanoTime()
+            val file = BDUtils.deltaByChecksumFile(src, checksum, srcKey, destKey, workDir, ratio)
+            val nanos = System.nanoTime() - start
+            val throughput = Throughput(src.length(), nanos)
+            logger.info("Success to bd compress $srcKey,$throughput.")
+            return file
+        } finally {
+            src.delete()
         }
     }
 

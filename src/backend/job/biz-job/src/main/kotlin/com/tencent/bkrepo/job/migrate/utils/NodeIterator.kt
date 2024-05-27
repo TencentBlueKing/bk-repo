@@ -144,7 +144,7 @@ class NodeIterator(
 
     private fun initLastNodeId(): String {
         return if (task.lastMigratedNodeId == MIN_OBJECT_ID) {
-            val query = Query(buildCriteria()).with(Sort.by(Sort.Direction.ASC, ID))
+            val query = Query(buildCriteria()).with(Sort.by(Sort.Direction.ASC, ID)).withHint(PATH_IDX)
             // 找到第一个node
             mongoTemplate.findOne(query, Node::class.java, collectionName)?.id?.let {
                 // 获取一个比其小的id
@@ -157,5 +157,6 @@ class NodeIterator(
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeIterator::class.java)
+        private const val PATH_IDX = "projectId_repoName_path_idx"
     }
 }
