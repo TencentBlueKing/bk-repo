@@ -869,5 +869,7 @@
     "clear": "清空",
     "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割",
     "importBkTitle":"蓝盾用户导入",
-    "bkciUserGroup":"蓝盾用户组"
+    "bkciUserGroup":"蓝盾用户组",
+    "userSource":"用户来源",
+    "bkci": "蓝盾"
 }

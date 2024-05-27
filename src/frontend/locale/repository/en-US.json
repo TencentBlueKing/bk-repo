@@ -868,5 +868,7 @@
     "clear": "Clear",
     "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
     "importBkTitle":"User From BKCI",
-    "bkciUserGroup":"BKCI User Group"
+    "bkciUserGroup":"BKCI User Group",
+    "userSource":"User Source",
+    "bkci": "BKCI"
 }

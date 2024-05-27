@@ -310,7 +310,7 @@ export default {
         })
     },
     // 获取蓝盾传输的用户组
-    getUserGroupByBk (_, { projectId }) {
-        return Vue.prototype.$ajax.get(`${authPrefix}/external/group/${projectId}/DEVOPS`)
+    getUserGroupByExternal (_, { projectId, sourceId }) {
+        return Vue.prototype.$ajax.get(`${authPrefix}/external/group/${projectId}/${sourceId}`)
     }
 }
