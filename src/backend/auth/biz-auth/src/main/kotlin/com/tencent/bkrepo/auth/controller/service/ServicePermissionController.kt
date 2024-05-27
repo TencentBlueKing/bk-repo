@@ -61,7 +61,7 @@ class ServicePermissionController @Autowired constructor(
                 val result = ListPathResult(status = false, path = mapOf(OperationType.IN to emptyList()))
                 return ResponseBuilder.success(result)
             }
-            val result = ListPathResult(status = true, path = mapOf(OperationType.IN to permissionPath!!))
+            val result = ListPathResult(status = true, path = mapOf(OperationType.IN to permissionPath))
             return ResponseBuilder.success(result)
         } else {
             val permissionPath = permissionService.listNoPermissionPath(userId, projectId, repoName)
