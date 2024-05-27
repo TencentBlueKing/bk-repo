@@ -1,13 +1,13 @@
-import Vue from 'vue'
 import App from '@/App'
 import createRouter from '@/router'
 import store from '@/store'
 import '@repository/utils/request'
+import Vue from 'vue'
 
-import Icon from '@repository/components/Icon'
+import createLocale from '@locale'
 import CanwayDialog from '@repository/components/CanwayDialog'
 import EmptyData from '@repository/components/EmptyData'
-import createLocale from '@locale'
+import Icon from '@repository/components/Icon'
 import { throttleMessage } from '@repository/utils'
 import cookies from 'js-cookie'
 
@@ -50,7 +50,7 @@ window.repositoryVue = new Vue({
     components: {
         App
     },
-    template: '<App/>'
+    template: '<App />'
 })
 
 if (document.querySelector('#app')) window.repositoryVue.$mount('#app')
