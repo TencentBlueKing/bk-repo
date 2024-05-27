@@ -86,6 +86,8 @@ class RouteConfiguration(
 
         "/service/block".nest {
             GET("/list$DEFAULT_MAPPING_URI", fsNodeHandler::listBlocks)
+            POST("/restore$DEFAULT_MAPPING_URI", fsNodeHandler::restoreBlock)
+            DELETE("/delete$DEFAULT_MAPPING_URI", fsNodeHandler::deleteBlock)
         }
 
         "/node".nest {
@@ -115,6 +117,7 @@ class RouteConfiguration(
             POST("/create/{projectId}/{repoName}", clientHandler::createClient)
             DELETE("/delete/{projectId}/{repoName}/{clientId}", clientHandler::removeClient)
             POST("/heartbeat/{projectId}/{repoName}/{clientId}", clientHandler::heartbeat)
+            POST("/metrics/push/{projectId}/{repoName}", clientHandler::pushMetrics)
         }
 
         "/service/client".nest {

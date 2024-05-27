@@ -59,6 +59,12 @@ object HttpContextHolder {
         return requestAttributes.response!!
     }
 
+    fun getResponseOrNull(): HttpServletResponse? {
+        val requestAttributes = RequestContextHolder.getRequestAttributes() ?: return null
+        if (requestAttributes !is ServletRequestAttributes) return null
+        return requestAttributes.response
+    }
+
     fun getClientAddress(): String {
         val requestAttributes = RequestContextHolder.getRequestAttributes()
         return if (requestAttributes is ServletRequestAttributes) {

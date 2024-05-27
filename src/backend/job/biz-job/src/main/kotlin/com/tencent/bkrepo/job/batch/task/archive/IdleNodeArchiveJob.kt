@@ -70,7 +70,7 @@ class IdleNodeArchiveJob(
     private var lastCutoffTime: LocalDateTime? = null
     private var tempCutoffTime: LocalDateTime? = null
     private var refreshCount = INITIAL_REFRESH_COUNT
-    private val nodeUseInfoCache = ConcurrentHashMap<NodeDataId, Boolean>()
+    private val nodeUseInfoCache = ConcurrentHashMap<String, Boolean>()
 
     override fun collectionNames(): List<String> {
         val collectionNames = mutableListOf<String>()
@@ -149,8 +149,7 @@ class IdleNodeArchiveJob(
             logger.info("Skip $row#${repo.type.name} on $credentialsKey.")
             return
         }
-        val nodeDataId = NodeDataId(sha256, credentialsKey)
-        if (nodeUseInfoCache[nodeDataId] == true) {
+        if (nodeUseInfoCache[sha256] == true) {
             logger.info("Find it[$row] in use by cache,skip archive.")
             return
         }
@@ -182,11 +181,10 @@ class IdleNodeArchiveJob(
         with(row) {
             val af = archiveClient.get(sha256, credentialsKey).data
             if (af == null) {
-                val nodeDataId = NodeDataId(sha256, credentialsKey)
-                val inUse = nodeUseInfoCache[nodeDataId] ?: checkUse(sha256, credentialsKey, days)
+                val inUse = nodeUseInfoCache[sha256] ?: checkUse(sha256, days, row.projectId)
                 if (inUse) {
                     // 只需要缓存被使用的情况，这可以避免sha256被重复搜索。当sha256未被使用时，它会创建一条归档记录，所以无需缓存。
-                    nodeUseInfoCache[nodeDataId] = true
+                    nodeUseInfoCache[sha256] = true
                 } else {
                     createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
                 }
@@ -249,34 +247,35 @@ class IdleNodeArchiveJob(
         var lastAccessDate: LocalDateTime? = null,
     ) {
         override fun toString(): String {
-            return "$projectId/$repoName$fullPath($sha256)"
+            return "$projectId/$repoName$fullPath($sha256,$lastAccessDate)"
         }
     }
 
-    private fun checkUse(sha256: String, credentialsKey: String?, days: Int): Boolean {
+    private fun checkUse(sha256: String, days: Int, projectId: String): Boolean {
         val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(days.toLong()))
-        val query = Query.query(
-            Criteria.where("sha256").isEqualTo(sha256)
-                .and("deleted").isEqualTo(null)
-                .and("lastAccessDate").gt(cutoffTime),
-        )
-        collectionNames().forEach {
-            val nodes = mongoTemplate.find(query, Node::class.java, it)
-            nodes.forEach { n ->
-                val repo = RepositoryCommonUtils.getRepositoryDetail(n.projectId, n.repoName)
-                if (repo.storageCredentials?.key == credentialsKey) {
-                    logger.info("$sha256/$credentialsKey in use[$n].")
-                    return true
-                }
+        /*
+        * 满足以下条件之一，则不进行归档
+        * 1. 其他项目存在相同sha256的节点。（跨项目的文件会无法归档）
+        * 2. 当前项目存在更新（晚于归档截止时间）的节点。
+        * */
+        (0 until SHARDING_COUNT).forEach {
+            val collectionName = COLLECTION_NAME_PREFIX.plus(it)
+            val query = Query.query(
+                Criteria.where("sha256").isEqualTo(sha256)
+                    .and("deleted").isEqualTo(null)
+                    .orOperator(
+                        Criteria.where("projectId").ne(projectId),
+                        Criteria.where("lastAccessDate").gt(cutoffTime),
+                    ),
+            )
+            val existNode = mongoTemplate.findOne(query, Node::class.java, collectionName)
+            if (existNode != null) {
+                logger.info("Find in use $existNode.")
+                return true
             }
         }
         return false
     }
-
-    data class NodeDataId(
-        val sha256: String,
-        val credentialsKey: String?,
-    )
 
     companion object {
         const val COLLECTION_NAME_PREFIX = "node_"

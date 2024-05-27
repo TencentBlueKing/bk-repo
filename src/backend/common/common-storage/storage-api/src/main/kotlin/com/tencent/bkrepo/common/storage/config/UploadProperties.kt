@@ -40,5 +40,10 @@ data class UploadProperties(
     /**
      * 文件上传本地目录，一定要为本地文件系统路径。
      * */
-    var localPath: String = System.getProperty("java.io.tmpdir")
+    var localPath: String = System.getProperty("java.io.tmpdir"),
+
+    /**
+     * 文件上传线程数
+     */
+    var workers: Int = Runtime.getRuntime().availableProcessors() * 2,
 )

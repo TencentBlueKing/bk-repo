@@ -45,11 +45,10 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.PypiProperties
+import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
-import com.tencent.bkrepo.pypi.constants.PypiQueryType
-import com.tencent.bkrepo.pypi.constants.QUERY_TYPE
 import com.tencent.bkrepo.pypi.util.UrlUtils
 import org.springframework.stereotype.Service
 
@@ -65,16 +64,13 @@ class PypiService(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    fun simple(artifactInfo: PypiArtifactInfo): Any? {
+    fun simple(artifactInfo: PypiSimpleArtifactInfo): Any? {
         val urlPath = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
         if (!urlPath.endsWith(SLASH)) {
             HttpContextHolder.getResponse().sendRedirect(UrlUtils.getRedirectUrl(pypiProperties.domain, urlPath))
             return null
         }
         val context = ArtifactQueryContext()
-        val artifactName = context.artifactInfo.getArtifactName()
-        val queryType = if (artifactName == SLASH) PypiQueryType.PACKAGE_INDEX else PypiQueryType.VERSION_INDEX
-        context.putAttribute(QUERY_TYPE, queryType)
         return repository.query(context)
     }
 

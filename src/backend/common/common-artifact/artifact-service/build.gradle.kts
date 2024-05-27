@@ -42,6 +42,7 @@ dependencies {
     api(project(":common:common-storage:storage-service"))
     api(project(":common:common-operate:operate-service"))
     api(project(":common:common-stream"))
+    api(project(":common:common-metrics-push"))
 
     api("org.springframework.boot:spring-boot-starter-aop")
     api("io.micrometer:micrometer-registry-prometheus")

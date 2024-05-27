@@ -50,6 +50,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
@@ -127,6 +128,9 @@ open class ServiceBaseTest {
     @MockBean
     lateinit var routerControllerClient: RouterControllerClient
 
+    @MockBean
+    lateinit var fsNodeClient: FsNodeClient
+
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
 
@@ -165,6 +169,8 @@ open class ServiceBaseTest {
         whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull(), any()))
             .then {}
         whenever(resourcePermissionListener.handle(any<ProjectCreatedEvent>())).then {}
+        whenever(fsNodeClient.restoreBlockResources(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .then {}
     }
 
     fun initRepoForUnitTest(

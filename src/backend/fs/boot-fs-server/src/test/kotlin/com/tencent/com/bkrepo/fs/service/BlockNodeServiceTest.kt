@@ -1,5 +1,6 @@
 package com.tencent.com.bkrepo.fs.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -8,6 +9,8 @@ import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.model.TBlockNode
 import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
 import com.tencent.bkrepo.fs.server.service.BlockNodeService
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.com.bkrepo.fs.UT_PROJECT_ID
 import com.tencent.com.bkrepo.fs.UT_REPO_NAME
 import com.tencent.com.bkrepo.fs.UT_USER
@@ -137,6 +140,21 @@ class BlockNodeServiceTest {
             val createdDate = LocalDateTime.now().minusSeconds(1).toString()
             Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
                 .thenReturn(Mono.just(successResponse(true)))
+            val nodeInfo = NodeInfo(
+                createdBy = UT_USER,
+                createdDate = createdDate,
+                lastModifiedBy = UT_USER,
+                lastModifiedDate = createdDate,
+                folder = false,
+                path = StringPool.ROOT,
+                name = "newFile",
+                fullPath = "/newFile",
+                size = 21,
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME
+            )
+            Mockito.`when`(rRepositoryClient.getNodeDetail(any(), any(), any()))
+                .thenReturn(Mono.just(successResponse(NodeDetail(nodeInfo))))
             createBlockNode(startPos = 10)
             createBlockNode(startPos = 20)
             val fullPath = "/file"

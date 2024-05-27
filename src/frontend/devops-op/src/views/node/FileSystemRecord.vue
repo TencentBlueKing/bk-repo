@@ -84,6 +84,7 @@ import { queryDailyFileSystemClient } from '@/api/fileSystem'
 import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import { formatNormalDate } from '@/utils/date'
+import moment from 'moment'
 
 export default {
   name: 'FileSystem',
@@ -99,11 +100,17 @@ export default {
         pageNumber: 1,
         ip: '',
         version: '',
-        startTime: '',
+        startTime: new Date(),
         endTime: ''
       },
       clients: []
     }
+  },
+  created() {
+    const query = {
+      startTime: moment(new Date()).format('yyyy-MM-DD')
+    }
+    this.$router.push({ path: '/nodes/FileSystemRecord', query: query })
   },
   mounted() {
     this.onRouteUpdate(this.$route)
@@ -175,13 +182,7 @@ export default {
       })
     },
     queryClients(clientQuery) {
-      this.$refs['form'].validate((valid) => {
-        if (valid) {
-          this.doQueryClients(clientQuery)
-        } else {
-          return false
-        }
-      })
+      this.doQueryClients(clientQuery)
     },
     doQueryClients(clientQuery) {
       this.loading = true

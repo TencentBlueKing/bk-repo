@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Duration
@@ -66,7 +67,13 @@ class ArtifactCacheMetrics(
         try {
             addMetrics(resource)
         } catch (e: Exception) {
-            logger.error("record artifact cache metrics failed", e)
+            val msg = "record artifact cache metrics failed"
+            if (e is NoSuchFileException) {
+                // 缓存文件可能已经被清理导致出现NoSuchFileException异常
+                logger.warn(msg, e)
+            } else {
+                logger.error(msg, e)
+            }
         }
     }
 

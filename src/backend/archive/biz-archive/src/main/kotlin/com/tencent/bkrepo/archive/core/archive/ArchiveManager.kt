@@ -4,9 +4,10 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
+import com.tencent.bkrepo.archive.core.provider.FileTask
 import com.tencent.bkrepo.archive.event.FileArchivedEvent
 import com.tencent.bkrepo.archive.event.FileRestoredEvent
-import com.tencent.bkrepo.archive.core.FileProvider
+import com.tencent.bkrepo.archive.core.provider.PriorityFileProvider
 import com.tencent.bkrepo.archive.core.TaskResult
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
@@ -29,12 +30,13 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Function
 
 @Component
 class ArchiveManager(
     private val archiveProperties: ArchiveProperties,
-    private val fileProvider: FileProvider,
+    private val fileProvider: PriorityFileProvider,
     private val archiveFileDao: ArchiveFileDao,
     private val archiveFileRepository: ArchiveFileRepository,
     private val storageService: StorageService,
@@ -54,6 +56,7 @@ class ArchiveManager(
         ThreadFactoryBuilder().setNameFormat("archive-worker-%d").build(),
     )
     private val scheduler = Schedulers.fromExecutor(archiveThreadPool)
+    private val prioritySeq = AtomicInteger(Int.MIN_VALUE)
 
     init {
         if (!Files.exists(compressedPath)) {
@@ -115,7 +118,8 @@ class ArchiveManager(
         Files.createDirectories(dir)
         val credentials = ArchiveUtils.getStorageCredentials(storageCredentialsKey)
         val begin = System.nanoTime()
-        val ret = fileProvider.get(sha256, Range.full(file.size), credentials)
+        val fileTask = FileTask(sha256, Range.full(file.size), credentials)
+        val ret = fileProvider.get(fileTask)
             .publishOn(scheduler)
             .flatMap {
                 val filePath = dir.resolve(sha256)
@@ -197,7 +201,8 @@ class ArchiveManager(
         Files.createDirectories(dir)
         val begin = System.nanoTime()
         val range = if (file.compressedSize == -1L) Range.FULL_RANGE else Range.full(file.compressedSize)
-        val ret = fileProvider.get(key, range, credentials)
+        val fileTask = FileTask(key, range, credentials, prioritySeq.getAndIncrement())
+        val ret = fileProvider.get(fileTask)
             .publishOn(scheduler)
             .flatMap {
                 val archiveFilePath = dir.resolve(key)
@@ -255,10 +260,13 @@ class ArchiveManager(
 
     fun getStorageCredentials(key: String?): StorageCredentials {
         return if (key == null) {
-            archiveProperties.cos
+            archiveProperties.defaultCredentials.cos
         } else {
-            val credential = archiveProperties.credentials[key]?.apply { this.key = key }
-            credential ?: archiveProperties.cos
+            val credentialsProperties = archiveProperties.extraCredentialsConfig[key]
+            if (credentialsProperties == null) {
+                return archiveProperties.defaultCredentials.cos
+            }
+            credentialsProperties.cos.apply { this.key = key }
         }
     }
 

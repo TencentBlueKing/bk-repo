@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.pypi.util
 
-import com.tencent.bkrepo.pypi.XML_RPC_OPERATION_OR
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
+import com.tencent.bkrepo.pypi.constants.XML_RPC_OPERATION_OR
 import com.tencent.bkrepo.pypi.pojo.PypiSearchPojo2
 import java.io.BufferedReader
 
