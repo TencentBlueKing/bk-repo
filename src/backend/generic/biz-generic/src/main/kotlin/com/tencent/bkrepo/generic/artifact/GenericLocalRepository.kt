@@ -242,7 +242,7 @@ class GenericLocalRepository(
     private fun checkIfOverwritePipelineArtifact(context: ArtifactUploadContext) {
         val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
         val pipelineSource = context.repoName == PIPELINE || context.repoName == CUSTOM
-        if (!overwrite && !pipelineSource) {
+        if (!overwrite || !pipelineSource) {
             return
         }
         with(context.artifactInfo) {

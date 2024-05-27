@@ -170,7 +170,6 @@ class MetadataServiceImpl(
         oldMetadata: MutableList<TMetadata>,
         newMetadata: MutableList<TMetadata>
     ) {
-
         val oldAllowUserAddSystemMetadata =
             oldMetadata.map { it.key }.intersectIgnoreCase(repositoryProperties.allowUserAddSystemMetadata)
         val newAllowUserAddSystemMetadata =
