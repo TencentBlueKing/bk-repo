@@ -89,7 +89,7 @@ interface FileBlockOperation {
      * 列出分块文件
      * blockId: 分块存储id
      */
-    fun listBlock(blockId: String, storageCredentials: StorageCredentials?): List<Pair<Long, String>>
+    fun listBlock(blockId: String, storageCredentials: StorageCredentials?): List<Triple<Long, String, Int>>
 
     /**
      * 存储分块文件
