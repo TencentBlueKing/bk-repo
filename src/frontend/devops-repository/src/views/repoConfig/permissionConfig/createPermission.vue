@@ -20,9 +20,6 @@
                     </node-table>
                 </template>
             </bk-form-item>
-            <!--            <bk-form-item label="蓝盾用户组导入">-->
-            <!--                <bk-button icon="plus" @click="showImportDialog">{{ '导入用户' }}</bk-button>-->
-            <!--            </bk-form-item>-->
             <bk-form-item :label="$t('staffing')">
                 <bk-button icon="plus" @click="showImportDialog">{{ $t('add') + $t('space') + $t('user') }}</bk-button>
                 <div v-show="permissionForm.users.length" class="mt10 user-list">
