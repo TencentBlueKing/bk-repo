@@ -49,9 +49,9 @@ class ServicePermissionController @Autowired constructor(
 
 
     /**
-     * 本接口不做权限校验，status表面是否需要做校验
-     * IN 表示要做并集，表示有权限的路径列表，需要做并集
-     * NIN 表示有无权限的路径列表，需要做差集
+     * 本接口不做权限校验，status表明是否需要做校验
+     * OperationType IN  表示有权限的路径列表，需要做交集
+     * OperationType NIN 表示有无权限的路径列表，需要做差集
      */
     override fun listPermissionPath(userId: String, projectId: String, repoName: String): Response<ListPathResult> {
         val repoAccessControl = permissionService.checkRepoAccessControl(projectId, repoName)
