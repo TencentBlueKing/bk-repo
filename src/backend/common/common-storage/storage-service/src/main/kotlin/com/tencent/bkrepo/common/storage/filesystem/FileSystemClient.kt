@@ -39,6 +39,7 @@ import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.stream.Stream
 
 /**
  * 本地文件存储客户端
@@ -139,7 +140,6 @@ class FileSystemClient(val root: String) {
      * 使用channel拷贝
      * */
     private fun copyByChannel(src: Path, target: Path) {
-
         if (!Files.exists(src)) {
             throw IOException("src[$src] file not exist")
         }
@@ -306,6 +306,10 @@ class FileSystemClient(val root: String) {
             throw IllegalArgumentException("[$filePath] is not a regular file.")
         }
         return Files.size(filePath)
+    }
+
+    fun walk(path: String): Stream<Path> {
+        return Files.walk(Paths.get(root, path))
     }
 
     private fun transfer(input: ReadableByteChannel, output: FileChannel, size: Long, append: Boolean = false) {

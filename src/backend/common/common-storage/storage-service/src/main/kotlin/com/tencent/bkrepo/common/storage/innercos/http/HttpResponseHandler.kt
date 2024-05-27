@@ -41,10 +41,13 @@ abstract class HttpResponseHandler<T> {
     open fun keepConnection(response: Response): Boolean = false
 
     companion object {
-        private val xmlMapper: XmlMapper = XmlMapper()
+        val xmlMapper: XmlMapper = XmlMapper()
 
-        fun readXmlValue(response: Response): Map<*, *> {
-            return xmlMapper.readValue(response.body?.string(), Map::class.java)
+        fun readXmlToMap(response: Response): Map<*, *> {
+            return readXmlValue(response)
+        }
+        inline fun <reified T> readXmlValue(response: Response): T {
+            return xmlMapper.readValue(response.body?.string(), T::class.java)
         }
     }
 }
