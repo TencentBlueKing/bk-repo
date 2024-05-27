@@ -14,11 +14,15 @@ class FileReferenceController(
         return ResponseBuilder.success(fileReferenceService.decrement(sha256, credentialsKey))
     }
 
-    override fun increment(sha256: String, credentialsKey: String?): Response<Boolean> {
-        return ResponseBuilder.success(fileReferenceService.increment(sha256, credentialsKey))
+    override fun increment(sha256: String, credentialsKey: String?, inc: Long): Response<Boolean> {
+        return ResponseBuilder.success(fileReferenceService.increment(sha256, credentialsKey, inc))
     }
 
     override fun count(sha256: String, credentialsKey: String?): Response<Long> {
         return ResponseBuilder.success(fileReferenceService.count(sha256, credentialsKey))
+    }
+
+    override fun exists(sha256: String, credentialsKey: String?): Response<Boolean> {
+        return ResponseBuilder.success(fileReferenceService.exists(sha256, credentialsKey))
     }
 }

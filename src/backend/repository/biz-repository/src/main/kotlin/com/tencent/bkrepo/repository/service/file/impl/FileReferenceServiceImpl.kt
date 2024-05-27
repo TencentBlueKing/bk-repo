@@ -78,9 +78,9 @@ class FileReferenceServiceImpl(
         }
     }
 
-    override fun increment(sha256: String, credentialsKey: String?): Boolean {
+    override fun increment(sha256: String, credentialsKey: String?, inc: Long): Boolean {
         val query = buildQuery(sha256, credentialsKey)
-        val update = Update().inc(TFileReference::count.name, 1)
+        val update = Update().inc(TFileReference::count.name, inc)
         try {
             fileReferenceDao.upsert(query, update)
         } catch (exception: DuplicateKeyException) {
@@ -126,6 +126,10 @@ class FileReferenceServiceImpl(
         val tFileReference = fileReferenceDao.findOne(query)
             ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND)
         return convert(tFileReference)
+    }
+
+    override fun exists(sha256: String, credentialsKey: String?): Boolean {
+        return fileReferenceDao.exists(buildQuery(sha256, credentialsKey))
     }
 
     private fun convert(tFileReference: TFileReference): FileReference {
