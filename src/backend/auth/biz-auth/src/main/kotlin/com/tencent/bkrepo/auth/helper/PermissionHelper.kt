@@ -373,6 +373,8 @@ class PermissionHelper constructor(
             result.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
             }
+            val personalPathCheck = checkPersonalPath(uid, projectId!!, repoName!!, path!!)
+            if (personalPathCheck != null) return personalPathCheck
             return false
         }
     }
@@ -392,12 +394,6 @@ class PermissionHelper constructor(
         // check personal path
         val personalPath = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
         if (personalPath != null && path.startsWith(personalPath.fullPath)) return true
-
-        // check personal exclude path
-        val personalExcludePath = personalPathDao.listByProjectAndRepoAndExcludeUser(userId, projectId, repoName)
-        personalExcludePath.forEach {
-            if (path.startsWith(it.fullPath)) return false
-        }
         return null
     }
 
