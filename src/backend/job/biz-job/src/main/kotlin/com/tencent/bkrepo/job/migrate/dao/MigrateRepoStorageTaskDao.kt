@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTING_STATE
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -44,6 +45,19 @@ import java.time.LocalDateTime
 
 @Repository
 class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
+
+    fun count(state: String?): Long {
+        val criteria = Criteria()
+        state?.let { criteria.and(TMigrateRepoStorageTask::state.name).isEqualTo(it) }
+        return count(Query(criteria))
+    }
+
+    fun find(state: String?, pageRequest: PageRequest): List<TMigrateRepoStorageTask> {
+        val criteria = Criteria()
+        state?.let { criteria.and(TMigrateRepoStorageTask::state.name).isEqualTo(it) }
+        return find(Query(criteria).with(pageRequest))
+    }
+
     fun exists(projectId: String, repoName: String): Boolean {
         val query = Query(buildCriteria(projectId, repoName))
         val update = Update.update(TMigrateRepoStorageTask::projectId.name, projectId)

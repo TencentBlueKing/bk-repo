@@ -201,7 +201,16 @@ class RepositoryServiceImpl(
             criteria.and(TRepository::category).isEqualTo(this.toUpperCase())
         }
         val query = Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
-        return repositoryDao.find(query).map { convertToInfo(it)!! }
+        val originResults = repositoryDao.find(query).map { convertToInfo(it)!! }
+        val originNames = originResults.map { it.name }.toSet()
+        var includeResults = emptyList<RepositoryInfo>()
+        if (names.isNotEmpty() && option.include != null) {
+            val inValues = names.intersect(setOf(option.include!!)).minus(originNames)
+            val includeCriteria = where(TRepository::projectId).isEqualTo(projectId)
+                .and(TRepository::name).inValues(inValues)
+            includeResults = repositoryDao.find(Query(includeCriteria)).map { convertToInfo(it)!! }
+        }
+        return originResults + includeResults
     }
 
     override fun listPermissionRepoPage(
@@ -558,7 +567,7 @@ class RepositoryServiceImpl(
         proxyChannelService.deleteProxy(proxyRepository)
         logger.info(
             "Success to delete private proxy channel [${proxy.name}]" +
-                " in repo[${repository.projectId}|${repository.name}]",
+                    " in repo[${repository.projectId}|${repository.name}]",
         )
     }
 
@@ -681,7 +690,7 @@ class RepositoryServiceImpl(
         if (configuration == null) {
             return true
         }
-        return when(configuration) {
+        return when (configuration) {
             is com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration ->
                 category == RepositoryCategory.PROXY
             is CompositeConfiguration -> category == RepositoryCategory.COMPOSITE

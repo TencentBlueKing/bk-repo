@@ -29,15 +29,11 @@ package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
-import com.tencent.bkrepo.job.SHARDING_COUNT
-import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
-import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
@@ -50,7 +46,6 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
-import com.tencent.bkrepo.job.model.TNode
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
@@ -151,30 +146,4 @@ open class ExecutorBaseTest {
     protected fun buildContext(task: MigrateRepoStorageTask): MigrationContext = MigrationContext(
         task, null, FileSystemCredentials(key = UT_STORAGE_CREDENTIALS_KEY)
     )
-
-    protected fun createNode(
-        repoName: String = UT_REPO_NAME,
-        createDate: LocalDateTime = LocalDateTime.now(),
-        sha256: String = UT_SHA256,
-        fullPath: String = "/a/b/c.txt"
-    ): TNode {
-        val node = TNode(
-            id = null,
-            projectId = UT_PROJECT_ID,
-            repoName = repoName,
-            fullPath = fullPath,
-            size = 100L,
-            sha256 = sha256,
-            md5 = UT_MD5,
-            createdDate = createDate,
-            folder = false,
-        )
-        val sharding = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
-        return mongoTemplate.insert(node, "node_$sharding")
-    }
-
-    protected fun removeNodes() {
-        val sequence = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
-        mongoTemplate.remove(Query(), "node_$sequence")
-    }
 }

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.auth.api.cluster
 
-import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_USER_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Api("集群间用户服务接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterUserResource")
-@RequestMapping(AUTH_CLUSTER_USER_PREFIX)
+@RequestMapping(AUTH_CLUSTER_PERMISSION_PREFIX)
 interface ClusterUserClient {
 
     @ApiOperation("用户信息")

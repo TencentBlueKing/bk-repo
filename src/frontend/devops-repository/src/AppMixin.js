@@ -1,5 +1,7 @@
+
 import ConfirmDialog from '@repository/components/ConfirmDialog'
 import GlobalUploadViewport from '@repository/components/GlobalUploadViewport'
+import { routeBase } from '@repository/utils'
 import Vue from 'vue'
 import { mapMutations, mapState } from 'vuex'
 export default {
@@ -61,7 +63,8 @@ export default {
                 })
 
                 window.globalVue.$on('change::$routePath', data => { // 蓝鲸Devops切换路径
-                    this.$router.push({ name: data.routePath.englishName, path: data.routePath.path.replace(/^\/[a-zA-Z]+/, '/ui') })
+                    console.log('change::$routePath', data)
+                    this.$router.push({ name: data.routePath.englishName, path: data.routePath.path.replace(/^\/[a-zA-Z]+/, routeBase) })
                 })
 
                 window.globalVue.$on('order::backHome', data => { // 蓝鲸Devops选择项目时切换

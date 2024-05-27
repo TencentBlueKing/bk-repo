@@ -13,6 +13,7 @@ import com.tencent.bkrepo.job.batch.task.archive.IdleNodeArchiveJob
 import com.tencent.bkrepo.job.batch.task.archive.IdleNodeArchiveJob.Companion.COLLECTION_NAME_PREFIX
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
+import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.service.ArchiveJobService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
@@ -27,6 +28,7 @@ import java.time.LocalDateTime
 class ArchiveJobServiceImpl(
     private val archiveJob: IdleNodeArchiveJob,
     private val archiveClient: ArchiveClient,
+    private val migrateRepoStorageService: MigrateRepoStorageService,
 ) : ArchiveJobService {
     override fun archive(projectId: String, key: String, days: Int, storageClass: ArchiveStorageClass) {
         val now = LocalDateTime.now()
@@ -74,7 +76,11 @@ class ArchiveJobServiceImpl(
             val sha256 = node.sha256
             try {
                 val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
-                val credentialKey = repo.storageCredentials?.key
+                val credentialKey = if (migrateRepoStorageService.migrating(projectId, repoName)) {
+                    repo.oldCredentialsKey
+                } else {
+                    repo.storageCredentials?.key
+                }
                 if (it["archived"].toString() == "true") {
                     val req = ArchiveFileRequest(sha256, credentialKey, SYSTEM_USER)
                     archiveClient.restore(req)

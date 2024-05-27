@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
+import com.tencent.bkrepo.job.migrate.executor.handler.MigrateFailedHandler
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
@@ -51,6 +52,7 @@ class CorrectExecutor(
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
+    private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
     private val mongoTemplate: MongoTemplate,
 ) : BaseTaskExecutor(
@@ -84,10 +86,7 @@ class CorrectExecutor(
                     try {
                         correctNode(context, node)
                     } catch (e: Exception) {
-                        saveMigrateFailedNode(task.id!!, node)
-                        logger.error(
-                            "correct node[${node.fullPath}] failed, task[${task.projectId}/${task.repoName}]", e
-                        )
+                        migrateFailedHandler.handle(task, node, e)
                     } finally {
                         context.decTransferringCount()
                     }

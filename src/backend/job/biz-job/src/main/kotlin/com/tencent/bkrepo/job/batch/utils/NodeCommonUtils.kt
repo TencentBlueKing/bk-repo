@@ -63,7 +63,12 @@ class NodeCommonUtils(
             (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.forEach { collection ->
                 val find = mongoTemplate.find(query, Node::class.java, collection).filter {
                     val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
-                    repo.storageCredentials?.key == storageCredentialsKey
+                    val key = if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
+                        repo.oldCredentialsKey
+                    } else {
+                        repo.storageCredentials?.key
+                    }
+                    key == storageCredentialsKey
                 }
                 nodes.addAll(find)
             }

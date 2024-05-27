@@ -25,7 +25,7 @@
                 <template #default="{ row }">
                     <span class="hover-btn">{{row.users.length ? row.users : '/'}}</span></template>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="70">
+            <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
                     <operation-list
                         :list="[

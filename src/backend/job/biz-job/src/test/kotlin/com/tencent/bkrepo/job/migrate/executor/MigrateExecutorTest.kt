@@ -8,6 +8,8 @@ import com.tencent.bkrepo.job.UT_USER
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
 import com.tencent.bkrepo.job.model.TNode
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -46,7 +48,7 @@ class MigrateExecutorTest @Autowired constructor(
     fun beforeEach() {
         initMock()
         migrateRepoStorageTaskDao.remove(Query())
-        removeNodes()
+        mongoTemplate.removeNodes()
     }
 
     @Test
@@ -54,7 +56,7 @@ class MigrateExecutorTest @Autowired constructor(
         // 创建node用于模拟遍历迁移
         val nodeCount = 5L
         for (i in 0 until nodeCount) {
-            createNode()
+            mongoTemplate.createNode()
         }
         val context = executor.execute(buildContext(createTask()))!!
 
@@ -77,7 +79,7 @@ class MigrateExecutorTest @Autowired constructor(
         val migratedCount = 23L
         val nodes = ArrayList<TNode>()
         for (i in 0 until nodeCount) {
-            nodes.add(createNode())
+            nodes.add(mongoTemplate.createNode())
         }
         // 创建任务
         val now = LocalDateTime.now()
@@ -112,14 +114,15 @@ class MigrateExecutorTest @Autowired constructor(
             throw FileNotFoundException()
         }
         // 创建node用于模拟遍历迁移
-        createNode()
-        createNode(sha256 = FAKE_SHA256, fullPath = "/a/b/d.txt")
+        mongoTemplate.createNode()
+        mongoTemplate.createNode(sha256 = FAKE_SHA256, fullPath = "/a/b/d.txt")
+        mongoTemplate.createNode(compressed = true, fullPath = "/a/b/e.txt")
         val context = executor.execute(buildContext(createTask()))!!
 
         // 等待任务执行完
         Thread.sleep(1000L)
         context.waitAllTransferFinished()
-        assertEquals(2, migrateFailedNodeDao.count(Query()))
+        assertEquals(3, migrateFailedNodeDao.count(Query()))
     }
 
     private fun assertTaskFinished(taskId: String, totalCount: Long) {

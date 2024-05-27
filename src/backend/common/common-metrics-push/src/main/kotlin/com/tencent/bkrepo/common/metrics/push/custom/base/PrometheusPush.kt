@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,41 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.controller.user
+package com.tencent.bkrepo.common.metrics.push.custom.base
 
-import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
-import com.tencent.bkrepo.auth.pojo.Key
-import com.tencent.bkrepo.auth.service.KeyService
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.ApiOperation
-import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.DeleteMapping
+import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.exporter.PushGateway
 
-@RestController
-@RequestMapping(AUTH_API_KEY_PREFIX)
-class KeyController(private val keyService: KeyService) {
+class PrometheusPush(
+    private val jobName: String,
+    private val groupingKey: Map<String, String>? = null,
+    uri: String,
+    bkToken: String? = null,
+    user: String? = null,
+    password: String? = null,
+) {
 
-    @ApiOperation("新增密钥")
-    @PostMapping("/create")
-    fun createKey(name: String, key: String): Response<Void> {
-        keyService.createKey(name, key)
-        return ResponseBuilder.success()
+    private var pushGW: PushGateway = PushGateway(uri)
+    var errMsg: String? = null
+
+    init {
+        pushGW.setConnectionFactory(BkHttpConnectionFactory(bkToken, user, password))
     }
 
-    @ApiOperation("查询公钥列表")
-    @GetMapping("/list")
-    fun listKey(): Response<List<Key>> {
-        return ResponseBuilder.success(keyService.listKey())
-    }
-
-    @ApiOperation("删除公钥")
-    @DeleteMapping("/delete/{id}")
-    fun deleteKey(id: String): Response<Void> {
-        keyService.deleteKey(id)
-        return ResponseBuilder.success()
+    fun push(registry: CollectorRegistry?): Boolean {
+        var bRet = true
+        try {
+            pushGW.pushAdd(registry, jobName, groupingKey)
+        } catch (e: Exception) {
+            bRet = false
+            errMsg = e.message
+        }
+        return bRet
     }
 }

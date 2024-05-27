@@ -41,12 +41,11 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.pypi.FLUSH_CACHE_EXPIRE
-import com.tencent.bkrepo.pypi.REMOTE_HTML_CACHE_FULL_PATH
-import com.tencent.bkrepo.pypi.XML_RPC_URI
+import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
-import com.tencent.bkrepo.pypi.constants.PypiQueryType
-import com.tencent.bkrepo.pypi.constants.QUERY_TYPE
+import com.tencent.bkrepo.pypi.constants.FLUSH_CACHE_EXPIRE
+import com.tencent.bkrepo.pypi.constants.REMOTE_HTML_CACHE_FULL_PATH
+import com.tencent.bkrepo.pypi.constants.XML_RPC_URI
 import com.tencent.bkrepo.pypi.exception.PypiRemoteSearchException
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -86,9 +85,11 @@ class PypiRemoteRepository : RemoteRepository() {
     }
 
     override fun query(context: ArtifactQueryContext): Any? {
-        return when (context.getAttribute<PypiQueryType>(QUERY_TYPE)) {
-            PypiQueryType.PACKAGE_INDEX -> getCacheHtml(context) ?: "Can not cache remote html"
-            PypiQueryType.VERSION_INDEX -> remoteRequest(context) ?: ""
+        return when (val artifactInfo = context.artifactInfo) {
+            is PypiSimpleArtifactInfo -> {
+                if (artifactInfo.packageName == null) getCacheHtml(context) ?: "Can not cache remote html"
+                else remoteRequest(context) ?: ""
+            }
             else -> throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
         }
     }
@@ -161,9 +162,7 @@ class PypiRemoteRepository : RemoteRepository() {
      * 需要单独给fullpath赋值。
      */
     fun getNodeCreateRequest(context: ArtifactQueryContext, artifactFile: ArtifactFile): NodeCreateRequest {
-        return super.buildCacheNodeCreateRequest(context, artifactFile).copy(
-            fullPath = "/$REMOTE_HTML_CACHE_FULL_PATH"
-        )
+        return super.buildCacheNodeCreateRequest(context, artifactFile)
     }
 
     /**

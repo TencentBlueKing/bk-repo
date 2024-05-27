@@ -38,6 +38,8 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestInstance
@@ -64,6 +66,12 @@ open class ArtifactPreloadBaseServiceTest(
     protected val fileLocator: FileLocator,
     protected val storageProperties: StorageProperties,
 ) {
+    @MockBean
+    protected lateinit var nodeClient: NodeClient
+
+    @MockBean
+    protected lateinit var repositoryClient: RepositoryClient
+
     @MockBean
     protected lateinit var storageCredentialsClient: StorageCredentialsClient
 

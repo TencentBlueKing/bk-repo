@@ -1,3 +1,4 @@
+import { rootPath } from '@blueking/sub-saas'
 import createLocale from '@locale'
 /**
  *  转换文件大小
@@ -130,3 +131,5 @@ export function copyToClipboard (text) {
     return result ? Promise.resolve() : Promise.reject(new Error())
     // }
 }
+
+export const routeBase = rootPath === '/' ? '/ui' : rootPath

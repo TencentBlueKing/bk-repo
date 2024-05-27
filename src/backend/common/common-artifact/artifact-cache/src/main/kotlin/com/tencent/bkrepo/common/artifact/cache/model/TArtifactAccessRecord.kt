@@ -43,7 +43,7 @@ import java.time.LocalDateTime
         unique = true,
         background = true
     ),
-    CompoundIndex(name = "lastModifiedDate_idx", def = "{'lastModifiedDate': 1}", unique = true, background = true)
+    CompoundIndex(name = "lastModifiedDate_idx", def = "{'lastModifiedDate': 1}", background = true)
 )
 data class TArtifactAccessRecord(
     val id: String? = null,
