@@ -83,7 +83,7 @@ class MigrateFailedNodeExecutor(
             val failedNode = migrateFailedNodeDao.findOneToRetry(projectId, repoName) ?: break
             val node = convert(failedNode)
             context.incTransferringCount()
-            transferDataExecutor.execute {
+            transferDataExecutor.execute(node) {
                 try {
                     correctNode(context, node)
                     logger.info("migrate failed node[${node.fullPath}] success, task[${projectId}/${repoName}]")

@@ -100,7 +100,7 @@ class MigrateExecutor(
             logger.info("submit node[${node.fullPath}] to thread pool, task[$projectId/$repoName]")
             val taskNumber = ++migratedCount
             context.incTransferringCount()
-            transferDataExecutor.execute {
+            transferDataExecutor.execute(node) {
                 try {
                     logger.info("migrate node[${node.fullPath}] start, task[$projectId/$repoName]")
                     // 迁移制品
