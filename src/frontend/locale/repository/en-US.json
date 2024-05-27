@@ -868,5 +868,5 @@
     "clear": "Clear",
     "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
     "rootDirectoryPermission": "Access Control:",
-    "rootDirectoryPermissionTip": "After Open, Access the resource in the repo need auth."
+    "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth."
 }

@@ -869,5 +869,5 @@
     "clear": "清空",
     "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割",
     "rootDirectoryPermission": "访问控制：",
-    "rootDirectoryPermissionTip": "打开之后访问此仓库下资源需要授权"
+    "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权"
 }
