@@ -315,11 +315,11 @@ open class PermissionServiceImpl constructor(
         if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
             return null
         }
-        val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
-        val configPath = permHelper.getPermissionPathFromConfig(userId, user.roles, projectPermission, true)
+        val permission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
+        val configPath = permHelper.getPermissionPathFromConfig(userId, user.roles, permission, true).toMutableList()
         val personalPath = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
         if (personalPath != null) {
-            configPath.toMutableList().add(personalPath.fullPath)
+            configPath.add(personalPath.fullPath)
         }
         return configPath
     }
