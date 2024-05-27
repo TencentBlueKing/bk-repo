@@ -40,4 +40,6 @@ data class TNode(
     val sha256: String,
     val md5: String,
     val deleted: LocalDateTime? = null,
+    val archived: Boolean? = null,
+    val compressed: Boolean? = null,
 )

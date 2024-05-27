@@ -34,6 +34,9 @@ package com.tencent.bkrepo.fs.server.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
+import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
+import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.model.TClient
@@ -45,6 +48,7 @@ import com.tencent.bkrepo.fs.server.pojo.DailyClientListRequest
 import com.tencent.bkrepo.fs.server.repository.ClientRepository
 import com.tencent.bkrepo.fs.server.repository.DailyClientRepository
 import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
+import com.tencent.bkrepo.fs.server.request.ClientPushMetricsRequest
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -56,7 +60,8 @@ import java.time.format.DateTimeFormatter
 
 class ClientService(
     private val clientRepository: ClientRepository,
-    private val dailyClientRepository: DailyClientRepository
+    private val dailyClientRepository: DailyClientRepository,
+    private val customMetricsExporter: CustomMetricsExporter? = null
 ) {
 
     suspend fun createClient(request: ClientCreateRequest): ClientDetail {
@@ -119,6 +124,26 @@ class ClientService(
         return Pages.ofResponse(pageRequest, count, data.map { it.convert() })
     }
 
+    suspend fun pushMetrics(request: ClientPushMetricsRequest) {
+        with(request) {
+            val ip = ReactiveRequestContextHolder.getClientAddress()
+            metrics.forEach {
+                val newLabels = mutableMapOf<String, String>()
+                newLabels.putAll(it.labels)
+                newLabels["clientIp"] = ip
+                val metricItem = try {
+                    MetricsItem(
+                        it.metricName, it.metricHelp, DataModel.valueOf(it.metricDataModel),
+                        it.keepHistory, it.value.toDouble(), newLabels
+                    )
+                } catch (e: Exception) {
+                    throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID, it)
+                }
+                customMetricsExporter?.reportMetrics(metricItem)
+            }
+        }
+    }
+
     private suspend fun insertClient(request: ClientCreateRequest): TClient {
         val client = TClient(
             projectId = request.projectId,
@@ -167,7 +192,7 @@ class ClientService(
         insertDairyClient(request, action)
     }
 
-    private suspend fun recordDairyClient(client:TClient) {
+    private suspend fun recordDairyClient(client: TClient) {
         val query = Query(
             Criteria.where(TDailyClient::projectId.name).isEqualTo(client.projectId)
                 .and(TDailyClient::repoName.name).isEqualTo(client.repoName)
@@ -218,13 +243,17 @@ class ClientService(
         request.version?.let { criteria.and(TDailyClient::version.name).isEqualTo(request.version) }
         var endTime = LocalDateTime.now()
         request.endTime?.let {
-            val target = LocalDate.parse(request.endTime,
-                DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().plusDays(1)
+            val target = LocalDate.parse(
+                request.endTime,
+                DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            ).atStartOfDay().plusDays(1)
             endTime = target
         }
         if (!request.startTime.isNullOrEmpty()) {
-            val target = LocalDate.parse(request.startTime,
-                DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay()
+            val target = LocalDate.parse(
+                request.startTime,
+                DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            ).atStartOfDay()
             criteria.and(TDailyClient::time.name).lt(endTime).gte(target)
         } else {
             criteria.and(TDailyClient::time.name).lt(endTime)

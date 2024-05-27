@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.fs.server.request.service
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.fs.server.request.NodeRequest
 import org.springframework.web.reactive.function.server.ServerRequest
 
 class DeleteBlocksRequest(request: ServerRequest) : NodeRequest(request) {
     override val fullPath: String = request.queryParam("fullPath")
-        .orElseThrow { IllegalArgumentException("fullPath") }
+        .orElseThrow { ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "fullPath") }
 }

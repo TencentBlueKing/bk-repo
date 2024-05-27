@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.api.stream.EnhanceFileChunkedFutureWrapper
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
+import com.tencent.bkrepo.common.storage.innercos.exception.MigrateFailedException
 import com.tencent.bkrepo.common.storage.innercos.http.CosHttpClient
 import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.request.AbortMultipartUploadRequest
@@ -285,7 +286,7 @@ class CosClient(val credentials: InnerCosCredentials) {
             val uploadId = initiateMultipartUpload(key, null)
             val cosObject = fromClient.headObject(HeadObjectRequest(key))
             val length = cosObject.length!!
-            val crc64 = cosObject.crc64ecma!!
+            val crc64 = cosObject.crc64ecma
             if (length == 0L) {
                 return putObject(PutObjectRequest(key, StringPool.EMPTY.byteInputStream(), length))
             }
@@ -302,11 +303,13 @@ class CosClient(val credentials: InnerCosCredentials) {
             try {
                 val partETagList = futureList.map { it.get() }
                 val response = completeMultipartUpload(key, uploadId, partETagList)
-                if (response.crc64ecma != crc64) {
-                    throw InnerCosException("$crc64 not match response: ${response.crc64ecma}")
+                val dstObject = headObject(HeadObjectRequest(key))
+                // 部分历史文件没有crc64, 此时只校验文件长度
+                if (crc64 != null && dstObject.crc64ecma != crc64 || dstObject.length != length) {
+                    throw MigrateFailedException(crc64, length, dstObject.crc64ecma, dstObject.length)
                 }
                 return response
-            } catch (exception: InnerCosException) {
+            } catch (exception: MigrateFailedException) {
                 deleteObject(DeleteObjectRequest(key))
                 throw exception
             } catch (exception: IOException) {

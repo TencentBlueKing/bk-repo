@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,22 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.artifact
+package com.tencent.bkrepo.pypi.util
 
-import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
-import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import org.springframework.stereotype.Component
-import javax.servlet.http.HttpServletRequest
+import com.tencent.bkrepo.pypi.constants.HTML_ENCODED_GREATER_THAN
+import com.tencent.bkrepo.pypi.constants.HTML_ENCODED_LESS_THAN
 
-@Component
-@Resolver(PypiArtifactInfo::class)
-class PypiArtifactInfoResolver : ArtifactInfoResolver {
-    override fun resolve(
-        projectId: String,
-        repoName: String,
-        artifactUri: String,
-        request: HttpServletRequest
-    ): PypiArtifactInfo {
-        return PypiArtifactInfo(projectId, repoName, artifactUri)
-    }
+object HtmlUtils {
+    fun partialEncode(s: String) = s.replace("<", HTML_ENCODED_LESS_THAN).replace(">", HTML_ENCODED_GREATER_THAN)
 }

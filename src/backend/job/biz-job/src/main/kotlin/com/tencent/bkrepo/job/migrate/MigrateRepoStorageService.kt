@@ -31,6 +31,8 @@ import com.google.common.base.CaseFormat.LOWER_CAMEL
 import com.google.common.base.CaseFormat.UPPER_CAMEL
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -60,6 +62,7 @@ import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -110,6 +113,20 @@ class MigrateRepoStorageService(
             logger.info("create migrate task for $projectId/$repoName success")
             return task.toDto()
         }
+    }
+
+    /**
+     * 分页查询迁移任务
+     *
+     * @param state 任务状态，未指定时查询所有任务
+     * @param pageRequest 分页请求
+     *
+     * @return 迁移任务分页
+     */
+    fun findTask(state: String?, pageRequest: PageRequest): Page<MigrateRepoStorageTask> {
+        val count = migrateRepoStorageTaskDao.count(state)
+        val records = migrateRepoStorageTaskDao.find(state, pageRequest).map { it.toDto() }
+        return Pages.ofResponse(pageRequest, count, records)
     }
 
     /**

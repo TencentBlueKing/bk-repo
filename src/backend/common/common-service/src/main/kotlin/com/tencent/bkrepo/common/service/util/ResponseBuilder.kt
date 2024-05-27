@@ -54,7 +54,7 @@ object ResponseBuilder {
         code: Int = CommonMessageCode.SUCCESS.getCode()
     ): Response<T> {
         TraceHeaderUtils.setResponseHeader()
-        return Response<T>(code, message, data)
+        return object : Response<T>(code, message, data) {}
     }
 
     fun success() = build(CommonMessageCode.SUCCESS.getCode(), null, null)

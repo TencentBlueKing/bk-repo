@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.migrate.utils
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
+import com.tencent.bkrepo.job.migrate.pojo.Node
 import org.springframework.stereotype.Component
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -43,16 +44,39 @@ class TransferDataExecutor(
      * 实际执行数据迁移的线程池
      */
     private val transferDataExecutor: ThreadPoolExecutor by lazy {
-        ThreadPoolExecutor(
-            properties.nodeConcurrency,
-            properties.nodeConcurrency,
-            0L,
-            TimeUnit.MILLISECONDS,
-            SynchronousQueue(),
-            ThreadFactoryBuilder().setNameFormat("transfer-data-%d").build(),
-            ThreadPoolExecutor.CallerRunsPolicy()
-        )
+        buildExecutor(properties.nodeConcurrency, "transfer-data")
     }
 
-    fun execute(r: Runnable) = transferDataExecutor.execute(r)
+    /**
+     * 执行小文件迁移的线程池
+     */
+    private val transferSmallDataExecutor: ThreadPoolExecutor by lazy {
+        buildExecutor(properties.smallNodeConcurrentCy, "transfer-data-small")
+    }
+
+    /**
+     * 执行数据迁移
+     *
+     * @param node 待迁移的node
+     * @param r 迁移动作
+     */
+    fun execute(node: Node, r: Runnable) {
+        val smallExecutorProjects = properties.smallExecutorProjects
+        val isSmallExecutorProject = smallExecutorProjects.isEmpty() || node.projectId in smallExecutorProjects
+        if (isSmallExecutorProject && node.size < properties.smallNodeThreshold.toBytes()) {
+            transferSmallDataExecutor.execute(r)
+        } else {
+            transferDataExecutor.execute(r)
+        }
+    }
+
+    private fun buildExecutor(size: Int, prefix: String) = ThreadPoolExecutor(
+        size,
+        size,
+        0L,
+        TimeUnit.MILLISECONDS,
+        SynchronousQueue(),
+        ThreadFactoryBuilder().setNameFormat("$prefix-%d").build(),
+        ThreadPoolExecutor.CallerRunsPolicy()
+    )
 }

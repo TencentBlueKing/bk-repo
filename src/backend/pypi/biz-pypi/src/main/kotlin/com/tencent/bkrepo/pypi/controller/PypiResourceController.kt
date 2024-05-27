@@ -33,6 +33,7 @@ package com.tencent.bkrepo.pypi.controller
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.service.PypiService
 import io.swagger.annotations.Api
 import org.slf4j.LoggerFactory
@@ -65,8 +66,11 @@ class PypiResourceController(
         return pypiService.search(pypiArtifactInfo)
     }
 
-    @GetMapping(PypiArtifactInfo.PYPI_SIMPLE_MAPPING_INSTALL_URI, produces = [MediaType.TEXT_HTML_VALUE])
-    fun simple(artifactInfo: PypiArtifactInfo): Any? {
+    @GetMapping(
+        "/{projectId}/{repoName}/simple", "/{projectId}/{repoName}/simple/{name}",
+        produces = [MediaType.TEXT_HTML_VALUE]
+    )
+    fun simple(artifactInfo: PypiSimpleArtifactInfo): Any? {
         logger.info("simple pypi package: $artifactInfo")
         return pypiService.simple(artifactInfo)
     }

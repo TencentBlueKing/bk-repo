@@ -35,4 +35,6 @@ data class Node(
     val size: Long,
     val sha256: String,
     val md5: String,
+    val archived: Boolean? = null,
+    val compressed: Boolean? = null,
 )

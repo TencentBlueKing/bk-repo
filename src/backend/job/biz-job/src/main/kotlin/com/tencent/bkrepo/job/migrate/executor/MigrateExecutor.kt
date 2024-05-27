@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
+import com.tencent.bkrepo.job.migrate.executor.handler.MigrateFailedHandler
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
@@ -55,6 +56,7 @@ class MigrateExecutor(
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
+    private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
     private val repositoryClient: RepositoryClient,
     private val mongoTemplate: MongoTemplate
@@ -98,14 +100,13 @@ class MigrateExecutor(
             logger.info("submit node[${node.fullPath}] to thread pool, task[$projectId/$repoName]")
             val taskNumber = ++migratedCount
             context.incTransferringCount()
-            transferDataExecutor.execute {
+            transferDataExecutor.execute(node) {
                 try {
                     logger.info("migrate node[${node.fullPath}] start, task[$projectId/$repoName]")
                     // 迁移制品
                     migrateNode(context, node)
                 } catch (e: Exception) {
-                    saveMigrateFailedNode(taskId, node)
-                    logger.error("migrate node[${node.fullPath}] failed, task[$projectId/$repoName]", e)
+                    migrateFailedHandler.handle(task, node, e)
                 } finally {
                     logger.info("migrate node[${node.fullPath}] finished, task[$projectId/$repoName]")
                     // 保存完成的任务序号

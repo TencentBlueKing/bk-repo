@@ -29,22 +29,17 @@ package com.tencent.bkrepo.common.artifact.cache.service.impl
 
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
-import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan.Companion.STATUS_EXECUTING
 import com.tencent.bkrepo.common.artifact.cache.service.PreloadListener
 
 class DefaultPreloadListener(private val preloadPlanDao: ArtifactPreloadPlanDao) : PreloadListener {
     override fun onPreloadStart(plan: ArtifactPreloadPlan) {
         // 使用乐观锁尝试更新计划执行状态
-        if (preloadPlanDao.updateStatus(plan.id!!, STATUS_EXECUTING, plan.lastModifiedDate).modifiedCount != 1L) {
-            throw RuntimeException("update plan status failed, maybe plan was executed by other thread")
+        if (preloadPlanDao.remove(plan.id!!).deletedCount != 1L) {
+            throw RuntimeException("remove plan failed, maybe plan was executed by other thread")
         }
     }
 
     override fun onPreloadSuccess(plan: ArtifactPreloadPlan) = Unit
     override fun onPreloadFailed(plan: ArtifactPreloadPlan) = Unit
-
-    override fun onPreloadFinished(plan: ArtifactPreloadPlan) {
-        // 执行结束后删除预加载计划
-        preloadPlanDao.removeById(plan.id!!)
-    }
+    override fun onPreloadFinished(plan: ArtifactPreloadPlan) = Unit
 }

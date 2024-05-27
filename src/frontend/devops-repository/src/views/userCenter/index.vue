@@ -40,10 +40,10 @@
     </div>
 </template>
 <script>
-    import { mapState, mapActions } from 'vuex'
-    import userRelated from './userRelated'
-    import modifyPasswordDialog from '@repository/views/userCenter/modifyPasswordDialog'
     import { transformEmail, transformPhone } from '@repository/utils/privacy'
+    import modifyPasswordDialog from '@repository/views/userCenter/modifyPasswordDialog'
+    import { mapActions, mapState } from 'vuex'
+    import userRelated from './userRelated'
     export default {
         name: 'userInfo',
         components: { userRelated, modifyPasswordDialog },

@@ -29,23 +29,8 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.controller.user
-
-import com.tencent.bkrepo.auth.constant.AUTH_API_DEPARTMENT_PREFIX
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.ApiOperation
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
-
-@RestController
-@RequestMapping(AUTH_API_DEPARTMENT_PREFIX)
-class DepartmentController {
-
-    @ApiOperation("部门列表")
-    @GetMapping("/list")
-    fun listDepartment(): Response<List<Map<Any, Any>>> {
-        return ResponseBuilder.success(emptyList())
-    }
+dependencies {
+    api(project(":common:common-service"))
+    api("io.micrometer:micrometer-registry-prometheus")
+    api("io.prometheus:simpleclient_pushgateway")
 }

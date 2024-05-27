@@ -34,5 +34,34 @@ const val FIELD_NAME = "Name"
 const val FIELD_VERSION = "Version"
 const val NAME = "name"
 const val VERSION = "version"
+const val SUMMARY = "summary"
 
-const val QUERY_TYPE = "queryType"
+const val REQUIRES_PYTHON = "requires_python"
+
+const val LINE_BREAK = "<br />"
+const val INDENT = "    "
+const val HTML_ENCODED_LESS_THAN = "&lt;"
+const val HTML_ENCODED_GREATER_THAN = "&gt;"
+const val REQUIRES_PYTHON_ATTR = "data-requires-python"
+
+const val NON_ALPHANUMERIC_SEQ_REGEX = "[-_.]+"
+
+const val PACKAGE_INDEX_TITLE = "Simple Index"
+const val VERSION_INDEX_TITLE = "Links for %s"
+const val SIMPLE_PAGE_CONTENT =
+"""<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="pypi:repository-version" content="1.0">
+    <title>%s</title>
+  </head>
+  <body>
+    <h1>%s</h1>
+%s
+  </body>
+</html>"""
+
+const val REMOTE_HTML_CACHE_FULL_PATH = "remoteHtml.html"
+const val FLUSH_CACHE_EXPIRE = 60 * 24
+const val XML_RPC_URI = "RPC2"
+const val XML_RPC_OPERATION_OR = "or"
