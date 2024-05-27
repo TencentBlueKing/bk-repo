@@ -311,6 +311,6 @@ export default {
     },
     // 获取蓝盾传输的用户组
     getUserGroupByExternal (_, { projectId, sourceId }) {
-        return Vue.prototype.$ajax.get(`${authPrefix}/external/group/${projectId}/${sourceId}`)
+        return Vue.prototype.$ajax.get(`${authPrefix}/permission/external/group/${projectId}/${sourceId}`)
     }
 }
