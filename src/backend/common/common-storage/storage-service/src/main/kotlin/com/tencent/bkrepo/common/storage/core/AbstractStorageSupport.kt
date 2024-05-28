@@ -43,7 +43,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 抽象存储服务辅助类
@@ -105,7 +104,6 @@ abstract class AbstractStorageSupport : StorageService {
         filename: String,
         artifactFile: ArtifactFile,
         credentials: StorageCredentials,
-        cancel: AtomicBoolean? = null,
         storageClass: String? = null,
     )
 

@@ -110,7 +110,7 @@ open class ExecutorBaseTest {
     protected lateinit var storageService: StorageService
 
     fun initMock() {
-        whenever(fileReferenceClient.increment(any(), anyOrNull())).thenReturn(Response(0, data = true))
+        whenever(fileReferenceClient.increment(any(), anyOrNull(), any())).thenReturn(Response(0, data = true))
         whenever(fileReferenceClient.decrement(any(), anyOrNull())).thenReturn(Response(0, data = true))
         whenever(fileReferenceClient.count(anyString(), anyOrNull())).thenReturn(Response(0, data = 0L))
 
