@@ -46,5 +46,7 @@ data class CreateRoleRequest(
     @ApiModelProperty("管理员")
     val admin: Boolean = false,
     @ApiModelProperty("描述信息")
-    val description: String? = null
+    val description: String? = null,
+    @ApiModelProperty("来源")
+    val source: String? = null
 )

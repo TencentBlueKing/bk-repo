@@ -22,9 +22,13 @@
             <bk-table-column :label="$t('description')" show-overflow-tooltip>
                 <template #default="{ row }">{{row.description || '/'}}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('user')" show-overflow-tooltip>
+            <bk-table-column :label="$t('user')" width="800px" show-overflow-tooltip>
                 <template #default="{ row }">
                     <span class="hover-btn">{{row.users.length ? row.users : '/'}}</span></template>
+            </bk-table-column>
+            <bk-table-column :label="$t('userSource')" show-overflow-tooltip>
+                <template #default="{ row }">
+                    <span class="hover-btn">{{ transformSource(row.source) }}</span></template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
@@ -263,6 +267,15 @@
             },
             importRoleHandler () {
                 this.showImportUserDialog = true
+            },
+            transformSource (sourceId) {
+                if (!sourceId) {
+                    return '/'
+                } else if (sourceId === 'DEVOPS') {
+                    return this.$t('bkci')
+                } else {
+                    return '/'
+                }
             }
         }
     }

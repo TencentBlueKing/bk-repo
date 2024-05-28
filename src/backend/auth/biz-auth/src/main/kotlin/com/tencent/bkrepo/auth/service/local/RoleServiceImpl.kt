@@ -149,7 +149,8 @@ class RoleServiceImpl constructor(
             projectId = tRole.projectId,
             admin = tRole.admin,
             users = users,
-            description = tRole.description
+            description = tRole.description,
+            source = tRole.source
         )
     }
 

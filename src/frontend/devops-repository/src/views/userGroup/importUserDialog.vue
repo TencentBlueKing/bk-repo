@@ -113,7 +113,8 @@
                     type: 'PROJECT',
                     projectId: this.projectId,
                     admin: false,
-                    description: ''
+                    description: '',
+                    source: this.selectedType
                 }
                 this.createRole({ body: body }).then(res => {
                     this.editRole({
