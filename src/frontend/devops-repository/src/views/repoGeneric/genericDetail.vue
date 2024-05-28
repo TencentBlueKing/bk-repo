@@ -116,6 +116,7 @@
                                     @change="current => handlerPaginationChange({ current })"
                                     :limit="pagination.limit"
                                     :show-limit="false"
+                                    :limit-list="pagination.limitList"
                                     :count="pagination.count"
                                 />
                             </div>
@@ -181,6 +182,7 @@
                     count: 0,
                     current: 1,
                     limit: 15,
+                    limitList: [15],
                     align: 'left'
                 }
             }
@@ -334,7 +336,8 @@
                     projectId: this.detailSlider.projectId,
                     repoName: this.detailSlider.repoName,
                     path: this.detailSlider.path,
-                    pageNumber: this.pagination.current
+                    pageNumber: this.pagination.current,
+                    pageSize: this.pagination.limit
                 }).then(res => {
                     this.downloadRecord = res.records
                     this.pagination.count = res.totalRecords
