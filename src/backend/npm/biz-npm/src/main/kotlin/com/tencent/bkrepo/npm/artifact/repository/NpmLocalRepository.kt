@@ -45,7 +45,6 @@ import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.migration.PackageMigrateDetail
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
@@ -79,7 +78,7 @@ import java.io.InputStream
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Collections
+import java.util.*
 import kotlin.system.measureTimeMillis
 
 @Component
@@ -137,7 +136,7 @@ class NpmLocalRepository(
         val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
         val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
         if (node == null || node.folder) return null
-        return storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
+        return storageManager.loadFullArtifactInputStream(node, context.storageCredentials)
             .also {
                 logger.info("search artifact [$fullPath] success in repo [${context.artifactInfo.getRepoIdentify()}]")
             }
@@ -367,7 +366,7 @@ class NpmLocalRepository(
     private fun ArtifactMigrateContext.npmPackageMetaData(fullPath: String): NpmPackageMetaData? {
         val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
         return node?.let {
-            val inputStream = storageService.load(it.sha256!!, Range.full(it.size), storageCredentials)
+            val inputStream = storageManager.loadFullArtifactInputStream(it, storageCredentials)
             JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)
         }
     }
