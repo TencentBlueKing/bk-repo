@@ -43,7 +43,6 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -76,6 +75,7 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.listPermissionPaths
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -122,7 +122,10 @@ abstract class NodeBaseService(
     override fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo> {
         checkNodeListOption(option)
         with(artifact) {
-            getNoPermissionPaths(SecurityUtils.getUserId(), projectId, repoName)?.let { option.noPermissionPath = it }
+            val userId = SecurityUtils.getUserId()
+            val (hasPermissionPaths, noPermissionPaths) = getPermissionPaths(userId, projectId, repoName)
+            option.hasPermissionPath = hasPermissionPaths
+            option.noPermissionPath = noPermissionPaths
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
             if (nodeDao.count(query) > repositoryProperties.listCountLimit) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
@@ -134,7 +137,10 @@ abstract class NodeBaseService(
     override fun listNodePage(artifact: ArtifactInfo, option: NodeListOption): Page<NodeInfo> {
         checkNodeListOption(option)
         with(artifact) {
-            getNoPermissionPaths(SecurityUtils.getUserId(), projectId, repoName)?.let { option.noPermissionPath = it }
+            val userId = SecurityUtils.getUserId()
+            val (hasPermissionPaths, noPermissionPaths) = getPermissionPaths(userId, projectId, repoName)
+            option.hasPermissionPath = hasPermissionPaths
+            option.noPermissionPath = noPermissionPaths
             val pageNumber = option.pageNumber
             val pageSize = option.pageSize
             Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
@@ -420,22 +426,15 @@ abstract class NodeBaseService(
     /**
      * 获取用户无权限路径列表
      */
-    private fun getNoPermissionPaths(userId: String, projectId: String, repoName: String): List<String>? {
+    private fun getPermissionPaths(
+        userId: String,
+        projectId: String,
+        repoName: String
+    ): Pair<List<String>, List<String>> {
         if (userId == SYSTEM_USER) {
-            return null
+            return Pair(emptyList(), emptyList())
         }
-        val result = servicePermissionClient.listPermissionPath(userId, projectId, repoName).data!!
-        if (result.status) {
-            val paths = result.path.flatMap {
-                require(it.key == OperationType.NIN)
-                it.value
-            }.ifEmpty { null }
-            logger.info(
-                "user[$userId] does not have permission of paths[$paths] in [$projectId/$repoName], will be filterd"
-            )
-            return paths
-        }
-        return null
+        return servicePermissionClient.listPermissionPaths(userId, projectId, repoName)
     }
 
     companion object {
