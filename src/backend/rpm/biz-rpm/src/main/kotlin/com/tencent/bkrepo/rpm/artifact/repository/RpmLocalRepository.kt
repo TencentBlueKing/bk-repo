@@ -52,7 +52,6 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -879,7 +878,8 @@ class RpmLocalRepository(
         }
         logger.info("find primary index: ${indexNode.fullPath}")
 
-        val originXmlFile = storageManager.loadArtifactInputStream(indexNode, repoDetail.storageCredentials)!!
+        val originXmlFile = storageManager
+            .loadFullArtifactInputStream(NodeDetail(indexNode), repoDetail.storageCredentials)!!
             .use { it.unGzipInputStream() }
         logger.info("originIndexMd5: ${originXmlFile.md5()}")
         try {

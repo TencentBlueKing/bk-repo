@@ -48,7 +48,6 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.config.OciProperties
@@ -133,14 +132,13 @@ class OciOperationServiceImpl(
     private val metadataClient: MetadataClient,
     private val packageMetadataClient: PackageMetadataClient,
     private val packageClient: PackageClient,
-    private val storageService: StorageService,
     private val storageManager: StorageManager,
     private val repositoryClient: RepositoryClient,
     private val ociProperties: OciProperties,
     private val ociReplicationRecordDao: OciReplicationRecordDao,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val pluginManager: PluginManager
-    ) : OciOperationService {
+) : OciOperationService {
 
     /**
      * 检查package 对应的version是否存在
@@ -465,7 +463,7 @@ class OciOperationServiceImpl(
         storageCredentials: StorageCredentials?
     ): ManifestSchema2? {
         return try {
-            val manifestBytes = storageManager.loadArtifactInputStream(node, storageCredentials)!!.readText()
+            val manifestBytes = storageManager.loadFullArtifactInputStream(node, storageCredentials)!!.readText()
             OciUtils.stringToManifestV2(manifestBytes)
         } catch (e: Exception) {
             null
