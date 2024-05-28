@@ -129,7 +129,7 @@ export default {
         )
     },
     // 计划执行日志制品详情
-    getPlanLogPackageList (_, { id, status, packageName, repoName, clusterName, path, current = 1, limit = 10 }) {
+    getPlanLogPackageList (_, { id, status, artifactName, repoName, clusterName, current = 1, limit = 10 }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/task/record/detail/page/${id}`,
             {
@@ -137,12 +137,17 @@ export default {
                     pageNumber: current,
                     pageSize: limit,
                     status: status || undefined,
-                    packageName: packageName || undefined,
+                    artifactName: artifactName || undefined,
                     repoName: repoName || undefined,
-                    clusterName: clusterName || undefined,
-                    path: path || undefined
+                    clusterName: clusterName || undefined
                 }
             }
+        )
+    },
+    // 计划执行任务总览
+    getPlanLogDetailOverview (_, { id }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/task/record/overview/${id}`
         )
     }
 }

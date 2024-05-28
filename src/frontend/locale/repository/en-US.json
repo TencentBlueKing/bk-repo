@@ -663,7 +663,7 @@
     "runningStatus":"Running status",
     "startExecutionTime":"Starting time",
     "endExecutionTime":"End Time",
-    "planLogTitle":"{name} execution log",
+    "planLogTitle":"{name} execution task record",
     "usedQuotaCapacity":"Quota capacity used by the repository",
     "nodeTypeEnum": {
         "CENTER": "center",
@@ -866,5 +866,23 @@
     "previous": "Previous",
     "copyAll": "Copy All",
     "clear": "Clear",
-    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space"
+    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
+    "planRecordAllLog":"Record all distribution logs",
+    "planLogReserveDays":"Log retention days (within 60 days)",
+    "planRecordReserveDaysInfo":"Please enter a number between 1-60",
+    "planTaskLogInfo":"[{name}] distribution plan does not select to record all distribution logs, and task log details cannot be viewed.",
+    "planLogEnum" :{
+        "total": "Total number of syncs",
+        "success": "Number of successes",
+        "failed": "Number of failures",
+        "conflict": "Number of conflicts"
+    },
+    "conflictStrategyEnum": {
+        "SKIP": "Skip conflicts",
+        "OVERWRITE": "Replacement artifacts",
+        "FAST_FAIL": "Terminate synchronization"
+    },
+    "planLogErrorReason":"Error reason",
+    "planLogEmptyTitle":"There is no data or the data has been cleared after exceeding the maximum retention days.",
+    "logDetail":"Log detail"
 }
