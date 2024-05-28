@@ -129,8 +129,7 @@ class PypiRemoteRepository : RemoteRepository() {
             }
         }.start()
         val stringBuilder = StringBuilder()
-        storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)?.use {
-            artifactInputStream ->
+        storageManager.loadFullArtifactInputStream(node, context.storageCredentials)?.use { artifactInputStream ->
             var line: String?
             val br = BufferedReader(InputStreamReader(artifactInputStream))
             while (br.readLine().also { line = it } != null) {
