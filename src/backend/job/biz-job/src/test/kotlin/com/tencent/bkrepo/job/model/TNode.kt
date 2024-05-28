@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.model
 
+import org.springframework.data.mongodb.core.index.TextIndexDefinition.TextIndexDefinitionBuilder
 import java.time.LocalDateTime
 
 data class TNode(
@@ -40,4 +41,16 @@ data class TNode(
     val sha256: String,
     val md5: String,
     val deleted: LocalDateTime? = null,
-)
+    val archived: Boolean? = null,
+    val compressed: Boolean? = null,
+) {
+    companion object {
+        fun pathIndex() = TextIndexDefinitionBuilder()
+            .onField("projectId")
+            .onField("repoName")
+            .onField("path")
+            .onField("deleted")
+            .named("projectId_repoName_path_idx")
+            .build()
+    }
+}

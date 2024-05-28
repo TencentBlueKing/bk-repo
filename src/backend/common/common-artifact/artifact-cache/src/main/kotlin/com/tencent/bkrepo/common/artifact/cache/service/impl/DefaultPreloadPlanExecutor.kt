@@ -47,7 +47,9 @@ import com.tencent.bkrepo.common.storage.util.existReal
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.nio.file.Files
 import java.nio.file.Paths
+import java.nio.file.attribute.FileTime
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -102,9 +104,14 @@ class DefaultPreloadPlanExecutor(
             }
             logger.info("preload start, ${plan.artifactInfo()}")
             listener?.onPreloadStart(plan)
-            val throughput = if (existsOrCaching(credentials, plan.sha256)) {
-                // 正在缓存或缓存已存在的情况不执行加载
-                logger.info("cache exists or caching, ${plan.artifactInfo()}")
+            val cacheFile = Paths.get(credentials.cache.path, fileLocator.locate(plan.sha256), plan.sha256)
+            val cacheFileLock = Paths.get(credentials.cache.path, StringPool.TEMP, "${plan.sha256}.locked")
+            val throughput = if (cacheFile.existReal()) {
+                Files.setLastModifiedTime(cacheFile, FileTime.fromMillis(System.currentTimeMillis()))
+                logger.info("cache already exists, update LastModifiedTime, ${plan.artifactInfo()}")
+                null
+            } else if (cacheFileLock.existReal()) {
+                logger.info("cache file is loading, skip preload, ${plan.artifactInfo()}")
                 null
             } else {
                 // 执行预加载
@@ -129,12 +136,6 @@ class DefaultPreloadPlanExecutor(
                 throw RuntimeException("cache is not enabled")
             }
         } ?: throw RuntimeException("artifact not exists")
-    }
-
-    private fun existsOrCaching(credentials: StorageCredentials, sha256: String): Boolean {
-        val cacheFile = Paths.get(credentials.cache.path, fileLocator.locate(sha256), sha256)
-        val cacheFileLock = Paths.get(credentials.cache.path, StringPool.TEMP, "$sha256.locked")
-        return cacheFile.existReal() || cacheFileLock.existReal()
     }
 
     private fun updateExecutor() {

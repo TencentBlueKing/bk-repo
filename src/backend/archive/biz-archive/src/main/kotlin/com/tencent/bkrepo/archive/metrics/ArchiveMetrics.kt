@@ -2,8 +2,8 @@ package com.tencent.bkrepo.archive.metrics
 
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.CompressStatus
-import com.tencent.bkrepo.archive.core.FileProvider
-import com.tencent.bkrepo.archive.core.FileStorageFileProvider
+import com.tencent.bkrepo.archive.core.provider.FileStorageFileProvider
+import com.tencent.bkrepo.archive.core.provider.PriorityFileProvider
 import com.tencent.bkrepo.archive.core.archive.ArchiveManager
 import com.tencent.bkrepo.archive.core.compress.BDZipManager
 import com.tencent.bkrepo.archive.model.TArchiveFile
@@ -32,7 +32,7 @@ class ArchiveMetrics(
     val archiveFileRepository: ArchiveFileRepository,
     val compressFileRepository: CompressFileRepository,
     val bdZipManager: BDZipManager,
-    val fileProvider: FileProvider,
+    val fileProvider: PriorityFileProvider,
     val archiveManager: ArchiveManager,
     private val archiveFileDao: ArchiveFileDao,
     private val compressFileDao: CompressFileDao,

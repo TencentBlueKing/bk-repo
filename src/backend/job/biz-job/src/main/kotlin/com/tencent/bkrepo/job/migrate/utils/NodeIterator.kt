@@ -28,15 +28,18 @@
 package com.tencent.bkrepo.job.migrate.utils
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.constant.ID_IDX
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -79,9 +82,16 @@ class NodeIterator(
     private var data: List<Node>
 
     init {
-        lastNodeId = task.lastMigratedNodeId
+        // 查询第一个node id
+        lastNodeId = initLastNodeId()
+        // 查询总数
         totalCount = mongoTemplate.count(Query(buildCriteria()), collectionName)
-        data = nextPage()
+        // 查询第一页数据
+        data = if (totalCount == 0L) {
+            emptyList()
+        } else {
+            nextPage()
+        }
     }
 
     override fun hasNext() = cursor != data.size
@@ -102,11 +112,19 @@ class NodeIterator(
     }
 
     private fun nextPage(): List<Node> {
-        val query = Query(buildCriteria(lastNodeId)).limit(pageSize).with(Sort.by(Sort.Direction.ASC, ID))
+        val startTime = System.nanoTime()
+        val query = Query(buildCriteria(lastNodeId))
+            .withHint(ID_IDX)
+            .limit(pageSize)
+            .with(Sort.by(Sort.Direction.ASC, ID))
         val result = mongoTemplate.find(query, Node::class.java, collectionName)
         if (result.isNotEmpty()) {
             lastNodeId = result.last().id
         }
+
+        // 输出查询耗时
+        val elapsed = System.nanoTime() - startTime
+        logger.info("query next page elapsed[${HumanReadable.time(elapsed)}], task[${task.projectId}/${task.repoName}]")
         return result
     }
 
@@ -115,7 +133,6 @@ class NodeIterator(
             .where(Node::projectId.name).isEqualTo(task.projectId)
             .and(Node::repoName.name).isEqualTo(task.repoName)
             .and(NodeDetail::folder.name).isEqualTo(false)
-            .and(Node::sha256.name).ne(FAKE_SHA256)
         if (task.state == MigrateRepoStorageTaskState.CORRECTING.name) {
             criteria.and(NodeDetail::createdDate.name).gte(task.startDate!!)
         } else {
@@ -123,5 +140,23 @@ class NodeIterator(
         }
         lastId?.let { criteria.and(ID).gt(ObjectId(it)) }
         return criteria
+    }
+
+    private fun initLastNodeId(): String {
+        return if (task.lastMigratedNodeId == MIN_OBJECT_ID) {
+            val query = Query(buildCriteria()).with(Sort.by(Sort.Direction.ASC, ID)).withHint(PATH_IDX)
+            // 找到第一个node
+            mongoTemplate.findOne(query, Node::class.java, collectionName)?.id?.let {
+                // 获取一个比其小的id
+                ObjectId(ObjectId(it).timestamp - 1, 0).toHexString()
+            } ?: MIN_OBJECT_ID
+        } else {
+            task.lastMigratedNodeId
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(NodeIterator::class.java)
+        private const val PATH_IDX = "projectId_repoName_path_idx"
     }
 }

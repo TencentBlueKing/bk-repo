@@ -68,7 +68,7 @@ object CosHttpClient {
     }
 
     private fun <T> resolveResponse(request: Request, response: Response, handler: HttpResponseHandler<T>): T {
-        response.useOnCondition(!handler.keepConnection()) {
+        response.useOnCondition(!handler.keepConnection(response)) {
             try {
                 if (it.isSuccessful) {
                     return handler.handle(it)

@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.job.migrate.dao
 
+import com.mongodb.client.result.DeleteResult
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
@@ -40,10 +43,13 @@ import java.time.LocalDateTime
 
 @Repository
 class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
+    fun page(projectId: String, repoName: String, pageRequest: PageRequest): List<TMigrateFailedNode> {
+        val criteria = buildCriteria(projectId, repoName)
+        return find(Query(criteria).with(pageRequest))
+    }
+
     fun findOneToRetry(projectId: String, repoName: String, maxRetryTimes: Int = 3): TMigrateFailedNode? {
-        val criteria = Criteria
-            .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
-            .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
+        val criteria = buildCriteria(projectId, repoName)
             .and(TMigrateFailedNode::retryTimes.name).lt(maxRetryTimes)
             .and(TMigrateFailedNode::migrating.name).isEqualTo(false)
         val update = Update()
@@ -55,18 +61,31 @@ class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
     }
 
     fun existsFailedNode(projectId: String, repoName: String, fullPath: String? = null): Boolean {
-        val criteria = Criteria
-            .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
-            .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
-        fullPath?.let { criteria.and(TMigrateFailedNode::fullPath.name).isEqualTo(it) }
+        val criteria = buildCriteria(projectId, repoName, fullPath)
         return exists(Query(criteria))
     }
 
     fun resetMigrating(projectId: String, repoName: String, fullPath: String) {
+        val criteria = buildCriteria(projectId, repoName, fullPath)
+        updateFirst(Query(criteria), Update.update(TMigrateFailedNode::migrating.name, false))
+    }
+
+    fun resetRetryCount(projectId: String, repoName: String, fullPath: String?): UpdateResult {
+        val criteria = buildCriteria(projectId, repoName, fullPath)
+        val update = Update.update(TMigrateFailedNode::retryTimes.name, 0)
+        return updateMulti(Query(criteria), update)
+    }
+
+    fun remove(projectId: String, repoName: String, fullPath: String?): DeleteResult {
+        val criteria = buildCriteria(projectId, repoName, fullPath)
+        return remove(Query(criteria))
+    }
+
+    private fun buildCriteria(projectId: String, repoName: String, fullPath: String? = null): Criteria {
         val criteria = Criteria
             .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
             .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
-            .and(TMigrateFailedNode::fullPath.name).isEqualTo(fullPath)
-        updateFirst(Query(criteria), Update.update(TMigrateFailedNode::migrating.name, false))
+        fullPath?.let { criteria.and(TMigrateFailedNode::fullPath.name).isEqualTo(it) }
+        return criteria
     }
 }

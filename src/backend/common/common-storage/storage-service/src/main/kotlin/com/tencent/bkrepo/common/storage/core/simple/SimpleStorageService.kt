@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 存储服务简单实现
@@ -49,7 +48,6 @@ class SimpleStorageService : AbstractStorageService() {
         filename: String,
         artifactFile: ArtifactFile,
         credentials: StorageCredentials,
-        cancel: AtomicBoolean?,
         storageClass: String?,
     ) {
         when {

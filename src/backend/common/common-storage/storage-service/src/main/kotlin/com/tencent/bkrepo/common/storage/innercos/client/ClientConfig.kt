@@ -132,6 +132,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
      * */
     var qps: Int = credentials.download.qps
 
+    /**
+     * 上传并发数
+     */
+    var uploadWorkers = credentials.upload.workers
+
     private fun createEndpointResolver(): EndpointResolver {
         return if (credentials.modId != null && credentials.cmdId != null) {
             PolarisEndpointResolver(credentials.modId!!, credentials.cmdId!!)

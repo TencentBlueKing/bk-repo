@@ -262,12 +262,13 @@ class IdleNodeArchiveJob(
             val collectionName = COLLECTION_NAME_PREFIX.plus(it)
             val query = Query.query(
                 Criteria.where("sha256").isEqualTo(sha256)
-                    .and("deleted").isEqualTo(null),
+                    .and("deleted").isEqualTo(null)
+                    .orOperator(
+                        Criteria.where("projectId").ne(projectId),
+                        Criteria.where("lastAccessDate").gt(cutoffTime),
+                    ),
             )
-            val nodes = mongoTemplate.find(query, Node::class.java, collectionName)
-            val existNode = nodes.firstOrNull { node ->
-                node.projectId != projectId || node.lastAccessDate?.isAfter(cutoffTime) ?: false
-            }
+            val existNode = mongoTemplate.findOne(query, Node::class.java, collectionName)
             if (existNode != null) {
                 logger.info("Find in use $existNode.")
                 return true

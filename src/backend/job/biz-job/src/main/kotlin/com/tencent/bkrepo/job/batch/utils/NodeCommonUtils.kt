@@ -16,6 +16,8 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
+import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
@@ -61,7 +63,12 @@ class NodeCommonUtils(
             (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.forEach { collection ->
                 val find = mongoTemplate.find(query, Node::class.java, collection).filter {
                     val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
-                    repo.storageCredentials?.key == storageCredentialsKey
+                    val key = if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
+                        repo.oldCredentialsKey
+                    } else {
+                        repo.storageCredentials?.key
+                    }
+                    key == storageCredentialsKey
                 }
                 nodes.addAll(find)
             }
@@ -101,7 +108,7 @@ class NodeCommonUtils(
             futures.forEach { it.get() }
         }
 
-        private fun findByCollection(
+        fun findByCollection(
             query: Query,
             batchSize: Int,
             collection: String,
@@ -125,6 +132,17 @@ class NodeCommonUtils(
                 querySize = data.size
                 lastId = data.last()[ID] as ObjectId
             } while (querySize == batchSize)
+        }
+
+        fun findByCollectionAsync(
+            query: Query,
+            batchSize: Int,
+            collection: String,
+            consumer: Consumer<Map<String, Any?>>,
+        ): Mono<Unit> {
+            return Mono.fromCallable {
+                findByCollection(query, batchSize, collection, consumer)
+            }.publishOn(Schedulers.boundedElastic())
         }
 
         fun collectionNames(projectIds: List<String>): List<String> {

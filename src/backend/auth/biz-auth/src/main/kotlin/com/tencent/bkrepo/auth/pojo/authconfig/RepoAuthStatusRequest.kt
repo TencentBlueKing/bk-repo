@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,9 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi
+package com.tencent.bkrepo.auth.pojo.authconfig
 
-const val REMOTE_HTML_CACHE_FULL_PATH = "remoteHtml.html"
-const val FLUSH_CACHE_EXPIRE = 60 * 24
-const val XML_RPC_URI = "RPC2"
-const val XML_RPC_OPERATION_OR = "or"
+data class RepoAuthStatusRequest(
+    val status: Boolean,
+    val projectId: String,
+    val repoName: String
+)
+

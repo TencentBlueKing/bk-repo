@@ -30,9 +30,9 @@ package com.tencent.bkrepo.job.migrate.dao
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
-import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTABLE_STATE
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.Companion.EXECUTING_STATE
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -45,18 +45,36 @@ import java.time.LocalDateTime
 
 @Repository
 class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
+
+    fun count(state: String?): Long {
+        val criteria = Criteria()
+        state?.let { criteria.and(TMigrateRepoStorageTask::state.name).isEqualTo(it) }
+        return count(Query(criteria))
+    }
+
+    fun find(state: String?, pageRequest: PageRequest): List<TMigrateRepoStorageTask> {
+        val criteria = Criteria()
+        state?.let { criteria.and(TMigrateRepoStorageTask::state.name).isEqualTo(it) }
+        return find(Query(criteria).with(pageRequest))
+    }
+
     fun exists(projectId: String, repoName: String): Boolean {
-        return exists(Query(buildCriteria(projectId, repoName)))
+        val query = Query(buildCriteria(projectId, repoName))
+        val update = Update.update(TMigrateRepoStorageTask::projectId.name, projectId)
+        return findFromPrimary(query, update) != null
     }
 
     fun migrating(projectId: String, repoName: String): Boolean {
         val criteria = buildCriteria(projectId, repoName)
             .and(TMigrateRepoStorageTask::startDate.name).ne(null)
-        return exists(Query(criteria))
+        val update = Update.update(TMigrateRepoStorageTask::projectId.name, projectId)
+        return findFromPrimary(Query(criteria), update) != null
     }
 
     fun find(projectId: String, repoName: String): TMigrateRepoStorageTask? {
-        return findOne(Query(buildCriteria(projectId, repoName)))
+        val query = Query(buildCriteria(projectId, repoName))
+        val update = Update.update(TMigrateRepoStorageTask::projectId.name, projectId)
+        return findFromPrimary(query, update)
     }
 
     fun updateStartDate(id: String, startDate: LocalDateTime): TMigrateRepoStorageTask? {
@@ -102,9 +120,11 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
         return updateFirst(Query(criteria), update)
     }
 
-    fun executableTask(): TMigrateRepoStorageTask? {
-        val criteria = TMigrateRepoStorageTask::state.inValues(EXECUTABLE_STATE)
-        return findOne(Query(criteria))
+    fun executableTask(state: String): TMigrateRepoStorageTask? {
+        val criteria = TMigrateRepoStorageTask::state.isEqualTo(state)
+        val update = Update.update(TMigrateRepoStorageTask::state.name, state)
+        val options = FindAndModifyOptions().returnNew(true)
+        return findAndModify(Query(criteria), update, options, TMigrateRepoStorageTask::class.java)
     }
 
     /**
@@ -121,9 +141,17 @@ class MigrateRepoStorageTaskDao : SimpleMongoDao<TMigrateRepoStorageTask>() {
     fun correctableTask(interval: Duration): TMigrateRepoStorageTask? {
         // 需要等待一段时间，待所有传输中的制品传输结束后再执行correct
         val beforeDateTime = LocalDateTime.now().minus(interval)
-        val criteria = TMigrateRepoStorageTask::state.isEqualTo(MigrateRepoStorageTaskState.MIGRATE_FINISHED.name)
+        val criteria = TMigrateRepoStorageTask::state.isEqualTo(MIGRATE_FINISHED.name)
             .and(TMigrateRepoStorageTask::startDate.name).lte(beforeDateTime)
-        return findOne(Query(criteria))
+
+        val update = Update.update(TMigrateRepoStorageTask::state.name, MIGRATE_FINISHED.name)
+        return findFromPrimary(Query(criteria), update)
+    }
+
+    private fun findFromPrimary(query: Query, update: Update): TMigrateRepoStorageTask? {
+        val options = FindAndModifyOptions().returnNew(true)
+        // 使用findAndModify强制从主库查询
+        return findAndModify(query, update, options, TMigrateRepoStorageTask::class.java)
     }
 
     private fun buildCriteria(projectId: String, repoName: String) =

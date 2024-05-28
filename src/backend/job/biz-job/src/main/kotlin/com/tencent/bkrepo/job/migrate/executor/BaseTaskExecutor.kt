@@ -31,10 +31,10 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
-import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECTING
@@ -49,8 +49,6 @@ import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.dao.DuplicateKeyException
-import java.time.LocalDateTime
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -158,6 +156,7 @@ abstract class BaseTaskExecutor(
     }
 
     protected fun correctNode(context: MigrationContext, node: Node) {
+        checkNode(node)
         val sha256 = node.sha256
         val task = context.task
         val projectId = node.projectId
@@ -183,6 +182,7 @@ abstract class BaseTaskExecutor(
     }
 
     protected fun migrateNode(context: MigrationContext, node: Node) {
+        checkNode(node)
         val srcStorageKey = context.task.srcStorageKey
         val dstStorageKey = context.task.dstStorageKey
         val sha256 = node.sha256
@@ -201,35 +201,6 @@ abstract class BaseTaskExecutor(
         }
     }
 
-    protected fun saveMigrateFailedNode(taskId: String, node: Node) {
-        if (migrateFailedNodeDao.existsFailedNode(node.projectId, node.repoName, node.fullPath)) {
-            return
-        }
-
-        val now = LocalDateTime.now()
-        with(node) {
-            try {
-                migrateFailedNodeDao.insert(
-                    TMigrateFailedNode(
-                        id = null,
-                        createdDate = now,
-                        lastModifiedDate = now,
-                        nodeId = node.id,
-                        taskId = taskId,
-                        projectId = projectId,
-                        repoName = repoName,
-                        fullPath = fullPath,
-                        sha256 = sha256,
-                        md5 = md5,
-                        size = size,
-                        retryTimes = 0
-                    )
-                )
-            } catch (ignore: DuplicateKeyException) {
-            }
-        }
-    }
-
     open fun close(timeout: Long, unit: TimeUnit) {}
 
     /**
@@ -242,6 +213,17 @@ abstract class BaseTaskExecutor(
         }
         // 输出迁移速率
         logger.info("Success to transfer file[${node.sha256}], $throughput, task[${node.projectId}/${node.repoName}]")
+    }
+
+    private fun checkNode(node: Node) {
+        with(node) {
+            if (sha256 == FAKE_SHA256) {
+                throw IllegalArgumentException("can not migrate fake node[$fullPath], task[$projectId/$repoName]")
+            }
+            if (node.archived == true || node.compressed == true) {
+                throw IllegalArgumentException("node[$fullPath] was archived or compressed, task[$projectId/$repoName]")
+            }
+        }
     }
 
     companion object {

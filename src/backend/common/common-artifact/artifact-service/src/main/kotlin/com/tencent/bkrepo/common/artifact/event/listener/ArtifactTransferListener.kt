@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecordLog
 import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
+import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
@@ -74,6 +75,7 @@ class ArtifactTransferListener(
     private val commonTagProvider: ObjectProvider<CommonTagProvider>,
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
     private val artifactCacheMetrics: ArtifactCacheMetrics,
+    private val prometheusMetricsExporter: ObjectProvider<ArtifactMetricsExporter>,
 ) {
 
     private var queue = LinkedBlockingQueue<ArtifactTransferRecord>(QUEUE_LIMIT)
@@ -96,7 +98,8 @@ class ArtifactTransferListener(
                 sha256 = artifactFile.getFileSha256(),
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
-                clientIp = clientIp
+                clientIp = clientIp,
+                fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
@@ -134,7 +137,8 @@ class ArtifactTransferListener(
                 sha256 = artifactResource.node?.sha256.orEmpty(),
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
-                clientIp = clientIp
+                clientIp = clientIp,
+                fullPath = getFullPath(),
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
@@ -153,6 +157,15 @@ class ArtifactTransferListener(
                 )
             }
             queue.offer(record)
+        }
+    }
+
+    private fun getFullPath(): String {
+        val artifactInfo = ArtifactContextHolder.getArtifactInfo()
+        return if (artifactInfo != null) {
+            ArtifactContextHolder.getNodeDetail(artifactInfo)?.fullPath ?: UNKNOWN
+        } else {
+            UNKNOWN
         }
     }
 
@@ -190,7 +203,6 @@ class ArtifactTransferListener(
         }
     }
 
-
     /**
      * 记录访问时间分布
      * */
@@ -225,7 +237,11 @@ class ArtifactTransferListener(
     fun export() {
         val current = queue
         queue = LinkedBlockingQueue(QUEUE_LIMIT)
-        influxMetricsExporter.ifAvailable?.export(current)
+        if (artifactMetricsProperties.useInfluxDb) {
+            influxMetricsExporter.ifAvailable?.export(current)
+        } else {
+            prometheusMetricsExporter.ifAvailable?.export(current)
+        }
     }
 
     companion object {

@@ -476,56 +476,6 @@
   |deletedBy|string|删除人|delete user|
   |deletedTime|string|删除时间|delete time|
 
-## 恢复被删除节点
-
-- API: POST /repository/api/node/restore/{projectId}/{repoName}/{fullPath}?deletedId=1632451573064&conflictStrategy=SKIP
-- API 名称: restore_node
-- 功能说明：
-  - 中文：恢复被删除节点
-  - English：restore deleted node
-- 请求体
-  此接口请求体为空
-
-- 请求字段说明
-
-  |字段|类型|是否必须|默认值|说明|Description|
-  |---|---|---|---|---|---|
-  |projectId|string|是|无|项目名称|project name|
-  |repoName|string|是|无|仓库名称|repo name|
-  |fullPath|string|是|无|删除的节点路径，可以为目录，也可以为文件|full path|
-  |deletedId|long|是|无|删除点id，通过查询获得|deleted point id|
-  |conflictStrategy|string|是|SKIP|冲突处理策略。假如用户新创建了新的同名文件的冲突处理策略|conflict strategy|
-
-- ConflictStrategy 冲突处理策略选项
-  - SKIP: 跳过    
-  - OVERWRITE: 覆盖
-  - FAILED: 失败
-
-- 响应体
-
-  ```json
-  {
-    "code": 0,
-    "message": null,
-    "data": {
-        "fullPath": "/test.txt",
-        "restoreCount": 1,
-        "skipCount": 0,
-        "conflictCount": 0
-    },
-    "traceId": ""
-  }
-  ```
-
-- data字段说明
-
-  |字段|类型|说明|Description|
-  |---|---|---|---|
-  |fullPath|string|节点完整路径|full path|
-  |restoreCount|long|恢复数量|restore count|
-  |skipCount|long|跳过数量|skip count|
-  |conflictCount|long|冲突数量|conflict count|
-
 ## 自定义搜索
 
 - API: POST /repository/api/node/search

@@ -27,9 +27,12 @@
 
 package com.tencent.bkrepo.job.migrate
 
-import com.google.common.base.CaseFormat
+import com.google.common.base.CaseFormat.LOWER_CAMEL
+import com.google.common.base.CaseFormat.UPPER_CAMEL
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -45,6 +48,7 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.CreateMigrateRepoStorageTaskRequest
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECTING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.FINISHING
@@ -58,6 +62,7 @@ import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -111,31 +116,36 @@ class MigrateRepoStorageService(
     }
 
     /**
+     * 分页查询迁移任务
+     *
+     * @param state 任务状态，未指定时查询所有任务
+     * @param pageRequest 分页请求
+     *
+     * @return 迁移任务分页
+     */
+    fun findTask(state: String?, pageRequest: PageRequest): Page<MigrateRepoStorageTask> {
+        val count = migrateRepoStorageTaskDao.count(state)
+        val records = migrateRepoStorageTaskDao.find(state, pageRequest).map { it.toDto() }
+        return Pages.ofResponse(pageRequest, count, records)
+    }
+
+    /**
      * 尝试从队列中取出一个任务执行
      *
      * @return 未执行任务时返回null，否则返回触发执行的任务
      */
     fun tryExecuteTask(): MigrateRepoStorageTask? {
-        val task = migrateRepoStorageTaskDao.executableTask()?.toDto()
-            ?: migrateRepoStorageTaskDao.correctableTask(migrateRepoStorageProperties.correctInterval)?.toDto()
-            ?: return null
-
-        val projectId = task.projectId
-        val repoName = task.repoName
-        val executorName = when (task.state) {
-            PENDING.name -> MigrateExecutor::class.simpleName!!
-            MIGRATE_FINISHED.name -> CorrectExecutor::class.simpleName!!
-            CORRECT_FINISHED.name -> MigrateFailedNodeExecutor::class.simpleName!!
-            MIGRATE_FAILED_NODE_FINISHED.name -> FinishExecutor::class.simpleName!!
-            else -> throw IllegalStateException("unsupported state[${task.state}], task[$projectId/$repoName]")
+        MigrateRepoStorageTaskState.EXECUTABLE_STATE.forEach { state ->
+            migrateRepoStorageTaskDao
+                .executableTask(state)
+                ?.let { executeTask(it.toDto()) }
+                ?.let { return it }
         }
-        val executor = executors[CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, executorName)]!!
 
-        return if (executor.execute(buildContext(task)) != null) {
-            task
-        } else {
-            null
-        }
+        return migrateRepoStorageTaskDao
+            .correctableTask(migrateRepoStorageProperties.correctInterval)
+            ?.toDto()
+            ?.let { executeTask(it) }
     }
 
     /**
@@ -172,6 +182,19 @@ class MigrateRepoStorageService(
                 logger.info("rollback task[${it.projectId}/${it.repoName}] state[${it.state}] to [$rollbackState]")
             }
         }
+    }
+
+    private fun executeTask(task: MigrateRepoStorageTask): MigrateRepoStorageTask? {
+        val projectId = task.projectId
+        val repoName = task.repoName
+        val executorName = when (task.state) {
+            PENDING.name -> MigrateExecutor::class.simpleName!!
+            MIGRATE_FINISHED.name -> CorrectExecutor::class.simpleName!!
+            CORRECT_FINISHED.name -> MigrateFailedNodeExecutor::class.simpleName!!
+            MIGRATE_FAILED_NODE_FINISHED.name -> FinishExecutor::class.simpleName!!
+            else -> throw IllegalStateException("unsupported state[${task.state}], task[$projectId/$repoName]")
+        }
+        return executors[UPPER_CAMEL.to(LOWER_CAMEL, executorName)]!!.execute(buildContext(task))?.task
     }
 
     private fun buildContext(task: MigrateRepoStorageTask): MigrationContext {

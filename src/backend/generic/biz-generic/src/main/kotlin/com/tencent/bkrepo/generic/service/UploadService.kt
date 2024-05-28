@@ -168,8 +168,8 @@ class UploadService(
         checkUploadId(uploadId, storageCredentials)
 
         val blockInfoList = storageService.listBlock(uploadId, storageCredentials)
-        return blockInfoList.mapIndexed { index, it ->
-            BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second)
+        return blockInfoList.map {
+            BlockInfo(size = it.first, sha256 = it.second, sequence = it.third)
         }
     }
 

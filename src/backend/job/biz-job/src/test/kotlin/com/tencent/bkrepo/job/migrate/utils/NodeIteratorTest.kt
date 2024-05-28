@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.utils
 
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -35,8 +35,11 @@ import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildTask
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.ensureNodeIndex
 import com.tencent.bkrepo.job.model.TNode
+import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -44,6 +47,7 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Query
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -65,6 +69,7 @@ class NodeIteratorTest @Autowired constructor(
 
     @BeforeAll
     fun beforeAll() {
+        mongoTemplate.ensureNodeIndex(collectionName)
         nodes = createNodes(startDate)
     }
 
@@ -77,6 +82,14 @@ class NodeIteratorTest @Autowired constructor(
         val lastMigratedNodeId = nodes[(migratedCount - 1).toInt()].id!!
         val continueTask = task.copy(lastMigratedNodeId = lastMigratedNodeId, migratedCount = migratedCount)
         testIterate(continueTask, beforeStartDateCount, continueTask.migratedCount)
+    }
+
+    @Test
+    fun testMigrateEmpty() {
+        mongoTemplate.remove(Query(), collectionName)
+        val task = buildTask(startDate)
+        testIterate(task, 0L)
+        createNodes(startDate)
     }
 
     @Test
@@ -93,10 +106,15 @@ class NodeIteratorTest @Autowired constructor(
         val iterator = NodeIterator(task, mongoTemplate, collectionName)
         assertEquals(totalCount, iterator.totalCount)
         var count = iteratedCount
+        // 确认按id升序遍历
+        var preNodeId = ObjectId(MIN_OBJECT_ID)
         while (iterator.hasNext()) {
-            iterator.next()
+            val nodeId = ObjectId(iterator.next().id)
+            assertTrue(preNodeId < nodeId)
+            preNodeId = nodeId
             count++
         }
+        // 确认遍历的总数符合预期
         assertEquals(totalCount, count)
     }
 
@@ -126,7 +144,6 @@ class NodeIteratorTest @Autowired constructor(
                 ),
             )
         }
-        nodes.add(node.copy(sha256 = FAKE_SHA256))
 
         return mongoTemplate.insert(nodes, collectionName).toList()
     }

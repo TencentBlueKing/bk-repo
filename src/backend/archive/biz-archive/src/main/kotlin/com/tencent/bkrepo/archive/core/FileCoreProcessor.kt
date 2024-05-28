@@ -170,7 +170,9 @@ class FileCoreProcessor(
         }
         logger.info("Request $request files to compress or uncompress.")
         val req = request.toInt()
-        val query = Query.query(where(TCompressFile::status).isEqualTo(CompressStatus.WAIT_TO_UNCOMPRESS))
+        val criteria = where(TCompressFile::status).isEqualTo(CompressStatus.WAIT_TO_UNCOMPRESS)
+            .and(TArchiveFile::lastModifiedDate.name).lt(LocalDateTime.now().minusMinutes(UNCOMPRESS_RETRY_MIN_MINUTES))
+        val query = Query.query(criteria)
             .with(Sort.by(Sort.Direction.DESC, TCompressFile::lastModifiedDate.name))
             .limit(req)
         reactiveMongoTemplate.find(query, TCompressFile::class.java).collectList().zipWhen {
@@ -223,5 +225,6 @@ class FileCoreProcessor(
     companion object {
         private val logger = LoggerFactory.getLogger(FileCoreProcessor::class.java)
         private const val COS_RESTORE_MIN_MINUTES = 1L
+        private const val UNCOMPRESS_RETRY_MIN_MINUTES = 1L
     }
 }

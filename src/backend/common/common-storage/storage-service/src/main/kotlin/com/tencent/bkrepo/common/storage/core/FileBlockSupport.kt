@@ -240,7 +240,7 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
-    override fun listBlock(blockId: String, storageCredentials: StorageCredentials?): List<Pair<Long, String>> {
+    override fun listBlock(blockId: String, storageCredentials: StorageCredentials?): List<Triple<Long, String, Int>> {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
         try {
@@ -251,7 +251,8 @@ abstract class FileBlockSupport : CleanupSupport() {
                 val size = it.length()
                 val name = it.name.replace(BLOCK_SUFFIX, SHA256_SUFFIX)
                 val sha256 = tempClient.load(blockId, name)?.readText().orEmpty()
-                Pair(size, sha256)
+                val sequence = it.name.removeSuffix(BLOCK_SUFFIX).toInt()
+                Triple(size, sha256, sequence)
             }
         } catch (exception: Exception) {
             logger.error("Failed to list block [$blockId] on [${credentials.key}]", exception)

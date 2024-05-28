@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -82,6 +83,7 @@ class CommitEdgeCenterNodeServiceImpl(
     override val servicePermissionClient: ServicePermissionClient,
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
+    override val fsNodeClient: FsNodeClient,
     val clusterProperties: ClusterProperties
 ) : NodeServiceImpl(
     nodeDao,
@@ -94,7 +96,8 @@ class CommitEdgeCenterNodeServiceImpl(
     messageSupplier,
     servicePermissionClient,
     routerControllerClient,
-    routerControllerProperties
+    routerControllerProperties,
+    fsNodeClient
 ) {
 
     override fun checkRepo(projectId: String, repoName: String): TRepository {

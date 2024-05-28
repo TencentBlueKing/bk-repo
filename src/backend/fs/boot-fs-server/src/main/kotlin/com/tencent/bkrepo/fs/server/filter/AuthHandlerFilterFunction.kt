@@ -34,6 +34,7 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
+import org.slf4j.LoggerFactory
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 
@@ -64,17 +65,21 @@ class AuthHandlerFilterFunction(
         try {
             val jws = securityManager.validateToken(token)
             request.exchange().attributes[USER_KEY] = jws.body.subject ?: user
-            return next(request)
         } catch (exception: ExpiredJwtException) {
+            logger.info("validate token[$token] failed:", exception)
             throw AuthenticationException("Expired token")
         } catch (exception: JwtException) {
+            logger.info("validate token[$token] failed:", exception)
             throw AuthenticationException("Invalid token")
         } catch (exception: IllegalArgumentException) {
+            logger.info("validate token[$token] failed:", exception)
             throw AuthenticationException("Empty token")
         }
+        return next(request)
     }
 
     companion object {
         private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/ioa")
+        private val logger = LoggerFactory.getLogger(AuthHandlerFilterFunction::class.java)
     }
 }

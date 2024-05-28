@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.api.stream.EnhanceFileChunkedFutureWrapper
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
+import com.tencent.bkrepo.common.storage.innercos.exception.MigrateFailedException
 import com.tencent.bkrepo.common.storage.innercos.http.CosHttpClient
 import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.request.AbortMultipartUploadRequest
@@ -107,6 +108,12 @@ import kotlin.math.max
 @Suppress("UnstableApiUsage")
 class CosClient(val credentials: InnerCosCredentials) {
     private val config: ClientConfig = ClientConfig(credentials)
+
+    /**
+     * 分片上传使用的执行器
+     */
+    private val uploadThreadPool = Executors.newFixedThreadPool(config.uploadWorkers)
+
 
     /**
      * 分块下载使用的执行器。可以为null,为null则不使用分块下载
@@ -279,7 +286,7 @@ class CosClient(val credentials: InnerCosCredentials) {
             val uploadId = initiateMultipartUpload(key, null)
             val cosObject = fromClient.headObject(HeadObjectRequest(key))
             val length = cosObject.length!!
-            val crc64 = cosObject.crc64ecma!!
+            val crc64 = cosObject.crc64ecma
             if (length == 0L) {
                 return putObject(PutObjectRequest(key, StringPool.EMPTY.byteInputStream(), length))
             }
@@ -288,7 +295,7 @@ class CosClient(val credentials: InnerCosCredentials) {
             while (factory.hasMoreRequests()) {
                 val getObjectRequest = factory.nextDownloadPartRequest()
                 val downloadRequest = fromClient.buildHttpRequest(getObjectRequest)
-                val future = executors.submit(multipartMigrate(key, uploadId, partNumber, downloadRequest))
+                val future = uploadThreadPool.submit(multipartMigrate(key, uploadId, partNumber, downloadRequest))
                 futureList.add(future)
                 partNumber++
             }
@@ -296,11 +303,13 @@ class CosClient(val credentials: InnerCosCredentials) {
             try {
                 val partETagList = futureList.map { it.get() }
                 val response = completeMultipartUpload(key, uploadId, partETagList)
-                if (response.crc64ecma != crc64) {
-                    throw InnerCosException("$crc64 not match response: ${response.crc64ecma}")
+                val dstObject = headObject(HeadObjectRequest(key))
+                // 部分历史文件没有crc64, 此时只校验文件长度
+                if (crc64 != null && dstObject.crc64ecma != crc64 || dstObject.length != length) {
+                    throw MigrateFailedException(crc64, length, dstObject.crc64ecma, dstObject.length)
                 }
                 return response
-            } catch (exception: InnerCosException) {
+            } catch (exception: MigrateFailedException) {
                 deleteObject(DeleteObjectRequest(key))
                 throw exception
             } catch (exception: IOException) {
@@ -346,7 +355,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         val futureList = mutableListOf<Future<PartETag>>()
         while (factory.hasMoreRequests()) {
             val uploadPartRequest = factory.nextUploadPartRequest()
-            val future = executors.submit(uploadPart(uploadPartRequest))
+            val future = uploadThreadPool.submit(uploadPart(uploadPartRequest))
             futureList.add(future)
         }
         // 等待所有完成
@@ -626,7 +635,6 @@ class CosClient(val credentials: InnerCosCredentials) {
 
     companion object {
         private val logger = LogFactory.getLog(CosClient::class.java)
-        private val executors = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
         private val cleanerExecutors = Executors.newSingleThreadScheduledExecutor()
         private const val RETRY_COUNT = 5
         private const val SLOW_LOG_SPEED_IGNORE_FILESIZE_FACTOR = 5L

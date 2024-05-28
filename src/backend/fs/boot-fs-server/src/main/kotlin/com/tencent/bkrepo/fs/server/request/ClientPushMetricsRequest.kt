@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,10 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.constants
+package com.tencent.bkrepo.fs.server.request
 
-enum class PypiQueryType {
-    PACKAGE_INDEX,
-    VERSION_INDEX,
-    VERSION_DETAIL
-}
+/**
+ * 客户端推送指标请求
+ */
+data class ClientPushMetricsRequest(
+    val metrics: List<MetricsContent>
+)

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,23 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.controller.user
+package com.tencent.bkrepo.auth.model
 
-import com.tencent.bkrepo.auth.constant.AUTH_API_DEPARTMENT_PREFIX
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.ApiOperation
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@RestController
-@RequestMapping(AUTH_API_DEPARTMENT_PREFIX)
-class DepartmentController {
-
-    @ApiOperation("部门列表")
-    @GetMapping("/list")
-    fun listDepartment(): Response<List<Map<Any, Any>>> {
-        return ResponseBuilder.success(emptyList())
-    }
-}
+@Document("repo_auth_mode")
+@CompoundIndexes(
+    CompoundIndex(name = "repo_idx", def = "{'projectId': 1, 'repoName': 1}", background = true, unique = true),
+    CompoundIndex(name = "access_ctrl_idx", def = "{'accessControl': 1}", background = true)
+)
+data class TRepoAuthConfig(
+    var id: String? = null,
+    var projectId: String,
+    var repoName: String,
+    var accessControl: Boolean,
+    var lastModifiedBy: String,
+    val lastModifiedDate: LocalDateTime
+)

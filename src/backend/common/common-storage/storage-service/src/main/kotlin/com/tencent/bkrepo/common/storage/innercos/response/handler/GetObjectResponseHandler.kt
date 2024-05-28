@@ -46,7 +46,7 @@ class GetObjectResponseHandler : HttpResponseHandler<CosObject>() {
         return CosObject(eTag, inputStream, length, crc64ecma)
     }
 
-    override fun keepConnection() = true
+    override fun keepConnection(response: Response) = response.isSuccessful
 
     override fun handle404(): CosObject {
         return CosObject(null, null, null, null)

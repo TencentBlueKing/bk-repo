@@ -32,6 +32,8 @@ import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -61,16 +63,16 @@ class CorrectExecutorTest @Autowired constructor(
     fun beforeEach() {
         initMock()
         migrateRepoStorageTaskDao.remove(Query())
-        removeNodes()
+        mongoTemplate.removeNodes()
     }
 
     @Test
     fun correctSuccess() {
         val now = LocalDateTime.now()
         // 创建待迁移node
-        createNode(createDate = now.minusMinutes(1L))
-        createNode(createDate = now)
-        createNode(createDate = now.plusMinutes(1L))
+        mongoTemplate.createNode(createDate = now.minusMinutes(1L))
+        mongoTemplate.createNode(createDate = now)
+        mongoTemplate.createNode(createDate = now.plusMinutes(1L))
         // 创建任务
         var task = createTask()
         updateTask(task.id!!, MIGRATE_FINISHED.name, now)
@@ -96,7 +98,7 @@ class CorrectExecutorTest @Autowired constructor(
         whenever(fileReferenceClient.count(anyString(), anyOrNull())).thenReturn(Response(0, data = 1L))
         // 创建node用于模拟遍历迁移
         val now = LocalDateTime.now()
-        createNode(createDate = now.plusMinutes(1L))
+        mongoTemplate.createNode(createDate = now.plusMinutes(1L))
 
         // 执行任务
         val task = createTask()

@@ -27,14 +27,18 @@
 
 package com.tencent.bkrepo.fs.server.service
 
+import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.fs.server.constant.ID
 import com.tencent.bkrepo.fs.server.model.TBlockNode
 import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -99,13 +103,45 @@ class BlockNodeServiceImpl(
     }
 
     override suspend fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {
+        val nodeDetail = rRepositoryClient.getNodeDetail(projectId, repoName, dstFullPath).awaitSingle().data
+            ?: throw NodeNotFoundException(dstFullPath)
+        if (nodeDetail.folder) {
+            val criteria = where(TBlockNode::nodeFullPath).regex("^${EscapeUtils.escapeRegex(fullPath)}/")
+                .and(TBlockNode::projectId.name).isEqualTo(projectId)
+                .and(TBlockNode::repoName.name).isEqualTo(repoName)
+                .and(TBlockNode::deleted).isEqualTo(null)
+            val blocks = blockNodeRepository.find(Query(criteria))
+            blocks.forEach {
+                val update = Update().set(TBlockNode::nodeFullPath.name, it.nodeFullPath.replace(fullPath, dstFullPath))
+                val query = Query(Criteria.where(ID).isEqualTo(it.id).and(TBlockNode::repoName).isEqualTo(repoName))
+                blockNodeRepository.updateMulti(query, update)
+            }
+        } else {
+            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
+                .and(TBlockNode::projectId.name).isEqualTo(projectId)
+                .and(TBlockNode::repoName.name).isEqualTo(repoName)
+                .and(TBlockNode::deleted).isEqualTo(null)
+            val update = Update().set(TBlockNode::nodeFullPath.name, dstFullPath)
+            blockNodeRepository.updateMulti(Query(criteria), update)
+        }
+        logger.info("Move node[$projectId/$repoName$fullPath] to node[$projectId/$repoName$dstFullPath] success.")
+    }
+
+    override suspend fun restoreBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeCreateDate: LocalDateTime,
+        nodeDeleteDate: LocalDateTime
+    ) {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId.name).isEqualTo(projectId)
             .and(TBlockNode::repoName.name).isEqualTo(repoName)
-            .and(TBlockNode::deleted).isEqualTo(null)
-        val update = Update().set(TBlockNode::nodeFullPath.name, dstFullPath)
-        blockNodeRepository.updateMulti(Query(criteria), update)
-        logger.info("Move node[$projectId/$repoName$fullPath] to node[$projectId/$repoName$dstFullPath] success.")
+            .and(TBlockNode::createdDate).gt(nodeCreateDate).lt(nodeDeleteDate)
+        val update = Update().set(TBlockNode::deleted.name, null)
+        val result = blockNodeRepository.updateMulti(Query(criteria), update)
+        logger.info("Restore ${result.modifiedCount} blocks node[$projectId/$repoName$fullPath] " +
+            "between $nodeCreateDate and $nodeDeleteDate success.")
     }
 
     companion object {

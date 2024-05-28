@@ -30,14 +30,23 @@ package com.tencent.bkrepo.job.migrate.utils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
+import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.job.UT_USER
+import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
+import com.tencent.bkrepo.job.model.TNode
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
 
 object MigrateTestUtils {
@@ -79,4 +88,60 @@ object MigrateTestUtils {
         oldCredentialsKey = oldCredentialsKey,
         storageCredentials = storageCredentials,
     )
+
+    fun MigrateFailedNodeDao.insertFailedNode(fullPath: String = "/a/b/c.txt"): TMigrateFailedNode {
+        val now = LocalDateTime.now()
+        return insert(
+            TMigrateFailedNode(
+                id = null,
+                createdDate = now,
+                lastModifiedDate = now,
+                nodeId = "",
+                taskId = "",
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                fullPath = fullPath,
+                sha256 = UT_SHA256,
+                size = 1000L,
+                md5 = UT_MD5,
+                retryTimes = 0,
+            )
+        )
+    }
+
+    fun MongoTemplate.createNode(
+        repoName: String = UT_REPO_NAME,
+        createDate: LocalDateTime = LocalDateTime.now(),
+        sha256: String = UT_SHA256,
+        fullPath: String = "/a/b/c.txt",
+        archived: Boolean = false,
+        compressed: Boolean = false,
+    ): TNode {
+        val node = TNode(
+            id = null,
+            projectId = UT_PROJECT_ID,
+            repoName = repoName,
+            fullPath = fullPath,
+            size = 100L,
+            sha256 = sha256,
+            md5 = UT_MD5,
+            createdDate = createDate,
+            folder = false,
+            archived = archived,
+            compressed = compressed,
+        )
+        val sharding = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
+        val collectionName = "node_$sharding"
+        ensureNodeIndex(collectionName)
+        return insert(node, collectionName)
+    }
+
+    fun MongoTemplate.ensureNodeIndex(collectionName: String) {
+        indexOps(collectionName).ensureIndex(TNode.pathIndex())
+    }
+
+    fun MongoTemplate.removeNodes() {
+        val sequence = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
+        remove(Query(), "node_$sequence")
+    }
 }

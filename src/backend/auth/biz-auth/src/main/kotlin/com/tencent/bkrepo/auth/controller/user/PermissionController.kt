@@ -87,12 +87,14 @@ class PermissionController @Autowired constructor(
         @RequestParam userId: String,
         @RequestParam appId: String?
     ): Response<List<String>> {
+        preCheckContextUser(userId)
         return ResponseBuilder.success(permissionService.listPermissionRepo(projectId, userId, appId))
     }
 
     @ApiOperation("list有权限项目")
     @GetMapping("/project/list")
     fun listPermissionProject(@RequestParam userId: String): Response<List<String>> {
+        preCheckContextUser(userId)
         return ResponseBuilder.success(permissionService.listPermissionProject(userId))
     }
 
@@ -113,6 +115,7 @@ class PermissionController @Autowired constructor(
         @RequestParam projectId: String,
         @RequestParam repoName: String
     ): Response<List<Permission>> {
+        preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(permissionService.listBuiltinPermission(projectId, repoName))
     }
 
@@ -131,6 +134,7 @@ class PermissionController @Autowired constructor(
     @ApiOperation("更新权限权限绑定repo")
     @PutMapping("/repo")
     fun updatePermissionRepo(@RequestBody request: UpdatePermissionRepoRequest): Response<Boolean> {
+        preCheckUserAdmin()
         return ResponseBuilder.success(permissionService.updateRepoPermission(request))
     }
 
