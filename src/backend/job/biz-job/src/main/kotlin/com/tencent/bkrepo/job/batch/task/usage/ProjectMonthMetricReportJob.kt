@@ -49,6 +49,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
@@ -64,9 +65,7 @@ class ProjectMonthMetricReportJob(
 
     override fun doStart0(jobContext: JobContext) {
         val currentDate = LocalDate.now().atStartOfDay()
-        if (properties.monthList.isEmpty() && currentDate.dayOfMonth != properties.reportDay) return
-        if (properties.reportHost.isBlank() || properties.reportUrl.isBlank()
-            || properties.reportPlatformKey.isBlank() || properties.reportServiceName.isBlank()) return
+        if (!filterProperties(currentDate)) return
         val costDate = mutableSetOf<String>()
         if (properties.monthList.isNotEmpty()) {
             costDate.addAll(properties.monthList)
@@ -81,6 +80,13 @@ class ProjectMonthMetricReportJob(
     }
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+
+    private fun filterProperties(currentDate: LocalDateTime): Boolean {
+        if (properties.monthList.isEmpty() && currentDate.dayOfMonth != properties.reportDay) return false
+        if (properties.reportHost.isBlank() || properties.reportUrl.isBlank()) return false
+        if (properties.reportPlatformKey.isBlank() || properties.reportServiceName.isBlank()) return false
+        return true
+    }
 
     private fun findAndReportData(reportMonth: String) {
         val criteria = Criteria.where(TProjectMetricsDailyAvgRecord::costDate.name).isEqualTo(reportMonth)
@@ -102,6 +108,7 @@ class ProjectMonthMetricReportJob(
     }
 
     private fun buildAndReportUsageData(projectMonthUsage: MutableList<ProjectMonthUsage>) {
+        logger.info("report project month usage with size ${projectMonthUsage.size}")
         val bkMonthUsage = BkMonthUsage(
             dataSourceName = properties.reportServiceName,
             bills = projectMonthUsage
