@@ -866,5 +866,7 @@
     "previous": "Previous",
     "copyAll": "Copy All",
     "clear": "Clear",
-    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space"
+    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
+    "rootDirectoryPermission": "Access Control:",
+    "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth."
 }

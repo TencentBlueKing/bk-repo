@@ -42,6 +42,7 @@ import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
+import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
@@ -65,6 +66,7 @@ class DevopsPermissionServiceImpl constructor(
     permissionDao: PermissionDao,
     userDao: UserDao,
     personalPathDao: PersonalPathDao,
+    repoAuthConfigDao: RepoAuthConfigDao,
     private val devopsAuthConfig: DevopsAuthConfig,
     private val devopsPipelineService: DevopsPipelineService,
     private val devopsProjectService: DevopsProjectService,
@@ -78,6 +80,7 @@ class DevopsPermissionServiceImpl constructor(
     accountRepository,
     permissionDao,
     personalPathDao,
+    repoAuthConfigDao,
     repoClient,
     projectClient,
 ) {
