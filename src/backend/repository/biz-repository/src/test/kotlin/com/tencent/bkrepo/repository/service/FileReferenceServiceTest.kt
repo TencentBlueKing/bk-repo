@@ -84,6 +84,8 @@ class FileReferenceServiceTest @Autowired constructor(
     fun testIncrementAndDecrement() {
         val sha256 = uniqueId()
         assertEquals(0, fileReferenceService.count(sha256, null))
+        assertTrue(fileReferenceService.increment(sha256, null, 0L))
+        assertEquals(0L, fileReferenceService.get(null, sha256).count)
         assertTrue(fileReferenceService.increment(sha256, null))
         assertEquals(1, fileReferenceService.count(sha256, null))
         assertTrue(fileReferenceService.increment(sha256, null))

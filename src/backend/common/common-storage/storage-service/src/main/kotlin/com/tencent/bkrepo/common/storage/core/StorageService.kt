@@ -42,7 +42,6 @@ import com.tencent.bkrepo.common.storage.core.operation.OverlayOperation
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import java.nio.file.Path
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 存储服务接口
@@ -61,7 +60,6 @@ interface StorageService :
         digest: String,
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
-        cancel: AtomicBoolean? = null,
         storageClass: String? = null,
     ): Int
 

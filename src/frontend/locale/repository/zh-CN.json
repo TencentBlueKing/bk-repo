@@ -868,6 +868,9 @@
     "copyAll": "复制全部",
     "clear": "清空",
     "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割",
+    "rootDirectoryPermission": "访问控制：",
+    "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权",
+    "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割",
     "downloadHistory": "下载历史(最近一年)",
     "downloadDate": "下载时间",
     "downloader": "下载用户"
