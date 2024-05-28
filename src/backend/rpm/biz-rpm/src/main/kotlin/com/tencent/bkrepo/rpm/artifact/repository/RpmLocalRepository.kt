@@ -878,7 +878,8 @@ class RpmLocalRepository(
             return
         }
         logger.info("find primary index: ${indexNode.fullPath}")
-        val originXmlFile = storageService.load(indexNode.sha256!!, Range.full(indexNode.size), null)!!
+
+        val originXmlFile = storageManager.loadArtifactInputStream(indexNode, repoDetail.storageCredentials)!!
             .use { it.unGzipInputStream() }
         logger.info("originIndexMd5: ${originXmlFile.md5()}")
         try {
