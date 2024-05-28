@@ -45,7 +45,8 @@ import org.springframework.data.mongodb.core.mapping.Document
     CompoundIndex(name = "roleId_idx", def = "{'roleId': 1}", background = true),
     CompoundIndex(name = "type_idx", def = "{'type': 1}", background = true),
     CompoundIndex(name = "projectId_idx", def = "{'projectId': 1}", background = true),
-    CompoundIndex(name = "repoName_idx", def = "{'repoName': 1}", background = true)
+    CompoundIndex(name = "repoName_idx", def = "{'repoName': 1}", background = true),
+    CompoundIndex(name = "source_idx", def = "{'source': 1}", background = true)
 )
 data class TRole(
     val id: String? = null,
