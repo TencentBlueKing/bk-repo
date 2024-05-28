@@ -48,7 +48,6 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -1178,11 +1177,7 @@ class MavenLocalRepository(
         // 查找 `/groupId/artifactId/maven-metadata.xml`
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data ?: return
-            storageService.load(
-                node.sha256!!,
-                Range.full(node.size),
-                storageCredentials
-            ).use { artifactInputStream ->
+            storageManager.loadArtifactInputStream(node, storageCredentials).use { artifactInputStream ->
                 // 更新 `/groupId/artifactId/maven-metadata.xml`
                 val mavenMetadata = MetadataXpp3Reader().read(artifactInputStream)
                 mavenMetadata.versioning.versions.remove(version)
