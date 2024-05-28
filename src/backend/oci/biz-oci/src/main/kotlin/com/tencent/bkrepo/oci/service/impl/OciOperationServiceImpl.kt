@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -429,7 +428,7 @@ class OciOperationServiceImpl(
         // https://github.com/docker/docker-ce/blob/master/components/engine/distribution/push_v2.go
         // docker 客户端上传manifest时先按照schema2的格式上传，
         // 如失败则按照schema1格式上传，但是非docker客户端不兼容schema1版本manifest
-        val manifest = loadManifest(nodeDetail.sha256!!, nodeDetail.size, storageCredentials)
+        val manifest = loadManifest(nodeDetail, storageCredentials)
             ?: throw OciBadRequestException(OciMessageCode.OCI_MANIFEST_SCHEMA1_NOT_SUPPORT)
         // 更新manifest文件的metadata
         val mediaType = if (manifest.mediaType.isNullOrEmpty()) {
@@ -461,19 +460,12 @@ class OciOperationServiceImpl(
         )
     }
 
-
     private fun loadManifest(
-        sha256: String,
-        size: Long,
+        node: NodeDetail,
         storageCredentials: StorageCredentials?
     ): ManifestSchema2? {
         return try {
-            val manifestBytes = storageService.load(
-                sha256,
-                Range.full(size),
-                storageCredentials
-            )!!.readText()
-
+            val manifestBytes = storageManager.loadArtifactInputStream(node, storageCredentials)!!.readText()
             OciUtils.stringToManifestV2(manifestBytes)
         } catch (e: Exception) {
             null
@@ -487,9 +479,7 @@ class OciOperationServiceImpl(
         with(ociArtifactInfo) {
             val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data ?: return false
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, manifestPath).data ?: return false
-            val manifest = loadManifest(
-                nodeDetail.sha256!!, nodeDetail.size, repositoryDetail.storageCredentials
-            ) ?: return false
+            val manifest = loadManifest(nodeDetail, repositoryDetail.storageCredentials) ?: return false
             return syncBlobInfo(
                 ociArtifactInfo = ociArtifactInfo,
                 manifest = manifest,
@@ -1040,9 +1030,7 @@ class OciOperationServiceImpl(
             return true
         }
         val storageCredentials = repoInfo.storageCredentialsKey?.let { storageCredentialsClient.findByKey(it).data }
-        val manifest = loadManifest(
-            manifestNode.sha256!!, manifestNode.size, storageCredentials
-        ) ?: run {
+        val manifest = loadManifest(manifestNode, storageCredentials) ?: run {
             logger.warn("The content of manifest.json ${manifestNode.fullPath} is null, check the mediaType.")
             return false
         }
