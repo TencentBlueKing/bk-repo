@@ -39,6 +39,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
@@ -69,7 +70,7 @@ class ProjectDailyAvgMetricsJob(
         )
         data.forEach {
             val criteria = Criteria.where(PROJECT).isEqualTo(it)
-                .lte(currentDate)
+                .and(ProjectMetricsDailyRecord::createdDate.name).lte(currentDate)
                 .gte(currentDate.minusDays(1))
             val query = Query.query(criteria)
             var capSize = 0L
@@ -98,7 +99,7 @@ class ProjectDailyAvgMetricsJob(
         val query = Query(where(ProjectInfo::name).isEqualTo(projectId))
         val projectInfo = mongoTemplate.find(query, ProjectInfo::class.java, COLLECTION_NAME_PROJECT)
             .firstOrNull() ?: return
-        val usage = (capSize.toDouble() / count).toBigDecimal().setScale(2, BigDecimal.ROUND_HALF_UP).toDouble()
+        val usage = (capSize.toDouble() / (count * 1024 * 1024 * 1024)).toBigDecimal().setScale(2, BigDecimal.ROUND_HALF_UP).toDouble()
         storeDailyAvgRecord(projectInfo, currentDate, usage)
     }
 
@@ -117,13 +118,28 @@ class ProjectDailyAvgMetricsJob(
             name = projectInfo.displayName,
             usage = usage,
             bgName = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_BG_NAME }?.value as? String
-                ?: StringPool.UNKNOWN,
+                ?: StringPool.EMPTY,
             flag = covertToFlag(bgId, productId),
             costDateDay = currentDate.minusDays(1).format(
                 DateTimeFormatter.ofPattern("yyyyMMdd")
             ),
         )
-        mongoTemplate.insert(dailyRecord, COLLECTION_NAME_PROJECT_METRICS_DAILY_AVG_RECORD)
+        val query = Query(
+            where(TProjectMetricsDailyAvgRecord::projectId).isEqualTo(dailyRecord.projectId)
+                .and(TProjectMetricsDailyAvgRecord::costDate.name).isEqualTo(dailyRecord.costDate)
+                .and(TProjectMetricsDailyAvgRecord::costDateDay.name).isEqualTo(dailyRecord.costDateDay)
+        )
+        val update = buildUpdateRecord(dailyRecord)
+        mongoTemplate.upsert(query, update, COLLECTION_NAME_PROJECT_METRICS_DAILY_AVG_RECORD)
+    }
+
+    private fun buildUpdateRecord(dailyRecord: TProjectMetricsDailyAvgRecord): Update {
+        val update = Update()
+        update.set(TProjectMetricsDailyAvgRecord::name.name, dailyRecord.name)
+        update.set(TProjectMetricsDailyAvgRecord::usage.name, dailyRecord.usage)
+        update.set(TProjectMetricsDailyAvgRecord::bgName.name, dailyRecord.bgName)
+        update.set(TProjectMetricsDailyAvgRecord::flag.name, dailyRecord.flag)
+        return update
     }
 
     private fun covertToFlag(

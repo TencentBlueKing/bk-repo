@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.usage
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.JsonUtils
@@ -66,9 +67,23 @@ class ProjectMonthMetricReportJob(
         if (properties.monthList.isEmpty() && currentDate.dayOfMonth != properties.reportDay) return
         if (properties.reportHost.isBlank() || properties.reportUrl.isBlank()
             || properties.reportPlatformKey.isBlank() || properties.reportServiceName.isBlank()) return
-        logger.info("start to report month usage...")
-        val costDate = currentDate.format(DateTimeFormatter.ofPattern("yyyyMM"))
-        val criteria = Criteria.where(TProjectMetricsDailyAvgRecord::costDate.name).isEqualTo(costDate)
+        val costDate = mutableSetOf<String>()
+        if (properties.monthList.isNotEmpty()) {
+            costDate.addAll(properties.monthList)
+        } else {
+            costDate.add(currentDate.format(DateTimeFormatter.ofPattern("yyyyMM")))
+        }
+        costDate.forEach {
+            logger.info("start to report month $it usage...")
+            findAndReportData(it)
+            logger.info("report month $it usage finished")
+        }
+    }
+
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+
+    private fun findAndReportData(reportMonth: String) {
+        val criteria = Criteria.where(TProjectMetricsDailyAvgRecord::costDate.name).isEqualTo(reportMonth)
         val query = Query.query(criteria).cursorBatchSize(BATCH_SIZE)
         val projectMonthUsage: MutableList<ProjectMonthUsage> = mutableListOf()
         mongoTemplate.find(
@@ -77,17 +92,23 @@ class ProjectMonthMetricReportJob(
         ).forEach {
             projectMonthUsage.add(convertToProjectMonthUsage(it))
             if (projectMonthUsage.size >= properties.batchUploadSize) {
-                val bkMonthUsage = BkMonthUsage(
-                    dataSourceName = properties.reportServiceName,
-                    bills = projectMonthUsage
-                )
-                val bkMonthUsageSummary = BkMonthUsageSummary(mutableListOf(bkMonthUsage))
-                reportUsageData(bkMonthUsageSummary)
+                buildAndReportUsageData(projectMonthUsage)
+                projectMonthUsage.clear()
             }
+        }
+        if (projectMonthUsage.isNotEmpty()) {
+            buildAndReportUsageData(projectMonthUsage)
         }
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+    private fun buildAndReportUsageData(projectMonthUsage: MutableList<ProjectMonthUsage>) {
+        val bkMonthUsage = BkMonthUsage(
+            dataSourceName = properties.reportServiceName,
+            bills = projectMonthUsage
+        )
+        val bkMonthUsageSummary = BkMonthUsageSummary(bkMonthUsage)
+        reportUsageData(bkMonthUsageSummary)
+    }
 
     private fun reportUsageData(monthUsageSummary: BkMonthUsageSummary) {
         val requestBody = JsonUtils.objectMapper.writeValueAsString(monthUsageSummary)
@@ -96,7 +117,7 @@ class ProjectMonthMetricReportJob(
         try {
             val request = Request.Builder().url(url).header(PLATFORM_KEY_HEADER, properties.reportPlatformKey)
                 .post(requestBody).build()
-            doRequest(okHttpClient, request, 2)
+            doRequest(okHttpClient, request)
         } catch (exception: Exception) {
             logger.error("report usage data error:", exception)
         }
@@ -105,30 +126,23 @@ class ProjectMonthMetricReportJob(
     private fun doRequest(
         okHttpClient: OkHttpClient,
         request: Request,
-        retry: Int = 0,
     ) {
         try {
-            val response = okHttpClient.newBuilder().build().newCall(request).execute()
-            val responseCode = response.code
-            val responseContent = response.body!!.string()
-            if (response.isSuccessful) {
-                return
+            okHttpClient.newBuilder().build().newCall(request).execute().use {
+                if (!it.isSuccessful) {
+                    throw RuntimeException("report usage request error, response code is ${it.code}")
+                }
+                val bkResponse = JsonUtils.objectMapper.readValue(it.body!!.byteStream(), BkResponse::class.java)
+                if (bkResponse.result || bkResponse.code == 200) {
+                    return
+                }
+                val logMsg = "report usage request url ${request.url} failed, " +
+                    "code: ${bkResponse.code}, error is: ${bkResponse.message}"
+                logger.error(logMsg)
+                throw RuntimeException(logMsg)
             }
-            val logMsg = "report usage request url ${request.url} failed, " +
-                "code: $responseCode, responseContent: $responseContent"
-            throw RuntimeException(logMsg)
         } catch (e: Exception) {
-            if (retry > 0) {
-                logger.warn("report usage request error, cause: ${e.message}")
-            } else {
-                logger.error("report usage request error ", e)
-            }
-        }
-        if (retry > 0) {
-            Thread.sleep(500)
-            return doRequest(okHttpClient, request, retry - 1)
-        } else {
-            throw RuntimeException("report usage http request error")
+            throw e
         }
     }
 
@@ -146,9 +160,10 @@ class ProjectMonthMetricReportJob(
 
     data class BkMonthUsageSummary(
         @JsonProperty(value = "data_source_bills", required = true)
-        var dataSourceBills: MutableList<BkMonthUsage> = mutableListOf()
+        var dataSourceBills: BkMonthUsage
     )
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     data class BkMonthUsage(
         @JsonProperty(value = "data_source_name", required = true)
         var dataSourceName: String,
@@ -173,6 +188,13 @@ class ProjectMonthMetricReportJob(
         var flag: Boolean,
         @JsonProperty(value = "cost_date_day")
         var costDateDay: String,
+    )
+
+    data class BkResponse(
+        var result: Boolean,
+        var code: Int,
+        var message: String,
+        var errors: String? = null
     )
 
     private val okHttpClient = okhttp3.OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)

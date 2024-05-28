@@ -46,6 +46,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
@@ -147,19 +148,28 @@ class ProjectMetricsReport2BkbaseJob(
     }
 
     private fun storeDailyRecord(projectMetrics: ProjectMetrics) {
-        val dailyRecord = TProjectMetricsDailyRecord(
-            projectId = projectMetrics.projectId,
-            nodeNum = projectMetrics.nodeNum,
-            capSize = projectMetrics.capSize,
-            customCapSize = projectMetrics.customCapSize,
-            pipelineCapSize = projectMetrics.pipelineCapSize,
-            helmRepoCapSize = projectMetrics.helmRepoCapSize,
-            dockerRepoCapSize = projectMetrics.dockerRepoCapSize,
-            active = projectMetrics.active,
-            enabled = projectMetrics.enabled,
-            createdDate = projectMetrics.createdDate
+        val query = Query(
+            where(TProjectMetricsDailyRecord::projectId).isEqualTo(projectMetrics.projectId)
+                .and(TProjectMetricsDailyRecord::createdDate.name).isEqualTo(projectMetrics.createdDate)
         )
-        mongoTemplate.insert(dailyRecord, COLLECTION_NAME_PROJECT_METRICS_DAILY_RECORD)
+        val update = buildUpdateRecord(projectMetrics)
+        mongoTemplate.upsert(query, update, COLLECTION_NAME_PROJECT_METRICS_DAILY_RECORD)
+    }
+
+    private fun buildUpdateRecord(projectMetrics: ProjectMetrics): Update {
+        val update = Update()
+        update.set(TProjectMetricsDailyRecord::nodeNum.name, projectMetrics.nodeNum)
+        update.set(TProjectMetricsDailyRecord::capSize.name, projectMetrics.capSize)
+        update.set(TProjectMetricsDailyRecord::customCapSize.name, projectMetrics.customCapSize)
+        update.set(TProjectMetricsDailyRecord::pipelineCapSize.name, projectMetrics.pipelineCapSize)
+        update.set(TProjectMetricsDailyRecord::helmRepoCapSize.name, projectMetrics.helmRepoCapSize)
+        update.set(TProjectMetricsDailyRecord::dockerRepoCapSize.name, projectMetrics.dockerRepoCapSize)
+        update.set(TProjectMetricsDailyRecord::active.name, projectMetrics.active)
+        update.set(TProjectMetricsDailyRecord::createdDate.name, projectMetrics.createdDate)
+        projectMetrics.enabled?.let {
+            update.set(TProjectMetricsDailyRecord::enabled.name, projectMetrics.enabled)
+        }
+        return update
     }
 
     data class ProjectMetrics(
