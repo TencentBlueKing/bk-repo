@@ -1177,7 +1177,7 @@ class MavenLocalRepository(
         // 查找 `/groupId/artifactId/maven-metadata.xml`
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data ?: return
-            storageManager.loadArtifactInputStream(node, storageCredentials).use { artifactInputStream ->
+            storageManager.loadFullArtifactInputStream(node, storageCredentials).use { artifactInputStream ->
                 // 更新 `/groupId/artifactId/maven-metadata.xml`
                 val mavenMetadata = MetadataXpp3Reader().read(artifactInputStream)
                 mavenMetadata.versioning.versions.remove(version)
