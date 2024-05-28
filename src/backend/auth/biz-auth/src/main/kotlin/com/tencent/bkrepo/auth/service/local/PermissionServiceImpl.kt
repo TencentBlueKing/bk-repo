@@ -321,7 +321,7 @@ open class PermissionServiceImpl constructor(
         if (personalPath != null) {
             configPath.add(personalPath.fullPath)
         }
-        return configPath
+        return configPath.distinct()
     }
 
     fun getAllRepoByProjectId(projectId: String): List<String> {
