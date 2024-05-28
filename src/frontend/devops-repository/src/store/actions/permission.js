@@ -312,5 +312,24 @@ export default {
     // 获取蓝盾传输的用户组
     getUserGroupByExternal (_, { projectId, sourceId }) {
         return Vue.prototype.$ajax.get(`${authPrefix}/permission/external/group/${projectId}/${sourceId}`)
+    },
+    // 获取当前repo的根目录权限
+    getRootPermission (_, { projectId, repoName }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/mode/repo/query`,
+            {
+                params: {
+                    projectId: projectId,
+                    repoName: repoName
+                }
+            }
+        )
+    },
+    // 创建或更新当前根目录权限
+    createOrUpdateRootPermission (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/mode/repo/toggle`,
+            body
+        )
     }
 }

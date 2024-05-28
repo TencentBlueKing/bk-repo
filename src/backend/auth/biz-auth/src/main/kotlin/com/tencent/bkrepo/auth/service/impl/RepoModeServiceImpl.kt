@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,29 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.auth.service.impl
 
-import com.tencent.bkrepo.repository.job.base.RepoJobProperties
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
+import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
+import com.tencent.bkrepo.auth.service.RepoModeService
+import org.springframework.stereotype.Service
 
-@Configuration
-@ConfigurationProperties("repository")
-data class RepositoryProperties(
-    var deletedNodeReserveDays: Long = 14,
-    var defaultStorageCredentialsKey: String? = null,
-    var listCountLimit: Long = 100000L,
-    var slowLogTimeThreshold: Long = 1_000,
-    @NestedConfigurationProperty
-    var job: RepoJobProperties = RepoJobProperties(),
-    @NestedConfigurationProperty
-    var repoStorageMapping: RepoStorageMapping = RepoStorageMapping(),
-    var allowUserAddSystemMetadata: List<String> = emptyList(),
-    var gitUrl: String = "",
-    var svnUrl: String = "",
-    /**
-     * 用于验证bkci webhook签名
-     */
-    var bkciWebhookSecret: String = ""
-)
+@Service
+class RepoModeServiceImpl(
+    private val repoAuthConfigDao: RepoAuthConfigDao
+) : RepoModeService {
+
+    override fun createOrUpdateConfig(projectId: String, repoName: String, status: Boolean): RepoModeStatus {
+        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, status)
+        return RepoModeStatus(id, status)
+    }
+
+
+    override fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus {
+        val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName)
+        if (result != null) {
+            return RepoModeStatus(result.id!!, result.accessControl)
+        }
+        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, false)
+        return RepoModeStatus(id, false)
+    }
+
+
+}

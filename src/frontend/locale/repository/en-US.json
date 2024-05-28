@@ -870,5 +870,7 @@
     "importBkTitle":"User From BKCI",
     "bkciUserGroup":"BKCI User Group",
     "userSource":"User Source",
-    "bkci": "BKCI"
+    "bkci": "BKCI",
+    "rootDirectoryPermission": "Access Control:",
+    "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth."
 }
