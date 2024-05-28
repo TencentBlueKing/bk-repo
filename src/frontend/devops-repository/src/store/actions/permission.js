@@ -316,7 +316,7 @@ export default {
     // 获取当前repo的根目录权限
     getRootPermission (_, { projectId, repoName }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/permission/mode/repo/query`,
+            `${authPrefix}/mode/repo/query`,
             {
                 params: {
                     projectId: projectId,
@@ -328,7 +328,7 @@ export default {
     // 创建或更新当前根目录权限
     createOrUpdateRootPermission (_, { body }) {
         return Vue.prototype.$ajax.post(
-            `${authPrefix}/permission/mode/repo/toggle`,
+            `${authPrefix}/mode/repo/toggle`,
             body
         )
     }
