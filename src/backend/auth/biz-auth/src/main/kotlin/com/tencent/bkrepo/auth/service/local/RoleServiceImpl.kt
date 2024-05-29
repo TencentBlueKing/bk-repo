@@ -43,6 +43,7 @@ import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.UserHelper
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -122,6 +123,11 @@ class RoleServiceImpl constructor(
             false,
             listOf(PROJECT_MANAGE_ID, PROJECT_VIEWER_ID)
         ).map { transfer(it) }
+    }
+
+    override fun listRoleBySource(source: RoleSource): List<Role> {
+        logger.debug("list role by role ,[$source]")
+        return roleRepository.findBySource(source).map { transfer(it) }
     }
 
     override fun deleteRoleById(id: String): Boolean {

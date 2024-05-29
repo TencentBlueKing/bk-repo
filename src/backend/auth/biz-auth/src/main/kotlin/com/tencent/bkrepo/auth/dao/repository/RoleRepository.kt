@@ -82,4 +82,6 @@ interface RoleRepository : MongoRepository<TRole, String> {
         ids: List<String>
     ): List<TRole>
 
+    fun findBySource(source: RoleSource): List<TRole>
+
 }
