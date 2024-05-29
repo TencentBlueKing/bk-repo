@@ -113,9 +113,8 @@ class ProjectDailyAvgMetricsJob(
         val query = Query(where(ProjectInfo::name).isEqualTo(projectId))
         val projectInfo = mongoTemplate.find(query, ProjectInfo::class.java, COLLECTION_NAME_PROJECT)
             .firstOrNull() ?: return
-        val usage = (capSize / (count * 1024 * 1024 * 1024).toDouble())
+        val usage = (capSize.toDouble() / (count * 1024 * 1024 * 1024L))
             .toBigDecimal().setScale(2, BigDecimal.ROUND_HALF_UP).toDouble()
-        logger.info("project $projectId usage: $usage javaClass: ${usage.javaClass}")
         storeDailyAvgRecord(projectInfo, currentDate, usage)
     }
 
