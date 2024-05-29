@@ -60,7 +60,23 @@ class ProjectDailyAvgMetricsJob(
 ) : DefaultContextJob(properties) {
 
     override fun doStart0(jobContext: JobContext) {
-        val currentDate = LocalDate.now().atStartOfDay()
+        val days = mutableListOf<LocalDateTime>()
+        if (properties.reRunDays.isNotEmpty()) {
+            val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+            properties.reRunDays.forEach {
+                days.add(LocalDate.parse(it, dateTimeFormatter).atStartOfDay())
+            }
+        } else {
+            days.add(LocalDate.now().atStartOfDay())
+        }
+        days.forEach {
+            doStoreProjectDailyAvgRecord(it)
+        }
+    }
+
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+
+    private fun doStoreProjectDailyAvgRecord(currentDate: LocalDateTime) {
         val criteria = Criteria.where(ProjectMetricsDailyRecord::createdDate.name).lte(currentDate)
             .gte(currentDate.minusDays(1))
         val query = Query(criteria)
@@ -90,8 +106,6 @@ class ProjectDailyAvgMetricsJob(
             )
         }
     }
-
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     private fun handleProjectDailyAvgRecord(
         projectId: String, capSize: Long, count: Int, currentDate: LocalDateTime

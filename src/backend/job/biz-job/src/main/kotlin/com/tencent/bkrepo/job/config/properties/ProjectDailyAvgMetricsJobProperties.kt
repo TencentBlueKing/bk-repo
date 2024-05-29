@@ -34,6 +34,8 @@ import org.springframework.scheduling.annotation.Scheduled
 class ProjectDailyAvgMetricsJobProperties(
     override var enabled: Boolean = false,
     override var cron: String = Scheduled.CRON_DISABLED,
+    // 重新执行历史数据
+    var reRunDays: MutableList<String> = mutableListOf<String>(),
     // 每月账单开始时间
     var monthStartDay: Int = 15,
     // 每月账单截止时间
