@@ -331,6 +331,12 @@ class NodeSearchServiceTest @Autowired constructor(
         val result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(2, result.totalRecords)
 
+        // 测试所有路径均无权限
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(ListPathResult(status = true, path = mapOf(OperationType.IN to emptyList())))
+        )
+        Assertions.assertEquals(0, nodeSearchService.search(queryModel).totalRecords)
+
         // 测试同时存在NIN与IN
         whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
             ResponseBuilder.success(
@@ -343,7 +349,7 @@ class NodeSearchServiceTest @Autowired constructor(
                 )
             )
         )
-        assertThrows<IllegalStateException> { nodeSearchService.search(queryModel) }
+        assertThrows<IllegalArgumentException> { nodeSearchService.search(queryModel) }
     }
 
     private fun testLocalDateTimeOperation(

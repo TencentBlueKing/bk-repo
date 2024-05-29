@@ -430,7 +430,7 @@ abstract class NodeBaseService(
         userId: String,
         projectId: String,
         repoName: String
-    ): Pair<List<String>, List<String>> {
+    ): Pair<List<String>?, List<String>> {
         if (userId == SYSTEM_USER) {
             return Pair(emptyList(), emptyList())
         }

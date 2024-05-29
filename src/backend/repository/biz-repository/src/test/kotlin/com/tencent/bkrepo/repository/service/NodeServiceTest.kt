@@ -314,6 +314,13 @@ class NodeServiceTest @Autowired constructor(
         assertEquals("/a/1", result[0].fullPath)
         assertEquals("/a/2", result[1].fullPath)
 
+        // 测试所有路径均无权限
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(ListPathResult(status = true, path = mapOf(OperationType.IN to emptyList())))
+        )
+        assertEquals(0, nodeService.listNodePage(node("/a"), option).totalRecords)
+        assertEquals(0, nodeService.listNode(node("/a"), option).size)
+
         // 测试同时包含有权限与无权限
         whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
             ResponseBuilder.success(
@@ -326,7 +333,7 @@ class NodeServiceTest @Autowired constructor(
                 )
             )
         )
-        assertThrows<IllegalStateException> { nodeService.listNode(node("/a"), option) }
+        assertThrows<IllegalArgumentException> { nodeService.listNode(node("/a"), option) }
     }
 
     @Test

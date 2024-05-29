@@ -40,6 +40,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.exists
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.regex
@@ -90,10 +91,13 @@ object NodeQueryHelper {
         if (!option.includeFolder) {
             criteria.and(TNode::folder).isEqualTo(false)
         }
-        return if (option.hasPermissionPath.isNotEmpty()) {
+        return if (option.hasPermissionPath?.isEmpty() == true) {
+            // hasPermissionPath为empty时所有路径都无权限,构造一个永远不成立的条件使查询结果为空列表
+            TNode::projectId.exists(false)
+        } else if (option.hasPermissionPath?.isNotEmpty() == true) {
             Criteria().andOperator(
                 criteria,
-                Criteria().orOperator(buildPermissionPathCriteria(option.hasPermissionPath))
+                Criteria().orOperator(buildPermissionPathCriteria(option.hasPermissionPath!!))
             )
         } else if (option.noPermissionPath.isNotEmpty()) {
             Criteria().andOperator(
@@ -217,40 +221,48 @@ object NodeQueryHelper {
             .set(TNode::deleted.name, deleteTime)
     }
 
+    /**
+     * 查询有权限与无权限的路径
+     *
+     * @param userId 用户
+     * @param projectId 项目
+     * @param repoName 仓库
+     *
+     * @return first为有权限的路径，为空时表示所有路径均无权限，为null时表示未配置，second为无权限路径
+     */
     fun ServicePermissionClient.listPermissionPaths(
         userId: String,
         projectId: String,
         repoName: String
-    ): Pair<List<String>, List<String>> {
+    ): Pair<List<String>?, List<String>> {
         val result = listPermissionPath(userId, projectId, repoName).data!!
         if (result.status) {
-            val hasPermissionPaths = ArrayList<String>()
-            val noPermissionPaths = ArrayList<String>()
-            result.path.forEach {
-                when (it.key) {
-                    OperationType.IN -> hasPermissionPaths.addAll(it.value)
-                    OperationType.NIN -> noPermissionPaths.addAll(it.value)
-                    else -> throw UnsupportedOperationException("Unsupported operation [${it.key}].")
-                }
-            }
-
-            if (hasPermissionPaths.isNotEmpty() && noPermissionPaths.isNotEmpty()) {
-                throw IllegalStateException(
-                    "contains hasPermissionPath[$hasPermissionPaths] and noPermissionPath[$noPermissionPaths]"
-                )
-            }
-
-            if (hasPermissionPaths.isNotEmpty()) {
-                logger.info("user[$userId] have permission to $hasPermissionPaths of [$projectId/$repoName]")
-            }
-
-            if (noPermissionPaths.isNotEmpty()) {
-                logger.info("user[$userId] does not have permission to $noPermissionPaths of [$projectId/$repoName]")
-            }
-
-            return Pair(hasPermissionPaths, noPermissionPaths)
+            require(result.path.isNotEmpty())
+            require(result.path.all { it.key == OperationType.IN } || result.path.all { it.key == OperationType.NIN })
+            val opType = result.path.entries.first().key
+            return listPermissionPaths(userId, projectId, repoName, opType, result.path.values.flatten())
         }
-        return Pair(emptyList(), emptyList())
+        return Pair(null, emptyList())
+    }
+
+    private fun listPermissionPaths(
+        userId: String,
+        projectId: String,
+        repoName: String,
+        operationType: OperationType,
+        paths: List<String>,
+    ): Pair<List<String>?, List<String>> {
+        if (operationType == OperationType.NIN) {
+            logger.info("user[$userId] does not have permission to $paths of [$projectId/$repoName]")
+            return Pair(null, paths)
+        }
+
+        if (operationType == OperationType.IN) {
+            logger.info("user[$userId] have permission to $paths of [$projectId/$repoName]")
+            return Pair(paths, emptyList())
+        }
+
+        throw UnsupportedOperationException("Unsupported operation [$operationType].")
     }
 
     private fun buildPermissionPathCriteria(paths: List<String>) = paths.flatMap {

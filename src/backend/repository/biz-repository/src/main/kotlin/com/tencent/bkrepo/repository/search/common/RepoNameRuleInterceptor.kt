@@ -160,9 +160,16 @@ class RepoNameRuleInterceptor(
 
         val paths: List<String>
         val relationType: Rule.NestedRule.RelationType
-        if (hasPermissionPaths.isNotEmpty()) {
+        if (hasPermissionPaths?.isNotEmpty() == true) {
             paths = hasPermissionPaths
             relationType = Rule.NestedRule.RelationType.OR
+        } else if (hasPermissionPaths?.isEmpty() == true) {
+            // hasPermissionPath为empty时所有路径都无权限,构造一个永远不成立的条件使查询结果为空列表
+            return Rule.NestedRule(
+                mutableListOf(
+                    repoRule, Rule.QueryRule(NodeInfo::projectId.name, false, OperationType.NULL)
+                )
+            )
         } else if (noPermissionPaths.isNotEmpty()) {
             paths = noPermissionPaths
             relationType = Rule.NestedRule.RelationType.NOR
