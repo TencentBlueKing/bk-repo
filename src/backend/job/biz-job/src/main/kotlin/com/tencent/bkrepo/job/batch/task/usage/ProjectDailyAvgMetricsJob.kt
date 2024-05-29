@@ -123,8 +123,7 @@ class ProjectDailyAvgMetricsJob(
         currentDate: LocalDateTime,
         usage: Double,
     ) {
-        val productId = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_PRODUCT_ID }?.value as? String
-            ?: StringPool.EMPTY
+        val productId = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_PRODUCT_ID }?.value as? Int
         val bgId = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_BG_ID }?.value as? String
             ?: StringPool.EMPTY
         val dailyRecord = TProjectMetricsDailyAvgRecord(
@@ -159,12 +158,12 @@ class ProjectDailyAvgMetricsJob(
 
     private fun covertToFlag(
         bgId: String,
-        productId: String
+        productId: Int?
     ): Boolean {
         return if (properties.bgIds.isEmpty()) {
-            bgId.isNotBlank() && productId.isNotBlank()
+            bgId.isNotBlank() && productId != null
         } else {
-            properties.bgIds.contains(bgId) && bgId.isNotBlank() && productId.isNotBlank()
+            properties.bgIds.contains(bgId) && bgId.isNotBlank() && productId != null
         }
     }
 
