@@ -116,8 +116,8 @@ open class OpenResource(private val permissionService: PermissionService) {
     fun preCheckUserInProject(type: AuthPermissionType, projectId: String, repoName: String?) {
         val checkRequest = CheckPermissionRequest(
             uid = SecurityUtils.getUserId(),
-            resourceType = ResourceType.PROJECT.toString(),
-            action = PermissionAction.WRITE.toString(),
+            resourceType = ResourceType.PROJECT.name,
+            action = PermissionAction.WRITE.name,
             projectId = projectId,
             appId = SecurityUtils.getPlatformId()
         )

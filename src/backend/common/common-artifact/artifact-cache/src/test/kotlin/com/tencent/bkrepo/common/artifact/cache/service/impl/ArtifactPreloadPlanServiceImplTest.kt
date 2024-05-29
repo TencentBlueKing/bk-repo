@@ -253,7 +253,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         lastModifiedDate = "",
         quota = null,
         display = true,
-        used = null,
+        used = null
     )
 
     private fun buildNodeInfo(projectId: String = UT_PROJECT_ID, repoName: String = UT_REPO_NAME): NodeInfo {

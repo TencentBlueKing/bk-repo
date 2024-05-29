@@ -110,6 +110,7 @@ class BkciProjectMetadataSyncJob(
         val metadataMap = project.metadata.associateByTo(HashMap()) { it.key }
         newMetadata.forEach { metadataMap[it.key] = it }
         val update = Update().set(Project::metadata.name, metadataMap.values)
+            .set(Project::displayName.name, bkciProject.projectName)
         mongoTemplate.updateFirst(query, update, "project")
     }
 
@@ -124,7 +125,7 @@ class BkciProjectMetadataSyncJob(
             ProjectMetadata(it[ProjectMetadata::key.name].toString(), it[ProjectMetadata::value.name]!!)
         } ?: emptyList()
 
-        return Project(row[Project::name.name]!! as String, metadata)
+        return Project(row[Project::name.name]!! as String, row[Project::displayName.name]!! as String, metadata)
     }
 
     override fun entityClass() = Project::class
@@ -137,7 +138,7 @@ class BkciProjectMetadataSyncJob(
         private const val DEVOPS_GATEWAY_TAG = "X-GATEWAY-TAG"
     }
 
-    data class Project(val name: String, val metadata: List<ProjectMetadata> = emptyList())
+    data class Project(val name: String, val displayName: String, val metadata: List<ProjectMetadata> = emptyList())
 
     private data class BkciResponse(
         val code: Int? = null,

@@ -61,7 +61,7 @@ interface FileReferenceService {
      * [credentialsKey]为`null`则使用默认的存储实例
      * 增加引用成功则返回`true`
      */
-    fun increment(sha256: String, credentialsKey: String?): Boolean
+    fun increment(sha256: String, credentialsKey: String?, inc: Long = 1L): Boolean
 
     /**
      * 减少文件[sha256]在存储实例[credentialsKey]上的文件数量
@@ -85,4 +85,14 @@ interface FileReferenceService {
      * @param sha256 所引用文件的sha256
      */
     fun get(credentialsKey: String?, sha256: String): FileReference
+
+    /**
+     * 判断引用是否存在
+     *
+     * @param sha256 所引用文件的sha256
+     * @param credentialsKey 文件所在存储实例
+     *
+     * @return 是否存在
+     */
+    fun exists(sha256: String, credentialsKey: String?): Boolean
 }
