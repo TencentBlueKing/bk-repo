@@ -160,7 +160,7 @@ class StorageManager(
             return null
         }
         val range = Range.full(node.size)
-        val nodeResource = nodeResourceFactoryImpl.getNodeResource(node.nodeInfo, range, storageCredentials)
+        val nodeResource = nodeResourceFactory.getNodeResource(node.nodeInfo, range, storageCredentials)
         return nodeResource.getArtifactInputStream()
     }
 
