@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -49,7 +48,6 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
@@ -69,6 +67,7 @@ import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -78,12 +77,10 @@ import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.SortedSet
+import java.util.*
 
 @Service
-class FixToolServiceImpl(
-    private val storageService: StorageService
-) : FixToolService, AbstractChartService() {
+class FixToolServiceImpl : FixToolService, AbstractChartService() {
 
     override fun repairPackageCreatedDate(): List<DateTimeRepairResponse> {
         val repairResponse = mutableListOf<DateTimeRepairResponse>()
@@ -181,7 +178,7 @@ class FixToolServiceImpl(
                     HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
                 )
             }
-        val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
+        val inputStream = storageManager.loadFullArtifactInputStream(nodeDetail, null) ?: run {
             logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
             throw HelmFileNotFoundException(
                 HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
@@ -229,7 +226,7 @@ class FixToolServiceImpl(
                 }
             // sleep 0.1s
             Thread.sleep(100)
-            val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
+            val inputStream = storageManager.loadFullArtifactInputStream(nodeDetail, null) ?: run {
                 logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
                 throw HelmFileNotFoundException(
                     HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
@@ -320,7 +317,7 @@ class FixToolServiceImpl(
             with(it) {
                 // sleep 0.1s
                 Thread.sleep(100)
-                val helmChartMetadata = storageService.load(sha256!!, Range.full(size), null)
+                val helmChartMetadata = storageManager.loadFullArtifactInputStream(NodeDetail(it), null)
                     ?.use {
                         it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION).byteInputStream()
                             .readYamlString<HelmChartMetadata>()
