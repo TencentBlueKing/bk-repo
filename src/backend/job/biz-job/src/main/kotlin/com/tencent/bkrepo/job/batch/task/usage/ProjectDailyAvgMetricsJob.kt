@@ -98,6 +98,7 @@ class ProjectDailyAvgMetricsJob(
                 capSize += it.capSize
                 count++
             }
+            logger.info("project $it usage: $capSize javaClass: ${capSize.javaClass}")
             handleProjectDailyAvgRecord(
                 projectId = it,
                 capSize = capSize,
