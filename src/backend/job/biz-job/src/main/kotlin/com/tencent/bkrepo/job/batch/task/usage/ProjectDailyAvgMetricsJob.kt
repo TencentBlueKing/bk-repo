@@ -98,7 +98,6 @@ class ProjectDailyAvgMetricsJob(
                 capSize += it.capSize
                 count++
             }
-            logger.info("project $it usage: $capSize javaClass: ${capSize.javaClass}")
             handleProjectDailyAvgRecord(
                 projectId = it,
                 capSize = capSize,
@@ -116,6 +115,7 @@ class ProjectDailyAvgMetricsJob(
             .firstOrNull() ?: return
         val usage = (capSize.toDouble() / (count * 1024 * 1024 * 1024))
             .toBigDecimal().setScale(2, BigDecimal.ROUND_HALF_UP).toDouble()
+        logger.info("project $projectId usage: $usage javaClass: ${usage.javaClass}")
         storeDailyAvgRecord(projectInfo, currentDate, usage)
     }
 
