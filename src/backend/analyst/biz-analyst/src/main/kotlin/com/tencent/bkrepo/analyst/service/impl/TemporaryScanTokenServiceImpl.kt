@@ -50,12 +50,11 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_NOT_FOUND
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.SYSTEM_ERROR
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
@@ -75,7 +74,7 @@ class TemporaryScanTokenServiceImpl(
     private val temporaryTokenClient: ServiceTemporaryTokenClient,
     private val redisTemplate: RedisTemplate<String, String>,
     private val scannerProperties: ScannerProperties,
-    private val storageService: StorageService,
+    private val storageManager: StorageManager,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val nodeClient: NodeClient
 ) : TemporaryScanTokenService {
@@ -189,9 +188,7 @@ class TemporaryScanTokenServiceImpl(
 
     private fun getFullPaths(subtask: SubScanTask): Map<String, FileUrl> = with(subtask) {
         return if (repoType == RepositoryType.DOCKER.name) {
-            val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
-            val manifestContent = storageService.load(sha256, Range.full(size), storageCredentials)?.readText()
-                ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "file [$projectId:$repoName:$fullPath] not found")
+            val manifestContent = readManifest(projectId, repoName, sha256, credentialsKey)
             val schemeVersion = OciUtils.schemeVersion(manifestContent)
             val fullPaths = LinkedHashMap<String, FileUrl>()
             // 将manifest下载链接加入fullPaths列表，需要保证map第一项是manifest文件
@@ -220,6 +217,26 @@ class TemporaryScanTokenServiceImpl(
         } else {
             mapOf(subtask.fullPath to FileUrl("", subtask.fileName(), subtask.sha256, subtask.size))
         }
+    }
+
+    private fun readManifest(projectId: String, repoName: String, sha256: String, credentialsKey: String?): String {
+        val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
+        val nodes = nodeClient.queryWithoutCount(
+            NodeQueryBuilder()
+                .projectId(projectId)
+                .repoName(repoName)
+                .sha256(sha256)
+                .select(NodeDetail::fullPath.name)
+                .page(1, 1)
+                .build()
+        )
+        if (nodes.isNotOk() || nodes.data!!.records.isEmpty()) {
+            throw SystemErrorException(RESOURCE_NOT_FOUND, sha256)
+        }
+        val fullPath = nodes.data!!.records[0][NodeDetail::fullPath.name].toString()
+        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let { node ->
+            storageManager.loadFullArtifactInputStream(node, storageCredentials)?.readText()
+        } ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "file [$projectId:$repoName:$fullPath] not found")
     }
 
     private fun tokenKey(subtaskId: String) = "scanner:token:$subtaskId"
