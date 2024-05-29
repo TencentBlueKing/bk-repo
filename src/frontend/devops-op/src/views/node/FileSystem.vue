@@ -58,6 +58,13 @@
           @click="changeRouteQueryParams(1)"
         >查询</el-button>
       </el-form-item>
+      <el-form-item>
+        <el-button
+          size="mini"
+          type="primary"
+          @click="copy"
+        >复制当前所有IP</el-button>
+      </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="clients" style="width: 100%">
       <el-table-column prop="projectId" label="项目ID" />
@@ -108,6 +115,7 @@ import { queryFileSystemClient } from '@/api/fileSystem'
 import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import { formatNormalDate } from '@/utils/date'
+import { copyToClipboard } from '@/utils/copy'
 import FileSystemStatusRecordDialog from '@/views/node/components/FileSystemStatusRecordDialog'
 
 export default {
@@ -237,9 +245,21 @@ export default {
       return row.online === value
     },
     showRecord(row) {
-      console.log(row)
       this.param = row
       this.showDialog = true
+    },
+    copy() {
+      const ips = []
+      let text = ''
+      if (this.clients.length > 0) {
+        for (let i = 0; i < this.clients.length; i++) {
+          ips.push(this.clients[i].ip)
+        }
+        text = ips.join('\n')
+      }
+      copyToClipboard(text).then(res => {
+        this.$message.success('复制成功')
+      })
     }
   }
 }
