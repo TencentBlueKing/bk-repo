@@ -75,7 +75,10 @@ class ArtifactMetricsExporter(
         )
     }
 
-    private fun convertRecordToMap(record: ArtifactTransferRecord, ignoreSizeAndTime: Boolean = false): MutableMap<String, String> {
+    private fun convertRecordToMap(
+        record: ArtifactTransferRecord,
+        ignoreSizeAndTime: Boolean = false
+    ): MutableMap<String, String> {
         val labels = mutableMapOf<String, String>()
         labels[ArtifactTransferRecord::fullPath.name] = record.fullPath
         labels[ArtifactTransferRecord::storage.name] = record.storage
