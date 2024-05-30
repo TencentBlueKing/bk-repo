@@ -872,5 +872,6 @@
     "userSource":"User Source",
     "bkci": "BKCI",
     "rootDirectoryPermission": "Access Control:",
-    "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth."
+    "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth.",
+    "errMsg": "Error Message"
 }
