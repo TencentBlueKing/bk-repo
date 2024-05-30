@@ -320,6 +320,7 @@ open class PermissionServiceImpl constructor(
         val permission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
         val configPath = permHelper.getPermissionPathFromConfig(userId, user.roles, permission, true).toMutableList()
         val personalPath = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
+        configPath.add(defaultPersonalPrefix)
         if (personalPath != null) {
             configPath.add(personalPath.fullPath)
         }
