@@ -314,7 +314,9 @@ class NodeSearchServiceTest @Autowired constructor(
     @Test
     fun testHasPermissionPathSearch() {
         whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
-            ResponseBuilder.success(ListPathResult(status = true, path = mapOf(OperationType.IN to listOf("/a"))))
+            ResponseBuilder.success(
+                ListPathResult(status = true, path = mapOf(OperationType.IN to listOf("/a/a1.txt")))
+            )
         )
         whenever(servicePermissionClient.listPermissionRepo(anyString(), anyString(), isNull())).thenReturn(
             ResponseBuilder.success(listOf(UT_REPO_NAME))
