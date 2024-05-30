@@ -61,14 +61,13 @@ class ArtifactMetricsExporter(
     }
 
     private fun buildMetricItem(item: ArtifactTransferRecord, metricType: TypeOfMetricsItem): MetricsItem? {
-        val ignoreSizeAndTime = metricType != TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE
         val value = when (metricType) {
             TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE -> item.average.toDouble()
             TypeOfMetricsItem.ARTIFACT_TRANSFER_SIZE -> item.bytes.toDouble()
             TypeOfMetricsItem.ARTIFACT_TRANSFER_TIME -> item.elapsed.toDouble()
             else -> return null
         }
-        val labels = convertRecordToMap(item, ignoreSizeAndTime)
+        val labels = convertRecordToMap(item)
         return MetricsItem(
             metricType.displayName, metricType.help,
             metricType.dataModel, metricType.keepHistory, value, labels
@@ -77,7 +76,6 @@ class ArtifactMetricsExporter(
 
     private fun convertRecordToMap(
         record: ArtifactTransferRecord,
-        ignoreSizeAndTime: Boolean = false
     ): MutableMap<String, String> {
         val labels = mutableMapOf<String, String>()
         labels[ArtifactTransferRecord::fullPath.name] = record.fullPath
@@ -86,10 +84,8 @@ class ArtifactMetricsExporter(
         labels[ArtifactTransferRecord::clientIp.name] = record.clientIp
         labels[ArtifactTransferRecord::repoName.name] = record.repoName
         labels[PROJECT_ID] = record.project
-        if (!ignoreSizeAndTime) {
-            labels[ArtifactTransferRecord::elapsed.name] = record.elapsed.toString()
-            labels[ArtifactTransferRecord::bytes.name] = record.bytes.toString()
-        }
+        labels[ArtifactTransferRecord::elapsed.name] = record.elapsed.toString()
+        labels[ArtifactTransferRecord::bytes.name] = record.bytes.toString()
         labels[ArtifactTransferRecord::type.name] = record.type
         return labels
     }
