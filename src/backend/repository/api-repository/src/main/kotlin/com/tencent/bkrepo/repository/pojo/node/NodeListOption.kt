@@ -57,6 +57,8 @@ data class NodeListOption(
     val direction: List<String> = emptyList(),
     @ApiModelProperty("无权限路径")
     var noPermissionPath: List<String> = emptyList(),
+    @ApiModelProperty("有权限的路径")
+    var hasPermissionPath: List<String>? = null,
     @ApiModelProperty("操作用户")
     var operator: String = SYSTEM_USER,
 )

@@ -27,16 +27,20 @@
 
 package com.tencent.bkrepo.repository.util
 
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.exists
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.regex
@@ -47,6 +51,7 @@ import java.time.LocalDateTime
  * 查询条件构造工具
  */
 object NodeQueryHelper {
+    private val logger = LoggerFactory.getLogger(NodeQueryHelper::class.java)
 
     fun nodeQuery(projectId: String, repoName: String, fullPath: String? = null): Query {
         val criteria = where(TNode::projectId).isEqualTo(projectId)
@@ -86,14 +91,19 @@ object NodeQueryHelper {
         if (!option.includeFolder) {
             criteria.and(TNode::folder).isEqualTo(false)
         }
-        return if (option.noPermissionPath.isNotEmpty()) {
-            val noPermissionPathCriteria = option.noPermissionPath.flatMap {
-                listOf(
-                    TNode::fullPath.isEqualTo(it),
-                    TNode::fullPath.regex("^${escapeRegex(it)}")
-                )
-            }
-            Criteria().andOperator(criteria, Criteria().norOperator(noPermissionPathCriteria))
+        return if (option.hasPermissionPath?.isEmpty() == true) {
+            // hasPermissionPath为empty时所有路径都无权限,构造一个永远不成立的条件使查询结果为空列表
+            TNode::projectId.exists(false)
+        } else if (option.hasPermissionPath?.isNotEmpty() == true) {
+            Criteria().andOperator(
+                criteria,
+                Criteria().orOperator(buildPermissionPathCriteria(option.hasPermissionPath!!))
+            )
+        } else if (option.noPermissionPath.isNotEmpty()) {
+            Criteria().andOperator(
+                criteria,
+                Criteria().norOperator(buildPermissionPathCriteria(option.noPermissionPath))
+            )
         } else {
             criteria
         }
@@ -209,6 +219,54 @@ object NodeQueryHelper {
         return Update()
             .set(TNode::lastModifiedBy.name, operator)
             .set(TNode::deleted.name, deleteTime)
+    }
+
+    /**
+     * 查询有权限与无权限的路径
+     *
+     * @param userId 用户
+     * @param projectId 项目
+     * @param repoName 仓库
+     *
+     * @return first为有权限的路径，为空时表示所有路径均无权限，为null时表示未配置，second为无权限路径
+     */
+    fun ServicePermissionClient.listPermissionPaths(
+        userId: String,
+        projectId: String,
+        repoName: String
+    ): Pair<List<String>?, List<String>> {
+        val result = listPermissionPath(userId, projectId, repoName).data!!
+        if (result.status) {
+            require(result.path.isNotEmpty())
+            require(result.path.all { it.key == OperationType.IN } || result.path.all { it.key == OperationType.NIN })
+            val opType = result.path.entries.first().key
+            return listPermissionPaths(userId, projectId, repoName, opType, result.path.values.flatten())
+        }
+        return Pair(null, emptyList())
+    }
+
+    private fun listPermissionPaths(
+        userId: String,
+        projectId: String,
+        repoName: String,
+        operationType: OperationType,
+        paths: List<String>,
+    ): Pair<List<String>?, List<String>> {
+        if (operationType == OperationType.NIN) {
+            logger.info("user[$userId] does not have permission to $paths of [$projectId/$repoName]")
+            return Pair(null, paths)
+        }
+
+        if (operationType == OperationType.IN) {
+            logger.info("user[$userId] have permission to $paths of [$projectId/$repoName]")
+            return Pair(paths, emptyList())
+        }
+
+        throw UnsupportedOperationException("Unsupported operation [$operationType].")
+    }
+
+    private fun buildPermissionPathCriteria(paths: List<String>) = paths.flatMap {
+        listOf(TNode::fullPath.isEqualTo(it), TNode::fullPath.regex("^${escapeRegex(it)}"))
     }
 
     private fun update(operator: String): Update {
