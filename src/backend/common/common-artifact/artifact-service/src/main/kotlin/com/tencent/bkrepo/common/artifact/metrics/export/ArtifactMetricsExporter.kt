@@ -52,31 +52,51 @@ class ArtifactMetricsExporter(
         for (i in 0 until count) {
             val item = queue.poll()
             if (item.project == StringPool.UNKNOWN || item.fullPath == StringPool.UNKNOWN) continue
-            val labels = convertRecordToMap(item)
-            val metrics = TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE
-            val metricItem = MetricsItem(
-                metrics.displayName, metrics.help,
-                metrics.dataModel, metrics.keepHistory, item.average.toDouble(), labels
-            )
-            customMetricsExporter?.reportMetrics(metricItem)
+            ARTIFACT_TRANSFER_METRICS.forEach {
+                buildMetricItem(item, it)?.let { metricsItem ->
+                    customMetricsExporter?.reportMetrics(metricsItem)
+                }
+            }
         }
     }
 
-    private fun convertRecordToMap(record: ArtifactTransferRecord): MutableMap<String, String> {
+    private fun buildMetricItem(item: ArtifactTransferRecord, metricType: TypeOfMetricsItem): MetricsItem? {
+        val ignoreSizeAndTime = metricType != TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE
+        val value = when (metricType) {
+            TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE -> item.average.toDouble()
+            TypeOfMetricsItem.ARTIFACT_TRANSFER_SIZE -> item.bytes.toDouble()
+            TypeOfMetricsItem.ARTIFACT_TRANSFER_TIME -> item.elapsed.toDouble()
+            else -> return null
+        }
+        val labels = convertRecordToMap(item, ignoreSizeAndTime)
+        return MetricsItem(
+            metricType.displayName, metricType.help,
+            metricType.dataModel, metricType.keepHistory, value, labels
+        )
+    }
+
+    private fun convertRecordToMap(record: ArtifactTransferRecord, ignoreSizeAndTime: Boolean = false): MutableMap<String, String> {
         val labels = mutableMapOf<String, String>()
         labels[ArtifactTransferRecord::fullPath.name] = record.fullPath
         labels[ArtifactTransferRecord::storage.name] = record.storage
-        labels[ArtifactTransferRecord::bytes.name] = record.bytes.toString()
         labels[ArtifactTransferRecord::sha256.name] = record.sha256
         labels[ArtifactTransferRecord::clientIp.name] = record.clientIp
         labels[ArtifactTransferRecord::repoName.name] = record.repoName
         labels[PROJECT_ID] = record.project
-        labels[ArtifactTransferRecord::elapsed.name] = record.elapsed.toString()
+        if (!ignoreSizeAndTime) {
+            labels[ArtifactTransferRecord::elapsed.name] = record.elapsed.toString()
+            labels[ArtifactTransferRecord::bytes.name] = record.bytes.toString()
+        }
         labels[ArtifactTransferRecord::type.name] = record.type
         return labels
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactMetricsExporter::class.java)
+        private val ARTIFACT_TRANSFER_METRICS = listOf(
+            TypeOfMetricsItem.ARTIFACT_TRANSFER_TIME,
+            TypeOfMetricsItem.ARTIFACT_TRANSFER_SIZE,
+            TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE
+        )
     }
 }

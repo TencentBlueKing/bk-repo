@@ -40,4 +40,22 @@ enum class TypeOfMetricsItem(
         DataModel.DATAMODEL_GAUGE,
         false,
     ),
+    /**
+     * 制品传输大小
+     */
+    ARTIFACT_TRANSFER_SIZE(
+        "artifact_transfer_size",
+        "artifact transfer size",
+        DataModel.DATAMODEL_GAUGE,
+        false,
+    ),
+    /**
+     * 制品传输耗时
+     */
+    ARTIFACT_TRANSFER_TIME(
+        "artifact_transfer_time",
+        "artifact transfer time",
+        DataModel.DATAMODEL_GAUGE,
+        false,
+    ),
 }
