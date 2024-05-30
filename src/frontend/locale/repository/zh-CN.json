@@ -265,7 +265,7 @@
     "normalUser": "普通用户",
     "totalVersionCount": "共计{0}个版本",
     "artifactVersion": "制品版本",
-    "userImport": "用户导入",
+    "import": "导入",
     "createUser": "新建用户",
     "editUser": "编辑用户",
     "resetPassword": "重置密码",
@@ -868,6 +868,10 @@
     "copyAll": "复制全部",
     "clear": "清空",
     "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割",
+    "importBkTitle":"蓝盾用户导入",
+    "bkciUserGroup":"蓝盾用户组",
+    "userSource":"用户来源",
+    "bkci": "蓝盾",
     "rootDirectoryPermission": "访问控制：",
     "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权"
 }

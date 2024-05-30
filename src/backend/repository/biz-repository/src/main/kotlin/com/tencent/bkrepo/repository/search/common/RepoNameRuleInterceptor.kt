@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.listPermissionPaths
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
@@ -151,30 +152,40 @@ class RepoNameRuleInterceptor(
 
     private fun buildRule(projectId: String, repoName: String): Rule {
         val repoRule = Rule.QueryRule(NodeInfo::repoName.name, repoName, OperationType.EQ).toFixed()
-        return listNoPermissionPath(projectId, repoName)?.let {
-            val pathRules = it.flatMapTo(ArrayList(it.size)) { path ->
-                listOf(
-                    Rule.QueryRule(NodeInfo::fullPath.name, path.ensureSuffix("/"), OperationType.PREFIX) as Rule,
-                    Rule.QueryRule(NodeInfo::fullPath.name, path, OperationType.EQ) as Rule,
-                )
-            }
-            val pathRule = Rule.NestedRule(pathRules, Rule.NestedRule.RelationType.NOR)
-            Rule.NestedRule(mutableListOf(repoRule, pathRule))
-        } ?: repoRule
-    }
 
-    private fun listNoPermissionPath(projectId: String, repoName: String): List<String>? {
-        val userId = SecurityUtils.getUserId()
-        val result = servicePermissionClient.listPermissionPath(userId, projectId, repoName).data!!
-        if (result.status) {
-            val paths = result.path.flatMap {
-                require(it.key == OperationType.NIN)
-                it.value
-            }
-            logger.info("user[$userId] does not have permission to $paths of [$projectId/$repoName], will be filtered")
-            return paths.ifEmpty { null }
+        // 获取有权限或无权限的路径
+        val (hasPermissionPaths, noPermissionPaths) = servicePermissionClient.listPermissionPaths(
+            SecurityUtils.getUserId(), projectId, repoName
+        )
+
+        val paths: List<String>
+        val relationType: Rule.NestedRule.RelationType
+        if (hasPermissionPaths?.isNotEmpty() == true) {
+            paths = hasPermissionPaths
+            relationType = Rule.NestedRule.RelationType.OR
+        } else if (hasPermissionPaths?.isEmpty() == true) {
+            // hasPermissionPath为empty时所有路径都无权限,构造一个永远不成立的条件使查询结果为空列表
+            return Rule.NestedRule(
+                mutableListOf(
+                    repoRule, Rule.QueryRule(NodeInfo::projectId.name, false, OperationType.NULL)
+                )
+            )
+        } else if (noPermissionPaths.isNotEmpty()) {
+            paths = noPermissionPaths
+            relationType = Rule.NestedRule.RelationType.NOR
+        } else {
+            return repoRule
         }
-        return null
+
+        // 构造rule
+        val pathRules = paths.flatMapTo(ArrayList(paths.size)) { path ->
+            listOf(
+                Rule.QueryRule(NodeInfo::fullPath.name, path.ensureSuffix("/"), OperationType.PREFIX) as Rule,
+                Rule.QueryRule(NodeInfo::fullPath.name, path, OperationType.EQ) as Rule,
+            )
+        }
+        val pathRule = Rule.NestedRule(pathRules, relationType)
+        return Rule.NestedRule(mutableListOf(repoRule, pathRule))
     }
 
     private fun hasRepoPermission(
