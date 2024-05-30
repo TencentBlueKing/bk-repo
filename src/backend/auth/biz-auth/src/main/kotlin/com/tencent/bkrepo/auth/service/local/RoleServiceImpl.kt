@@ -43,6 +43,7 @@ import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.UserHelper
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -75,7 +76,9 @@ class RoleServiceImpl constructor(
 
     override fun detail(rid: String, projectId: String, repoName: String): Role? {
         logger.debug("get  role  detail rid : [$rid,$projectId,$repoName]")
-        val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
+        val result =
+            roleRepository.findFirstByTypeAndRoleIdAndProjectIdAndRepoName(RoleType.REPO, rid, projectId, repoName)
+                ?: return null
         return transfer(result)
     }
 
@@ -111,7 +114,7 @@ class RoleServiceImpl constructor(
     override fun listRoleByProject(projectId: String, repoName: String?): List<Role> {
         logger.debug("list role by project ,[$projectId , $repoName]")
         repoName?.let {
-            return roleRepository.findByProjectIdAndRepoNameAndType(projectId, repoName, RoleType.REPO)
+            return roleRepository.findByTypeAndProjectIdAndRepoName(RoleType.REPO, projectId, repoName)
                 .map { transfer(it) }
         }
         return roleRepository.findByTypeAndProjectIdAndAdminAndRoleIdNotIn(
@@ -120,6 +123,11 @@ class RoleServiceImpl constructor(
             false,
             listOf(PROJECT_MANAGE_ID, PROJECT_VIEWER_ID)
         ).map { transfer(it) }
+    }
+
+    override fun listRoleBySource(source: RoleSource): List<Role> {
+        logger.debug("list role by role ,[$source]")
+        return roleRepository.findBySource(source).map { transfer(it) }
     }
 
     override fun deleteRoleById(id: String): Boolean {
@@ -149,7 +157,8 @@ class RoleServiceImpl constructor(
             projectId = tRole.projectId,
             admin = tRole.admin,
             users = users,
-            description = tRole.description
+            description = tRole.description,
+            source = tRole.source
         )
     }
 
