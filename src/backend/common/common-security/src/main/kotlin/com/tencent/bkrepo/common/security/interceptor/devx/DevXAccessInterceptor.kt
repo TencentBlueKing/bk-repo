@@ -30,12 +30,14 @@ package com.tencent.bkrepo.common.security.interceptor.devx
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -104,7 +106,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
 
         if (matchPrefix || matchSuffix) {
             logger.info("User[$user] was forbidden because of suffix or prefix")
-            throw PermissionException()
+            throw if (user == ANONYMOUS_USER) AuthenticationException() else PermissionException()
         }
     }
 

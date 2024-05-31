@@ -309,6 +309,10 @@ export default {
             commit('SET_REPO_PERMISSION_LIMIT', res)
         })
     },
+    // 获取蓝盾传输的用户组
+    getUserGroupByExternal (_, { projectId, sourceId }) {
+        return Vue.prototype.$ajax.get(`${authPrefix}/permission/external/group/${projectId}/${sourceId}`)
+    },
     // 获取当前repo的根目录权限
     getRootPermission (_, { projectId, repoName }) {
         return Vue.prototype.$ajax.get(

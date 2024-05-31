@@ -37,6 +37,8 @@ import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
+import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 
 interface PermissionService {
     /**
@@ -98,4 +100,6 @@ interface PermissionService {
     fun getPathCheckConfig(): Boolean
 
     fun getOrCreatePersonalPath(projectId: String, repoName: String): String
+
+    fun listExternalRoleByProject(projectId: String, source: RoleSource): List<ExternalRoleResult>
 }
