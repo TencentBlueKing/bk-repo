@@ -40,6 +40,8 @@ import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
+import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -181,5 +183,15 @@ class PermissionController @Autowired constructor(
     ): Response<String> {
         preCheckUserInProject(AuthPermissionType.REPO, projectId, repoName)
         return ResponseBuilder.success(permissionService.getOrCreatePersonalPath(projectId, repoName))
+    }
+
+    @ApiOperation("查询外部用户组")
+    @GetMapping("/external/group/{projectId}/{source}")
+    fun getExternalRole(
+        @PathVariable projectId: String,
+        @PathVariable source: RoleSource
+    ): Response<List<ExternalRoleResult>> {
+        preCheckProjectAdmin(projectId)
+        return ResponseBuilder.success(permissionService.listExternalRoleByProject(projectId, source))
     }
 }

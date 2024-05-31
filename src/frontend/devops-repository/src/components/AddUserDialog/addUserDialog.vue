@@ -72,12 +72,6 @@
             visible: function (newVal) {
                 if (newVal) {
                     this.showDialog = true
-                    this.editUserConfig = {
-                        users: this.showData.users,
-                        search: '',
-                        newUser: '',
-                        originUsers: this.showData.originUsers
-                    }
                 } else {
                     this.cancel()
                 }

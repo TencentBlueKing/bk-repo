@@ -64,6 +64,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
@@ -308,6 +309,49 @@ class NodeSearchServiceTest @Autowired constructor(
         queryModel = QueryModel(sort = null, select = null, rule = Rule.NestedRule(rules))
         result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(4, result.totalRecords)
+    }
+
+    @Test
+    fun testHasPermissionPathSearch() {
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(status = true, path = mapOf(OperationType.IN to listOf("/a/a1.txt")))
+            )
+        )
+        whenever(servicePermissionClient.listPermissionRepo(anyString(), anyString(), isNull())).thenReturn(
+            ResponseBuilder.success(listOf(UT_REPO_NAME))
+        )
+
+        // 创建node
+        val createNodeRequest = createRequest("/a/a1.txt", false)
+        nodeService.createNode(createNodeRequest)
+        nodeService.createNode(createNodeRequest.copy(fullPath = "/b/b1.txt"))
+        nodeService.createNode(createNodeRequest.copy(fullPath = "/c/c1.txt"))
+
+        // 查询
+        val queryModel = createQueryBuilder().build()
+        val result = nodeSearchService.search(queryModel)
+        Assertions.assertEquals(2, result.totalRecords)
+
+        // 测试所有路径均无权限
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(ListPathResult(status = true, path = mapOf(OperationType.IN to emptyList())))
+        )
+        Assertions.assertEquals(0, nodeSearchService.search(queryModel).totalRecords)
+
+        // 测试同时存在NIN与IN
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(
+                    status = true,
+                    path = mapOf(
+                        OperationType.IN to listOf("/a"),
+                        OperationType.NIN to listOf("/b"),
+                    )
+                )
+            )
+        )
+        assertThrows<IllegalArgumentException> { nodeSearchService.search(queryModel) }
     }
 
     private fun testLocalDateTimeOperation(
