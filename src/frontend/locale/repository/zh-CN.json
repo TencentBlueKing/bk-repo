@@ -873,5 +873,6 @@
     "userSource":"用户来源",
     "bkci": "蓝盾",
     "rootDirectoryPermission": "访问控制：",
-    "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权"
+    "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权",
+    "errMsg": "错误信息"
 }
