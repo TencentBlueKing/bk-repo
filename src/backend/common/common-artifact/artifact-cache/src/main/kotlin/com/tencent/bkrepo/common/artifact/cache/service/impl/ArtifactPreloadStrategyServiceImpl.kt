@@ -42,7 +42,6 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.ARTIFACT_P
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.ARTIFACT_PRELOAD_STRATEGY_NOT_FOUND
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.support.CronExpression
-import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.regex.PatternSyntaxException
 

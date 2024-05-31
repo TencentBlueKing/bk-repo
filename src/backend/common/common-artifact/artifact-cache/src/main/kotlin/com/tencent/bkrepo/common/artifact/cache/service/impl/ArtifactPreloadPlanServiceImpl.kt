@@ -50,7 +50,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
-import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -147,7 +146,7 @@ class ArtifactPreloadPlanServiceImpl(
         if (sizeNotMatch || pathNotMatch || createTimeNotMatch) {
             logger.info(
                 "${node.projectId}/${node.repoName}${node.fullPath} not match preload strategy, " +
-                        "node size[${node.size}], node createdDateTime[$createdDateTime]"
+                    "node size[${node.size}], node createdDateTime[$createdDateTime]"
             )
             return null
         }

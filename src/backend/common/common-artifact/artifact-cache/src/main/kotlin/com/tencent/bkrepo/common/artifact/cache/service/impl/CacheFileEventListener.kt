@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
-import org.springframework.stereotype.Component
 
 /**
  * 缓存文件相关事件监听器

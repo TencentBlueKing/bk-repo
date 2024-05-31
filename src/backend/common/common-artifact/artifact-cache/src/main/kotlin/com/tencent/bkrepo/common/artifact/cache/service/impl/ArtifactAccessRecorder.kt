@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.scheduling.annotation.Async
-import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
