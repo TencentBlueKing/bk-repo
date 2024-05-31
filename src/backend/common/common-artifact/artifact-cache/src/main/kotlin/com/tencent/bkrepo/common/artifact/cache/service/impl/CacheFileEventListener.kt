@@ -38,7 +38,6 @@ import org.springframework.stereotype.Component
 /**
  * 缓存文件相关事件监听器
  */
-@Component
 class CacheFileEventListener(
     private val properties: ArtifactPreloadProperties,
     private val preloadPlanService: ArtifactPreloadPlanService,

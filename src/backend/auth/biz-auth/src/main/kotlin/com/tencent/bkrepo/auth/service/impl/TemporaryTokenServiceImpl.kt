@@ -30,7 +30,7 @@ package com.tencent.bkrepo.auth.service.impl
 import com.tencent.bkrepo.auth.model.TTemporaryToken
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
-import com.tencent.bkrepo.auth.dao.TemporaryTokenDao
+import com.tencent.bkrepo.auth.dao.AuthTemporaryTokenDao
 import com.tencent.bkrepo.auth.service.TemporaryTokenService
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
@@ -50,7 +50,7 @@ import java.util.UUID
 @Service("authTemporaryTokenServiceImpl")
 @Conditional(DefaultCondition::class)
 class TemporaryTokenServiceImpl(
-    private val temporaryTokenRepository: TemporaryTokenDao
+    private val temporaryTokenRepository: AuthTemporaryTokenDao
 ) : TemporaryTokenService {
 
     override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {

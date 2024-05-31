@@ -26,6 +26,9 @@
  */
 
 dependencies {
-    implementation(project(":router-controller:biz-router-controller"))
+    api(project(":router-controller:api-router-controller"))
+    api(project(":common:common-mongo"))
+    api(project(":common:common-query:query-mongo"))
+    api(project(":common:common-service"))
+    api(project(":common:common-security"))
 }
-

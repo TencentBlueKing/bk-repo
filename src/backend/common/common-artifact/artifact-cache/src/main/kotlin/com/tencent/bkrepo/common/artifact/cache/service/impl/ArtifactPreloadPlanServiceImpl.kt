@@ -56,7 +56,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
-@Service
 class ArtifactPreloadPlanServiceImpl(
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,

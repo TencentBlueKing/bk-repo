@@ -58,7 +58,6 @@ import java.util.concurrent.TimeUnit
 /**
  * 制品加载器，负责将制品加载到存储缓存中
  */
-@Component
 class DefaultPreloadPlanExecutor(
     private val preloadProperties: ArtifactPreloadProperties,
     private val cacheStorageService: StorageService,

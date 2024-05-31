@@ -48,7 +48,6 @@ import java.time.format.DateTimeFormatter
 /**
  * 记录制品访问时间，用于统计项目制品使用习惯
  */
-@Component
 class ArtifactAccessRecorder(
     private val preloadProperties: ArtifactPreloadProperties,
     private val artifactAccessRecordDao: ArtifactAccessRecordDao,

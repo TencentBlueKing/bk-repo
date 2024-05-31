@@ -46,7 +46,6 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.regex.PatternSyntaxException
 
-@Service
 class ArtifactPreloadStrategyServiceImpl(
     private val artifactPreloadStrategyDao: ArtifactPreloadStrategyDao,
     private val preloadProperties: ArtifactPreloadProperties,
