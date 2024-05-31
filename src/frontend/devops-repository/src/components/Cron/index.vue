@@ -101,13 +101,12 @@
                                     :create-tag-validator="tag => {
                                         return Number(tag) && tag >= new Date().getFullYear()
                                     }"
-                                    :title="cron[tab][type]"
+                                    @change="uiChange"
+                                    @click.native.stop.prevent="() => {}"
                                     :list="cron[tab].enumerationList.map(v => ({
                                         id: v,
                                         name: tab === 'week' ? $t(`cron.${tab}`) + $t(`cron.${v}`) : v + $t(`cron.${tab}`)
                                     }))">
-                                    @change="uiChange"
-                                    @click.native.stop.prevent="() => {}"
                                 </bk-tag-input>
                             </template>
                         </bk-radio>
