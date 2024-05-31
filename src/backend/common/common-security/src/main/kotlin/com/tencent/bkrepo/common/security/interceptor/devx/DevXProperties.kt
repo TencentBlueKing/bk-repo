@@ -131,4 +131,16 @@ data class DevXProperties(
      * 应用devX拦截器的接口
      */
     var includePatterns: List<String> = emptyList(),
+
+    /**
+     * 校验devx token接口url
+     */
+    var validateTokenUrl: String = "",
+
+    /**
+     * 校验devx token接口的认证token
+     */
+    var authToken: String = "",
+
+
 )
