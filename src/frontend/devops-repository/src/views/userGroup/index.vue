@@ -34,7 +34,7 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: $t('edit'), clickEvent: () => editRoleHandler(row) },
+                            !row.source && { label: $t('edit'), clickEvent: () => editRoleHandler(row) },
                             { label: $t('delete'), clickEvent: () => deleteRoleHandler(row) }
                         ]"></operation-list>
                 </template>
