@@ -391,5 +391,18 @@ export default {
                 }
             }
         )
+    },
+    // 查询节点下载历史
+    getDownloadRecord (_, { projectId, repoName, path, pageNumber, pageSize = 15 }) {
+        return Vue.prototype.$ajax.post(
+            'generic/download/record/page',
+            {
+                projectId: projectId,
+                repoName: repoName,
+                path: path,
+                pageNumber: pageNumber,
+                pageSize: pageSize
+            }
+        )
     }
 }

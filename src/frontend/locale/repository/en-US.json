@@ -873,5 +873,8 @@
     "bkci": "BKCI",
     "rootDirectoryPermission": "Access Control:",
     "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth.",
-    "errMsg": "Error Message"
+    "errMsg": "Error Message",
+    "downloadHistory": "Download History(Last Year)",
+    "downloadDate": "Download Date",
+    "downloader": "Downloader"
 }
