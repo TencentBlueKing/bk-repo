@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
@@ -114,7 +115,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.devops.api.http.HttpHeaders
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
@@ -264,6 +264,7 @@ class GenericLocalRepository(
                 ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true)  }?.value?.toString()
             if (mPipelineId != null) {
                 val status = checkPipelineArtifactUploadPermission(
+                    artifactInfo = this,
                     existNode = existNode,
                     metadata = metadata
                 )
@@ -271,10 +272,6 @@ class GenericLocalRepository(
             } else {
                 checkNormalArtifactUploadPermission(existNode, projectId, repoName)
             }
-
-            logger.warn("User[${SecurityUtils.getPrincipal()}] try to overwrite " +
-                "pipeline artifact[$projectId/$repoName${getArtifactFullPath()}], " +
-                "user agent[${HeaderUtils.getHeader(HttpHeaders.USER_AGENT)}]")
         }
     }
 
@@ -296,14 +293,18 @@ class GenericLocalRepository(
      * 检查流水线归档的上传权限
      * 1. 需要包含流水线元数据，projectId、pipelineId、buildId或buildNo、taskId(可选)
      * 2. 对应流水线需要是正在运行的状态
-     * 3. 如果是全新上传，则允许上传
+     * 3. 如果是全新上传，
+     *      * 3.1.如果是流水线仓库，元数据pipelineId、buildId需要和路径一致
+     *      * 3.2.如果是自定义仓库，则允许上传
      * 4. 如果是覆盖上传
      *      * 4.1.如果是流水线仓库，buildId需要和原节点一致
      *      * 4.1.如果是自定义仓库，则允许覆盖
      */
+    @Suppress("ComplexMethod")
     fun checkPipelineArtifactUploadPermission(
+        artifactInfo: ArtifactInfo,
         existNode: NodeDetail?,
-        metadata: List<MetadataModel>
+        metadata: List<MetadataModel>,
     ): PipelineBuildStatus {
         val subProjectId = metadata.find { it.key.equals(METADATA_SUB_PROJECT_ID, true) }?.value?.toString()
         val subPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true)  }?.value?.toString()
@@ -315,21 +316,21 @@ class GenericLocalRepository(
         if (projectId == null) {
             ciPermissionManager.throwOrLogError(
                 messageCode = GenericMessageCode.PIPELINE_METADATA_INCOMPLETE,
-                param = "projectId"
+                "projectId"
             )
             return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
         }
         if (pipelineId == null) {
             ciPermissionManager.throwOrLogError(
                 messageCode = GenericMessageCode.PIPELINE_METADATA_INCOMPLETE,
-                param = "pipelineId"
+                "pipelineId"
             )
             return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
         }
         if (buildId == null && folderBuildId == null) {
             ciPermissionManager.throwOrLogError(
                 messageCode = GenericMessageCode.PIPELINE_METADATA_INCOMPLETE,
-                param = "buildId"
+                "buildId"
             )
             return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
         }
@@ -338,16 +339,36 @@ class GenericLocalRepository(
             pipelineId = subPipelineId ?: pipelineId,
             buildId = subBuildId ?: buildId ?: folderBuildId
         )
-        val existBuildIdKey = existNode?.metadata?.keys?.find { it.equals(METADATA_BUILD_ID, true) }
-        val diffBuildId = existNode?.metadata?.get(existBuildIdKey) != buildId
-        if (existNode?.repoName == PIPELINE && diffBuildId) {
-            ciPermissionManager.throwOrLogError(
-                messageCode = GenericMessageCode.PIPELINE_ARTIFACT_OVERWRITE_NOT_ALLOWED,
-                param = "${existNode.projectId}${existNode.path.removeSuffix(StringPool.SLASH)}"
-            )
-            return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
+        if (artifactInfo.repoName == CUSTOM) {
+            return status
         }
-        return status
+        if (existNode == null) {
+            val folders = artifactInfo.getArtifactFullPath().split(StringPool.SLASH)
+            if (folders.size < 4) {
+                ciPermissionManager.throwOrLogError(GenericMessageCode.PIPELINE_REPO_MANUAL_UPLOAD_NOT_ALLOWED)
+                return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
+            }
+            val pPipelineId = folders[1]
+            val pBuildId = folders[2]
+            if (pPipelineId != pipelineId || pBuildId != (buildId ?: folderBuildId)) {
+                ciPermissionManager.throwOrLogError(
+                    messageCode = GenericMessageCode.PIPELINE_ARTIFACT_PATH_ILLEGAL,
+                    artifactInfo.getArtifactFullPath(), "${artifactInfo.projectId}/$pPipelineId/$pBuildId")
+                return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
+            }
+            return status
+        } else {
+            val existBuildIdKey = existNode.metadata.keys.find { it.equals(METADATA_BUILD_ID, true) }
+            val diffBuildId = existNode.metadata[existBuildIdKey] != buildId
+            if (existNode.repoName == PIPELINE && diffBuildId) {
+                ciPermissionManager.throwOrLogError(
+                    messageCode = GenericMessageCode.PIPELINE_ARTIFACT_OVERWRITE_NOT_ALLOWED,
+                    "${existNode.projectId}${existNode.path.removeSuffix(StringPool.SLASH)}"
+                )
+                return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
+            }
+            return status
+        }
     }
 
     /**
@@ -361,16 +382,19 @@ class GenericLocalRepository(
         repoName: String
     ) {
         if (repoName == PIPELINE) {
-            return ciPermissionManager.throwOrLogError(
-                messageCode = GenericMessageCode.PIPELINE_REPO_MANUAL_UPLOAD_NOT_ALLOWED,
-                param = null
-            )
+            return ciPermissionManager.throwOrLogError(GenericMessageCode.PIPELINE_REPO_MANUAL_UPLOAD_NOT_ALLOWED)
         }
         existNode?.metadata?.keys?.forEach { key ->
             if (CIPermissionManager.PIPELINE_METADATA.any { it.equals(key, true) }) {
+                val mProjectId = existNode.metadata[METADATA_PROJECT_ID]
+                    ?: existNode.metadata[METADATA_PROJECT_ID.toLowerCase()]
+                val mPipelineId = existNode.metadata[METADATA_PIPELINE_ID]
+                    ?: existNode.metadata[METADATA_PIPELINE_ID.toLowerCase()]
+                val mBuildId = existNode.metadata[METADATA_BUILD_ID]
+                    ?: existNode.metadata[METADATA_BUILD_ID.toLowerCase()]
                 return ciPermissionManager.throwOrLogError(
                     messageCode = GenericMessageCode.CUSTOM_ARTIFACT_OVERWRITE_NOT_ALLOWED,
-                    param = existNode.fullPath
+                    existNode.fullPath, "$mProjectId/$mPipelineId/$mBuildId"
                 )
             }
         }

@@ -93,15 +93,14 @@ open class CIPermissionManager(
         return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
     }
 
-    fun throwOrLogError(messageCode: MessageCode, param: Any?) {
-        val params = param ?: ""
+    fun throwOrLogError(messageCode: MessageCode, vararg params: Any) {
         val url = HttpContextHolder.getRequestOrNull()?.requestURI
         val user = SecurityUtils.getPrincipal()
         val userAgent = HeaderUtils.getHeader(HttpHeaders.USER_AGENT)
-        val msg = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(params))
+        val msg = LocaleMessageUtils.getLocalizedMessage(messageCode, params)
         logger.warn("user[$user] illegal pipeline artifact request[$url], error: $msg, user agent: $userAgent")
         if (ciPermissionProperties.returnError) {
-            throw ErrorCodeException(messageCode, params)
+            throw ErrorCodeException(messageCode, params = params)
         }
     }
 

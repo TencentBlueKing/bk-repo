@@ -162,7 +162,7 @@ class MetadataServiceImpl(
         if (illegal) {
             ciPermissionManager.throwOrLogError(
                 messageCode = RepositoryMessageCode.PIPELINE_METADATA_UPDATE_NOT_ALLOWED,
-                param = pipelineMetadataKey
+                pipelineMetadataKey!!
             )
         }
     }
