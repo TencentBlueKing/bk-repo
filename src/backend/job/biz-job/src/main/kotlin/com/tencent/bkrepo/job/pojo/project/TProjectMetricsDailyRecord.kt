@@ -38,7 +38,7 @@ import java.time.LocalDateTime
 @Document(collection = "project_metrics_daily_record")
 @CompoundIndexes(
     CompoundIndex(
-        name = "project_record_idx",
+        name = "project_created_idx",
         def = "{'projectId': 1,'createdDate': 1}",
         background = true,
         unique = true
