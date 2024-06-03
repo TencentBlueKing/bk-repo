@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.security.interceptor.devx
 
-data class QueryResponse(
+data class QueryResponse<out T>(
     val status: Int,
-    val data: List<DevXWorkSpace>,
+    val data: T?,
 )

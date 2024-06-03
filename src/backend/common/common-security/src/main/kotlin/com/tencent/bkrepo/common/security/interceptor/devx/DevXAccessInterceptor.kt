@@ -133,7 +133,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         }
         val ips = HashSet<String>()
         devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
-        response.body!!.byteStream().readJsonString<QueryResponse>().data.forEach { workspace ->
+        response.body!!.byteStream().readJsonString<QueryResponse<List<DevXWorkSpace>>>().data!!.forEach { workspace ->
             workspace.innerIp?.substringAfter('.')?.let { ips.add(it) }
         }
         return ips

@@ -184,7 +184,7 @@ class DevxWorkspaceUtils(
             } else {
                 val ips = HashSet<String>()
                 devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
-                response.awaitBody<QueryResponse>().data.forEach { workspace ->
+                response.awaitBody<QueryResponse<List<DevXWorkSpace>>>().data!!.forEach { workspace ->
                     workspace.innerIp?.substringAfter('.')?.let { ips.add(it) }
                 }
                 ips
@@ -197,7 +197,7 @@ class DevxWorkspaceUtils(
                 logger.error("${response.statusCode()} $errorMsg")
                 emptyList()
             } else {
-                response.awaitBody<QueryResponse>().data
+                response.awaitBody<QueryResponse<List<DevXWorkSpace>>>().data!!
             }
         }
     }
