@@ -119,7 +119,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 加载要返回的资源
      */
     open fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
-        return storageService.load(cacheNode.sha256!!, Range.full(cacheNode.size), context.storageCredentials)?.run {
+        return storageManager.loadFullArtifactInputStream(cacheNode, context.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
             }

@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -440,11 +439,10 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
     }
 
     private fun nodeToJson(node: NodeDetail): String {
-        val inputStream = storageService.load(
-            node.sha256!!,
-            Range.full(node.size),
-            null
-        ) ?: throw RuntimeException("load ${node.projectId} | ${node.repoName} | ${node.fullPath} error")
+        val repoId = ArtifactContextHolder.RepositoryId(node.projectId, node.repoName)
+        val storageCredentials = ArtifactContextHolder.getRepoDetail(repoId).storageCredentials
+        val inputStream = storageManager.loadFullArtifactInputStream(node, storageCredentials)
+            ?: throw RuntimeException("load ${node.projectId} | ${node.repoName} | ${node.fullPath} error")
         val stringBuilder = StringBuilder()
         var line: String?
         try {

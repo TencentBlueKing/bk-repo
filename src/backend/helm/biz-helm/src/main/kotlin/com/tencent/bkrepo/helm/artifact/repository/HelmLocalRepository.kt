@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.FileNameParser
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
@@ -216,9 +215,7 @@ class HelmLocalRepository(
         val fullPath = context.getStringAttribute(FULL_PATH)!!
         val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
         if (node == null || node.folder) return null
-        return storageService.load(
-            node.sha256!!, Range.full(node.size), context.storageCredentials
-        )
+        return storageManager.loadFullArtifactInputStream(node, context.storageCredentials)
     }
 
     /**
