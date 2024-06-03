@@ -42,10 +42,14 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
@@ -64,7 +68,6 @@ import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.CompressedFileService
 import com.tencent.bkrepo.generic.service.DownloadService
-import com.tencent.bkrepo.generic.service.GenericDownloadRecordService
 import com.tencent.bkrepo.generic.service.UploadService
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -79,6 +82,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
 
 @RestController
 class GenericController(
@@ -86,7 +90,7 @@ class GenericController(
     private val downloadService: DownloadService,
     private val permissionManager: PermissionManager,
     private val compressedFileService: CompressedFileService,
-    private val genericDownloadRecordService: GenericDownloadRecordService
+    private val operateLogService: OperateLogService
 ) {
 
     @PutMapping(GENERIC_MAPPING_URI)
@@ -229,7 +233,19 @@ class GenericController(
     @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
     fun getDownloadRecord(
         @RequestBody genericPageRequest: GenericPageRequest
-    ): Response<Page<TOperateLog>> {
-        return ResponseBuilder.success(genericDownloadRecordService.getRecord(genericPageRequest))
+    ): Response<Page<OperateLog>> {
+        with(genericPageRequest) {
+            val option = OpLogListOption(
+                projectId = projectId,
+                repoName = repoName,
+                resourceKey = path,
+                pageNumber = pageNumber,
+                pageSize = pageSize,
+                eventType = EventType.NODE_DOWNLOADED,
+                startTime = LocalDateTime.now().minusYears(1),
+                endTime = LocalDateTime.now()
+            )
+            return ResponseBuilder.success((operateLogService.listPage(option)))
+        }
     }
 }
