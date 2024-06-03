@@ -151,7 +151,8 @@ class GenericRemoteRepository(
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
             }
-            ArtifactResource(this, context.artifactInfo.getResponseName(), cacheNode, ArtifactChannel.PROXY)
+            val artifactName = context.artifactInfo.getResponseName()
+            ArtifactResource(this, artifactName, cacheNode, ArtifactChannel.PROXY, context.useDisposition)
         }
     }
 
