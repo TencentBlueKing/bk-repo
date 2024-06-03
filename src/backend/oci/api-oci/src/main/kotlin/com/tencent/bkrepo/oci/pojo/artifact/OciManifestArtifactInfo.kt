@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.oci.pojo.artifact
 
+import com.tencent.bkrepo.oci.constant.DOCKER_DISTRIBUTION_MANIFEST_LIST_V2
+import com.tencent.bkrepo.oci.constant.IMAGE_INDEX_MEDIA_TYPE
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 
 class OciManifestArtifactInfo(
@@ -35,17 +37,28 @@ class OciManifestArtifactInfo(
     packageName: String,
     version: String,
     val reference: String,
-    val isValidDigest: Boolean
+    val isValidDigest: Boolean,
+    var mediaType: String? = null
 ) : OciArtifactInfo(projectId, repoName, packageName, version) {
 
     override fun getArtifactFullPath(): String {
         return if(getArtifactMappingUri().isNullOrEmpty()) {
             if (isValidDigest) {
-                OciLocationUtils.buildDigestManifestPathWithReference(packageName, reference)
+                OciLocationUtils.buildDigestManifestPathWithReference(packageName, reference, isFatManifest())
+            } else if (isFatManifest()) {
+                OciLocationUtils.buildManifestListPath(packageName, reference)
             } else {
                 OciLocationUtils.buildManifestPath(packageName, reference)
             }
         } else getArtifactMappingUri()!!
+    }
 
+    fun isFatManifest() = FAT_MANIFEST_MEDIA_TYPES.contains(mediaType)
+
+    companion object {
+        private val FAT_MANIFEST_MEDIA_TYPES = listOf(
+            DOCKER_DISTRIBUTION_MANIFEST_LIST_V2,
+            IMAGE_INDEX_MEDIA_TYPE
+        )
     }
 }

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.oci.artifact.resolver
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -69,7 +70,10 @@ class OciManifestArtifactInfoResolver : ArtifactInfoResolver {
                 val reference = attributes["reference"].toString().trim()
                 validate(packageName)
                 val isValidDigest = OciDigest.isValid(reference)
-                OciManifestArtifactInfo(projectId, repoName, packageName, "", reference, isValidDigest)
+                val contentType = request.getHeader(HttpHeaders.CONTENT_TYPE)
+                OciManifestArtifactInfo(
+                    projectId, repoName, packageName, "", reference, isValidDigest, contentType
+                )
             }
         }
     }
