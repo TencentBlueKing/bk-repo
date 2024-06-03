@@ -869,7 +869,6 @@
     "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
     "rootDirectoryPermission": "Access Control:",
     "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth.",
-    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
     "downloadHistory": "Download History(Last Year)",
     "downloadDate": "Download Date",
     "downloader": "Downloader"
