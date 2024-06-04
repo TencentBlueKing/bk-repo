@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.security.interceptor.devx
 
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
@@ -34,7 +36,7 @@ import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.IpUtils
-import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
@@ -57,7 +59,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
     private val projectIpsCache: LoadingCache<String, Set<String>> = CacheBuilder.newBuilder()
         .maximumSize(devXProperties.cacheSize)
         .expireAfterWrite(devXProperties.cacheExpireTime)
-        .build(CacheLoader.from { key -> listIpFromProject(key) })
+        .build(CacheLoader.from { key -> listIpFromProject(key) + listCvmIpFromProject(key) + listIpFromProps(key) })
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val user = SecurityUtils.getUserId()
@@ -117,29 +119,45 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
     }
 
     private fun listIpFromProject(projectId: String): Set<String> {
-        val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
-        val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
-        val workspaceUrl = devXProperties.workspaceUrl
-        val request = Request.Builder()
-            .url("$workspaceUrl?project_id=$projectId")
-            .header("X-Bkapi-Authorization", token)
-            .build()
+        val reqBuilder = Request.Builder().url("${devXProperties.workspaceUrl}?project_id=$projectId")
         logger.info("Update project[$projectId] ips.")
-        val response = httpClient.newCall(request).execute()
-        if (!response.isSuccessful || response.body == null) {
-            val errorMsg = response.body?.bytes()?.let { String(it) }
-            logger.error("${response.code} $errorMsg")
-            return devXProperties.projectCvmWhiteList[projectId] ?: emptySet()
-        }
         val ips = HashSet<String>()
-        devXProperties.projectCvmWhiteList[projectId]?.let { ips.addAll(it) }
-        response.body!!.byteStream().readJsonString<QueryResponse<List<DevXWorkSpace>>>().data!!.forEach { workspace ->
+        doRequest<List<DevXWorkSpace>>(reqBuilder, jacksonTypeRef())?.forEach { workspace ->
             workspace.innerIp?.substringAfter('.')?.let { ips.add(it) }
         }
         return ips
     }
 
+    private fun listIpFromProps(projectId: String) = devXProperties.projectCvmWhiteList[projectId] ?: emptySet()
 
+    private fun listCvmIpFromProject(projectId: String): Set<String> {
+        val workspaceUrl = devXProperties.cvmWorkspaceUrl.replace("{projectId}", projectId)
+        val reqBuilder = Request.Builder().url(workspaceUrl)
+        logger.info("Update project[$projectId] cvm ips.")
+        return doRequest<PageResponse<DevXCvmWorkspace>>(reqBuilder, jacksonTypeRef())
+            ?.records
+            ?.mapTo(HashSet()) { it.ip }
+            ?: emptySet()
+    }
+
+    private fun <T> doRequest(requestBuilder: Request.Builder, jacksonTypeRef: TypeReference<QueryResponse<T>>): T? {
+        val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
+        val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
+        val req = requestBuilder.header("X-Bkapi-Authorization", token).build()
+        val response = httpClient.newCall(req).execute()
+        if (!response.isSuccessful || response.body == null) {
+            val errorMsg = response.body?.bytes()?.let { String(it) }
+            logger.error("${response.code} $errorMsg")
+            return null
+        }
+
+        val queryResponse = JsonUtils.objectMapper.readValue( response.body!!.byteStream(), jacksonTypeRef)
+        if (queryResponse.status != 0) {
+            logger.error("request bkapi failed ${response.code} status:${queryResponse.status}")
+            return null
+        }
+        return queryResponse.data!!
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevXAccessInterceptor::class.java)
