@@ -82,7 +82,9 @@ class ArtifactCacheMetrics(
     private fun addMetrics(resource: ArtifactResource) {
         val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
         val projectId = repositoryDetail?.projectId
-        if (projectId == null || projectId.startsWith(CODE_PROJECT_PREFIX) || projectId.startsWith(CLOSED_SOURCE_PREFIX)) {
+        if (projectId == null || projectId.startsWith(CODE_PROJECT_PREFIX)
+            || projectId.startsWith(CLOSED_SOURCE_PREFIX)
+        ) {
             return
         }
         val credentials = repositoryDetail.storageCredentials()
@@ -103,7 +105,7 @@ class ArtifactCacheMetrics(
                     val fullPath = resource.node?.fullPath
                     logger.info(
                         "large file cache miss, " +
-                            "project[$projectId], repoName[${repositoryDetail.name}], fullPath[$fullPath]"
+                                "project[$projectId], repoName[${repositoryDetail.name}], fullPath[$fullPath]"
                     )
                 }
                 incMissCount(credentials.key(), projectId)
