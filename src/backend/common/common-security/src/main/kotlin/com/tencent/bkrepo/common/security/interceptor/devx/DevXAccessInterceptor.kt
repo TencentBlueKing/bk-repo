@@ -134,10 +134,11 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         val workspaceUrl = devXProperties.cvmWorkspaceUrl.replace("{projectId}", projectId)
         val reqBuilder = Request.Builder().url("$workspaceUrl?pageSize=${devXProperties.cvmWorkspacePageSize}")
         logger.info("Update project[$projectId] cvm ips.")
-        return doRequest<PageResponse<DevXCvmWorkspace>>(reqBuilder, jacksonTypeRef())
-            ?.records
-            ?.mapTo(HashSet()) { it.ip }
-            ?: emptySet()
+        val res = doRequest<PageResponse<DevXCvmWorkspace>>(reqBuilder, jacksonTypeRef())
+        if ((res?.totalPages ?: 0) > 1) {
+            logger.error("[$projectId] has [${res?.totalPages}] page cvm workspace")
+        }
+        return res?.records?.mapTo(HashSet()) { it.ip } ?: emptySet()
     }
 
     private fun <T> doRequest(requestBuilder: Request.Builder, jacksonTypeRef: TypeReference<QueryResponse<T>>): T? {
