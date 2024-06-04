@@ -53,6 +53,7 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
 
 /**
@@ -166,6 +167,9 @@ class ProjectMetricsReport2BkbaseJob(
         update.set(TProjectMetricsDailyRecord::dockerRepoCapSize.name, projectMetrics.dockerRepoCapSize)
         update.set(TProjectMetricsDailyRecord::active.name, projectMetrics.active)
         update.set(TProjectMetricsDailyRecord::createdDate.name, projectMetrics.createdDate)
+        update.set(TProjectMetricsDailyRecord::createdDay.name, projectMetrics.createdDate.format(
+            DateTimeFormatter.ofPattern("yyyyMMdd")
+        ))
         projectMetrics.enabled?.let {
             update.set(TProjectMetricsDailyRecord::enabled.name, projectMetrics.enabled)
         }
