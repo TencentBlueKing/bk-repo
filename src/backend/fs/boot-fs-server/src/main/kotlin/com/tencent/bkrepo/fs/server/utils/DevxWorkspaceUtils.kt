@@ -132,46 +132,33 @@ class DevxWorkspaceUtils(
         }
 
         suspend fun getWorkspace(): Mono<DevXWorkSpace?> {
-            val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
-            val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
-            val workspaceUrl = devXProperties.workspaceUrl
-            val ip = ReactiveRequestContextHolder.getClientAddress()
+            val type = object : ParameterizedTypeReference<QueryResponse<List<DevXWorkSpace>>>() {}
             return httpClient
                 .get()
-                .uri("$workspaceUrl?ip=$ip")
-                .header("X-Bkapi-Authorization", token)
-                .exchangeToMono {
-                    mono { parseWorkSpaces(it).firstOrNull() }
-                }
-                .retryWhen(
-                    RetryBackoffSpec
-                        .backoff(2L, Duration.ofSeconds(1))
-                        .filter {
-                            val retry = it.cause is PrematureCloseException
-                            logger.warn("request workspace of ip[$ip] failed, will retry: $retry")
-                            retry
-                        }
-                )
+                .uri("${devXProperties.workspaceUrl}?ip=${ReactiveRequestContextHolder.getClientAddress()}")
+                .doRequest(type) { it?.data?.firstOrNull() }
         }
 
-        private suspend fun listIp(projectId: String): Mono<Set<String>> {
+        private fun listIp(projectId: String): Mono<Set<String>> {
             return Mono.zip(listIpFromProject(projectId), listIpFromProps(projectId), listCvmIpFromProject(projectId))
                 .map { it.t1 + it.t2 + it.t3 }
                 .cache(devXProperties.cacheExpireTime)
         }
 
-        private suspend fun listIpFromProject(projectId: String): Mono<Set<String>> {
+        private fun listIpFromProject(projectId: String): Mono<Set<String>> {
             logger.info("Update project[$projectId] ips.")
-            val ipMono = httpClient.get().uri("${devXProperties.workspaceUrl}?project_id=$projectId").doRequest {
-                logger.info("Parse project[$projectId] ips.")
-                val ips = HashSet<String>()
-                val type = object : ParameterizedTypeReference<QueryResponse<List<DevXWorkSpace>>>() {}
-                parseResponse(it, type)?.forEach { workspace ->
-                    workspace.innerIp?.substringAfter('.')?.let { ip -> ips.add(ip) }
+            val type = object : ParameterizedTypeReference<QueryResponse<List<DevXWorkSpace>>>() {}
+            return httpClient
+                .get()
+                .uri("${devXProperties.workspaceUrl}?project_id=$projectId")
+                .doRequest(type) {
+                    logger.info("Parse project[$projectId] ips.")
+                    val ips = HashSet<String>()
+                    it?.data?.forEach { workspace ->
+                        workspace.innerIp?.substringAfter('.')?.let { ip -> ips.add(ip) }
+                    }
+                    ips
                 }
-                ips as Set<String>
-            }
-            return ipMono
         }
 
         private fun listIpFromProps(projectId: String): Mono<Set<String>> {
@@ -181,24 +168,42 @@ class DevxWorkspaceUtils(
         private fun listCvmIpFromProject(projectId: String): Mono<Set<String>> {
             val workspaceUrl = devXProperties.cvmWorkspaceUrl.replace("{projectId}", projectId)
             logger.info("Update project[$projectId] cvm ips.")
+            val type = object : ParameterizedTypeReference<QueryResponse<PageResponse<DevXCvmWorkspace>>>() {}
             return httpClient
                 .get()
                 .uri("$workspaceUrl?pageSize=${devXProperties.cvmWorkspacePageSize}")
-                .doRequest { res ->
+                .doRequest(type) { res ->
                     logger.info("Parse project[$projectId] cvm ips.")
-                    val type = object : ParameterizedTypeReference<QueryResponse<PageResponse<DevXCvmWorkspace>>>() {}
-                    val queryResponse = parseResponse(res, type)
-                    if ((queryResponse?.totalPages ?: 0) > 1) {
-                        logger.error("[$projectId] has [${queryResponse?.totalPages}] page cvm workspace")
+                    if ((res?.data?.totalPages ?: 0) > 1) {
+                        logger.error("[$projectId] has [${res?.data?.totalPages}] page cvm workspace")
                     }
-                    queryResponse?.records?.mapTo(HashSet()) { it.ip } ?: emptySet()
+                    res?.data?.records?.mapTo(HashSet()) { it.ip } ?: emptySet()
                 }
+        }
+
+        private fun <T, R> WebClient.RequestHeadersSpec<*>.doRequest(
+            type: ParameterizedTypeReference<QueryResponse<T>>,
+            handler: (res: QueryResponse<T>?) -> R
+        ): Mono<R> {
+            val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
+            val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
+            return header("X-Bkapi-Authorization", token)
+                .exchangeToMono { mono { handler(parseResponse(it, type)) } }
+                .retryWhen(
+                    RetryBackoffSpec
+                        .backoff(2L, Duration.ofSeconds(1))
+                        .filter {
+                            val retry = it.cause is PrematureCloseException
+                            logger.warn("request bkapi failed, will retry: $retry")
+                            retry
+                        }
+                )
         }
 
         private suspend fun <T> parseResponse(
             response: ClientResponse,
             type: ParameterizedTypeReference<QueryResponse<T>>
-        ): T? {
+        ): QueryResponse<T>? {
             if (response.statusCode() != HttpStatus.OK) {
                 val errorMsg = response.awaitBody<String>()
                 logger.error("${response.statusCode()} $errorMsg")
@@ -210,35 +215,7 @@ class DevxWorkspaceUtils(
                 logger.error("request bkapi failed, status: ${queryRes.status}")
                 return null
             }
-            return queryRes.data
-        }
-
-        private suspend fun parseWorkSpaces(response: ClientResponse): List<DevXWorkSpace> {
-            return if (response.statusCode() != HttpStatus.OK) {
-                val errorMsg = response.awaitBody<String>()
-                logger.error("${response.statusCode()} $errorMsg")
-                emptyList()
-            } else {
-                response.awaitBody<QueryResponse<List<DevXWorkSpace>>>().data!!
-            }
-        }
-
-        private fun <T> WebClient.RequestHeadersSpec<*>.doRequest(
-            handler: suspend (res: ClientResponse) -> T
-        ): Mono<T> {
-            val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
-            val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
-            return header("X-Bkapi-Authorization", token)
-                .exchangeToMono { mono { handler(it) } }
-                .retryWhen(
-                    RetryBackoffSpec
-                        .backoff(2L, Duration.ofSeconds(1))
-                        .filter {
-                            val retry = it.cause is PrematureCloseException
-                            logger.warn("request bkapi failed, will retry: $retry")
-                            retry
-                        }
-                )
+            return queryRes
         }
     }
 }
