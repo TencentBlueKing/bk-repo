@@ -41,5 +41,5 @@ class ProjectMonthMetricReportJobProperties(
     var reportHost: String = "",
     var reportUrl: String = "",
     var reportPlatformKey: String = "",
-    var batchUploadSize: Int = 150
+    var batchUploadSize: Int = 50
 ) : MongodbJobProperties(enabled)
