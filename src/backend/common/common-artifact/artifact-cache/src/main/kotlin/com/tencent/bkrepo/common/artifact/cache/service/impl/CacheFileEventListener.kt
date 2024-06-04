@@ -37,7 +37,7 @@ import org.springframework.scheduling.annotation.Async
 /**
  * 缓存文件相关事件监听器
  */
-class CacheFileEventListener(
+open class CacheFileEventListener(
     private val properties: ArtifactPreloadProperties,
     private val preloadPlanService: ArtifactPreloadPlanService,
 ) {
@@ -47,7 +47,7 @@ class CacheFileEventListener(
      */
     @Async
     @EventListener(CacheFileDeletedEvent::class)
-    fun onCacheFileDeleted(event: CacheFileDeletedEvent) {
+    open fun onCacheFileDeleted(event: CacheFileDeletedEvent) {
         if (properties.enabled && event.data.size >= properties.minSize.toBytes()) {
             with(event.data) {
                 logger.info("try generate preload plan for sha256[${sha256}], fullPath[$fullPath], size[$size")

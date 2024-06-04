@@ -77,22 +77,21 @@ class ProjectDailyAvgMetricsJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     private fun doStoreProjectDailyAvgRecord(currentDate: LocalDateTime) {
-        val criteria = Criteria.where(ProjectMetricsDailyRecord::createdDate.name).lte(currentDate)
-            .gte(currentDate.minusDays(1))
+        val yesterday = currentDate.minusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+        logger.info("start to store avg record for $yesterday")
+        val criteria = Criteria.where(ProjectMetricsDailyRecord::createdDay.name).isEqualTo(yesterday)
         val query = Query(criteria)
         val data = mongoTemplate.findDistinct(
             query, ProjectMetricsDailyRecord::projectId.name,
             COLLECTION_NAME_PROJECT_METRICS_DAILY_RECORD, String::class.java
         )
         data.forEach {
-            val criteria = Criteria.where(PROJECT).isEqualTo(it)
-                .and(ProjectMetricsDailyRecord::createdDate.name).lte(currentDate)
-                .gte(currentDate.minusDays(1))
-            val query = Query.query(criteria)
+            val projectCriteria = Criteria.where(PROJECT).isEqualTo(it).andOperator(criteria)
+            val projectQuery = Query.query(projectCriteria)
             var capSize = 0L
             var count = 0
             mongoTemplate.find(
-                query, ProjectMetricsDailyRecord::class.java,
+                projectQuery, ProjectMetricsDailyRecord::class.java,
                 COLLECTION_NAME_PROJECT_METRICS_DAILY_RECORD
             ).forEach {
                 capSize += it.capSize
@@ -126,6 +125,8 @@ class ProjectDailyAvgMetricsJob(
         val productId = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_PRODUCT_ID }?.value as? Int
         val bgId = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_BG_ID }?.value as? String
             ?: StringPool.EMPTY
+        val enabled = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_ENABLED }?.value as? Boolean
+            ?: false
         val dailyRecord = TProjectMetricsDailyAvgRecord(
             projectId = projectInfo.name,
             costDate = convertToCostDate(currentDate),
@@ -133,7 +134,7 @@ class ProjectDailyAvgMetricsJob(
             usage = usage,
             bgName = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_BG_NAME }?.value as? String
                 ?: StringPool.EMPTY,
-            flag = covertToFlag(bgId, productId),
+            flag = covertToFlag(projectInfo.name, bgId, productId, enabled),
             costDateDay = currentDate.minusDays(1).format(
                 DateTimeFormatter.ofPattern("yyyyMMdd")
             ),
@@ -157,13 +158,21 @@ class ProjectDailyAvgMetricsJob(
     }
 
     private fun covertToFlag(
+        projectId: String,
         bgId: String,
-        productId: Int?
+        productId: Int?,
+        enabled: Boolean
     ): Boolean {
-        return if (properties.bgIds.isEmpty()) {
-            bgId.isNotBlank() && productId != null
+        val streamReport = if (properties.reportStream) {
+            true
         } else {
-            properties.bgIds.contains(bgId) && bgId.isNotBlank() && productId != null
+            !projectId.startsWith(GIT_PROJECT_PREFIX)
+        }
+        return if (properties.bgIds.isEmpty()) {
+            streamReport && bgId.isNotBlank() && productId != null && enabled
+        } else {
+            streamReport && properties.bgIds.contains(bgId)
+                && bgId.isNotBlank() && productId != null && enabled
         }
     }
 
@@ -172,7 +181,7 @@ class ProjectDailyAvgMetricsJob(
         val minusMonth = if (day >= properties.monthStartDay) {
             -1
         } else {
-            1
+            0
         }
         return currentDate.minusMonths(minusMonth.toLong()).format(
             DateTimeFormatter.ofPattern("yyyyMM")
@@ -188,7 +197,7 @@ class ProjectDailyAvgMetricsJob(
     data class ProjectMetricsDailyRecord(
         var projectId: String,
         var capSize: Long,
-        val createdDate: LocalDateTime,
+        var createdDay: String? = null
     )
 
     companion object {
@@ -196,5 +205,6 @@ class ProjectDailyAvgMetricsJob(
         private const val COLLECTION_NAME_PROJECT = "project"
         private const val COLLECTION_NAME_PROJECT_METRICS_DAILY_RECORD = "project_metrics_daily_record"
         private const val COLLECTION_NAME_PROJECT_METRICS_DAILY_AVG_RECORD = "project_metrics_daily_avg_record"
+        private const val GIT_PROJECT_PREFIX = "git_"
     }
 }
