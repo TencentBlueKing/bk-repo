@@ -34,12 +34,11 @@ package com.tencent.bkrepo.pypi.artifact.repository
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
@@ -129,8 +128,7 @@ class PypiRemoteRepository : RemoteRepository() {
             }
         }.start()
         val stringBuilder = StringBuilder()
-        storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)?.use {
-            artifactInputStream ->
+        storageManager.loadFullArtifactInputStream(node, context.storageCredentials)?.use { artifactInputStream ->
             var line: String?
             val br = BufferedReader(InputStreamReader(artifactInputStream))
             while (br.readLine().also { line = it } != null) {

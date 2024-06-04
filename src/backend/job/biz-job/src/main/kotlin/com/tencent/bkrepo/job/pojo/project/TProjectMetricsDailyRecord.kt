@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service.impl
+package com.tencent.bkrepo.job.pojo.project
 
-import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
-import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
-import org.slf4j.LoggerFactory
-import org.springframework.context.event.EventListener
-import org.springframework.scheduling.annotation.Async
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
- * 缓存文件相关事件监听器
+ * 项目用量每日采点记录表
  */
-class CacheFileEventListener(
-    private val properties: ArtifactPreloadProperties,
-    private val preloadPlanService: ArtifactPreloadPlanService,
-) {
-
-    /**
-     * 缓存被删除时判断是否需要创建预加载执行计划
-     */
-    @Async
-    @EventListener(CacheFileDeletedEvent::class)
-    fun onCacheFileDeleted(event: CacheFileDeletedEvent) {
-        if (properties.enabled && event.data.size >= properties.minSize.toBytes()) {
-            with(event.data) {
-                logger.info("try generate preload plan for sha256[${sha256}], fullPath[$fullPath], size[$size")
-                preloadPlanService.generatePlan(credentials.key, sha256)
-            }
-        }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(CacheFileEventListener::class.java)
-    }
-}
+@Document(collection = "project_metrics_daily_record")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "project_created_idx",
+        def = "{'projectId': 1,'createdDate': 1}",
+        background = true,
+        unique = true
+    )
+)
+data class TProjectMetricsDailyRecord(
+    var projectId: String,
+    var nodeNum: Long,
+    var capSize: Long,
+    var pipelineCapSize: Long = 0,
+    var customCapSize: Long = 0,
+    var helmRepoCapSize: Long = 0,
+    var dockerRepoCapSize: Long = 0,
+    val active: Boolean = true,
+    var enabled: Boolean?,
+    val createdDate: LocalDateTime,
+)

@@ -23,7 +23,7 @@
                 :row-border="false"
                 :virtual-render="fileList.length > 3000"
                 size="small">
-                <bk-table-column :label="$t('fileName')" min-width="300" show-overflow-tooltip>
+                <bk-table-column :label="$t('fileName')" min-width="230" show-overflow-tooltip>
                     <template #default="{ row }">
                         <bk-popover placement="top">
                             {{row.file.name}}
@@ -45,10 +45,14 @@
                             </span>
                             <span>{{ row.progressPercent }}</span>
                         </span>
-                        <span v-else class="repo-tag" :class="row.status"
-                            v-bk-tooltips="{ disabled: row.status !== 'FAILED' || !row.errMsg, content: row.errMsg, placements: ['bottom'] }">
+                        <span v-else class="repo-tag" :class="row.status">
                             {{ uploadStatus[row.status].label }}
                         </span>
+                    </template>
+                </bk-table-column>
+                <bk-table-column :label="$t('errMsg')" width="140" show-overflow-tooltip>
+                    <template #default="{ row }">
+                        {{ row.errMsg }}
                     </template>
                 </bk-table-column>
                 <bk-table-column :label="$t('operation')" width="90">
@@ -217,7 +221,7 @@
                             }
                         })
                     }
-                    e && this.$set(wait, 'errMsg', e.message || e)
+                    e && this.$set(wait, 'errMsg', e.response.message || e)
                     this.$set(wait, 'status', 'FAILED')
                 }).finally(() => {
                     this.upLoadTaskQueue = this.upLoadTaskQueue.filter(task => task !== wait)
@@ -250,7 +254,7 @@
     position: fixed;
     right: 40px;
     bottom: 60px;
-    width: 520px;
+    width: 600px;
     z-index: 1999;
     border-radius: 3px;
     box-shadow: 0px 0px 20px 0px rgba(8, 30, 64, 0.2);

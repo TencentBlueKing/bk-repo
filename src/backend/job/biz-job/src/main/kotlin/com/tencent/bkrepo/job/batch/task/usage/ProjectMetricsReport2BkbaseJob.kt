@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.bkbase
+package com.tencent.bkrepo.job.batch.task.usage
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -40,11 +40,13 @@ import com.tencent.bkrepo.job.batch.context.ProjectReportJobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ProjectMetricsReport2BkbaseJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
+import com.tencent.bkrepo.job.pojo.project.TProjectMetricsDailyRecord
 import com.tencent.bkrepo.job.pojo.project.TRepoMetrics
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
@@ -61,7 +63,7 @@ import kotlin.reflect.KClass
 class ProjectMetricsReport2BkbaseJob(
     val properties: ProjectMetricsReport2BkbaseJobProperties,
     val messageSupplier: MessageSupplier
-) : DefaultContextMongoDbJob<TProjectMetrics>(properties)  {
+) : DefaultContextMongoDbJob<TProjectMetrics>(properties) {
     override fun collectionNames(): List<String> {
         return listOf(COLLECTION_NAME_PROJECT_METRICS)
     }
@@ -78,6 +80,7 @@ class ProjectMetricsReport2BkbaseJob(
         val projectInfo = mongoTemplate.find(query, ProjectInfo::class.java, COLLECTION_NAME_PROJECT)
             .firstOrNull() ?: return
         val storageMetrics = calculateRepoStorage(row, projectInfo, context.statTime)
+        storeDailyRecord(storageMetrics)
         messageSupplier.delegateToSupplier(storageMetrics, topic = TOPIC, binderType = BinderType.KAFKA)
     }
 
@@ -103,7 +106,6 @@ class ProjectMetricsReport2BkbaseJob(
     override fun createJobContext(): ProjectReportJobContext = ProjectReportJobContext(
         statTime = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
     )
-
 
     private fun calculateRepoStorage(
         current: TProjectMetrics, project: ProjectInfo, statTime: LocalDateTime
@@ -145,6 +147,31 @@ class ProjectMetricsReport2BkbaseJob(
         return sizeOfRepoType
     }
 
+    private fun storeDailyRecord(projectMetrics: ProjectMetrics) {
+        val query = Query(
+            where(TProjectMetricsDailyRecord::projectId).isEqualTo(projectMetrics.projectId)
+                .and(TProjectMetricsDailyRecord::createdDate.name).isEqualTo(projectMetrics.createdDate)
+        )
+        val update = buildUpdateRecord(projectMetrics)
+        mongoTemplate.upsert(query, update, COLLECTION_NAME_PROJECT_METRICS_DAILY_RECORD)
+    }
+
+    private fun buildUpdateRecord(projectMetrics: ProjectMetrics): Update {
+        val update = Update()
+        update.set(TProjectMetricsDailyRecord::nodeNum.name, projectMetrics.nodeNum)
+        update.set(TProjectMetricsDailyRecord::capSize.name, projectMetrics.capSize)
+        update.set(TProjectMetricsDailyRecord::customCapSize.name, projectMetrics.customCapSize)
+        update.set(TProjectMetricsDailyRecord::pipelineCapSize.name, projectMetrics.pipelineCapSize)
+        update.set(TProjectMetricsDailyRecord::helmRepoCapSize.name, projectMetrics.helmRepoCapSize)
+        update.set(TProjectMetricsDailyRecord::dockerRepoCapSize.name, projectMetrics.dockerRepoCapSize)
+        update.set(TProjectMetricsDailyRecord::active.name, projectMetrics.active)
+        update.set(TProjectMetricsDailyRecord::createdDate.name, projectMetrics.createdDate)
+        projectMetrics.enabled?.let {
+            update.set(TProjectMetricsDailyRecord::enabled.name, projectMetrics.enabled)
+        }
+        return update
+    }
+
     data class ProjectMetrics(
         var projectId: String,
         var bgName: String?,
@@ -172,5 +199,6 @@ class ProjectMetricsReport2BkbaseJob(
         private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
         private const val COLLECTION_NAME_PROJECT = "project"
         private const val TOPIC = "bkbase-bkrepo-project-storage-usage"
+        private const val COLLECTION_NAME_PROJECT_METRICS_DAILY_RECORD = "project_metrics_daily_record"
     }
 }

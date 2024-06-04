@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.service.impl
-
-import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
-import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
-import org.slf4j.LoggerFactory
-import org.springframework.context.event.EventListener
-import org.springframework.scheduling.annotation.Async
-
-/**
- * 缓存文件相关事件监听器
- */
-class CacheFileEventListener(
-    private val properties: ArtifactPreloadProperties,
-    private val preloadPlanService: ArtifactPreloadPlanService,
-) {
-
-    /**
-     * 缓存被删除时判断是否需要创建预加载执行计划
-     */
-    @Async
-    @EventListener(CacheFileDeletedEvent::class)
-    fun onCacheFileDeleted(event: CacheFileDeletedEvent) {
-        if (properties.enabled && event.data.size >= properties.minSize.toBytes()) {
-            with(event.data) {
-                logger.info("try generate preload plan for sha256[${sha256}], fullPath[$fullPath], size[$size")
-                preloadPlanService.generatePlan(credentials.key, sha256)
-            }
-        }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(CacheFileEventListener::class.java)
-    }
+dependencies {
+    api(project(":router-controller:api-router-controller"))
+    api(project(":common:common-mongo"))
+    api(project(":common:common-query:query-mongo"))
+    api(project(":common:common-service"))
+    api(project(":common:common-security"))
 }

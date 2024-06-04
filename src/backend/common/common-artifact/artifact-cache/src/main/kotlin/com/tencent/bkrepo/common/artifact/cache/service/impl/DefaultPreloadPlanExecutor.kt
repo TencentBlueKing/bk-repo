@@ -46,7 +46,6 @@ import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.common.storage.util.existReal
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.FileTime
@@ -58,7 +57,6 @@ import java.util.concurrent.TimeUnit
 /**
  * 制品加载器，负责将制品加载到存储缓存中
  */
-@Component
 class DefaultPreloadPlanExecutor(
     private val preloadProperties: ArtifactPreloadProperties,
     private val cacheStorageService: StorageService,

@@ -66,6 +66,9 @@ interface StorageService :
     /**
      * 在存储实例[storageCredentials]上加载摘要为[digest]的文件
      * 当文件未找到时，会尝试去默认存储实例上查找文件
+     *
+     * 注意：该方法只会从指定存储[storageCredentials]中加载文件，如果文件正在迁移中还在旧存储或者存在于其他集群该方法会加载失败，
+     * 此时需要考虑使用[com.tencent.bkrepo.common.artifact.manager.StorageManager]中加载方法
      */
     fun load(digest: String, range: Range, storageCredentials: StorageCredentials?): ArtifactInputStream?
 

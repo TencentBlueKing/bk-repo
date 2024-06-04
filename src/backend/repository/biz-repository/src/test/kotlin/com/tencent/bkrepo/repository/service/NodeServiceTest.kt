@@ -300,7 +300,7 @@ class NodeServiceTest @Autowired constructor(
             ResponseBuilder.success(
                 ListPathResult(
                     status = true,
-                    path = mapOf(OperationType.IN to listOf("/a/1", "/a/2"))
+                    path = mapOf(OperationType.IN to listOf("/a/1/1.txt", "/a/2"))
                 )
             )
         )

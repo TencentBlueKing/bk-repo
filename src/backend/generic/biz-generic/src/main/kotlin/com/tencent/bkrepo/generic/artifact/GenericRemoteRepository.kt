@@ -62,7 +62,6 @@ import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveContentRange
-import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -129,17 +128,7 @@ class GenericRemoteRepository(
     }
 
     override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
-        val range = HttpContextHolder.getRequestOrNull()
-            ?.let { resolveRange(it, cacheNode.size) }
-            ?: Range.full(cacheNode.size)
-
-        val artifactInputStream = if (shouldReturnEmptyStream(range)) {
-            ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-        } else {
-            storageService.load(cacheNode.sha256!!, range, context.repositoryDetail.storageCredentials)
-        }
-
-        return artifactInputStream?.run {
+        return storageManager.loadArtifactInputStream(cacheNode, context.repositoryDetail.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
             }
@@ -317,11 +306,6 @@ class GenericRemoteRepository(
         headers[HttpHeaders.ETAG]?.let { response.setHeader(HttpHeaders.ETAG, it) }
         headers[X_CHECKSUM_MD5]?.let { response.setHeader(X_CHECKSUM_MD5, it) }
         headers[X_CHECKSUM_SHA256]?.let { response.setHeader(X_CHECKSUM_SHA256, it) }
-    }
-
-    private fun shouldReturnEmptyStream(range: Range? = null): Boolean {
-        val rangeToTest = range ?: HttpContextHolder.getRequestOrNull()?.let { resolveRange(it, Long.MAX_VALUE) }
-        return HttpContextHolder.getRequestOrNull()?.method == HEAD.name || rangeToTest?.isEmpty() == true
     }
 
     private inline fun <reified T> request(remoteConfiguration: RemoteConfiguration, request: Request): T {

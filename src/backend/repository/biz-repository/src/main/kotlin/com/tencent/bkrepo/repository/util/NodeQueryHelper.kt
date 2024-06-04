@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
@@ -97,12 +98,12 @@ object NodeQueryHelper {
         } else if (option.hasPermissionPath?.isNotEmpty() == true) {
             Criteria().andOperator(
                 criteria,
-                Criteria().orOperator(buildPermissionPathCriteria(option.hasPermissionPath!!))
+                Criteria().orOperator(buildHasPermissionPathCriteria(option.hasPermissionPath!!))
             )
         } else if (option.noPermissionPath.isNotEmpty()) {
             Criteria().andOperator(
                 criteria,
-                Criteria().norOperator(buildPermissionPathCriteria(option.noPermissionPath))
+                Criteria().norOperator(buildNoPermissionPathCriteria(option.noPermissionPath))
             )
         } else {
             criteria
@@ -265,8 +266,18 @@ object NodeQueryHelper {
         throw UnsupportedOperationException("Unsupported operation [$operationType].")
     }
 
-    private fun buildPermissionPathCriteria(paths: List<String>) = paths.flatMap {
+    private fun buildNoPermissionPathCriteria(paths: List<String>) = paths.flatMap {
         listOf(TNode::fullPath.isEqualTo(it), TNode::fullPath.regex("^${escapeRegex(it)}"))
+    }
+
+    private fun buildHasPermissionPathCriteria(paths: List<String>) = paths.flatMap { path ->
+        val parentFolders = PathUtils.resolveAncestorFolder(path)
+        val criteriaList = ArrayList<Criteria>(parentFolders.size + 2)
+        // 拥有文件权限时将自动拥有父目录查看权限，在前端或者bk-driver中才能查看子目录及文件
+        parentFolders.forEach { criteriaList.add(TNode::fullPath.isEqualTo(it)) }
+        criteriaList.add(TNode::fullPath.isEqualTo(path))
+        criteriaList.add(TNode::fullPath.regex("^${escapeRegex(path)}"))
+        criteriaList
     }
 
     private fun update(operator: String): Update {

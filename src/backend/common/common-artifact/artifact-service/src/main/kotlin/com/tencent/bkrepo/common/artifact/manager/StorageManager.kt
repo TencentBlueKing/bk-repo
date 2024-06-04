@@ -152,6 +152,18 @@ class StorageManager(
         return loadArtifactInputStream(load.nodeInfo, storageCredentials)
     }
 
+    /**
+     * 加载[node]对应的完整ArtifactInputStream
+     */
+    fun loadFullArtifactInputStream(node: NodeDetail?, storageCredentials: StorageCredentials?): ArtifactInputStream? {
+        if (node == null || node.folder) {
+            return null
+        }
+        val range = Range.full(node.size)
+        val nodeResource = nodeResourceFactory.getNodeResource(node.nodeInfo, range, storageCredentials)
+        return nodeResource.getArtifactInputStream()
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(StorageManager::class.java)
     }
