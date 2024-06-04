@@ -97,11 +97,11 @@ class DefaultPreloadPlanExecutor(
 
     fun load(plan: ArtifactPreloadPlan, credentials: StorageCredentials, listener: PreloadListener?) {
         try {
+            logger.info("preload start, ${plan.artifactInfo()}")
+            listener?.onPreloadStart(plan)
             if (System.currentTimeMillis() - plan.executeTime > preloadProperties.planTimeout.toMillis()) {
                 throw RuntimeException("plan timeout[${plan.executeTime}], ${plan.artifactInfo()}")
             }
-            logger.info("preload start, ${plan.artifactInfo()}")
-            listener?.onPreloadStart(plan)
             val cacheFile = Paths.get(credentials.cache.path, fileLocator.locate(plan.sha256), plan.sha256)
             val cacheFileLock = Paths.get(credentials.cache.path, StringPool.TEMP, "${plan.sha256}.locked")
             val throughput = if (cacheFile.existReal()) {

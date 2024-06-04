@@ -162,6 +162,7 @@ class ArtifactPreloadPlanServiceImpl(
                 size = node.size,
                 strategy = strategy
             )
+            logger.info("generate preload plan for sha256[${node.sha256}]")
             generator.generate(param)
         }
     }
