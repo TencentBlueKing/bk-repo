@@ -43,6 +43,8 @@ import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
+import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
 
 /**
  * 用于创建资源权限的时间监听器
@@ -122,8 +124,4 @@ class ResourcePermissionListener(
         return true
     }
 
-    companion object {
-        private const val CODE_PROJECT_PREFIX = "CODE_"
-        private const val CLOSED_SOURCE_PREFIX = "CLOSED_SOURCE_"
-    }
 }
