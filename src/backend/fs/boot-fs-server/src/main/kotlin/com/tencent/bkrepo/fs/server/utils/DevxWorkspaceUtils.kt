@@ -187,10 +187,11 @@ class DevxWorkspaceUtils(
                 .doRequest { res ->
                     logger.info("Parse project[$projectId] cvm ips.")
                     val type = object : ParameterizedTypeReference<QueryResponse<PageResponse<DevXCvmWorkspace>>>() {}
-                    parseResponse(res, type)
-                        ?.records
-                        ?.mapTo(HashSet()) { it.ip }
-                        ?: emptySet()
+                    val queryResponse = parseResponse(res, type)
+                    if ((queryResponse?.totalPages ?: 0) > 1) {
+                        logger.error("[$projectId] has [${queryResponse?.totalPages}] page cvm workspace")
+                    }
+                    queryResponse?.records?.mapTo(HashSet()) { it.ip } ?: emptySet()
                 }
         }
 
