@@ -181,14 +181,17 @@ class DevxWorkspaceUtils(
         private fun listCvmIpFromProject(projectId: String): Mono<Set<String>> {
             val workspaceUrl = devXProperties.cvmWorkspaceUrl.replace("{projectId}", projectId)
             logger.info("Update project[$projectId] cvm ips.")
-            return httpClient.get().uri(workspaceUrl).doRequest { res ->
-                logger.info("Parse project[$projectId] cvm ips.")
-                val type = object : ParameterizedTypeReference<QueryResponse<PageResponse<DevXCvmWorkspace>>>() {}
-                parseResponse(res, type)
-                    ?.records
-                    ?.mapTo(HashSet()) { it.ip }
-                    ?: emptySet()
-            }
+            return httpClient
+                .get()
+                .uri("$workspaceUrl?pageSize=${devXProperties.cvmWorkspacePageSize}")
+                .doRequest { res ->
+                    logger.info("Parse project[$projectId] cvm ips.")
+                    val type = object : ParameterizedTypeReference<QueryResponse<PageResponse<DevXCvmWorkspace>>>() {}
+                    parseResponse(res, type)
+                        ?.records
+                        ?.mapTo(HashSet()) { it.ip }
+                        ?: emptySet()
+                }
         }
 
         private suspend fun <T> parseResponse(

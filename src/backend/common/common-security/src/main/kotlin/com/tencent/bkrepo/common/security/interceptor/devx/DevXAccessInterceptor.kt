@@ -132,7 +132,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
 
     private fun listCvmIpFromProject(projectId: String): Set<String> {
         val workspaceUrl = devXProperties.cvmWorkspaceUrl.replace("{projectId}", projectId)
-        val reqBuilder = Request.Builder().url(workspaceUrl)
+        val reqBuilder = Request.Builder().url("$workspaceUrl?pageSize=${devXProperties.cvmWorkspacePageSize}")
         logger.info("Update project[$projectId] cvm ips.")
         return doRequest<PageResponse<DevXCvmWorkspace>>(reqBuilder, jacksonTypeRef())
             ?.records
@@ -151,7 +151,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
             return null
         }
 
-        val queryResponse = JsonUtils.objectMapper.readValue( response.body!!.byteStream(), jacksonTypeRef)
+        val queryResponse = JsonUtils.objectMapper.readValue(response.body!!.byteStream(), jacksonTypeRef)
         if (queryResponse.status != 0) {
             logger.error("request bkapi failed ${response.code} status:${queryResponse.status}")
             return null
