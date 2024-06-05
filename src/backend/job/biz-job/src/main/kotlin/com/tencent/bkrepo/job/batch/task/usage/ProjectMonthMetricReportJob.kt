@@ -49,7 +49,6 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
@@ -64,32 +63,52 @@ class ProjectMonthMetricReportJob(
 ) : DefaultContextJob(properties) {
 
     override fun doStart0(jobContext: JobContext) {
-        val currentDate = LocalDate.now().atStartOfDay()
-        if (!filterProperties(currentDate)) return
-        val costDate = mutableSetOf<String>()
+        if (!filterProperties()) return
+        // 优先上报配置需要的月份数据
         if (properties.monthList.isNotEmpty()) {
+            val costDate = mutableSetOf<String>()
             costDate.addAll(properties.monthList)
-        } else {
-            costDate.add(currentDate.format(DateTimeFormatter.ofPattern("yyyyMM")))
+            costDate.forEach {
+                findAndReportMonthData(it)
+            }
         }
-        costDate.forEach {
-            logger.info("start to report month $it usage...")
-            findAndReportData(it)
-            logger.info("report month $it usage finished")
+        // 然后上报配置需要的日数据
+        if (properties.dayList.isNotEmpty()) {
+            val costDay = mutableSetOf<String>()
+            costDay.addAll(properties.dayList)
+            costDay.forEach {
+                findAndReportDailyData(it)
+            }
         }
+        // 最后上报前一天的数据
+        val yesterday = LocalDate.now().minusDays(1)
+            .format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+        findAndReportDailyData(yesterday)
     }
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
-    private fun filterProperties(currentDate: LocalDateTime): Boolean {
-        if (properties.monthList.isEmpty() && currentDate.dayOfMonth != properties.reportDay) return false
+    private fun filterProperties(): Boolean {
         if (properties.reportHost.isBlank() || properties.reportUrl.isBlank()) return false
         if (properties.reportPlatformKey.isBlank() || properties.reportServiceName.isBlank()) return false
         return true
     }
 
-    private fun findAndReportData(reportMonth: String) {
+    private fun findAndReportDailyData(reportDay: String) {
+        logger.info("start to report day $reportDay usage...")
+        val criteria = Criteria.where(TProjectMetricsDailyAvgRecord::costDateDay.name).isEqualTo(reportDay)
+        findAndReportData(criteria)
+        logger.info("report day $reportDay usage finished")
+    }
+
+    private fun findAndReportMonthData(reportMonth: String) {
+        logger.info("start to report month $reportMonth usage...")
         val criteria = Criteria.where(TProjectMetricsDailyAvgRecord::costDate.name).isEqualTo(reportMonth)
+        findAndReportData(criteria)
+        logger.info("report month $reportMonth usage finished")
+    }
+
+    private fun findAndReportData(criteria: Criteria) {
         val query = Query.query(criteria).cursorBatchSize(BATCH_SIZE)
         val projectMonthUsage: MutableList<ProjectMonthUsage> = mutableListOf()
         mongoTemplate.find(

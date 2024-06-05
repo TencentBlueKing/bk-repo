@@ -34,8 +34,8 @@ import org.springframework.scheduling.annotation.Scheduled
 class ProjectMonthMetricReportJobProperties(
     override var enabled: Boolean = false,
     override var cron: String = Scheduled.CRON_DISABLED,
-    var reportDay: Int = 15,
     var monthList: MutableList<String> = mutableListOf(),
+    var dayList: MutableList<String> = mutableListOf(),
     var overwrite: Boolean = false,
     var reportServiceName: String = "",
     var reportHost: String = "",
