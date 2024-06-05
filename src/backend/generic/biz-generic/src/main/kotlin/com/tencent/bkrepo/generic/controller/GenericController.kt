@@ -229,11 +229,11 @@ class GenericController(
 
     @ApiOperation("分页查询下载历史")
     @PostMapping("/download/record/page")
-    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
     fun getDownloadRecord(
         @RequestBody genericPageRequest: GenericPageRequest
     ): Response<Page<OperateLog>> {
         with(genericPageRequest) {
+            permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
             val option = OpLogListOption(
                 projectId = projectId,
                 repoName = repoName,
