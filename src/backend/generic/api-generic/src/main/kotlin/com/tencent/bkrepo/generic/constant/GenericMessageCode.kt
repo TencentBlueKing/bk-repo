@@ -42,7 +42,13 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     SIGN_FILE_NOT_FOUND(3, "generic.delta.sign-file.notfound"),
     NODE_DATA_HAS_CHANGED(4, "generic.node.data.has.changed"),
     DOWNLOAD_DIR_NOT_ALLOWED(5, "generic.download.dir.not-allowed"),
-    ARTIFACT_SEARCH_FAILED(6, "generic.artifact.query.failed");
+    ARTIFACT_SEARCH_FAILED(6, "generic.artifact.query.failed"),
+    PIPELINE_ARTIFACT_OVERWRITE_NOT_ALLOWED(7, "generic.pipeline-artifact.overwrite.not-allowed"),
+    CUSTOM_ARTIFACT_OVERWRITE_NOT_ALLOWED(8, "generic.custom-artifact.overwrite.not-allowed"),
+    PIPELINE_METADATA_INCOMPLETE(9, "generic.pipeline.metadata.incomplete"),
+    PIPELINE_REPO_MANUAL_UPLOAD_NOT_ALLOWED(10, "generic.pipeline-repo.manual-upload.not-allowed"),
+    PIPELINE_ARTIFACT_PATH_ILLEGAL(11, "generic.pipeline.artifact.path.illegal"),
+    ;
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

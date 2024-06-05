@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.metadata.impl.edge
 
+import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
@@ -44,10 +45,12 @@ import org.springframework.stereotype.Service
 class EdgeMetadataServiceImpl(
     nodeDao: NodeDao,
     repositoryProperties: RepositoryProperties,
-    clusterProperties: ClusterProperties
+    clusterProperties: ClusterProperties,
+    ciPermissionManager: CIPermissionManager
 ) : MetadataServiceImpl(
     nodeDao,
-    repositoryProperties
+    repositoryProperties,
+    ciPermissionManager
 ) {
 
     private val centerMetadataClient: ClusterMetadataClient by lazy {
