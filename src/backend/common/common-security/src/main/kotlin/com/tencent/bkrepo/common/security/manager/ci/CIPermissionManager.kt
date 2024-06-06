@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.security.manager.ci
 
-import com.sun.org.slf4j.internal.LoggerFactory
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -42,6 +41,7 @@ import com.tencent.devops.api.http.HttpHeaders
 import com.tencent.devops.api.pojo.Response
 import okhttp3.Request
 import okio.IOException
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.BeanFactory
 import java.util.concurrent.TimeUnit
 
