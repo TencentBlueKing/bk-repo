@@ -41,7 +41,12 @@ import org.springframework.data.mongodb.core.mapping.Document
         def = "{'costDate': 1,'projectId': 1,'costDateDay': 1}",
         background = true,
         unique = true
-    )
+    ),
+    CompoundIndex(
+        name = "cost_day_idx",
+        def = "{'costDateDay': 1}",
+        background = true
+    ),
 )
 data class TProjectMetricsDailyAvgRecord(
     var costDate: String,
