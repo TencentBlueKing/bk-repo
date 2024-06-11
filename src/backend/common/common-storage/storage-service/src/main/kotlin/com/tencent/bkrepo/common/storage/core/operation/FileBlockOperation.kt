@@ -110,7 +110,7 @@ interface FileBlockOperation {
      * blockId: 分块存储id
      * sequence: 序列id，从1开始
      */
-    fun storeBlockWithAppend(
+    fun storeBlockWithRandomPosition(
         blockId: String,
         sequence: Int,
         digest: String,

@@ -31,6 +31,7 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.PIPELINE
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -84,6 +85,8 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
+import com.tencent.bkrepo.generic.constant.BKREPO_META
+import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
@@ -109,6 +112,7 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.repository.api.PipelineNodeClient
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -119,8 +123,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
+import java.net.URLDecoder
+import java.util.Base64
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.servlet.http.HttpServletRequest
 import kotlin.reflect.full.memberProperties
 
 @Component
@@ -261,8 +268,8 @@ class GenericLocalRepository(
         with(context.artifactInfo) {
             val existNode = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
             val metadata = resolveMetadata(context.request)
-            val mPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true)  }?.value?.toString()
-                ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true)  }?.value?.toString()
+            val mPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true) }?.value?.toString()
+                ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true) }?.value?.toString()
             if (mPipelineId != null) {
                 val status = checkPipelineArtifactUploadPermission(
                     artifactInfo = this,
@@ -308,10 +315,10 @@ class GenericLocalRepository(
         metadata: List<MetadataModel>,
     ): PipelineBuildStatus {
         val subProjectId = metadata.find { it.key.equals(METADATA_SUB_PROJECT_ID, true) }?.value?.toString()
-        val subPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true)  }?.value?.toString()
-        val subBuildId = metadata.find { it.key.equals(METADATA_SUB_BUILD_ID, true)  }?.value?.toString()
+        val subPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true) }?.value?.toString()
+        val subBuildId = metadata.find { it.key.equals(METADATA_SUB_BUILD_ID, true) }?.value?.toString()
         val projectId = metadata.find { it.key.equals(METADATA_PROJECT_ID, true) }?.value?.toString()
-        val pipelineId = metadata.find { it.key.equals(METADATA_PIPELINE_ID, true)  }?.value?.toString()
+        val pipelineId = metadata.find { it.key.equals(METADATA_PIPELINE_ID, true) }?.value?.toString()
         val buildId = metadata.find { it.key.equals(METADATA_BUILD_ID, true) }?.value?.toString()
         val folderBuildId = metadata.find { it.key.equals(METADATA_FOLDER_BUILD_ID, true) }?.value?.toString()
         if (projectId == null) {
@@ -354,7 +361,8 @@ class GenericLocalRepository(
             if (pPipelineId != pipelineId || pBuildId != (buildId ?: folderBuildId)) {
                 ciPermissionManager.throwOrLogError(
                     messageCode = GenericMessageCode.PIPELINE_ARTIFACT_PATH_ILLEGAL,
-                    artifactInfo.getArtifactFullPath(), "${artifactInfo.projectId}/$pPipelineId/$pBuildId")
+                    artifactInfo.getArtifactFullPath(), "${artifactInfo.projectId}/$pPipelineId/$pBuildId"
+                )
                 return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
             }
             return status
@@ -693,7 +701,7 @@ class GenericLocalRepository(
             val range = HttpRangeUtils.resolveContentRange(HeaderUtils.getHeader(CONTENT_RANGE))
             val totalSize = HeaderUtils.getHeader(HEADER_SIZE)?.toLongOrNull()
             if (blockAppend && range != null && totalSize != null) {
-                storageService.storeBlockWithAppend(
+                storageService.storeBlockWithRandomPosition(
                     uploadId,
                     sequence,
                     getArtifactSha256(),
@@ -740,6 +748,25 @@ class GenericLocalRepository(
         pipelineMetadata?.let { metadata.putAll(pipelineMetadata) }
         return metadata.map { MetadataModel(key = it.key, value = it.value) }
     }
+
+    private fun decodeMetadata(header: String): Map<String, String> {
+        val metadata = mutableMapOf<String, String>()
+        try {
+            val metadataUrl = String(Base64.getDecoder().decode(header))
+            metadataUrl.split(CharPool.AND).forEach { part ->
+                val pair = part.trim().split(CharPool.EQUAL, limit = 2)
+                if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
+                    val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
+                    val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
+                    metadata[key] = value
+                }
+            }
+        } catch (exception: IllegalArgumentException) {
+            logger.warn("$header is not in valid Base64 scheme.")
+        }
+        return metadata
+    }
+
 
     /**
      * 是否使用分块追加上传

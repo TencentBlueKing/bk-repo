@@ -158,7 +158,7 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
-    override fun storeBlockWithAppend(
+    override fun storeBlockWithRandomPosition(
         blockId: String,
         sequence: Int,
         digest: String,
