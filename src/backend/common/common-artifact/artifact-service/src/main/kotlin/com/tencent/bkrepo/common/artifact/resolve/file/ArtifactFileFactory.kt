@@ -53,7 +53,7 @@ import java.io.InputStream
 @Component
 class ArtifactFileFactory(
     storageProperties: StorageProperties,
-    storageHealthMonitorHelper: StorageHealthMonitorHelper
+    storageHealthMonitorHelper: StorageHealthMonitorHelper,
 ) {
 
     init {
@@ -74,12 +74,12 @@ class ArtifactFileFactory(
         fun buildBkSync(
             blockChannel: BlockChannel,
             deltaInputStream: InputStream,
-            blockSize: Int
+            blockSize: Int,
         ): BkSyncArtifactFile {
             return BkSyncArtifactFile(
                 blockChannel,
                 deltaInputStream,
-                blockSize
+                blockSize,
             ).apply {
                 track(this)
             }
@@ -90,6 +90,12 @@ class ArtifactFileFactory(
          */
         fun buildChunked(): ChunkedArtifactFile {
             return ChunkedArtifactFile(getMonitor(), properties, getStorageCredentials()).apply {
+                track(this)
+            }
+        }
+
+        fun buildChunked(storageCredentials: StorageCredentials): ChunkedArtifactFile {
+            return ChunkedArtifactFile(getMonitor(storageCredentials), properties, storageCredentials).apply {
                 track(this)
             }
         }
@@ -106,7 +112,11 @@ class ArtifactFileFactory(
          */
         fun build(inputStream: InputStream, contentLength: Long? = null): ArtifactFile {
             return StreamArtifactFile(
-                inputStream, getMonitor(), properties, getStorageCredentials(), contentLength
+                inputStream,
+                getMonitor(),
+                properties,
+                getStorageCredentials(),
+                contentLength,
             ).apply {
                 track(this)
             }
@@ -127,7 +137,10 @@ class ArtifactFileFactory(
          */
         fun build(multipartFile: MultipartFile, storageCredentials: StorageCredentials): ArtifactFile {
             return MultipartArtifactFile(
-                multipartFile, getMonitor(storageCredentials), properties, storageCredentials
+                multipartFile,
+                getMonitor(storageCredentials),
+                properties,
+                storageCredentials,
             ).apply {
                 track(this)
             }
@@ -169,7 +182,7 @@ class ArtifactFileFactory(
         }
 
         private fun getMonitor(
-            storageCredentials: StorageCredentials? = null
+            storageCredentials: StorageCredentials? = null,
         ): StorageHealthMonitor {
             val credentials = storageCredentials ?: getStorageCredentials()
             return monitorHelper.getMonitor(properties, credentials)
