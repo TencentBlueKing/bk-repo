@@ -37,6 +37,8 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
@@ -49,7 +51,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import com.tencent.bkrepo.generic.artifact.resolveMetadata
+import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
@@ -145,6 +147,7 @@ class UploadService(
             throw BadRequestException(GenericMessageCode.CHUNKED_ARTIFACT_BROKEN, sha256.orEmpty())
         }
         // 保存节点
+        val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL) as GenericLocalRepository
         nodeClient.createNode(
             NodeCreateRequest(
                 projectId = artifactInfo.projectId,
@@ -157,7 +160,7 @@ class UploadService(
                 overwrite = getBooleanHeader(HEADER_OVERWRITE),
                 operator = userId,
                 expires = getLongHeader(HEADER_EXPIRES),
-                nodeMetadata = resolveMetadata(HttpContextHolder.getRequest())
+                nodeMetadata = repository.resolveMetadata(HttpContextHolder.getRequest())
             )
         )
         logger.info("User[${SecurityUtils.getPrincipal()}] complete upload [$artifactInfo] success.")

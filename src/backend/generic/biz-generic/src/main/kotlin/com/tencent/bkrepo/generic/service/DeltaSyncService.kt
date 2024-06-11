@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
-import com.tencent.bkrepo.generic.artifact.resolveMetadata
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
@@ -469,7 +468,7 @@ class DeltaSyncService(
                 uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256),
                 uploadMd5 = HeaderUtils.getHeader(HEADER_MD5),
                 expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
-                metadata = resolveMetadata(request),
+                metadata = repository.resolveMetadata(request),
                 contentLength = request.contentLengthLong,
                 emitter = emitter,
                 counterInputStream = counterInputStream,

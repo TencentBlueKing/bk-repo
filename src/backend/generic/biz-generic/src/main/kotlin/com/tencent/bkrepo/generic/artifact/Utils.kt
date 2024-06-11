@@ -27,21 +27,16 @@
 
 package com.tencent.bkrepo.generic.artifact
 
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
 import com.tencent.bkrepo.generic.config.PlatformProperties
-import com.tencent.bkrepo.generic.constant.BKREPO_META
-import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -52,9 +47,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import java.net.Inet4Address
 import java.net.InetAddress
-import java.net.URLDecoder
-import java.util.Base64
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 替换规则中的projectId与repoName
@@ -165,44 +157,4 @@ fun MetadataClient.updateParentMetadata(remoteNodes: List<Any>, projectId: Strin
             )
         }
     }
-}
-
-
-/**
- * 从header中提取metadata
- */
-fun resolveMetadata(request: HttpServletRequest): List<MetadataModel> {
-    val metadata = mutableMapOf<String, String>()
-    // case insensitive
-    val headerNames = request.headerNames
-    for (headerName in headerNames) {
-        if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
-            val key = headerName.substring(BKREPO_META_PREFIX.length).trim().toLowerCase()
-            if (key.isNotBlank()) {
-                metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
-            }
-        }
-    }
-    // case sensitive, base64 metadata
-    // format X-BKREPO-META: base64(a=1&b=2)
-    request.getHeader(BKREPO_META)?.let { metadata.putAll(decodeMetadata(it)) }
-    return metadata.map { MetadataModel(key = it.key, value = it.value) }
-}
-
-
-fun decodeMetadata(header: String): Map<String, String> {
-    val metadata = mutableMapOf<String, String>()
-    try {
-        val metadataUrl = String(Base64.getDecoder().decode(header))
-        metadataUrl.split(CharPool.AND).forEach { part ->
-            val pair = part.trim().split(CharPool.EQUAL, limit = 2)
-            if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
-                val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
-                val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
-                metadata[key] = value
-            }
-        }
-    } catch (ignore: IllegalArgumentException) {
-    }
-    return metadata
 }
