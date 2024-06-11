@@ -25,17 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.pojo
+package com.tencent.bkrepo.common.artifact.metrics
 
-data class ChunkedMetrics(
-    var tag: String = "ChunkedMetrics",
+/**
+ * 分块上传/下载指标
+ */
+data class ChunkArtifactTransferMetrics(
+    var tag: String = "ChunkArtifactTransferMetrics",
     // 类型
-    var type: String = "UPLOAD",
+    var type: String = UPLOAD,
     // 文件路径
     var fullPath: String = "",
     // 文件大小，单位字节
     var fileSize: Long = 0,
-    // 上传或下载时间，单位毫秒
+    // 文件sha256
+    var sha256: String = "",
+    // client ip
+    var clientIp: String = "",
+    // 速率
+    var average: Long = 0,
+    // 上传或下载时间，NanoTime
     var costTime: Long = 0,
     // 成功或者失败
     var success: Boolean = true,
@@ -48,5 +57,12 @@ data class ChunkedMetrics(
     var pipelineId: String = "",
     var buildId: String = "",
     var taskId: String = "",
-)
+    var storage: String = ""
+) {
+    companion object {
+        const val UPLOAD = "UPLOAD"
+        const val DOWNLOAD = "DOWNLOAD"
+    }
+}
+
 

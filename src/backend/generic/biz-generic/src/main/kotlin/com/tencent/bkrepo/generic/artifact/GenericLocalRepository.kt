@@ -64,6 +64,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager.Companion.METADATA_BUILD_ID
@@ -81,17 +82,20 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
+import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
+import com.tencent.bkrepo.generic.constant.HEADER_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
@@ -194,23 +198,27 @@ class GenericLocalRepository(
                 return
             }
             // TODO 如果分块上传也进行分发，此处需要修改
-            replicaTaskClient.create(ReplicaTaskCreateRequest(
-                name = context.artifactInfo.getArtifactFullPath() +
-                    "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
-                localProjectId = context.projectId,
-                replicaObjectType = ReplicaObjectType.PATH,
-                replicaTaskObjects = listOf(ReplicaObjectInfo(
-                    localRepoName = context.repoName,
-                    remoteProjectId = context.projectId,
-                    remoteRepoName = context.repoName,
-                    repoType = RepositoryType.GENERIC,
-                    packageConstraints = null,
-                    pathConstraints = listOf(PathConstraint(context.artifactInfo.getArtifactFullPath()))
-                )),
-                replicaType = ReplicaType.EDGE_PULL,
-                setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
-                remoteClusterIds = emptySet()
-            ))
+            replicaTaskClient.create(
+                ReplicaTaskCreateRequest(
+                    name = context.artifactInfo.getArtifactFullPath() +
+                        "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
+                    localProjectId = context.projectId,
+                    replicaObjectType = ReplicaObjectType.PATH,
+                    replicaTaskObjects = listOf(
+                        ReplicaObjectInfo(
+                            localRepoName = context.repoName,
+                            remoteProjectId = context.projectId,
+                            remoteRepoName = context.repoName,
+                            repoType = RepositoryType.GENERIC,
+                            packageConstraints = null,
+                            pathConstraints = listOf(PathConstraint(context.artifactInfo.getArtifactFullPath()))
+                        )
+                    ),
+                    replicaType = ReplicaType.EDGE_PULL,
+                    setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
+                    remoteClusterIds = emptySet()
+                )
+            )
         }
     }
 
@@ -260,8 +268,8 @@ class GenericLocalRepository(
         with(context.artifactInfo) {
             val existNode = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
             val metadata = resolveMetadata(context.request)
-            val mPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true)  }?.value?.toString()
-                ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true)  }?.value?.toString()
+            val mPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true) }?.value?.toString()
+                ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true) }?.value?.toString()
             if (mPipelineId != null) {
                 val status = checkPipelineArtifactUploadPermission(
                     artifactInfo = this,
@@ -307,10 +315,10 @@ class GenericLocalRepository(
         metadata: List<MetadataModel>,
     ): PipelineBuildStatus {
         val subProjectId = metadata.find { it.key.equals(METADATA_SUB_PROJECT_ID, true) }?.value?.toString()
-        val subPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true)  }?.value?.toString()
-        val subBuildId = metadata.find { it.key.equals(METADATA_SUB_BUILD_ID, true)  }?.value?.toString()
+        val subPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true) }?.value?.toString()
+        val subBuildId = metadata.find { it.key.equals(METADATA_SUB_BUILD_ID, true) }?.value?.toString()
         val projectId = metadata.find { it.key.equals(METADATA_PROJECT_ID, true) }?.value?.toString()
-        val pipelineId = metadata.find { it.key.equals(METADATA_PIPELINE_ID, true)  }?.value?.toString()
+        val pipelineId = metadata.find { it.key.equals(METADATA_PIPELINE_ID, true) }?.value?.toString()
         val buildId = metadata.find { it.key.equals(METADATA_BUILD_ID, true) }?.value?.toString()
         val folderBuildId = metadata.find { it.key.equals(METADATA_FOLDER_BUILD_ID, true) }?.value?.toString()
         if (projectId == null) {
@@ -353,7 +361,8 @@ class GenericLocalRepository(
             if (pPipelineId != pipelineId || pBuildId != (buildId ?: folderBuildId)) {
                 ciPermissionManager.throwOrLogError(
                     messageCode = GenericMessageCode.PIPELINE_ARTIFACT_PATH_ILLEGAL,
-                    artifactInfo.getArtifactFullPath(), "${artifactInfo.projectId}/$pPipelineId/$pBuildId")
+                    artifactInfo.getArtifactFullPath(), "${artifactInfo.projectId}/$pPipelineId/$pBuildId"
+                )
                 return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
             }
             return status
@@ -526,7 +535,7 @@ class GenericLocalRepository(
             nodeDetailList.addAll(
                 records.filter { paths.contains(it.fullPath) }.map { NodeDetail(it) }
             )
-            pageNumber ++
+            pageNumber++
         } while (nodeDetailList.size < paths.size)
         return nodeDetailList
     }
@@ -558,6 +567,7 @@ class GenericLocalRepository(
         }
         return nodeDetailList
     }
+
     /**
      * 检查文件数量是否超过阈值
      * @throws ErrorCodeException 超过阈值抛出NODE_LIST_TOO_LARGE类型ErrorCodeException
@@ -687,14 +697,30 @@ class GenericLocalRepository(
             if (!storageService.checkBlockId(uploadId, storageCredentials)) {
                 throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
             }
-            storageService.storeBlock(
-                uploadId,
-                sequence,
-                getArtifactSha256(),
-                getArtifactFile(),
-                HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
-                storageCredentials
-            )
+            val blockAppend = HeaderUtils.getHeader(HEADER_BLOCK_APPEND)?.toBoolean() ?: false
+            val range = HttpRangeUtils.resolveContentRange(HeaderUtils.getHeader(CONTENT_RANGE))
+            val totalSize = HeaderUtils.getHeader(HEADER_SIZE)?.toLongOrNull()
+            if (blockAppend && range != null && totalSize != null) {
+                storageService.storeBlockWithRandomPosition(
+                    uploadId,
+                    sequence,
+                    getArtifactSha256(),
+                    getArtifactFile(),
+                    HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
+                    storageCredentials,
+                    startPosition = range.start,
+                    totalLength = totalSize
+                )
+            } else {
+                storageService.storeBlock(
+                    uploadId,
+                    sequence,
+                    getArtifactSha256(),
+                    getArtifactFile(),
+                    HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
+                    storageCredentials
+                )
+            }
         }
     }
 
@@ -796,7 +822,8 @@ class GenericLocalRepository(
                 else -> {
                     logger.info(
                         "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
-                            "already appended, size of append file is $lengthOfAppendFile and uuid: $uuid")
+                            "already appended, size of append file is $lengthOfAppendFile and uuid: $uuid"
+                    )
                     Pair(lengthOfAppendFile, HttpStatus.ACCEPTED)
                 }
             }
@@ -828,9 +855,13 @@ class GenericLocalRepository(
             } else {
                 null
             }
-            val fileInfo = storageService.finishAppend(
-                uuid!!, context.repositoryDetail.storageCredentials, originalFileInfo
-            )
+            val fileInfo = try {
+                storageService.finishAppend(
+                    uuid!!, context.repositoryDetail.storageCredentials, originalFileInfo
+                )
+            } catch (e: StorageErrorException) {
+                throw BadRequestException(GenericMessageCode.CHUNKED_ARTIFACT_BROKEN, sha256.orEmpty())
+            }
             logger.info(
                 "The file with sha256 $sha256 in repo $projectId|$repoName " +
                     "has been uploaded with uuid: $uuid"

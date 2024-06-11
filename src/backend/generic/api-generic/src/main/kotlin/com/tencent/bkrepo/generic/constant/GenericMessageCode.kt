@@ -48,6 +48,7 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     PIPELINE_METADATA_INCOMPLETE(9, "generic.pipeline.metadata.incomplete"),
     PIPELINE_REPO_MANUAL_UPLOAD_NOT_ALLOWED(10, "generic.pipeline-repo.manual-upload.not-allowed"),
     PIPELINE_ARTIFACT_PATH_ILLEGAL(11, "generic.pipeline.artifact.path.illegal"),
+    CHUNKED_ARTIFACT_BROKEN(12, "generic.chunked.artifact.broken"),
     ;
 
     override fun getBusinessCode() = businessCode
