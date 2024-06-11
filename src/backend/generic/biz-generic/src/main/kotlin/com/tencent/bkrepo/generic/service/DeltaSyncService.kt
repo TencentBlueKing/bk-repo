@@ -54,7 +54,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.apache.pulsar.shade.org.eclipse.util.UrlEncoded
 import org.slf4j.LoggerFactory
@@ -256,7 +256,7 @@ class DeltaSyncService(
             token = bkBaseProperties.token,
             sql = sql,
         )
-        val requestBody = query.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
+        val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), query.toJsonString())
         val request = Request.Builder().url(url).post(requestBody).build()
         return queryHistorySpeed(request, sql, metrics)
     }
