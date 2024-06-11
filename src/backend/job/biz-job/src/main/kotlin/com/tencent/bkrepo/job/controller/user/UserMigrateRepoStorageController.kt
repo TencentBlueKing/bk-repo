@@ -29,6 +29,8 @@ package com.tencent.bkrepo.job.controller.user
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.mongo.util.Pages
@@ -93,9 +95,15 @@ class UserMigrateRepoStorageController(
 
     @PostMapping("/failed/node/autofix")
     fun autoFix(
-        @RequestParam projectId: String,
-        @RequestParam repoName: String,
+        @RequestParam(required = false) projectId: String? = null,
+        @RequestParam(required = false) repoName: String? = null,
     ) {
-        migrateFailedNodeService.autoFix(projectId, repoName)
+        if (projectId.isNullOrEmpty() && repoName.isNullOrEmpty()) {
+            migrateFailedNodeService.autoFix()
+        } else if (!projectId.isNullOrEmpty() && !repoName.isNullOrEmpty()) {
+            migrateFailedNodeService.autoFix(projectId, repoName)
+        } else {
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "miss projectId or repoName")
+        }
     }
 }

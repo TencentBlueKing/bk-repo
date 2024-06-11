@@ -15,6 +15,7 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.insertFailedNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -28,6 +29,8 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
@@ -56,6 +59,9 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
     private lateinit var storageCredentialsClient: StorageCredentialsClient
 
     @MockBean
+    private lateinit var fileReferenceClient: FileReferenceClient
+
+    @MockBean
     private lateinit var repositoryClient: RepositoryClient
 
     @MockBean
@@ -67,6 +73,8 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
             .thenReturn(Response(0, data = listOf(FileSystemCredentials())))
         whenever(storageCredentialsClient.findByKey(anyString()))
             .thenReturn(Response(0, data = FileSystemCredentials()))
+        whenever(fileReferenceClient.increment(anyString(), anyOrNull(), any()))
+            .thenReturn(Response(0, data = true))
         whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyOrNull()))
             .thenReturn(Response(0, "", MigrateTestUtils.buildRepo()))
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
@@ -114,6 +122,7 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
         val node = mongoTemplate.createNode()
         val failedNode = migrateFailedNodeDao.insertFailedNode(node.fullPath)
         assertTrue(strategy.fix(failedNode))
+        verify(fileReferenceClient, times(1)).increment(any(), anyOrNull(), any())
     }
 
     @Test

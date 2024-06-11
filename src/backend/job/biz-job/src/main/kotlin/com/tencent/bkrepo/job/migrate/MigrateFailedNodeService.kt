@@ -31,8 +31,10 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
-import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
-import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeAutoFixStrategy
+import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
+import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
+import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
+import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
@@ -42,8 +44,9 @@ import org.springframework.stereotype.Service
  */
 @Service
 class MigrateFailedNodeService(
+    private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     private val migrateFailedNodeDao: MigrateFailedNodeDao,
-    private val migrateFailedNodeAutoFixStrategy: List<MigrateFailedNodeAutoFixStrategy>,
+    private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
 ) {
     /**
      * 无法处理时，或已经手动处理成功则可以移除迁移失败的node
@@ -70,6 +73,27 @@ class MigrateFailedNodeService(
     }
 
     /**
+     * 尝试自动修复所有失败node都已经重试并再次失败的项目
+     */
+    @Async
+    fun autoFix() {
+        var pageRequest = Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE)
+        var tasks: List<TMigrateRepoStorageTask>
+        do {
+            tasks = migrateRepoStorageTaskDao.find(MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE.name, pageRequest)
+            tasks.forEach {
+                val existsFailedNode = migrateFailedNodeDao.existsFailedNode(it.projectId, it.repoName)
+                val existsRetryableNode = migrateFailedNodeDao.existsRetryableNode(it.projectId, it.repoName)
+                // 存在无法继续重试的node时尝试修复
+                if (existsFailedNode && !existsRetryableNode) {
+                    autoFix(it.projectId, it.repoName)
+                }
+            }
+            pageRequest = pageRequest.withPage(pageRequest.pageNumber + 1)
+        } while (tasks.isNotEmpty())
+    }
+
+    /**
      * 尝试自动修复迁移失败的node
      *
      * @param projectId 项目id
@@ -77,26 +101,7 @@ class MigrateFailedNodeService(
      */
     @Async
     fun autoFix(projectId: String, repoName: String) {
-        var pageRequest = Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE)
-        var failedNodes = migrateFailedNodeDao.page(projectId, repoName, pageRequest)
-        while (failedNodes.isNotEmpty()) {
-            failedNodes.forEach { autoFix(it) }
-            pageRequest = pageRequest.withPage(pageRequest.pageNumber + 1)
-            failedNodes = migrateFailedNodeDao.page(projectId, repoName, pageRequest)
-        }
-    }
-
-    private fun autoFix(failedNode: TMigrateFailedNode) {
-        val projectId = failedNode.projectId
-        val repoName = failedNode.repoName
-        for (strategy in migrateFailedNodeAutoFixStrategy) {
-            if (strategy.fix(failedNode)) {
-                logger.info("auto fix failed node[${failedNode.fullPath}] success, task[$projectId/$repoName]")
-                resetRetryCount(projectId, repoName, failedNode.fullPath)
-                return
-            }
-        }
-        logger.info("auto fix failed node[${failedNode.fullPath}] failed, task[$projectId/$repoName]")
+        migrateFailedNodeFixer.fix(projectId, repoName)
     }
 
     companion object {
