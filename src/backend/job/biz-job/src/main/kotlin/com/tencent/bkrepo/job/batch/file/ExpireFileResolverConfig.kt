@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.job.batch.file
 
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.job.config.properties.ExpiredCacheFileCleanupJobProperties
 import com.tencent.bkrepo.job.service.FileCacheService
 import org.springframework.context.annotation.Bean
@@ -10,15 +10,13 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 
 @Configuration
 class ExpireFileResolverConfig {
-
-
     @Bean
-    fun fileExpireResolver(
+    fun fileRetainResolver(
         expiredCacheFileCleanupJobProperties: ExpiredCacheFileCleanupJobProperties,
         scheduler: ThreadPoolTaskScheduler,
         fileCacheService: FileCacheService,
         mongoTemplate: MongoTemplate
-    ): FileExpireResolver {
+    ): FileRetainResolver {
         return BasedRepositoryFileExpireResolver(
             expiredCacheFileCleanupJobProperties.repoConfig,
             scheduler,

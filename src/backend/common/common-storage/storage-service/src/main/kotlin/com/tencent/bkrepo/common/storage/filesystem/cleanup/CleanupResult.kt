@@ -45,6 +45,14 @@ data class CleanupResult(
      * 根目录下除了tempPath与stagingPath子目录外被访问的文件大小
      */
     var rootDirNotDeletedSize: Long = 0,
+    /**
+     * 根据保留策略保留的文件数量
+     */
+    var retainFile: Long = 0,
+    /**
+     * 根据保留策略保留的文件大小
+     */
+    var retainSize: Long = 0,
 ) {
 
     fun merge(vararg others: CleanupResult): CleanupResult {

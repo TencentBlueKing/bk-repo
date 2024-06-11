@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.job.metrics
 
+import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -12,21 +13,29 @@ class StorageCacheMetricsTest {
         val metrics = StorageCacheMetrics(registry)
         metrics.setCacheSize(storageKey, 1000L)
         metrics.setCacheCount(storageKey, 20L)
-        val sizeMeter = registry
-            .get(StorageCacheMetrics.CACHE_SIZE)
-            .tags(StorageCacheMetrics.TAG_STORAGE_KEY, storageKey)
-            .gauge()
-        val countMeter = registry
-            .get(StorageCacheMetrics.CACHE_COUNT)
-            .tags(StorageCacheMetrics.TAG_STORAGE_KEY, storageKey)
-            .gauge()
+        metrics.setRetainSize(storageKey, 500L)
+        metrics.setRetainCount(storageKey, 10L)
+        val sizeMeter = registry.getMeter(StorageCacheMetrics.CACHE_SIZE, storageKey)
+        val retainSizeMeter = registry.getMeter(StorageCacheMetrics.CACHE_RETAIN_SIZE, storageKey)
+        val countMeter = registry.getMeter(StorageCacheMetrics.CACHE_COUNT, storageKey)
+        val retainCountMeter = registry.getMeter(StorageCacheMetrics.CACHE_RETAIN_COUNT, storageKey)
         Assertions.assertEquals(1000.0, sizeMeter.value())
+        Assertions.assertEquals(500.0, retainSizeMeter.value())
         Assertions.assertEquals(20.0, countMeter.value())
+        Assertions.assertEquals(10.0, retainCountMeter.value())
 
         // 测试更新后的统计值
         metrics.setCacheSize(storageKey, 2000L)
+        metrics.setRetainSize(storageKey, 1000L)
         metrics.setCacheCount(storageKey, 40L)
+        metrics.setRetainCount(storageKey, 30L)
         Assertions.assertEquals(2000.0, sizeMeter.value())
+        Assertions.assertEquals(1000.0, retainSizeMeter.value())
         Assertions.assertEquals(40.0, countMeter.value())
+        Assertions.assertEquals(30.0, retainCountMeter.value())
     }
+
+    private fun MeterRegistry.getMeter(name: String, storageKey: String) = get(name)
+        .tags(StorageCacheMetrics.TAG_STORAGE_KEY, storageKey)
+        .gauge()
 }

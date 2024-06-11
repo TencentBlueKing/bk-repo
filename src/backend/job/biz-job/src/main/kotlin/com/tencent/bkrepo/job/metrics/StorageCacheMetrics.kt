@@ -29,7 +29,6 @@ package com.tencent.bkrepo.job.metrics
 
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.BaseUnits
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
 
@@ -40,17 +39,15 @@ class StorageCacheMetrics(
 
     private val cacheSizeMap = ConcurrentHashMap<String, Long>()
     private val cacheCountMap = ConcurrentHashMap<String, Long>()
+    private val retainSizeMap = ConcurrentHashMap<String, Long>()
+    private val retainCountMap = ConcurrentHashMap<String, Long>()
 
     /**
      * 设置当前缓存总大小，由于目前只有Job服务在清理缓存时会统计，因此只有Job服务会调用该方法
      */
     fun setCacheSize(storageKey: String, size: Long) {
         cacheSizeMap[storageKey] = size
-        Gauge.builder(CACHE_SIZE, cacheSizeMap) { cacheSizeMap.getOrDefault(storageKey, 0L).toDouble() }
-            .baseUnit(BaseUnits.BYTES)
-            .tag(TAG_STORAGE_KEY, storageKey)
-            .description("storage cache total size")
-            .register(registry)
+        gauge(CACHE_SIZE, storageKey, cacheSizeMap, "storage cache total size")
     }
 
     /**
@@ -58,15 +55,37 @@ class StorageCacheMetrics(
      */
     fun setCacheCount(storageKey: String, count: Long) {
         cacheCountMap[storageKey] = count
-        Gauge.builder(CACHE_COUNT, cacheCountMap) { cacheCountMap.getOrDefault(storageKey, 0L).toDouble() }
+        gauge(CACHE_COUNT, storageKey, cacheCountMap, "storage cache total count")
+    }
+
+    /**
+     * 设置根据策略保留的文件总大小
+     */
+    fun setRetainSize(storageKey: String, size: Long) {
+        retainSizeMap[storageKey] = size
+        gauge(CACHE_RETAIN_SIZE, storageKey, retainSizeMap, "storage cache retain size")
+    }
+
+    /**
+     * 设置根据策略保留的文件数量
+     */
+    fun setRetainCount(storageKey: String, count: Long) {
+        retainCountMap[storageKey] = count
+        gauge(CACHE_RETAIN_COUNT, storageKey, retainCountMap, "storage cache retain count")
+    }
+
+    private fun gauge(name: String, storageKey: String, data: Map<String, Long>, des: String) {
+        Gauge.builder(name, data) { it.getOrDefault(storageKey, 0L).toDouble() }
             .tag(TAG_STORAGE_KEY, storageKey)
-            .description("storage cache total count")
+            .description(des)
             .register(registry)
     }
 
     companion object {
         const val CACHE_SIZE = "storage.cache.size"
         const val CACHE_COUNT = "storage.cache.count"
+        const val CACHE_RETAIN_SIZE = "storage.cache.retain.size"
+        const val CACHE_RETAIN_COUNT = "storage.cache.retain.count"
         const val TAG_STORAGE_KEY = "storageKey"
     }
 }

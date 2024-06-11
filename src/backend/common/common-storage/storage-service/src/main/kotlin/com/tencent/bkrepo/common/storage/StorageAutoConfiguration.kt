@@ -43,7 +43,7 @@ import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.core.simple.SimpleStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
@@ -93,17 +93,12 @@ class StorageAutoConfiguration {
     fun storageService(
         properties: StorageProperties,
         threadPoolTaskExecutor: ThreadPoolTaskExecutor,
-        fileExpireResolver: FileExpireResolver?,
+        fileRetainResolver: FileRetainResolver?,
     ): StorageService {
-        fileExpireResolver?.let {
-            logger.info("Use FileExpireResolver[${fileExpireResolver::class.simpleName}].")
-        }
+        fileRetainResolver?.let { logger.info("Use FileRetainResolver[${fileRetainResolver::class.simpleName}].") }
         val cacheEnabled = properties.defaultStorageCredentials().cache.enabled
         val storageService = if (cacheEnabled) {
-            CacheStorageService(
-                threadPoolTaskExecutor,
-                fileExpireResolver,
-            )
+            CacheStorageService(threadPoolTaskExecutor, fileRetainResolver)
         } else {
             SimpleStorageService()
         }

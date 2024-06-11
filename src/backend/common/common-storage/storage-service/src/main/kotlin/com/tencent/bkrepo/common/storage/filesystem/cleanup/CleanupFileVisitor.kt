@@ -31,11 +31,11 @@ import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.api.constant.JOB_LOGGER_NAME
 import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
 import com.tencent.bkrepo.common.storage.core.FileStorage
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventData
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
-import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
-import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventData
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
 import com.tencent.bkrepo.common.storage.util.toPath
@@ -62,6 +62,7 @@ class CleanupFileVisitor(
     private val credentials: StorageCredentials,
     private val fileExpireResolver: FileExpireResolver,
     private val publisher: ApplicationEventPublisher,
+    private val fileRetainResolver: FileRetainResolver? = null,
 ) : ArtifactFileVisitor() {
 
     val result = CleanupResult()
@@ -74,7 +75,10 @@ class CleanupFileVisitor(
         val isTempFile = isTempFile(filePath)
         var deleted = false
         try {
-            if (fileExpireResolver.isExpired(filePath.toFile()) && !isNFSTempFile(filePath)) {
+            val file = filePath.toFile()
+            val expired = fileExpireResolver.isExpired(file)
+            val retain = fileRetainResolver?.retain(file) ?: false
+            if (expired && !retain && !isNFSTempFile(filePath)) {
                 if (isTempFile || existInStorage(filePath)) {
                     rateLimiter.acquire()
                     Files.delete(filePath)
@@ -84,6 +88,10 @@ class CleanupFileVisitor(
                     onFileCleaned(filePath, size)
                     logger.info("Clean up file[$filePath], size[$size], summary: $result")
                 }
+            }
+            if (expired && retain) {
+                result.retainFile += 1
+                result.retainSize += size
             }
         } catch (ignored: Exception) {
             logger.error("Clean file[${filePath.fileName}] error.", ignored)

@@ -34,18 +34,17 @@ import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer
 import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.StorageEldestRemovedListener
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
-import com.tencent.bkrepo.job.batch.file.BasedRepositoryFileExpireResolver
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import org.springframework.stereotype.Component
 
 @Component
 class StorageCacheIndexerCustomizer(
-    private val resolver: FileExpireResolver,
+    private val resolver: FileRetainResolver,
     private val fileLocator: FileLocator,
     private val storageService: StorageService
 ) : IndexerCustomizer<String, Long> {
     override fun customize(indexer: StorageCacheIndexer<String, Long>, credentials: StorageCredentials) {
-        if (resolver is BasedRepositoryFileExpireResolver && storageService is CacheStorageService) {
+        if (storageService is CacheStorageService) {
             indexer.addEldestRemovedListener(EldestRemovedListener(credentials, fileLocator, storageService, resolver))
         }
     }
@@ -57,10 +56,10 @@ class StorageCacheIndexerCustomizer(
         storageCredentials: StorageCredentials,
         fileLocator: FileLocator,
         storageService: CacheStorageService,
-        private val resolver: BasedRepositoryFileExpireResolver,
+        private val resolver: FileRetainResolver,
     ) : StorageEldestRemovedListener(storageCredentials, fileLocator, storageService) {
         override fun onEldestRemoved(key: String, value: Long) {
-            if (resolver.isExpired(key)) {
+            if (!resolver.retain(key)) {
                 super.onEldestRemoved(key, value)
             }
         }
