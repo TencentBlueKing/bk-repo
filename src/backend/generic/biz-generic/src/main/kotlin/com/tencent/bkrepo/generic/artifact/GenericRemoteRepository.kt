@@ -34,6 +34,7 @@ package com.tencent.bkrepo.generic.artifact
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -62,7 +63,6 @@ import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveContentRange
-import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -128,22 +128,20 @@ class GenericRemoteRepository(
         }
     }
 
+    override fun createRemoteDownloadUrl(context: ArtifactContext): String {
+        val configuration = context.getRemoteConfiguration()
+        val artifactUri = context.artifactInfo.getArtifactFullPath().urlEncode()
+        val queryString = context.request.queryString
+        return UrlFormatter.format(configuration.url, artifactUri, queryString)
+    }
+
     override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
-        val range = HttpContextHolder.getRequestOrNull()
-            ?.let { resolveRange(it, cacheNode.size) }
-            ?: Range.full(cacheNode.size)
-
-        val artifactInputStream = if (shouldReturnEmptyStream(range)) {
-            ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-        } else {
-            storageService.load(cacheNode.sha256!!, range, context.repositoryDetail.storageCredentials)
-        }
-
-        return artifactInputStream?.run {
+        return storageManager.loadArtifactInputStream(cacheNode, context.repositoryDetail.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
             }
-            ArtifactResource(this, context.artifactInfo.getResponseName(), cacheNode, ArtifactChannel.PROXY)
+            val artifactName = context.artifactInfo.getResponseName()
+            ArtifactResource(this, artifactName, cacheNode, ArtifactChannel.PROXY, context.useDisposition)
         }
     }
 
@@ -194,7 +192,7 @@ class GenericRemoteRepository(
         val artifactInfo = context.artifactInfo
         val url = UrlFormatter.format(
             baseUrl,
-            "/generic/detail/$remoteProjectId/$remoteRepoName/${artifactInfo.getArtifactFullPath()}",
+            "/generic/detail/$remoteProjectId/$remoteRepoName/${artifactInfo.getArtifactFullPath().urlEncode()}",
         )
 
         // 执行请求
@@ -317,11 +315,6 @@ class GenericRemoteRepository(
         headers[HttpHeaders.ETAG]?.let { response.setHeader(HttpHeaders.ETAG, it) }
         headers[X_CHECKSUM_MD5]?.let { response.setHeader(X_CHECKSUM_MD5, it) }
         headers[X_CHECKSUM_SHA256]?.let { response.setHeader(X_CHECKSUM_SHA256, it) }
-    }
-
-    private fun shouldReturnEmptyStream(range: Range? = null): Boolean {
-        val rangeToTest = range ?: HttpContextHolder.getRequestOrNull()?.let { resolveRange(it, Long.MAX_VALUE) }
-        return HttpContextHolder.getRequestOrNull()?.method == HEAD.name || rangeToTest?.isEmpty() == true
     }
 
     private inline fun <reified T> request(remoteConfiguration: RemoteConfiguration, request: Request): T {

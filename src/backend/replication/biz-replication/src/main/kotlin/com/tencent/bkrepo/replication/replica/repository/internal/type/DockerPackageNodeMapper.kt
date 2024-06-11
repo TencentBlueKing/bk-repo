@@ -28,9 +28,8 @@
 package com.tencent.bkrepo.replication.replica.repository.internal.type
 
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.replication.constant.BLOB_PATH_REFRESHED_KEY
 import com.tencent.bkrepo.replication.constant.DOCKER_LAYER_FULL_PATH
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
@@ -51,7 +50,7 @@ import org.springframework.stereotype.Component
 @Component
 class DockerPackageNodeMapper(
     private val nodeClient: NodeClient,
-    private val storageService: StorageService,
+    private val storageManager: StorageManager,
     private val repositoryClient: RepositoryClient
 ) : PackageNodeMapper {
 
@@ -79,11 +78,7 @@ class DockerPackageNodeMapper(
                 nodeClient.getNodeDetail(projectId, repoName, manifestFullPath).data!!
             }
             if (nodeDetail.sha256.isNullOrEmpty()) throw ArtifactNotFoundException(manifestFullPath)
-            val inputStream = storageService.load(
-                nodeDetail.sha256!!,
-                Range.full(nodeDetail.size),
-                repository.storageCredentials
-            )!!
+            val inputStream = storageManager.loadFullArtifactInputStream(nodeDetail, repository.storageCredentials)!!
             val manifestInfo = try {
                 ManifestParser.parseManifest(inputStream)
             } catch (e: Exception) {

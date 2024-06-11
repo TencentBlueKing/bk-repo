@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
@@ -118,6 +119,9 @@ open class ServiceBaseTest {
 
     @MockBean
     lateinit var permissionManager: PermissionManager
+
+    @MockBean
+    lateinit var ciPermissionManager: CIPermissionManager
 
     @MockBean
     lateinit var messageSupplier: MessageSupplier

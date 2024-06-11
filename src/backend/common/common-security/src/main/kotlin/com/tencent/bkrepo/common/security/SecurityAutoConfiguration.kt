@@ -45,6 +45,8 @@ import com.tencent.bkrepo.common.security.interceptor.devx.DevXAccessInterceptor
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
+import com.tencent.bkrepo.common.security.manager.ci.CIPermissionProperties
 import com.tencent.bkrepo.common.security.manager.edge.EdgePermissionManager
 import com.tencent.bkrepo.common.security.manager.proxy.ProxyPermissionManager
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
@@ -74,9 +76,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
     ServiceAuthConfiguration::class,
     ActuatorAuthConfiguration::class,
     CryptoConfiguration::class,
-    AuthenticationManager::class
+    AuthenticationManager::class,
+    CIPermissionManager::class
 )
-@EnableConfigurationProperties(DevXProperties::class)
+@EnableConfigurationProperties(DevXProperties::class, CIPermissionProperties::class)
 class SecurityAutoConfiguration {
 
     @Bean

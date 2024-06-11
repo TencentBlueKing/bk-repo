@@ -40,7 +40,8 @@ object RoleRequestUtil {
             projectId = request.projectId,
             repoName = request.repoName,
             admin = request.admin,
-            description = request.description
+            description = request.description,
+            source = request.source
         )
     }
 }

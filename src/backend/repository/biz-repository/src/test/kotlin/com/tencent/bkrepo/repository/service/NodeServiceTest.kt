@@ -260,18 +260,10 @@ class NodeServiceTest @Autowired constructor(
     }
 
     @Test
-    @DisplayName("测试查询无路径权限的目录")
-    fun testListNoPathPermissionNode() {
+    @DisplayName("测试查询存在路径权限配置的目录")
+    fun testListPermissionNode() {
         val size = 5L
         repeat(size.toInt()) { i -> nodeService.createNode(createRequest("/a/$i/$i.txt", false)) }
-        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
-            ResponseBuilder.success(
-                ListPathResult(
-                    status = true,
-                    path = mapOf(OperationType.NIN to listOf("/a/1", "/a/2"))
-                )
-            )
-        )
 
         val option = NodeListOption(
             pageNumber = 0,
@@ -281,17 +273,67 @@ class NodeServiceTest @Autowired constructor(
             deep = false,
             sort = false
         )
-        val page = nodeService.listNodePage(node("/a"), option)
+
+        // 测试查询无权限路径
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(
+                    status = true,
+                    path = mapOf(OperationType.NIN to listOf("/a/1", "/a/2"))
+                )
+            )
+        )
+        var page = nodeService.listNodePage(node("/a"), option)
         assertEquals(3, page.totalRecords)
         assertEquals("/a/0", page.records[0].fullPath)
         assertEquals("/a/3", page.records[1].fullPath)
         assertEquals("/a/4", page.records[2].fullPath)
 
-        val result = nodeService.listNode(node("/a"), option)
+        var result = nodeService.listNode(node("/a"), option)
         assertEquals(3, result.size)
         assertEquals("/a/0", result[0].fullPath)
         assertEquals("/a/3", result[1].fullPath)
         assertEquals("/a/4", result[2].fullPath)
+
+        // 测试查询有权限路径
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(
+                    status = true,
+                    path = mapOf(OperationType.IN to listOf("/a/1/1.txt", "/a/2"))
+                )
+            )
+        )
+        page = nodeService.listNodePage(node("/a"), option)
+        assertEquals(2, page.totalRecords)
+        assertEquals("/a/1", page.records[0].fullPath)
+        assertEquals("/a/2", page.records[1].fullPath)
+
+        result = nodeService.listNode(node("/a"), option)
+        assertEquals(2, result.size)
+        assertEquals("/a/1", result[0].fullPath)
+        assertEquals("/a/2", result[1].fullPath)
+
+        // 测试所有路径均无权限
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(ListPathResult(status = true, path = mapOf(OperationType.IN to emptyList())))
+        )
+        assertEquals(0, nodeService.listNodePage(node("/a"), option).totalRecords)
+        assertEquals(0, nodeService.listNode(node("/a"), option).size)
+
+        // 测试同时包含有权限与无权限
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(
+                    status = true,
+                    path = mapOf(
+                        OperationType.IN to listOf("/a/1", "/a/2"),
+                        OperationType.NIN to listOf("/a/3", "/a/4"),
+                    )
+                )
+            )
+        )
+        assertThrows<IllegalArgumentException> { nodeService.listNode(node("/a"), option) }
     }
 
     @Test

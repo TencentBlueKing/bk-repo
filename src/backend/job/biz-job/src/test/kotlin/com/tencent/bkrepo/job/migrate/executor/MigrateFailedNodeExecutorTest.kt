@@ -35,6 +35,8 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE
+import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeAutoFixStrategy
+import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -43,18 +45,29 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
 import java.io.FileNotFoundException
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 @DisplayName("迁移失败Node执行器测试")
+@Import(MigrateFailedNodeFixer::class)
 class MigrateFailedNodeExecutorTest @Autowired constructor(
     private val executor: MigrateFailedNodeExecutor,
 ) : ExecutorBaseTest() {
+
+    @MockBean
+    private lateinit var migrateFailedNodeAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
+
     @AfterAll
     fun afterAll() {
         executor.close(1L, TimeUnit.MINUTES)
@@ -63,6 +76,7 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
+        whenever(migrateFailedNodeAutoFixStrategy.fix(any())).thenReturn(true)
         migrateRepoStorageTaskDao.remove(Query())
         migrateFailedNodeDao.remove(Query())
     }
@@ -105,6 +119,13 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
         updateTask(task.id!!, CORRECT_FINISHED.name, LocalDateTime.now())
         createFailedNode(task.id!!)
 
+        // 测试达到最大重试次数后自动修复成功将重试次数重置为0
+        migrateFailedNodeDao.updateFirst(
+            Query(Criteria.where(TMigrateFailedNode::taskId.name).isEqualTo(task.id!!)),
+            Update.update(TMigrateFailedNode::retryTimes.name, 2)
+        )
+        assertEquals(2, migrateFailedNodeDao.findOne(Query())!!.retryTimes)
+
         // 执行任务
         val context = executor.execute(buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!))!!
 
@@ -114,6 +135,7 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
         task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
         assertEquals(MIGRATING_FAILED_NODE.name, task.state)
         assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
+        assertEquals(0, migrateFailedNodeDao.findOne(Query())!!.retryTimes)
     }
 
     private fun createFailedNode(taskId: String) {

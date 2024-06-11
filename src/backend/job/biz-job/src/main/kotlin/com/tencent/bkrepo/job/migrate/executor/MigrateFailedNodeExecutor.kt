@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.job.migrate.Constant.MAX_MIGRATE_FAILED_RETRY_TIMES
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
@@ -35,6 +36,7 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
+import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
@@ -53,6 +55,7 @@ class MigrateFailedNodeExecutor(
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
     private val transferDataExecutor: TransferDataExecutor,
+    private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -91,6 +94,10 @@ class MigrateFailedNodeExecutor(
                 } catch (e: Exception) {
                     migrateFailedNodeDao.resetMigrating(projectId, repoName, node.fullPath)
                     logger.error("migrate failed node[${node.fullPath}] failed, task[${projectId}/${repoName}]", e)
+                    if (failedNode.retryTimes >= MAX_MIGRATE_FAILED_RETRY_TIMES) {
+                        logger.info("try to fix node[${node.fullPath}] failed, task[${projectId}/${repoName}]")
+                        migrateFailedNodeFixer.fix(failedNode)
+                    }
                 } finally {
                     context.decTransferringCount()
                 }

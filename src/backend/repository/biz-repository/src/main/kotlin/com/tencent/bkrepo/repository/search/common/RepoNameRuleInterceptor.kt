@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
@@ -45,6 +46,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.listPermissionPaths
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
@@ -151,30 +153,60 @@ class RepoNameRuleInterceptor(
 
     private fun buildRule(projectId: String, repoName: String): Rule {
         val repoRule = Rule.QueryRule(NodeInfo::repoName.name, repoName, OperationType.EQ).toFixed()
-        return listNoPermissionPath(projectId, repoName)?.let {
-            val pathRules = it.flatMapTo(ArrayList(it.size)) { path ->
-                listOf(
-                    Rule.QueryRule(NodeInfo::fullPath.name, path.ensureSuffix("/"), OperationType.PREFIX) as Rule,
-                    Rule.QueryRule(NodeInfo::fullPath.name, path, OperationType.EQ) as Rule,
+
+        // 获取有权限或无权限的路径
+        val (hasPermissionPaths, noPermissionPaths) = servicePermissionClient.listPermissionPaths(
+            SecurityUtils.getUserId(), projectId, repoName
+        )
+
+        // hasPermissionPath为empty时所有路径都无权限,构造一个永远不成立的条件使查询结果为空列表
+        if (hasPermissionPaths?.isEmpty() == true) {
+            return Rule.NestedRule(
+                mutableListOf(
+                    repoRule,
+                    Rule.QueryRule(NodeInfo::projectId.name, false, OperationType.NULL)
                 )
-            }
+            )
+        }
+
+        // 配置了有权限的路径
+        if (hasPermissionPaths?.isNotEmpty() == true) {
+            val rules = buildHasPermissionPathRules(hasPermissionPaths)
+            val pathRule = Rule.NestedRule(rules, Rule.NestedRule.RelationType.OR)
+            return Rule.NestedRule(mutableListOf(repoRule, pathRule))
+        }
+
+        // 配置了无权限路径
+        if (noPermissionPaths.isNotEmpty()) {
+            val pathRules = buildNoPermissionPathRules(noPermissionPaths)
             val pathRule = Rule.NestedRule(pathRules, Rule.NestedRule.RelationType.NOR)
-            Rule.NestedRule(mutableListOf(repoRule, pathRule))
-        } ?: repoRule
+            return Rule.NestedRule(mutableListOf(repoRule, pathRule))
+        }
+
+        return repoRule
     }
 
-    private fun listNoPermissionPath(projectId: String, repoName: String): List<String>? {
-        val userId = SecurityUtils.getUserId()
-        val result = servicePermissionClient.listPermissionPath(userId, projectId, repoName).data!!
-        if (result.status) {
-            val paths = result.path.flatMap {
-                require(it.key == OperationType.NIN)
-                it.value
-            }
-            logger.info("user[$userId] does not have permission to $paths of [$projectId/$repoName], will be filtered")
-            return paths.ifEmpty { null }
+    private fun buildHasPermissionPathRules(paths: List<String>): MutableList<Rule> {
+        return paths.flatMapTo(ArrayList(paths.size * 4)) { path ->
+            // 拥有所有父目录查看权限，用于在前端与bk-driver中查看
+            val parentFolders = PathUtils.resolveAncestorFolder(path)
+            val rules = ArrayList<Rule>(parentFolders.size + 2)
+            parentFolders.forEach { rules.add(Rule.QueryRule(NodeInfo::fullPath.name, it, OperationType.EQ)) }
+            // 拥有目录自身的权限
+            rules.add(Rule.QueryRule(NodeInfo::fullPath.name, path, OperationType.EQ))
+            // 拥有子目录的权限
+            rules.add(Rule.QueryRule(NodeInfo::fullPath.name, path.ensureSuffix("/"), OperationType.PREFIX))
+            rules
         }
-        return null
+    }
+
+    private fun buildNoPermissionPathRules(paths: List<String>): MutableList<Rule> {
+        return paths.flatMapTo(ArrayList(paths.size * 2)) { path ->
+            listOf<Rule>(
+                Rule.QueryRule(NodeInfo::fullPath.name, path.ensureSuffix("/"), OperationType.PREFIX),
+                Rule.QueryRule(NodeInfo::fullPath.name, path, OperationType.EQ),
+            )
+        }
     }
 
     private fun hasRepoPermission(
