@@ -45,7 +45,7 @@ class StorageCacheMetrics(
     /**
      * 设置当前缓存总大小及数量，由于目前只有Job服务在清理缓存时会统计，因此只有Job服务会调用该方法
      */
-    fun setCacheSize(storageKey: String, size: Long, count: Long) {
+    fun setCacheMetrics(storageKey: String, size: Long, count: Long) {
         cacheSizeMap[storageKey] = size
         gauge(CACHE_SIZE, storageKey, cacheSizeMap, "storage cache total size")
         cacheCountMap[storageKey] = count
@@ -55,7 +55,7 @@ class StorageCacheMetrics(
     /**
      * 设置根据策略保留的文件总大小及数量
      */
-    fun setRetainCache(storageKey: String, size: Long, count: Long) {
+    fun setRetainCacheMetrics(storageKey: String, size: Long, count: Long) {
         retainSizeMap[storageKey] = size
         gauge(CACHE_RETAIN_SIZE, storageKey, retainSizeMap, "storage cache retain size")
         retainCountMap[storageKey] = count

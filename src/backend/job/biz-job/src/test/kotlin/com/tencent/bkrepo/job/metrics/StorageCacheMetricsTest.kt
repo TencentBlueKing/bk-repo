@@ -11,8 +11,8 @@ class StorageCacheMetricsTest {
         val storageKey = "testKey"
         val registry = SimpleMeterRegistry()
         val metrics = StorageCacheMetrics(registry)
-        metrics.setCacheSize(storageKey, 1000L, 20L)
-        metrics.setRetainCache(storageKey, 500L, 10L)
+        metrics.setCacheMetrics(storageKey, 1000L, 20L)
+        metrics.setRetainCacheMetrics(storageKey, 500L, 10L)
         val sizeMeter = registry.getMeter(StorageCacheMetrics.CACHE_SIZE, storageKey)
         val retainSizeMeter = registry.getMeter(StorageCacheMetrics.CACHE_RETAIN_SIZE, storageKey)
         val countMeter = registry.getMeter(StorageCacheMetrics.CACHE_COUNT, storageKey)
@@ -23,8 +23,8 @@ class StorageCacheMetricsTest {
         Assertions.assertEquals(10.0, retainCountMeter.value())
 
         // 测试更新后的统计值
-        metrics.setCacheSize(storageKey, 2000L, 40L)
-        metrics.setRetainCache(storageKey, 1000L, 30L)
+        metrics.setCacheMetrics(storageKey, 2000L, 40L)
+        metrics.setRetainCacheMetrics(storageKey, 1000L, 30L)
         Assertions.assertEquals(2000.0, sizeMeter.value())
         Assertions.assertEquals(1000.0, retainSizeMeter.value())
         Assertions.assertEquals(40.0, countMeter.value())
