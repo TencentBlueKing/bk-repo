@@ -623,7 +623,7 @@
                     }
                     const key = this.userInfo.name + 'SelectedPaths'
                     const isCheckedPaths = sessionStorage.getItem(key) === null ? '' : sessionStorage.getItem(key)
-                    this.showMultiDelete = isCheckedPaths.length > 0
+                    this.showMultiDelete = isCheckedPaths.length > 0 && isCheckedPaths.includes('\'' + this.projectId + '/' + this.repoName + '/')
                     for (let i = 0; i < this.artifactoryList.length; i++) {
                         const targetPath = '\'' + this.artifactoryList[i].projectId + '/' + this.artifactoryList[i].repoName + this.artifactoryList[i].fullPath + '\''
                         if (isCheckedPaths.includes(targetPath)) {
@@ -1098,7 +1098,7 @@
                 const isCheckedPaths = sessionStorage.getItem(key).split('\'')
                 const paths = []
                 for (let i = 0; i < isCheckedPaths.length; i++) {
-                    if (isCheckedPaths[i].length > 0) {
+                    if (isCheckedPaths[i].length > 0 && isCheckedPaths[i].startsWith(this.projectId + '/' + this.repoName)) {
                         paths.push(isCheckedPaths[i].replace(this.projectId + '/' + this.repoName, ''))
                     }
                 }
@@ -1388,7 +1388,7 @@
                         isCheckedPaths = isCheckedPaths.replace(targetPath, '')
                     }
                 }
-                this.showMultiDelete = isCheckedPaths.length > 0
+                this.showMultiDelete = isCheckedPaths.length > 0 && isCheckedPaths.includes('\'' + this.projectId + '/' + this.repoName + '/')
                 sessionStorage.setItem(key, isCheckedPaths)
             },
 
@@ -1401,7 +1401,7 @@
                 } else {
                     isCheckedPaths = isCheckedPaths.replace('\'' + row.projectId + '/' + row.repoName + row.fullPath + '\'', '')
                 }
-                this.showMultiDelete = isCheckedPaths.length > 0
+                this.showMultiDelete = isCheckedPaths.length > 0 && isCheckedPaths.includes('\'' + this.projectId + '/' + this.repoName + '/')
                 sessionStorage.setItem(key, isCheckedPaths)
             }
         }
