@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.metrics
 
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.BaseUnits
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
 
@@ -47,7 +48,7 @@ class StorageCacheMetrics(
      */
     fun setCacheMetrics(storageKey: String, size: Long, count: Long) {
         cacheSizeMap[storageKey] = size
-        gauge(CACHE_SIZE, storageKey, cacheSizeMap, "storage cache total size")
+        gauge(CACHE_SIZE, storageKey, cacheSizeMap, "storage cache total size", BaseUnits.BYTES)
         cacheCountMap[storageKey] = count
         gauge(CACHE_COUNT, storageKey, cacheCountMap, "storage cache total count")
     }
@@ -57,13 +58,14 @@ class StorageCacheMetrics(
      */
     fun setRetainCacheMetrics(storageKey: String, size: Long, count: Long) {
         retainSizeMap[storageKey] = size
-        gauge(CACHE_RETAIN_SIZE, storageKey, retainSizeMap, "storage cache retain size")
+        gauge(CACHE_RETAIN_SIZE, storageKey, retainSizeMap, "storage cache retain size", BaseUnits.BYTES)
         retainCountMap[storageKey] = count
         gauge(CACHE_RETAIN_COUNT, storageKey, retainCountMap, "storage cache retain count")
     }
 
-    private fun gauge(name: String, storageKey: String, data: Map<String, Long>, des: String) {
+    private fun gauge(name: String, storageKey: String, data: Map<String, Long>, des: String, unit: String? = null) {
         Gauge.builder(name, data) { it.getOrDefault(storageKey, 0L).toDouble() }
+            .baseUnit(unit)
             .tag(TAG_STORAGE_KEY, storageKey)
             .description(des)
             .register(registry)
