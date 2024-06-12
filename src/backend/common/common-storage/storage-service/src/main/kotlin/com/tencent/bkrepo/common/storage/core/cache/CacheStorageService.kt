@@ -228,15 +228,17 @@ class CacheStorageService(
         path: String,
         filename: String,
         credentials: StorageCredentials,
-    ) {
-        if (doExist(path, filename, credentials)) {
+    ): Boolean {
+        return if (doExist(path, filename, credentials)) {
             val cacheFilePath = "${credentials.cache.path}$path$filename"
             val size = File(cacheFilePath).length()
             getCacheClient(credentials).delete(path, filename)
             cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)
             logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
+            true
         } else {
             logger.info("Cache file[${credentials.cache.path}/$path/$filename] was not in storage")
+            false
         }
     }
 

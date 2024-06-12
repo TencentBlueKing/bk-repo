@@ -43,33 +43,21 @@ class StorageCacheMetrics(
     private val retainCountMap = ConcurrentHashMap<String, Long>()
 
     /**
-     * 设置当前缓存总大小，由于目前只有Job服务在清理缓存时会统计，因此只有Job服务会调用该方法
+     * 设置当前缓存总大小及数量，由于目前只有Job服务在清理缓存时会统计，因此只有Job服务会调用该方法
      */
-    fun setCacheSize(storageKey: String, size: Long) {
+    fun setCacheSize(storageKey: String, size: Long, count: Long) {
         cacheSizeMap[storageKey] = size
         gauge(CACHE_SIZE, storageKey, cacheSizeMap, "storage cache total size")
-    }
-
-    /**
-     * 设置当前缓存总数，由于目前只有Job服务在清理缓存时会统计，因此只有Job服务会调用该方法
-     */
-    fun setCacheCount(storageKey: String, count: Long) {
         cacheCountMap[storageKey] = count
         gauge(CACHE_COUNT, storageKey, cacheCountMap, "storage cache total count")
     }
 
     /**
-     * 设置根据策略保留的文件总大小
+     * 设置根据策略保留的文件总大小及数量
      */
-    fun setRetainSize(storageKey: String, size: Long) {
+    fun setRetainCache(storageKey: String, size: Long, count: Long) {
         retainSizeMap[storageKey] = size
         gauge(CACHE_RETAIN_SIZE, storageKey, retainSizeMap, "storage cache retain size")
-    }
-
-    /**
-     * 设置根据策略保留的文件数量
-     */
-    fun setRetainCount(storageKey: String, count: Long) {
         retainCountMap[storageKey] = count
         gauge(CACHE_RETAIN_COUNT, storageKey, retainCountMap, "storage cache retain count")
     }

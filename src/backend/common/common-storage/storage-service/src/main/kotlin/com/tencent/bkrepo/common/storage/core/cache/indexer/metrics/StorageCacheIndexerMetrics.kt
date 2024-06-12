@@ -25,31 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.indexer.listener
+package com.tencent.bkrepo.common.storage.core.cache.indexer.metrics
 
-import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
-import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
-import com.tencent.bkrepo.common.storage.core.cache.indexer.metrics.StorageCacheIndexerMetrics
-import com.tencent.bkrepo.common.storage.core.locator.FileLocator
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
 
-/**
- * 缓存淘汰监听器，缓存索引被淘汰时同时删除硬盘上的缓存文件
- */
-open class StorageEldestRemovedListener(
-    @Volatile
-    protected var storageCredentials: StorageCredentials,
-    protected val fileLocator: FileLocator,
-    protected val storageService: CacheStorageService,
-    protected val storageCacheIndexerMetrics: StorageCacheIndexerMetrics? = null,
-) : UpdatableEldestRemovedListener<String, Long> {
-    override fun onEldestRemoved(key: String, value: Long) {
-        val path = fileLocator.locate(key)
-        val deleted = storageService.deleteCacheFile(path, key, storageCredentials)
-        storageCacheIndexerMetrics?.evicted(storageCredentials.key ?: DEFAULT_STORAGE_KEY, value, deleted)
+class StorageCacheIndexerMetrics(
+    private val registry: MeterRegistry,
+) {
+
+    fun evicted(storageKey: String, size: Long, deleted: Boolean) {
+        Counter.builder(CACHE_EVICTED_SIZE)
+            .tag(TAG_STORAGE_KEY, storageKey)
+            .tag(TAG_DELETED, deleted.toString())
+            .description("storage cache evicted size")
+            .register(registry)
+            .increment(size.toDouble())
+
+        Counter.builder(CACHE_EVICTED_COUNT)
+            .tag(TAG_STORAGE_KEY, storageKey)
+            .tag(TAG_DELETED, deleted.toString())
+            .description("storage cache evicted count")
+            .register(registry)
+            .increment()
     }
 
-    override fun updateCredentials(credentials: StorageCredentials) {
-        this.storageCredentials = credentials
+    companion object {
+        private const val CACHE_EVICTED_SIZE = "storage.cache.evicted.size"
+        private const val CACHE_EVICTED_COUNT = "storage.cache.evicted.count"
+        private const val TAG_STORAGE_KEY = "storageKey"
+        private const val TAG_DELETED = "deleted"
     }
 }
