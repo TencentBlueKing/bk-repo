@@ -1,5 +1,6 @@
 <template>
     <div class="bkrepo-main flex-column">
+        <Notice v-if="!ciMode && !isSubSaas" />
         <Header v-if="!ciMode && !isSubSaas" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
@@ -12,11 +13,12 @@
     import { subEnv } from '@blueking/sub-saas'
     import mixin from '@repository/AppMixin'
     import Header from '@repository/components/Header'
+    import Notice from '@repository/components/Notice'
     import Login from '@repository/components/Login'
     import cookies from 'js-cookie'
     import { mapActions } from 'vuex'
     export default {
-        components: { Header, Login },
+        components: { Header, Login, Notice },
         mixins: [mixin],
         data () {
             return {
