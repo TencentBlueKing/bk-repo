@@ -34,6 +34,7 @@ package com.tencent.bkrepo.generic.artifact
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -127,12 +128,20 @@ class GenericRemoteRepository(
         }
     }
 
+    override fun createRemoteDownloadUrl(context: ArtifactContext): String {
+        val configuration = context.getRemoteConfiguration()
+        val artifactUri = context.artifactInfo.getArtifactFullPath().urlEncode()
+        val queryString = context.request.queryString
+        return UrlFormatter.format(configuration.url, artifactUri, queryString)
+    }
+
     override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
         return storageManager.loadArtifactInputStream(cacheNode, context.repositoryDetail.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
             }
-            ArtifactResource(this, context.artifactInfo.getResponseName(), cacheNode, ArtifactChannel.PROXY)
+            val artifactName = context.artifactInfo.getResponseName()
+            ArtifactResource(this, artifactName, cacheNode, ArtifactChannel.PROXY, context.useDisposition)
         }
     }
 
@@ -183,7 +192,7 @@ class GenericRemoteRepository(
         val artifactInfo = context.artifactInfo
         val url = UrlFormatter.format(
             baseUrl,
-            "/generic/detail/$remoteProjectId/$remoteRepoName/${artifactInfo.getArtifactFullPath()}",
+            "/generic/detail/$remoteProjectId/$remoteRepoName/${artifactInfo.getArtifactFullPath().urlEncode()}",
         )
 
         // 执行请求

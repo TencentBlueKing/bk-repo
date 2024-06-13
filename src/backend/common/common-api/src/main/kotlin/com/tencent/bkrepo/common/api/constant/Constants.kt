@@ -138,3 +138,10 @@ const val ACCESS_FROM_WEB = "web"
  * b3 trace header
  */
 const val B3_TRACE = "b3"
+
+
+/**
+ * codecc 业务前缀
+ */
+const val CODE_PROJECT_PREFIX = "CODE_"
+const val CLOSED_SOURCE_PREFIX = "CLOSED_SOURCE_"

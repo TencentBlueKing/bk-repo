@@ -30,8 +30,10 @@ package com.tencent.bkrepo.repository.service.repo.impl
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.TOTAL_RECORDS_INFINITY
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
+import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -102,7 +104,10 @@ class ProjectServiceImpl(
     }
 
     override fun listProject(): List<ProjectInfo> {
-        return projectDao.findAll().map { convert(it)!! }
+        val criteria1 = TProject::name.regex("^$CLOSED_SOURCE_PREFIX")
+        val criteria2 = TProject::name.regex("^$CODE_PROJECT_PREFIX")
+        val query = Query().addCriteria(Criteria().norOperator(criteria1, criteria2)).limit(10000)
+        return projectDao.find(query).map { convert(it)!! }
     }
 
     override fun searchProject(option: ProjectSearchOption): Page<ProjectInfo> {
@@ -125,7 +130,7 @@ class ProjectServiceImpl(
         option?.names?.let { names = names.intersect(option.names!!).toList() }
         val query = Query.query(
             where(TProject::name).`in`(names)
-            .apply { option?.displayNames?.let { and(TProject::displayName).`in`(option.displayNames!!) } }
+                .apply { option?.displayNames?.let { and(TProject::displayName).`in`(option.displayNames!!) } }
         )
         if (option?.sortProperty?.isNotEmpty() == true) {
             checkPropertyAndDirection(option)
@@ -171,7 +176,7 @@ class ProjectServiceImpl(
         }
         if (request.projectMetadata.isNotEmpty()) {
             val metadataCriteria = request.projectMetadata.map {
-               TProject::metadata.elemMatch(
+                TProject::metadata.elemMatch(
                     ProjectMetadata::key.isEqualTo(it.key).and(ProjectMetadata::value.name).isEqualTo(it.value)
                 )
             }

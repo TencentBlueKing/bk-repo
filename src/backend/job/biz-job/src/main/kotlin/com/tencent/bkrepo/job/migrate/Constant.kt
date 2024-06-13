@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.migrate
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.scheduling.annotation.Scheduled
-
-@ConfigurationProperties("job.project-month-metric-report")
-class ProjectMonthMetricReportJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = Scheduled.CRON_DISABLED,
-    var monthList: MutableList<String> = mutableListOf(),
-    var dayList: MutableList<String> = mutableListOf(),
-    var overwrite: Boolean = false,
-    var reportServiceName: String = "",
-    var reportHost: String = "",
-    var reportUrl: String = "",
-    var reportPlatformKey: String = "",
-    var batchUploadSize: Int = 50
-) : MongodbJobProperties(enabled)
+object Constant {
+    /**
+     * 迁移失败的node最大重试次数
+     */
+    const val MAX_MIGRATE_FAILED_RETRY_TIMES = 3
+}

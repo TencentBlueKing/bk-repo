@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
 import java.nio.channels.ReadableByteChannel
 import java.nio.file.FileAlreadyExistsException
@@ -220,6 +221,33 @@ class FileSystemClient(val root: String) {
     }
 
     /**
+     * 从指定开始位置追加文件内容
+     * @param dir 目录
+     * @param filename 文件名
+     * @param inputStream 输入流
+     * @param size 输入流数据大小
+     * @param start 写入开始位置, 当为空时追加到文件末尾
+     * @return 当前文件总大小
+     */
+    fun appendAt(
+        dir: String, filename: String, inputStream: InputStream,
+        size: Long, start: Long, totalLength: Long
+    ) {
+        val filePath = Paths.get(this.root, dir, filename)
+        val file = filePath.toFile()
+        if (!file.exists()) {
+            val raf = RandomAccessFile(file, "rw")
+            raf.setLength(totalLength)
+            raf.close()
+        }
+        FileLockExecutor.executeInLock(inputStream) { input ->
+            FileLockExecutor.executeInLock(file) { output ->
+                transfer(input, output, size, false, start)
+            }
+        }
+    }
+
+    /**
      * 创建目录
      * @param dir 父目录
      * @param name 要创建的目录名称
@@ -269,7 +297,8 @@ class FileSystemClient(val root: String) {
      *
      * @return 合并后的文件
      */
-    fun mergeFiles(fileList: List<File>, outputFile: File): File {
+    fun mergeFiles(fileList: List<File>, outputFile: File, mergeFileFlag: Boolean): File {
+        if (outputFile.exists() && !mergeFileFlag) return outputFile
         if (!outputFile.exists()) {
             if (!outputFile.createNewFile()) {
                 throw IOException("Failed to create file [$outputFile]!")
@@ -308,8 +337,14 @@ class FileSystemClient(val root: String) {
         return Files.size(filePath)
     }
 
-    private fun transfer(input: ReadableByteChannel, output: FileChannel, size: Long, append: Boolean = false) {
-        val startPosition: Long = if (append) output.size() else 0L
+    private fun transfer(
+        input: ReadableByteChannel,
+        output: FileChannel,
+        size: Long,
+        appendAtEnd: Boolean = false,
+        start: Long = 0
+    ) {
+        val startPosition: Long = if (appendAtEnd) output.size() else start
         var bytesCopied: Long
         var totalCopied = 0L
         var count: Long

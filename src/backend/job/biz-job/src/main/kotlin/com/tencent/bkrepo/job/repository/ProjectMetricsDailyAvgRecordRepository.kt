@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,14 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.enums
+package com.tencent.bkrepo.job.repository
 
-import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
-import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
+import com.tencent.bkrepo.job.pojo.project.TProjectMetricsDailyAvgRecord
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-enum class ProjectType(val prefix: List<String>?) {
-    ALL(listOf()),
-    BLUEKING(listOf()),
-    CODECC(listOf(CLOSED_SOURCE_PREFIX, CODE_PROJECT_PREFIX)),
-    GIT(listOf("git_")),
+@Repository
+interface ProjectMetricsDailyAvgRecordRepository : MongoRepository<TProjectMetricsDailyAvgRecord, String> {
+    fun findAllBy(): List<TProjectMetricsDailyAvgRecord>
 }

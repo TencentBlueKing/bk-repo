@@ -47,13 +47,13 @@ import java.time.format.DateTimeFormatter
 /**
  * 记录制品访问时间，用于统计项目制品使用习惯
  */
-class ArtifactAccessRecorder(
+open class ArtifactAccessRecorder(
     private val preloadProperties: ArtifactPreloadProperties,
     private val artifactAccessRecordDao: ArtifactAccessRecordDao,
 ) {
 
     @Async
-    fun onArtifactAccess(node: NodeDetail, cacheMiss: Boolean) {
+    open fun onArtifactAccess(node: NodeDetail, cacheMiss: Boolean) {
         val validNode = !node.folder && node.size > preloadProperties.minSize.toBytes()
         val shouldNotRecord = preloadProperties.onlyRecordCacheMiss && !cacheMiss
         if (!preloadProperties.enabled || shouldNotRecord || !validNode) {
@@ -117,7 +117,7 @@ class ArtifactAccessRecorder(
 
     @Async
     @EventListener(ArtifactResponseEvent::class)
-    fun listen(event: ArtifactResponseEvent) {
+    open fun listen(event: ArtifactResponseEvent) {
         safeRecordArtifactCacheAccess(event.artifactResource)
     }
 

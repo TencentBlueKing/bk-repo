@@ -25,21 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.common.artifact.event
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.scheduling.annotation.Scheduled
+import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 
-@ConfigurationProperties("job.project-month-metric-report")
-class ProjectMonthMetricReportJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = Scheduled.CRON_DISABLED,
-    var monthList: MutableList<String> = mutableListOf(),
-    var dayList: MutableList<String> = mutableListOf(),
-    var overwrite: Boolean = false,
-    var reportServiceName: String = "",
-    var reportHost: String = "",
-    var reportUrl: String = "",
-    var reportPlatformKey: String = "",
-    var batchUploadSize: Int = 50
-) : MongodbJobProperties(enabled)
+data class ChunkArtifactTransferEvent(
+    val chunkArtifactTransferMetrics: ChunkArtifactTransferMetrics
+)

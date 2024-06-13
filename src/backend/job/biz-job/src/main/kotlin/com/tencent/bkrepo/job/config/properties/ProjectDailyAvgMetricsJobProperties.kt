@@ -40,5 +40,6 @@ class ProjectDailyAvgMetricsJobProperties(
     var monthStartDay: Int = 15,
     // 每月账单截止时间
     var monthEndDay: Int = 14,
-    var bgIds: MutableList<String> = mutableListOf<String>()
+    var bgIds: MutableList<String> = mutableListOf<String>(),
+    var reportStream: Boolean = false
 ) : MongodbJobProperties(enabled)

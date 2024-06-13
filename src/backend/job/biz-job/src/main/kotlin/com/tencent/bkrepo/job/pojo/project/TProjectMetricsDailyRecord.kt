@@ -42,8 +42,13 @@ import java.time.LocalDateTime
         def = "{'projectId': 1,'createdDate': 1}",
         background = true,
         unique = true
+    ),
+    CompoundIndex(
+        name = "created_day_idx",
+        def = "{'createdDay': 1}",
+        background = true
+    ),
     )
-)
 data class TProjectMetricsDailyRecord(
     var projectId: String,
     var nodeNum: Long,
@@ -55,4 +60,5 @@ data class TProjectMetricsDailyRecord(
     val active: Boolean = true,
     var enabled: Boolean?,
     val createdDate: LocalDateTime,
+    var createdDay: String? = null
 )
