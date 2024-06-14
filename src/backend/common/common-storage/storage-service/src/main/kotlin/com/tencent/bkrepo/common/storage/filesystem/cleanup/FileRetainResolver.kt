@@ -25,31 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.cache.indexer.listener
+package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
-import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
-import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
-import com.tencent.bkrepo.common.storage.core.cache.indexer.metrics.StorageCacheIndexerMetrics
-import com.tencent.bkrepo.common.storage.core.locator.FileLocator
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import java.io.File
 
 /**
- * 缓存淘汰监听器，缓存索引被淘汰时同时删除硬盘上的缓存文件
+ * 文件是否保留解析器，用于在清理文件时判断是否保留
  */
-open class StorageEldestRemovedListener(
-    @Volatile
-    protected var storageCredentials: StorageCredentials,
-    protected val fileLocator: FileLocator,
-    protected val storageService: CacheStorageService,
-    protected val storageCacheIndexerMetrics: StorageCacheIndexerMetrics? = null,
-) : UpdatableEldestRemovedListener<String, Long> {
-    override fun onEldestRemoved(key: String, value: Long) {
-        val path = fileLocator.locate(key)
-        val deleted = storageService.deleteCacheFile(path, key, storageCredentials)
-        storageCacheIndexerMetrics?.evicted(storageCredentials.key ?: DEFAULT_STORAGE_KEY, value, deleted)
-    }
+interface FileRetainResolver {
+    /**
+     * 文件是否保留
+     *
+     * @param file 待解析文件
+     *
+     * @return true表示保留，否则不保留
+     */
+    fun retain(file: File): Boolean
 
-    override fun updateCredentials(credentials: StorageCredentials) {
-        this.storageCredentials = credentials
-    }
+
+    /**
+     * 文件是否保留
+     *
+     * @param sha256 文件sha256
+     *
+     * @return true表示保留，否则不保留
+     */
+    fun retain(sha256: String): Boolean
 }

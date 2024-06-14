@@ -3,7 +3,7 @@ package com.tencent.bkrepo.job.batch.file
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
@@ -37,7 +37,7 @@ class BasedRepositoryFileExpireResolver(
     taskScheduler: ThreadPoolTaskScheduler,
     private val fileCacheService: FileCacheService,
     private val mongoTemplate: MongoTemplate,
-) : FileExpireResolver {
+) : FileRetainResolver {
 
     private var retainNodes = mutableSetOf<String>()
 
@@ -45,12 +45,12 @@ class BasedRepositoryFileExpireResolver(
         taskScheduler.scheduleWithFixedDelay(this::refreshRetainNode, expireConfig.cacheTime)
     }
 
-    override fun isExpired(file: File): Boolean {
-        return !retainNodes.contains(file.name)
+    override fun retain(file: File): Boolean {
+        return retainNodes.contains(file.name)
     }
 
-    fun isExpired(sha256: String): Boolean {
-        return !retainNodes.contains(sha256)
+    override fun retain(sha256: String): Boolean {
+        return retainNodes.contains(sha256)
     }
 
     private fun refreshRetainNode() {

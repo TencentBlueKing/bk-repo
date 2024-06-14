@@ -27,26 +27,30 @@
 
 package com.tencent.bkrepo.job.batch.task.cache
 
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.cache.indexer.IndexerCustomizer
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexer
 import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.StorageEldestRemovedListener
+import com.tencent.bkrepo.common.storage.core.cache.indexer.metrics.StorageCacheIndexerMetrics
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
-import com.tencent.bkrepo.job.batch.file.BasedRepositoryFileExpireResolver
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import org.springframework.stereotype.Component
 
 @Component
 class StorageCacheIndexerCustomizer(
-    private val resolver: FileExpireResolver,
+    private val resolver: FileRetainResolver,
     private val fileLocator: FileLocator,
-    private val storageService: StorageService
+    private val storageService: StorageService,
+    private val storageCacheIndexerMetrics: StorageCacheIndexerMetrics,
 ) : IndexerCustomizer<String, Long> {
     override fun customize(indexer: StorageCacheIndexer<String, Long>, credentials: StorageCredentials) {
-        if (resolver is BasedRepositoryFileExpireResolver && storageService is CacheStorageService) {
-            indexer.addEldestRemovedListener(EldestRemovedListener(credentials, fileLocator, storageService, resolver))
+        if (storageService is CacheStorageService) {
+            indexer.addEldestRemovedListener(
+                EldestRemovedListener(credentials, fileLocator, storageService, storageCacheIndexerMetrics, resolver)
+            )
         }
     }
 
@@ -57,11 +61,15 @@ class StorageCacheIndexerCustomizer(
         storageCredentials: StorageCredentials,
         fileLocator: FileLocator,
         storageService: CacheStorageService,
-        private val resolver: BasedRepositoryFileExpireResolver,
-    ) : StorageEldestRemovedListener(storageCredentials, fileLocator, storageService) {
+        storageCacheIndexerMetrics: StorageCacheIndexerMetrics,
+        private val resolver: FileRetainResolver,
+    ) : StorageEldestRemovedListener(storageCredentials, fileLocator, storageService, storageCacheIndexerMetrics) {
         override fun onEldestRemoved(key: String, value: Long) {
-            if (resolver.isExpired(key)) {
+            if (!resolver.retain(key)) {
                 super.onEldestRemoved(key, value)
+            } else {
+                val storageKey = storageCredentials.key ?: DEFAULT_STORAGE_KEY
+                storageCacheIndexerMetrics?.evicted(storageKey, value, false)
             }
         }
     }
