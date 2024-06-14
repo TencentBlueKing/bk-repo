@@ -53,6 +53,14 @@ data class DevXProperties(
      * */
     var workspaceUrl: String = "",
     /**
+     * 查询cvm workspace的url
+     */
+    var cvmWorkspaceUrl: String = "",
+    /**
+     * 查询cvm workspace 页大小
+     */
+    var cvmWorkspacePageSize: Int = 500,
+    /**
      * 缓存的项目ip过期时间
      */
     var cacheExpireTime: Duration = Duration.ofMinutes(1L),
