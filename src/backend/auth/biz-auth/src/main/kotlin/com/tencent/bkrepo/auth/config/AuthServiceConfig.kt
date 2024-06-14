@@ -33,7 +33,7 @@ package com.tencent.bkrepo.auth.config
 
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.dao.repository.AccountRepository
+import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
@@ -64,7 +64,6 @@ import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 import org.springframework.core.Ordered
-import org.springframework.data.mongodb.core.MongoTemplate
 
 @Configuration
 @AutoConfigureOrder(Ordered.LOWEST_PRECEDENCE)
@@ -81,17 +80,16 @@ class AuthServiceConfig {
     @Bean
     @ConditionalOnMissingBean(AccountService::class)
     fun accountService(
-        accountRepository: AccountRepository,
+        accountDao: AccountDao,
         oauthTokenRepository: OauthTokenRepository,
-        userService: UserService,
-        mongoTemplate: MongoTemplate
-    ) = AccountServiceImpl(accountRepository, oauthTokenRepository, userService, mongoTemplate)
+        userDao: UserDao
+    ) = AccountServiceImpl(accountDao, oauthTokenRepository, userDao)
 
     @Bean
     @Conditional(LocalAuthCondition::class)
     fun permissionService(
         roleRepository: RoleRepository,
-        accountRepository: AccountRepository,
+        accountDao: AccountDao,
         permissionDao: PermissionDao,
         userDao: UserDao,
         personalPathDao: PersonalPathDao,
@@ -99,7 +97,7 @@ class AuthServiceConfig {
     ): PermissionService {
         return PermissionServiceImpl(
             roleRepository,
-            accountRepository,
+            accountDao,
             permissionDao,
             userDao,
             personalPathDao,
@@ -116,7 +114,7 @@ class AuthServiceConfig {
         personalPathDao: PersonalPathDao,
         repoAuthConfigDao: RepoAuthConfigDao,
         roleRepository: RoleRepository,
-        accountRepository: AccountRepository,
+        accountDao: AccountDao,
         permissionDao: PermissionDao,
         repoClient: RepositoryClient
     ): PermissionService {
@@ -124,7 +122,7 @@ class AuthServiceConfig {
             bkiamV3Service,
             userDao,
             roleRepository,
-            accountRepository,
+            accountDao,
             permissionDao,
             personalPathDao,
             repoAuthConfigDao,
@@ -137,7 +135,7 @@ class AuthServiceConfig {
     @Conditional(DevopsAuthCondition::class)
     fun bkAuthPermissionService(
         roleRepository: RoleRepository,
-        accountRepository: AccountRepository,
+        accountDao: AccountDao,
         permissionDao: PermissionDao,
         userDao: UserDao,
         personalPathDao: PersonalPathDao,
@@ -149,7 +147,7 @@ class AuthServiceConfig {
     ): PermissionService {
         return DevopsPermissionServiceImpl(
             roleRepository,
-            accountRepository,
+            accountDao,
             permissionDao,
             userDao,
             personalPathDao,

@@ -99,7 +99,7 @@ interface PermissionService {
 
     fun getPathCheckConfig(): Boolean
 
-    fun getOrCreatePersonalPath(projectId: String, repoName: String): String
+    fun getOrCreatePersonalPath(projectId: String, repoName: String, userId: String): String
 
     fun listExternalRoleByProject(projectId: String, source: RoleSource): List<ExternalRoleResult>
 }
