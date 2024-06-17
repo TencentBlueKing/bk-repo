@@ -191,6 +191,10 @@ class DevopsPermissionServiceImpl constructor(
 
     private fun checkRepoOrNodePermission(request: CheckPermissionRequest): Boolean {
         with(request) {
+            if (action == MANAGE.name) {
+                logger.debug("project request need manage permission [$request]")
+                return false
+            }
             when (repoName) {
                 CUSTOM, LOG -> {
                     return checkDevopsCustomPermission(request)
