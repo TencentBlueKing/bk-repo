@@ -172,7 +172,7 @@ class DevxWorkspaceUtils(
             return httpClient
                 .get()
                 .uri("$workspaceUrl?pageSize=${devXProperties.cvmWorkspacePageSize}")
-                .header("X-DEVOPS-UID", "bk-repo")
+                .header("X-DEVOPS-UID", devXProperties.cvmWorkspaceUid)
                 .doRequest(type) { res ->
                     logger.info("Parse project[$projectId] cvm ips.")
                     if ((res?.data?.totalPages ?: 0) > 1) {

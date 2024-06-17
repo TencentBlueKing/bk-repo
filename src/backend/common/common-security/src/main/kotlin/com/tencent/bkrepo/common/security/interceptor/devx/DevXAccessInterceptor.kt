@@ -135,7 +135,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         val reqBuilder = Request
             .Builder()
             .url("$workspaceUrl?pageSize=${devXProperties.cvmWorkspacePageSize}")
-            .header("X-DEVOPS-UID", "bk-repo")
+            .header("X-DEVOPS-UID", devXProperties.cvmWorkspaceUid)
         logger.info("Update project[$projectId] cvm ips.")
         val res = doRequest<PageResponse<DevXCvmWorkspace>>(reqBuilder, jacksonTypeRef())
         if ((res?.totalPages ?: 0) > 1) {
