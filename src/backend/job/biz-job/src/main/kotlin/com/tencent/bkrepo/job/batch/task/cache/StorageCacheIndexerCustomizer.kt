@@ -44,7 +44,7 @@ class StorageCacheIndexerCustomizer(
     private val resolver: FileRetainResolver,
     private val fileLocator: FileLocator,
     private val storageService: StorageService,
-    private val storageCacheIndexerMetrics: StorageCacheIndexerMetrics,
+    private val storageCacheIndexerMetrics: StorageCacheIndexerMetrics? = null,
 ) : IndexerCustomizer<String, Long> {
     override fun customize(indexer: StorageCacheIndexer<String, Long>, credentials: StorageCredentials) {
         if (storageService is CacheStorageService) {
@@ -61,7 +61,7 @@ class StorageCacheIndexerCustomizer(
         storageCredentials: StorageCredentials,
         fileLocator: FileLocator,
         storageService: CacheStorageService,
-        storageCacheIndexerMetrics: StorageCacheIndexerMetrics,
+        storageCacheIndexerMetrics: StorageCacheIndexerMetrics?,
         private val resolver: FileRetainResolver,
     ) : StorageEldestRemovedListener(storageCredentials, fileLocator, storageService, storageCacheIndexerMetrics) {
         override fun onEldestRemoved(key: String, value: Long) {
