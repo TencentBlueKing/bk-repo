@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,7 +27,17 @@
 
 package com.tencent.bkrepo.common.security.interceptor.devx
 
-data class QueryResponse<out T>(
-    val status: Int,
-    val data: T?,
+import io.swagger.annotations.ApiModelProperty
+
+data class PageResponse<out T>(
+    @ApiModelProperty("记录条数")
+    val count: Long,
+    @ApiModelProperty("页码(从1页开始)")
+    val page: Int,
+    @ApiModelProperty("每页多少条")
+    val pageSize: Int,
+    @ApiModelProperty("总页数")
+    val totalPages: Long,
+    @ApiModelProperty("数据列表")
+    val records: List<T>
 )

@@ -432,7 +432,7 @@ abstract class NodeBaseService(
         repoName: String
     ): Pair<List<String>?, List<String>> {
         if (userId == SYSTEM_USER) {
-            return Pair(emptyList(), emptyList())
+            return Pair(null, emptyList())
         }
         return servicePermissionClient.listPermissionPaths(userId, projectId, repoName)
     }

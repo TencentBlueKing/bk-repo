@@ -240,6 +240,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("校验用户token")
     @PostMapping("/token")
+    @Deprecated("no need work")
     fun checkToken(@RequestParam uid: String, @RequestParam token: String): Response<Boolean> {
         preCheckContextUser(uid)
         userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
