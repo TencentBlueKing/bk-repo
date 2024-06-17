@@ -43,8 +43,7 @@ import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFileExpireResolver
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.CompositeFileExpireResolver
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileExpireResolver
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -58,7 +57,7 @@ import java.nio.file.Paths
  */
 class CacheStorageService(
     private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
-    private val fileExpireResolver: FileExpireResolver? = null,
+    private val fileRetainResolver: FileRetainResolver? = null,
 ) : AbstractStorageService() {
 
     private val cacheFileEventPublisher by lazy { CacheFileEventPublisher(publisher) }
@@ -170,12 +169,7 @@ class CacheStorageService(
         val rootPath = Paths.get(credentials.cache.path)
         val tempPath = getTempPath(credentials)
         val stagingPath = getStagingPath(credentials)
-        val resolver = if (fileExpireResolver != null) {
-            val baseFileExpireResolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
-            CompositeFileExpireResolver(listOf(baseFileExpireResolver, fileExpireResolver))
-        } else {
-            BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
-        }
+        val resolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
         val visitor = CleanupFileVisitor(
             rootPath,
             tempPath,
@@ -185,6 +179,7 @@ class CacheStorageService(
             credentials,
             resolver,
             publisher,
+            fileRetainResolver
         )
         getCacheClient(credentials).walk(visitor)
         val result = mutableMapOf<Path, CleanupResult>()
@@ -233,15 +228,17 @@ class CacheStorageService(
         path: String,
         filename: String,
         credentials: StorageCredentials,
-    ) {
-        if (doExist(path, filename, credentials)) {
+    ): Boolean {
+        return if (doExist(path, filename, credentials)) {
             val cacheFilePath = "${credentials.cache.path}$path$filename"
             val size = File(cacheFilePath).length()
             getCacheClient(credentials).delete(path, filename)
             cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)
             logger.info("Cache [${credentials.cache.path}/$path/$filename] was deleted")
+            true
         } else {
             logger.info("Cache file[${credentials.cache.path}/$path/$filename] was not in storage")
+            false
         }
     }
 

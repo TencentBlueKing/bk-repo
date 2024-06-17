@@ -32,11 +32,14 @@ import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_LRU
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_SLRU
 import com.tencent.bkrepo.common.storage.core.cache.indexer.listener.StorageEldestRemovedListener
+import com.tencent.bkrepo.common.storage.core.cache.indexer.metrics.StorageCacheIndexerMetrics
 import com.tencent.bkrepo.common.storage.core.cache.indexer.redis.RedisLRUCacheIndexer
 import com.tencent.bkrepo.common.storage.core.cache.indexer.redis.RedisSLRUCacheIndexer
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.util.toPath
+import io.micrometer.core.instrument.MeterRegistry
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -50,6 +53,12 @@ import org.springframework.data.redis.core.RedisTemplate
 @ConditionalOnProperty(prefix = "storage.cache.index", name = ["enabled"])
 @EnableConfigurationProperties(StorageCacheIndexProperties::class)
 class StorageCacheIndexConfiguration {
+    @Bean
+    @ConditionalOnBean(MeterRegistry::class)
+    fun storageCacheIndexerMetrics(registry: MeterRegistry): StorageCacheIndexerMetrics {
+        return StorageCacheIndexerMetrics(registry)
+    }
+
     @Bean
     fun storageCacheIndexerManager(
         cacheFactory: StorageCacheIndexerFactory<String, Long>,
@@ -114,10 +123,13 @@ class StorageCacheIndexConfiguration {
     fun defaultIndexerCustomizer(
         storageService: CacheStorageService,
         fileLocator: FileLocator,
+        storageCacheIndexerMetrics: StorageCacheIndexerMetrics? = null,
     ): IndexerCustomizer<String, Long> {
         return object : IndexerCustomizer<String, Long> {
             override fun customize(indexer: StorageCacheIndexer<String, Long>, credentials: StorageCredentials) {
-                val listener = StorageEldestRemovedListener(credentials, fileLocator, storageService)
+                val listener = StorageEldestRemovedListener(
+                    credentials, fileLocator, storageService, storageCacheIndexerMetrics
+                )
                 indexer.addEldestRemovedListener(listener)
             }
         }

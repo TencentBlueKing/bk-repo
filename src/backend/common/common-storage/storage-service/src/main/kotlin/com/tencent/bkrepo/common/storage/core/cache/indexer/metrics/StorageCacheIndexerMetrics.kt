@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,9 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.interceptor.devx
+package com.tencent.bkrepo.common.storage.core.cache.indexer.metrics
 
-data class QueryResponse<out T>(
-    val status: Int,
-    val data: T?,
-)
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
+
+class StorageCacheIndexerMetrics(
+    private val registry: MeterRegistry,
+) {
+
+    fun evicted(storageKey: String, size: Long, deleted: Boolean) {
+        Counter.builder(CACHE_EVICTED_SIZE)
+            .tag(TAG_STORAGE_KEY, storageKey)
+            .tag(TAG_DELETED, deleted.toString())
+            .description("storage cache evicted size")
+            .register(registry)
+            .increment(size.toDouble())
+
+        Counter.builder(CACHE_EVICTED_COUNT)
+            .tag(TAG_STORAGE_KEY, storageKey)
+            .tag(TAG_DELETED, deleted.toString())
+            .description("storage cache evicted count")
+            .register(registry)
+            .increment()
+    }
+
+    companion object {
+        private const val CACHE_EVICTED_SIZE = "storage.cache.evicted.size"
+        private const val CACHE_EVICTED_COUNT = "storage.cache.evicted.count"
+        private const val TAG_STORAGE_KEY = "storageKey"
+        private const val TAG_DELETED = "deleted"
+    }
+}

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,9 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.interceptor.devx
+package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
-data class QueryResponse<out T>(
-    val status: Int,
-    val data: T?,
-)
+import java.io.File
+
+/**
+ * 文件是否保留解析器，用于在清理文件时判断是否保留
+ */
+interface FileRetainResolver {
+    /**
+     * 文件是否保留
+     *
+     * @param file 待解析文件
+     *
+     * @return true表示保留，否则不保留
+     */
+    fun retain(file: File): Boolean
+
+
+    /**
+     * 文件是否保留
+     *
+     * @param sha256 文件sha256
+     *
+     * @return true表示保留，否则不保留
+     */
+    fun retain(sha256: String): Boolean
+}
