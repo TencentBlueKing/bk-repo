@@ -29,8 +29,8 @@ package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.constant.PROXY_HEADER_NAME
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
@@ -42,13 +42,11 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
-import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.constant.BinderType
@@ -63,7 +61,6 @@ import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.ConflictStrategy
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -78,12 +75,12 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.listPermissionPaths
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -125,7 +122,10 @@ abstract class NodeBaseService(
     override fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo> {
         checkNodeListOption(option)
         with(artifact) {
-            getNoPermissionPaths(SecurityUtils.getUserId(), projectId, repoName)?.let { option.noPermissionPath = it }
+            val userId = SecurityUtils.getUserId()
+            val (hasPermissionPaths, noPermissionPaths) = getPermissionPaths(userId, projectId, repoName)
+            option.hasPermissionPath = hasPermissionPaths
+            option.noPermissionPath = noPermissionPaths
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
             if (nodeDao.count(query) > repositoryProperties.listCountLimit) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
@@ -137,7 +137,10 @@ abstract class NodeBaseService(
     override fun listNodePage(artifact: ArtifactInfo, option: NodeListOption): Page<NodeInfo> {
         checkNodeListOption(option)
         with(artifact) {
-            getNoPermissionPaths(SecurityUtils.getUserId(), projectId, repoName)?.let { option.noPermissionPath = it }
+            val userId = SecurityUtils.getUserId()
+            val (hasPermissionPaths, noPermissionPaths) = getPermissionPaths(userId, projectId, repoName)
+            option.hasPermissionPath = hasPermissionPaths
+            option.noPermissionPath = noPermissionPaths
             val pageNumber = option.pageNumber
             val pageSize = option.pageSize
             Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
@@ -173,7 +176,6 @@ abstract class NodeBaseService(
     @Transactional(rollbackFor = [Throwable::class])
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
-            val createStart = System.currentTimeMillis()
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
             Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
@@ -181,13 +183,13 @@ abstract class NodeBaseService(
             // 仓库是否存在
             val repo = checkRepo(projectId, repoName)
             // 路径唯一性校验
-            val deletedTime = checkConflictAndQuota(createRequest, fullPath)
+            checkConflictAndQuota(createRequest, fullPath)
             // 判断父目录是否存在，不存在先创建
-            val parents = mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
+            mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
             val node = buildTNode(this)
             doCreate(node)
-            afterCreate(repo, node, createStart, parents, deletedTime)
+            afterCreate(repo, node)
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return convertToDetail(node)!!
         }
@@ -262,21 +264,8 @@ abstract class NodeBaseService(
         }
     }
 
-    private fun afterCreate(
-        repo: TRepository,
-        node: TNode,
-        createStart: Long,
-        parents: List<TNode>,
-        deletedTime: LocalDateTime?,
-    ) {
+    private fun afterCreate(repo: TRepository, node: TNode) {
         with(node) {
-            val createEnd = System.currentTimeMillis()
-            val timeout = createEnd - createStart > repositoryProperties.nodeCreateTimeout
-            if (timeout) {
-                logger.info("Create node[$fullPath] timeout")
-                rollbackCreate(parents, node, deletedTime)
-                throw ErrorCodeException(ArtifactMessageCode.NODE_CREATE_TIMEOUT, fullPath)
-            }
             if (isGenericRepo(repo)) {
                 publishEvent(buildCreatedEvent(node))
                 createRouter(this)
@@ -291,66 +280,6 @@ abstract class NodeBaseService(
     private fun createRouter(node: TNode) {
         HeaderUtils.getHeader(PROXY_HEADER_NAME)?.let {
             routerControllerClient.addNode(node.projectId, node.repoName, node.fullPath, it)
-        }
-    }
-
-    /**
-     * 回滚创建的节点和目录
-     * */
-    private fun rollbackCreate(parents: List<TNode>, newNode: TNode, deletedTime: LocalDateTime?) {
-        val toDeletedDirs = mutableListOf<TNode>()
-        val projectId = newNode.projectId
-        val repoName = newNode.repoName
-        toDeletedDirs.addAll(parents)
-        if (newNode.folder) {
-            toDeletedDirs.add(newNode)
-        } else {
-            // 删除新创建的
-            nodeDao.remove(
-                Query(
-                    Criteria(ID).isEqualTo(newNode.id)
-                        .and(TNode::projectId).isEqualTo(projectId),
-                ),
-            )
-            // 软链接node或fs-server创建的node的sha256为FAKE_SHA256，不会增加引用数，回滚时无需减少
-            if (newNode.sha256 != FAKE_SHA256) {
-                fileReferenceService.decrement(newNode)
-            }
-            quotaService.decreaseUsedVolume(projectId, repoName, newNode.size)
-            logger.info("Rollback node [$projectId/$repoName${newNode.fullPath}]")
-        }
-
-        toDeletedDirs.sortByDescending { it.fullPath }
-        for (dir in toDeletedDirs) {
-            val option = NodeListOption(deep = true)
-            val query = NodeQueryHelper.nodeListQuery(dir.projectId, dir.repoName, dir.fullPath, option)
-            val size = nodeDao.find(query).size
-            if (size > 0) {
-                break
-            }
-            nodeDao.remove(
-                Query(
-                    Criteria(ID).isEqualTo(dir.id)
-                        .and(TNode::projectId).isEqualTo(dir.projectId),
-                ),
-            )
-            logger.info("Rollback node [$projectId/$repoName${dir.fullPath}]")
-        }
-
-        // 恢复创建前的情况，可能是新创建也可能是被覆盖。deletedTime不为空，则表示是覆盖创建
-        with(newNode) {
-            deletedTime?.let {
-                val restoreContext = NodeRestoreSupport.RestoreContext(
-                    projectId = projectId,
-                    repoName = repoName,
-                    rootFullPath = fullPath,
-                    deletedTime = it,
-                    conflictStrategy = ConflictStrategy.FAILED,
-                    operator = createdBy,
-                )
-                restoreNode(restoreContext)
-                logger.info("Restore node [$projectId/$repoName$fullPath]")
-            }
         }
     }
 
@@ -497,22 +426,15 @@ abstract class NodeBaseService(
     /**
      * 获取用户无权限路径列表
      */
-    private fun getNoPermissionPaths(userId: String, projectId: String, repoName: String): List<String>? {
+    private fun getPermissionPaths(
+        userId: String,
+        projectId: String,
+        repoName: String
+    ): Pair<List<String>?, List<String>> {
         if (userId == SYSTEM_USER) {
-            return null
+            return Pair(emptyList(), emptyList())
         }
-        val result = servicePermissionClient.listPermissionPath(userId, projectId, repoName).data!!
-        if (result.status) {
-            val paths = result.path.flatMap {
-                require(it.key == OperationType.NIN)
-                it.value
-            }.ifEmpty { null }
-            logger.info(
-                "user[$userId] does not have permission of paths[$paths] in [$projectId/$repoName], will be filterd"
-            )
-            return paths
-        }
-        return null
+        return servicePermissionClient.listPermissionPaths(userId, projectId, repoName)
     }
 
     companion object {

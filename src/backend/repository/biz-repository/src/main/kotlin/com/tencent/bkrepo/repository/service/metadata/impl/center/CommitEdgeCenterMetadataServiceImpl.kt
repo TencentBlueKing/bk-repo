@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.metadata.impl.center
 
+import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -38,8 +39,10 @@ import org.springframework.stereotype.Service
 @Conditional(CommitEdgeCenterCondition::class)
 class CommitEdgeCenterMetadataServiceImpl(
     nodeDao: NodeDao,
-    repositoryProperties: RepositoryProperties
+    repositoryProperties: RepositoryProperties,
+    ciPermissionManager: CIPermissionManager
 ) : MetadataServiceImpl(
     nodeDao,
-    repositoryProperties
+    repositoryProperties,
+    ciPermissionManager
 )

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,28 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.pojo
+package com.tencent.bkrepo.common.security.interceptor.devx
 
-data class ChunkedMetrics(
-    var tag: String = "ChunkedMetrics",
-    // 类型
-    var type: String = "UPLOAD",
-    // 文件路径
-    var fullPath: String = "",
-    // 文件大小，单位字节
-    var fileSize: Long = 0,
-    // 上传或下载时间，单位毫秒
-    var costTime: Long = 0,
-    // 成功或者失败
-    var success: Boolean = true,
-    //  失败原因
-    var failedReason: String = "",
-    // 上报指标时间戳
-    var reportTimeStamp: Long = System.currentTimeMillis(),
-    var projectId: String = "",
-    var repoName: String = "",
-    var pipelineId: String = "",
-    var buildId: String = "",
-    var taskId: String = "",
+import io.swagger.annotations.ApiModelProperty
+
+data class PageResponse<out T>(
+    @ApiModelProperty("记录条数")
+    val count: Long,
+    @ApiModelProperty("页码(从1页开始)")
+    val page: Int,
+    @ApiModelProperty("每页多少条")
+    val pageSize: Int,
+    @ApiModelProperty("总页数")
+    val totalPages: Long,
+    @ApiModelProperty("数据列表")
+    val records: List<T>
 )
-

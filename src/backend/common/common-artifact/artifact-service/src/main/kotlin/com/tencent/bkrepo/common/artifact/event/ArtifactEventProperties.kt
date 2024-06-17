@@ -28,11 +28,22 @@
 package com.tencent.bkrepo.common.artifact.event
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
 
 @ConfigurationProperties("artifact.event")
 data class ArtifactEventProperties(
     // 是否更新节点访问时间
     var updateAccessDate: Boolean = false,
     // 不更新节点访问时间的项目仓库
-    var filterProjectRepoKey: List<String> = emptyList()
+    var filterProjectRepoKey: List<String> = emptyList(),
+    // 是否上报节点更新访问时间事件
+    var reportAccessDateEvent: Boolean = false,
+    // 导出到消息队列时的topic
+    var topic: String? = null,
+    // 更新访问时间频率， 当时间间隔小于该值时不更新, 默认1天
+    var accessDateDuration: Duration = Duration.ofDays(1),
+    // 是否消费上报节点更新访问时间事件去更新对应访问时间
+    var consumeAccessDateEvent: Boolean = false,
+    // 更新节点访问时间的项目仓库, 默认为空，当为空的情况下更新所有事件
+    var consumeProjectRepoKey: List<String> = emptyList(),
 )

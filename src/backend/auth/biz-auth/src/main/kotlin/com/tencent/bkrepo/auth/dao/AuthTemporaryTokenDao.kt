@@ -42,7 +42,7 @@ import org.springframework.stereotype.Repository
  * 临时token数据访问层
  */
 @Repository
-class TemporaryTokenDao : SimpleMongoDao<TTemporaryToken>() {
+class AuthTemporaryTokenDao : SimpleMongoDao<TTemporaryToken>() {
 
     /**
      * 根据[token]查找临时token信息

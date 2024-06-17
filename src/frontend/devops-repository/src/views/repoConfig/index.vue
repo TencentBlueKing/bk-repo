@@ -236,7 +236,7 @@
             },
             showPermissionConfigTab () {
                 if (this.permissionConfig === true) {
-                    return ['generic'].includes(this.repoType)
+                    return ['generic', 'ddc'].includes(this.repoType)
                         && (this.userInfo.admin || this.userInfo.manage)
                 } else {
                     return false

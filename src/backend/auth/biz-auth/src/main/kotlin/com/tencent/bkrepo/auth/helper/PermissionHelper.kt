@@ -89,7 +89,7 @@ class PermissionHelper constructor(
         }
         if (queryRoles.isEmpty()) return false
 
-        val result = roleRepository.findByProjectIdAndTypeAndAdminAndRepoNameAndIdIn(
+        val result = roleRepository.findByTypeAndProjectIdAndAdminAndRepoNameAndIdIn(
             projectId = request.projectId!!,
             type = RoleType.REPO,
             repoName = request.repoName!!,
@@ -186,10 +186,11 @@ class PermissionHelper constructor(
         return request.projectId != null && request.action == READ.name && isProjectUser
     }
 
-    fun getNoPermissionPathFromConfig(
+    fun getPermissionPathFromConfig(
         userId: String,
         roles: List<String>,
-        config: List<TPermission>
+        config: List<TPermission>,
+        include: Boolean
     ): List<String> {
         val excludePath = mutableListOf<String>()
         val includePath = mutableListOf<String>()
@@ -220,6 +221,9 @@ class PermissionHelper constructor(
                     excludePath.addAll(it.includePattern)
                 }
             }
+        }
+        if (include) {
+            return includePath.distinct()
         }
         val filterPath = includePath.distinct()
         return excludePath.distinct().filter { !filterPath.contains(it) }
@@ -336,16 +340,14 @@ class PermissionHelper constructor(
         return permissionDao.updateById(id, key, value)
     }
 
-    fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
+    fun checkNodeActionWithOutCtrl(
+        request: CheckPermissionRequest,
+        userRoles: List<String>?,
+        isProjectUser: Boolean
+    ): Boolean {
         with(request) {
-            var roles = userRoles
             if (resourceType != NODE.name || path == null) return false
-            if (roles == null) {
-                val user = userDao.findFirstByUserId(uid) ?: run {
-                    throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-                }
-                roles = user.roles
-            }
+            val roles = getUserRoles(uid, userRoles)
             val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
             result.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
@@ -363,16 +365,35 @@ class PermissionHelper constructor(
         return isProjectUser
     }
 
+    fun checkNodeActionWithCtrl(request: CheckPermissionRequest, userRoles: List<String>?): Boolean {
+        with(request) {
+            if (resourceType != NODE.name || path == null) return false
+            val roles = getUserRoles(uid, userRoles)
+            val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
+            result.forEach {
+                if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
+            }
+            val personalPathCheck = checkPersonalPath(uid, projectId!!, repoName!!, path!!)
+            if (personalPathCheck != null) return personalPathCheck
+            return false
+        }
+    }
+
+    private fun getUserRoles(userId: String, userRoles: List<String>?): List<String> {
+        var roles = userRoles
+        if (roles == null) {
+            val user = userDao.findFirstByUserId(userId) ?: run {
+                throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+            }
+            roles = user.roles
+        }
+        return roles
+    }
+
     private fun checkPersonalPath(userId: String, projectId: String, repoName: String, path: String): Boolean? {
         // check personal path
         val personalPath = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
         if (personalPath != null && path.startsWith(personalPath.fullPath)) return true
-
-        // check personal exclude path
-        val personalExcludePath = personalPathDao.listByProjectAndRepoAndExcludeUser(userId, projectId, repoName)
-        personalExcludePath.forEach {
-            if (path.startsWith(it.fullPath)) return false
-        }
         return null
     }
 

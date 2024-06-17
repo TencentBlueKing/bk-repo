@@ -31,9 +31,12 @@
 
 package com.tencent.bkrepo.opdata.pojo.enums
 
+import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
+import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
+
 enum class ProjectType(val prefix: List<String>?) {
     ALL(listOf()),
     BLUEKING(listOf()),
-    CODECC(listOf("CODE_","CLOSED_SOURCE_")),
+    CODECC(listOf(CLOSED_SOURCE_PREFIX, CODE_PROJECT_PREFIX)),
     GIT(listOf("git_")),
 }

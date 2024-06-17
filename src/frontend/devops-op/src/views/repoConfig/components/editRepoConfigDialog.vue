@@ -43,14 +43,14 @@
           label="保存时间(天)"
           prop="cleanupValue"
         >
-          <el-input-number v-model="repoConfig.configuration.settings.cleanupStrategy.cleanupValue" controls-position="right" :min="0" @change="changeEnable" />
+          <el-input-number v-model="cleanValue" controls-position="right" :min="0" @change="changeEnable" />
         </el-form-item>
         <el-form-item
           v-if="repoConfig.configuration.settings.cleanupStrategy.enable && repoConfig.configuration.settings.cleanupStrategy.cleanupType === 'retentionNums'"
           label="保存数目"
           prop="cleanupValue"
         >
-          <el-input-number v-model="repoConfig.configuration.settings.cleanupStrategy.cleanupValue" controls-position="right" :min="0" @change="changeEnable" />
+          <el-input-number v-model="cleanValue" controls-position="right" :min="0" @change="changeEnable" />
         </el-form-item>
         <el-form-item
           v-if="repoConfig.configuration.settings.cleanupStrategy.enable && repoConfig.configuration.settings.cleanupStrategy.cleanupType === 'retentionDate'"
@@ -118,6 +118,7 @@ export default {
     return {
       repoCache: {},
       showDialog: false,
+      cleanValue: '',
       repoConfig: {
         projectId: '',
         name: '',
@@ -172,6 +173,8 @@ export default {
           cleanTargets: [''],
           cleanupValue: new Date()
         }
+      } else {
+        this.cleanValue = this.repoConfig.configuration.settings.cleanupStrategy.cleanupValue
       }
       if (this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets.length === 0) {
         this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets = ['']
@@ -225,6 +228,7 @@ export default {
       })
     },
     changeEnable() {
+      this.repoConfig.configuration.settings.cleanupStrategy.cleanupValue = this.cleanValue.toString()
       this.$forceUpdate()
     },
     changeType() {

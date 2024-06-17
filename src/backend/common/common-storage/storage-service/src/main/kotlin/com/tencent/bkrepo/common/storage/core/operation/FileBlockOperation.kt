@@ -106,8 +106,27 @@ interface FileBlockOperation {
     )
 
     /**
+     * 将分块文件追加到指定位置
+     * blockId: 分块存储id
+     * sequence: 序列id，从1开始
+     */
+    fun storeBlockWithRandomPosition(
+        blockId: String,
+        sequence: Int,
+        digest: String,
+        artifactFile: ArtifactFile,
+        overwrite: Boolean,
+        storageCredentials: StorageCredentials?,
+        startPosition: Long,
+        totalLength: Long
+    )
+
+    /**
      * 合并分块文件
      * blockId: 分块存储id
      */
-    fun mergeBlock(blockId: String, storageCredentials: StorageCredentials?): FileInfo
+    fun mergeBlock(
+        blockId: String, storageCredentials: StorageCredentials?,
+        fileInfo: FileInfo? = null, mergeFileFlag: Boolean = true
+    ): FileInfo
 }

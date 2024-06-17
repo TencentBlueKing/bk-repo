@@ -29,13 +29,21 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.job.config.JobConfig
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration
+import org.springframework.cloud.sleuth.Tracer
+import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
@@ -58,4 +66,14 @@ import org.springframework.test.context.TestPropertySource
 @ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
 @SpringBootConfiguration
 @EnableAutoConfiguration
-open class JobBaseTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class JobBaseTest {
+    @BeforeAll
+    fun commonMock() {
+        val tracer = mockk<OtelTracer>()
+        mockkObject(SpringContextUtils.Companion)
+        every { SpringContextUtils.getBean<Tracer>() } returns tracer
+        every { tracer.currentSpan() } returns null
+        every { SpringContextUtils.publishEvent(any()) } returns Unit
+    }
+}

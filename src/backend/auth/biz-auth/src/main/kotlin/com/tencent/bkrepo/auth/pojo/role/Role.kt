@@ -49,5 +49,7 @@ data class Role(
     @ApiModelProperty("绑定的用户")
     val users: List<String> = listOf(),
     @ApiModelProperty("描述信息")
-    val description: String? = null
+    val description: String? = null,
+    @ApiModelProperty("角色来源")
+    val source: RoleSource? = null
 )

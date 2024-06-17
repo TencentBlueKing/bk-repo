@@ -772,7 +772,7 @@ class RepositoryServiceImpl(
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     quota = it.quota,
                     used = it.used,
-                    display = it.display,
+                    display = it.display
                 )
             }
         }

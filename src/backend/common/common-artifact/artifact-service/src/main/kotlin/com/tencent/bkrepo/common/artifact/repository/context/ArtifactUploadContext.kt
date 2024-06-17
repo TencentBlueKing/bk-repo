@@ -46,6 +46,7 @@ open class ArtifactUploadContext : ArtifactContext {
 
     private var artifactFileMap: ArtifactFileMap
     private var artifactFile: ArtifactFile? = null
+    val pipelineMetadata: MutableMap<String, String> = mutableMapOf()
 
     constructor(
         repo: RepositoryDetail,

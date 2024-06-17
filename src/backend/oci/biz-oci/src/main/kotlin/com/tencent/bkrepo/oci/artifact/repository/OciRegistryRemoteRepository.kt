@@ -463,7 +463,7 @@ class OciRegistryRemoteRepository(
      * 加载要返回的资源: oci协议需要返回特定的请求头和资源类型
      */
     override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
-        return storageService.load(cacheNode.sha256!!, Range.full(cacheNode.size), context.storageCredentials)?.run {
+        return storageManager.loadArtifactInputStream(cacheNode, context.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
             }

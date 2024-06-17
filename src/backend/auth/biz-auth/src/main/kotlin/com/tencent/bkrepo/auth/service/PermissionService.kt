@@ -37,6 +37,8 @@ import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
+import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 
 interface PermissionService {
     /**
@@ -65,9 +67,19 @@ interface PermissionService {
     fun listPermissionProject(userId: String): List<String>
 
     /**
-     * 获取有权限路径列表
+     * 获取无权限路径列表
      */
     fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String>
+
+    /**
+     * 获取有权限路径列表
+     */
+    fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>?
+
+    /**
+     * 查询是否开启仓库访问限制
+     */
+    fun checkRepoAccessControl(projectId: String, repoName: String): Boolean
 
     fun createPermission(request: CreatePermissionRequest): Boolean
 
@@ -88,4 +100,6 @@ interface PermissionService {
     fun getPathCheckConfig(): Boolean
 
     fun getOrCreatePersonalPath(projectId: String, repoName: String): String
+
+    fun listExternalRoleByProject(projectId: String, source: RoleSource): List<ExternalRoleResult>
 }

@@ -259,7 +259,7 @@
     "normalUser": "Normal user",
     "totalVersionCount": "total of {0} versions",
     "artifactVersion": "Artifact version",
-    "userImport": "user import",
+    "import": "Import",
     "createUser": "Create user",
     "editUser": "Edit user",
     "resetPassword": "Reset",
@@ -866,5 +866,12 @@
     "previous": "Previous",
     "copyAll": "Copy All",
     "clear": "Clear",
-    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space"
+    "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
+    "importBkTitle":"User From BKCI",
+    "bkciUserGroup":"BKCI User Group",
+    "userSource":"User Source",
+    "bkci": "BKCI",
+    "rootDirectoryPermission": "Access Control:",
+    "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth.",
+    "errMsg": "Error Message"
 }

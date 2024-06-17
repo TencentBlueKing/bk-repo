@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job
 
+import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
+import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
+
 /**
  * 分表数量
  */
@@ -89,4 +92,4 @@ const val JOB_TIME_CONSUME_DESC = "任务执行时长统计"
 const val JOB_TASK_RUNNING_STATUS = "job.running.status"
 const val JOB_TASK_RUNNING_STATUS_DESC = "任务执行状态"
 
-val IGNORE_PROJECT_PREFIX_LIST = listOf("CODE_", "CLOSED_SOURCE_")
+val IGNORE_PROJECT_PREFIX_LIST = listOf(CODE_PROJECT_PREFIX, CLOSED_SOURCE_PREFIX)

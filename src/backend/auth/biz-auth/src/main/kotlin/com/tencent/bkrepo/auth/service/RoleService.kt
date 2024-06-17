@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.Role
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.pojo.user.UserResult
 
@@ -43,6 +44,8 @@ interface RoleService {
     fun deleteRoleById(id: String): Boolean
 
     fun listRoleByProject(projectId: String, repoName: String? = null): List<Role>
+
+    fun listRoleBySource(source: RoleSource): List<Role>
 
     fun detail(id: String): Role?
 

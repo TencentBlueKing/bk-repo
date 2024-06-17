@@ -41,12 +41,12 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.DefaultCondition
-import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.model.TMetadata
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -56,7 +56,6 @@ import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataDeletedEvent
 import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataSavedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
-import com.tencent.devops.api.http.HttpHeaders
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
@@ -73,7 +72,8 @@ import org.springframework.transaction.annotation.Transactional
 @Conditional(DefaultCondition::class)
 class MetadataServiceImpl(
     private val nodeDao: NodeDao,
-    private val repositoryProperties: RepositoryProperties
+    private val repositoryProperties: RepositoryProperties,
+    private val ciPermissionManager: CIPermissionManager
 ) : MetadataService {
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
@@ -96,7 +96,7 @@ class MetadataServiceImpl(
                 metadata,
                 MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
             )
-            checkIfUpdatePipelineMetadata(node, newMetadata)
+            checkIfModifyPipelineMetadata(node, newMetadata.map { it.key })
             checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
             node.metadata = if (replace) {
                 newMetadata
@@ -135,6 +135,7 @@ class MetadataServiceImpl(
             // 检查是否有更新权限
             val node = nodeDao.findOne(query) ?: throw NodeNotFoundException(fullPath)
             ClusterUtils.checkContainsSrcCluster(node.clusterNames)
+            checkIfModifyPipelineMetadata(node, request.keyList)
             node.metadata?.forEach {
                 if (it.key in keyList && it.system && !allowDeleteSystemMetadata) {
                     throw PermissionException("No permission to update system metadata[${it.key}]")
@@ -151,15 +152,18 @@ class MetadataServiceImpl(
         }
     }
 
-    private fun checkIfUpdatePipelineMetadata(node: TNode, newMetadata: MutableList<TMetadata>) {
+    private fun checkIfModifyPipelineMetadata(node: TNode, newMetadataKeys: Collection<String>) {
         val pipelineSource = node.repoName == PIPELINE || node.repoName == CUSTOM
-        val pipelineMetadataKey = newMetadata.find {
-            PIPELINE_METADATA.any { m -> m.equals(it.key, true) }
-        } != null
-        if (!node.folder && pipelineSource && pipelineMetadataKey) {
-            logger.warn("User[${SecurityUtils.getPrincipal()}] try to update pipeline metadata, " +
-                "artifact[${node.projectId}/${node.repoName}${node.fullPath}], " +
-                "user agent[${HeaderUtils.getHeader(HttpHeaders.USER_AGENT)}]")
+        val pipelineMetadataKey = newMetadataKeys.find {
+            CIPermissionManager.PIPELINE_METADATA.any { m -> m.equals(it, true) }
+        }
+        val illegal = !node.folder && pipelineSource &&
+            pipelineMetadataKey != null && !ciPermissionManager.whiteListRequest()
+        if (illegal) {
+            ciPermissionManager.throwOrLogError(
+                messageCode = RepositoryMessageCode.PIPELINE_METADATA_UPDATE_NOT_ALLOWED,
+                pipelineMetadataKey!!
+            )
         }
     }
 
@@ -189,13 +193,5 @@ class MetadataServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(MetadataServiceImpl::class.java)
-        private const val METADATA_PROJECT_ID = "projectId"
-        private const val METADATA_PIPELINE_ID = "pipelineId"
-        private const val METADATA_BUILD_ID = "buildId"
-        private const val METADATA_BUILD_NO = "buildNo"
-        private const val METADATA_TASK_ID = "taskId"
-        private val PIPELINE_METADATA = listOf(
-            METADATA_PROJECT_ID, METADATA_PIPELINE_ID, METADATA_BUILD_ID, METADATA_BUILD_NO, METADATA_TASK_ID
-        )
     }
 }

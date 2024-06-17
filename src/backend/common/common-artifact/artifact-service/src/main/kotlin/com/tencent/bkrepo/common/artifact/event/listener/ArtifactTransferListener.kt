@@ -36,11 +36,13 @@ import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
+import com.tencent.bkrepo.common.artifact.event.ChunkArtifactTransferEvent
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecordLog
+import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
 import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -164,6 +166,41 @@ class ArtifactTransferListener(
             ArtifactContextHolder.getNodeDetail(artifactInfo)?.fullPath ?: UNKNOWN
         } else {
             UNKNOWN
+        }
+    }
+
+    @EventListener(ChunkArtifactTransferEvent::class)
+    fun listen(event: ChunkArtifactTransferEvent) {
+        with(event.chunkArtifactTransferMetrics) {
+            val recordType = if (type == ChunkArtifactTransferMetrics.UPLOAD) {
+                ArtifactTransferRecord.RECEIVE
+            } else {
+                ArtifactTransferRecord.RESPONSE
+            }
+            val record = ArtifactTransferRecord(
+                time = Instant.now(),
+                type = recordType,
+                elapsed = costTime,
+                bytes = fileSize,
+                average = average,
+                storage = storage,
+                sha256 = sha256,
+                project = projectId,
+                repoName = repoName,
+                clientIp = HttpContextHolder.getClientAddress(),
+                fullPath = fullPath
+            )
+            if (artifactMetricsProperties.collectByLog) {
+                logger.info(
+                    toJson(
+                        ArtifactTransferRecordLog(
+                            record = record,
+                            commonTag = commonTagProvider.ifAvailable?.provide().orEmpty()
+                        )
+                    )
+                )
+            }
+            queue.offer(record)
         }
     }
 

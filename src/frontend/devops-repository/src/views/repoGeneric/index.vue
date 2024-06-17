@@ -52,7 +52,7 @@
                             {{$t('batchDownload')}}
                         </bk-button>
                         <bk-button
-                            v-if="multiSelect.length && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline')"
+                            v-if="showMultiDelete && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline')"
                             class="ml10"
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
@@ -86,6 +86,8 @@
                     ref="artifactoryTable"
                     @sort-change="orderList"
                     @row-dblclick="openFolder"
+                    @select="handleSelectChange"
+                    @select-all="handleSelectAllChange"
                     @selection-change="selectMultiRow">
                     <template #empty>
                         <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)"></empty-data>
@@ -275,7 +277,7 @@
                     count: 0,
                     current: 1,
                     limit: 20,
-                    limitList: [10, 20, 40]
+                    limitList: [10, 20, 50, 100]
                 },
                 baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
                 compressedData: [],
@@ -286,7 +288,8 @@
                 showIamDenyDialog: false,
                 showData: {},
                 sortParams: [],
-                timer: null
+                timer: null,
+                showMultiDelete: false
             }
         },
         computed: {
@@ -617,6 +620,17 @@
                             })
                         }
                         this.artifactoryList = originData
+                    }
+                    const key = this.userInfo.name + 'SelectedPaths'
+                    const isCheckedPaths = sessionStorage.getItem(key) === null ? '' : sessionStorage.getItem(key)
+                    this.showMultiDelete = isCheckedPaths.length > 0 && isCheckedPaths.includes('\'' + this.projectId + '/' + this.repoName + '/')
+                    for (let i = 0; i < this.artifactoryList.length; i++) {
+                        const targetPath = '\'' + this.artifactoryList[i].projectId + '/' + this.artifactoryList[i].repoName + this.artifactoryList[i].fullPath + '\''
+                        if (isCheckedPaths.includes(targetPath)) {
+                            this.$nextTick(() => {
+                                this.$refs.artifactoryTable.toggleRowSelection(this.artifactoryList[i], true)
+                            })
+                        }
                     }
                 }).finally(() => {
                     this.isLoading = false
@@ -1080,7 +1094,14 @@
                 this.multiSelect = selects
             },
             async handlerMultiDelete () {
-                const paths = this.multiSelect.map(r => r.fullPath)
+                const key = this.userInfo.name + 'SelectedPaths'
+                const isCheckedPaths = sessionStorage.getItem(key).split('\'')
+                const paths = []
+                for (let i = 0; i < isCheckedPaths.length; i++) {
+                    if (isCheckedPaths[i].length > 0 && isCheckedPaths[i].startsWith(this.projectId + '/' + this.repoName)) {
+                        paths.push(isCheckedPaths[i].replace(this.projectId + '/' + this.repoName, ''))
+                    }
+                }
                 const totalRecords = await this.getMultiFileNumOfFolder({
                     projectId: this.projectId,
                     repoName: this.repoName,
@@ -1120,7 +1141,7 @@
                 })
                 this.$confirm({
                     theme: 'danger',
-                    message: this.$t('batchDeleteMsg', [this.multiSelect.length]),
+                    message: this.$t('batchDeleteMsg', [paths.length]),
                     subMessage: this.$t('batchDeleteSubMsg', [totalRecords]),
                     confirmFn: () => {
                         return this.deleteMultiArtifactory({
@@ -1353,6 +1374,35 @@
                 } else {
                     this.$refs.genericCleanDialog.date = beforeYears(1)
                 }
+            },
+            handleSelectAllChange (selection) {
+                const key = this.userInfo.name + 'SelectedPaths'
+                let isCheckedPaths = sessionStorage.getItem(key) === null ? '' : sessionStorage.getItem(key)
+                const isChecked = selection.length
+                if (isChecked) {
+                    const paths = this.multiSelect.map(r => '\'' + r.projectId + '/' + r.repoName + r.fullPath + '\'').join('')
+                    isCheckedPaths = isCheckedPaths + paths
+                } else {
+                    for (let i = 0; i < this.artifactoryList.length; i++) {
+                        const targetPath = '\'' + this.artifactoryList[i].projectId + '/' + this.artifactoryList[i].repoName + this.artifactoryList[i].fullPath + '\''
+                        isCheckedPaths = isCheckedPaths.replace(targetPath, '')
+                    }
+                }
+                this.showMultiDelete = isCheckedPaths.length > 0 && isCheckedPaths.includes('\'' + this.projectId + '/' + this.repoName + '/')
+                sessionStorage.setItem(key, isCheckedPaths)
+            },
+
+            handleSelectChange (selection, row) {
+                const key = this.userInfo.name + 'SelectedPaths'
+                let isCheckedPaths = sessionStorage.getItem(key) === null ? '' : sessionStorage.getItem(key)
+                const isChecked = selection.length && selection.indexOf(row) !== -1
+                if (isChecked) {
+                    isCheckedPaths = isCheckedPaths + '\'' + row.projectId + '/' + row.repoName + row.fullPath + '\''
+                } else {
+                    isCheckedPaths = isCheckedPaths.replace('\'' + row.projectId + '/' + row.repoName + row.fullPath + '\'', '')
+                }
+                this.showMultiDelete = isCheckedPaths.length > 0 && isCheckedPaths.includes('\'' + this.projectId + '/' + this.repoName + '/')
+                sessionStorage.setItem(key, isCheckedPaths)
             }
         }
     }

@@ -46,7 +46,6 @@ import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.common.storage.util.existReal
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.FileTime
@@ -58,7 +57,6 @@ import java.util.concurrent.TimeUnit
 /**
  * 制品加载器，负责将制品加载到存储缓存中
  */
-@Component
 class DefaultPreloadPlanExecutor(
     private val preloadProperties: ArtifactPreloadProperties,
     private val cacheStorageService: StorageService,
@@ -99,11 +97,11 @@ class DefaultPreloadPlanExecutor(
 
     fun load(plan: ArtifactPreloadPlan, credentials: StorageCredentials, listener: PreloadListener?) {
         try {
+            logger.info("preload start, ${plan.artifactInfo()}")
+            listener?.onPreloadStart(plan)
             if (System.currentTimeMillis() - plan.executeTime > preloadProperties.planTimeout.toMillis()) {
                 throw RuntimeException("plan timeout[${plan.executeTime}], ${plan.artifactInfo()}")
             }
-            logger.info("preload start, ${plan.artifactInfo()}")
-            listener?.onPreloadStart(plan)
             val cacheFile = Paths.get(credentials.cache.path, fileLocator.locate(plan.sha256), plan.sha256)
             val cacheFileLock = Paths.get(credentials.cache.path, StringPool.TEMP, "${plan.sha256}.locked")
             val throughput = if (cacheFile.existReal()) {

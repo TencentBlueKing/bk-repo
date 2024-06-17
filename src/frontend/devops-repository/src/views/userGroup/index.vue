@@ -1,7 +1,8 @@
 <template>
     <div class="role-container" v-bkloading="{ isLoading }">
-        <div class="ml20 mr20 mt10 flex-between-center">
+        <div class="ml20 mr20 mt10">
             <bk-button icon="plus" theme="primary" @click="createRoleHandler">{{ $t('create') }}</bk-button>
+            <bk-button icon="plus" theme="primary" @click="importRoleHandler">{{ $t('import') }}</bk-button>
         </div>
         <bk-table
             class="mt10 role-table"
@@ -21,15 +22,19 @@
             <bk-table-column :label="$t('description')" show-overflow-tooltip>
                 <template #default="{ row }">{{row.description || '/'}}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('user')" show-overflow-tooltip>
+            <bk-table-column :label="$t('user')" width="800px" show-overflow-tooltip>
                 <template #default="{ row }">
                     <span class="hover-btn">{{row.users.length ? row.users : '/'}}</span></template>
+            </bk-table-column>
+            <bk-table-column :label="$t('userSource')" show-overflow-tooltip>
+                <template #default="{ row }">
+                    <span class="hover-btn">{{ transformSource(row.source) }}</span></template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: $t('edit'), clickEvent: () => editRoleHandler(row) },
+                            !row.source && { label: $t('edit'), clickEvent: () => editRoleHandler(row) },
                             { label: $t('delete'), clickEvent: () => deleteRoleHandler(row) }
                         ]"></operation-list>
                 </template>
@@ -68,15 +73,17 @@
             </template>
         </canway-dialog>
         <add-user-dialog ref="addUserDialog" :visible.sync="showAddUserDialog" @complete="handleAddUsers"></add-user-dialog>
+        <import-user-dialog :visible.sync="showImportUserDialog" @complete="getRoleListHandler"></import-user-dialog>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
     import { mapState, mapActions } from 'vuex'
     import AddUserDialog from '@/components/AddUserDialog/addUserDialog'
+    import importUserDialog from '@/views/userGroup/importUserDialog'
     export default {
         name: 'role',
-        components: { AddUserDialog, OperationList },
+        components: { AddUserDialog, OperationList, importUserDialog },
         data () {
             return {
                 isLoading: false,
@@ -105,7 +112,11 @@
                     ]
                 },
                 showAddUserDialog: false,
-                showData: {}
+                showData: {},
+                openImport: false,
+                importUsers: [],
+                importDate: [],
+                showImportUserDialog: false
             }
         },
         computed: {
@@ -130,7 +141,8 @@
                 'createRole',
                 'editRole',
                 'deleteRole',
-                'getProjectUserList'
+                'getProjectUserList',
+                'getUserGroupByExternal'
             ]),
             getRoleListHandler () {
                 this.isLoading = true
@@ -252,6 +264,18 @@
             handleAddUsers (users) {
                 this.editRoleConfig.originUsers = users
                 this.editRoleConfig.users = users
+            },
+            importRoleHandler () {
+                this.showImportUserDialog = true
+            },
+            transformSource (sourceId) {
+                if (!sourceId) {
+                    return '/'
+                } else if (sourceId === 'DEVOPS') {
+                    return this.$t('bkci')
+                } else {
+                    return '/'
+                }
             }
         }
     }

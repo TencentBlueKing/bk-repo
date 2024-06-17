@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.dao.repository
 
 import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
@@ -49,10 +50,23 @@ interface RoleRepository : MongoRepository<TRole, String> {
     ): List<TRole>
 
     fun findByTypeAndProjectIdAndAdmin(type: RoleType, projectId: String, admin: Boolean): List<TRole>
-    fun findByProjectIdAndRepoNameAndType(projectId: String, repoName: String, type: RoleType): List<TRole>
+    fun findByTypeAndProjectIdAndRepoName(type: RoleType, projectId: String, repoName: String): List<TRole>
     fun findFirstByRoleIdAndProjectId(roleId: String, projectId: String): TRole?
-    fun findFirstByProjectIdAndTypeAndName(projectId: String, type: RoleType, name: String): TRole?
-    fun findFirstByRoleIdAndProjectIdAndRepoName(roleId: String, projectId: String, repoName: String): TRole?
+    fun findFirstByTypeAndProjectIdAndName(type: RoleType, projectId: String, name: String): TRole?
+    fun findFirstByTypeAndRoleIdAndProjectIdAndRepoName(
+        type: RoleType,
+        roleId: String,
+        projectId: String,
+        repoName: String
+    ): TRole?
+
+    fun findFirstByTypeAndRoleIdAndProjectIdAndSource(
+        type: RoleType,
+        roleId: String,
+        projectId: String,
+        source: RoleSource
+    ): TRole?
+
     fun findByProjectIdAndTypeAndAdminAndIdIn(
         projectId: String,
         type: RoleType,
@@ -60,12 +74,14 @@ interface RoleRepository : MongoRepository<TRole, String> {
         ids: List<String>
     ): List<TRole>
 
-    fun findByProjectIdAndTypeAndAdminAndRepoNameAndIdIn(
-        projectId: String,
+    fun findByTypeAndProjectIdAndAdminAndRepoNameAndIdIn(
         type: RoleType,
+        projectId: String,
         admin: Boolean,
         repoName: String,
         ids: List<String>
     ): List<TRole>
+
+    fun findBySource(source: RoleSource): List<TRole>
 
 }

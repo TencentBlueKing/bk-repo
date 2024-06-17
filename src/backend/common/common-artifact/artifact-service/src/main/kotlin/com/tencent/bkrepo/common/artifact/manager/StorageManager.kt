@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -47,7 +48,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 存储管理类
@@ -66,7 +66,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
-    private val nodeResourceFactoryImpl: NodeResourceFactoryImpl,
+    private val fileReferenceClient: FileReferenceClient,
+    private val nodeResourceFactory: NodeResourceFactory,
     private val pluginManager: PluginManager,
 ) {
 
@@ -79,18 +80,18 @@ class StorageManager(
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
     ): NodeDetail {
-        val cancel = AtomicBoolean(false)
-        val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials, cancel)
+        val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials)
         try {
             return nodeClient.createNode(request).data!!
         } catch (exception: Exception) {
-            // 当文件有创建，则删除文件
             if (affectedCount == 1) {
                 try {
-                    cancel.set(true)
-                    storageService.delete(request.sha256!!, storageCredentials)
+                    // 当createNode调用超时，实际node和引用创建成功时不会做任何改变
+                    // 当文件创建成功，但是node创建失败时，则创建一个计数为0的fileReference用于清理任务清理垃圾文件
+                    fileReferenceClient.increment(request.sha256!!, storageCredentials?.key, 0L)
                 } catch (exception: Exception) {
-                    logger.error("Failed to delete new created file[${request.sha256}]", exception)
+                    // 创建引用失败后会通过定时任务StorageReconcileJob清理垃圾文件
+                    logger.error("Failed to create ref for new created file[${request.sha256}]", exception)
                 }
             }
             // 异常往上抛
@@ -124,7 +125,7 @@ class StorageManager(
         if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         }
-        val nodeResource = nodeResourceFactoryImpl.getNodeResource(node, range, storageCredentials)
+        val nodeResource = nodeResourceFactory.getNodeResource(node, range, storageCredentials)
         return nodeResource.getArtifactInputStream()
     }
 
@@ -149,6 +150,18 @@ class StorageManager(
         }
         val load = forwardNode ?: node
         return loadArtifactInputStream(load.nodeInfo, storageCredentials)
+    }
+
+    /**
+     * 加载[node]对应的完整ArtifactInputStream
+     */
+    fun loadFullArtifactInputStream(node: NodeDetail?, storageCredentials: StorageCredentials?): ArtifactInputStream? {
+        if (node == null || node.folder) {
+            return null
+        }
+        val range = Range.full(node.size)
+        val nodeResource = nodeResourceFactory.getNodeResource(node.nodeInfo, range, storageCredentials)
+        return nodeResource.getArtifactInputStream()
     }
 
     companion object {

@@ -48,7 +48,7 @@ import org.springframework.web.bind.annotation.RestController
 @Api("Proxy管理接口")
 @RestController
 @RequestMapping("/api/proxy")
-class ProxyController(
+class AuthProxyController(
     private val proxyService: ProxyService
 ) {
 

@@ -51,7 +51,7 @@ class TransferDataExecutor(
      * 执行小文件迁移的线程池
      */
     private val transferSmallDataExecutor: ThreadPoolExecutor by lazy {
-        buildExecutor(properties.smallNodeConcurrentCy, "transfer-data-small")
+        buildExecutor(properties.smallNodeConcurrency, "transfer-data-small")
     }
 
     /**

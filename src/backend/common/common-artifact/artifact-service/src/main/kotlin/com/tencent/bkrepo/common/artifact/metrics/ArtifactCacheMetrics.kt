@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
+import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
@@ -80,7 +82,9 @@ class ArtifactCacheMetrics(
     private fun addMetrics(resource: ArtifactResource) {
         val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
         val projectId = repositoryDetail?.projectId
-        if (projectId == null || projectId.startsWith("CODE_") || projectId.startsWith("CLOSED_SOURCE_")) {
+        if (projectId == null || projectId.startsWith(CODE_PROJECT_PREFIX)
+            || projectId.startsWith(CLOSED_SOURCE_PREFIX)
+        ) {
             return
         }
         val credentials = repositoryDetail.storageCredentials()
@@ -101,7 +105,7 @@ class ArtifactCacheMetrics(
                     val fullPath = resource.node?.fullPath
                     logger.info(
                         "large file cache miss, " +
-                            "project[$projectId], repoName[${repositoryDetail.name}], fullPath[$fullPath]"
+                                "project[$projectId], repoName[${repositoryDetail.name}], fullPath[$fullPath]"
                     )
                 }
                 incMissCount(credentials.key(), projectId)
