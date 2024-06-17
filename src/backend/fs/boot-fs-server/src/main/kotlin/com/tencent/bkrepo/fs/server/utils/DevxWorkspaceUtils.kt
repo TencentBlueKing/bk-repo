@@ -136,6 +136,7 @@ class DevxWorkspaceUtils(
             return httpClient
                 .get()
                 .uri("${devXProperties.workspaceUrl}?ip=${ReactiveRequestContextHolder.getClientAddress()}")
+                .header("X-DEVOPS-UID", "bk-repo")
                 .doRequest(type) { it?.data?.firstOrNull() }
         }
 

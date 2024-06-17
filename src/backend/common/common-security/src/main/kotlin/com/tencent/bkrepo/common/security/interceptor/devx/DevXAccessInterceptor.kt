@@ -132,7 +132,10 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
 
     private fun listCvmIpFromProject(projectId: String): Set<String> {
         val workspaceUrl = devXProperties.cvmWorkspaceUrl.replace("{projectId}", projectId)
-        val reqBuilder = Request.Builder().url("$workspaceUrl?pageSize=${devXProperties.cvmWorkspacePageSize}")
+        val reqBuilder = Request
+            .Builder()
+            .url("$workspaceUrl?pageSize=${devXProperties.cvmWorkspacePageSize}")
+            .header("X-DEVOPS-UID", "bk-repo")
         logger.info("Update project[$projectId] cvm ips.")
         val res = doRequest<PageResponse<DevXCvmWorkspace>>(reqBuilder, jacksonTypeRef())
         if ((res?.totalPages ?: 0) > 1) {
