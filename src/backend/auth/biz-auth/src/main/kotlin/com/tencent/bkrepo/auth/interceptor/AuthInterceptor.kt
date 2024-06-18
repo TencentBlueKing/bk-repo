@@ -188,7 +188,7 @@ class AuthInterceptor(
     }
 
     private fun setAuthAttribute(userId: String, appId: String, request: HttpServletRequest) {
-        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) || request.requestURI.contains(it)}
+        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
         val anonymousAccess = anonymousAccessApiSet.any { request.requestURI.contains(it) }
         val userInfo = userService.getUserInfoById(userId)
         val isAdmin: Boolean = userInfo?.admin ?: false
