@@ -169,14 +169,14 @@ class EmptyFolderCleanup(
         objectId: String?,
         collectionName: String,
         deletedEmptyFolder: Boolean,
-        ) {
+    ) {
         if (objectId.isNullOrEmpty()) return
         val query = Query(
             Criteria.where(ID).isEqualTo(ObjectId(objectId))
                 .and(FOLDER).isEqualTo(true)
         )
         val deleteTime = LocalDateTime.now()
-        var update = Update().set(LAST_MODIFIED_DATE, deleteTime)
+        val update = Update().set(LAST_MODIFIED_DATE, deleteTime)
         if (deletedEmptyFolder) {
             update.set(DELETED_DATE, deleteTime)
         } else {
