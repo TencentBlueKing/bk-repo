@@ -433,7 +433,7 @@ class PypiLocalRepository(
             val pypiPackagePojo = try {
                 artifactInfo.getArtifactFullPath().toPypiPackagePojo()
             } catch (e: Exception) {
-                logger.error("parse pypi package failed", e)
+                logger.info("parse path[${artifactInfo.getArtifactFullPath()}] to pypi package version failed: ", e)
                 null
             } ?: return null
 
