@@ -51,7 +51,7 @@ import java.time.Duration
 @Component
 @EnableConfigurationProperties(ActiveProjectEmptyFolderCleanupJobProperties::class)
 class ActiveProjectEmptyFolderCleanupJob(
-    properties: ActiveProjectEmptyFolderCleanupJobProperties,
+    private val properties: ActiveProjectEmptyFolderCleanupJobProperties,
     executor: ThreadPoolTaskExecutor,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
@@ -104,7 +104,7 @@ class ActiveProjectEmptyFolderCleanupJob(
     override fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         logger.info("will filter empty folder in project $projectId")
-        emptyFolderCleanup.emptyFolderHandler(collection, context, projectId)
+        emptyFolderCleanup.emptyFolderHandler(collection, context, properties.deletedEmptyFolder, projectId)
     }
 
     companion object {
