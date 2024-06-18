@@ -29,13 +29,13 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import org.slf4j.LoggerFactory
@@ -74,7 +74,20 @@ open class Scanner(
     @ApiModelProperty("支持的分发器")
     val supportDispatchers: List<String> = emptyList(),
     @ApiModelProperty("执行扫描所需要的内存大小")
-    val memory: Long = DEFAULT_MEM
+    @Deprecated("使用limitMem替代")
+    val memory: Long = DEFAULT_MEM,
+    @ApiModelProperty("容器limit mem")
+    val limitMem: Long = 32 * GB,
+    @ApiModelProperty("容器 request mem")
+    val requestMem: Long = 16 * GB,
+    @ApiModelProperty("容器request ephemeralStorage")
+    val requestStorage: Long = 16 * GB,
+    @ApiModelProperty("容器limit ephemeralStorage")
+    val limitStorage: Long = 128 * GB,
+    @ApiModelProperty("容器request cpu")
+    val requestCpu: Double = 4.0,
+    @ApiModelProperty("容器limit cpu")
+    val limitCpu: Double = 16.0
 ) {
     /**
      * 获取待扫描文件最大允许扫描时长
@@ -101,13 +114,16 @@ open class Scanner(
         )
         private val logger = LoggerFactory.getLogger(Scanner::class.java)
         private const val DEFAULT_MAX_SCAN_DURATION = 6 * 1000L
+
         /**
          * 默认至少允许扫描的时间
          */
         private const val DEFAULT_MIN_SCAN_DURATION = 3 * 60L * 1000L
+
         /**
          * 默认内存大小
          */
         private const val DEFAULT_MEM = 32L * 1024L * 1024L * 1024L
+        const val GB = 1024 * 1024 * 1024L
     }
 }
