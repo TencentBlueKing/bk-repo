@@ -61,7 +61,7 @@ open class CIPermissionManager(
         buildId: String?,
         taskId: String? = null
     ): PipelineBuildStatus {
-        if (!ciPermissionProperties.enabled) {
+        if (!ciPermissionProperties.enabled || whiteListRequest()) {
             return PipelineBuildStatus(SecurityUtils.getUserId(), false, "RUNNING")
         }
         var url = "${ciPermissionProperties.host}/ms/process/api/open/service/pipeline/get_build_status?" +
