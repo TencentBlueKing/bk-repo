@@ -87,7 +87,9 @@ open class Scanner(
     @ApiModelProperty("容器request cpu")
     val requestCpu: Double = 4.0,
     @ApiModelProperty("容器limit cpu")
-    val limitCpu: Double = 16.0
+    val limitCpu: Double = 16.0,
+    @ApiModelProperty("不支持的制品名称正则列表")
+    val unsupportedArtifactNameRegex: Set<String> = emptySet(),
 ) {
     /**
      * 获取待扫描文件最大允许扫描时长
