@@ -34,8 +34,10 @@ import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
+import com.tencent.bkrepo.job.NODE_NUM
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
+import com.tencent.bkrepo.job.SIZE
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
@@ -108,6 +110,7 @@ class EmptyFolderCleanup(
     fun emptyFolderHandler(
         collection: String,
         context: EmptyFolderCleanupJobContext,
+        deletedEmptyFolder: Boolean,
         projectId: String = StringPool.EMPTY,
         runCollection: Boolean = false,
     ) {
@@ -128,9 +131,10 @@ class EmptyFolderCleanup(
                 )) {
                 logger.info(
                     "will delete empty folder ${folderInfo.fullPath}" +
-                        " in repo ${folderInfo.projectId}|${folderInfo.repoName}"
+                        " in repo ${folderInfo.projectId}|${folderInfo.repoName} " +
+                        "with config deletedEmptyFolder: $deletedEmptyFolder"
                 )
-                doEmptyFolderDelete(entry.value.id, collection)
+                doEmptyFolderDelete(entry.value.id, collection, deletedEmptyFolder)
                 context.totalDeletedNum.increment()
             }
         }
@@ -163,7 +167,8 @@ class EmptyFolderCleanup(
      */
     private fun doEmptyFolderDelete(
         objectId: String?,
-        collectionName: String
+        collectionName: String,
+        deletedEmptyFolder: Boolean,
     ) {
         if (objectId.isNullOrEmpty()) return
         val query = Query(
@@ -171,9 +176,12 @@ class EmptyFolderCleanup(
                 .and(FOLDER).isEqualTo(true)
         )
         val deleteTime = LocalDateTime.now()
-        val update = Update()
-            .set(LAST_MODIFIED_DATE, deleteTime)
-            .set(DELETED_DATE, deleteTime)
+        val update = Update().set(LAST_MODIFIED_DATE, deleteTime)
+        if (deletedEmptyFolder) {
+            update.set(DELETED_DATE, deleteTime)
+        } else {
+            update.set(SIZE, 0).set(NODE_NUM, 0)
+        }
         mongoTemplate.updateFirst(query, update, collectionName)
     }
 
