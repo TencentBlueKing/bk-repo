@@ -110,14 +110,20 @@ class ArchiveJobServiceImpl(
                 )
             repoName?.let { criteria.and("repoName").isEqualTo(it) }
             prefix?.let { criteria.and("fullPath").regex("^${MongoEscapeUtils.escapeRegex(it)}") }
-            metadata.forEach {
+            val metadataCriteria = metadata.map {
                 val elemCriteria = Criteria().andOperator(
                     MetadataModel::key.isEqualTo(it.key),
                     MetadataModel::value.isEqualTo(it.value)
                 )
-                criteria.and("metadata").elemMatch(elemCriteria)
+                Criteria.where("metadata").elemMatch(elemCriteria)
             }
-            criteria
+            if (metadataCriteria.isEmpty()) {
+                criteria
+            } else {
+                val allCriteria = metadataCriteria.toMutableList()
+                allCriteria.add(criteria)
+                Criteria().andOperator(allCriteria)
+            }
         }
     }
 
