@@ -66,9 +66,9 @@ class ArchiveJobServiceImplTest @Autowired constructor(
         nodes = findNodes(
             req.copy(
                 projectId = "metadata-test",
-                metadata = listOf(
-                    MetadataModel("pid", "ppp"),
-                    MetadataModel("bid", "bbb"),
+                metadata = mapOf(
+                    "pid" to "ppp",
+                    "bid" to "bbb"
                 )
             )
         )

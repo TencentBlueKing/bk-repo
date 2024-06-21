@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.job.pojo
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-
 /**
  * 恢复已归档或已压缩的制品请求
  */
@@ -48,5 +46,5 @@ data class ArchiveRestoreRequest(
     /**
      * 制品元数据，所有元数据均匹配才会恢复
      */
-    val metadata: List<MetadataModel> = emptyList(),
+    val metadata: Map<String, String> = emptyMap(),
 )
