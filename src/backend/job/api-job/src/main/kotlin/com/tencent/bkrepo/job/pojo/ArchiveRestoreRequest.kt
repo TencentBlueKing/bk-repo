@@ -25,34 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.model
+package com.tencent.bkrepo.job.pojo
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import org.springframework.data.mongodb.core.index.TextIndexDefinition.TextIndexDefinitionBuilder
-import java.time.LocalDateTime
-
-data class TNode(
-    val id: String? = null,
-    val createdDate: LocalDateTime,
-    val folder: Boolean,
+/**
+ * 恢复已归档或已压缩的制品请求
+ */
+data class ArchiveRestoreRequest(
+    /**
+     * 制品所属项目
+     */
     val projectId: String,
-    val repoName: String,
-    val fullPath: String,
-    val size: Long,
-    val sha256: String,
-    val md5: String,
-    val deleted: LocalDateTime? = null,
-    val archived: Boolean? = null,
-    val compressed: Boolean? = null,
-    val metadata: List<MetadataModel> = emptyList(),
-) {
-    companion object {
-        fun pathIndex() = TextIndexDefinitionBuilder()
-            .onField("projectId")
-            .onField("repoName")
-            .onField("path")
-            .onField("deleted")
-            .named("projectId_repoName_path_idx")
-            .build()
-    }
-}
+    /**
+     * 制品所属仓库
+     */
+    val repoName: String? = null,
+    /**
+     * 制品路径前缀
+     */
+    val prefix: String? = null,
+    /**
+     * 制品元数据，所有元数据均匹配才会恢复
+     */
+    val metadata: Map<String, String> = emptyMap(),
+)
