@@ -27,7 +27,9 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
-import com.google.common.cache.CacheBuilder
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXCvmWorkspace
@@ -38,8 +40,6 @@ import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
@@ -48,13 +48,13 @@ import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
+import reactor.core.publisher.toMono
 import reactor.netty.http.client.HttpClient
 import reactor.netty.http.client.PrematureCloseException
 import reactor.netty.resources.ConnectionProvider
 import reactor.util.retry.RetryBackoffSpec
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.Executors
 
 class DevxWorkspaceUtils(
     devXProperties: DevXProperties
@@ -74,38 +74,29 @@ class DevxWorkspaceUtils(
             WebClient.builder().clientConnector(connector).build()
         }
 
-        private val mutex = Mutex()
-        private val illegalIp by lazy { CacheBuilder.newBuilder()
-            .expireAfterWrite(devXProperties.cacheExpireTime)
-            .maximumSize(devXProperties.cacheSize)
-            .build<String, String>() }
-        private val projectIpsCache: ConcurrentHashMap<String, Mono<Set<String>>> by lazy {
-            ConcurrentHashMap(devXProperties.cacheSize.toInt())
+        private val illegalIp by lazy {
+            Caffeine.newBuilder()
+                .expireAfterWrite(devXProperties.cacheExpireTime)
+                .maximumSize(devXProperties.cacheSize)
+                .build<String, String>()
+        }
+        private val executor by lazy {
+            Executors.newFixedThreadPool(
+                Runtime.getRuntime().availableProcessors(),
+                ThreadFactoryBuilder().setNameFormat("fs-server-devx-%d").build(),
+            )
+        }
+        private val projectIpsCache: AsyncLoadingCache<String, Set<String>> by lazy {
+            Caffeine.newBuilder()
+                .refreshAfterWrite(devXProperties.cacheExpireTime)
+                .executor(executor)
+                .maximumSize(devXProperties.cacheSize)
+                .buildAsync { k -> listIp(k).block() }
         }
 
-        suspend fun getIpList(projectId: String): Mono<Set<String>> {
-            return projectIpsCache[projectId] ?: requestIpList(projectId)
+        fun getIpList(projectId: String): Mono<Set<String>> {
+            return projectIpsCache[projectId].toMono()
         }
-
-        /**
-         * 获取项目ip列表, 5s内获取不到ip列表则返回空
-         * 为了避免接口异常，阻塞大量请求, 获取锁的超时比请求读超时短
-         */
-        private suspend fun requestIpList(projectId: String): Mono<Set<String>> {
-            val start = System.currentTimeMillis()
-            while (System.currentTimeMillis() - start < TimeUnit.SECONDS.toMillis(5)) {
-                if (mutex.tryLock()) {
-                    val ipList = try {
-                        projectIpsCache.getOrPut(projectId) { listIp(projectId) }
-                    } finally {
-                        mutex.unlock()
-                    }
-                    return ipList
-                }
-            }
-            return Mono.empty()
-        }
-
 
         /**
          * 是否为已知非法ip
@@ -125,10 +116,8 @@ class DevxWorkspaceUtils(
             illegalIp.put(ip, projectId)
         }
 
-        suspend fun refreshIpListCache(projectId: String) {
-            mutex.withLock {
-                projectIpsCache[projectId] = listIp(projectId)
-            }
+        fun refreshIpListCache(projectId: String) {
+            projectIpsCache.synchronous().refresh(projectId)
         }
 
         suspend fun getWorkspace(): Mono<DevXWorkSpace?> {
@@ -142,7 +131,6 @@ class DevxWorkspaceUtils(
         private fun listIp(projectId: String): Mono<Set<String>> {
             return Mono.zip(listIpFromProject(projectId), listIpFromProps(projectId), listCvmIpFromProject(projectId))
                 .map { it.t1 + it.t2 + it.t3 }
-                .cache(devXProperties.cacheExpireTime)
         }
 
         private fun listIpFromProject(projectId: String): Mono<Set<String>> {
