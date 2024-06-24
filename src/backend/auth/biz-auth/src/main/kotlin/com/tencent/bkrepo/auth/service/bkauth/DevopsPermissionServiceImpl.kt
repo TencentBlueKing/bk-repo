@@ -34,8 +34,8 @@ package com.tencent.bkrepo.auth.service.bkauth
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.dao.repository.AccountRepository
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory
  */
 class DevopsPermissionServiceImpl constructor(
     roleRepository: RoleRepository,
-    accountRepository: AccountRepository,
+    accountDao: AccountDao,
     permissionDao: PermissionDao,
     userDao: UserDao,
     personalPathDao: PersonalPathDao,
@@ -79,7 +79,7 @@ class DevopsPermissionServiceImpl constructor(
     bkIamV3Service,
     userDao,
     roleRepository,
-    accountRepository,
+    accountDao,
     permissionDao,
     personalPathDao,
     repoAuthConfigDao,
@@ -99,7 +99,7 @@ class DevopsPermissionServiceImpl constructor(
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
 
         // 校验平台账号操作范围
-        if (!checkPlatformPermission(request)) return false
+        if (request.appId != null && !checkPlatformPermission(request)) return false
 
         // bkiamv3权限校验
         if (matchBkiamv3Cond(request)) {
