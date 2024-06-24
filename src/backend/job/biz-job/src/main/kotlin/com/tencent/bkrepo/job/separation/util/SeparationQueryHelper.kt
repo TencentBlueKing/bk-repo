@@ -1,0 +1,126 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package com.tencent.bkrepo.job.separation.util
+
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.job.separation.model.TSeparationNode
+import com.tencent.bkrepo.job.separation.model.TSeparationPackage
+import com.tencent.bkrepo.job.separation.model.TSeparationPackageVersion
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
+import java.time.LocalDateTime
+
+/**
+ * 查询条件构造工具
+ */
+object SeparationQueryHelper {
+
+    fun packageIdQuery(packageId: String): Query {
+        val criteria = where(TSeparationPackage::id).isEqualTo(packageId)
+        return Query(criteria)
+    }
+
+    fun packageQuery(projectId: String, repoName: String, key: String): Query {
+        val criteria = where(TSeparationPackage::projectId).isEqualTo(projectId)
+            .and(TSeparationPackage::repoName).isEqualTo(repoName)
+            .and(TSeparationPackage::key).isEqualTo(key)
+        return Query(criteria)
+    }
+
+    fun packageNameQuery(projectId: String, repoName: String, packageName: String?, packageRegex: String?): Query {
+        val criteria = Criteria.where(TSeparationPackage::projectId.name).isEqualTo(projectId)
+            .and(TSeparationPackage::repoName.name).isEqualTo(repoName)
+            .apply {
+                packageName?.let { and(TSeparationPackage::name.name).isEqualTo(packageName) }
+            }.apply {
+                packageRegex?.let { and(TSeparationPackage::name.name).regex(".*${packageRegex}.*") }
+            }
+        return Query(criteria)
+    }
+
+    fun versionIdQuery(versionId: String, separationDate: LocalDateTime): Query {
+        val criteria = where(TSeparationPackageVersion::id).isEqualTo(versionId)
+            .and(TSeparationPackageVersion::separationDate).isEqualTo(separationDate)
+        return Query(criteria)
+    }
+
+    fun versionQuery(packageId: String, name: String? = null, separationDate: LocalDateTime): Query {
+        val criteria = where(TSeparationPackageVersion::packageId).isEqualTo(packageId)
+            .and(TSeparationPackageVersion::separationDate).isEqualTo(separationDate)
+            .apply {
+                name?.let { and(TSeparationPackageVersion::name).isEqualTo(name) }
+            }
+        return Query(criteria)
+    }
+
+    fun versionListQuery(packageId: String, separationDate: LocalDateTime, nameRegex: String? = null, versionList: List<String>? = null): Query {
+        val criteria = where(TSeparationPackageVersion::packageId).isEqualTo(packageId)
+            .and(TSeparationPackageVersion::separationDate).isEqualTo(separationDate)
+            .apply {
+                versionList?.let { and(TSeparationPackageVersion::name).`in`(versionList) }
+            }.apply {
+                nameRegex?.let { and(TSeparationPackageVersion::name).regex(".*${nameRegex}.*") }
+            }
+        return Query(criteria)
+    }
+
+    fun nodeIdQuery(nodeId: String, separationDate: LocalDateTime): Query {
+        val criteria = Criteria.where(TSeparationNode::id.name).isEqualTo(nodeId)
+            .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
+        return Query(criteria)
+    }
+
+    fun pathQuery(projectId: String, repoName: String, versionPath: String, separationDate: LocalDateTime): Query {
+        val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
+            .and(TSeparationNode::repoName.name).isEqualTo(repoName)
+            .and(TSeparationNode::fullPath.name).regex("^${PathUtils.escapeRegex(versionPath)}")
+            .and(TSeparationNode::folder.name).isEqualTo(false)
+            .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
+        return Query(criteria).withHint(FULL_PATH_IDX)
+    }
+
+    fun pathQuery(projectId: String, repoName: String, separationDate: LocalDateTime, path: String? = null, pathRegex: String? = null): Query {
+        val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
+            .and(TSeparationNode::repoName.name).isEqualTo(repoName)
+            .and(TSeparationNode::folder.name).isEqualTo(false)
+            .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
+            .apply {
+                path?.let { and(TSeparationNode::fullPath.name).regex("^${PathUtils.escapeRegex(path)}") }
+            }
+            .apply {
+                pathRegex?.let { and(TSeparationNode::fullPath.name).regex(".*${pathRegex}.*") }
+            }
+        return Query(criteria).withHint(FULL_PATH_IDX)
+    }
+
+    private const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
+
+}

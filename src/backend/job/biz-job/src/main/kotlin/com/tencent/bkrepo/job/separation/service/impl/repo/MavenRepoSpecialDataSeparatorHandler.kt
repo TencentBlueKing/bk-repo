@@ -1,0 +1,247 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package com.tencent.bkrepo.job.separation.service.impl.repo
+
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
+import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
+import com.tencent.bkrepo.job.separation.dao.repo.SeparationMavenMetadataDao
+import com.tencent.bkrepo.job.separation.exception.SeparationDataStoreException
+import com.tencent.bkrepo.job.separation.pojo.VersionSeparationInfo
+import com.tencent.bkrepo.job.separation.pojo.query.MavenMetadata
+import com.tencent.bkrepo.job.separation.pojo.query.NodeBaseInfo
+import com.tencent.bkrepo.job.separation.pojo.query.NodeDetailInfo
+import com.tencent.bkrepo.job.separation.service.RepoSpecialDataSeparator
+import com.tencent.bkrepo.job.separation.util.SeparationQueryHelper
+import com.tencent.bkrepo.job.separation.util.SeparationUtils.getNodeCollectionName
+import org.apache.commons.lang3.StringUtils
+import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+
+
+class MavenRepoSpecialDataSeparatorHandler(
+    private val separationMavenMetadataDao: SeparationMavenMetadataDao,
+    private val separationNodeDao: SeparationNodeDao,
+    private val mongoTemplate: MongoTemplate,
+) : RepoSpecialDataSeparator {
+    override fun type(): RepositoryType {
+        return RepositoryType.MAVEN
+    }
+
+    override fun extraType(): RepositoryType? {
+        return null
+    }
+
+    override fun separateRepoSpecialData(versionSeparationInfo: VersionSeparationInfo) {
+        with(versionSeparationInfo) {
+            val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
+            val criteria = Criteria.where(MavenMetadata::projectId.name).isEqualTo(projectId)
+                .and(MavenMetadata::repoName.name).isEqualTo(repoName)
+                .and(MavenMetadata::groupId.name).isEqualTo(groupId)
+                .and(MavenMetadata::artifactId.name).isEqualTo(artifactId)
+                .and(MavenMetadata::version.name).isEqualTo(version)
+            val metadataQuery = Query(criteria)
+            val metadataRecords = mongoTemplate.find(
+                metadataQuery,
+                MavenMetadata::class.java,
+                MAVEN_METADATA_COLLECTION_NAME
+            )
+            if (metadataRecords.isEmpty()) {
+                logger.warn("No metadata record found for $version of $packageKey in $projectId|$repoName")
+            }
+            metadataRecords.forEach {
+                val upsertResult = separationMavenMetadataDao.upsertMetaData(it, separationDate)
+                if (upsertResult.modifiedCount != 1L) {
+                    logger.error("store metadata record $it error for $version of $packageKey in $projectId|$repoName")
+                    throw SeparationDataStoreException(it.id!!)
+                }
+            }
+            metadataRecords.forEach {
+                val query = Query(Criteria.where(ID).isEqualTo(it.id))
+                val deletedResult = mongoTemplate.remove(query, MAVEN_METADATA_COLLECTION_NAME)
+                if (deletedResult.deletedCount != 1L) {
+                    logger.error("delete metadata $it error for $version of $packageKey in $projectId|$repoName")
+                }
+            }
+        }
+    }
+
+    override fun getNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String> {
+        with(versionSeparationInfo) {
+            val packagePath = extractPath(packageKey)
+            val versionPath = PathUtils.combinePath(packagePath, version)
+            val nodeCollectionName = getNodeCollectionName(projectId)
+            // 目录节点保持不变，空目录节点清理job会对降冷的仓库禁用
+            val criteria = Criteria.where(NodeDetailInfo::projectId.name).isEqualTo(projectId)
+                .and(NodeDetailInfo::repoName.name).isEqualTo(repoName)
+                .and(NodeDetailInfo::deleted.name).isEqualTo(null)
+                .and(NodeDetailInfo::path.name).isEqualTo(versionPath)
+                .and(NodeDetailInfo::folder.name).isEqualTo(false)
+            val fullPathsMap = mutableMapOf<String, String>()
+            val pageSize = BATCH_SIZE
+            var querySize: Int
+            var lastId = ObjectId(MIN_OBJECT_ID)
+            do {
+                val query = Query(criteria)
+                    .addCriteria(Criteria.where(ID).gt(lastId))
+                    .limit(BATCH_SIZE)
+                    .with(Sort.by(ID).ascending())
+                val nodeBaseInfos = mongoTemplate.find(query, NodeBaseInfo::class.java, nodeCollectionName)
+                if (nodeBaseInfos.isEmpty()) {
+                    break
+                }
+                val nodeAccessDateCheck = nodeBaseInfos.firstOrNull {
+                    it.lastAccessDate?.isAfter(separationDate) == true || it.lastModifiedDate.isAfter(separationDate)
+                } != null
+                // 只要该版本下有一个文件不符合条件则该版本不能降冷
+                if (nodeAccessDateCheck) {
+                    return mutableMapOf()
+                }
+                nodeBaseInfos.forEach {
+                    fullPathsMap[it.id] = it.fullPath
+                }
+                querySize = nodeBaseInfos.size
+                lastId = ObjectId(nodeBaseInfos.last().id)
+            } while (querySize == pageSize)
+            return fullPathsMap
+        }
+    }
+
+    override fun getRestoreNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String> {
+        with(versionSeparationInfo) {
+            val packagePath = extractPath(packageKey)
+            val versionPath = PathUtils.combinePath(packagePath, version)
+            var pageNumber = 0
+            val pageSize = BATCH_SIZE
+            var querySize = 0
+            val query = SeparationQueryHelper.pathQuery(projectId, repoName, versionPath, separationDate)
+            val fullPathsMap = mutableMapOf<String, String>()
+            do {
+                val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
+                val data = separationNodeDao.find(pageQuery)
+                if (data.isEmpty()) {
+                    logger.warn(
+                        "Could not find cold node $versionPath " +
+                            "of $versionSeparationInfo in $projectId|$repoName!"
+                    )
+                    break
+                }
+                data.forEach {
+                    fullPathsMap[it.id!!] = it.fullPath
+                }
+                querySize = data.size
+                pageNumber++
+            } while (querySize == pageSize)
+            return fullPathsMap
+        }
+    }
+
+    override fun restoreRepoSpecialData(versionSeparationInfo: VersionSeparationInfo) {
+        with(versionSeparationInfo) {
+            val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
+            val codeRecord = separationMavenMetadataDao.search(
+                projectId, repoName, groupId, artifactId, version, separationDate
+            )
+            if (codeRecord.isEmpty()) {
+                logger.warn(
+                    "No separation metadata record found " +
+                        "for $version of $packageKey in $projectId|$repoName"
+                )
+            }
+            codeRecord.forEach {
+                val criteria = Criteria.where(MavenMetadata::projectId.name).isEqualTo(it.projectId)
+                    .and(MavenMetadata::repoName.name).isEqualTo(it.repoName)
+                    .and(MavenMetadata::groupId.name).isEqualTo(it.groupId)
+                    .and(MavenMetadata::artifactId.name).isEqualTo(it.artifactId)
+                    .and(MavenMetadata::version.name).isEqualTo(it.version)
+                    .and(MavenMetadata::classifier.name).isEqualTo(it.classifier)
+                    .and(MavenMetadata::extension.name).isEqualTo(it.extension)
+                val existQuery = Query(criteria)
+                val hotRecord = mongoTemplate.find(
+                    existQuery,
+                    MavenMetadata::class.java, MAVEN_METADATA_COLLECTION_NAME
+                )
+                if (hotRecord.isEmpty() || overwrite) {
+                    val update = Update().set(MavenMetadata::buildNo.name, it.buildNo)
+                        .set(MavenMetadata::timestamp.name, it.timestamp)
+                    val upsertResult = mongoTemplate.upsert(existQuery, update, MAVEN_METADATA_COLLECTION_NAME)
+                    if (upsertResult.modifiedCount != 1L) {
+                        logger.error(
+                            "restore metadata record $it error for $version of $packageKey " +
+                                "in $projectId|$repoName"
+                        )
+                        throw SeparationDataStoreException(it.id!!)
+                    }
+                }
+            }
+            codeRecord.forEach {
+                val deletedResult = separationMavenMetadataDao.deleteById(it.id!!, it.separationDate)
+                if (deletedResult.deletedCount != 1L) {
+                    logger.error(
+                        "delete separation metadata $it error for $version of $packageKey" +
+                            " in $projectId|$repoName"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * 提取出对应的artifactId和groupId
+     */
+    private fun extractGroupIdAndArtifactId(packageKey: String): Pair<String, String> {
+        val params = PackageKeys.resolveGav(packageKey)
+        val artifactId = params.split(":").last()
+        val groupId = params.split(":").first()
+        return Pair(artifactId, groupId)
+    }
+
+    /**
+     * 获取对应package存储的节点路径
+     */
+    private fun extractPath(packageKey: String): String {
+        val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
+        return StringUtils.join(groupId.split("."), "/") + "/$artifactId"
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(MavenRepoSpecialDataSeparatorHandler::class.java)
+        private const val MAVEN_METADATA_COLLECTION_NAME = "maven_metadata"
+    }
+}
