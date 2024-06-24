@@ -36,4 +36,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class InactiveProjectEmptyFolderCleanupJobProperties(
     override var enabled: Boolean = true,
     override var cron: String = "0 0 0/12 * * ?",
-) : StatJobProperties()
+    var deletedEmptyFolder: Boolean = false,
+    ) : StatJobProperties()

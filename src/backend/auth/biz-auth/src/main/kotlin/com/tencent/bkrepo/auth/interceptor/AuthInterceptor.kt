@@ -121,7 +121,7 @@ class AuthInterceptor(
     }
 
     private fun checkUserFromBasic(request: HttpServletRequest, authHeader: String): Boolean {
-        val userAccess = userAccessApiSet.any { request.requestURI.startsWith(it) }
+        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
         val encodedCredentials = authHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
         val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
         val parts = decodedHeader.split(COLON)
@@ -188,8 +188,8 @@ class AuthInterceptor(
     }
 
     private fun setAuthAttribute(userId: String, appId: String, request: HttpServletRequest) {
-        val userAccess = userAccessApiSet.any { request.requestURI.startsWith(it) }
-        val anonymousAccess = anonymousAccessApiSet.any { request.requestURI.startsWith(it) }
+        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
+        val anonymousAccess = anonymousAccessApiSet.any { request.requestURI.contains(it) }
         val userInfo = userService.getUserInfoById(userId)
         val isAdmin: Boolean = userInfo?.admin ?: false
         if (userId.isNotEmpty() && userInfo == null && userId != ANONYMOUS_USER) {
