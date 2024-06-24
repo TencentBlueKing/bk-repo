@@ -28,16 +28,18 @@
 package com.tencent.bkrepo.repository.service.packages.impl.center
 
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterPackageCondition
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageDependentsDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.service.packages.impl.PackageDependentsServiceImpl
 import org.springframework.context.annotation.Conditional
+import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
 
 @Service
-@Conditional(CommitEdgeCenterCondition::class)
+@Conditional(CommitEdgeCenterPackageCondition::class)
+@Primary
 class CommitEdgeCenterPackageDependentsServiceImpl(
     private val packageDao: PackageDao,
     packageDependentsDao: PackageDependentsDao

@@ -30,8 +30,9 @@ package com.tencent.bkrepo.repository.service.repo.impl.edge
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.reportMetadataToCenter
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterProjectClient
@@ -70,6 +71,9 @@ class EdgeProjectServiceImpl(
     }
 
     override fun createProject(request: ProjectCreateRequest): ProjectInfo {
+        if (!reportMetadataToCenter(request.name)) {
+            return super.createProject(request)
+        }
         try {
             centerProjectClient.createProject(request)
         } catch (e: RemoteErrorCodeException) {

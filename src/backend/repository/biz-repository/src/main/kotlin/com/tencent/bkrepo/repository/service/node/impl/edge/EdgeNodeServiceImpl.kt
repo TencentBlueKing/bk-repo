@@ -29,9 +29,11 @@ package com.tencent.bkrepo.repository.service.node.impl.edge
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.ignoreException
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.fs.server.api.FsNodeClient
@@ -120,13 +122,25 @@ class EdgeNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
-        centerNodeClient.deleteNode(deleteRequest)
+        ignoreException(
+            projectId = deleteRequest.projectId,
+            repoName = deleteRequest.repoName,
+            messageCodes = listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+        ) {
+            centerNodeClient.deleteNode(deleteRequest)
+        }
         return NodeDeleteSupport(this).deleteNode(deleteRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
-        centerNodeClient.deleteNodes(nodesDeleteRequest)
+        ignoreException(
+            projectId = nodesDeleteRequest.projectId,
+            repoName = nodesDeleteRequest.repoName,
+            messageCodes = listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+        ) {
+            centerNodeClient.deleteNodes(nodesDeleteRequest)
+        }
         return NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
     }
 
@@ -161,24 +175,55 @@ class EdgeNodeServiceImpl(
         operator: String,
         path: String
     ): NodeDeleteResult {
+        ignoreException(projectId, repoName, listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND)) {
+            centerNodeClient.deleteNodeLastModifiedBeforeDate(projectId, repoName, path, date, operator)
+        }
         return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
-        centerNodeClient.moveNode(moveRequest)
+        ignoreException(
+            projectId = moveRequest.projectId,
+            repoName = moveRequest.repoName,
+            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+        ) {
+            moveRequest.destNodeFolder = nodeDao.findNode(
+                projectId = moveRequest.destProjectId ?: moveRequest.projectId,
+                repoName = moveRequest.destRepoName ?: moveRequest.srcRepoName,
+                fullPath = moveRequest.destPath ?: moveRequest.destFullPath
+            )?.folder
+            centerNodeClient.moveNode(moveRequest)
+        }
         return NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
-        centerNodeClient.copyNode(copyRequest)
+        ignoreException(
+            projectId = copyRequest.projectId,
+            repoName = copyRequest.repoName,
+            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+        ) {
+            copyRequest.destNodeFolder = nodeDao.findNode(
+                projectId = copyRequest.destProjectId ?: copyRequest.projectId,
+                repoName = copyRequest.destRepoName ?: copyRequest.srcRepoName,
+                fullPath = copyRequest.destPath ?: copyRequest.destFullPath
+            )?.folder
+            centerNodeClient.copyNode(copyRequest)
+        }
         return NodeMoveCopySupport(this).copyNode(copyRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun renameNode(renameRequest: NodeRenameRequest) {
-        centerNodeClient.renameNode(renameRequest)
+        ignoreException(
+            projectId = renameRequest.projectId,
+            repoName = renameRequest.repoName,
+            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+        ) {
+            centerNodeClient.renameNode(renameRequest)
+        }
         NodeRenameSupport(this).renameNode(renameRequest)
     }
 
