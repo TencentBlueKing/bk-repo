@@ -34,7 +34,9 @@ import com.tencent.bkrepo.common.artifact.exception.ProjectNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
@@ -43,6 +45,7 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
@@ -65,14 +68,18 @@ class LocalDataManager(
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient,
-    private val storageService: StorageService
+    private val storageService: StorageService,
+    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageProperties: StorageProperties,
 ) {
 
     /**
      * 获取blob文件数据
      */
     fun getBlobData(sha256: String, length: Long, repoInfo: RepositoryDetail): InputStream {
-        return storageService.load(sha256, Range.full(length), repoInfo.storageCredentials)
+        val range = Range.full(length)
+        return storageService.load(sha256, range, repoInfo.storageCredentials)
+            ?: loadFromOtherStorage(sha256, range, repoInfo.storageCredentials)
             ?: throw ArtifactNotFoundException(sha256)
     }
 
@@ -81,7 +88,28 @@ class LocalDataManager(
      */
     fun getBlobDataByRange(sha256: String, range: Range, repoInfo: RepositoryDetail): InputStream {
         return storageService.load(sha256, range, repoInfo.storageCredentials)
+            ?: loadFromOtherStorage(sha256, range, repoInfo.storageCredentials)
             ?: throw ArtifactNotFoundException(sha256)
+    }
+
+    /**
+     * 节点可能是从其他仓库复制过来，仓库存储不一样，对应文件还没有复制
+     */
+    private fun loadFromOtherStorage(
+        sha256: String, range: Range,
+        currentStorageCredentials: StorageCredentials?
+    ): InputStream? {
+        val allCredentials = storageCredentialsClient.list().data!! + storageProperties.defaultStorageCredentials()
+        var result: InputStream? = null
+        for (credential in allCredentials) {
+            val key = credential.key
+            if (key == currentStorageCredentials?.key) continue
+            result = storageService.load(sha256, range, credential)
+            if (result != null) {
+                break
+            }
+        }
+        return result
     }
 
     /**
@@ -161,8 +189,9 @@ class LocalDataManager(
         projectId: String, repoName: String, fullPath: String
     ): NodeDetail {
         return findNode(projectId, repoName, fullPath) ?: findDeletedNodeDetail(projectId, repoName, fullPath)
-            ?: throw NodeNotFoundException(fullPath)
+        ?: throw NodeNotFoundException(fullPath)
     }
+
     fun findDeletedNodeDetail(
         projectId: String, repoName: String, fullPath: String
     ): NodeDetail? {
@@ -202,7 +231,7 @@ class LocalDataManager(
         )
     }
 
-/**
+    /**
      * 分页查询包
      */
     fun listPackagePage(projectId: String, repoName: String, option: PackageListOption): List<PackageSummary> {

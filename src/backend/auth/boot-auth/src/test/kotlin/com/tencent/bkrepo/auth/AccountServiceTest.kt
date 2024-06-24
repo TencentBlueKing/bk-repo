@@ -70,25 +70,24 @@ class AccountServiceTest {
 
     @BeforeEach
     fun setUp() {
-        HttpContextHolder.getRequest().setAttribute(USER_KEY, "admin")
-        accountService.listAccount().filter { appIdList.contains(it.appId) }.forEach {
-            accountService.deleteAccount(it.appId)
-        }
         HttpContextHolder.getRequest().setAttribute(USER_KEY, userId)
+        accountService.listAccount().filter { appIdList.contains(it.appId) }.forEach {
+            accountService.deleteAccount(it.appId, userId)
+        }
     }
 
     @AfterEach
     fun teardown() {
-        HttpContextHolder.getRequest().setAttribute(USER_KEY, "admin")
+        HttpContextHolder.getRequest().setAttribute(USER_KEY, userId)
         accountService.listAccount().filter { appIdList.contains(it.appId) }.forEach {
-            accountService.deleteAccount(it.appId)
+            accountService.deleteAccount(it.appId, userId)
         }
     }
 
     @DisplayName("创建账户测试")
     fun createAccountTest() {
-        val account = accountService.createAccount(buildCreateAccountRequest())
-        assertThrows<ErrorCodeException> { accountService.createAccount(buildCreateAccountRequest()) }
+        val account = accountService.createAccount(buildCreateAccountRequest(), userId)
+        assertThrows<ErrorCodeException> { accountService.createAccount(buildCreateAccountRequest(), userId) }
         Assertions.assertEquals(account.appId, appId)
         Assertions.assertFalse(account.locked)
         Assertions.assertTrue(account.credentials.size == account.authorizationGrantTypes.size)
@@ -96,44 +95,45 @@ class AccountServiceTest {
 
     @DisplayName("查询账户测试")
     fun listAccountTest() {
-        accountService.createAccount(buildCreateAccountRequest())
-        accountService.createAccount(buildCreateAccountRequest(appId = "test1"))
-        accountService.createAccount(buildCreateAccountRequest(appId = "test2", locked = true))
-        Assertions.assertTrue(accountService.listOwnAccount().size == 3)
-        accountService.deleteAccount("test1")
-        accountService.deleteAccount("test2")
+        accountService.createAccount(buildCreateAccountRequest(), userId)
+        accountService.createAccount(buildCreateAccountRequest(appId = "test1"), userId)
+        accountService.createAccount(buildCreateAccountRequest(appId = "test2", locked = true), userId)
+        Assertions.assertTrue(accountService.listOwnAccount(userId).size == 3)
+        accountService.deleteAccount("test1", userId)
+        accountService.deleteAccount("test2", userId)
     }
 
     @DisplayName("删除账户测试")
     fun deleteAccountTest() {
-        accountService.createAccount(buildCreateAccountRequest())
-        accountService.deleteAccount(appId)
-        assertThrows<ErrorCodeException> { accountService.deleteAccount(appId) }
+        accountService.createAccount(buildCreateAccountRequest(), userId)
+        accountService.deleteAccount(appId, userId)
+        assertThrows<ErrorCodeException> { accountService.deleteAccount(appId, userId) }
     }
 
     @DisplayName("修改账户测试")
     fun updateAccountTest() {
-        assertThrows<ErrorCodeException> { accountService.updateAccount(buildUpdateAccountRequest()) }
-        accountService.createAccount(buildCreateAccountRequest())
-        var updateAccount = accountService.updateAccount(buildUpdateAccountRequest())
+        assertThrows<ErrorCodeException> { accountService.updateAccount(buildUpdateAccountRequest(), userId) }
+        accountService.createAccount(buildCreateAccountRequest(), userId)
+        var updateAccount = accountService.updateAccount(buildUpdateAccountRequest(), userId)
         Assertions.assertTrue(updateAccount)
-        var account = accountService.findAccountByAppId(appId)
+        var account = accountService.findAccountByAppId(appId, userId)
         Assertions.assertTrue(account.credentials.size == 1)
-        updateAccount = accountService.updateAccount(buildUpdateAccountRequest(authorizationGrantTypes = allTypes))
+        updateAccount =
+            accountService.updateAccount(buildUpdateAccountRequest(authorizationGrantTypes = allTypes), userId)
         Assertions.assertTrue(updateAccount)
-        account = accountService.findAccountByAppId(appId)
+        account = accountService.findAccountByAppId(appId, userId)
         Assertions.assertTrue(account.credentials.size == 2)
     }
 
     @DisplayName("创建ak/sk对测试")
     fun createCredentialTest() {
         assertThrows<ErrorCodeException> {
-            accountService.createCredential(appId, AuthorizationGrantType.AUTHORIZATION_CODE)
+            accountService.createCredential(appId, AuthorizationGrantType.AUTHORIZATION_CODE, userId)
         }
         // 创建账户每个认证授权类型会自带创建一个as/sk对
-        accountService.createAccount(buildCreateAccountRequest())
-        val credential = accountService.createCredential(appId, AuthorizationGrantType.AUTHORIZATION_CODE)
-        val account = accountService.findAccountByAppId(appId)
+        accountService.createAccount(buildCreateAccountRequest(), userId)
+        val credential = accountService.createCredential(appId, AuthorizationGrantType.AUTHORIZATION_CODE, userId)
+        val account = accountService.findAccountByAppId(appId, userId)
         Assertions.assertTrue(account.credentials.size == 3)
         with(credential) {
             Assertions.assertTrue(this.accessKey.length == 32)
@@ -143,25 +143,25 @@ class AccountServiceTest {
 
     @DisplayName("获取as/sk对测试")
     fun listCredentialsTest() {
-        accountService.createAccount(buildCreateAccountRequest())
-        val credentialsList = accountService.listCredentials(appId)
+        accountService.createAccount(buildCreateAccountRequest(), userId)
+        val credentialsList = accountService.listCredentials(appId, userId)
         Assertions.assertTrue(credentialsList.size == 2)
     }
 
     @DisplayName("删除as/sk对测试")
     fun deleteCredentialTest() {
-        val account = accountService.createAccount(buildCreateAccountRequest())
+        val account = accountService.createAccount(buildCreateAccountRequest(), userId)
         assertThrows<ErrorCodeException> {
-            accountService.deleteCredential(account.appId, account.credentials[0].accessKey)
+            accountService.deleteCredential(account.appId, account.credentials[0].accessKey, userId)
         }
-        accountService.createCredential(account.appId, AuthorizationGrantType.PLATFORM)
-        val result = accountService.deleteCredential(account.appId, account.credentials.last().accessKey)
+        accountService.createCredential(account.appId, AuthorizationGrantType.PLATFORM, userId)
+        val result = accountService.deleteCredential(account.appId, account.credentials.last().accessKey, userId)
         Assertions.assertTrue(result)
     }
 
     @DisplayName("更新ak/sk对状态测试")
     fun updateCredentialStatusTest() {
-        val account = accountService.createAccount(buildCreateAccountRequest())
+        val account = accountService.createAccount(buildCreateAccountRequest(), userId)
         val accessKey = account.credentials[0].accessKey
         val credentialStatus = account.credentials[0].status
         Assertions.assertEquals(credentialStatus, CredentialStatus.ENABLE)
@@ -171,7 +171,7 @@ class AccountServiceTest {
 
     @DisplayName("校验ak/sk")
     fun checkCredentialTest() {
-        val account = accountService.createAccount(buildCreateAccountRequest())
+        val account = accountService.createAccount(buildCreateAccountRequest(), userId)
         val accessKey = account.credentials[0].accessKey
         val secretKey = account.credentials[0].secretKey
         val checkCredential = accountService.checkCredential("accessKey", "secretKey")
