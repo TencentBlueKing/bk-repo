@@ -27,7 +27,10 @@
 
 package com.tencent.bkrepo.job.separation.service
 
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
+import org.springframework.data.domain.PageRequest
 import java.time.LocalDateTime
 
 interface SeparationTaskService {
@@ -37,4 +40,6 @@ interface SeparationTaskService {
     fun findDistinctSeparationDate(
         projectId: String? = null, repoName: String? = null
     ): Set<LocalDateTime>
+
+    fun findTasks(state: String? = null, pageRequest: PageRequest): Page<SeparationTask>
 }

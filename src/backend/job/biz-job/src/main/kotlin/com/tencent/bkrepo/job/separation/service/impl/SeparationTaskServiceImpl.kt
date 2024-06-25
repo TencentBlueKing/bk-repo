@@ -30,7 +30,9 @@ package com.tencent.bkrepo.job.separation.service.impl
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.job.RESTORE
 import com.tencent.bkrepo.job.SEPARATE
@@ -39,11 +41,14 @@ import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.model.TSeparationTask
 import com.tencent.bkrepo.job.separation.pojo.SeparationArtifactType
+import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask
+import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask.Companion.toDto
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -100,6 +105,12 @@ class SeparationTaskServiceImpl(
         )
         result.addAll(dateRecords)
         return result
+    }
+
+    override fun findTasks(state: String?, pageRequest: PageRequest): Page<SeparationTask> {
+        val count = separationTaskDao.count(state)
+        val records = separationTaskDao.find(state, pageRequest).map { it.toDto() }
+        return Pages.ofResponse(pageRequest, count, records)
     }
 
     private fun getRepoInfo(projectId: String, repoName: String): RepositoryDetail {

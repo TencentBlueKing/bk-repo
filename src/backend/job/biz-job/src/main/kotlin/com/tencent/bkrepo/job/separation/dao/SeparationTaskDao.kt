@@ -59,6 +59,8 @@ import com.tencent.bkrepo.job.separation.model.TSeparationTask
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -69,11 +71,25 @@ import java.time.LocalDateTime
 @Repository
 class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
 
+
+    fun find(state: String?, pageRequest: PageRequest): List<TSeparationTask> {
+        val criteria = Criteria()
+        state?.let { criteria.and(TSeparationTask::state.name).isEqualTo(it) }
+        return find(Query(criteria).with(pageRequest))
+    }
+
+    fun count(state: String?): Long {
+        val criteria = Criteria()
+        state?.let { criteria.and(TSeparationTask::state.name).isEqualTo(it) }
+        return count(Query(criteria))
+    }
+
     fun updateState(taskId: String, state: SeparationTaskState) {
         val criteria = where(TSeparationTask::id).isEqualTo(taskId)
         val update = Update().set(TSeparationTask::lastModifiedBy.name, SYSTEM_USER)
             .set(TSeparationTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSeparationTask::state.name, state.name)
+            .set(TSeparationTask::startDate.name, LocalDateTime.now())
         this.updateFirst(Query(criteria), update)
     }
 
@@ -86,6 +102,7 @@ class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
             .set(TSeparationTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSeparationTask::state.name, state.name)
             .set(TSeparationTask::totalCount.name, count)
+            .set(TSeparationTask::endDate.name, LocalDateTime.now())
         this.updateFirst(Query(criteria), update)
     }
 }

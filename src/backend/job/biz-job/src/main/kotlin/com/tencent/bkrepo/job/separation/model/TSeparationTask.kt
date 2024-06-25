@@ -81,6 +81,8 @@ data class TSeparationTask(
     val lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime,
     val separationDate: LocalDateTime,
+    val startDate: LocalDateTime? = null,
+    val endDate: LocalDateTime? = null,
     val totalCount: SeparationCount? = null,
     val type: String = SEPARATE,
     var content: SeparationContent,
