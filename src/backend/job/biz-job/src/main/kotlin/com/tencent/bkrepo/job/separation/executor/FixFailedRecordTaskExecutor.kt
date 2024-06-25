@@ -65,9 +65,9 @@ class FixFailedRecordTaskExecutor(
 
     override fun threadPoolExecutor(): ThreadPoolExecutor? = fixExecutor
 
-    override fun beforeExecute(context: SeparationContext) {}
+    override fun beforeExecute(context: SeparationContext) = Unit
 
-    override fun afterExecute(context: SeparationContext) {}
+    override fun afterExecute(context: SeparationContext) = Unit
 
     override fun doAction(context: SeparationContext) {
         fixPackageSeparationTask(context)

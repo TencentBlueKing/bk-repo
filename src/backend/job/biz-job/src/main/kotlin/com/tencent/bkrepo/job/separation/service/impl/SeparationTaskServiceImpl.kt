@@ -118,7 +118,10 @@ class SeparationTaskServiceImpl(
         with(request) {
             if (separationDate == null) {
                 logger.warn("Separation date [$separationDate] is illegal!")
-                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::separationDate.name)
+                throw BadRequestException(
+                    CommonMessageCode.PARAMETER_INVALID,
+                    SeparationTaskRequest::separationDate.name
+                )
             }
             if (LocalDateTime.now().minusDays(dataSeparationConfig.keepDays.toDays()).isAfter(separationDate)) {
                 return
@@ -131,7 +134,10 @@ class SeparationTaskServiceImpl(
                 }
             }
             logger.warn("Separation date [$separationDate] is illegal!")
-            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::separationDate.name)
+            throw BadRequestException(
+                CommonMessageCode.PARAMETER_INVALID,
+                SeparationTaskRequest::separationDate.name
+            )
         }
     }
 

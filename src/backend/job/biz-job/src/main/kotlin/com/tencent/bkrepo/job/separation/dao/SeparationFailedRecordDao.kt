@@ -59,10 +59,7 @@ import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.separation.model.TSeparationFailedRecord
 import com.tencent.bkrepo.job.separation.util.SeparationQueryHelper
 import org.springframework.data.mongodb.core.FindAndModifyOptions
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
