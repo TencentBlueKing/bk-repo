@@ -1,11 +1,14 @@
 import router from '@/router'
 
 const BASE_DIR = process.env.VUE_APP_BASE_DIR
-const LOGIN_SERVICE_URL = process.env.VUE_APP_LOGIN_SERVICE_URL
-const MODE_CONFIG = process.env.VUE_APP_MODE_CONFIG
-const MODE_CONFIG_STAND_ALONE = 'standalone'
-// const MODE_CONFIG_CI = 'ci'
-// const MODE_CONFIG_SAAS = 'saas'
+var PAAS_SERVICE_URL = '__BK_HTTP_SCHEMA__://__BK_REPO_PAAS_FQDN__'
+var LOGIN_SERVICE_URL = /^https?/.test(PAAS_SERVICE_URL)
+  ? PAAS_SERVICE_URL + '/login/'
+  : '__BK_REPO_PAAS_LOGIN_URL__'
+const MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
+// const MODE_CONFIG_STAND_ALONE = 'standalone'
+const MODE_CONFIG_CI = 'ci'
+const MODE_CONFIG_SAAS = 'saas'
 
 function getLoginUrl(redirectUrl) {
   const cUrl = location.origin + `/${BASE_DIR}` + (redirectUrl || '')
@@ -25,12 +28,12 @@ function getLoginUrl(redirectUrl) {
 }
 
 export function toLoginPage(redirectUrl) {
-  if (MODE_CONFIG === MODE_CONFIG_STAND_ALONE) {
-    router.push(`/login?redirect=${redirectUrl}`)
-  } else {
+  if (MODE_CONFIG === MODE_CONFIG_CI || MODE_CONFIG === MODE_CONFIG_SAAS) {
     window.postMessage({
       action: 'toggleLoginDialog'
     }, '*')
     location.href = getLoginUrl(redirectUrl)
+  } else {
+    router.push(`/login?redirect=${redirectUrl}`)
   }
 }
