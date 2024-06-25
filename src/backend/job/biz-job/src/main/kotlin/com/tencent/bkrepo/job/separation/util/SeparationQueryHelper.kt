@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.job.separation.util
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.job.SEPARATE
+import com.tencent.bkrepo.job.separation.model.TSeparationFailedRecord
 import com.tencent.bkrepo.job.separation.model.TSeparationNode
 import com.tencent.bkrepo.job.separation.model.TSeparationPackage
 import com.tencent.bkrepo.job.separation.model.TSeparationPackageVersion
@@ -125,6 +127,25 @@ object SeparationQueryHelper {
                 pathRegex?.let { and(TSeparationNode::fullPath.name).regex(".*${pathRegex}.*") }
             }
         return Query(criteria).withHint(FULL_PATH_IDX)
+    }
+
+    fun failedRecordQuery(
+        projectId: String,
+        repoName: String,
+        taskId: String,
+        packageId: String? = null,
+        versionId: String? = null,
+        nodeId: String? = null,
+        type: String = SEPARATE,
+    ): Query {
+        val criteria = Criteria().and(TSeparationFailedRecord::projectId.name).isEqualTo(projectId)
+            .and(TSeparationFailedRecord::repoName.name).isEqualTo(repoName)
+            .and(TSeparationFailedRecord::type.name).isEqualTo(type)
+            .and(TSeparationFailedRecord::taskId.name).isEqualTo(taskId)
+            .and(TSeparationFailedRecord::nodeId.name).isEqualTo(nodeId)
+            .and(TSeparationFailedRecord::packageId.name).isEqualTo(packageId)
+            .and(TSeparationFailedRecord::versionId.name).isEqualTo(versionId)
+        return Query(criteria)
     }
 
     private const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"

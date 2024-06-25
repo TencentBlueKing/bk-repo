@@ -80,7 +80,7 @@ data class TSeparationTask(
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime,
-    val separationDate: LocalDateTime? = null,
+    val separationDate: LocalDateTime,
     val totalCount: SeparationCount? = null,
     val type: String = SEPARATE,
     var content: SeparationContent,

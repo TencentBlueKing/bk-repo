@@ -125,7 +125,7 @@ class DataSeparatorImpl(
     ) {
         with(context) {
             validatePackageParams(pkg)
-            val criteria = buildPackageCriteria(projectId, repoName, separationDate!!, pkg)
+            val criteria = buildPackageCriteria(projectId, repoName, separationDate, pkg)
             val pageSize = BATCH_SIZE
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
@@ -172,7 +172,7 @@ class DataSeparatorImpl(
         packageInfo: PackageInfo,
     ) {
         with(context) {
-            val criteria = buildVersionCriteria(pkg, packageInfo, separationDate!!)
+            val criteria = buildVersionCriteria(pkg, packageInfo, separationDate)
             val pageSize = BATCH_SIZE
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
@@ -222,7 +222,7 @@ class DataSeparatorImpl(
     ) {
         with(context) {
             val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val date = separationDate!!.format(dateTimeFormatter)
+            val date = separationDate.format(dateTimeFormatter)
             val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
                 .and(REPO_NAME).isEqualTo(repoName)
                 .and(PACKAGE_KEY).isEqualTo(packageInfo.key)
@@ -251,7 +251,7 @@ class DataSeparatorImpl(
                     type = repoType,
                     packageKey = packageInfo.key,
                     version = packageVersionInfo.name,
-                    separationDate = separationDate!!,
+                    separationDate = separationDate,
                 )
                 logger.info("start to copy cold data $versionSeparationInfo in repo $projectId|$repoName")
                 // 查找出版本对应节点
@@ -273,7 +273,7 @@ class DataSeparatorImpl(
                 removeColdDataInSource(context, idSha256Map, packageInfo, packageVersionInfo)
                 setSuccessProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
                 if (context.fixTask) {
-                    removeFailedRecord(context, context.separationDate!!, packageInfo.id, packageVersionInfo.id)
+                    removeFailedRecord(context, packageInfo.id, packageVersionInfo.id)
                 }
             } catch (e: Exception) {
                 logger.error(
@@ -281,7 +281,7 @@ class DataSeparatorImpl(
                         " failed, error: ${e.message}"
                 )
                 saveFailedRecord(
-                    context, context.separationDate!!, packageInfo.id, packageVersionInfo.id,
+                    context, packageInfo.id, packageVersionInfo.id,
                 )
                 setFailedProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
             }
@@ -329,7 +329,7 @@ class DataSeparatorImpl(
         coldVersionRecord.packageId = packageId
         // 检查版本是否存在
         val oldVersion = separationPackageVersionDao.findByName(
-            packageId, packageVersionInfo.name, context.separationDate!!
+            packageId, packageVersionInfo.name, context.separationDate
         )
         if (oldVersion != null) {
             oldVersion.apply {
@@ -353,7 +353,7 @@ class DataSeparatorImpl(
             )
         } else {
             // create cold
-            val coldVersion = buildTSeparationPackageVersion(coldVersionRecord, context.separationDate!!)
+            val coldVersion = buildTSeparationPackageVersion(coldVersionRecord, context.separationDate)
             separationPackageVersionDao.save(coldVersion)
             logger.info(
                 "separation package version[${coldVersion.packageId}|${coldVersion.name}] " +
@@ -373,7 +373,7 @@ class DataSeparatorImpl(
         }
         var existColdPackage = separationPackageDao.findByKey(context.projectId, context.repoName, packageInfo.key)
         if (existColdPackage == null) {
-            existColdPackage = buildTSeparationPackage(coldPackageRecord, context.separationDate!!)
+            existColdPackage = buildTSeparationPackage(coldPackageRecord, context.separationDate)
             separationPackageDao.save(existColdPackage)
         } else {
             // 防止同一Package有多个，以历史降冷的Package信息为准
@@ -481,7 +481,7 @@ class DataSeparatorImpl(
                 storedColdNode = separationNodeDao.save(existedCodeNode)
                 logger.info("Update separation node ${nodeRecord.fullPath} success in $projectId|$repoName")
             } else {
-                val codeNode = buildTSeparationNode(nodeRecord, separationDate!!)
+                val codeNode = buildTSeparationNode(nodeRecord, separationDate)
                 storedColdNode = separationNodeDao.save(codeNode)
                 logger.info("Create separation node ${nodeRecord.fullPath} success in $projectId|$repoName")
             }
@@ -531,28 +531,32 @@ class DataSeparatorImpl(
                     break
                 }
                 data.forEach {
-                    try {
-                        val (id, sha256) = separateColdNode(context, it.fullPath, it.id)
-                        // 逻辑删除node,
-                        removeColdDataInSource(context, mutableMapOf(id to sha256))
-                        setSuccessProgress(context.separationProgress, nodeId = it.id)
-                        if (context.fixTask) {
-                            removeFailedRecord(context, context.separationDate!!, nodeId = it.id)
-                        }
-                    } catch (e: Exception) {
-                        logger.error(
-                            "copy cold node ${it.id} with path ${it.fullPath}" +
-                                " failed, error: ${e.message}"
-                        )
-                        saveFailedRecord(
-                            context, context.separationDate!!, nodeId = it.id
-                        )
-                        setFailedProgress(context.separationProgress, nodeId = it.id)
-                    }
+                    separateColdNode(context, it)
                 }
                 querySize = data.size
                 lastId = ObjectId(data.last().id)
             } while (querySize == pageSize)
+        }
+    }
+
+    private fun separateColdNode(context: SeparationContext, node: NodeBaseInfo) {
+        try {
+            val (id, sha256) = separateColdNode(context, node.fullPath, node.id)
+            // 逻辑删除node,
+            removeColdDataInSource(context, mutableMapOf(id to sha256))
+            setSuccessProgress(context.separationProgress, nodeId = node.id)
+            if (context.fixTask) {
+                removeFailedRecord(context, nodeId = node.id)
+            }
+        } catch (e: Exception) {
+            logger.error(
+                "copy cold node ${node.id} with path ${node.fullPath}" +
+                    " failed, error: ${e.message}"
+            )
+            saveFailedRecord(
+                context, nodeId = node.id
+            )
+            setFailedProgress(context.separationProgress, nodeId = node.id)
         }
     }
 

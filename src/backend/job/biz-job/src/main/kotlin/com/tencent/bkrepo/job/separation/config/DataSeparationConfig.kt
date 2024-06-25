@@ -59,7 +59,6 @@ import java.time.Duration
 
 @ConfigurationProperties("separation")
 data class DataSeparationConfig(
-    var enabled: Boolean = false,
     // 当前时间到（当前时间-keepDays）为热数据，不允许拆分，避免误操作将所有数据进行降冷
     var keepDays: Duration = Duration.ofDays(365),
     // 特殊项目仓库配置

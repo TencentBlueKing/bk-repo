@@ -54,7 +54,6 @@
 
 package com.tencent.bkrepo.job.separation.dao
 
-import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.mongo.dao.sharding.MonthRangeShardingMongoDao
 import com.tencent.bkrepo.job.separation.model.TSeparationPackageVersion
 import com.tencent.bkrepo.job.separation.util.SeparationQueryHelper
@@ -70,9 +69,5 @@ class SeparationPackageVersionDao : MonthRangeShardingMongoDao<TSeparationPackag
 
     fun findById(versionId: String, separationDate: LocalDateTime): TSeparationPackageVersion? {
         return this.findOne(SeparationQueryHelper.versionIdQuery(versionId, separationDate))
-    }
-
-    fun deleteById(versionId: String, separationDate: LocalDateTime): DeleteResult {
-        return this.remove(SeparationQueryHelper.versionIdQuery(versionId, separationDate))
     }
 }

@@ -61,7 +61,6 @@ import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
@@ -69,14 +68,6 @@ import java.time.LocalDateTime
 
 @Repository
 class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
-
-    fun findUndoTaskByProjectIdAndRepoName(projectId: String, repoName: String, type: String): List<TSeparationTask> {
-        val criteria = where(TSeparationTask::projectId).isEqualTo(projectId)
-            .and(TSeparationTask::repoName).isEqualTo(repoName)
-            .and(TSeparationTask::type).isEqualTo(type)
-            .and(TSeparationTask::state).isEqualTo(SeparationTaskState.PENDING.name)
-        return this.find(Query(criteria))
-    }
 
     fun updateState(taskId: String, state: SeparationTaskState) {
         val criteria = where(TSeparationTask::id).isEqualTo(taskId)

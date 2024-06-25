@@ -27,12 +27,9 @@
 
 package com.tencent.bkrepo.job.separation.service.impl
 
-import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
-import com.tencent.bkrepo.job.RESTORE
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
@@ -61,7 +58,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
 
 @Component
 class DataRestorerImpl(
@@ -105,17 +101,11 @@ class DataRestorerImpl(
 
 
     private fun handlePackageRestore(context: SeparationContext, pkg: PackageFilterInfo? = null) {
-        // TODO 需要支持恢复指定降冷日期内的数据
         with(context) {
             validatePackageParams(pkg)
-            if (context.restoreDates.isNullOrEmpty())
-                throw NotFoundException(
-                    CommonMessageCode.REQUEST_CONTENT_INVALID,
-                    "no separation task for $projectId|$repoName"
-                )
             var pageNumber = 0
             val pageSize = BATCH_SIZE
-            var querySize = 0
+            var querySize: Int
             val query = SeparationQueryHelper.packageNameQuery(projectId, repoName, pkg?.packageName, pkg?.packageRegex)
 
             do {
@@ -140,27 +130,25 @@ class DataRestorerImpl(
         packageInfo: TSeparationPackage,
     ) {
         with(context) {
-            context.restoreDates!!.forEach {
-                var pageNumber = 0
-                val pageSize = BATCH_SIZE
-                var querySize: Int
-                val query = SeparationQueryHelper.versionListQuery(
-                    packageInfo.id!!, it, nameRegex = pkg?.versionRegex, versionList = pkg?.versions
-                )
-                do {
-                    val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
-                    val data = separationPackageVersionDao.find(pageQuery)
-                    if (data.isEmpty()) {
-                        logger.warn("Could not find cold version $pkg in $projectId|$repoName !")
-                        break
-                    }
-                    data.forEach {
-                        restoreColdData(context, packageInfo, it)
-                    }
-                    querySize = data.size
-                    pageNumber++
-                } while (querySize == pageSize)
-            }
+            var pageNumber = 0
+            val pageSize = BATCH_SIZE
+            var querySize: Int
+            val query = SeparationQueryHelper.versionListQuery(
+                packageInfo.id!!, separationDate, nameRegex = pkg?.versionRegex, versionList = pkg?.versions
+            )
+            do {
+                val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
+                val data = separationPackageVersionDao.find(pageQuery)
+                if (data.isEmpty()) {
+                    logger.warn("Could not find cold version $pkg in $projectId|$repoName !")
+                    break
+                }
+                data.forEach {
+                    restoreColdData(context, packageInfo, it)
+                }
+                querySize = data.size
+                pageNumber++
+            } while (querySize == pageSize)
         }
     }
 
@@ -190,19 +178,19 @@ class DataRestorerImpl(
                     return
                 }
                 //  restore到热表, 并增加引用,
-                val idSha256Map = restoreColdNodes(context, nodeRecordsMap, packageVersionInfo.separationDate)
+                val idSha256Map = restoreColdNodes(context, nodeRecordsMap)
                 // copy对应依赖源特殊数据
                 RepoSpecialSeparationMappings.restoreRepoColdData(versionSeparationInfo)
                 // copy package以及version信息
                 restorePackageVersion(context, packageInfo, packageVersionInfo)
                 //删除package, 删除node,
                 removeCodeDataInSeparation(
-                    context, idSha256Map, packageVersionInfo.separationDate, packageInfo, packageVersionInfo
+                    context, idSha256Map, packageInfo, packageVersionInfo
                 )
                 setSuccessProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
                 if (context.fixTask) {
                     removeFailedRecord(
-                        context, packageVersionInfo.separationDate, packageInfo.id, packageVersionInfo.id, type = RESTORE
+                        context, packageInfo.id, packageVersionInfo.id
                     )
                 }
             } catch (e: Exception) {
@@ -211,7 +199,7 @@ class DataRestorerImpl(
                         " failed, error: ${e.message}"
                 )
                 saveFailedRecord(
-                    context, packageVersionInfo.separationDate, packageInfo.id, packageVersionInfo.id, type = RESTORE
+                    context, packageInfo.id, packageVersionInfo.id
                 )
                 setFailedProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
             }
@@ -220,19 +208,18 @@ class DataRestorerImpl(
 
 
     private fun restoreColdNodes(
-        context: SeparationContext, fullPaths: MutableMap<String, String>, separationDate: LocalDateTime
+        context: SeparationContext, fullPaths: MutableMap<String, String>
     ): MutableMap<String, String> {
         val idSha256Map = mutableMapOf<String, String>()
         fullPaths.forEach {
-            val (id, sha256) = restoreColdNode(context, it.value, it.key, separationDate)
+            val (id, sha256) = restoreColdNode(context, it.value, it.key)
             idSha256Map[id] = sha256
         }
         return idSha256Map
     }
 
     private fun restoreColdNode(
-        context: SeparationContext, fullPath: String,
-        id: String, separationDate: LocalDateTime
+        context: SeparationContext, fullPath: String, id: String
     ): Pair<String, String> {
         with(context) {
             val nodeRecord = separationNodeDao.findById(id, separationDate)
@@ -399,14 +386,14 @@ class DataRestorerImpl(
     }
 
     private fun removeCodeDataInSeparation(
-        context: SeparationContext, idSha256Map: MutableMap<String, String>, separationDate: LocalDateTime,
+        context: SeparationContext, idSha256Map: MutableMap<String, String>,
         packageInfo: TSeparationPackage? = null, packageVersionInfo: TSeparationPackageVersion? = null,
     ) {
         if (packageInfo != null && packageVersionInfo != null) {
             removeColdVersionFromSeparation(context, packageInfo, packageVersionInfo)
         }
         // 删除节点
-        removeColdNodeFromSeparation(context, idSha256Map, separationDate)
+        removeColdNodeFromSeparation(context, idSha256Map)
     }
 
     private fun removeColdVersionFromSeparation(
@@ -423,7 +410,6 @@ class DataRestorerImpl(
     private fun removeColdNodeFromSeparation(
         context: SeparationContext,
         idSha256Map: MutableMap<String, String>,
-        separationDate: LocalDateTime
     ) {
         with(context) {
             idSha256Map.forEach {
@@ -446,47 +432,46 @@ class DataRestorerImpl(
     private fun handleNodeRestore(context: SeparationContext, node: NodeFilterInfo? = null) {
         with(context) {
             validateNodeParams(node)
-            if (context.restoreDates.isNullOrEmpty())
-                throw NotFoundException(
-                    CommonMessageCode.REQUEST_CONTENT_INVALID,
-                    "no separation task for $projectId|$repoName"
+            var pageNumber = 0
+            val pageSize = BATCH_SIZE
+            var querySize: Int
+            val query = SeparationQueryHelper.pathQuery(
+                projectId, repoName, separationDate, node?.path, node?.pathRegex
+            )
+            do {
+                val nodeQuery = query.with(PageRequest.of(pageNumber, pageSize))
+                val data = separationNodeDao.find(nodeQuery)
+                if (data.isEmpty()) {
+                    logger.warn("Could not find cold node $node in $projectId|$repoName !")
+                    break
+                }
+                data.forEach { cNode ->
+                    restoreNode(context, cNode)
+                }
+                querySize = data.size
+                pageNumber++
+            } while (querySize == pageSize)
+        }
+    }
+
+    private fun restoreNode(context: SeparationContext, cNode: TSeparationNode) {
+        try {
+            val (id, sha256) = restoreColdNode(context, cNode.fullPath, cNode.id!!)
+            // 逻辑删除node,
+            removeCodeDataInSeparation(context, mutableMapOf(id to sha256))
+            setSuccessProgress(context.separationProgress, nodeId = cNode.id)
+            if (context.fixTask) {
+                removeFailedRecord(
+                    context, nodeId = cNode.id,
                 )
-            context.restoreDates.forEach {
-                var pageNumber = 0
-                val pageSize = BATCH_SIZE
-                var querySize = 0
-                val query = SeparationQueryHelper.pathQuery(projectId, repoName, it, node?.path, node?.pathRegex)
-                do {
-                    val nodeQuery = query.with(PageRequest.of(pageNumber, pageSize))
-                    val data = separationNodeDao.find(nodeQuery)
-                    if (data.isEmpty()) {
-                        logger.warn("Could not find cold node $node in $projectId|$repoName !")
-                        break
-                    }
-                    data.forEach { cNode ->
-                        try {
-                            val (id, sha256) = restoreColdNode(context, cNode.fullPath, cNode.id!!, it)
-                            // 逻辑删除node,
-                            removeCodeDataInSeparation(context, mutableMapOf(id to sha256), it)
-                            setSuccessProgress(context.separationProgress, nodeId = cNode.id)
-                            if (context.fixTask) {
-                                removeFailedRecord(
-                                    context, it, nodeId = cNode.id, type = RESTORE
-                                )
-                            }
-                        } catch (e: Exception) {
-                            logger.error(
-                                "restore cold node ${cNode.id} with path ${cNode.fullPath} at $it" +
-                                    " failed, error: ${e.message}"
-                            )
-                            saveFailedRecord(context, it, nodeId = cNode.id, type = RESTORE)
-                            setFailedProgress(context.separationProgress, nodeId = cNode.id)
-                        }
-                    }
-                    querySize = data.size
-                    pageNumber++
-                } while (querySize == pageSize)
             }
+        } catch (e: Exception) {
+            logger.error(
+                "restore cold node ${cNode.id} with path ${cNode.fullPath} " +
+                    "at ${context.separationDate} failed, error: ${e.message}"
+            )
+            saveFailedRecord(context, nodeId = cNode.id)
+            setFailedProgress(context.separationProgress, nodeId = cNode.id)
         }
     }
 

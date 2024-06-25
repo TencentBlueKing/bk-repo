@@ -62,16 +62,39 @@ class SeparationTaskServiceImpl(
         with(request) {
             val repo = getRepoInfo(projectId, repoName)
             contentCheck(request, repo)
-            if (!validateSeparationTaskParams(request)) return
-            val task = buildSeparationTask(request)
-            separationTaskDao.save(task)
+            when (type) {
+                SEPARATE -> {
+                    validateSeparateTaskParams(request)
+                    val task = buildSeparationTask(request)
+                    separationTaskDao.save(task)
+                }
+                RESTORE -> {
+                    val separatedDates = findDistinctSeparationDate(projectId, repoName)
+                    if (separatedDates.isEmpty()) {
+                        logger.warn("no cold data has been stored in $projectId|$repoName")
+                        throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::type.name)
+                    }
+                    separatedDates.forEach {
+                        request.separationDate = it
+                        val task = buildSeparationTask(request)
+                        separationTaskDao.save(task)
+                    }
+                }
+                else -> {
+                    logger.warn("unsupported task type $type")
+                    throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
+                }
+            }
+
         }
     }
 
-
-    override fun findDistinctSeparationDate(): Set<LocalDateTime> {
+    override fun findDistinctSeparationDate(projectId: String?, repoName: String?): Set<LocalDateTime> {
         val result = mutableSetOf<LocalDateTime>()
-        val query = Query(Criteria.where(TSeparationTask::type.name).isEqualTo(SEPARATE))
+        val criteria = Criteria.where(TSeparationTask::type.name).isEqualTo(SEPARATE)
+        projectId?.apply { criteria.and(TSeparationTask::projectId.name).isEqualTo(projectId) }
+        repoName?.apply { criteria.and(TSeparationTask::repoName.name).isEqualTo(repoName) }
+        val query = Query(criteria)
         val dateRecords = mongoTemplate.findDistinct(
             query, TSeparationTask::separationDate.name, SEPARATION_TASK_COLLECTION_NAME, LocalDateTime::class.java
         )
@@ -91,44 +114,39 @@ class SeparationTaskServiceImpl(
         return repo
     }
 
-
-    private fun validateSeparationTaskParams(request: SeparationTaskRequest): Boolean {
+    private fun validateSeparateTaskParams(request: SeparationTaskRequest) {
         with(request) {
-            if (type == RESTORE) return true
             if (separationDate == null) {
                 logger.warn("Separation date [$separationDate] is illegal!")
-                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
+                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::separationDate.name)
             }
             if (LocalDateTime.now().minusDays(dataSeparationConfig.keepDays.toDays()).isAfter(separationDate)) {
-                return true
+                return
             }
             val projectRepoKey = "$projectId/$repoName"
             dataSeparationConfig.specialRepos.forEach {
                 val regex = Regex(it.replace("*", ".*"))
                 if (regex.matches(projectRepoKey)) {
-                    return true
+                    return
                 }
             }
             logger.warn("Separation date [$separationDate] is illegal!")
-            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::separationDate.name)
         }
     }
 
-
     private fun contentCheck(request: SeparationTaskRequest, repo: RepositoryDetail) {
-        with(request) {
-            val separationArtifactType = when (repo.type) {
-                RepositoryType.GENERIC -> SeparationArtifactType.NODE
-                else -> SeparationArtifactType.PACKAGE
-            }
-            if (!request.content.packages.isNullOrEmpty() && separationArtifactType == SeparationArtifactType.NODE) {
-                logger.warn("Separation content [${request.content}] is illegal!")
-                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
-            }
-            if (!request.content.paths.isNullOrEmpty() && separationArtifactType == SeparationArtifactType.PACKAGE) {
-                logger.warn("Separation content [${request.content}] is illegal!")
-                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
-            }
+        val separationArtifactType = when (repo.type) {
+            RepositoryType.GENERIC -> SeparationArtifactType.NODE
+            else -> SeparationArtifactType.PACKAGE
+        }
+        if (!request.content.packages.isNullOrEmpty() && separationArtifactType == SeparationArtifactType.NODE) {
+            logger.warn("Separation content [${request.content}] is illegal!")
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
+        }
+        if (!request.content.paths.isNullOrEmpty() && separationArtifactType == SeparationArtifactType.PACKAGE) {
+            logger.warn("Separation content [${request.content}] is illegal!")
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
         }
     }
 
@@ -142,14 +160,13 @@ class SeparationTaskServiceImpl(
                 createdDate = LocalDateTime.now(),
                 lastModifiedDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
-                separationDate = separationDate?.toLocalDate()?.atStartOfDay(),
+                separationDate = separationDate!!.toLocalDate().atStartOfDay(),
                 content = content,
                 type = type,
                 overwrite = overwrite
             )
         }
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(SeparationTaskServiceImpl::class.java)

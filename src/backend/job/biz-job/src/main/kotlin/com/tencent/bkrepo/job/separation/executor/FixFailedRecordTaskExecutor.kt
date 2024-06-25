@@ -65,33 +65,34 @@ class FixFailedRecordTaskExecutor(
 
     override fun threadPoolExecutor(): ThreadPoolExecutor? = fixExecutor
 
-    override fun beforeExecute(context: SeparationContext) {
-    }
+    override fun beforeExecute(context: SeparationContext) {}
 
-    override fun afterExecute(context: SeparationContext) {
-    }
+    override fun afterExecute(context: SeparationContext) {}
 
     override fun doAction(context: SeparationContext) {
-        with(context) {
-            if (!task.content.packages.isNullOrEmpty()) {
-                task.content.packages!!.forEach {
-                    if (type == SEPARATE) {
-                        dataSeparator.packageSeparator(context, it)
-                    } else {
-                        dataRestorer.packageRestorer(context, it)
-                    }
-                }
-                return
+        fixPackageSeparationTask(context)
+        fixNodeSeparationTask(context)
+    }
+
+    private fun fixPackageSeparationTask(context: SeparationContext) {
+        if (context.task.content.packages.isNullOrEmpty()) return
+        context.task.content.packages!!.forEach {
+            if (context.type == SEPARATE) {
+                dataSeparator.packageSeparator(context, it)
+            } else {
+                dataRestorer.packageRestorer(context, it)
             }
-            if (!task.content.paths.isNullOrEmpty()) {
-                task.content.paths!!.forEach {
-                    dataSeparator.nodeSeparator(context, it)
-                    if (type == SEPARATE) {
-                        dataSeparator.nodeSeparator(context, it)
-                    } else {
-                        dataRestorer.nodeRestorer(context, it)
-                    }
-                }
+        }
+    }
+
+    private fun fixNodeSeparationTask(context: SeparationContext) {
+        if (context.task.content.paths.isNullOrEmpty()) return
+        context.task.content.paths!!.forEach {
+            dataSeparator.nodeSeparator(context, it)
+            if (context.type == SEPARATE) {
+                dataSeparator.nodeSeparator(context, it)
+            } else {
+                dataRestorer.nodeRestorer(context, it)
             }
         }
     }

@@ -34,5 +34,7 @@ interface SeparationTaskService {
 
     fun createSeparationTask(request: SeparationTaskRequest)
 
-    fun findDistinctSeparationDate(): Set<LocalDateTime>
+    fun findDistinctSeparationDate(
+        projectId: String? = null, repoName: String? = null
+    ): Set<LocalDateTime>
 }

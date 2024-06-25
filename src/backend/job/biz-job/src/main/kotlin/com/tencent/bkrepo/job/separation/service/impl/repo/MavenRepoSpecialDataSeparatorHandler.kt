@@ -36,6 +36,7 @@ import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.repo.SeparationMavenMetadataDao
 import com.tencent.bkrepo.job.separation.exception.SeparationDataStoreException
+import com.tencent.bkrepo.job.separation.model.repo.TSeparationMavenMetadataRecord
 import com.tencent.bkrepo.job.separation.pojo.VersionSeparationInfo
 import com.tencent.bkrepo.job.separation.pojo.query.MavenMetadata
 import com.tencent.bkrepo.job.separation.pojo.query.NodeBaseInfo
@@ -150,7 +151,7 @@ class MavenRepoSpecialDataSeparatorHandler(
             val versionPath = PathUtils.combinePath(packagePath, version)
             var pageNumber = 0
             val pageSize = BATCH_SIZE
-            var querySize = 0
+            var querySize: Int
             val query = SeparationQueryHelper.pathQuery(projectId, repoName, versionPath, separationDate)
             val fullPathsMap = mutableMapOf<String, String>()
             do {
@@ -176,48 +177,56 @@ class MavenRepoSpecialDataSeparatorHandler(
     override fun restoreRepoSpecialData(versionSeparationInfo: VersionSeparationInfo) {
         with(versionSeparationInfo) {
             val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
-            val codeRecord = separationMavenMetadataDao.search(
+            val coldRecord = separationMavenMetadataDao.search(
                 projectId, repoName, groupId, artifactId, version, separationDate
             )
-            if (codeRecord.isEmpty()) {
+            if (coldRecord.isEmpty()) {
                 logger.warn(
                     "No separation metadata record found " +
                         "for $version of $packageKey in $projectId|$repoName"
                 )
             }
-            codeRecord.forEach {
-                val criteria = Criteria.where(MavenMetadata::projectId.name).isEqualTo(it.projectId)
-                    .and(MavenMetadata::repoName.name).isEqualTo(it.repoName)
-                    .and(MavenMetadata::groupId.name).isEqualTo(it.groupId)
-                    .and(MavenMetadata::artifactId.name).isEqualTo(it.artifactId)
-                    .and(MavenMetadata::version.name).isEqualTo(it.version)
-                    .and(MavenMetadata::classifier.name).isEqualTo(it.classifier)
-                    .and(MavenMetadata::extension.name).isEqualTo(it.extension)
-                val existQuery = Query(criteria)
-                val hotRecord = mongoTemplate.find(
-                    existQuery,
-                    MavenMetadata::class.java, MAVEN_METADATA_COLLECTION_NAME
-                )
-                if (hotRecord.isEmpty() || overwrite) {
-                    val update = Update().set(MavenMetadata::buildNo.name, it.buildNo)
-                        .set(MavenMetadata::timestamp.name, it.timestamp)
-                    val upsertResult = mongoTemplate.upsert(existQuery, update, MAVEN_METADATA_COLLECTION_NAME)
-                    if (upsertResult.modifiedCount != 1L) {
-                        logger.error(
-                            "restore metadata record $it error for $version of $packageKey " +
-                                "in $projectId|$repoName"
-                        )
-                        throw SeparationDataStoreException(it.id!!)
-                    }
-                }
-            }
-            codeRecord.forEach {
+            restoreMetaData(coldRecord, versionSeparationInfo)
+            coldRecord.forEach {
                 val deletedResult = separationMavenMetadataDao.deleteById(it.id!!, it.separationDate)
                 if (deletedResult.deletedCount != 1L) {
                     logger.error(
                         "delete separation metadata $it error for $version of $packageKey" +
                             " in $projectId|$repoName"
                     )
+                }
+            }
+        }
+    }
+
+    private fun restoreMetaData(
+        coldRecord: List<TSeparationMavenMetadataRecord>,
+        versionSeparationInfo: VersionSeparationInfo
+    ) {
+        coldRecord.forEach {
+            val criteria = Criteria.where(MavenMetadata::projectId.name).isEqualTo(it.projectId)
+                .and(MavenMetadata::repoName.name).isEqualTo(it.repoName)
+                .and(MavenMetadata::groupId.name).isEqualTo(it.groupId)
+                .and(MavenMetadata::artifactId.name).isEqualTo(it.artifactId)
+                .and(MavenMetadata::version.name).isEqualTo(it.version)
+                .and(MavenMetadata::classifier.name).isEqualTo(it.classifier)
+                .and(MavenMetadata::extension.name).isEqualTo(it.extension)
+            val existQuery = Query(criteria)
+            val hotRecord = mongoTemplate.find(
+                existQuery,
+                MavenMetadata::class.java, MAVEN_METADATA_COLLECTION_NAME
+            )
+            if (hotRecord.isEmpty() || versionSeparationInfo.overwrite) {
+                val update = Update().set(MavenMetadata::buildNo.name, it.buildNo)
+                    .set(MavenMetadata::timestamp.name, it.timestamp)
+                val upsertResult = mongoTemplate.upsert(existQuery, update, MAVEN_METADATA_COLLECTION_NAME)
+                if (upsertResult.modifiedCount != 1L) {
+                    logger.error(
+                        "restore metadata record $it error for ${versionSeparationInfo.version} " +
+                            "of ${versionSeparationInfo.packageKey} in" +
+                            " ${versionSeparationInfo.projectId}|${versionSeparationInfo.repoName}"
+                    )
+                    throw SeparationDataStoreException(it.id!!)
                 }
             }
         }

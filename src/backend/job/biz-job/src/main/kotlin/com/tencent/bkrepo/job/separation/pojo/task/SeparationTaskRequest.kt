@@ -33,7 +33,7 @@ import java.time.LocalDateTime
 data class SeparationTaskRequest(
     val projectId: String,
     val repoName: String,
-    val separationDate: LocalDateTime? = null,
+    var separationDate: LocalDateTime? = null,
     val content: SeparationContent,
     val type: String,
     val overwrite: Boolean = false

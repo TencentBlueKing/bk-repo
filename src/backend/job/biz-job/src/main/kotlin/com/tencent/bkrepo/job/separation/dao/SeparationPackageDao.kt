@@ -64,8 +64,4 @@ class SeparationPackageDao : SimpleMongoDao<TSeparationPackage>() {
     fun findByKey(projectId: String, repoName: String, key: String): TSeparationPackage? {
         return this.findOne(SeparationQueryHelper.packageQuery(projectId, repoName, key))
     }
-
-    fun findByName(projectId: String, repoName: String, name: String): TSeparationPackage? {
-        return this.findOne(SeparationQueryHelper.packageNameQuery(projectId, repoName, name, null))
-    }
 }

@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.FILE_REFERENCE_COLLECTION_NAME
-import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
 import com.tencent.bkrepo.job.separation.pojo.PackageFilterInfo
@@ -44,7 +43,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import java.time.LocalDateTime
 
 open class AbstractHandler(
     private val mongoTemplate: MongoTemplate,
@@ -115,11 +113,9 @@ open class AbstractHandler(
 
     fun saveFailedRecord(
         context: SeparationContext,
-        actionDate: LocalDateTime,
         packageId: String? = null,
         versionId: String? = null,
         nodeId: String? = null,
-        type: String = SEPARATE,
     ) {
         separationFailedRecordDao.saveFailedRecord(
             projectId = context.projectId,
@@ -129,17 +125,15 @@ open class AbstractHandler(
             packageId = packageId,
             versionId = versionId,
             nodeId = nodeId,
-            actionDate = actionDate
+            actionDate = context.separationDate
         )
     }
 
     fun removeFailedRecord(
         context: SeparationContext,
-        actionDate: LocalDateTime,
         packageId: String? = null,
         versionId: String? = null,
         nodeId: String? = null,
-        type: String = SEPARATE,
     ) {
         separationFailedRecordDao.removeFailedRecord(
             projectId = context.projectId,

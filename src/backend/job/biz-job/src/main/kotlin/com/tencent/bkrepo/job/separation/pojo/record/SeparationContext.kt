@@ -36,7 +36,6 @@ import java.time.LocalDateTime
 class SeparationContext(
     val task: TSeparationTask,
     val repo: RepositoryDetail,
-    val restoreDates: List<LocalDateTime>? = null,
     val fixTask: Boolean = false,
 ) {
     val projectId: String = task.projectId
@@ -44,7 +43,7 @@ class SeparationContext(
     val repoType: RepositoryType = repo.type
     val credentialsKey: String? = repo.storageCredentials?.key
     var separationProgress = SeparationProgress()
-    var separationDate: LocalDateTime? = task.separationDate
+    var separationDate: LocalDateTime = task.separationDate
     var type: String = task.type
     var taskId: String = task.id!!
     val overwrite: Boolean = task.overwrite
