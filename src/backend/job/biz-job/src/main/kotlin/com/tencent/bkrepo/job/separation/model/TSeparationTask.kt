@@ -54,12 +54,11 @@
 
 package com.tencent.bkrepo.job.separation.model
 
-import com.tencent.bkrepo.job.separation.constant.SEPARATE
+import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.separation.model.TSeparationTask.Companion.TASK_TYPE_IDX
 import com.tencent.bkrepo.job.separation.model.TSeparationTask.Companion.TASK_TYPE_IDX_DEF
 import com.tencent.bkrepo.job.separation.pojo.SeparationContent
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationPointer
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -83,9 +82,8 @@ data class TSeparationTask(
     val lastModifiedDate: LocalDateTime,
     val separationDate: LocalDateTime? = null,
     val totalCount: SeparationCount? = null,
-    val lastRunId: SeparationPointer? = null,
     val type: String = SEPARATE,
-    val content: SeparationContent,
+    var content: SeparationContent,
     val state: String = SeparationTaskState.PENDING.name,
     val overwrite: Boolean = false
 ) {

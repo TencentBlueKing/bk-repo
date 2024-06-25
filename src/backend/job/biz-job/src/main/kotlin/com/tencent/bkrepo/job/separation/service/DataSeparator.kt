@@ -41,4 +41,5 @@ interface DataSeparator {
     fun versionSeparator(context: SeparationContext, version: VersionFilterInfo)
 
     fun nodeSeparator(context: SeparationContext, node: NodeFilterInfo)
+
 }

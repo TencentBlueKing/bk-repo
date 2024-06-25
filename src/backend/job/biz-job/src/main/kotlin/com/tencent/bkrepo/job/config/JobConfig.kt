@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.config
 
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
+import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -39,7 +40,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
  * Job配置
  * */
 @Configuration
-@EnableConfigurationProperties(JobProperties::class, MigrateRepoStorageProperties::class)
+@EnableConfigurationProperties(
+    JobProperties::class,
+    MigrateRepoStorageProperties::class,
+    DataSeparationConfig::class,
+)
 class JobConfig {
     @Bean
     fun blockThreadPoolTaskExecutorDecorator(

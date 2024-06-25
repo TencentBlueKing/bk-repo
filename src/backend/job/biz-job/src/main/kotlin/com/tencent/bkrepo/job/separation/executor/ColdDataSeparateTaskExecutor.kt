@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.job.separation.executor
 
+import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
-import com.tencent.bkrepo.job.separation.constant.SEPARATE
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.service.DataSeparator
@@ -45,7 +45,7 @@ class ColdDataSeparateTaskExecutor(
 ) : AbstractSeparationTaskExecutor(separationTaskDao) {
 
     private val separateExecutor: ThreadPoolExecutor by lazy {
-        SeparationUtils.buildThreadPoolExecutor(SEPARATE_TASK_NAME_PRIFIX, dataSeparationConfig.separateTaskConcurrency)
+        SeparationUtils.buildThreadPoolExecutor(SEPARATE_TASK_NAME_PREFIX, dataSeparationConfig.separateTaskConcurrency)
     }
 
     override fun filterTask(context: SeparationContext): Boolean {
@@ -55,7 +55,7 @@ class ColdDataSeparateTaskExecutor(
     override fun concurrencyCheck(): Boolean {
         val queueSize = separateExecutor.queue.size
         if (queueSize > dataSeparationConfig.separateTaskConcurrency) {
-            logger.warn("$queueSize task of separate is running or waiting")
+            logger.warn("$queueSize tasks are separating")
             return true
         }
         return false
@@ -85,6 +85,6 @@ class ColdDataSeparateTaskExecutor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ColdDataSeparateTaskExecutor::class.java)
-        private const val SEPARATE_TASK_NAME_PRIFIX = "separate-task"
+        private const val SEPARATE_TASK_NAME_PREFIX = "separate-task"
     }
 }

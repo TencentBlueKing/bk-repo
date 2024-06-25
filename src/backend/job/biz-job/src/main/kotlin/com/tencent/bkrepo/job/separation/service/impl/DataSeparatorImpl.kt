@@ -35,13 +35,12 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.NAME
+import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
+import com.tencent.bkrepo.job.PACKAGE_DOWNLOADS_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_DOWNLOAD_DATE
-import com.tencent.bkrepo.job.PACKAGE_ID
 import com.tencent.bkrepo.job.PACKAGE_KEY
 import com.tencent.bkrepo.job.PACKAGE_VERSION
-import com.tencent.bkrepo.job.separation.constant.PACKAGE_COLLECTION_NAME
-import com.tencent.bkrepo.job.separation.constant.PACKAGE_DOWNLOADS_COLLECTION_NAME
-import com.tencent.bkrepo.job.separation.constant.PACKAGE_VERSION_COLLECTION_NAME
+import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
@@ -88,7 +87,7 @@ class DataSeparatorImpl(
     private val separationPackageDao: SeparationPackageDao,
     private val separationFailedRecordDao: SeparationFailedRecordDao,
     private val separationNodeDao: SeparationNodeDao,
-) : AbstractHandler(mongoTemplate), DataSeparator {
+) : AbstractHandler(mongoTemplate, separationFailedRecordDao), DataSeparator {
     override fun repoSeparator(context: SeparationContext) {
         logger.info("start to do separation for repo ${context.projectId}|${context.repoName}")
         when (context.separationArtifactType) {
@@ -202,7 +201,7 @@ class DataSeparatorImpl(
         packageInfo: PackageInfo,
         separationDate: LocalDateTime
     ): Criteria {
-        val criteria = Criteria.where(PACKAGE_ID).isEqualTo(packageInfo.id)
+        val criteria = Criteria.where(PackageVersionInfo::packageId.name).isEqualTo(packageInfo.id)
             .and(LAST_MODIFIED_DATE).lte(separationDate)
         if (pkg != null) {
             if (pkg.versions.isNullOrEmpty()) {
@@ -273,15 +272,16 @@ class DataSeparatorImpl(
                 //删除package, 逻辑删除node,
                 removeColdDataInSource(context, idSha256Map, packageInfo, packageVersionInfo)
                 setSuccessProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
+                if (context.fixTask) {
+                    removeFailedRecord(context, context.separationDate!!, packageInfo.id, packageVersionInfo.id)
+                }
             } catch (e: Exception) {
                 logger.error(
                     "copy cold package ${packageInfo.key} with version ${packageVersionInfo.name}" +
                         " failed, error: ${e.message}"
                 )
-                separationFailedRecordDao.save(
-                    buildTSeparationFailedRecord(
-                        context, context.separationDate!!, packageInfo.id, packageVersionInfo.id,
-                    )
+                saveFailedRecord(
+                    context, context.separationDate!!, packageInfo.id, packageVersionInfo.id,
                 )
                 setFailedProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
             }
@@ -536,15 +536,16 @@ class DataSeparatorImpl(
                         // 逻辑删除node,
                         removeColdDataInSource(context, mutableMapOf(id to sha256))
                         setSuccessProgress(context.separationProgress, nodeId = it.id)
+                        if (context.fixTask) {
+                            removeFailedRecord(context, context.separationDate!!, nodeId = it.id)
+                        }
                     } catch (e: Exception) {
                         logger.error(
                             "copy cold node ${it.id} with path ${it.fullPath}" +
                                 " failed, error: ${e.message}"
                         )
-                        separationFailedRecordDao.save(
-                            buildTSeparationFailedRecord(
-                                context, context.separationDate!!, nodeId = it.id
-                            )
+                        saveFailedRecord(
+                            context, context.separationDate!!, nodeId = it.id
                         )
                         setFailedProgress(context.separationProgress, nodeId = it.id)
                     }

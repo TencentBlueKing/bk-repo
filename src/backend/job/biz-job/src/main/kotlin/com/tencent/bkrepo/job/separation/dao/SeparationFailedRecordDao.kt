@@ -55,8 +55,60 @@
 package com.tencent.bkrepo.job.separation.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.separation.model.TSeparationFailedRecord
+import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
-class SeparationFailedRecordDao : SimpleMongoDao<TSeparationFailedRecord>()
+class SeparationFailedRecordDao : SimpleMongoDao<TSeparationFailedRecord>() {
+
+    fun saveFailedRecord(
+        projectId: String,
+        repoName: String,
+        taskId: String,
+        actionDate: LocalDateTime,
+        packageId: String? = null,
+        versionId: String? = null,
+        nodeId: String? = null,
+        type: String = SEPARATE,
+    ) {
+        val criteria = Criteria().and(TSeparationFailedRecord::projectId.name).isEqualTo(projectId)
+            .and(TSeparationFailedRecord::repoName.name).isEqualTo(repoName)
+            .and(TSeparationFailedRecord::type.name).isEqualTo(type)
+            .and(TSeparationFailedRecord::taskId.name).isEqualTo(taskId)
+            .and(TSeparationFailedRecord::nodeId.name).isEqualTo(nodeId)
+            .and(TSeparationFailedRecord::packageId.name).isEqualTo(packageId)
+            .and(TSeparationFailedRecord::versionId.name).isEqualTo(versionId)
+        val update = Update()
+            .inc(TSeparationFailedRecord::triedTimes.name, 1)
+            .set(TSeparationFailedRecord::actionDate.name, actionDate)
+        val query = Query(criteria)
+        findAndModify(query, update, FindAndModifyOptions().returnNew(true), TSeparationFailedRecord::class.java)
+    }
+
+    fun removeFailedRecord(
+        projectId: String,
+        repoName: String,
+        taskId: String,
+        packageId: String? = null,
+        versionId: String? = null,
+        nodeId: String? = null,
+        type: String = SEPARATE,
+    ) {
+        val criteria = Criteria().and(TSeparationFailedRecord::projectId.name).isEqualTo(projectId)
+            .and(TSeparationFailedRecord::repoName.name).isEqualTo(repoName)
+            .and(TSeparationFailedRecord::type.name).isEqualTo(type)
+            .and(TSeparationFailedRecord::taskId.name).isEqualTo(taskId)
+            .and(TSeparationFailedRecord::nodeId.name).isEqualTo(nodeId)
+            .and(TSeparationFailedRecord::packageId.name).isEqualTo(packageId)
+            .and(TSeparationFailedRecord::versionId.name).isEqualTo(versionId)
+        val query = Query(criteria)
+        this.remove(query)
+    }
+}

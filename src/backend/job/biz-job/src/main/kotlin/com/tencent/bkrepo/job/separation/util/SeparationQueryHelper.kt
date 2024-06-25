@@ -81,7 +81,10 @@ object SeparationQueryHelper {
         return Query(criteria)
     }
 
-    fun versionListQuery(packageId: String, separationDate: LocalDateTime, nameRegex: String? = null, versionList: List<String>? = null): Query {
+    fun versionListQuery(
+        packageId: String, separationDate: LocalDateTime,
+        nameRegex: String? = null, versionList: List<String>? = null
+    ): Query {
         val criteria = where(TSeparationPackageVersion::packageId).isEqualTo(packageId)
             .and(TSeparationPackageVersion::separationDate).isEqualTo(separationDate)
             .apply {
@@ -107,7 +110,10 @@ object SeparationQueryHelper {
         return Query(criteria).withHint(FULL_PATH_IDX)
     }
 
-    fun pathQuery(projectId: String, repoName: String, separationDate: LocalDateTime, path: String? = null, pathRegex: String? = null): Query {
+    fun pathQuery(
+        projectId: String, repoName: String, separationDate: LocalDateTime,
+        path: String? = null, pathRegex: String? = null
+    ): Query {
         val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
             .and(TSeparationNode::repoName.name).isEqualTo(repoName)
             .and(TSeparationNode::folder.name).isEqualTo(false)

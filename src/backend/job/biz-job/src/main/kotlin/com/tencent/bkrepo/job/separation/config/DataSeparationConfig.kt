@@ -57,7 +57,7 @@ package com.tencent.bkrepo.job.separation.config
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
 
-@ConfigurationProperties("common.data.separation")
+@ConfigurationProperties("separation")
 data class DataSeparationConfig(
     var enabled: Boolean = false,
     // 当前时间到（当前时间-keepDays）为热数据，不允许拆分，避免误操作将所有数据进行降冷
@@ -68,6 +68,8 @@ data class DataSeparationConfig(
     var separateTaskConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
     // 允许同时执行的恢复任务数
     var restoreTaskConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
+    // 允许同时执行的fix任务数
+    var fixTaskConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
 )
 
 

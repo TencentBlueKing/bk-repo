@@ -27,65 +27,77 @@
 
 package com.tencent.bkrepo.job.separation.executor
 
-import com.tencent.bkrepo.job.RESTORE
+import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.service.DataRestorer
+import com.tencent.bkrepo.job.separation.service.DataSeparator
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
 
 @Component
-class ColdDataRestoreTaskExecutor(
+class FixFailedRecordTaskExecutor(
     separationTaskDao: SeparationTaskDao,
     private val dataSeparationConfig: DataSeparationConfig,
-    private val dataRestorer: DataRestorer
+    private val dataSeparator: DataSeparator,
+    private val dataRestorer: DataRestorer,
 ) : AbstractSeparationTaskExecutor(separationTaskDao) {
 
-
-    private val restoreExecutor: ThreadPoolExecutor by lazy {
-        SeparationUtils.buildThreadPoolExecutor(RESTORE_TASK_NAME_PREFIX, dataSeparationConfig.restoreTaskConcurrency)
+    private val fixExecutor: ThreadPoolExecutor by lazy {
+        SeparationUtils.buildThreadPoolExecutor(FIX_TASK_NAME_PREFIX, dataSeparationConfig.fixTaskConcurrency)
     }
 
     override fun filterTask(context: SeparationContext): Boolean {
-        return context.type != RESTORE
+        return false
     }
 
     override fun concurrencyCheck(): Boolean {
-        val queueSize = restoreExecutor.queue.size
-        if (queueSize > dataSeparationConfig.restoreTaskConcurrency) {
-            logger.warn("$queueSize tasks are restoring")
+        val queueSize = fixExecutor.queue.size
+        if (queueSize > dataSeparationConfig.fixTaskConcurrency) {
+            logger.warn("$queueSize tasks are fixing")
             return true
         }
         return false
     }
 
-    override fun threadPoolExecutor(): ThreadPoolExecutor? = restoreExecutor
+    override fun threadPoolExecutor(): ThreadPoolExecutor? = fixExecutor
+
+    override fun beforeExecute(context: SeparationContext) {
+    }
+
+    override fun afterExecute(context: SeparationContext) {
+    }
+
     override fun doAction(context: SeparationContext) {
         with(context) {
-            if (task.content.packages.isNullOrEmpty() && task.content.paths.isNullOrEmpty()) {
-                dataRestorer.repoRestorer(context)
-                return
-            }
             if (!task.content.packages.isNullOrEmpty()) {
                 task.content.packages!!.forEach {
-                    dataRestorer.packageRestorer(context, it)
+                    if (type == SEPARATE) {
+                        dataSeparator.packageSeparator(context, it)
+                    } else {
+                        dataRestorer.packageRestorer(context, it)
+                    }
                 }
                 return
             }
             if (!task.content.paths.isNullOrEmpty()) {
                 task.content.paths!!.forEach {
-                    dataRestorer.nodeRestorer(context, it)
+                    dataSeparator.nodeSeparator(context, it)
+                    if (type == SEPARATE) {
+                        dataSeparator.nodeSeparator(context, it)
+                    } else {
+                        dataRestorer.nodeRestorer(context, it)
+                    }
                 }
             }
         }
     }
 
-
     companion object {
-        private val logger = LoggerFactory.getLogger(ColdDataRestoreTaskExecutor::class.java)
-        private const val RESTORE_TASK_NAME_PREFIX = "restore-task"
+        private val logger = LoggerFactory.getLogger(FixFailedRecordTaskExecutor::class.java)
+        private const val FIX_TASK_NAME_PREFIX = "fix-task"
     }
 }

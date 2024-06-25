@@ -32,10 +32,10 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.job.RESTORE
+import com.tencent.bkrepo.job.SEPARATE
+import com.tencent.bkrepo.job.SEPARATION_TASK_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
-import com.tencent.bkrepo.job.separation.constant.RESTORE
-import com.tencent.bkrepo.job.separation.constant.SEPARATE
-import com.tencent.bkrepo.job.separation.constant.SEPARATION_TASK_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.model.TSeparationTask
 import com.tencent.bkrepo.job.separation.pojo.SeparationArtifactType

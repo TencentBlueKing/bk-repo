@@ -25,10 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.separation.pojo.record
+package com.tencent.bkrepo.job.config.properties
 
-data class SeparationResult(
-    val status: SeparationExecutionState,
-    val progress: SeparationProgress? = null,
-    val errorReason: String? = null,
-)
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.scheduling.annotation.Scheduled
+
+@ConfigurationProperties("job.fix-failed-data-separation")
+class FixFailedDataSeparationJobProperties(
+    override var enabled: Boolean = false,
+    override var cron: String = Scheduled.CRON_DISABLED,
+    var triedTimes: Int = 2
+) : MongodbJobProperties(enabled)

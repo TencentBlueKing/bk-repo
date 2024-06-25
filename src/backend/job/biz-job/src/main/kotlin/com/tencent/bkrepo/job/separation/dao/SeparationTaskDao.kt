@@ -57,7 +57,6 @@ package com.tencent.bkrepo.job.separation.dao
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.separation.model.TSeparationTask
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationPointer
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.data.mongodb.core.query.Query
@@ -87,13 +86,15 @@ class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
         this.updateFirst(Query(criteria), update)
     }
 
-    fun updateContentAndStat(taskId: String, state: SeparationTaskState, count: SeparationCount, lastRunId: SeparationPointer? = null) {
+    fun updateContentAndStat(
+        taskId: String, state: SeparationTaskState,
+        count: SeparationCount
+    ) {
         val criteria = where(TSeparationTask::id).isEqualTo(taskId)
         val update = Update().set(TSeparationTask::lastModifiedBy.name, SYSTEM_USER)
             .set(TSeparationTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSeparationTask::state.name, state.name)
             .set(TSeparationTask::totalCount.name, count)
-            .set(TSeparationTask::lastRunId.name, lastRunId)
         this.updateFirst(Query(criteria), update)
     }
 }

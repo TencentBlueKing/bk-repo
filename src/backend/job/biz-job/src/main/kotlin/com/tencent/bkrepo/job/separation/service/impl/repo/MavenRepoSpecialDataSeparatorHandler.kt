@@ -60,6 +60,7 @@ class MavenRepoSpecialDataSeparatorHandler(
     private val separationNodeDao: SeparationNodeDao,
     private val mongoTemplate: MongoTemplate,
 ) : RepoSpecialDataSeparator {
+
     override fun type(): RepositoryType {
         return RepositoryType.MAVEN
     }

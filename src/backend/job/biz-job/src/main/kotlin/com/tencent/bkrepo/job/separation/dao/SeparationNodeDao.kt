@@ -63,7 +63,11 @@ import java.time.LocalDateTime
 
 @Repository
 class SeparationNodeDao : MonthRangeShardingMongoDao<TSeparationNode>() {
-    fun findOne(projectId: String, repoName: String, versionPath: String, separationDate: LocalDateTime): TSeparationNode? {
+
+    fun findOne(
+        projectId: String, repoName: String,
+        versionPath: String, separationDate: LocalDateTime
+    ): TSeparationNode? {
         return this.findOne(SeparationQueryHelper.pathQuery(projectId, repoName, versionPath, separationDate))
     }
 

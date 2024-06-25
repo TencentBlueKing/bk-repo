@@ -28,10 +28,8 @@
 package com.tencent.bkrepo.job.separation.executor
 
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
-import com.tencent.bkrepo.job.separation.pojo.SeparationArtifactType
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationPointer
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ThreadPoolExecutor
@@ -58,7 +56,7 @@ abstract class AbstractSeparationTaskExecutor(
         with(context) {
             try {
                 logger.info("start to run task $task")
-                beforeExecute(task.id!!)
+                beforeExecute(context)
                 doAction(context)
             } catch (exception: Exception) {
                 logger.error("$task separate exception: $exception")
@@ -69,27 +67,17 @@ abstract class AbstractSeparationTaskExecutor(
         }
     }
 
-    private fun beforeExecute(taskId: String) {
-        separationTaskDao.updateState(taskId, SeparationTaskState.RUNNING)
+    open fun beforeExecute(context: SeparationContext) {
+        separationTaskDao.updateState(context.taskId, SeparationTaskState.RUNNING)
     }
 
-    private fun afterExecute(context: SeparationContext) {
+    open fun afterExecute(context: SeparationContext) {
         with(context) {
             val count = SeparationCount(separationProgress.success, separationProgress.failed)
-            val lastRunPointer = when (separationArtifactType) {
-                SeparationArtifactType.PACKAGE -> SeparationPointer(
-                    packageId = separationProgress.packageId,
-                    versionId = separationProgress.versionId
-                )
-                else -> {
-                    SeparationPointer(nodeId = separationProgress.nodeId)
-                }
-            }
             separationTaskDao.updateContentAndStat(
                 taskId,
                 SeparationTaskState.FINISHED,
                 count,
-                lastRunPointer
             )
         }
     }

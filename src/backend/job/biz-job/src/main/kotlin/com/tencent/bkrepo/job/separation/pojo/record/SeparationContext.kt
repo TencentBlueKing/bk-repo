@@ -36,7 +36,8 @@ import java.time.LocalDateTime
 class SeparationContext(
     val task: TSeparationTask,
     val repo: RepositoryDetail,
-    val restoreDates: List<LocalDateTime>? = null
+    val restoreDates: List<LocalDateTime>? = null,
+    val fixTask: Boolean = false,
 ) {
     val projectId: String = task.projectId
     val repoName: String = task.repoName

@@ -54,7 +54,7 @@
 
 package com.tencent.bkrepo.job.separation.model
 
-import com.tencent.bkrepo.job.separation.constant.SEPARATE
+import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.separation.model.TSeparationFailedRecord.Companion.RECORD_IDX
 import com.tencent.bkrepo.job.separation.model.TSeparationFailedRecord.Companion.RECORD_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -75,13 +75,13 @@ data class TSeparationFailedRecord(
     val id: String? = null,
     val projectId: String,
     val repoName: String,
-    val createdDate: LocalDateTime,
     val taskId: String,
+    val triedTimes: Int,
     val actionDate: LocalDateTime? = null,
     val type: String = SEPARATE,
     val packageId: String? = null,
     val versionId: String? = null,
-    val nodeId: String? = null
+    val nodeId: String? = null,
 ) {
     companion object {
         const val RECORD_IDX = "projectId_repoName_type"

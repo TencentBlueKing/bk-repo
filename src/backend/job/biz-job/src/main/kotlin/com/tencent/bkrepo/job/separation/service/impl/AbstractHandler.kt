@@ -30,9 +30,9 @@ package com.tencent.bkrepo.job.separation.service.impl
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
-import com.tencent.bkrepo.job.separation.constant.FILE_REFERENCE_COLLECTION_NAME
-import com.tencent.bkrepo.job.separation.constant.SEPARATE
-import com.tencent.bkrepo.job.separation.model.TSeparationFailedRecord
+import com.tencent.bkrepo.job.FILE_REFERENCE_COLLECTION_NAME
+import com.tencent.bkrepo.job.SEPARATE
+import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
 import com.tencent.bkrepo.job.separation.pojo.PackageFilterInfo
 import com.tencent.bkrepo.job.separation.pojo.query.FileReferenceInfo
@@ -46,8 +46,9 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
 
-abstract class AbstractHandler(
+open class AbstractHandler(
     private val mongoTemplate: MongoTemplate,
+    private val separationFailedRecordDao: SeparationFailedRecordDao,
 ) {
 
     fun validatePackageParams(pkg: PackageFilterInfo?) {
@@ -112,24 +113,42 @@ abstract class AbstractHandler(
         separationProgress.nodeId = nodeId
     }
 
-    fun buildTSeparationFailedRecord(
+    fun saveFailedRecord(
         context: SeparationContext,
         actionDate: LocalDateTime,
         packageId: String? = null,
         versionId: String? = null,
         nodeId: String? = null,
         type: String = SEPARATE,
-    ): TSeparationFailedRecord {
-        return TSeparationFailedRecord(
+    ) {
+        separationFailedRecordDao.saveFailedRecord(
             projectId = context.projectId,
             repoName = context.repoName,
-            createdDate = LocalDateTime.now(),
+            type = context.type,
             taskId = context.taskId,
-            actionDate = actionDate,
-            type = type,
             packageId = packageId,
             versionId = versionId,
-            nodeId = nodeId
+            nodeId = nodeId,
+            actionDate = actionDate
+        )
+    }
+
+    fun removeFailedRecord(
+        context: SeparationContext,
+        actionDate: LocalDateTime,
+        packageId: String? = null,
+        versionId: String? = null,
+        nodeId: String? = null,
+        type: String = SEPARATE,
+    ) {
+        separationFailedRecordDao.removeFailedRecord(
+            projectId = context.projectId,
+            repoName = context.repoName,
+            type = context.type,
+            taskId = context.taskId,
+            packageId = packageId,
+            versionId = versionId,
+            nodeId = nodeId,
         )
     }
 

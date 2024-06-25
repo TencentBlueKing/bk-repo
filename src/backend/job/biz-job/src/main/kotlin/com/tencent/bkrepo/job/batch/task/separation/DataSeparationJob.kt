@@ -25,15 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.separate
+package com.tencent.bkrepo.job.batch.task.separation
 
 import com.google.common.base.CaseFormat
+import com.tencent.bkrepo.job.RESTORE
+import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.DataSeparationJobProperties
-import com.tencent.bkrepo.job.separation.constant.RESTORE
-import com.tencent.bkrepo.job.separation.constant.SEPARATE
 import com.tencent.bkrepo.job.separation.executor.ColdDataRestoreTaskExecutor
 import com.tencent.bkrepo.job.separation.executor.ColdDataSeparateTaskExecutor
 import com.tencent.bkrepo.job.separation.executor.SeparationTaskExecutor
@@ -65,7 +65,11 @@ class DataSeparationJob(
         val query = Query(criteria)
         val tasks = mongoTemplate.find(query, TSeparationTask::class.java, SEPARATION_TASK_COLLECTION_NAME)
         tasks.forEach {
-            executeSeparationTask(it)
+            try {
+                executeSeparationTask(it)
+            } catch (e: Exception) {
+                logger.error("run separation task ${it.id} failed, error: ${e.message}")
+            }
         }
     }
 
@@ -86,7 +90,7 @@ class DataSeparationJob(
         val repo = RepositoryCommonUtils.getRepositoryDetail(task.projectId, task.repoName)
         return SeparationContext(
             task = task,
-            repo = repo
+            repo = repo,
         )
     }
 

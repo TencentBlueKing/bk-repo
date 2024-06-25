@@ -30,7 +30,7 @@ package com.tencent.bkrepo.job.config.properties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.scheduling.annotation.Scheduled
 
-@ConfigurationProperties("job.data-separation-report")
+@ConfigurationProperties("job.data-separation")
 class DataSeparationJobProperties(
     override var enabled: Boolean = false,
     override var cron: String = Scheduled.CRON_DISABLED,

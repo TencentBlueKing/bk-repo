@@ -30,9 +30,9 @@ package com.tencent.bkrepo.job.separation.service.impl
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.job.BATCH_SIZE
-import com.tencent.bkrepo.job.separation.constant.PACKAGE_COLLECTION_NAME
-import com.tencent.bkrepo.job.separation.constant.PACKAGE_VERSION_COLLECTION_NAME
-import com.tencent.bkrepo.job.separation.constant.RESTORE
+import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
+import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
+import com.tencent.bkrepo.job.RESTORE
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
@@ -70,7 +70,7 @@ class DataRestorerImpl(
     private val separationPackageDao: SeparationPackageDao,
     private val separationFailedRecordDao: SeparationFailedRecordDao,
     private val separationNodeDao: SeparationNodeDao
-) : AbstractHandler(mongoTemplate), DataRestorer {
+) : AbstractHandler(mongoTemplate, separationFailedRecordDao), DataRestorer {
     override fun repoRestorer(context: SeparationContext) {
         logger.info("start to do restore for repo ${context.projectId}|${context.repoName}")
         when (context.separationArtifactType) {
@@ -200,15 +200,18 @@ class DataRestorerImpl(
                     context, idSha256Map, packageVersionInfo.separationDate, packageInfo, packageVersionInfo
                 )
                 setSuccessProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
+                if (context.fixTask) {
+                    removeFailedRecord(
+                        context, packageVersionInfo.separationDate, packageInfo.id, packageVersionInfo.id, type = RESTORE
+                    )
+                }
             } catch (e: Exception) {
                 logger.error(
                     "copy cold package ${packageInfo.key} with version ${packageVersionInfo.name}" +
                         " failed, error: ${e.message}"
                 )
-                separationFailedRecordDao.save(
-                    buildTSeparationFailedRecord(
-                        context, packageVersionInfo.separationDate, packageInfo.id, packageVersionInfo.id, RESTORE
-                    )
+                saveFailedRecord(
+                    context, packageVersionInfo.separationDate, packageInfo.id, packageVersionInfo.id, type = RESTORE
                 )
                 setFailedProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
             }
@@ -466,12 +469,17 @@ class DataRestorerImpl(
                             // 逻辑删除node,
                             removeCodeDataInSeparation(context, mutableMapOf(id to sha256), it)
                             setSuccessProgress(context.separationProgress, nodeId = cNode.id)
+                            if (context.fixTask) {
+                                removeFailedRecord(
+                                    context, it, nodeId = cNode.id, type = RESTORE
+                                )
+                            }
                         } catch (e: Exception) {
                             logger.error(
                                 "restore cold node ${cNode.id} with path ${cNode.fullPath} at $it" +
                                     " failed, error: ${e.message}"
                             )
-                            separationFailedRecordDao.save(buildTSeparationFailedRecord(context, it, nodeId = cNode.id))
+                            saveFailedRecord(context, it, nodeId = cNode.id, type = RESTORE)
                             setFailedProgress(context.separationProgress, nodeId = cNode.id)
                         }
                     }
