@@ -83,7 +83,7 @@ class DevxWorkspaceUtils(
         private val executor by lazy {
             Executors.newFixedThreadPool(
                 Runtime.getRuntime().availableProcessors(),
-                ThreadFactoryBuilder().setNameFormat("fs-server-devx-%d").build(),
+                ThreadFactoryBuilder().setNameFormat("devx-access-%d").build(),
             )
         }
         private val projectIpsCache: AsyncLoadingCache<String, Set<String>> by lazy {
@@ -116,8 +116,8 @@ class DevxWorkspaceUtils(
             illegalIp.put(ip, projectId)
         }
 
-        fun refreshIpListCache(projectId: String) {
-            projectIpsCache.synchronous().refresh(projectId)
+        fun getLatestIpList(projectId: String): Mono<Set<String>> {
+            return listIp(projectId)
         }
 
         suspend fun getWorkspace(): Mono<DevXWorkSpace?> {
