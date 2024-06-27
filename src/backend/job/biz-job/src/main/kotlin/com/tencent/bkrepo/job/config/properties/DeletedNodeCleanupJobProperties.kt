@@ -37,5 +37,5 @@ class DeletedNodeCleanupJobProperties(
     /**
      * 保留引用丢失的node天数
      */
-    var keepRefLostNodeDays: Long = 15L,
+    var keepRefLostNodeDays: Long = 16L,
 ) : MongodbJobProperties()

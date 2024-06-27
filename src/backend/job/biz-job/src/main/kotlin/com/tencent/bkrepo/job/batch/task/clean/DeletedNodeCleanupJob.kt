@@ -204,6 +204,7 @@ class DeletedNodeCleanupJob(
 
         val newQuery = Query(buildCriteria(sha256, credentialsKey))
         mongoTemplate.findOne<FileReference>(newQuery, collectionName) ?: run {
+            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]")
             if (createIfNotExists) {
                 /* 早期FileReferenceCleanupJob在最终存储不存在时，不会判断对应的node是否存在而是直接删除引用，
                  * 导致出现node存在而引用不存在的情况，此处为这些引用缺失的数据补偿创建引用以清理对应的node及存储
@@ -211,7 +212,6 @@ class DeletedNodeCleanupJob(
                 mongoTemplate.upsert(newQuery, Update().inc(FileReference::count.name, 0), collectionName)
                 return true
             }
-            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]")
             return false
         }
 
