@@ -170,7 +170,9 @@ class DeletedNodeCleanupJob(
                 val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
                 val deletedDays = node.deleted?.let { Duration.between(it, LocalDateTime.now()).toDays() } ?: 0
                 val keepRefLostNode = deletedDays < properties.keepRefLostNodeDays
-                if (!decrementFileReferences(node.sha256, credentialsKey, true) && keepRefLostNode) {
+                // 需要保留Node用于排查问题时不补偿创建引用，避免引用创建后node记录可以被正常删除
+                val createIfNotExists = !keepRefLostNode
+                if (!decrementFileReferences(node.sha256, credentialsKey, createIfNotExists)) {
                     logger.warn("Clean up node fail collection[$collectionName], node[$node]")
                     return
                 }
@@ -207,6 +209,7 @@ class DeletedNodeCleanupJob(
                  * 导致出现node存在而引用不存在的情况，此处为这些引用缺失的数据补偿创建引用以清理对应的node及存储
                  */
                 mongoTemplate.upsert(newQuery, Update().inc(FileReference::count.name, 0), collectionName)
+                return true
             }
             logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]")
             return false
