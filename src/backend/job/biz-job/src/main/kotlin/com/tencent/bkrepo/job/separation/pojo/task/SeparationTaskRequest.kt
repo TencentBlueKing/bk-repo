@@ -33,8 +33,10 @@ import java.time.LocalDateTime
 data class SeparationTaskRequest(
     val projectId: String,
     val repoName: String,
-    var separationDate: LocalDateTime? = null,
     val content: SeparationContent,
     val type: String,
+    // 将冷时需要指定， 恢复时不需要
+    var separateAt: String? = null,
+    // 恢复时如果存在是否进行覆盖
     val overwrite: Boolean = false
 )

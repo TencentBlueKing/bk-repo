@@ -109,6 +109,5 @@ const val PACKAGE_DOWNLOADS_COLLECTION_NAME = "package_downloads"
 const val FILE_REFERENCE_COLLECTION_NAME = "file_reference"
 const val SEPARATION_TASK_COLLECTION_NAME = "separation_task"
 
-const val PACKAGE_KEY = "key"
 const val PACKAGE_VERSION = "version"
 const val PACKAGE_DOWNLOAD_DATE = "date"

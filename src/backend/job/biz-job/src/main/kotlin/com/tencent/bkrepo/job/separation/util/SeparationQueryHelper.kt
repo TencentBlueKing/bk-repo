@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.separation.util
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.separation.model.TSeparationFailedRecord
 import com.tencent.bkrepo.job.separation.model.TSeparationNode
@@ -46,7 +47,7 @@ import java.time.LocalDateTime
 object SeparationQueryHelper {
 
     fun packageIdQuery(packageId: String): Query {
-        val criteria = where(TSeparationPackage::id).isEqualTo(packageId)
+        val criteria = Criteria.where(ID).isEqualTo(packageId)
         return Query(criteria)
     }
 
@@ -57,26 +58,34 @@ object SeparationQueryHelper {
         return Query(criteria)
     }
 
-    fun packageNameQuery(projectId: String, repoName: String, packageName: String?, packageRegex: String?): Query {
+    fun packageKeyQuery(projectId: String, repoName: String, packageKey: String?, packageKeyRegex: String?): Query {
         val criteria = Criteria.where(TSeparationPackage::projectId.name).isEqualTo(projectId)
             .and(TSeparationPackage::repoName.name).isEqualTo(repoName)
             .apply {
-                packageName?.let { and(TSeparationPackage::name.name).isEqualTo(packageName) }
+                packageKey?.let { and(TSeparationPackage::key.name).isEqualTo(packageKey) }
             }.apply {
-                packageRegex?.let { and(TSeparationPackage::name.name).regex(".*${packageRegex}.*") }
+                packageKeyRegex?.let { and(TSeparationPackage::key.name).regex(".*${packageKeyRegex}.*") }
             }
         return Query(criteria)
     }
 
     fun versionIdQuery(versionId: String, separationDate: LocalDateTime): Query {
-        val criteria = where(TSeparationPackageVersion::id).isEqualTo(versionId)
-            .and(TSeparationPackageVersion::separationDate).isEqualTo(separationDate)
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
+        val criteria = Criteria.where(ID).isEqualTo(versionId)
+            .and(TSeparationPackageVersion::separationDate.name).gte(startOfDay).lt(endOfDay)
+        return Query(criteria)
+    }
+
+    fun versionIdRemoveQuery(versionId: String, separationDate: LocalDateTime): Query {
+        val criteria = Criteria.where(ID).isEqualTo(versionId)
+            .and(TSeparationPackageVersion::separationDate.name).isEqualTo(separationDate)
         return Query(criteria)
     }
 
     fun versionQuery(packageId: String, name: String? = null, separationDate: LocalDateTime): Query {
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = where(TSeparationPackageVersion::packageId).isEqualTo(packageId)
-            .and(TSeparationPackageVersion::separationDate).isEqualTo(separationDate)
+            .and(TSeparationPackageVersion::separationDate.name).gte(startOfDay).lt(endOfDay)
             .apply {
                 name?.let { and(TSeparationPackageVersion::name).isEqualTo(name) }
             }
@@ -87,8 +96,9 @@ object SeparationQueryHelper {
         packageId: String, separationDate: LocalDateTime,
         nameRegex: String? = null, versionList: List<String>? = null
     ): Query {
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = where(TSeparationPackageVersion::packageId).isEqualTo(packageId)
-            .and(TSeparationPackageVersion::separationDate).isEqualTo(separationDate)
+            .and(TSeparationPackageVersion::separationDate.name).gte(startOfDay).lt(endOfDay)
             .apply {
                 versionList?.let { and(TSeparationPackageVersion::name).`in`(versionList) }
             }.apply {
@@ -98,28 +108,46 @@ object SeparationQueryHelper {
     }
 
     fun nodeIdQuery(nodeId: String, separationDate: LocalDateTime): Query {
-        val criteria = Criteria.where(TSeparationNode::id.name).isEqualTo(nodeId)
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
+        val criteria = Criteria.where(ID).isEqualTo(nodeId)
+            .and(TSeparationNode::separationDate.name).gte(startOfDay).lt(endOfDay)
+        return Query(criteria)
+    }
+
+    fun nodeIdRemoveQuery(nodeId: String, separationDate: LocalDateTime): Query {
+        val criteria = Criteria.where(ID).isEqualTo(nodeId)
             .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
         return Query(criteria)
     }
 
     fun pathQuery(projectId: String, repoName: String, versionPath: String, separationDate: LocalDateTime): Query {
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
             .and(TSeparationNode::repoName.name).isEqualTo(repoName)
             .and(TSeparationNode::fullPath.name).regex("^${PathUtils.escapeRegex(versionPath)}")
             .and(TSeparationNode::folder.name).isEqualTo(false)
-            .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
+            .and(TSeparationNode::separationDate.name).gte(startOfDay).lt(endOfDay)
         return Query(criteria).withHint(FULL_PATH_IDX)
+    }
+
+    fun fullPathQuery(projectId: String, repoName: String, fullPath: String, separationDate: LocalDateTime): Query {
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
+        val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
+            .and(TSeparationNode::repoName.name).isEqualTo(repoName)
+            .and(TSeparationNode::fullPath.name).isEqualTo(fullPath)
+            .and(TSeparationNode::separationDate.name).gte(startOfDay).lt(endOfDay)
+        return Query(criteria)
     }
 
     fun pathQuery(
         projectId: String, repoName: String, separationDate: LocalDateTime,
         path: String? = null, pathRegex: String? = null
     ): Query {
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
             .and(TSeparationNode::repoName.name).isEqualTo(repoName)
             .and(TSeparationNode::folder.name).isEqualTo(false)
-            .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
+            .and(TSeparationNode::separationDate.name).gte(startOfDay).lt(endOfDay)
             .apply {
                 path?.let { and(TSeparationNode::fullPath.name).regex("^${PathUtils.escapeRegex(path)}") }
             }

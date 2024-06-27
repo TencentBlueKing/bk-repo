@@ -64,13 +64,17 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
 class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
 
+    fun findTasksByRepo(projectId: String, repoName: String): List<TSeparationTask> {
+        val criteria = Criteria().and(TSeparationTask::projectId.name).isEqualTo(projectId)
+            .and(TSeparationTask::repoName.name).isEqualTo(repoName)
+        return find(Query(criteria))
+    }
 
     fun find(state: String?, pageRequest: PageRequest): List<TSeparationTask> {
         val criteria = Criteria()
@@ -84,25 +88,13 @@ class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
         return count(Query(criteria))
     }
 
-    fun updateState(taskId: String, state: SeparationTaskState) {
-        val criteria = where(TSeparationTask::id).isEqualTo(taskId)
-        val update = Update().set(TSeparationTask::lastModifiedBy.name, SYSTEM_USER)
+    fun updateState(taskId: String, state: SeparationTaskState, count: SeparationCount? = null) {
+        val criteria = Criteria().and(ID).isEqualTo(taskId)
+        val update = Update.update(TSeparationTask::lastModifiedBy.name, SYSTEM_USER)
             .set(TSeparationTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSeparationTask::state.name, state.name)
             .set(TSeparationTask::startDate.name, LocalDateTime.now())
-        this.updateFirst(Query(criteria), update)
-    }
-
-    fun updateContentAndStat(
-        taskId: String, state: SeparationTaskState,
-        count: SeparationCount
-    ) {
-        val criteria = where(TSeparationTask::id).isEqualTo(taskId)
-        val update = Update().set(TSeparationTask::lastModifiedBy.name, SYSTEM_USER)
-            .set(TSeparationTask::lastModifiedDate.name, LocalDateTime.now())
-            .set(TSeparationTask::state.name, state.name)
-            .set(TSeparationTask::totalCount.name, count)
-            .set(TSeparationTask::endDate.name, LocalDateTime.now())
+        count?.let { update.set(TSeparationTask::totalCount.name, count) }
         this.updateFirst(Query(criteria), update)
     }
 }

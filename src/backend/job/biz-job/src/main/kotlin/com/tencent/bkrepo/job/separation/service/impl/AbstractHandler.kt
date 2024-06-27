@@ -50,10 +50,10 @@ open class AbstractHandler(
 ) {
 
     fun validatePackageParams(pkg: PackageFilterInfo?) {
-        if (pkg != null && pkg.packageName.isNullOrEmpty() && pkg.packageRegex.isNullOrEmpty()) {
+        if (pkg != null && pkg.packageKey.isNullOrEmpty() && pkg.packageKeyRegex.isNullOrEmpty()) {
             throw NotFoundException(
                 CommonMessageCode.PARAMETER_MISSING,
-                "packageName: ${pkg.packageName}|${pkg.packageRegex}"
+                "packageName: ${pkg.packageKey}|${pkg.packageKeyRegex}"
             )
         }
     }

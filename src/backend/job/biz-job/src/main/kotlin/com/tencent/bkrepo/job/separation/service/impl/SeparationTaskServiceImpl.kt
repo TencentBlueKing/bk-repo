@@ -55,6 +55,9 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 @Component
 class SeparationTaskServiceImpl(
@@ -80,14 +83,13 @@ class SeparationTaskServiceImpl(
                         throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::type.name)
                     }
                     separatedDates.forEach {
-                        request.separationDate = it
-                        val task = buildSeparationTask(request)
+                        val task = buildSeparationTask(request, it)
                         separationTaskDao.save(task)
                     }
                 }
                 else -> {
                     logger.warn("unsupported task type $type")
-                    throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
+                    throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::type.name)
                 }
             }
 
@@ -113,6 +115,11 @@ class SeparationTaskServiceImpl(
         return Pages.ofResponse(pageRequest, count, records)
     }
 
+    override fun repoSeparationCheck(projectId: String, repoName: String): Boolean {
+        val tasks = separationTaskDao.findTasksByRepo(projectId, repoName)
+        return tasks.isNotEmpty()
+    }
+
     private fun getRepoInfo(projectId: String, repoName: String): RepositoryDetail {
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data
             ?: run {
@@ -127,14 +134,23 @@ class SeparationTaskServiceImpl(
 
     private fun validateSeparateTaskParams(request: SeparationTaskRequest) {
         with(request) {
-            if (separationDate == null) {
-                logger.warn("Separation date [$separationDate] is illegal!")
+            if (separateAt == null) {
+                logger.warn("Separation date [$separateAt] is null!")
                 throw BadRequestException(
                     CommonMessageCode.PARAMETER_INVALID,
-                    SeparationTaskRequest::separationDate.name
+                    SeparationTaskRequest::separateAt.name
                 )
             }
-            if (LocalDateTime.now().minusDays(dataSeparationConfig.keepDays.toDays()).isAfter(separationDate)) {
+            val separateDate = try {
+                LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
+            } catch (e: DateTimeParseException) {
+                logger.warn("Separation date $separateAt parse error")
+                throw BadRequestException(
+                    CommonMessageCode.PARAMETER_INVALID,
+                    SeparationTaskRequest::separateAt.name
+                )
+            }
+            if (LocalDateTime.now().minusDays(dataSeparationConfig.keepDays.toDays()).isAfter(separateDate)) {
                 return
             }
             val projectRepoKey = "$projectId/$repoName"
@@ -144,10 +160,10 @@ class SeparationTaskServiceImpl(
                     return
                 }
             }
-            logger.warn("Separation date [$separationDate] is illegal!")
+            logger.warn("Separation date [$separateAt] is illegal!")
             throw BadRequestException(
                 CommonMessageCode.PARAMETER_INVALID,
-                SeparationTaskRequest::separationDate.name
+                SeparationTaskRequest::separateAt.name
             )
         }
     }
@@ -167,9 +183,13 @@ class SeparationTaskServiceImpl(
         }
     }
 
-    private fun buildSeparationTask(request: SeparationTaskRequest): TSeparationTask {
+    private fun buildSeparationTask(
+        request: SeparationTaskRequest, restoreDate: LocalDateTime? = null
+    ): TSeparationTask {
         with(request) {
             val userId = SecurityUtils.getUserId()
+            val date = restoreDate ?: LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
+            val separateDate = LocalDateTime.of(date.toLocalDate(), LocalTime.MAX)
             return TSeparationTask(
                 projectId = projectId,
                 repoName = repoName,
@@ -177,7 +197,7 @@ class SeparationTaskServiceImpl(
                 createdDate = LocalDateTime.now(),
                 lastModifiedDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
-                separationDate = separationDate!!.toLocalDate().atStartOfDay(),
+                separationDate = separateDate,
                 content = content,
                 type = type,
                 overwrite = overwrite

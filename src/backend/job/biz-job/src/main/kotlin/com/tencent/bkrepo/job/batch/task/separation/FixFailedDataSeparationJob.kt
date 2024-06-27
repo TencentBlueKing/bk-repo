@@ -132,7 +132,7 @@ class FixFailedDataSeparationJob(
                 task.content.paths = content
             }
             else -> {
-                val (packageName, version) = when (task.type) {
+                val (packageKey, version) = when (task.type) {
                     SEPARATE -> {
                         val packageQuery = Query(Criteria.where(ID).isEqualTo(record.packageId))
                         val packageInfo = mongoTemplate.findOne(
@@ -150,7 +150,7 @@ class FixFailedDataSeparationJob(
                             logger.error("version ${record.versionId} is deleted")
                             throw SeparationDataNotFoundException(record.id!!)
                         }
-                        Pair(packageInfo.name, versionInfo.name)
+                        Pair(packageInfo.key, versionInfo.name)
                     }
                     else -> {
                         val packageInfo = separationPackageDao.findById(record.packageId!!)
@@ -163,10 +163,10 @@ class FixFailedDataSeparationJob(
                             logger.error("cold version ${record.versionId} in ${record.actionDate}  is deleted")
                             throw SeparationDataNotFoundException(record.id!!)
                         }
-                        Pair(packageInfo.name, versionInfo.name)
+                        Pair(packageInfo.key, versionInfo.name)
                     }
                 }
-                val content = mutableListOf(PackageFilterInfo(packageName = packageName, versions = listOf(version)))
+                val content = mutableListOf(PackageFilterInfo(packageKey = packageKey, versions = listOf(version)))
                 task.content.paths = null
                 task.content.packages = content
             }
@@ -182,7 +182,6 @@ class FixFailedDataSeparationJob(
         return SeparationContext(
             task = task,
             repo = repo,
-            fixTask = true
         )
     }
 

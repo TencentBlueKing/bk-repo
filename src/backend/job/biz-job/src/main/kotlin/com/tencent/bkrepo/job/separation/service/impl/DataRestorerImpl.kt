@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.separation.service.impl
 
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
@@ -51,13 +52,17 @@ import com.tencent.bkrepo.job.separation.service.DataRestorer
 import com.tencent.bkrepo.job.separation.service.impl.repo.RepoSpecialSeparationMappings
 import com.tencent.bkrepo.job.separation.util.SeparationQueryHelper
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 @Component
 class DataRestorerImpl(
@@ -85,7 +90,7 @@ class DataRestorerImpl(
     override fun versionRestorer(context: SeparationContext, version: VersionFilterInfo) {
         logger.info("start to do restore for version $version in repo ${context.projectId}|${context.repoName}")
         val pkg = PackageFilterInfo(
-            packageName = version.packageName,
+            packageKey = version.packageKey,
             versions = version.versions,
             versionRegex = version.versionRegex
         )
@@ -106,7 +111,9 @@ class DataRestorerImpl(
             var pageNumber = 0
             val pageSize = BATCH_SIZE
             var querySize: Int
-            val query = SeparationQueryHelper.packageNameQuery(projectId, repoName, pkg?.packageName, pkg?.packageRegex)
+            val query = SeparationQueryHelper.packageKeyQuery(
+                projectId, repoName, pkg?.packageKey, pkg?.packageKeyRegex
+            )
 
             do {
                 val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
@@ -140,7 +147,7 @@ class DataRestorerImpl(
                 val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
                 val data = separationPackageVersionDao.find(pageQuery)
                 if (data.isEmpty()) {
-                    logger.warn("Could not find cold version $pkg in $projectId|$repoName !")
+                    logger.warn("Could not find cold version $pkg before $separationDate in $projectId|$repoName !")
                     break
                 }
                 data.forEach {
@@ -159,14 +166,8 @@ class DataRestorerImpl(
     ) {
         with(context) {
             try {
-                val versionSeparationInfo = VersionSeparationInfo(
-                    projectId = projectId,
-                    repoName = repoName,
-                    type = repoType,
-                    packageKey = packageInfo.key,
-                    version = packageVersionInfo.name,
-                    separationDate = packageVersionInfo.separationDate,
-                    overwrite = overwrite
+                val versionSeparationInfo = buildVersionSeparationInfo(
+                    context, packageInfo.key, packageVersionInfo.name
                 )
                 // 查找出版本对应节点
                 val nodeRecordsMap = RepoSpecialSeparationMappings.getRestoreNodesOfVersion(versionSeparationInfo)
@@ -188,14 +189,12 @@ class DataRestorerImpl(
                     context, idSha256Map, packageInfo, packageVersionInfo
                 )
                 setSuccessProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
-                if (context.fixTask) {
-                    removeFailedRecord(
-                        context, packageInfo.id, packageVersionInfo.id
-                    )
-                }
+                removeFailedRecord(
+                    context, packageInfo.id, packageVersionInfo.id
+                )
             } catch (e: Exception) {
                 logger.error(
-                    "copy cold package ${packageInfo.key} with version ${packageVersionInfo.name}" +
+                    "restore cold package ${packageInfo.key} with version ${packageVersionInfo.name}" +
                         " failed, error: ${e.message}"
                 )
                 saveFailedRecord(
@@ -206,6 +205,23 @@ class DataRestorerImpl(
         }
     }
 
+
+    private fun buildVersionSeparationInfo(
+        context: SeparationContext, packageKey: String,
+        version: String
+    ): VersionSeparationInfo {
+        with(context) {
+            return VersionSeparationInfo(
+                projectId = projectId,
+                repoName = repoName,
+                type = repoType,
+                packageKey = packageKey,
+                version = version,
+                separationDate = separationDate,
+                overwrite = overwrite
+            )
+        }
+    }
 
     private fun restoreColdNodes(
         context: SeparationContext, fullPaths: MutableMap<String, String>
@@ -247,33 +263,52 @@ class DataRestorerImpl(
             )
             // 插入前判断热表中 node 是否存在，如存在根据配置是否覆盖
             val hotNode = mongoTemplate.findOne(existNodeQuery, NodeDetailInfo::class.java, nodeCollectionName)
-            val storedHotNode: NodeDetailInfo
-            if (hotNode != null && overwrite) {
-                hotNode.apply {
-                    expireDate = nodeRecord.expireDate
-                    size = nodeRecord.size
-                    sha256 = nodeRecord.sha256
-                    md5 = nodeRecord.md5
-                    nodeNum = nodeRecord.nodeNum
-                    metadata = nodeRecord.metadata
-                    lastModifiedBy = nodeRecord.lastModifiedBy
-                    lastModifiedDate = nodeRecord.lastModifiedDate
-                    lastAccessDate = nodeRecord.lastAccessDate
-                    copyFromCredentialsKey = nodeRecord.copyFromCredentialsKey
-                    copyIntoCredentialsKey = nodeRecord.copyIntoCredentialsKey
-                    clusterNames = nodeRecord.clusterNames
-                    archived = nodeRecord.archived
-                    compressed = nodeRecord.compressed
+            // 如果存在而且不需要覆盖，则直接返回
+            if (hotNode != null && !overwrite) return
+            try {
+                if (hotNode != null && overwrite) {
+                    // 存在则先删除，再新增，这样出问题也可以恢复删除节点
+                    removeExistNode(hotNode, nodeCollectionName)
                 }
-                storedHotNode = mongoTemplate.save(hotNode, nodeCollectionName)
-                logger.info("restore update hot node ${nodeRecord.fullPath} success in $projectId|$repoName")
-            } else {
                 val codeNode = buildNodeDetailInfo(nodeRecord)
-                storedHotNode = mongoTemplate.save(codeNode, nodeCollectionName)
-                logger.info("restore create hot node ${nodeRecord.fullPath} success in $projectId|$repoName")
+                mongoTemplate.save(codeNode, nodeCollectionName)
+                logger.info(
+                    "restore create hot node ${nodeRecord.id}" +
+                        " with ${nodeRecord.fullPath} success in $projectId|$repoName"
+                )
+                if (!sha256Check(nodeRecord.folder, nodeRecord.sha256)) return
+            } catch (e: DuplicateKeyException) {
+                logger.warn(
+                    "restore hot node ${nodeRecord.id} with fullPath ${nodeRecord.fullPath} occurred" +
+                        " DuplicateKeyException in $projectId|$repoName"
+                )
+                return
             }
-            if (!sha256Check(nodeRecord.folder, nodeRecord.sha256)) return
-            increment(storedHotNode.sha256!!, credentialsKey, 1)
+            // 只有新增的时候才去尽显文件索引新增
+            increment(nodeRecord.sha256!!, credentialsKey, 1)
+        }
+    }
+
+    private fun removeExistNode(
+        hotNode: NodeDetailInfo,
+        nodeCollectionName: String
+    ) {
+        val nodeQuery = Query(Criteria.where(ID).isEqualTo(hotNode.id))
+        // 逻辑删除， 同时删除索引
+        val update = Update()
+            .set(NodeDetailInfo::lastModifiedBy.name, SYSTEM_USER)
+            .set(NodeDetailInfo::deleted.name, LocalDateTime.now())
+        val updateResult = mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
+        if (updateResult.modifiedCount != 1L) {
+            logger.error(
+                "delete exist hot node failed with id ${hotNode.id} " +
+                    "and fullPath ${hotNode.fullPath} in ${hotNode.projectId}|${hotNode.repoName}"
+            )
+        } else {
+            logger.info(
+                "delete exist node success with id ${hotNode.id} " +
+                    "and fullPath ${hotNode.fullPath} in ${hotNode.projectId}|${hotNode.repoName}"
+            )
         }
     }
 
@@ -295,7 +330,7 @@ class DataRestorerImpl(
         )
         if (storedColdVersion == null) {
             logger.error(
-                "restore separation version $packageVersionInfo with packageId $packageId" +
+                "restore hot version $packageVersionInfo with packageId $packageId" +
                     " failed in ${context.projectId}|${context.repoName}"
             )
             throw SeparationDataNotFoundException(packageVersionInfo.id!!)
@@ -309,34 +344,55 @@ class DataRestorerImpl(
             VersionDetailInfo::class.java, PACKAGE_VERSION_COLLECTION_NAME
         )
         storedColdVersion.packageId = packageId
-        if (existHotVersionRecord != null && context.overwrite) {
-            existHotVersionRecord.apply {
-                lastModifiedBy = storedColdVersion.lastModifiedBy
-                lastModifiedDate = storedColdVersion.lastModifiedDate
-                size = storedColdVersion.size
-                ordinal = storedColdVersion.ordinal
-                downloads = storedColdVersion.downloads
-                manifestPath = storedColdVersion.manifestPath
-                artifactPath = storedColdVersion.artifactPath
-                stageTag = storedColdVersion.stageTag
-                metadata = storedColdVersion.metadata
-                tags = storedColdVersion.tags
-                extension = storedColdVersion.extension
-                clusterNames = storedColdVersion.clusterNames
-            }
-            mongoTemplate.save(existHotVersionRecord, PACKAGE_VERSION_COLLECTION_NAME)
+
+        // 存在且不覆盖直接返回
+        if (existHotVersionRecord != null && !context.overwrite) {
             logger.info(
-                "restore update package version[${packageId}|${existHotVersionRecord.name}] " +
-                    "success in ${context.projectId}|${context.repoName}"
+                "restore package version[${packageId}|${existHotVersionRecord.name}] exist " +
+                    "in ${context.projectId}|${context.repoName}"
             )
-        } else {
-            existHotVersionRecord = buildVersionDetailInfo(storedColdVersion)
-            mongoTemplate.save(existHotVersionRecord, PACKAGE_VERSION_COLLECTION_NAME)
-            logger.info(
-                "restore package version[${packageId}|${existHotVersionRecord.name}] " +
-                    "success in ${context.projectId}|${context.repoName}"
+            return
+        }
+        try {
+            if (existHotVersionRecord != null && context.overwrite) {
+                val update = buildPackageVersionUpdate(storedColdVersion)
+                mongoTemplate.updateFirst(versionQuery, update, PACKAGE_VERSION_COLLECTION_NAME)
+                logger.info(
+                    "restore update package version[${packageId}|${existHotVersionRecord.name}] " +
+                        "success in ${context.projectId}|${context.repoName}"
+                )
+            } else {
+                existHotVersionRecord = buildVersionDetailInfo(storedColdVersion)
+                mongoTemplate.save(existHotVersionRecord, PACKAGE_VERSION_COLLECTION_NAME)
+                logger.info(
+                    "restore package version[${packageId}|${existHotVersionRecord.name}] " +
+                        "success in ${context.projectId}|${context.repoName}"
+                )
+            }
+        } catch (e: DuplicateKeyException) {
+            logger.warn(
+                "restore hot version $storedColdVersion occurred DuplicateKeyException " +
+                    "in ${context.projectId}|${context.repoName}"
             )
         }
+    }
+
+    private fun buildPackageVersionUpdate(
+        storedColdVersion: TSeparationPackageVersion,
+    ): Update {
+        return Update().set(VersionDetailInfo::lastModifiedBy.name, storedColdVersion.lastModifiedBy)
+            .set(VersionDetailInfo::lastModifiedDate.name, storedColdVersion.lastModifiedDate)
+            .set(VersionDetailInfo::size.name, storedColdVersion.size)
+            .set(VersionDetailInfo::ordinal.name, storedColdVersion.ordinal)
+            .set(VersionDetailInfo::downloads.name, storedColdVersion.downloads)
+            .set(VersionDetailInfo::extension.name, storedColdVersion.extension)
+            .set(VersionDetailInfo::manifestPath.name, storedColdVersion.manifestPath)
+            .set(VersionDetailInfo::artifactPath.name, storedColdVersion.artifactPath)
+            .set(VersionDetailInfo::clusterNames.name, storedColdVersion.clusterNames)
+            .set(VersionDetailInfo::stageTag.name, storedColdVersion.stageTag)
+            .set(VersionDetailInfo::metadata.name, storedColdVersion.metadata)
+            .set(VersionDetailInfo::tags.name, storedColdVersion.tags)
+            .set(VersionDetailInfo::clusterNames.name, storedColdVersion.clusterNames)
     }
 
     private fun restoreColdPackage(context: SeparationContext, packageInfo: TSeparationPackage): String {
@@ -356,33 +412,55 @@ class DataRestorerImpl(
         var existHotPackageRecord = mongoTemplate.findOne(
             packageQuery, PackageDetailInfo::class.java, PACKAGE_COLLECTION_NAME
         )
-        if (existHotPackageRecord != null && context.overwrite) {
-            existHotPackageRecord.apply {
-                lastModifiedBy = storedColdPackage.lastModifiedBy
-                lastModifiedDate = storedColdPackage.lastModifiedDate
-                downloads = storedColdPackage.downloads
-                versions = storedColdPackage.versions
-                versionTag = storedColdPackage.versionTag
-                extension = storedColdPackage.extension
-                description = storedColdPackage.description
-                historyVersion = storedColdPackage.historyVersion
-                clusterNames = storedColdPackage.clusterNames
-                latest = storedColdPackage.latest
-            }
-            mongoTemplate.save(existHotPackageRecord, PACKAGE_COLLECTION_NAME)
+        // 存在且不覆盖直接返回
+        if (existHotPackageRecord != null && !context.overwrite) {
             logger.info(
-                "restore update package[${existHotPackageRecord.id}] success" +
+                "restore package[${existHotPackageRecord.id}|${existHotPackageRecord.key}] exist" +
                     " in ${context.projectId}|${context.repoName}"
             )
-        } else {
-            existHotPackageRecord = buildPackageDetailInfo(storedColdPackage)
-            mongoTemplate.save(existHotPackageRecord, PACKAGE_COLLECTION_NAME)
-            logger.info(
-                "restore package[${existHotPackageRecord.id}] success" +
-                    " in ${context.projectId}|${context.repoName}"
+            return existHotPackageRecord.id!!
+        }
+        try {
+            if (existHotPackageRecord != null && context.overwrite) {
+                val update = buildPackageUpdate(storedColdPackage)
+                mongoTemplate.updateFirst(packageQuery, update, PACKAGE_COLLECTION_NAME)
+                logger.info(
+                    "restore update package[${existHotPackageRecord.id}|${existHotPackageRecord.key}] success" +
+                        " in ${context.projectId}|${context.repoName}"
+                )
+            } else {
+                existHotPackageRecord = buildPackageDetailInfo(storedColdPackage)
+                mongoTemplate.save(existHotPackageRecord, PACKAGE_COLLECTION_NAME)
+                logger.info(
+                    "restore package[${existHotPackageRecord.id}|${existHotPackageRecord.key}] success" +
+                        " in ${context.projectId}|${context.repoName}"
+                )
+            }
+        } catch (e: DuplicateKeyException) {
+            logger.warn(
+                "restore hot package $existHotPackageRecord occurred DuplicateKeyException " +
+                    "in ${context.projectId}|${context.repoName}"
+            )
+            existHotPackageRecord = mongoTemplate.findOne(
+                packageQuery, PackageDetailInfo::class.java, PACKAGE_COLLECTION_NAME
             )
         }
         return existHotPackageRecord.id!!
+    }
+
+    private fun buildPackageUpdate(
+        storedColdPackage: TSeparationPackage,
+    ): Update {
+        return Update().set(PackageDetailInfo::lastModifiedBy.name, storedColdPackage.lastModifiedBy)
+            .set(PackageDetailInfo::lastModifiedDate.name, storedColdPackage.lastModifiedDate)
+            .set(PackageDetailInfo::downloads.name, storedColdPackage.downloads)
+            .set(PackageDetailInfo::versions.name, storedColdPackage.versions)
+            .set(PackageDetailInfo::versionTag.name, storedColdPackage.versionTag)
+            .set(PackageDetailInfo::extension.name, storedColdPackage.extension)
+            .set(PackageDetailInfo::description.name, storedColdPackage.description)
+            .set(PackageDetailInfo::historyVersion.name, storedColdPackage.historyVersion)
+            .set(PackageDetailInfo::clusterNames.name, storedColdPackage.clusterNames)
+            .set(PackageDetailInfo::latest.name, storedColdPackage.latest)
     }
 
     private fun removeCodeDataInSeparation(
@@ -391,6 +469,10 @@ class DataRestorerImpl(
     ) {
         if (packageInfo != null && packageVersionInfo != null) {
             removeColdVersionFromSeparation(context, packageInfo, packageVersionInfo)
+            val versionSeparationInfo = buildVersionSeparationInfo(
+                context, packageInfo.key, packageVersionInfo.name
+            )
+            RepoSpecialSeparationMappings.removeRestoredRepoColdData(versionSeparationInfo)
         }
         // 删除节点
         removeColdNodeFromSeparation(context, idSha256Map)
@@ -400,11 +482,20 @@ class DataRestorerImpl(
         context: SeparationContext, packageInfo: TSeparationPackage,
         packageVersionInfo: TSeparationPackageVersion
     ) {
-        separationPackageDao.removeById(packageInfo.id!!)
-        logger.info(
-            "delete stored code version $packageVersionInfo success " +
-                "for $packageInfo in ${context.projectId}|${context.repoName}"
+        val deletedResult = separationPackageVersionDao.removeById(
+            packageVersionInfo.id!!, packageVersionInfo.separationDate
         )
+        if (deletedResult.deletedCount != 1L) {
+            logger.error(
+                "delete restored version $packageVersionInfo failed " +
+                    "for $packageInfo in ${context.projectId}|${context.repoName}"
+            )
+        } else {
+            logger.info(
+                "delete restored version $packageVersionInfo success " +
+                    "for $packageInfo in ${context.projectId}|${context.repoName}"
+            )
+        }
     }
 
     private fun removeColdNodeFromSeparation(
@@ -416,10 +507,13 @@ class DataRestorerImpl(
                 // 删除， 同时删除索引
                 val updateResult = separationNodeDao.removeById(it.key, separationDate)
                 if (updateResult.deletedCount == 0L) {
-                    logger.error("delete separation node ${it.value} failed in $projectId|$repoName")
+                    logger.error(
+                        "delete restored node ${it.value} before $separationDate " +
+                            "failed in $projectId|$repoName"
+                    )
                     return
                 }
-                logger.error("delete separation node ${it.value} success in $projectId|$repoName")
+                logger.info("delete restored node ${it.value} before $separationDate success in $projectId|$repoName")
                 if (!sha256Check(false, it.value)) {
                     logger.warn("separation node[${it.key}] sha256 is null or blank.")
                     return
@@ -442,7 +536,7 @@ class DataRestorerImpl(
                 val nodeQuery = query.with(PageRequest.of(pageNumber, pageSize))
                 val data = separationNodeDao.find(nodeQuery)
                 if (data.isEmpty()) {
-                    logger.warn("Could not find cold node $node in $projectId|$repoName !")
+                    logger.warn("Could not find cold node $node before $separationDate in $projectId|$repoName !")
                     break
                 }
                 data.forEach { cNode ->
@@ -460,11 +554,9 @@ class DataRestorerImpl(
             // 逻辑删除node,
             removeCodeDataInSeparation(context, mutableMapOf(id to sha256))
             setSuccessProgress(context.separationProgress, nodeId = cNode.id)
-            if (context.fixTask) {
-                removeFailedRecord(
-                    context, nodeId = cNode.id,
-                )
-            }
+            removeFailedRecord(
+                context, nodeId = cNode.id,
+            )
         } catch (e: Exception) {
             logger.error(
                 "restore cold node ${cNode.id} with path ${cNode.fullPath} " +

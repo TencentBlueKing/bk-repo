@@ -56,13 +56,20 @@ package com.tencent.bkrepo.job.separation.model
 
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.job.separation.model.TSeparationPackageVersion.Companion.SEPARATION_VERSION_NAME_IDX
+import com.tencent.bkrepo.job.separation.model.TSeparationPackageVersion.Companion.SEPARATION_VERSION_NAME_IDX_DEF
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
 
 /**
  * 冷数据package version表
  */
 @ShardingDocument("separation_package_version")
+@CompoundIndexes(
+    CompoundIndex(name = SEPARATION_VERSION_NAME_IDX, def = SEPARATION_VERSION_NAME_IDX_DEF, background = true),
+)
 data class TSeparationPackageVersion(
     var id: String? = null,
     var createdBy: String,
@@ -83,5 +90,10 @@ data class TSeparationPackageVersion(
     var extension: Map<String, Any>? = null,
     var clusterNames: Set<String>? = null,
     @ShardingKey
-    var separationDate: LocalDateTime = LocalDateTime.now(),
-)
+    var separationDate: LocalDateTime,
+) {
+    companion object {
+        const val SEPARATION_VERSION_NAME_IDX = "separation_version_name_idx"
+        const val SEPARATION_VERSION_NAME_IDX_DEF = "{'packageId': 1, 'name': 1}"
+    }
+}

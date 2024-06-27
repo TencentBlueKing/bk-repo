@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.separation.executor
 
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
@@ -43,9 +44,7 @@ abstract class AbstractSeparationTaskExecutor(
     open fun concurrencyCheck(): Boolean = false
 
     override fun execute(context: SeparationContext) {
-        if (filterTask(context)) return
-        if (concurrencyCheck()) return
-        threadPoolExecutor()?.execute { runTask(context) }
+        threadPoolExecutor()?.execute (Runnable { runTask(context) }.trace())
     }
 
     open fun threadPoolExecutor(): ThreadPoolExecutor? = null
@@ -54,6 +53,8 @@ abstract class AbstractSeparationTaskExecutor(
 
     private fun runTask(context: SeparationContext) {
         with(context) {
+            if (filterTask(context)) return
+            if (concurrencyCheck()) return
             try {
                 logger.info("start to run task $task")
                 beforeExecute(context)
@@ -74,7 +75,7 @@ abstract class AbstractSeparationTaskExecutor(
     open fun afterExecute(context: SeparationContext) {
         with(context) {
             val count = SeparationCount(separationProgress.success, separationProgress.failed)
-            separationTaskDao.updateContentAndStat(
+            separationTaskDao.updateState(
                 taskId,
                 SeparationTaskState.FINISHED,
                 count,

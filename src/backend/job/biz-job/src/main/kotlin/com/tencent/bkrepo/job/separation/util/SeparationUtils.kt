@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.separation.util
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import java.time.LocalDateTime
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -52,5 +53,14 @@ object SeparationUtils {
             taskConcurrency, taskConcurrency, 60, TimeUnit.SECONDS,
             ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
+    }
+
+    /**
+     * 获取对应时间当天的开始以及结束时间
+     */
+    fun findStartAndEndTimeOfDate(date: LocalDateTime): Pair<LocalDateTime, LocalDateTime> {
+        val startOfDate = date.toLocalDate().atStartOfDay()
+        val endOfDate = date.toLocalDate().minusDays(-1).atStartOfDay()
+        return Pair(startOfDate, endOfDate)
     }
 }

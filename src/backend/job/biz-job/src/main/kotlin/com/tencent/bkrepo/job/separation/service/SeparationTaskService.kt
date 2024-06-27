@@ -42,4 +42,6 @@ interface SeparationTaskService {
     ): Set<LocalDateTime>
 
     fun findTasks(state: String? = null, pageRequest: PageRequest): Page<SeparationTask>
+
+    fun repoSeparationCheck(projectId: String, repoName: String): Boolean
 }

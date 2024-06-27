@@ -56,16 +56,22 @@ package com.tencent.bkrepo.job.separation.dao.repo
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.common.mongo.dao.sharding.MonthRangeShardingMongoDao
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.job.separation.model.TSeparationNode
 import com.tencent.bkrepo.job.separation.model.repo.TSeparationMavenMetadataRecord
 import com.tencent.bkrepo.job.separation.pojo.query.MavenMetadata
+import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
-class SeparationMavenMetadataDao : SimpleMongoDao<TSeparationMavenMetadataRecord>() {
+@Repository
+class SeparationMavenMetadataDao : MonthRangeShardingMongoDao<TSeparationMavenMetadataRecord>() {
 
     fun upsertMetaData(
         mavenMetadata: MavenMetadata, separationDate: LocalDateTime
@@ -74,10 +80,11 @@ class SeparationMavenMetadataDao : SimpleMongoDao<TSeparationMavenMetadataRecord
             .and(TSeparationMavenMetadataRecord::repoName.name).isEqualTo(mavenMetadata.repoName)
             .and(TSeparationMavenMetadataRecord::groupId.name).isEqualTo(mavenMetadata.groupId)
             .and(TSeparationMavenMetadataRecord::artifactId.name).isEqualTo(mavenMetadata.artifactId)
-            .and(TSeparationMavenMetadataRecord::separationDate.name).isEqualTo(separationDate)
             .and(TSeparationMavenMetadataRecord::version.name).isEqualTo(mavenMetadata.version)
             .and(TSeparationMavenMetadataRecord::classifier.name).isEqualTo(mavenMetadata.classifier)
             .and(TSeparationMavenMetadataRecord::extension.name).isEqualTo(mavenMetadata.extension)
+            .and(TSeparationMavenMetadataRecord::separationDate.name).isEqualTo(separationDate)
+
         val metadataQuery = Query(criteria)
         val update = Update().set(TSeparationMavenMetadataRecord::buildNo.name, mavenMetadata.buildNo)
             .set(TSeparationMavenMetadataRecord::timestamp.name, mavenMetadata.timestamp)
@@ -89,19 +96,21 @@ class SeparationMavenMetadataDao : SimpleMongoDao<TSeparationMavenMetadataRecord
         groupId: String, artifactId: String,
         version: String, separationDate: LocalDateTime
     ): List<TSeparationMavenMetadataRecord> {
+        val pageRequest = Pages.ofRequest(0, 10000)
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = Criteria.where(TSeparationMavenMetadataRecord::projectId.name).isEqualTo(projectId)
             .and(TSeparationMavenMetadataRecord::repoName.name).isEqualTo(repoName)
             .and(TSeparationMavenMetadataRecord::groupId.name).isEqualTo(groupId)
             .and(TSeparationMavenMetadataRecord::artifactId.name).isEqualTo(artifactId)
-            .and(TSeparationMavenMetadataRecord::separationDate.name).isEqualTo(separationDate)
+            .and(TSeparationMavenMetadataRecord::separationDate.name).gte(startOfDay).lt(endOfDay)
             .and(TSeparationMavenMetadataRecord::version.name).isEqualTo(version)
-        val metadataQuery = Query(criteria)
+        val metadataQuery = Query(criteria).with(pageRequest)
         return this.find(metadataQuery)
     }
 
     fun deleteById(id: String, separationDate: LocalDateTime): DeleteResult {
         val deleteQuery = Query(
-            Criteria.where(TSeparationMavenMetadataRecord::id.name).isEqualTo(id)
+            Criteria.where(ID).isEqualTo(id)
                 .and(TSeparationMavenMetadataRecord::separationDate.name).isEqualTo(separationDate)
         )
         return this.remove(deleteQuery)

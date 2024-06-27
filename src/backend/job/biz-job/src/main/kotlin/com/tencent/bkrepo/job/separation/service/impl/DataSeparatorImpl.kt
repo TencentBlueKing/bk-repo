@@ -33,12 +33,12 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.KEY
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.NAME
 import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_DOWNLOADS_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_DOWNLOAD_DATE
-import com.tencent.bkrepo.job.PACKAGE_KEY
 import com.tencent.bkrepo.job.PACKAGE_VERSION
 import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
@@ -63,6 +63,7 @@ import com.tencent.bkrepo.job.separation.pojo.query.VersionDetailInfo
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.service.DataSeparator
 import com.tencent.bkrepo.job.separation.service.impl.repo.RepoSpecialSeparationMappings
+import com.tencent.bkrepo.job.separation.util.SeparationQueryHelper
 import com.tencent.bkrepo.job.separation.util.SeparationUtils.getNodeCollectionName
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.bson.types.ObjectId
@@ -106,7 +107,7 @@ class DataSeparatorImpl(
     override fun versionSeparator(context: SeparationContext, version: VersionFilterInfo) {
         logger.info("start to do separation for version $version in repo ${context.projectId}|${context.repoName}")
         val pkg = PackageFilterInfo(
-            packageName = version.packageName,
+            packageKey = version.packageKey,
             versions = version.versions,
             versionRegex = version.versionRegex
         )
@@ -155,12 +156,12 @@ class DataSeparatorImpl(
             .and(REPO_NAME).isEqualTo(repoName)
             .and(LAST_MODIFIED_DATE).lte(separationDate)
         if (pkg != null) {
-            if (pkg.packageName.isNullOrEmpty()) {
-                if (!pkg.packageRegex.isNullOrEmpty()) {
-                    criteria.and(NAME).regex(".*${pkg.packageRegex}.*")
+            if (pkg.packageKey.isNullOrEmpty()) {
+                if (!pkg.packageKeyRegex.isNullOrEmpty()) {
+                    criteria.and(KEY).regex(".*${pkg.packageKeyRegex}.*")
                 }
             } else {
-                criteria.and(NAME).isEqualTo(pkg.packageName)
+                criteria.and(KEY).isEqualTo(pkg.packageKey)
             }
         }
         return criteria
@@ -225,7 +226,7 @@ class DataSeparatorImpl(
             val date = separationDate.format(dateTimeFormatter)
             val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
                 .and(REPO_NAME).isEqualTo(repoName)
-                .and(PACKAGE_KEY).isEqualTo(packageInfo.key)
+                .and(KEY).isEqualTo(packageInfo.key)
                 .and(PACKAGE_VERSION).isEqualTo(packageVersionInfo.name)
                 .and(PACKAGE_DOWNLOAD_DATE).gt(date)
             val query = Query(criteria)
@@ -245,13 +246,8 @@ class DataSeparatorImpl(
     ) {
         with(context) {
             try {
-                val versionSeparationInfo = VersionSeparationInfo(
-                    projectId = projectId,
-                    repoName = repoName,
-                    type = repoType,
-                    packageKey = packageInfo.key,
-                    version = packageVersionInfo.name,
-                    separationDate = separationDate,
+                val versionSeparationInfo = buildVersionSeparationInfo(
+                    context, packageInfo.key, packageVersionInfo.name
                 )
                 logger.info("start to copy cold data $versionSeparationInfo in repo $projectId|$repoName")
                 // 查找出版本对应节点
@@ -272,9 +268,7 @@ class DataSeparatorImpl(
                 //删除package, 逻辑删除node,
                 removeColdDataInSource(context, idSha256Map, packageInfo, packageVersionInfo)
                 setSuccessProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
-                if (context.fixTask) {
-                    removeFailedRecord(context, packageInfo.id, packageVersionInfo.id)
-                }
+                removeFailedRecord(context, packageInfo.id, packageVersionInfo.id)
             } catch (e: Exception) {
                 logger.error(
                     "copy cold package ${packageInfo.key} with version ${packageVersionInfo.name}" +
@@ -285,6 +279,23 @@ class DataSeparatorImpl(
                 )
                 setFailedProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
             }
+        }
+    }
+
+    private fun buildVersionSeparationInfo(
+        context: SeparationContext,
+        packageKey: String,
+        version: String,
+    ): VersionSeparationInfo {
+        with(context) {
+            return VersionSeparationInfo(
+                projectId = projectId,
+                repoName = repoName,
+                type = repoType,
+                packageKey = packageKey,
+                version = version,
+                separationDate = separationDate,
+            )
         }
     }
 
@@ -303,6 +314,8 @@ class DataSeparatorImpl(
     ) {
         if (packageInfo != null && packageVersionInfo != null) {
             removeColdVersionFromSource(context, packageInfo, packageVersionInfo)
+            val versionInfo = buildVersionSeparationInfo(context, packageInfo.key, packageVersionInfo.name)
+            RepoSpecialSeparationMappings.removeRepoColdData(versionInfo)
         }
         // 逻辑删除节点
         val collectionName = getNodeCollectionName(context.projectId)
@@ -405,11 +418,11 @@ class DataSeparatorImpl(
         packageVersionInfo: PackageVersionInfo,
     ) {
         val deletedResult = mongoTemplate.remove(
-            Criteria.where(ID).isEqualTo(packageVersionInfo.id), PACKAGE_VERSION_COLLECTION_NAME
+            Query(Criteria.where(ID).isEqualTo(packageVersionInfo.id)), PACKAGE_VERSION_COLLECTION_NAME
         )
         if (deletedResult.deletedCount != 1L) {
             logger.error(
-                "delete version $packageVersionInfo error " +
+                "delete version $packageVersionInfo failed " +
                     "for $packageInfo in ${context.projectId}|${context.repoName}"
             )
         } else {
@@ -452,11 +465,8 @@ class DataSeparatorImpl(
 
     private fun storeColdNode(context: SeparationContext, nodeRecord: NodeDetailInfo) {
         with(context) {
-            val existCodeNodeQuery = Query(
-                Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
-                    .and(TSeparationNode::repoName.name).isEqualTo(repoName)
-                    .and(TSeparationNode::fullPath.name).isEqualTo(nodeRecord.fullPath)
-                    .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
+            val existCodeNodeQuery = SeparationQueryHelper.fullPathQuery(
+                projectId, repoName, nodeRecord.fullPath, separationDate
             )
             val existedCodeNode = separationNodeDao.findOne(existCodeNodeQuery)
             // 插入前判断cold node 是否存在
@@ -484,12 +494,13 @@ class DataSeparatorImpl(
                 val codeNode = buildTSeparationNode(nodeRecord, separationDate)
                 storedColdNode = separationNodeDao.save(codeNode)
                 logger.info("Create separation node ${nodeRecord.fullPath} success in $projectId|$repoName")
+                // 只有新增的节点才去增加引用，避免同一节点降冷失败多次进行引用更新
+                if (!sha256Check(nodeRecord.folder, nodeRecord.sha256)) {
+                    logger.warn("store code node[${nodeRecord.id}] sha256 is null or blank.")
+                    return
+                }
+                increment(storedColdNode.sha256!!, credentialsKey, 1)
             }
-            if (!sha256Check(nodeRecord.folder, nodeRecord.sha256)) {
-                logger.warn("store code node[${nodeRecord.id}] sha256 is null or blank.")
-                return
-            }
-            increment(storedColdNode.sha256!!, credentialsKey, 1)
         }
     }
 
@@ -507,7 +518,15 @@ class DataSeparatorImpl(
                     .set(NodeDetailInfo::deleted.name, LocalDateTime.now())
                 val updateResult = mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
                 if (updateResult.modifiedCount != 1L) {
-                    logger.error("delete hot node failed with id ${it.key} in $projectId|$repoName")
+                    logger.error(
+                        "delete hot node failed with id ${it.key} " +
+                            "and fullPath ${it.value} in $projectId|$repoName"
+                    )
+                } else {
+                    logger.info(
+                        "delete hot node success with id ${it.key} " +
+                            "and fullPath ${it.value} in $projectId|$repoName"
+                    )
                 }
             }
         }
@@ -545,9 +564,7 @@ class DataSeparatorImpl(
             // 逻辑删除node,
             removeColdDataInSource(context, mutableMapOf(id to sha256))
             setSuccessProgress(context.separationProgress, nodeId = node.id)
-            if (context.fixTask) {
-                removeFailedRecord(context, nodeId = node.id)
-            }
+            removeFailedRecord(context, nodeId = node.id)
         } catch (e: Exception) {
             logger.error(
                 "copy cold node ${node.id} with path ${node.fullPath}" +

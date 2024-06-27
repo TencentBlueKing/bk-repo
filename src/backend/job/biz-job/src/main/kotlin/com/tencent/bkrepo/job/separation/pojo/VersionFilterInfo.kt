@@ -58,7 +58,7 @@ package com.tencent.bkrepo.job.separation.pojo
  * 包
  */
 data class VersionFilterInfo(
-    val packageName: String,
+    val packageKey: String,
     val versions: List<String>? = null,
     val versionRegex: String? = null,
 )

@@ -76,6 +76,6 @@ class SeparationNodeDao : MonthRangeShardingMongoDao<TSeparationNode>() {
     }
 
     fun removeById(id: String, separationDate: LocalDateTime): DeleteResult {
-        return this.remove(SeparationQueryHelper.nodeIdQuery(id, separationDate))
+        return this.remove(SeparationQueryHelper.nodeIdRemoveQuery(id, separationDate))
     }
 }

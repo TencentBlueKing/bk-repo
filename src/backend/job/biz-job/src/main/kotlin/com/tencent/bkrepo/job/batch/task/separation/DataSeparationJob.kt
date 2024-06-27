@@ -45,6 +45,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 
@@ -61,7 +62,7 @@ class DataSeparationJob(
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to run data separation job")
-        val criteria = Criteria.where(TSeparationTask::state.name).`in`(STATE_LIST)
+        val criteria = Criteria.where(TSeparationTask::state.name).isEqualTo(SeparationTaskState.PENDING.name)
         val query = Query(criteria)
         val tasks = mongoTemplate.find(query, TSeparationTask::class.java, SEPARATION_TASK_COLLECTION_NAME)
         tasks.forEach {
@@ -97,6 +98,5 @@ class DataSeparationJob(
     companion object {
         private val logger = LoggerFactory.getLogger(DataSeparationJob::class.java)
         private const val SEPARATION_TASK_COLLECTION_NAME = "separation_task"
-        private val STATE_LIST = listOf(SeparationTaskState.PENDING.name, SeparationTaskState.TERMINATED.name)
     }
 }

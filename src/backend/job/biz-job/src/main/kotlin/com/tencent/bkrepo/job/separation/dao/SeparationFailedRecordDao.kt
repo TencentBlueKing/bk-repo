@@ -82,7 +82,10 @@ class SeparationFailedRecordDao : SimpleMongoDao<TSeparationFailedRecord>() {
         val update = Update()
             .inc(TSeparationFailedRecord::triedTimes.name, 1)
             .set(TSeparationFailedRecord::actionDate.name, actionDate)
-        findAndModify(query, update, FindAndModifyOptions().returnNew(true), TSeparationFailedRecord::class.java)
+        findAndModify(
+            query, update, FindAndModifyOptions().returnNew(true).upsert(true),
+            TSeparationFailedRecord::class.java
+        )
     }
 
     fun removeFailedRecord(

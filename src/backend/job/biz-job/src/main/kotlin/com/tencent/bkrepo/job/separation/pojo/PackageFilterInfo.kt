@@ -58,8 +58,8 @@ package com.tencent.bkrepo.job.separation.pojo
  * 包
  */
 data class PackageFilterInfo(
-    val packageName: String? = null,
-    val packageRegex: String? = null,
+    val packageKey: String? = null,
+    val packageKeyRegex: String? = null,
     val versions: List<String>? = null,
     val versionRegex: String? = null,
 )

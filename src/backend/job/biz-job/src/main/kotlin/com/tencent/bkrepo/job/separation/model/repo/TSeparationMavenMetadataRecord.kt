@@ -56,9 +56,19 @@ package com.tencent.bkrepo.job.separation.model.repo
 
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
 
 @ShardingDocument("separation_maven_metadata")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "separation_metadata_index",
+        def = "{'projectId':1, 'repoName':1, 'groupId':1, 'artifactId':1, " +
+            "'version':1, 'classifier':1, 'extension':1 }",
+        background = true,
+    )
+)
 data class TSeparationMavenMetadataRecord(
     val id: String?,
     val projectId: String,
@@ -72,5 +82,5 @@ data class TSeparationMavenMetadataRecord(
     val classifier: String?,
     val extension: String,
     @ShardingKey
-    var separationDate: LocalDateTime = LocalDateTime.now(),
+    var separationDate: LocalDateTime,
 )

@@ -54,7 +54,13 @@
 
 package com.tencent.bkrepo.job.separation.model
 
+import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_KEY_IDX
+import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_KEY_IDX_DEF
+import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_NAME_IDX
+import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_NAME_IDX_DEF
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -62,6 +68,14 @@ import java.time.LocalDateTime
  * 冷数据package表
  */
 @Document("separation_package")
+@CompoundIndexes(
+    CompoundIndex(name = SEPARATION_PACKAGE_NAME_IDX, def = SEPARATION_PACKAGE_NAME_IDX_DEF, background = true),
+    CompoundIndex(
+        name = SEPARATION_PACKAGE_KEY_IDX,
+        def = SEPARATION_PACKAGE_KEY_IDX_DEF,
+        background = true
+    )
+)
 data class TSeparationPackage(
     var id: String? = null,
     var createdBy: String,
@@ -82,5 +96,12 @@ data class TSeparationPackage(
     var extension: Map<String, Any>? = null,
     var historyVersion: Set<String> = emptySet(),
     var clusterNames: Set<String>? = null,
-    var separationDate: LocalDateTime = LocalDateTime.now(),
-)
+    var separationDate: LocalDateTime
+) {
+    companion object {
+        const val SEPARATION_PACKAGE_NAME_IDX = "separation_package_name_idx"
+        const val SEPARATION_PACKAGE_KEY_IDX = "separation_package_key_idx"
+        const val SEPARATION_PACKAGE_NAME_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'name': 1}"
+        const val SEPARATION_PACKAGE_KEY_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'key': 1}"
+    }
+}

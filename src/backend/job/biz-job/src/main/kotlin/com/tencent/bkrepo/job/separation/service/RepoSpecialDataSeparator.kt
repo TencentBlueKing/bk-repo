@@ -46,14 +46,19 @@ interface RepoSpecialDataSeparator {
     fun extraType(): RepositoryType?
 
     /**
+     * 根据版本信息获取对应node列表
+     */
+    fun getNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String>
+
+    /**
      * 根据条件处理对应类型仓库特定冷数据
      */
     fun separateRepoSpecialData(versionSeparationInfo: VersionSeparationInfo)
 
     /**
-     * 根据版本信息获取对应node列表
+     * 根据条件删除对应类型仓库特定冷数据
      */
-    fun getNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String>
+    fun removeRepoSpecialData(versionSeparationInfo: VersionSeparationInfo)
 
     /**
      * 根据版本信息获取对应node列表
@@ -64,4 +69,9 @@ interface RepoSpecialDataSeparator {
      * 根据条件恢复对应类型仓库特定冷数据
      */
     fun restoreRepoSpecialData(versionSeparationInfo: VersionSeparationInfo)
+
+    /**
+     * 根据条件删除已恢复的仓库特定冷数据
+     */
+    fun removeRestoredRepoSpecialData(versionSeparationInfo: VersionSeparationInfo)
 }

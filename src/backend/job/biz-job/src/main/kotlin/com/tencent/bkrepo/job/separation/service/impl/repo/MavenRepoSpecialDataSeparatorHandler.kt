@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.separation.service.impl.repo
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
@@ -35,14 +36,14 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.repo.SeparationMavenMetadataDao
-import com.tencent.bkrepo.job.separation.exception.SeparationDataStoreException
+import com.tencent.bkrepo.job.separation.model.TSeparationNode
 import com.tencent.bkrepo.job.separation.model.repo.TSeparationMavenMetadataRecord
 import com.tencent.bkrepo.job.separation.pojo.VersionSeparationInfo
 import com.tencent.bkrepo.job.separation.pojo.query.MavenMetadata
 import com.tencent.bkrepo.job.separation.pojo.query.NodeBaseInfo
 import com.tencent.bkrepo.job.separation.pojo.query.NodeDetailInfo
 import com.tencent.bkrepo.job.separation.service.RepoSpecialDataSeparator
-import com.tencent.bkrepo.job.separation.util.SeparationQueryHelper
+import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import com.tencent.bkrepo.job.separation.util.SeparationUtils.getNodeCollectionName
 import org.apache.commons.lang3.StringUtils
 import org.bson.types.ObjectId
@@ -54,8 +55,11 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 
+@Component
 class MavenRepoSpecialDataSeparatorHandler(
     private val separationMavenMetadataDao: SeparationMavenMetadataDao,
     private val separationNodeDao: SeparationNodeDao,
@@ -72,28 +76,19 @@ class MavenRepoSpecialDataSeparatorHandler(
 
     override fun separateRepoSpecialData(versionSeparationInfo: VersionSeparationInfo) {
         with(versionSeparationInfo) {
-            val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
-            val criteria = Criteria.where(MavenMetadata::projectId.name).isEqualTo(projectId)
-                .and(MavenMetadata::repoName.name).isEqualTo(repoName)
-                .and(MavenMetadata::groupId.name).isEqualTo(groupId)
-                .and(MavenMetadata::artifactId.name).isEqualTo(artifactId)
-                .and(MavenMetadata::version.name).isEqualTo(version)
-            val metadataQuery = Query(criteria)
-            val metadataRecords = mongoTemplate.find(
-                metadataQuery,
-                MavenMetadata::class.java,
-                MAVEN_METADATA_COLLECTION_NAME
-            )
+            val metadataRecords = findMetaDatas(versionSeparationInfo)
             if (metadataRecords.isEmpty()) {
                 logger.warn("No metadata record found for $version of $packageKey in $projectId|$repoName")
             }
             metadataRecords.forEach {
-                val upsertResult = separationMavenMetadataDao.upsertMetaData(it, separationDate)
-                if (upsertResult.modifiedCount != 1L) {
-                    logger.error("store metadata record $it error for $version of $packageKey in $projectId|$repoName")
-                    throw SeparationDataStoreException(it.id!!)
-                }
+                separationMavenMetadataDao.upsertMetaData(it, separationDate)
             }
+        }
+    }
+
+    override fun removeRepoSpecialData(versionSeparationInfo: VersionSeparationInfo) {
+        with(versionSeparationInfo) {
+            val metadataRecords = findMetaDatas(versionSeparationInfo)
             metadataRecords.forEach {
                 val query = Query(Criteria.where(ID).isEqualTo(it.id))
                 val deletedResult = mongoTemplate.remove(query, MAVEN_METADATA_COLLECTION_NAME)
@@ -152,7 +147,7 @@ class MavenRepoSpecialDataSeparatorHandler(
             var pageNumber = 0
             val pageSize = BATCH_SIZE
             var querySize: Int
-            val query = SeparationQueryHelper.pathQuery(projectId, repoName, versionPath, separationDate)
+            val query = pathQuery(projectId, repoName, versionPath, separationDate)
             val fullPathsMap = mutableMapOf<String, String>()
             do {
                 val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
@@ -174,6 +169,16 @@ class MavenRepoSpecialDataSeparatorHandler(
         }
     }
 
+    fun pathQuery(projectId: String, repoName: String, versionPath: String, separationDate: LocalDateTime): Query {
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
+        val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
+            .and(TSeparationNode::repoName.name).isEqualTo(repoName)
+            .and(TSeparationNode::path.name).isEqualTo(versionPath)
+            .and(TSeparationNode::folder.name).isEqualTo(false)
+            .and(TSeparationNode::separationDate.name).gte(startOfDay).lt(endOfDay)
+        return Query(criteria)
+    }
+
     override fun restoreRepoSpecialData(versionSeparationInfo: VersionSeparationInfo) {
         with(versionSeparationInfo) {
             val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
@@ -187,6 +192,15 @@ class MavenRepoSpecialDataSeparatorHandler(
                 )
             }
             restoreMetaData(coldRecord, versionSeparationInfo)
+        }
+    }
+
+    override fun removeRestoredRepoSpecialData(versionSeparationInfo: VersionSeparationInfo) {
+        with(versionSeparationInfo) {
+            val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
+            val coldRecord = separationMavenMetadataDao.search(
+                projectId, repoName, groupId, artifactId, version, separationDate
+            )
             coldRecord.forEach {
                 val deletedResult = separationMavenMetadataDao.deleteById(it.id!!, it.separationDate)
                 if (deletedResult.deletedCount != 1L) {
@@ -196,6 +210,23 @@ class MavenRepoSpecialDataSeparatorHandler(
                     )
                 }
             }
+        }
+    }
+
+    private fun findMetaDatas(versionSeparationInfo: VersionSeparationInfo): List<MavenMetadata> {
+        with(versionSeparationInfo) {
+            val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
+            val criteria = Criteria.where(MavenMetadata::projectId.name).isEqualTo(projectId)
+                .and(MavenMetadata::repoName.name).isEqualTo(repoName)
+                .and(MavenMetadata::groupId.name).isEqualTo(groupId)
+                .and(MavenMetadata::artifactId.name).isEqualTo(artifactId)
+                .and(MavenMetadata::version.name).isEqualTo(version)
+            val metadataQuery = Query(criteria)
+            return mongoTemplate.find(
+                metadataQuery,
+                MavenMetadata::class.java,
+                MAVEN_METADATA_COLLECTION_NAME
+            )
         }
     }
 
@@ -219,15 +250,7 @@ class MavenRepoSpecialDataSeparatorHandler(
             if (hotRecord.isEmpty() || versionSeparationInfo.overwrite) {
                 val update = Update().set(MavenMetadata::buildNo.name, it.buildNo)
                     .set(MavenMetadata::timestamp.name, it.timestamp)
-                val upsertResult = mongoTemplate.upsert(existQuery, update, MAVEN_METADATA_COLLECTION_NAME)
-                if (upsertResult.modifiedCount != 1L) {
-                    logger.error(
-                        "restore metadata record $it error for ${versionSeparationInfo.version} " +
-                            "of ${versionSeparationInfo.packageKey} in" +
-                            " ${versionSeparationInfo.projectId}|${versionSeparationInfo.repoName}"
-                    )
-                    throw SeparationDataStoreException(it.id!!)
-                }
+                mongoTemplate.upsert(existQuery, update, MAVEN_METADATA_COLLECTION_NAME)
             }
         }
     }
@@ -247,7 +270,8 @@ class MavenRepoSpecialDataSeparatorHandler(
      */
     private fun extractPath(packageKey: String): String {
         val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
-        return StringUtils.join(groupId.split("."), "/") + "/$artifactId"
+        return PathUtils.UNIX_SEPARATOR +
+            StringUtils.join(groupId.split(CharPool.DOT), PathUtils.UNIX_SEPARATOR) + "/$artifactId"
     }
 
     companion object {

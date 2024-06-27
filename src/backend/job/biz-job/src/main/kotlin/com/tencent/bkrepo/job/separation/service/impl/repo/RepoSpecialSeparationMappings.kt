@@ -42,7 +42,13 @@ object RepoSpecialSeparationMappings {
 
     private fun addMapper(mapper: RepoSpecialDataSeparator) {
         mappers[mapper.type()] = mapper
-        mapper.extraType().let { mappers[mapper.extraType()!!] = mapper }
+        mapper.extraType()?.let { mappers[mapper.extraType()!!] = mapper }
+    }
+
+    fun getNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String> {
+        val mapper = mappers[versionSeparationInfo.type]
+        check(mapper != null) { "mapper[${versionSeparationInfo.type}] not found" }
+        return mapper.getNodesOfVersion(versionSeparationInfo)
     }
 
     fun separateRepoColdData(versionSeparationInfo: VersionSeparationInfo) {
@@ -51,10 +57,10 @@ object RepoSpecialSeparationMappings {
         mapper.separateRepoSpecialData(versionSeparationInfo)
     }
 
-    fun getNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String> {
+    fun removeRepoColdData(versionSeparationInfo: VersionSeparationInfo) {
         val mapper = mappers[versionSeparationInfo.type]
         check(mapper != null) { "mapper[${versionSeparationInfo.type}] not found" }
-        return mapper.getNodesOfVersion(versionSeparationInfo)
+        mapper.removeRepoSpecialData(versionSeparationInfo)
     }
 
     fun getRestoreNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String> {
@@ -67,5 +73,11 @@ object RepoSpecialSeparationMappings {
         val mapper = mappers[versionSeparationInfo.type]
         check(mapper != null) { "mapper[${versionSeparationInfo.type}] not found" }
         mapper.restoreRepoSpecialData(versionSeparationInfo)
+    }
+
+    fun removeRestoredRepoColdData(versionSeparationInfo: VersionSeparationInfo) {
+        val mapper = mappers[versionSeparationInfo.type]
+        check(mapper != null) { "mapper[${versionSeparationInfo.type}] not found" }
+        mapper.removeRestoredRepoSpecialData(versionSeparationInfo)
     }
 }

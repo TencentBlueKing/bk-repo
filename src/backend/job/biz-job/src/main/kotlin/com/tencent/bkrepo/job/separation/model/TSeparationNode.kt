@@ -56,13 +56,26 @@ package com.tencent.bkrepo.job.separation.model
 
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_FOLDER_IDX
+import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_FOLDER_IDX_DEF
+import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_FULL_PATH_IDX
+import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_FULL_PATH_IDX_DEF
+import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_PATH_IDX
+import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_PATH_IDX_DEF
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
 
 /**
  * 冷数据节点表
  */
 @ShardingDocument("separation_node")
+@CompoundIndexes(
+    CompoundIndex(name = SEPARATION_FULL_PATH_IDX, def = SEPARATION_FULL_PATH_IDX_DEF, background = true),
+    CompoundIndex(name = SEPARATION_PATH_IDX, def = SEPARATION_PATH_IDX_DEF, background = true),
+    CompoundIndex(name = SEPARATION_FOLDER_IDX, def = SEPARATION_FOLDER_IDX_DEF, background = true),
+)
 data class TSeparationNode(
     var id: String? = null,
     var createdBy: String,
@@ -91,5 +104,14 @@ data class TSeparationNode(
     var projectId: String,
     var repoName: String,
     @ShardingKey
-    var separationDate: LocalDateTime = LocalDateTime.now(),
-)
+    var separationDate: LocalDateTime,
+) {
+    companion object {
+        const val SEPARATION_FULL_PATH_IDX = "separation_projectId_repoName_fullPath_idx"
+        const val SEPARATION_PATH_IDX = "separation_projectId_repoName_path_idx"
+        const val SEPARATION_FULL_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}"
+        const val SEPARATION_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}"
+        const val SEPARATION_FOLDER_IDX = "separation_folder_idx"
+        const val SEPARATION_FOLDER_IDX_DEF = "{'folder': 1}"
+    }
+}
