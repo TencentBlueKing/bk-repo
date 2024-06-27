@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.job.separation.pojo.task
 
 import com.tencent.bkrepo.job.separation.pojo.SeparationContent
-import java.time.LocalDateTime
 
 data class SeparationTaskRequest(
     val projectId: String,

@@ -312,14 +312,14 @@ class DataSeparatorImpl(
         context: SeparationContext, idSha256Map: MutableMap<String, String>,
         packageInfo: PackageInfo? = null, packageVersionInfo: PackageVersionInfo? = null,
     ) {
+        // 逻辑删除节点
+        val collectionName = getNodeCollectionName(context.projectId)
+        removeColdNodeFromSource(context, collectionName, idSha256Map)
         if (packageInfo != null && packageVersionInfo != null) {
             removeColdVersionFromSource(context, packageInfo, packageVersionInfo)
             val versionInfo = buildVersionSeparationInfo(context, packageInfo.key, packageVersionInfo.name)
             RepoSpecialSeparationMappings.removeRepoColdData(versionInfo)
         }
-        // 逻辑删除节点
-        val collectionName = getNodeCollectionName(context.projectId)
-        removeColdNodeFromSource(context, collectionName, idSha256Map)
     }
 
     private fun storeColdPackageVersion(

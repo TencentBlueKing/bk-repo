@@ -57,9 +57,7 @@ package com.tencent.bkrepo.job.separation.dao.repo
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.sharding.MonthRangeShardingMongoDao
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.job.separation.model.TSeparationNode
 import com.tencent.bkrepo.job.separation.model.repo.TSeparationMavenMetadataRecord
 import com.tencent.bkrepo.job.separation.pojo.query.MavenMetadata
 import com.tencent.bkrepo.job.separation.util.SeparationUtils

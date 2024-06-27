@@ -467,6 +467,9 @@ class DataRestorerImpl(
         context: SeparationContext, idSha256Map: MutableMap<String, String>,
         packageInfo: TSeparationPackage? = null, packageVersionInfo: TSeparationPackageVersion? = null,
     ) {
+        // 删除节点
+        removeColdNodeFromSeparation(context, idSha256Map)
+
         if (packageInfo != null && packageVersionInfo != null) {
             removeColdVersionFromSeparation(context, packageInfo, packageVersionInfo)
             val versionSeparationInfo = buildVersionSeparationInfo(
@@ -474,8 +477,6 @@ class DataRestorerImpl(
             )
             RepoSpecialSeparationMappings.removeRestoredRepoColdData(versionSeparationInfo)
         }
-        // 删除节点
-        removeColdNodeFromSeparation(context, idSha256Map)
     }
 
     private fun removeColdVersionFromSeparation(
