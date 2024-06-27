@@ -48,14 +48,7 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
 
     @BeforeAll
     fun beforeAll() {
-        mongoTemplate.insert(
-            DeletedNodeCleanupJob.Repository(
-                id = ObjectId.get().toHexString(),
-                projectId = UT_PROJECT_ID,
-                name = UT_REPO_NAME,
-                credentialsKey = null
-            )
-        )
+        createRepo()
     }
 
     @BeforeEach
@@ -71,14 +64,30 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
     @Test
     fun testRefNotExists() {
         // mock data
-        val node = createNode()
+        val node = buildNode()
         val nodeShouldKeep = mongoTemplate.insert(node, COLLECTION_NAME)
         val nodeShouldNotKeep = mongoTemplate.insert(
             node.copy(
+                id = ObjectId.get().toHexString(),
                 deleted = LocalDateTime.now().minusDays(40L),
                 sha256 = node.sha256!!.sha256()
             )
         )
+
+        // test repo of node was deleted
+        assertNotNull(
+            mongoTemplate.findOne(Query.query(Criteria.where(ID).isEqualTo(nodeShouldKeep.id)), COLLECTION_NAME)
+        )
+        mongoTemplate.remove(Query(), DeletedNodeCleanupJob.Repository::class.java)
+        deletedNodeCleanupJob.run(nodeShouldKeep, COLLECTION_NAME, DeletedNodeCleanupJobContext())
+        // 未补偿创建ref
+        assertNull(findRef(nodeShouldKeep.sha256!!))
+        // node被删除
+        assertNull(mongoTemplate.findOne(Query.query(Criteria.where(ID).isEqualTo(nodeShouldKeep.id)), COLLECTION_NAME))
+
+        // 恢复数据
+        createRepo()
+        mongoTemplate.insert(nodeShouldKeep, COLLECTION_NAME)
 
         // test nodeShouldKeep
         assertNull(findRef(nodeShouldKeep.sha256!!))
@@ -93,10 +102,12 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
         // test nodeShouldNotKeep
         assertNull(findRef(nodeShouldNotKeep.sha256!!))
         deletedNodeCleanupJob.run(nodeShouldNotKeep, COLLECTION_NAME, DeletedNodeCleanupJobContext())
-        // 补偿创建ref
+        // 成功补偿创建ref
         assertEquals(0, findRef(nodeShouldNotKeep.sha256!!)!!.count.toInt())
         // node被删除
-        assertNull(mongoTemplate.findOne(Query.query(Criteria.where(ID).isEqualTo(nodeShouldKeep.id)), COLLECTION_NAME))
+        assertNull(
+            mongoTemplate.findOne(Query.query(Criteria.where(ID).isEqualTo(nodeShouldNotKeep.id)), COLLECTION_NAME)
+        )
     }
 
     private fun findRef(sha256: String, credentialsKey: String? = null): DeletedNodeCleanupJob.FileReference? {
@@ -107,7 +118,7 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
         return mongoTemplate.findOne(Query(criteria), DeletedNodeCleanupJob.FileReference::class.java, collectionName)
     }
 
-    private fun createNode() = DeletedNodeCleanupJob.Node(
+    private fun buildNode() = DeletedNodeCleanupJob.Node(
         id = ObjectId.get().toHexString(),
         projectId = UT_PROJECT_ID,
         repoName = UT_REPO_NAME,
@@ -116,6 +127,17 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
         deleted = LocalDateTime.now().minusDays(1L),
         clusterNames = null
     )
+
+    private fun createRepo() {
+        mongoTemplate.insert(
+            DeletedNodeCleanupJob.Repository(
+                id = ObjectId.get().toHexString(),
+                projectId = UT_PROJECT_ID,
+                name = UT_REPO_NAME,
+                credentialsKey = null
+            )
+        )
+    }
 
     companion object {
         private val COLLECTION_NAME = "node_${HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)}"
