@@ -45,10 +45,12 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType.ENDPOINT
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
+import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.util.scope.RuleUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -310,6 +312,14 @@ class PermissionHelper constructor(
             }
         }
         return projectList
+    }
+
+    fun isPlatformApp(platform: TAccount): Boolean {
+        val grantTypes = platform.authorizationGrantTypes ?: return true
+
+        if (grantTypes.contains(AuthorizationGrantType.PLATFORM)) return true
+
+        return false
     }
 
     private fun checkIncludePatternAction(

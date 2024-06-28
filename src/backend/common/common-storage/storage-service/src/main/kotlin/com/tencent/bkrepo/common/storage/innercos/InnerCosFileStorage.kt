@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.storage.core.AbstractEncryptorFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
-import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.MigrateObjectRequest
@@ -88,15 +87,7 @@ open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredential
     }
 
     override fun copy(path: String, name: String, fromClient: CosClient, toClient: CosClient) {
-        val sameCos = fromClient.credentials.region == toClient.credentials.region &&
-            fromClient.credentials.secretId == toClient.credentials.secretId &&
-            fromClient.credentials.secretKey == toClient.credentials.secretKey &&
-            fromClient.credentials.encrypt == toClient.credentials.encrypt
-        if (sameCos) {
-            toClient.copyObject(CopyObjectRequest(fromClient.credentials.bucket, name, name))
-        } else {
-            toClient.migrateObject(MigrateObjectRequest(fromClient, name))
-        }
+        toClient.migrateObject(MigrateObjectRequest(fromClient, name))
     }
 
     override fun checkRestore(path: String, name: String, client: CosClient): Boolean {

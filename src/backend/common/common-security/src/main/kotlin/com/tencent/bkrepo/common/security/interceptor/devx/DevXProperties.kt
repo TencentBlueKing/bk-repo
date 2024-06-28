@@ -57,6 +57,10 @@ data class DevXProperties(
      */
     var cvmWorkspaceUrl: String = "",
     /**
+     * 查询cvm workspace时使用的用户名
+     */
+    var cvmWorkspaceUid: String = "bkrepo",
+    /**
      * 查询cvm workspace 页大小
      */
     var cvmWorkspacePageSize: Int = 500,

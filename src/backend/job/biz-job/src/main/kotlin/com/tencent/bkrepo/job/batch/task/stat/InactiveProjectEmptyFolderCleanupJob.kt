@@ -129,7 +129,10 @@ class InactiveProjectEmptyFolderCleanupJob(
         require(context is EmptyFolderCleanupJobContext)
         super.onRunCollectionFinished(collectionName, context)
         logger.info("will filter empty folder in $collectionName")
-        emptyFolderCleanup.emptyFolderHandler(collectionName, context, runCollection = true)
+        emptyFolderCleanup.emptyFolderHandler(
+            collectionName, context,
+            properties.deletedEmptyFolder, runCollection = true,
+        )
     }
 
     data class Node(

@@ -35,7 +35,7 @@ import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.dao.repository.AccountRepository
+import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.pojo.enums.ActionTypeMapping
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -54,7 +54,7 @@ open class BkIamV3PermissionServiceImpl(
     private val bkiamV3Service: BkIamV3Service,
     userDao: UserDao,
     roleRepository: RoleRepository,
-    accountRepository: AccountRepository,
+    accountDao: AccountDao,
     permissionDao: PermissionDao,
     personalPathDao: PersonalPathDao,
     repoAuthConfigDao: RepoAuthConfigDao,
@@ -62,7 +62,7 @@ open class BkIamV3PermissionServiceImpl(
     projectClient: ProjectClient
 ) : PermissionServiceImpl(
     roleRepository,
-    accountRepository,
+    accountDao,
     permissionDao,
     userDao,
     personalPathDao,

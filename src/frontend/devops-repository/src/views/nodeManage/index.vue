@@ -35,7 +35,7 @@
             </template>
             <bk-table-column :label="$t('status')" width="100">
                 <template #default="{ row }">
-                    <div class="status-sign" :class="row.status" :data-name="row.status === 'HEALTHY' ? $t('normal') : $t('normal')"></div>
+                    <div class="status-sign" :class="row.status" :data-name="row.status === 'HEALTHY' ? $t('normal') : $t('abnormal')"></div>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('nodeName')" prop="name" width="250" show-overflow-tooltip></bk-table-column>
