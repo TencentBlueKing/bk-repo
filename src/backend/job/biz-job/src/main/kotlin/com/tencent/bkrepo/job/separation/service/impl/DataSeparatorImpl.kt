@@ -45,6 +45,7 @@ import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageVersionDao
+import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.exception.SeparationDataNotFoundException
 import com.tencent.bkrepo.job.separation.model.TSeparationNode
 import com.tencent.bkrepo.job.separation.model.TSeparationPackage
@@ -86,9 +87,10 @@ class DataSeparatorImpl(
     private val mongoTemplate: MongoTemplate,
     private val separationPackageVersionDao: SeparationPackageVersionDao,
     private val separationPackageDao: SeparationPackageDao,
-    private val separationFailedRecordDao: SeparationFailedRecordDao,
+    separationFailedRecordDao: SeparationFailedRecordDao,
     private val separationNodeDao: SeparationNodeDao,
-) : AbstractHandler(mongoTemplate, separationFailedRecordDao), DataSeparator {
+    separationTaskDao: SeparationTaskDao,
+) : AbstractHandler(mongoTemplate, separationFailedRecordDao, separationTaskDao), DataSeparator {
     override fun repoSeparator(context: SeparationContext) {
         logger.info("start to do separation for repo ${context.projectId}|${context.repoName}")
         when (context.separationArtifactType) {
@@ -267,7 +269,9 @@ class DataSeparatorImpl(
                 copyColdPackageVersion(context, packageInfo, packageVersionInfo)
                 //删除package, 逻辑删除node,
                 removeColdDataInSource(context, idSha256Map, packageInfo, packageVersionInfo)
-                setSuccessProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
+                setSuccessProgress(
+                    context.taskId, context.separationProgress, packageInfo.id, packageVersionInfo.id
+                )
                 removeFailedRecord(context, packageInfo.id, packageVersionInfo.id)
             } catch (e: Exception) {
                 logger.error(
@@ -277,7 +281,9 @@ class DataSeparatorImpl(
                 saveFailedRecord(
                     context, packageInfo.id, packageVersionInfo.id,
                 )
-                setFailedProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
+                setFailedProgress(
+                    context.taskId, context.separationProgress, packageInfo.id, packageVersionInfo.id
+                )
             }
         }
     }
@@ -563,7 +569,7 @@ class DataSeparatorImpl(
             val (id, sha256) = separateColdNode(context, node.fullPath, node.id)
             // 逻辑删除node,
             removeColdDataInSource(context, mutableMapOf(id to sha256))
-            setSuccessProgress(context.separationProgress, nodeId = node.id)
+            setSuccessProgress(context.taskId, context.separationProgress, nodeId = node.id)
             removeFailedRecord(context, nodeId = node.id)
         } catch (e: Exception) {
             logger.error(
@@ -573,7 +579,7 @@ class DataSeparatorImpl(
             saveFailedRecord(
                 context, nodeId = node.id
             )
-            setFailedProgress(context.separationProgress, nodeId = node.id)
+            setFailedProgress(context.taskId, context.separationProgress, nodeId = node.id)
         }
     }
 

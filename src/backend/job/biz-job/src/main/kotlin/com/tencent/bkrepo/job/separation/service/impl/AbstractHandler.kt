@@ -32,11 +32,14 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.FILE_REFERENCE_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
+import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
 import com.tencent.bkrepo.job.separation.pojo.PackageFilterInfo
 import com.tencent.bkrepo.job.separation.pojo.query.FileReferenceInfo
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationProgress
+import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
+import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -47,6 +50,7 @@ import org.springframework.data.mongodb.core.query.Update
 open class AbstractHandler(
     private val mongoTemplate: MongoTemplate,
     private val separationFailedRecordDao: SeparationFailedRecordDao,
+    private val separationTaskDao: SeparationTaskDao,
 ) {
 
     fun validatePackageParams(pkg: PackageFilterInfo?) {
@@ -90,6 +94,7 @@ open class AbstractHandler(
     }
 
     fun setSuccessProgress(
+        taskId: String,
         separationProgress: SeparationProgress,
         packageId: String? = null, versionId: String? = null,
         nodeId: String? = null
@@ -98,9 +103,11 @@ open class AbstractHandler(
         separationProgress.packageId = packageId
         separationProgress.versionId = versionId
         separationProgress.nodeId = nodeId
+        updateStatus(taskId, separationProgress)
     }
 
     fun setFailedProgress(
+        taskId: String,
         separationProgress: SeparationProgress,
         packageId: String? = null, versionId: String? = null,
         nodeId: String? = null
@@ -109,6 +116,19 @@ open class AbstractHandler(
         separationProgress.packageId = packageId
         separationProgress.versionId = versionId
         separationProgress.nodeId = nodeId
+        updateStatus(taskId, separationProgress)
+    }
+
+    private fun updateStatus(
+        taskId: String,
+        separationProgress: SeparationProgress,
+    ) {
+        val count = SeparationCount(separationProgress.success, separationProgress.failed)
+        separationTaskDao.updateState(
+            taskId,
+            SeparationTaskState.RUNNING,
+            count,
+        )
     }
 
     fun saveFailedRecord(

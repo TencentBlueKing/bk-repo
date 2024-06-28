@@ -55,6 +55,8 @@
 package com.tencent.bkrepo.job.separation.model
 
 import com.tencent.bkrepo.job.SEPARATE
+import com.tencent.bkrepo.job.separation.model.TSeparationTask.Companion.TASK_STATE_IDX
+import com.tencent.bkrepo.job.separation.model.TSeparationTask.Companion.TASK_STATE_IDX_DEF
 import com.tencent.bkrepo.job.separation.model.TSeparationTask.Companion.TASK_TYPE_IDX
 import com.tencent.bkrepo.job.separation.model.TSeparationTask.Companion.TASK_TYPE_IDX_DEF
 import com.tencent.bkrepo.job.separation.pojo.SeparationContent
@@ -70,7 +72,8 @@ import java.time.LocalDateTime
  */
 @Document("separation_task")
 @CompoundIndexes(
-    CompoundIndex(name = TASK_TYPE_IDX, def = TASK_TYPE_IDX_DEF, background = true)
+    CompoundIndex(name = TASK_TYPE_IDX, def = TASK_TYPE_IDX_DEF, background = true),
+    CompoundIndex(name = TASK_STATE_IDX, def = TASK_STATE_IDX_DEF, background = true)
 )
 data class TSeparationTask(
     val id: String? = null,
@@ -92,5 +95,7 @@ data class TSeparationTask(
     companion object {
         const val TASK_TYPE_IDX = "type_projectId_repoName"
         const val TASK_TYPE_IDX_DEF = "{'type': 1, 'projectId': 1, 'repoName': 1}"
+        const val TASK_STATE_IDX = "state"
+        const val TASK_STATE_IDX_DEF = "{'state': 1}"
     }
 }

@@ -88,12 +88,19 @@ class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
         return count(Query(criteria))
     }
 
-    fun updateState(taskId: String, state: SeparationTaskState, count: SeparationCount? = null) {
+    fun updateState(
+        taskId: String,
+        state: SeparationTaskState,
+        count: SeparationCount? = null,
+        startDate: LocalDateTime? = null,
+        endDate: LocalDateTime? = null
+    ) {
         val criteria = Criteria().and(ID).isEqualTo(taskId)
         val update = Update.update(TSeparationTask::lastModifiedBy.name, SYSTEM_USER)
             .set(TSeparationTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSeparationTask::state.name, state.name)
-            .set(TSeparationTask::startDate.name, LocalDateTime.now())
+        startDate?.let { update.set(TSeparationTask::startDate.name, startDate) }
+        endDate?.let { update.set(TSeparationTask::endDate.name, endDate) }
         count?.let { update.set(TSeparationTask::totalCount.name, count) }
         this.updateFirst(Query(criteria), update)
     }

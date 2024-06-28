@@ -43,5 +43,7 @@ interface SeparationTaskService {
 
     fun findTasks(state: String? = null, pageRequest: PageRequest): Page<SeparationTask>
 
+    fun reInitTaskState(taskId: String)
+
     fun repoSeparationCheck(projectId: String, repoName: String): Boolean
 }

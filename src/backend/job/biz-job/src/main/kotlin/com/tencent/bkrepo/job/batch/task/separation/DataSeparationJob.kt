@@ -45,9 +45,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.time.LocalDateTime
 
 /**
  * 根据配置进行数据降冷
@@ -62,19 +62,40 @@ class DataSeparationJob(
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to run data separation job")
-        val criteria = Criteria.where(TSeparationTask::state.name).isEqualTo(SeparationTaskState.PENDING.name)
+        val criteria = Criteria.where(TSeparationTask::state.name).ne(SeparationTaskState.FINISHED.name)
         val query = Query(criteria)
         val tasks = mongoTemplate.find(query, TSeparationTask::class.java, SEPARATION_TASK_COLLECTION_NAME)
-        tasks.forEach {
+        for (task in tasks) {
+            if (!taskStatusCheck(task)) continue
             try {
-                executeSeparationTask(it)
+                executeSeparationTask(task)
             } catch (e: Exception) {
-                logger.error("run separation task ${it.id} failed, error: ${e.message}")
+                logger.error("run separation task ${task.id} failed, error: ${e.message}")
             }
         }
     }
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+
+
+    private fun taskStatusCheck(task: TSeparationTask): Boolean {
+        return when (task.state) {
+            SeparationTaskState.PENDING.name -> true
+            SeparationTaskState.RUNNING.name -> {
+                //任务处于running 状态超过多久没有更新数据，则判断任务已经中断，需要重新执行
+                val check = LocalDateTime.now().minusMinutes(properties.waitTime.toMinutes())
+                    .isAfter(task.lastModifiedDate)
+                if (check) {
+                    logger.warn(
+                        "$task is staying in ${task.state} for" +
+                            " more than ${properties.waitTime.toMinutes()} minutes"
+                    )
+                }
+                check
+            }
+            else -> false
+        }
+    }
 
 
     private fun executeSeparationTask(task: TSeparationTask) {

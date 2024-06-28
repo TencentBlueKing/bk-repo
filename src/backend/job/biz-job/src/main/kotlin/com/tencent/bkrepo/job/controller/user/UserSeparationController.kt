@@ -39,6 +39,7 @@ import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -65,6 +66,12 @@ class UserSeparationController(
     ): Response<Page<SeparationTask>> {
         val page = separationTaskService.findTasks(state, Pages.ofRequest(pageNumber, pageSize))
         return ResponseBuilder.success(page)
+    }
+
+    @PostMapping("/update/{taskId}/state")
+    fun updateTaskState(@PathVariable("taskId") taskId: String): Response<Void> {
+        separationTaskService.reInitTaskState(taskId)
+        return ResponseBuilder.success()
     }
 
 }

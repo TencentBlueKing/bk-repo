@@ -50,7 +50,6 @@ import com.tencent.bkrepo.job.separation.pojo.query.NodeBaseInfo
 import com.tencent.bkrepo.job.separation.pojo.query.PackageInfo
 import com.tencent.bkrepo.job.separation.pojo.query.PackageVersionInfo
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
@@ -188,6 +187,5 @@ class FixFailedDataSeparationJob(
     companion object {
         private val logger = LoggerFactory.getLogger(FixFailedDataSeparationJob::class.java)
         private const val SEPARATION_FAILED_RECORD_COLLECTION_NAME = "separation_failed_record"
-        private val STATE_LIST = listOf(SeparationTaskState.PENDING.name, SeparationTaskState.TERMINATED.name)
     }
 }

@@ -44,6 +44,7 @@ import com.tencent.bkrepo.job.separation.pojo.SeparationArtifactType
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask.Companion.toDto
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
+import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -113,6 +114,12 @@ class SeparationTaskServiceImpl(
         val count = separationTaskDao.count(state)
         val records = separationTaskDao.find(state, pageRequest).map { it.toDto() }
         return Pages.ofResponse(pageRequest, count, records)
+    }
+
+    override fun reInitTaskState(taskId: String) {
+        separationTaskDao.findById(taskId)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, taskId)
+        separationTaskDao.updateState(taskId, SeparationTaskState.PENDING)
     }
 
     override fun repoSeparationCheck(projectId: String, repoName: String): Boolean {

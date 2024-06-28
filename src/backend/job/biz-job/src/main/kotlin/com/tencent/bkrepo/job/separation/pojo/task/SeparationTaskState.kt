@@ -34,7 +34,5 @@ enum class SeparationTaskState {
 
     RUNNING,
 
-    TERMINATED,
-
     FINISHED,
 }

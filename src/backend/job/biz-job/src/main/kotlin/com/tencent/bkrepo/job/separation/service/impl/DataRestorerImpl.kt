@@ -35,6 +35,7 @@ import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageVersionDao
+import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.exception.SeparationDataNotFoundException
 import com.tencent.bkrepo.job.separation.model.TSeparationNode
 import com.tencent.bkrepo.job.separation.model.TSeparationPackage
@@ -69,9 +70,10 @@ class DataRestorerImpl(
     private val mongoTemplate: MongoTemplate,
     private val separationPackageVersionDao: SeparationPackageVersionDao,
     private val separationPackageDao: SeparationPackageDao,
-    private val separationFailedRecordDao: SeparationFailedRecordDao,
-    private val separationNodeDao: SeparationNodeDao
-) : AbstractHandler(mongoTemplate, separationFailedRecordDao), DataRestorer {
+    separationFailedRecordDao: SeparationFailedRecordDao,
+    private val separationNodeDao: SeparationNodeDao,
+    separationTaskDao: SeparationTaskDao,
+) : AbstractHandler(mongoTemplate, separationFailedRecordDao, separationTaskDao), DataRestorer {
     override fun repoRestorer(context: SeparationContext) {
         logger.info("start to do restore for repo ${context.projectId}|${context.repoName}")
         when (context.separationArtifactType) {
@@ -188,7 +190,9 @@ class DataRestorerImpl(
                 removeCodeDataInSeparation(
                     context, idSha256Map, packageInfo, packageVersionInfo
                 )
-                setSuccessProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
+                setSuccessProgress(
+                    context.taskId, context.separationProgress, packageInfo.id, packageVersionInfo.id
+                )
                 removeFailedRecord(
                     context, packageInfo.id, packageVersionInfo.id
                 )
@@ -200,7 +204,9 @@ class DataRestorerImpl(
                 saveFailedRecord(
                     context, packageInfo.id, packageVersionInfo.id
                 )
-                setFailedProgress(context.separationProgress, packageInfo.id, packageVersionInfo.id)
+                setFailedProgress(
+                    context.taskId, context.separationProgress, packageInfo.id, packageVersionInfo.id
+                )
             }
         }
     }
@@ -554,7 +560,7 @@ class DataRestorerImpl(
             val (id, sha256) = restoreColdNode(context, cNode.fullPath, cNode.id!!)
             // 逻辑删除node,
             removeCodeDataInSeparation(context, mutableMapOf(id to sha256))
-            setSuccessProgress(context.separationProgress, nodeId = cNode.id)
+            setSuccessProgress(context.taskId, context.separationProgress, nodeId = cNode.id)
             removeFailedRecord(
                 context, nodeId = cNode.id,
             )
@@ -564,7 +570,7 @@ class DataRestorerImpl(
                     "at ${context.separationDate} failed, error: ${e.message}"
             )
             saveFailedRecord(context, nodeId = cNode.id)
-            setFailedProgress(context.separationProgress, nodeId = cNode.id)
+            setFailedProgress(context.taskId, context.separationProgress, nodeId = cNode.id)
         }
     }
 

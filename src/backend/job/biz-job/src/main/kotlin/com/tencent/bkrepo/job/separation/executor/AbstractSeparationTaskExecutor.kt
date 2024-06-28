@@ -33,6 +33,7 @@ import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import org.slf4j.LoggerFactory
+import java.time.LocalDateTime
 import java.util.concurrent.ThreadPoolExecutor
 
 abstract class AbstractSeparationTaskExecutor(
@@ -44,7 +45,7 @@ abstract class AbstractSeparationTaskExecutor(
     open fun concurrencyCheck(): Boolean = false
 
     override fun execute(context: SeparationContext) {
-        threadPoolExecutor()?.execute (Runnable { runTask(context) }.trace())
+        threadPoolExecutor()?.execute(Runnable { runTask(context) }.trace())
     }
 
     open fun threadPoolExecutor(): ThreadPoolExecutor? = null
@@ -69,7 +70,9 @@ abstract class AbstractSeparationTaskExecutor(
     }
 
     open fun beforeExecute(context: SeparationContext) {
-        separationTaskDao.updateState(context.taskId, SeparationTaskState.RUNNING)
+        separationTaskDao.updateState(
+            context.taskId, SeparationTaskState.RUNNING, startDate = LocalDateTime.now()
+        )
     }
 
     open fun afterExecute(context: SeparationContext) {
@@ -79,6 +82,7 @@ abstract class AbstractSeparationTaskExecutor(
                 taskId,
                 SeparationTaskState.FINISHED,
                 count,
+                endDate = LocalDateTime.now()
             )
         }
     }
