@@ -36,6 +36,7 @@ import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FixFailedDataSeparationJobProperties
+import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageVersionDao
@@ -74,6 +75,7 @@ class FixFailedDataSeparationJob(
     private val separationPackageDao: SeparationPackageDao,
     private val separationPackageVersionDao: SeparationPackageVersionDao,
     private val separationNodeDao: SeparationNodeDao,
+    private val separationFailedRecordDao: SeparationFailedRecordDao,
 ) : DefaultContextJob(properties) {
 
     override fun doStart0(jobContext: JobContext) {
@@ -96,7 +98,6 @@ class FixFailedDataSeparationJob(
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
-
     private fun executeFailedRecord(record: TSeparationFailedRecord) {
         val repo = RepositoryCommonUtils.getRepositoryDetail(record.projectId, record.repoName)
         val task = separationTaskDao.findById(record.taskId)
@@ -105,73 +106,143 @@ class FixFailedDataSeparationJob(
             throw SeparationDataNotFoundException(record.taskId)
         }
         when (repo.type) {
-            RepositoryType.GENERIC -> {
-                val fullPath = when (task.type) {
-                    SEPARATE -> {
-                        val nodeQuery = Query(Criteria.where(ID).isEqualTo(record.nodeId))
-                        val collectionName = SeparationUtils.getNodeCollectionName(record.projectId)
-                        val nodeInfo = mongoTemplate.findOne(nodeQuery, NodeBaseInfo::class.java, collectionName)
-                        if (nodeInfo == null) {
-                            logger.error("node ${record.nodeId} is deleted")
-                            throw SeparationDataNotFoundException(record.id!!)
-                        }
-                        nodeInfo.fullPath
-                    }
-                    else -> {
-                        val nodeInfo = separationNodeDao.findById(record.nodeId!!, record.actionDate!!)
-                        if (nodeInfo == null) {
-                            logger.error("cold node ${record.nodeId} is deleted")
-                            throw SeparationDataNotFoundException(record.id!!)
-                        }
-                        nodeInfo.fullPath
-                    }
-                }
-                val content = mutableListOf(NodeFilterInfo(path = fullPath))
-                task.content.packages = null
-                task.content.paths = content
-            }
-            else -> {
-                val (packageKey, version) = when (task.type) {
-                    SEPARATE -> {
-                        val packageQuery = Query(Criteria.where(ID).isEqualTo(record.packageId))
-                        val packageInfo = mongoTemplate.findOne(
-                            packageQuery, PackageInfo::class.java, PACKAGE_COLLECTION_NAME
-                        )
-                        if (packageInfo == null) {
-                            logger.error("package ${record.packageId} is deleted")
-                            throw SeparationDataNotFoundException(record.id!!)
-                        }
-                        val versionQuery = Query(Criteria.where(ID).isEqualTo(record.versionId))
-                        val versionInfo = mongoTemplate.findOne(
-                            versionQuery, PackageVersionInfo::class.java, PACKAGE_VERSION_COLLECTION_NAME
-                        )
-                        if (versionInfo == null) {
-                            logger.error("version ${record.versionId} is deleted")
-                            throw SeparationDataNotFoundException(record.id!!)
-                        }
-                        Pair(packageInfo.key, versionInfo.name)
-                    }
-                    else -> {
-                        val packageInfo = separationPackageDao.findById(record.packageId!!)
-                        if (packageInfo == null) {
-                            logger.error("the cold package ${record.packageId} is deleted")
-                            throw SeparationDataNotFoundException(record.id!!)
-                        }
-                        val versionInfo = separationPackageVersionDao.findById(record.versionId!!, record.actionDate!!)
-                        if (versionInfo == null) {
-                            logger.error("cold version ${record.versionId} in ${record.actionDate}  is deleted")
-                            throw SeparationDataNotFoundException(record.id!!)
-                        }
-                        Pair(packageInfo.key, versionInfo.name)
-                    }
-                }
-                val content = mutableListOf(PackageFilterInfo(packageKey = packageKey, versions = listOf(version)))
-                task.content.paths = null
-                task.content.packages = content
-            }
+            RepositoryType.GENERIC -> handleGenericFailedRecord(task, record)
+            else -> handleNonGenericFailedRecord(task, record)
         }
         val context = buildSeparationContext(task, repo)
         fixFailedRecordTaskExecutor.execute(context)
+    }
+
+    private fun handleGenericFailedRecord(
+        task: TSeparationTask,
+        record: TSeparationFailedRecord
+    ) {
+        val fullPath = when (task.type) {
+            SEPARATE -> {
+                val nodeQuery = Query(Criteria.where(ID).isEqualTo(record.nodeId))
+                val collectionName = SeparationUtils.getNodeCollectionName(record.projectId)
+                val nodeInfo = mongoTemplate.findOne(nodeQuery, NodeBaseInfo::class.java, collectionName)
+                if (nodeInfo == null) {
+                    logger.error("node ${record.nodeId} is deleted")
+                    separationFailedRecordDao.saveFailedRecord(
+                        projectId = record.projectId,
+                        repoName = record.repoName,
+                        type = record.type,
+                        taskId = record.taskId,
+                        packageId = record.packageId,
+                        versionId = record.versionId,
+                        nodeId = record.nodeId,
+                        actionDate = record.actionDate
+                    )
+                    throw SeparationDataNotFoundException(record.id!!)
+                }
+                nodeInfo.fullPath
+            }
+            else -> {
+                val nodeInfo = separationNodeDao.findById(record.nodeId!!, record.actionDate)
+                if (nodeInfo == null) {
+                    logger.error("cold node ${record.nodeId} is deleted")
+                    separationFailedRecordDao.saveFailedRecord(
+                        projectId = record.projectId,
+                        repoName = record.repoName,
+                        type = record.type,
+                        taskId = record.taskId,
+                        packageId = record.packageId,
+                        versionId = record.versionId,
+                        nodeId = record.nodeId,
+                        actionDate = record.actionDate
+                    )
+                    throw SeparationDataNotFoundException(record.id!!)
+                }
+                nodeInfo.fullPath
+            }
+        }
+        val content = mutableListOf(NodeFilterInfo(path = fullPath))
+        task.content.packages = null
+        task.content.paths = content
+    }
+
+    private fun handleNonGenericFailedRecord(
+        task: TSeparationTask,
+        record: TSeparationFailedRecord
+    ) {
+        val (packageKey, version) = when (task.type) {
+            SEPARATE -> {
+                val packageQuery = Query(Criteria.where(ID).isEqualTo(record.packageId))
+                val packageInfo = mongoTemplate.findOne(
+                    packageQuery, PackageInfo::class.java, PACKAGE_COLLECTION_NAME
+                )
+                if (packageInfo == null) {
+                    logger.error("package ${record.packageId} is deleted")
+                    separationFailedRecordDao.saveFailedRecord(
+                        projectId = record.projectId,
+                        repoName = record.repoName,
+                        type = record.type,
+                        taskId = record.taskId,
+                        packageId = record.packageId,
+                        versionId = record.versionId,
+                        nodeId = record.nodeId,
+                        actionDate = record.actionDate
+                    )
+                    throw SeparationDataNotFoundException(record.id!!)
+                }
+                val versionQuery = Query(Criteria.where(ID).isEqualTo(record.versionId))
+                val versionInfo = mongoTemplate.findOne(
+                    versionQuery, PackageVersionInfo::class.java, PACKAGE_VERSION_COLLECTION_NAME
+                )
+                if (versionInfo == null) {
+                    logger.error("version ${record.versionId} is deleted")
+                    separationFailedRecordDao.saveFailedRecord(
+                        projectId = record.projectId,
+                        repoName = record.repoName,
+                        type = record.type,
+                        taskId = record.taskId,
+                        packageId = record.packageId,
+                        versionId = record.versionId,
+                        nodeId = record.nodeId,
+                        actionDate = record.actionDate
+                    )
+                    throw SeparationDataNotFoundException(record.id!!)
+                }
+                Pair(packageInfo.key, versionInfo.name)
+            }
+            else -> {
+                val packageInfo = separationPackageDao.findById(record.packageId!!)
+                if (packageInfo == null) {
+                    logger.error("the cold package ${record.packageId} is deleted")
+                    separationFailedRecordDao.saveFailedRecord(
+                        projectId = record.projectId,
+                        repoName = record.repoName,
+                        type = record.type,
+                        taskId = record.taskId,
+                        packageId = record.packageId,
+                        versionId = record.versionId,
+                        nodeId = record.nodeId,
+                        actionDate = record.actionDate
+                    )
+                    throw SeparationDataNotFoundException(record.id!!)
+                }
+                val versionInfo = separationPackageVersionDao.findById(record.versionId!!, record.actionDate)
+                if (versionInfo == null) {
+                    logger.error("cold version ${record.versionId} in ${record.actionDate}  is deleted")
+                    separationFailedRecordDao.saveFailedRecord(
+                        projectId = record.projectId,
+                        repoName = record.repoName,
+                        type = record.type,
+                        taskId = record.taskId,
+                        packageId = record.packageId,
+                        versionId = record.versionId,
+                        nodeId = record.nodeId,
+                        actionDate = record.actionDate
+                    )
+                    throw SeparationDataNotFoundException(record.id!!)
+                }
+                Pair(packageInfo.key, versionInfo.name)
+            }
+        }
+        val content = mutableListOf(PackageFilterInfo(packageKey = packageKey, versions = listOf(version)))
+        task.content.paths = null
+        task.content.packages = content
     }
 
     private fun buildSeparationContext(

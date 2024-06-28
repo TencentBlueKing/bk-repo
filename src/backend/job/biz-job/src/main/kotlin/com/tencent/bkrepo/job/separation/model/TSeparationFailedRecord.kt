@@ -77,7 +77,7 @@ data class TSeparationFailedRecord(
     val repoName: String,
     val taskId: String,
     val triedTimes: Int,
-    val actionDate: LocalDateTime? = null,
+    val actionDate: LocalDateTime,
     val type: String = SEPARATE,
     val packageId: String? = null,
     val versionId: String? = null,
