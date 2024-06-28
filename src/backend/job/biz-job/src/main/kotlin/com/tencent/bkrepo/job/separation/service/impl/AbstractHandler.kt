@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.separation.service.impl
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.FILE_REFERENCE_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
@@ -36,16 +37,20 @@ import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
 import com.tencent.bkrepo.job.separation.pojo.PackageFilterInfo
 import com.tencent.bkrepo.job.separation.pojo.query.FileReferenceInfo
+import com.tencent.bkrepo.job.separation.pojo.query.NodeDetailInfo
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationProgress
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+import java.time.LocalDateTime
 
 open class AbstractHandler(
     private val mongoTemplate: MongoTemplate,
@@ -79,6 +84,34 @@ open class AbstractHandler(
         return true
     }
 
+    fun removeNodeFromSource(
+        context: SeparationContext,
+        nodeCollectionName: String,
+        idSha256Map: MutableMap<String, String>
+    ) {
+        with(context) {
+            idSha256Map.forEach {
+                val nodeQuery = Query(Criteria.where(ID).isEqualTo(it.key))
+                // 逻辑删除， 同时删除索引
+                val update = Update()
+                    .set(NodeDetailInfo::lastModifiedBy.name, SYSTEM_USER)
+                    .set(NodeDetailInfo::deleted.name, LocalDateTime.now())
+                val updateResult = mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
+                if (updateResult.modifiedCount != 1L) {
+                    logger.error(
+                        "delete hot node failed with id ${it.key} " +
+                            "and fullPath ${it.value} in $projectId|$repoName"
+                    )
+                } else {
+                    logger.info(
+                        "delete hot node success with id ${it.key} " +
+                            "and fullPath ${it.value} in $projectId|$repoName"
+                    )
+                }
+            }
+        }
+    }
+
     fun increment(sha256: String, credentialsKey: String?, inc: Long) {
         val criteria = Criteria.where(FileReferenceInfo::sha256.name).`is`(sha256)
             .and(FileReferenceInfo::credentialsKey.name).`is`(credentialsKey)
@@ -91,6 +124,19 @@ open class AbstractHandler(
             mongoTemplate.upsert(query, update, FILE_REFERENCE_COLLECTION_NAME)
         }
         logger.info("Increment hot node reference [$inc] of file [$sha256] on credentialsKey [$credentialsKey].")
+    }
+
+    fun setSkippedProgress(
+        taskId: String,
+        separationProgress: SeparationProgress,
+        packageId: String? = null, versionId: String? = null,
+        nodeId: String? = null
+    ) {
+        separationProgress.skipped++
+        separationProgress.packageId = packageId
+        separationProgress.versionId = versionId
+        separationProgress.nodeId = nodeId
+        updateStatus(taskId, separationProgress)
     }
 
     fun setSuccessProgress(
@@ -123,7 +169,9 @@ open class AbstractHandler(
         taskId: String,
         separationProgress: SeparationProgress,
     ) {
-        val count = SeparationCount(separationProgress.success, separationProgress.failed)
+        val count = SeparationCount(
+            separationProgress.success, separationProgress.failed, separationProgress.skipped
+        )
         separationTaskDao.updateState(
             taskId,
             SeparationTaskState.RUNNING,

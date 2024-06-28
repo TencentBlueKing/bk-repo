@@ -149,7 +149,7 @@ class DataRestorerImpl(
                 val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
                 val data = separationPackageVersionDao.find(pageQuery)
                 if (data.isEmpty()) {
-                    logger.warn("Could not find cold version $pkg before $separationDate in $projectId|$repoName !")
+                    logger.warn("Could not find cold version $pkg at $separationDate in $projectId|$repoName !")
                     break
                 }
                 data.forEach {
@@ -171,14 +171,31 @@ class DataRestorerImpl(
                 val versionSeparationInfo = buildVersionSeparationInfo(
                     context, packageInfo.key, packageVersionInfo.name
                 )
+                val versionExist = checkVersionExist(
+                    context.projectId, context.repoName, packageInfo.key, packageVersionInfo.name
+                )
+                // 当选择不覆盖时，并且对应版本在热数据中存在，则直接跳过
+                if (!overwrite && versionExist) {
+                    logger.info(
+                        "version ${packageVersionInfo.name} of package ${packageInfo.key} " +
+                            "has been skipped at $separationDate in $projectId|$repoName "
+                    )
+                    setSkippedProgress(
+                        context.taskId, context.separationProgress, packageInfo.id, packageVersionInfo.id
+                    )
+                    return
+                }
                 // 查找出版本对应节点
                 val nodeRecordsMap = RepoSpecialSeparationMappings.getRestoreNodesOfVersion(versionSeparationInfo)
                 if (nodeRecordsMap.isEmpty()) {
                     logger.warn(
                         "no version ${packageVersionInfo.name} of package ${packageInfo.key} " +
-                            "need to be restored before $separationDate in $projectId|$repoName "
+                            "need to be restored at $separationDate in $projectId|$repoName "
                     )
                     return
+                }
+                if (overwrite && versionExist) {
+                    removeNodeOfExistVersion(context, versionSeparationInfo)
                 }
                 //  restore到热表, 并增加引用,
                 val idSha256Map = restoreColdNodes(context, nodeRecordsMap)
@@ -196,6 +213,10 @@ class DataRestorerImpl(
                 removeFailedRecord(
                     context, packageInfo.id, packageVersionInfo.id
                 )
+                logger.info(
+                    "version ${packageVersionInfo.name} of package ${packageInfo.key} " +
+                        "restored success at $separationDate in $projectId|$repoName "
+                )
             } catch (e: Exception) {
                 logger.error(
                     "restore cold package ${packageInfo.key} with version ${packageVersionInfo.name}" +
@@ -211,6 +232,31 @@ class DataRestorerImpl(
         }
     }
 
+    private fun checkVersionExist(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String,
+    ): Boolean {
+        val packageInfo = getPackageInfo(projectId, repoName, packageKey) ?: return false
+        return getPackageVersionInfo(packageInfo.id!!, version) != null
+    }
+
+    /**
+     * 删除已经存在的节点信息，避免覆盖更新时干扰
+     */
+    private fun removeNodeOfExistVersion(
+        context: SeparationContext,
+        versionSeparationInfo: VersionSeparationInfo
+    ) {
+        logger.info("will delete exist nodes of $versionSeparationInfo")
+        val idSha256Map = RepoSpecialSeparationMappings.getNodesOfVersion(versionSeparationInfo, false)
+        // 逻辑删除节点
+        val collectionName = SeparationUtils.getNodeCollectionName(context.projectId)
+        removeNodeFromSource(context, collectionName, idSha256Map)
+        RepoSpecialSeparationMappings.removeRepoColdData(versionSeparationInfo)
+        logger.info("finish delete exist node of $versionSeparationInfo")
+    }
 
     private fun buildVersionSeparationInfo(
         context: SeparationContext, packageKey: String,
@@ -327,6 +373,27 @@ class DataRestorerImpl(
         restoreColdPackageVersion(context, packageId, packageVersionInfo)
     }
 
+    private fun buildPackageVersionQuery(
+        packageId: String,
+        version: String,
+    ): Query {
+        return Query(
+            Criteria.where(VersionDetailInfo::packageId.name).isEqualTo(packageId)
+                .and(VersionDetailInfo::name.name).isEqualTo(version)
+        )
+    }
+
+    private fun getPackageVersionInfo(
+        packageId: String,
+        version: String,
+    ): VersionDetailInfo? {
+        val versionQuery = buildPackageVersionQuery(packageId, version)
+        return mongoTemplate.findOne(
+            versionQuery,
+            VersionDetailInfo::class.java, PACKAGE_VERSION_COLLECTION_NAME
+        )
+    }
+
     private fun restoreColdPackageVersion(
         context: SeparationContext, packageId: String,
         packageVersionInfo: TSeparationPackageVersion,
@@ -341,14 +408,7 @@ class DataRestorerImpl(
             )
             throw SeparationDataNotFoundException(packageVersionInfo.id!!)
         }
-        val versionQuery = Query(
-            Criteria.where(VersionDetailInfo::packageId.name).isEqualTo(packageId)
-                .and(VersionDetailInfo::name.name).isEqualTo(packageVersionInfo.name)
-        )
-        var existHotVersionRecord = mongoTemplate.findOne(
-            versionQuery,
-            VersionDetailInfo::class.java, PACKAGE_VERSION_COLLECTION_NAME
-        )
+        var existHotVersionRecord = getPackageVersionInfo(packageId, packageVersionInfo.name)
         storedColdVersion.packageId = packageId
 
         // 存在且不覆盖直接返回
@@ -362,6 +422,7 @@ class DataRestorerImpl(
         try {
             if (existHotVersionRecord != null && context.overwrite) {
                 val update = buildPackageVersionUpdate(storedColdVersion)
+                val versionQuery = buildPackageVersionQuery(packageId, packageVersionInfo.name)
                 mongoTemplate.updateFirst(versionQuery, update, PACKAGE_VERSION_COLLECTION_NAME)
                 logger.info(
                     "restore update package version[${packageId}|${existHotVersionRecord.name}] " +
@@ -401,6 +462,29 @@ class DataRestorerImpl(
             .set(VersionDetailInfo::clusterNames.name, storedColdVersion.clusterNames)
     }
 
+    private fun buildPackageQuery(
+        projectId: String,
+        repoName: String,
+        packageKey: String
+    ): Query {
+        return Query(
+            Criteria.where(PackageDetailInfo::projectId.name).isEqualTo(projectId)
+                .and(PackageDetailInfo::repoName.name).isEqualTo(repoName)
+                .and(PackageDetailInfo::key.name).isEqualTo(packageKey)
+        )
+    }
+
+    private fun getPackageInfo(
+        projectId: String,
+        repoName: String,
+        packageKey: String
+    ): PackageDetailInfo? {
+        val packageQuery = buildPackageQuery(projectId, repoName, packageKey)
+        return mongoTemplate.findOne(
+            packageQuery, PackageDetailInfo::class.java, PACKAGE_COLLECTION_NAME
+        )
+    }
+
     private fun restoreColdPackage(context: SeparationContext, packageInfo: TSeparationPackage): String {
         val storedColdPackage = separationPackageDao.findById(packageInfo.id!!)
         if (storedColdPackage == null) {
@@ -410,14 +494,7 @@ class DataRestorerImpl(
             )
             throw SeparationDataNotFoundException(packageInfo.id!!)
         }
-        val packageQuery = Query(
-            Criteria.where(PackageDetailInfo::projectId.name).isEqualTo(context.projectId)
-                .and(PackageDetailInfo::repoName.name).isEqualTo(context.repoName)
-                .and(PackageDetailInfo::key.name).isEqualTo(storedColdPackage.key)
-        )
-        var existHotPackageRecord = mongoTemplate.findOne(
-            packageQuery, PackageDetailInfo::class.java, PACKAGE_COLLECTION_NAME
-        )
+        var existHotPackageRecord = getPackageInfo(context.projectId, context.repoName, storedColdPackage.key)
         // 存在且不覆盖直接返回
         if (existHotPackageRecord != null && !context.overwrite) {
             logger.info(
@@ -429,6 +506,7 @@ class DataRestorerImpl(
         try {
             if (existHotPackageRecord != null && context.overwrite) {
                 val update = buildPackageUpdate(storedColdPackage)
+                val packageQuery = buildPackageQuery(context.projectId, context.repoName, storedColdPackage.key)
                 mongoTemplate.updateFirst(packageQuery, update, PACKAGE_COLLECTION_NAME)
                 logger.info(
                     "restore update package[${existHotPackageRecord.id}|${existHotPackageRecord.key}] success" +
@@ -447,11 +525,9 @@ class DataRestorerImpl(
                 "restore hot package $existHotPackageRecord occurred DuplicateKeyException " +
                     "in ${context.projectId}|${context.repoName}"
             )
-            existHotPackageRecord = mongoTemplate.findOne(
-                packageQuery, PackageDetailInfo::class.java, PACKAGE_COLLECTION_NAME
-            )
+            existHotPackageRecord = getPackageInfo(context.projectId, context.repoName, storedColdPackage.key)
         }
-        return existHotPackageRecord.id!!
+        return existHotPackageRecord!!.id!!
     }
 
     private fun buildPackageUpdate(

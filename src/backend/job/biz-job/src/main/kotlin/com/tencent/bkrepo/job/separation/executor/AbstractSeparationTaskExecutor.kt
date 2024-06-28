@@ -77,7 +77,9 @@ abstract class AbstractSeparationTaskExecutor(
 
     open fun afterExecute(context: SeparationContext) {
         with(context) {
-            val count = SeparationCount(separationProgress.success, separationProgress.failed)
+            val count = SeparationCount(
+                separationProgress.success, separationProgress.failed, separationProgress.skipped
+            )
             separationTaskDao.updateState(
                 taskId,
                 SeparationTaskState.FINISHED,

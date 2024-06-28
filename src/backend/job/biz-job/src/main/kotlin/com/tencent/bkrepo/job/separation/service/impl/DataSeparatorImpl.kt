@@ -320,7 +320,7 @@ class DataSeparatorImpl(
     ) {
         // 逻辑删除节点
         val collectionName = getNodeCollectionName(context.projectId)
-        removeColdNodeFromSource(context, collectionName, idSha256Map)
+        removeNodeFromSource(context, collectionName, idSha256Map)
         if (packageInfo != null && packageVersionInfo != null) {
             removeColdVersionFromSource(context, packageInfo, packageVersionInfo)
             val versionInfo = buildVersionSeparationInfo(context, packageInfo.key, packageVersionInfo.name)
@@ -506,34 +506,6 @@ class DataSeparatorImpl(
                     return
                 }
                 increment(storedColdNode.sha256!!, credentialsKey, 1)
-            }
-        }
-    }
-
-    private fun removeColdNodeFromSource(
-        context: SeparationContext,
-        nodeCollectionName: String,
-        idSha256Map: MutableMap<String, String>
-    ) {
-        with(context) {
-            idSha256Map.forEach {
-                val nodeQuery = Query(Criteria.where(ID).isEqualTo(it.key))
-                // 逻辑删除， 同时删除索引
-                val update = Update()
-                    .set(NodeDetailInfo::lastModifiedBy.name, SYSTEM_USER)
-                    .set(NodeDetailInfo::deleted.name, LocalDateTime.now())
-                val updateResult = mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
-                if (updateResult.modifiedCount != 1L) {
-                    logger.error(
-                        "delete hot node failed with id ${it.key} " +
-                            "and fullPath ${it.value} in $projectId|$repoName"
-                    )
-                } else {
-                    logger.info(
-                        "delete hot node success with id ${it.key} " +
-                            "and fullPath ${it.value} in $projectId|$repoName"
-                    )
-                }
             }
         }
     }

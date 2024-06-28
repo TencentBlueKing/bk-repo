@@ -99,7 +99,10 @@ class MavenRepoSpecialDataSeparatorHandler(
         }
     }
 
-    override fun getNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String> {
+    override fun getNodesOfVersion(
+        versionSeparationInfo: VersionSeparationInfo,
+        accessCheck: Boolean
+    ): MutableMap<String, String> {
         with(versionSeparationInfo) {
             val packagePath = extractPath(packageKey)
             val versionPath = PathUtils.combinePath(packagePath, version)
@@ -123,10 +126,7 @@ class MavenRepoSpecialDataSeparatorHandler(
                 if (nodeBaseInfos.isEmpty()) {
                     break
                 }
-                val nodeAccessDateCheck = nodeBaseInfos.firstOrNull {
-                    it.lastAccessDate?.isAfter(separationDate) == true || it.lastModifiedDate.isAfter(separationDate)
-                } != null
-                // 只要该版本下有一个文件不符合条件则该版本不能降冷
+                val nodeAccessDateCheck = nodesAccessDateCheck(accessCheck, nodeBaseInfos, separationDate)
                 if (nodeAccessDateCheck) {
                     return mutableMapOf()
                 }
@@ -169,16 +169,6 @@ class MavenRepoSpecialDataSeparatorHandler(
         }
     }
 
-    fun pathQuery(projectId: String, repoName: String, versionPath: String, separationDate: LocalDateTime): Query {
-        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
-        val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
-            .and(TSeparationNode::repoName.name).isEqualTo(repoName)
-            .and(TSeparationNode::path.name).isEqualTo(versionPath)
-            .and(TSeparationNode::folder.name).isEqualTo(false)
-            .and(TSeparationNode::separationDate.name).gte(startOfDay).lt(endOfDay)
-        return Query(criteria)
-    }
-
     override fun restoreRepoSpecialData(versionSeparationInfo: VersionSeparationInfo) {
         with(versionSeparationInfo) {
             val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
@@ -211,6 +201,32 @@ class MavenRepoSpecialDataSeparatorHandler(
                 }
             }
         }
+    }
+
+    private fun pathQuery(
+        projectId: String, repoName: String, versionPath: String, separationDate: LocalDateTime
+    ): Query {
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
+        val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
+            .and(TSeparationNode::repoName.name).isEqualTo(repoName)
+            .and(TSeparationNode::path.name).isEqualTo(versionPath)
+            .and(TSeparationNode::folder.name).isEqualTo(false)
+            .and(TSeparationNode::separationDate.name).gte(startOfDay).lt(endOfDay)
+        return Query(criteria)
+    }
+
+    /**
+     * 只要该版本下有一个文件不符合条件则该版本不能降冷
+     */
+    private fun nodesAccessDateCheck(
+        accessCheck: Boolean,
+        nodeBaseInfos: List<NodeBaseInfo>,
+        separationDate: LocalDateTime
+    ): Boolean {
+        if (!accessCheck) return false
+        return nodeBaseInfos.firstOrNull {
+            it.lastAccessDate?.isAfter(separationDate) == true || it.lastModifiedDate.isAfter(separationDate)
+        } != null
     }
 
     private fun findMetaDatas(versionSeparationInfo: VersionSeparationInfo): List<MavenMetadata> {

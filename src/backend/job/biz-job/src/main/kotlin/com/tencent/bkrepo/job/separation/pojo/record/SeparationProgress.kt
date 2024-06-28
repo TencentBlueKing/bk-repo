@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.separation.pojo.record
 data class SeparationProgress(
     var success: Long = 0,
     var failed: Long = 0,
+    var skipped: Long = 0,
     /**
      * 最后执行id
      */

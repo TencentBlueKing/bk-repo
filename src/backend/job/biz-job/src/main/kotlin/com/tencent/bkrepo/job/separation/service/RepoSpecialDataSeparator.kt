@@ -48,7 +48,9 @@ interface RepoSpecialDataSeparator {
     /**
      * 根据版本信息获取对应node列表
      */
-    fun getNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String>
+    fun getNodesOfVersion(
+        versionSeparationInfo: VersionSeparationInfo, accessCheck: Boolean = true
+    ): MutableMap<String, String>
 
     /**
      * 根据条件处理对应类型仓库特定冷数据

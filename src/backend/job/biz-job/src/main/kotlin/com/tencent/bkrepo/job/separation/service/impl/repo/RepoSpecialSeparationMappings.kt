@@ -45,10 +45,12 @@ object RepoSpecialSeparationMappings {
         mapper.extraType()?.let { mappers[mapper.extraType()!!] = mapper }
     }
 
-    fun getNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String> {
+    fun getNodesOfVersion(
+        versionSeparationInfo: VersionSeparationInfo, accessCheck: Boolean = true
+    ): MutableMap<String, String> {
         val mapper = mappers[versionSeparationInfo.type]
         check(mapper != null) { "mapper[${versionSeparationInfo.type}] not found" }
-        return mapper.getNodesOfVersion(versionSeparationInfo)
+        return mapper.getNodesOfVersion(versionSeparationInfo, accessCheck)
     }
 
     fun separateRepoColdData(versionSeparationInfo: VersionSeparationInfo) {
