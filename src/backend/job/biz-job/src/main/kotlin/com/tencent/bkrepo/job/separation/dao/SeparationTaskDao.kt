@@ -76,6 +76,13 @@ class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
         return find(Query(criteria))
     }
 
+    fun exist(projectId: String, repoName: String, state: String): Boolean {
+        val criteria = Criteria().and(TSeparationTask::projectId.name).isEqualTo(projectId)
+            .and(TSeparationTask::repoName.name).isEqualTo(repoName)
+            .and(TSeparationTask::state.name).ne(state)
+        return exists(Query(criteria))
+    }
+
     fun find(state: String?, pageRequest: PageRequest): List<TSeparationTask> {
         val criteria = Criteria()
         state?.let { criteria.and(TSeparationTask::state.name).isEqualTo(it) }

@@ -38,6 +38,7 @@ import com.tencent.bkrepo.job.RESTORE
 import com.tencent.bkrepo.job.SEPARATE
 import com.tencent.bkrepo.job.SEPARATION_TASK_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
+import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.model.TSeparationTask
 import com.tencent.bkrepo.job.separation.pojo.SeparationArtifactType
@@ -65,6 +66,7 @@ class SeparationTaskServiceImpl(
     private val dataSeparationConfig: DataSeparationConfig,
     private val repositoryClient: RepositoryClient,
     private val separationTaskDao: SeparationTaskDao,
+    private val separationFailedRecordDao: SeparationFailedRecordDao,
     private val mongoTemplate: MongoTemplate,
 ) : SeparationTaskService {
     override fun createSeparationTask(request: SeparationTaskRequest) {
@@ -123,8 +125,9 @@ class SeparationTaskServiceImpl(
     }
 
     override fun repoSeparationCheck(projectId: String, repoName: String): Boolean {
-        val tasks = separationTaskDao.findTasksByRepo(projectId, repoName)
-        return tasks.isNotEmpty()
+        val exist = separationTaskDao.exist(projectId, repoName, SeparationTaskState.FINISHED.name)
+        val failedExist = separationFailedRecordDao.exist(projectId, repoName)
+        return exist || failedExist
     }
 
     private fun getRepoInfo(projectId: String, repoName: String): RepositoryDetail {
