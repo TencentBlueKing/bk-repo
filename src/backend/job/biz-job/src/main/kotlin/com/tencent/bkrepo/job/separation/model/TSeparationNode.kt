@@ -62,6 +62,8 @@ import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARAT
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_FULL_PATH_IDX_DEF
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_PATH_IDX
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_PATH_IDX_DEF
+import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_SHA256_IDX
+import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_SHA256_IDX_DEF
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -75,6 +77,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = SEPARATION_FULL_PATH_IDX, def = SEPARATION_FULL_PATH_IDX_DEF, background = true),
     CompoundIndex(name = SEPARATION_PATH_IDX, def = SEPARATION_PATH_IDX_DEF, background = true),
     CompoundIndex(name = SEPARATION_FOLDER_IDX, def = SEPARATION_FOLDER_IDX_DEF, background = true),
+    CompoundIndex(name = SEPARATION_SHA256_IDX, def = SEPARATION_SHA256_IDX_DEF, background = true),
 )
 data class TSeparationNode(
     var id: String? = null,
@@ -113,5 +116,7 @@ data class TSeparationNode(
         const val SEPARATION_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}"
         const val SEPARATION_FOLDER_IDX = "separation_folder_idx"
         const val SEPARATION_FOLDER_IDX_DEF = "{'folder': 1}"
+        const val SEPARATION_SHA256_IDX = "separation_sha256_idx"
+        const val SEPARATION_SHA256_IDX_DEF = "{'sha256': 1}"
     }
 }
