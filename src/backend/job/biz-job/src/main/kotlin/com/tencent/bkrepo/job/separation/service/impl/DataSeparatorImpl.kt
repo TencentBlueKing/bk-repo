@@ -66,7 +66,6 @@ import com.tencent.bkrepo.job.separation.service.DataSeparator
 import com.tencent.bkrepo.job.separation.service.impl.repo.RepoSpecialSeparationMappings
 import com.tencent.bkrepo.job.separation.util.SeparationQueryHelper
 import com.tencent.bkrepo.job.separation.util.SeparationUtils.getNodeCollectionName
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
@@ -74,7 +73,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -207,12 +205,14 @@ class DataSeparatorImpl(
         val criteria = Criteria.where(PackageVersionInfo::packageId.name).isEqualTo(packageInfo.id)
             .and(LAST_MODIFIED_DATE).lte(separationDate)
         if (pkg != null) {
-            if (pkg.versions.isNullOrEmpty()) {
-                if (!pkg.versionRegex.isNullOrEmpty()) {
-                    criteria.and(NAME).regex(".*${pkg.versionRegex}.*")
-                }
-            } else {
+            pkg.versionRegex?.let {
+                criteria.and(NAME).regex(".*${pkg.versionRegex}.*")
+            }
+            pkg.versions?.let {
                 criteria.and(NAME).`in`(pkg.versions)
+            }
+            pkg.excludeVersions?.let {
+                criteria.and(NAME).nin(pkg.excludeVersions)
             }
         }
         return criteria
@@ -257,7 +257,10 @@ class DataSeparatorImpl(
                 if (nodeRecordsMap.isEmpty()) {
                     logger.warn(
                         "nodes of package ${packageInfo.key} with version ${packageVersionInfo.name} " +
-                            "has been accessed after $separationDate"
+                            "has been accessed or deleted at $separationDate"
+                    )
+                    setFailedProgress(
+                        context.taskId, context.separationProgress, packageInfo.id, packageVersionInfo.id
                     )
                     return
                 }
@@ -273,6 +276,7 @@ class DataSeparatorImpl(
                     context.taskId, context.separationProgress, packageInfo.id, packageVersionInfo.id
                 )
                 removeFailedRecord(context, packageInfo.id, packageVersionInfo.id)
+                logger.info("finish copy cold data $versionSeparationInfo in repo $projectId|$repoName")
             } catch (e: Exception) {
                 logger.error(
                     "copy cold package ${packageInfo.key} with version ${packageVersionInfo.name}" +
@@ -568,13 +572,15 @@ class DataSeparatorImpl(
                         .and(NodeDetailInfo::lastModifiedDate).lt(separationDate),
                 )
             if (node == null) return criteria
-            if (node.path.isNullOrEmpty()) {
-                if (!node.pathRegex.isNullOrEmpty()) {
-                    criteria.and(NodeDetailInfo::fullPath).regex(".*${node.pathRegex}.*")
-                }
-            } else {
+            node.pathRegex?.let {
+                criteria.and(NodeDetailInfo::fullPath).regex(".*${node.pathRegex}.*")
+            }
+            node.path?.let {
                 val nodePath = PathUtils.toPath(node.path)
                 criteria.and(NodeDetailInfo::fullPath).regex("^${PathUtils.escapeRegex(nodePath)}")
+            }
+            node.excludePath?.let {
+                criteria.and(NodeDetailInfo::fullPath).nin(node.excludePath)
             }
             return criteria
         }

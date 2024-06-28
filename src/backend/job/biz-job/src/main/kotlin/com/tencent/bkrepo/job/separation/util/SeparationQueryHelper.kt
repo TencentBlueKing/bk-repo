@@ -94,7 +94,8 @@ object SeparationQueryHelper {
 
     fun versionListQuery(
         packageId: String, separationDate: LocalDateTime,
-        nameRegex: String? = null, versionList: List<String>? = null
+        nameRegex: String? = null, versionList: List<String>? = null,
+        excludeVersions: List<String>? = null
     ): Query {
         val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = where(TSeparationPackageVersion::packageId).isEqualTo(packageId)
@@ -103,6 +104,8 @@ object SeparationQueryHelper {
                 versionList?.let { and(TSeparationPackageVersion::name).`in`(versionList) }
             }.apply {
                 nameRegex?.let { and(TSeparationPackageVersion::name).regex(".*${nameRegex}.*") }
+            }.apply {
+                nameRegex?.let { and(TSeparationPackageVersion::name).nin(excludeVersions) }
             }
         return Query(criteria)
     }
@@ -120,7 +123,9 @@ object SeparationQueryHelper {
         return Query(criteria)
     }
 
-    fun pathQuery(projectId: String, repoName: String, versionPath: String, separationDate: LocalDateTime): Query {
+    fun pathQuery(
+        projectId: String, repoName: String, versionPath: String, separationDate: LocalDateTime
+    ): Query {
         val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
             .and(TSeparationNode::repoName.name).isEqualTo(repoName)
@@ -141,7 +146,7 @@ object SeparationQueryHelper {
 
     fun pathQuery(
         projectId: String, repoName: String, separationDate: LocalDateTime,
-        path: String? = null, pathRegex: String? = null
+        path: String? = null, pathRegex: String? = null, excludePath: List<String>? = null
     ): Query {
         val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
@@ -153,6 +158,8 @@ object SeparationQueryHelper {
             }
             .apply {
                 pathRegex?.let { and(TSeparationNode::fullPath.name).regex(".*${pathRegex}.*") }
+            }.apply {
+                excludePath?.let { and(TSeparationNode::fullPath.name).nin(excludePath) }
             }
         return Query(criteria).withHint(FULL_PATH_IDX)
     }

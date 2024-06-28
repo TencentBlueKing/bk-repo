@@ -143,7 +143,8 @@ class DataRestorerImpl(
             val pageSize = BATCH_SIZE
             var querySize: Int
             val query = SeparationQueryHelper.versionListQuery(
-                packageInfo.id!!, separationDate, nameRegex = pkg?.versionRegex, versionList = pkg?.versions
+                packageInfo.id!!, separationDate, nameRegex = pkg?.versionRegex,
+                versionList = pkg?.versions, excludeVersions = pkg?.excludeVersions
             )
             do {
                 val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
@@ -613,7 +614,7 @@ class DataRestorerImpl(
             val pageSize = BATCH_SIZE
             var querySize: Int
             val query = SeparationQueryHelper.pathQuery(
-                projectId, repoName, separationDate, node?.path, node?.pathRegex
+                projectId, repoName, separationDate, node?.path, node?.pathRegex, node?.excludePath
             )
             do {
                 val nodeQuery = query.with(PageRequest.of(pageNumber, pageSize))

@@ -62,5 +62,6 @@ data class PackageFilterInfo(
     val packageKeyRegex: String? = null,
     val versions: List<String>? = null,
     val versionRegex: String? = null,
+    val excludeVersions: List<String>? = null,
 )
 

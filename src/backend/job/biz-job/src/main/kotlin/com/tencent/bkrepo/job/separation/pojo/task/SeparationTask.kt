@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.separation.pojo.task
 
 import com.tencent.bkrepo.job.separation.model.TSeparationTask
+import com.tencent.bkrepo.job.separation.pojo.SeparationContent
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
@@ -52,12 +53,16 @@ data class SeparationTask(
     val successCount: Long = 0,
     @ApiModelProperty("降冷失败的制品数")
     val failedCount: Long = 0,
+    @ApiModelProperty("跳过的制品数")
+    val skippedCount: Long = 0,
     @ApiModelProperty("降冷任务所属项目")
     val projectId: String,
     @ApiModelProperty("降冷项目所属仓库")
     val repoName: String,
     @ApiModelProperty("任务状态")
     val state: String,
+    @ApiModelProperty("任务内容")
+    val content: SeparationContent,
 ) {
     companion object {
         fun TSeparationTask.toDto() = SeparationTask(
@@ -70,9 +75,11 @@ data class SeparationTask(
             endDate = endDate,
             successCount = totalCount?.successCount ?: 0,
             failedCount = totalCount?.failedCount ?: 0,
+            skippedCount = totalCount?.skippedCount ?: 0,
             projectId = projectId,
             repoName = repoName,
             state = state,
+            content = content
         )
     }
 }

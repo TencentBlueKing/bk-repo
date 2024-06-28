@@ -60,5 +60,6 @@ package com.tencent.bkrepo.job.separation.pojo
 data class NodeFilterInfo(
     val path: String? = null,
     val pathRegex: String? = null,
+    val excludePath: List<String>? = null,
 )
 
