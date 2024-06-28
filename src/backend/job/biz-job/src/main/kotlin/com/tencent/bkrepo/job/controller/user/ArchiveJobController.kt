@@ -3,8 +3,10 @@ package com.tencent.bkrepo.job.controller.user
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
 import com.tencent.bkrepo.job.service.ArchiveJobService
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -29,7 +31,7 @@ class ArchiveJobController(
     }
 
     @PostMapping("/restore")
-    fun restore(@RequestParam projectId: String) {
-        archiveJobService.restore(projectId)
+    fun restore(@RequestBody request: ArchiveRestoreRequest) {
+        archiveJobService.restore(request)
     }
 }

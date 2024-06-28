@@ -5,6 +5,7 @@ import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -14,8 +15,10 @@ import com.tencent.bkrepo.job.batch.task.archive.IdleNodeArchiveJob.Companion.CO
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
+import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
 import com.tencent.bkrepo.job.service.ArchiveJobService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -56,16 +59,9 @@ class ArchiveJobServiceImpl(
         }
     }
 
-    override fun restore(projectId: String) {
-        val query = Query.query(
-            Criteria.where("folder").isEqualTo(false)
-                .and("deleted").isEqualTo(null)
-                .and("sha256").ne(FAKE_SHA256)
-                .and("projectId").isEqualTo(projectId).orOperator(
-                    Criteria.where("archived").isEqualTo(true),
-                    Criteria.where("compressed").isEqualTo(true),
-                ),
-        )
+    override fun restore(request: ArchiveRestoreRequest) {
+        val projectId = request.projectId
+        val query = Query(buildCriteria(request))
         val index = HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val collectionName = COLLECTION_NAME_PREFIX.plus(index)
         val context = NodeContext()
@@ -100,6 +96,34 @@ class ArchiveJobServiceImpl(
             }
         }.subscribe {
             logger.info("Success to restore project[$projectId], $context")
+        }
+    }
+
+    fun buildCriteria(request: ArchiveRestoreRequest): Criteria {
+        return with(request) {
+            val criteria = Criteria.where("folder").isEqualTo(false)
+                .and("deleted").isEqualTo(null)
+                .and("sha256").ne(FAKE_SHA256)
+                .and("projectId").isEqualTo(projectId).orOperator(
+                    Criteria.where("archived").isEqualTo(true),
+                    Criteria.where("compressed").isEqualTo(true),
+                )
+            repoName?.let { criteria.and("repoName").isEqualTo(it) }
+            prefix?.let { criteria.and("fullPath").regex("^${MongoEscapeUtils.escapeRegex(it)}") }
+            val metadataCriteria = metadata.map {
+                val elemCriteria = Criteria().andOperator(
+                    MetadataModel::key.isEqualTo(it.key),
+                    MetadataModel::value.isEqualTo(it.value)
+                )
+                Criteria.where("metadata").elemMatch(elemCriteria)
+            }
+            if (metadataCriteria.isEmpty()) {
+                criteria
+            } else {
+                val allCriteria = metadataCriteria.toMutableList()
+                allCriteria.add(criteria)
+                Criteria().andOperator(allCriteria)
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.service
 
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
+import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
 
 /**
  * 归档任务服务
@@ -19,5 +20,5 @@ interface ArchiveJobService {
     /**
      * 恢复文件，从归档或者压缩中恢复文件
      * */
-    fun restore(projectId: String)
+    fun restore(request: ArchiveRestoreRequest)
 }
