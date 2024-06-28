@@ -106,7 +106,7 @@ class NodeCommonUtils(
             val separationDates = separationTaskService.findDistinctSeparationDate()
             for (date in separationDates) {
                 val collection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
-                    MonthRangeShardingUtils.shardingSequencesFor(date, 1)
+                    MonthRangeShardingUtils.shardingSequenceFor(date, 1)
                 )
                 val find = mongoTemplate.find(query, Node::class.java, collection)
                     .distinctBy { it.projectId + it.repoName }
@@ -147,7 +147,7 @@ class NodeCommonUtils(
             val separationDates = separationTaskService.findDistinctSeparationDate()
             for (date in separationDates) {
                 val collection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
-                    MonthRangeShardingUtils.shardingSequencesFor(date, 1)
+                    MonthRangeShardingUtils.shardingSequenceFor(date, 1)
                 )
                 futures.add(workPool.submit { findByCollection(query, batchSize, collection, consumer) })
 
