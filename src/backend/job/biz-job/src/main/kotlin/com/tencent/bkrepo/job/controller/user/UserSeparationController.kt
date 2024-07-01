@@ -29,6 +29,8 @@ package com.tencent.bkrepo.job.controller.user
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.mongo.util.Pages
@@ -37,7 +39,15 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
+import com.tencent.bkrepo.job.separation.service.SeparationDataService
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -45,12 +55,16 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 @RestController
 @RequestMapping("/api/job/separation")
 @Principal(type = PrincipalType.ADMIN)
 class UserSeparationController(
     private val separationTaskService: SeparationTaskService,
+    private val separationDataService: SeparationDataService
 ) {
     @PostMapping
     fun createTask(@RequestBody request: SeparationTaskRequest): Response<Void> {
@@ -72,6 +86,82 @@ class UserSeparationController(
     fun updateTaskState(@PathVariable("taskId") taskId: String): Response<Void> {
         separationTaskService.reInitTaskState(taskId)
         return ResponseBuilder.success()
+    }
+
+    @ApiOperation("查询冷表中节点信息")
+    @GetMapping("/node/{projectId}/{repoName}")
+    fun getNodeInfo(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String,
+    ): Response<NodeInfo?> {
+        return ResponseBuilder.success(separationDataService.findNodeInfo(projectId, repoName, fullPath))
+    }
+
+    @ApiOperation("查询冷表中版本信息")
+    @GetMapping("/version/{projectId}/{repoName}")
+    fun getVersionInfo(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestParam version: String,
+    ): Response<PackageVersion?> {
+        return ResponseBuilder.success(
+            separationDataService.findPackageVersion(projectId, repoName, packageKey, version)
+        )
+    }
+
+    @ApiOperation("分页查询包")
+    @GetMapping("/package/page/{projectId}/{repoName}")
+    fun listPackagePage(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        option: PackageListOption
+    ): Response<Page<PackageSummary>> {
+        val pageResult = separationDataService.listPackagePage(projectId, repoName, option)
+        return ResponseBuilder.success(pageResult)
+    }
+
+    @ApiOperation("分页查询版本")
+    @GetMapping("/version/page/{projectId}/{repoName}")
+    fun listVersionPage(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestParam separationDate: String,
+        option: VersionListOption
+    ): Response<Page<PackageVersion>> {
+        val sDate = convert(separationDate)
+        val pageResult = separationDataService.listVersionPage(projectId, repoName, packageKey, option, sDate)
+        return ResponseBuilder.success(pageResult)
+    }
+
+
+    @ApiOperation("分页查询节点")
+    @GetMapping("/node/page/{projectId}/{repoName}")
+    fun listPageNode(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String,
+        @RequestParam separationDate: String,
+        nodeListOption: NodeListOption
+    ): Response<Page<NodeInfo>> {
+        val sDate = convert(separationDate)
+        val nodePage = separationDataService.listNodePage(projectId, repoName, fullPath, nodeListOption, sDate)
+        return ResponseBuilder.success(nodePage)
+    }
+
+
+    private fun convert(separationDate: String): LocalDateTime {
+        val separateDate = try {
+            LocalDateTime.parse(separationDate, DateTimeFormatter.ISO_DATE_TIME)
+        } catch (e: DateTimeParseException) {
+            throw BadRequestException(
+                CommonMessageCode.PARAMETER_INVALID,
+                "separationDate"
+            )
+        }
+        return separateDate
     }
 
 }

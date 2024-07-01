@@ -61,7 +61,22 @@ import org.springframework.stereotype.Repository
 
 @Repository
 class SeparationPackageDao : SimpleMongoDao<TSeparationPackage>() {
+
+    fun findByKeyExcludeHistoryVersion(projectId: String, repoName: String, key: String): TSeparationPackage? {
+        if (key.isBlank()) {
+            return null
+        }
+        val query = SeparationQueryHelper.packageQuery(projectId, repoName, key)
+        query.fields().exclude(HISTORY_VERSION)
+        return this.findOne(query)
+    }
+
     fun findByKey(projectId: String, repoName: String, key: String): TSeparationPackage? {
         return this.findOne(SeparationQueryHelper.packageQuery(projectId, repoName, key))
+    }
+
+
+    companion object {
+        private const val HISTORY_VERSION = "historyVersion"
     }
 }

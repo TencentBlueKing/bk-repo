@@ -45,6 +45,8 @@ data class SeparationTask(
     val lastModifiedBy: String,
     @ApiModelProperty("最后修改时间")
     val lastModifiedDate: LocalDateTime,
+    @ApiModelProperty("降冷临界时间")
+    val separationDate: LocalDateTime,
     @ApiModelProperty("任务开始执行的时间")
     val startDate: LocalDateTime? = null,
     @ApiModelProperty("任务结束执行的时间")
@@ -79,7 +81,8 @@ data class SeparationTask(
             projectId = projectId,
             repoName = repoName,
             state = state,
-            content = content
+            content = content,
+            separationDate = separationDate
         )
     }
 }

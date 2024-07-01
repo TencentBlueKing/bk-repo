@@ -112,8 +112,8 @@ data class TSeparationNode(
     companion object {
         const val SEPARATION_FULL_PATH_IDX = "separation_projectId_repoName_fullPath_idx"
         const val SEPARATION_PATH_IDX = "separation_projectId_repoName_path_idx"
-        const val SEPARATION_FULL_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}"
-        const val SEPARATION_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}"
+        const val SEPARATION_FULL_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'fullPath': 1}"
+        const val SEPARATION_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'path': 1}"
         const val SEPARATION_FOLDER_IDX = "separation_folder_idx"
         const val SEPARATION_FOLDER_IDX_DEF = "{'folder': 1}"
         const val SEPARATION_SHA256_IDX = "separation_sha256_idx"
