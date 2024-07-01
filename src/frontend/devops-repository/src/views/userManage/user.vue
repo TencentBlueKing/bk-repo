@@ -67,6 +67,7 @@
                         :list="[
                             { label: $t('edit'), clickEvent: () => showEditUser(row) },
                             { label: $t('resetPassword'), clickEvent: () => resetUserPwd(row) },
+                            { label: $t('createAccessToken'), clickEvent: () => createAccessToken(row) },
                             { label: $t('delete'), clickEvent: () => deleteUserHandler(row) }
                         ]"></operation-list>
                 </template>
@@ -128,16 +129,18 @@
                 <bk-button class="ml10" :loading="editUserDialog.loading" theme="primary" @click="confirm">{{$t('confirm')}}</bk-button>
             </template>
         </canway-dialog>
+        <create-token-dialog ref="createToken"></create-token-dialog>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
+    import createTokenDialog from '@repository/views/repoToken/createTokenDialog'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     import { transformEmail, transformPhone } from '@repository/utils/privacy'
     export default {
         name: 'user',
-        components: { OperationList },
+        components: { OperationList, createTokenDialog },
         data () {
             return {
                 isLoading: false,
@@ -468,6 +471,10 @@
             transPhone (phone) {
                 if (phone === null || phone === '') return '/'
                 return transformPhone(phone)
+            },
+            createAccessToken (row) {
+                this.$refs.createToken.userName = row.userId
+                this.$refs.createToken.showDialogHandler()
             }
         }
     }
