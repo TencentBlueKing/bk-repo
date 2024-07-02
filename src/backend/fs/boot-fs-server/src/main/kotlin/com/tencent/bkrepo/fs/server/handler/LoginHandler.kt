@@ -42,6 +42,7 @@ import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.pojo.DevxLoginResponse
+import com.tencent.bkrepo.fs.server.request.DevxLoginRequest
 import com.tencent.bkrepo.fs.server.request.IoaLoginRequest
 import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
@@ -86,11 +87,20 @@ class LoginHandler(
     }
 
     suspend fun devxLogin(request: ServerRequest): ServerResponse {
-        val workspace = DevxWorkspaceUtils.getWorkspace().awaitSingleOrNull() ?: throw AuthenticationException()
+        val devxToken = request.bodyToMono(DevxLoginRequest::class.java).awaitSingleOrNull()?.token
         val repoName = request.pathVariable(REPO_NAME)
-        val userId = createUser(workspace)
-        val token = createToken(workspace.projectId, repoName, userId)
-        val response = DevxLoginResponse(workspace.projectId, token)
+        val response = if (devxToken.isNullOrEmpty()) {
+            val workspace = DevxWorkspaceUtils.getWorkspace().awaitSingleOrNull() ?: throw AuthenticationException()
+            val userId = createUser(workspace)
+            val token = createToken(workspace.projectId, repoName, userId)
+            DevxLoginResponse(workspace.projectId, token)
+        } else {
+            val devxTokenInfo = DevxWorkspaceUtils.validateToken(devxToken).awaitSingle()
+            createUser(devxTokenInfo.userId)
+            val token = createToken(devxTokenInfo.projectId, repoName, devxTokenInfo.userId)
+            DevxLoginResponse(devxTokenInfo.projectId, token)
+        }
+
         return ReactiveResponseBuilder.success(response)
     }
 
