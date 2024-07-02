@@ -52,21 +52,22 @@ open class CommonQueryContext(
     var repoList: List<RepositoryInfo>? = null
 
     fun findProjectId(): String {
-        if (projectId != null) {
-            return projectId!!
-        }
-        val rule = queryModel.rule
-        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-            findProjectIdRule(rule.rules)?.let {
-                return it.value.toString().apply { projectId = this }
-            }
-        }
-        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
+        return if (projectId != null) projectId!! else find(TNode::projectId.name).apply { projectId = this }
     }
 
-    private fun findProjectIdRule(rules: List<Rule>): Rule.QueryRule? {
+    protected fun find(field: String): String {
+        val rule = queryModel.rule
+        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
+            findRule(rule.rules, field)?.let {
+                return it.value.toString()
+            }
+        }
+        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, field)
+    }
+
+    private fun findRule(rules: List<Rule>, field: String): Rule.QueryRule? {
         for (rule in rules) {
-            if (rule is Rule.QueryRule && rule.field == TNode::projectId.name) {
+            if (rule is Rule.QueryRule && rule.field == field) {
                 return rule
             }
         }

@@ -39,12 +39,14 @@ import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
 import com.tencent.bkrepo.repository.model.TMetadata
 import com.tencent.bkrepo.repository.model.TNode
 import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.stereotype.Component
 
 /**
  * 元数据规则拦截器
  *
  * 条件构造器中传入元数据的条件是`metadata.key=value`，需要适配成mongodb的查询条件
  */
+@Component
 class MetadataRuleInterceptor : QueryRuleInterceptor {
 
     override fun match(rule: Rule): Boolean {
