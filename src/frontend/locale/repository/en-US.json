@@ -195,7 +195,7 @@
     "IP": "IP Range",
     "ipPlaceholder": "Multi IP ranges separated by commas",
     "whiteUser": "White List Members",
-    "whiteUserPlaceholder": "Whitelist members are exempt from this restriction",
+    "whiteUserPlaceholder": "Whitelist members are exempt from this restriction. Separate multiple members with commas.",
     "pleaseIpSegment": "Please enter the IP segment",
     "ipSegmentRule": "Multiple IP segments are separated by English commas, eg: 192.168.1.124",
     "open": "Open",
