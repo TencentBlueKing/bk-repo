@@ -71,7 +71,6 @@
                         <bk-form-item :label="$t('whiteUser')" :label-width="80"
                             :property="`${type}.whitelistUser`" error-display-type="normal">
                             <bk-input class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
-                            // <bk-member-selector v-model="repoBaseInfo[type].whitelistUser" class="member-selector" :placeholder="$t('whiteUserPlaceholder')"></bk-member-selector>
                         </bk-form-item>
                     </template>
                 </bk-form-item>
