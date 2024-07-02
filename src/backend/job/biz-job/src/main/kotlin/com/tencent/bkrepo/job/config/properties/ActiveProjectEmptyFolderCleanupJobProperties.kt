@@ -27,6 +27,10 @@
 
 package com.tencent.bkrepo.job.config.properties
 
+import com.tencent.bkrepo.common.artifact.constant.CUSTOM
+import com.tencent.bkrepo.common.artifact.constant.LOG
+import com.tencent.bkrepo.common.artifact.constant.PIPELINE
+import com.tencent.bkrepo.common.artifact.constant.REPORT
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
@@ -37,4 +41,6 @@ class ActiveProjectEmptyFolderCleanupJobProperties(
     override var enabled: Boolean = true,
     override var cron: String = "0 0/30 * * * ?",
     var deletedEmptyFolder: Boolean = false,
+    // 允许删除空目录的仓库列表
+    var deleteFolderRepos: List<String> = listOf(REPORT, LOG, PIPELINE, CUSTOM),
 ) : StatJobProperties()

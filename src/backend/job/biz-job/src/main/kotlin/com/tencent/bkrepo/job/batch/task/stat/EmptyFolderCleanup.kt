@@ -111,6 +111,7 @@ class EmptyFolderCleanup(
         collection: String,
         context: EmptyFolderCleanupJobContext,
         deletedEmptyFolder: Boolean,
+        deleteFolderRepos: List<String>,
         projectId: String = StringPool.EMPTY,
         runCollection: Boolean = false,
     ) {
@@ -129,16 +130,33 @@ class EmptyFolderCleanup(
                     path = folderInfo.fullPath,
                     collectionName = collection
                 )) {
+                val deletedFlag = deletedFolderFlag(
+                    repoName = folderInfo.repoName,
+                    deletedEmptyFolder = deletedEmptyFolder,
+                    deleteFolderRepos = deleteFolderRepos
+                )
                 logger.info(
                     "will delete empty folder ${folderInfo.fullPath}" +
                         " in repo ${folderInfo.projectId}|${folderInfo.repoName} " +
-                        "with config deletedEmptyFolder: $deletedEmptyFolder"
+                        "with config deletedFlag: $deletedFlag"
                 )
-                doEmptyFolderDelete(entry.value.id, collection, deletedEmptyFolder)
+                doEmptyFolderDelete(entry.value.id, collection, deletedFlag)
                 context.totalDeletedNum.increment()
             }
         }
         clearContextCache(projectId, context, collection, runCollection)
+    }
+
+    /**
+     * 只针对指定的generic仓库可以进行删除
+     * 即使全局配置的deletedEmptyFolder是true
+     */
+    private fun deletedFolderFlag(
+        repoName: String, deletedEmptyFolder: Boolean,
+        deleteFolderRepos: List<String>,
+    ): Boolean {
+        // 暂时只删除特殊仓库下的空目录
+        return (repoName in deleteFolderRepos) && deletedEmptyFolder
     }
 
     /**
