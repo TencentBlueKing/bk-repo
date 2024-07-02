@@ -3,8 +3,8 @@ import store from './store'
 import { Message } from 'element-ui'
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
-import { getToken } from '@/utils/auth' // get token from cookie
-import { toLoginPage } from '@/utils/login'
+import { getBkUid, getToken } from '@/utils/auth' // get token from cookie
+import { MODE_CONFIG, MODE_CONFIG_CI, MODE_CONFIG_SAAS, toLoginPage } from '@/utils/login'
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
@@ -19,10 +19,9 @@ router.beforeEach(async(to, from, next) => {
 
   // determine whether the user has logged in
   // const bkTicket = getBkTicket()
-  // const bkUid = getBkUid()
+  const bkUid = getBkUid()
   // const token = getToken()
   // const hasToken = token || bkTicket || bkUid
-
   const hasToken = getToken()
   if (hasToken) {
     if (to.path === '/login') {
@@ -60,14 +59,27 @@ router.beforeEach(async(to, from, next) => {
     }
   } else {
     /* has no token*/
-
-    if (whiteList.indexOf(to.path) !== -1) {
-      // in the free login whitelist, go directly
-      next()
+    if (MODE_CONFIG === MODE_CONFIG_CI || MODE_CONFIG === MODE_CONFIG_SAAS) {
+      if (bkUid) {
+        const { roles } = await store.dispatch('user/getInfo')
+        console.log(roles)
+        const accessRoutes = await store.dispatch('permission/generateRoutes', roles)
+        console.log(accessRoutes)
+        router.addRoutes(accessRoutes)
+        next()
+      } else {
+        toLoginPage(to.path)
+        NProgress.done()
+      }
     } else {
-      // other pages that do not have permission to access are redirected to the login page.
-      toLoginPage(to.path)
-      NProgress.done()
+      if (whiteList.indexOf(to.path) !== -1) {
+        // in the free login whitelist, go directly
+        next()
+      } else {
+        // other pages that do not have permission to access are redirected to the login page.
+        toLoginPage(to.path)
+        NProgress.done()
+      }
     }
   }
 })
