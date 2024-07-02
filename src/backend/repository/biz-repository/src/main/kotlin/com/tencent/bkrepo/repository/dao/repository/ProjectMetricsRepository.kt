@@ -34,8 +34,12 @@ package com.tencent.bkrepo.repository.dao.repository
 import com.tencent.bkrepo.repository.model.TProjectMetrics
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>{
     fun findFirstByProjectIdOrderByCreatedDateDesc(projectId:String): TProjectMetrics?
+
+    fun findByProjectIdAndCreatedDate(projectId:String, createdDate: LocalDateTime): TProjectMetrics?
+
 }
