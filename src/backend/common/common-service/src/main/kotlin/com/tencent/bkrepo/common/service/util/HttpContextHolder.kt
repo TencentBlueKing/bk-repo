@@ -111,4 +111,20 @@ object HttpContextHolder {
             return request.getHeader(HttpHeaders.X_FORWARDED_FOR)
         } else StringPool.UNKNOWN
     }
+
+    fun getUserAgent(): String {
+        val requestAttributes = RequestContextHolder.getRequestAttributes()
+        return if (requestAttributes is ServletRequestAttributes) {
+            val request = requestAttributes.request
+            return request.getHeader(HttpHeaders.USER_AGENT) ?: StringPool.UNKNOWN
+        } else StringPool.UNKNOWN
+    }
+
+    fun getReferer(): String? {
+        val requestAttributes = RequestContextHolder.getRequestAttributes()
+        return if (requestAttributes is ServletRequestAttributes) {
+            val request = requestAttributes.request
+            return request.getHeader(HttpHeaders.USER_AGENT) ?: null
+        } else null
+    }
 }

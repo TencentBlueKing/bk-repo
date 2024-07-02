@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
+import com.tencent.bkrepo.common.artifact.util.TransferUserAgentUtil
 import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
@@ -100,6 +101,12 @@ class ArtifactTransferListener(
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
                 fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
+                agent = TransferUserAgentUtil.getUserAgent(
+                    webPlatformId = artifactMetricsProperties.webPlatformId,
+                    host = artifactMetricsProperties.host,
+                    builderAgentList = artifactMetricsProperties.builderAgentList,
+                    clientAgentList = artifactMetricsProperties.clientAgentList
+                ).name
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
@@ -139,6 +146,12 @@ class ArtifactTransferListener(
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
                 fullPath = getFullPath(),
+                agent = TransferUserAgentUtil.getUserAgent(
+                    webPlatformId = artifactMetricsProperties.webPlatformId,
+                    host = artifactMetricsProperties.host,
+                    builderAgentList = artifactMetricsProperties.builderAgentList,
+                    clientAgentList = artifactMetricsProperties.clientAgentList
+                ).name
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
@@ -188,7 +201,13 @@ class ArtifactTransferListener(
                 project = projectId,
                 repoName = repoName,
                 clientIp = HttpContextHolder.getClientAddress(),
-                fullPath = fullPath
+                fullPath = fullPath,
+                agent = TransferUserAgentUtil.getUserAgent(
+                    webPlatformId = artifactMetricsProperties.webPlatformId,
+                    host = artifactMetricsProperties.host,
+                    builderAgentList = artifactMetricsProperties.builderAgentList,
+                    clientAgentList = artifactMetricsProperties.clientAgentList
+                ).name
             )
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(
