@@ -124,7 +124,7 @@ object HttpContextHolder {
         val requestAttributes = RequestContextHolder.getRequestAttributes()
         return if (requestAttributes is ServletRequestAttributes) {
             val request = requestAttributes.request
-            return request.getHeader(HttpHeaders.USER_AGENT) ?: null
+            return request.getHeader(HttpHeaders.REFERER) ?: null
         } else null
     }
 }
