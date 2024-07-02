@@ -24,7 +24,7 @@ class StreamManger : StreamAwareHandler {
         deleteStream(stream)
     }
 
-    fun addStream(stream: ClientStream): ClientStream {
+    private fun addStream(stream: ClientStream): ClientStream {
         val id = stream.id
         if (streams.putIfAbsent(id, stream) != null) {
             throw IllegalStateException("Stream $id existed")
@@ -33,7 +33,7 @@ class StreamManger : StreamAwareHandler {
         return stream
     }
 
-    fun deleteStream(stream: ClientStream) {
+    private fun deleteStream(stream: ClientStream) {
         val id = stream.id
         if (streams[id] != null) {
             if (!stream.closed.get()) {

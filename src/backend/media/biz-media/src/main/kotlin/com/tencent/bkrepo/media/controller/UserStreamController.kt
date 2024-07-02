@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
  * */
 @RestController
 @RequestMapping("/api/user/stream")
-class StreamController(
+class UserStreamController(
     private val streamService: StreamService,
     private val permissionManager: PermissionManager,
 ) {
