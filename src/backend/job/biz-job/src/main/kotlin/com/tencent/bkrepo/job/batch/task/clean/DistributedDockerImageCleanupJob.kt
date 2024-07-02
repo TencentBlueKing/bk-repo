@@ -150,7 +150,7 @@ class DistributedDockerImageCleanupJob(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        const val PACKAGE_COLLECTION_NAME = "package"
+        private const val PACKAGE_COLLECTION_NAME = "package"
         private const val PACKAGE_VERSION_NAME = "package_version"
         private const val DISTRIBUTION_METADATA_KEY = "enableDistribution"
         private const val IMAGE_SCAN_METADATA_KEY = "enableImageScan"

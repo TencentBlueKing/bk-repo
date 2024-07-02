@@ -202,6 +202,15 @@ class FileReferenceCleanupJob(
                 bf.put(sha256)
             }
         }
+
+        //加上冷表检查
+        NodeCommonUtils.forEachColdNodeByCollectionParallel(query) {
+            val sha256 = it[SHA256]?.toString()
+            if (sha256 != null) {
+                bf.put(sha256)
+            }
+        }
+
         val count = "${bf.approximateElementCount()}/${properties.expectedNodes}"
         val fpp = bf.expectedFpp()
         logger.info("Build bloom filter successful,count: $count,fpp: $fpp")
