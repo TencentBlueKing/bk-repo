@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.ProjectNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
@@ -58,11 +59,13 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -77,6 +80,7 @@ import java.util.concurrent.TimeUnit
  * 权限管理类
  */
 open class PermissionManager(
+    private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
     private val permissionResource: ServicePermissionClient,
     private val externalPermissionResource: ServiceExternalPermissionClient,
@@ -106,6 +110,9 @@ open class PermissionManager(
         projectId: String,
         userId: String = SecurityUtils.getUserId()
     ) {
+        if (!queryProjectEnabledStatus(projectId)) {
+            throw PermissionException()
+        }
         checkPermission(
             type = ResourceType.PROJECT,
             action = action,
@@ -130,6 +137,9 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
+        if (!queryProjectEnabledStatus(projectId)) {
+            throw PermissionException()
+        }
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicRepo(action, repoInfo, public)) {
             return
@@ -165,6 +175,9 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
+        if (!queryProjectEnabledStatus(projectId)) {
+            throw PermissionException()
+        }
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicRepo(action, repoInfo, public)) {
             return
@@ -259,6 +272,16 @@ open class PermissionManager(
     }
 
     /**
+     * 查询项目信息
+     */
+    open fun queryProjectEnabledStatus(projectId: String): Boolean {
+        val projectInfo = projectClient.getProjectInfo(projectId).data ?: throw ProjectNotFoundException(projectId)
+        return projectInfo.metadata.firstOrNull {
+            it.key == ProjectMetadata.KEY_ENABLED
+        }?.value as? Boolean ?: true
+    }
+
+    /**
      * 查询仓库信息
      */
     open fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
@@ -315,10 +338,10 @@ open class PermissionManager(
             // 无权限，响应403错误
             val reason: String?
             if (repoName.isNullOrEmpty()) {
-                val param = arrayOf(userId, action, projectId )
+                val param = arrayOf(userId, action, projectId)
                 reason = LocaleMessageUtils.getLocalizedMessage("permission.project.denied", param)
             } else {
-                val param = arrayOf(userId, action, projectId, repoName )
+                val param = arrayOf(userId, action, projectId, repoName)
                 reason = LocaleMessageUtils.getLocalizedMessage("permission.repo.denied", param)
             }
             throw PermissionException(reason)
@@ -452,14 +475,14 @@ open class PermissionManager(
                 }
                 logger.info(
                     "check external permission error, url[${request.url}], project[$projectId], repo[$repoName]," +
-                            " nodes$paths, code[${it.code}], response[$content]"
+                        " nodes$paths, code[${it.code}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
         } catch (e: IOException) {
             logger.error(
                 "check external permission error," + "url[${request.url}], project[$projectId], " +
-                        "repo[$repoName], nodes$paths, $e"
+                    "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
         }
