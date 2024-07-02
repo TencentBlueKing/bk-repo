@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.resolve.response
 
+import com.sun.org.slf4j.internal.LoggerFactory
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
@@ -198,7 +199,12 @@ open class DefaultArtifactResourceWriter(
             }
         } catch (exception: IOException) {
             val message = exception.message.orEmpty()
-            val status = if (isClientBroken(exception)) HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
+            val status = if (isClientBroken(exception)) {
+                HttpStatus.BAD_REQUEST
+            } else {
+                logger.warn("write zip stream failed", exception)
+                HttpStatus.INTERNAL_SERVER_ERROR
+            }
             throw ArtifactResponseException(message, status)
         } finally {
             resource.artifactMap.values.forEach { it.closeQuietly() }
@@ -232,6 +238,7 @@ open class DefaultArtifactResourceWriter(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(DefaultArtifactResourceWriter::class.java)
         private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK)
     }
 }
