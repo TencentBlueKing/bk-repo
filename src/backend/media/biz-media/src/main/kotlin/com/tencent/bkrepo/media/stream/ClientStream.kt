@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * */
 class ClientStream(
     val name: String,
+    val id: String = name,
     private val maxFileSize: Long,
     val recordingListener: RecordingListener? = null,
 ) : Stream {

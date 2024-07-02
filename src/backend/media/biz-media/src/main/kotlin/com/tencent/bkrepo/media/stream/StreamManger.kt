@@ -25,30 +25,30 @@ class StreamManger : StreamAwareHandler {
     }
 
     fun addStream(stream: ClientStream): ClientStream {
-        val name = stream.name
-        if (streams.putIfAbsent(name, stream) != null) {
-            throw IllegalStateException("Stream $name existed")
+        val id = stream.id
+        if (streams.putIfAbsent(id, stream) != null) {
+            throw IllegalStateException("Stream $id existed")
         }
-        logger.info("Add stream $name")
+        logger.info("Add stream $id")
         return stream
     }
 
     fun deleteStream(stream: ClientStream) {
-        val name = stream.name
-        if (streams[name] != null) {
+        val id = stream.id
+        if (streams[id] != null) {
             if (!stream.closed.get()) {
                 stream.stop()
             }
-            streams.remove(name)
-            logger.info("Delete stream $name")
+            streams.remove(id)
+            logger.info("Delete stream $id")
         }
     }
 
     fun close() {
         logger.info("Closing stream manager")
-        streams.forEach {
-            logger.info("Stopping stream ${it.key}")
-            it.value.stop()
+        streams.map { it.value }.forEach {
+            logger.info("Stopping stream ${it.id}")
+            it.stop()
         }
         streams.clear()
     }

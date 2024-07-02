@@ -114,8 +114,8 @@ class StreamService(
         } else {
             ArtifactFileRecordingListener(artifactFile, fileConsumer, saveType, scheduler)
         }
-
-        val stream = ClientStream(name, mediaProperties.maxRecordFileSize.toBytes(), recordingListener)
+        val streamId = "$projectId:$repoName:$name"
+        val stream = ClientStream(name, streamId, mediaProperties.maxRecordFileSize.toBytes(), recordingListener)
         stream.listeners.add(streamManger)
         stream.start()
         if (mode == StreamMode.RECORD) {
