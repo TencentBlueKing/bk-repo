@@ -101,6 +101,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -386,7 +387,13 @@ class RepositoryServiceImpl(
     }
 
     override fun statRepo(projectId: String, repoName: String): NodeSizeInfo {
-        val projectMetrics = projectMetricsRepository.findFirstByProjectIdOrderByCreatedDateDesc(projectId)
+        val today = LocalDate.now().atStartOfDay()
+        var projectMetrics = projectMetricsRepository.findByProjectIdAndCreatedDate(projectId, today)
+        // 可能当天任务还没有统计出来，则查询前一天的数据
+        if (projectMetrics == null) {
+            val yesterday = today.minusDays(1)
+            projectMetrics = projectMetricsRepository.findByProjectIdAndCreatedDate(projectId, yesterday)
+        }
         val repoMetrics = projectMetrics?.repoMetrics?.firstOrNull { it.repoName == repoName }
         return NodeSizeInfo(
             subNodeCount = repoMetrics?.num ?: 0,
