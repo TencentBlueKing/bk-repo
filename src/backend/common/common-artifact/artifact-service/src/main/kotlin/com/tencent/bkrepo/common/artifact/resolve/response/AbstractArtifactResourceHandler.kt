@@ -118,8 +118,7 @@ abstract class AbstractArtifactResourceHandler(
             val message = exception.message.orEmpty()
             val status = if (IOExceptionUtils.isClientBroken(exception)){
                 HttpStatus.BAD_REQUEST
-            }
-            else {
+            } else {
                 logger.warn("write range stream failed", exception)
                 HttpStatus.INTERNAL_SERVER_ERROR
             }
