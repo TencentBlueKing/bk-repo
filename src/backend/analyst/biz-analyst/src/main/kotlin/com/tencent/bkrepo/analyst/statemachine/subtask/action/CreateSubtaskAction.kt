@@ -37,6 +37,7 @@ import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
 import com.tencent.bkrepo.analyst.pojo.Node
 import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_ARTIFACT_LAST_MODIFIED_BY
 import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
@@ -78,7 +79,8 @@ class CreateSubtaskAction(
 
         // 添加到扫描任务队列
         val subtask = createSubTask(scanTask, node, storageCredentialsKey, state)
-        self.save(listOf(subtask), scanTask.metadata)
+        val metadata = createMetadata(scanTask.metadata, context.node)
+        self.save(listOf(subtask), metadata)
         return TransitResult(state.name, subtask)
     }
 
@@ -151,10 +153,16 @@ class CreateSubtaskAction(
         }
     }
 
+    private fun createMetadata(oldMetadata: List<TaskMetadata>, node: Node): List<TaskMetadata> {
+        val new = ArrayList(oldMetadata)
+        new.add(TaskMetadata(TASK_METADATA_ARTIFACT_LAST_MODIFIED_BY, node.lastModifiedBy))
+        return new
+    }
+
     override fun support(from: String, to: String, event: String): Boolean {
         return from == SubScanTaskStatus.NEVER_SCANNED.name
-            && (to == SubScanTaskStatus.CREATED.name || to == SubScanTaskStatus.BLOCKED.name)
-            && (event == SubtaskEvent.CREATE.name || event == SubtaskEvent.BLOCK.name)
+                && (to == SubScanTaskStatus.CREATED.name || to == SubScanTaskStatus.BLOCKED.name)
+                && (event == SubtaskEvent.CREATE.name || event == SubtaskEvent.BLOCK.name)
     }
 
     companion object {

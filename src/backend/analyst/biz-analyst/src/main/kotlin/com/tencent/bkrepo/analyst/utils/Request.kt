@@ -45,7 +45,8 @@ object Request {
         NodeDetail::fullPath.name,
         NodeDetail::projectId.name,
         NodeDetail::repoName.name,
-        NodeDetail::name.name
+        NodeDetail::name.name,
+        NodeDetail::lastModifiedBy.name,
     )
 
     /**
@@ -82,7 +83,19 @@ object Request {
             val size = toLong(it[NodeDetail::size.name]!!)
             val fullPath = it[NodeDetail::fullPath.name]!! as String
             val name = it[NodeDetail::name.name]!! as String
-            Node(projectId, repoName, fullPath, name, null, null, sha256, size, size)
+            val lastModifiedBy = it[NodeDetail::lastModifiedBy.name]!! as String
+            Node(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                artifactName = name,
+                packageKey = null,
+                packageVersion = null,
+                sha256 = sha256,
+                size = size,
+                packageSize = size,
+                lastModifiedBy = lastModifiedBy
+            )
         }
     }
 

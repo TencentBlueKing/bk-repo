@@ -61,7 +61,8 @@ class RequestTest {
             NodeDetail::fullPath.name to NODE_FULL_PATH,
             NodeDetail::projectId.name to PROJECT_ID,
             NodeDetail::repoName.name to REPO,
-            NodeDetail::name.name to NODE_NAME
+            NodeDetail::name.name to NODE_NAME,
+            NodeDetail::lastModifiedBy.name to "user",
         )
         val response = Response(CommonMessageCode.SUCCESS.getCode(), null, Pages.buildPage(listOf(node), 0, 1), null)
 

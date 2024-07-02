@@ -183,6 +183,7 @@ class KubernetesDeploymentDispatcher(
         val deploymentName = deploymentName()
         val token = tokenService.createExecutionClusterToken(executionCluster.name)
         val cmd = buildCommand(scanner.cmd, token)
+        val resReq = ResourceRequirements.calculate(scanner, executionCluster.kubernetesProperties)
         val body = v1Deployment {
             apiVersion = "apps/v1"
             kind = "Deployment"
@@ -219,14 +220,14 @@ class KubernetesDeploymentDispatcher(
                             addImagePullSecretsItemIfNeed(scanner, k8sProps)
                             resources {
                                 limits(
-                                    cpu = k8sProps.limitCpu,
-                                    memory = k8sProps.limitMem,
-                                    ephemeralStorage = k8sProps.limitStorage
+                                    cpu = resReq.limitCpu,
+                                    memory = resReq.limitMem,
+                                    ephemeralStorage = resReq.limitStorage
                                 )
                                 requests(
-                                    cpu = k8sProps.requestCpu,
-                                    memory = k8sProps.requestMem,
-                                    ephemeralStorage = k8sProps.requestStorage
+                                    cpu = resReq.requestCpu,
+                                    memory = resReq.requestMem,
+                                    ephemeralStorage = resReq.requestStorage
                                 )
                             }
                         }

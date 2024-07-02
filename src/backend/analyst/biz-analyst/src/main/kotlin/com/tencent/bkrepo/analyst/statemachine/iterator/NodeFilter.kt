@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,50 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo
+package com.tencent.bkrepo.analyst.statemachine.iterator
+
+import com.tencent.bkrepo.analyst.pojo.Node
+import org.slf4j.LoggerFactory
 
 /**
- * 文件节点
+ * 用于过滤需要扫描的制品
  */
-data class Node(
+class NodeFilter(
+    private val unsupportedArtifactName: List<Regex>
+) {
+
     /**
-     * 文件所属项目
+     * 过滤出需要扫描的制品
+     *
+     * @param node 待判断的制品
+     *
+     * @return true 需要扫描， false 不需要扫描
      */
-    val projectId: String,
-    /**
-     * 文件所属仓库
-     */
-    val repoName: String,
-    /**
-     * 文件完整路径
-     */
-    val fullPath: String,
-    /**
-     * 制品名
-     */
-    var artifactName: String,
-    /**
-     * 依赖包唯一标识，制品为依赖包时候存在
-     */
-    var packageKey: String? = null,
-    /**
-     * 依赖包版本
-     */
-    var packageVersion: String? = null,
-    /**
-     * 文件sha256
-     */
-    val sha256: String,
-    /**
-     * 文件大小
-     */
-    var size: Long,
-    /**
-     * package大小
-     */
-    var packageSize: Long,
-    /**
-     * 最后修改人
-     */
-    val lastModifiedBy: String,
-)
+    fun filter(node: Node): Boolean {
+        val artifactName = node.packageKey ?: node.artifactName
+        if (unsupportedArtifactName.any { it.matches(artifactName) }) {
+            logger.info("node[$artifactName], sha256[${node.sha256}] is unsupported to scan")
+            return false
+        }
+
+        return true
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(NodeFilter::class.java)
+    }
+}

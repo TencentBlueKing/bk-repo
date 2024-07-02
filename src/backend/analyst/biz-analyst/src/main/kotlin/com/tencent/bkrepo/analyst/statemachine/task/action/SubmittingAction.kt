@@ -45,6 +45,7 @@ import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.iterator.IteratorManager
+import com.tencent.bkrepo.analyst.statemachine.iterator.NodeFilter
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
@@ -154,7 +155,13 @@ class SubmittingAction(
         var submittedSubTaskCount = 0L
         var reuseResultTaskCount = 0L
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, scanner, false)
+        val nodeFilter = NodeFilter(scanner.unsupportedArtifactNameRegex.map { it.toRegex() })
         for (node in nodeIterator) {
+            if (!nodeFilter.filter(node)) {
+                // 不需要扫描的node直接跳过
+                continue
+            }
+
             // 未使用扫描方案的情况直接取node的projectId
             projectScanConfiguration = projectScanConfiguration
                 ?: projectScanConfigurationService.findProjectOrGlobalScanConfiguration(node.projectId)
