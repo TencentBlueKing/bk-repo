@@ -199,7 +199,7 @@
     "IP": "指定IP段",
     "ipPlaceholder": "请输入IP段，多组请以,分割",
     "whiteUser": "白名单成员",
-    "whiteUserPlaceholder": "白名单成员不受此限制",
+    "whiteUserPlaceholder": "白名单成员不受此限制，多个成员以英文逗号隔开",
     "pleaseIpSegment": "请输入IP段",
     "ipSegmentRule": "多个IP段以英文逗号分割, eg: 192.168.1.1/24",
     "open": "开启",

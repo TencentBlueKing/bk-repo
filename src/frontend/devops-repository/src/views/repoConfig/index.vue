@@ -342,7 +342,7 @@
                             if (i.type === 'IP_SEGMENT') {
                                 const curRules = {
                                     ipSegment: i.rules.ipSegment.join(','),
-                                    whitelistUser: this.isCommunity ? i.rules.whitelistUser.join(',') : i.rules.whitelistUser,
+                                    whitelistUser: i.rules.whitelistUser.join(','),
                                     officeNetwork: i.rules.officeNetwork
                                 }
                                 this.repoBaseInfo[i.type.toLowerCase()] = {

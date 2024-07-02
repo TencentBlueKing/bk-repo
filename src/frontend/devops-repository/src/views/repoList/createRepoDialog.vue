@@ -332,7 +332,7 @@
                                 type: type.toUpperCase(),
                                 rules: {
                                     ipSegment: ipSegment.split(','),
-                                    whitelistUser: this.isCommunity ? whitelistUser.split(',') : whitelistUser,
+                                    whitelistUser: whitelistUser.split(','),
                                     officeNetwork
                                 }
                             })
