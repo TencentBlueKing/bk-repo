@@ -54,6 +54,7 @@ import com.tencent.bkrepo.common.security.proxy.ProxyAuthConfiguration
 import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -85,6 +86,7 @@ class SecurityAutoConfiguration {
     @Bean
     @Suppress("LongParameterList")
     fun permissionManager(
+        projectClient: ProjectClient,
         repositoryClient: RepositoryClient,
         permissionResource: ServicePermissionClient,
         externalPermissionResource: ServiceExternalPermissionClient,
@@ -97,6 +99,7 @@ class SecurityAutoConfiguration {
             && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
         ) {
             EdgePermissionManager(
+                projectClient = projectClient,
                 repositoryClient = repositoryClient,
                 permissionResource = permissionResource,
                 externalPermissionResource = externalPermissionResource,
@@ -107,6 +110,7 @@ class SecurityAutoConfiguration {
             )
         } else {
             PermissionManager(
+                projectClient = projectClient,
                 repositoryClient = repositoryClient,
                 permissionResource = permissionResource,
                 externalPermissionResource = externalPermissionResource,
@@ -150,6 +154,7 @@ class SecurityAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun proxyPermissionManager(
+        projectClient: ProjectClient,
         repositoryClient: RepositoryClient,
         permissionResource: ServicePermissionClient,
         externalPermissionResource: ServiceExternalPermissionClient,
@@ -158,6 +163,7 @@ class SecurityAutoConfiguration {
         httpAuthProperties: HttpAuthProperties
     ): ProxyPermissionManager {
         return ProxyPermissionManager(
+            projectClient = projectClient,
             repositoryClient = repositoryClient,
             permissionResource = permissionResource,
             externalPermissionResource = externalPermissionResource,

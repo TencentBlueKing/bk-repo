@@ -38,9 +38,11 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 
 class EdgePermissionManager(
+    projectClient: ProjectClient,
     repositoryClient: RepositoryClient,
     permissionResource: ServicePermissionClient,
     externalPermissionResource: ServiceExternalPermissionClient,
@@ -49,6 +51,7 @@ class EdgePermissionManager(
     clusterProperties: ClusterProperties,
     httpAuthProperties: HttpAuthProperties
 ) : PermissionManager(
+    projectClient,
     repositoryClient,
     permissionResource,
     externalPermissionResource,
