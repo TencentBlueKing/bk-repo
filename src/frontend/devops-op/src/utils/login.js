@@ -1,17 +1,17 @@
 import router from '@/router'
 
-const BASE_DIR = process.env.VUE_APP_BASE_DIR
+// const BASE_DIR = process.env.VUE_APP_BASE_DIR
 var PAAS_SERVICE_URL = '__BK_HTTP_SCHEMA__://__BK_REPO_PAAS_FQDN__'
 var LOGIN_SERVICE_URL = /^https?/.test(PAAS_SERVICE_URL)
   ? PAAS_SERVICE_URL + '/login/'
   : '__BK_REPO_PAAS_LOGIN_URL__'
-const MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
-// const MODE_CONFIG_STAND_ALONE = 'standalone'
-const MODE_CONFIG_CI = 'ci'
-const MODE_CONFIG_SAAS = 'saas'
+export const MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
+export const MODE_CONFIG_STAND_ALONE = 'standalone'
+export const MODE_CONFIG_CI = 'ci'
+export const MODE_CONFIG_SAAS = 'saas'
 
 function getLoginUrl(redirectUrl) {
-  const cUrl = location.origin + `/${BASE_DIR}` + (redirectUrl || '')
+  const cUrl = location.origin + (redirectUrl || '')
   if (/{+curl}+/i.test(LOGIN_SERVICE_URL)) {
     return LOGIN_SERVICE_URL.replace(/{+curl}+/i, encodeURIComponent(cUrl))
   } else if (/=%s/.test(LOGIN_SERVICE_URL)) {
