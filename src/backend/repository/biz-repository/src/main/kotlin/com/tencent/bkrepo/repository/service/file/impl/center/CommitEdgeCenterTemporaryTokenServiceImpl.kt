@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.file.impl.center
 
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
 import com.tencent.bkrepo.repository.service.file.impl.TemporaryTokenServiceImpl
 import org.springframework.context.annotation.Conditional

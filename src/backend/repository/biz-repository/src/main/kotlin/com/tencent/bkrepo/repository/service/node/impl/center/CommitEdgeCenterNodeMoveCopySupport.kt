@@ -27,59 +27,65 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.center
 
+import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
+import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
+import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.isEdgeRequest
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
-import java.time.LocalDateTime
+import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 
 class CommitEdgeCenterNodeMoveCopySupport(
-    nodeBaseService: NodeBaseService,
-    private val clusterProperties: ClusterProperties
+    private val nodeBaseService: NodeBaseService
 ) : NodeMoveCopySupport(
     nodeBaseService
 ) {
 
     override fun checkConflict(context: MoveCopyContext, node: TNode, existNode: TNode?) {
         super.checkConflict(context, node, existNode)
-        if (context.move) {
-            ClusterUtils.checkIsSrcCluster(node.clusterNames)
-            existNode?.let { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
-        } else {
-            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
-            existNode?.let { ClusterUtils.checkContainsSrcCluster(it.clusterNames) }
+        logger.debug("check node[${node.projectId}/${node.repoName}/${node.fullPath}] cluster")
+        ClusterUtils.checkIsSrcCluster(node.clusterNames)
+        existNode?.let { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
+    }
+
+    override fun moveCopyFile(context: MoveCopyContext) {
+        with(context) {
+            val dstPath = if (dstNode?.folder == true || dstNodeFolder == true) {
+                toPath(dstFullPath)
+            } else {
+                resolveParent(dstFullPath)
+            }
+            val dstName = if (dstNode?.folder == true || dstNodeFolder == true) {
+                srcNode.name
+            } else {
+                resolveName(dstFullPath)
+            }
+            // 创建dst父目录
+            nodeBaseService.mkdirs(dstProjectId, dstRepoName, dstPath, operator)
+            doMoveCopy(context, srcNode, dstPath, dstName)
         }
     }
 
-    override fun buildDstNode(
+    override fun buildSubNodesQuery(
         context: MoveCopyContext,
-        node: TNode,
-        dstPath: String,
-        dstName: String,
-        dstFullPath: String
-    ): TNode {
-        with(context) {
-            val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
-            val dstNode = node.copy(
-                id = null,
-                projectId = dstProjectId,
-                repoName = dstRepoName,
-                path = dstPath,
-                name = dstName,
-                fullPath = dstFullPath,
-                lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now(),
-                clusterNames = setOf(srcCluster)
-            )
-            // move操作，create信息保留
-            if (move) {
-                dstNode.createdBy = operator
-                dstNode.createdDate = LocalDateTime.now()
-            }
-
-            return dstNode
+        srcRootNodePath: String,
+        listOption: NodeListOption
+    ): Query {
+        val query = super.buildSubNodesQuery(context, srcRootNodePath, listOption)
+        if (isEdgeRequest()) {
+            query.addCriteria(where(TNode::clusterNames).isEqualTo(SecurityUtils.getClusterName()))
         }
+        return query
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(CommitEdgeCenterNodeMoveCopySupport::class.java)
     }
 }

@@ -52,6 +52,8 @@ data class NodeMoveCopyRequest(
     val destRepoName: String? = null,
     @ApiModelProperty("目的路径", required = true)
     val destFullPath: String,
+    @ApiModelProperty("目的路径是否为目录", required = false)
+    var destNodeFolder: Boolean? = null, // commit-edge模式，移动edge节点到目录，center没有此目录时，需要此字段标记目的路径为目录
     @Deprecated("This property is deprecated!", ReplaceWith("destFullPath"))
     @ApiModelProperty("目的路径", required = false)
     val destPath: String? = null,

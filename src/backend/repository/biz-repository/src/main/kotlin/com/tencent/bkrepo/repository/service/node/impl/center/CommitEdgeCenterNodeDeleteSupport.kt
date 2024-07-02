@@ -34,7 +34,7 @@ import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -102,11 +102,16 @@ class CommitEdgeCenterNodeDeleteSupport(
         operator: String,
         path: String
     ): NodeDeleteResult {
+        val clusterName = SecurityUtils.getClusterName()
+        if (clusterName.isNullOrEmpty()) {
+            return super.deleteBeforeDate(projectId, repoName, date, operator, path)
+        }
         var deletedSize = 0L
         var deletedNum = 0L
         val option = NodeListOption(includeFolder = false, deep = true)
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
             .and(TNode::createdDate).lt(date)
+            .and(TNode::clusterNames).isEqualTo(clusterName)
         val pageSize = 1
         var queryCount: Int
         var lastId = ObjectId(MIN_OBJECT_ID)

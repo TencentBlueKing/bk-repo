@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.repository.service.metadata.impl.center
 
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.metadata.impl.MetadataServiceImpl
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
@@ -45,4 +47,15 @@ class CommitEdgeCenterMetadataServiceImpl(
     nodeDao,
     repositoryProperties,
     ciPermissionManager
-)
+) {
+
+    /**
+     * 检查节点地点
+     * 目录没有记录地点，不检查
+     */
+    override fun checkNodeCluster(node: TNode) {
+        if (!node.folder) {
+            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
+        }
+    }
+}

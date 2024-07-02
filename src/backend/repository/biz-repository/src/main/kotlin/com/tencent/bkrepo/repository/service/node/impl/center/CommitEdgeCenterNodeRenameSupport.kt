@@ -28,32 +28,58 @@
 package com.tencent.bkrepo.repository.service.node.impl.center
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.isEdgeRequest
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRenameSupport
-import com.tencent.bkrepo.repository.util.NodeEventFactory
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 
 class CommitEdgeCenterNodeRenameSupport(
-    nodeBaseService: NodeBaseService
+    nodeBaseService: NodeBaseService,
+    private val clusterProperties: ClusterProperties
 ) : NodeRenameSupport(
     nodeBaseService
 ) {
 
-    override fun renameNode(renameRequest: NodeRenameRequest) {
-        with(renameRequest) {
-            val fullPath = PathUtils.normalizeFullPath(fullPath)
-            val newFullPath = PathUtils.normalizeFullPath(newFullPath)
-            val node = nodeDao.findNode(projectId, repoName, fullPath)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+    /**
+     * 重命名目录检查子节点是否包含edge节点
+     * 重命名文件检查节点是否为edge节点
+     */
+    override fun checkNodeCluster(node: TNode) {
+        if (node.folder) {
+            val query = Query(
+                where(TNode::projectId).isEqualTo(node.projectId)
+                    .and(TNode::repoName).isEqualTo(node.repoName)
+                    .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(node.fullPath)}")
+                    .and(TNode::folder).isEqualTo(false)
+                    .and(TNode::deleted).isEqualTo(null)
+                    .andOperator(buildClusterCriteria())
+            )
+            nodeDao.findOne(query) ?: return
+            throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
+        } else {
             ClusterUtils.checkIsSrcCluster(node.clusterNames)
-            doRename(node, newFullPath, operator)
-            SpringContextUtils.publishEvent(NodeEventFactory.buildRenamedEvent(renameRequest))
-            logger.info("Rename node [$this] success.")
+        }
+    }
+
+    private fun buildClusterCriteria(): Criteria {
+        return if (isEdgeRequest()) {
+            where(TNode::clusterNames).ne(SecurityUtils.getClusterName())
+        } else {
+            Criteria().orOperator(
+                where(TNode::clusterNames).exists(false),
+                where(TNode::clusterNames).ne(listOf(clusterProperties.self.name))
+            )
         }
     }
 

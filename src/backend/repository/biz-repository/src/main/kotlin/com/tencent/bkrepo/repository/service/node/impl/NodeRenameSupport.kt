@@ -59,16 +59,21 @@ open class NodeRenameSupport(
             val newFullPath = PathUtils.normalizeFullPath(newFullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            checkNodeCluster(node)
             doRename(node, newFullPath, operator)
             publishEvent(buildRenamedEvent(renameRequest))
             logger.info("Rename node [$this] success.")
         }
     }
 
+    open fun checkNodeCluster(node: TNode) {
+        return
+    }
+
     /**
      * 将节点重命名为指定名称
      */
-    protected fun doRename(node: TNode, newFullPath: String, operator: String) {
+    private fun doRename(node: TNode, newFullPath: String, operator: String) {
         val projectId = node.projectId
         val repoName = node.repoName
         val newPath = PathUtils.resolveParent(newFullPath)

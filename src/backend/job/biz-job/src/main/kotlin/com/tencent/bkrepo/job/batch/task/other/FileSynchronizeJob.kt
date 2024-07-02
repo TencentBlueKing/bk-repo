@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.job.batch.task.other
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob

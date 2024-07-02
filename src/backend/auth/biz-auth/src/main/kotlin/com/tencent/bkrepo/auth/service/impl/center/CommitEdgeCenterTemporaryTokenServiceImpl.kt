@@ -29,7 +29,7 @@ package com.tencent.bkrepo.auth.service.impl.center
 
 import com.tencent.bkrepo.auth.dao.AuthTemporaryTokenDao
 import com.tencent.bkrepo.auth.service.impl.TemporaryTokenServiceImpl
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 

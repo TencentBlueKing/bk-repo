@@ -25,30 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller.service
+package com.tencent.bkrepo.common.service.cluster.condition
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.NodeShareClient
-import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
-import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
-import com.tencent.bkrepo.repository.service.file.ShareService
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
+import org.springframework.context.annotation.Condition
+import org.springframework.context.annotation.ConditionContext
+import org.springframework.core.type.AnnotatedTypeMetadata
 
-@RestController
-class NodeShareController(
-    private val shareService: ShareService
-): NodeShareClient {
-    override fun create(
-        userId: String,
-        artifactInfo: ArtifactInfo,
-        request: ShareRecordCreateRequest
-    ): Response<ShareRecordInfo> {
-        return ResponseBuilder.success(shareService.create(userId, artifactInfo, request))
-    }
-
-    override fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): Response<ShareRecordInfo> {
-        return ResponseBuilder.success(shareService.checkToken(userId, token, artifactInfo))
+class DefaultCondition: Condition {
+    override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {
+        val clusterArchitecture =
+            context.environment.getProperty("cluster.architecture", ClusterArchitecture::class.java)
+        return clusterArchitecture != ClusterArchitecture.COMMIT_EDGE
     }
 }

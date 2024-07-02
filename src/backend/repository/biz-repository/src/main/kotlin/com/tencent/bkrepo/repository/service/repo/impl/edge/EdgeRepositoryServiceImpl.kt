@@ -29,8 +29,9 @@ package com.tencent.bkrepo.repository.service.repo.impl.edge
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.reportMetadataToCenter
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
@@ -84,6 +85,9 @@ class EdgeRepositoryServiceImpl(
     }
 
     override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
+        if (!reportMetadataToCenter(repoCreateRequest.projectId, repoCreateRequest.name)) {
+            return super.createRepo(repoCreateRequest)
+        }
         try {
             centerRepoClient.createRepo(repoCreateRequest)
         } catch (e: RemoteErrorCodeException) {
@@ -95,12 +99,16 @@ class EdgeRepositoryServiceImpl(
     }
 
     override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {
-        centerRepoClient.deleteRepo(repoDeleteRequest)
+        if (reportMetadataToCenter(repoDeleteRequest.projectId, repoDeleteRequest.name)) {
+            centerRepoClient.deleteRepo(repoDeleteRequest)
+        }
         super.deleteRepo(repoDeleteRequest)
     }
 
     override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
-        centerRepoClient.updateRepo(repoUpdateRequest)
+        if (reportMetadataToCenter(repoUpdateRequest.projectId, repoUpdateRequest.name)) {
+            centerRepoClient.updateRepo(repoUpdateRequest)
+        }
         super.updateRepo(repoUpdateRequest)
     }
 }

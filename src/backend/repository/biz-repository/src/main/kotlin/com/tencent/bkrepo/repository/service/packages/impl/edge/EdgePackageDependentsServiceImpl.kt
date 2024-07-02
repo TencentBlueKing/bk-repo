@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.repository.service.packages.impl.edge
 
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgePackageCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterPackageDependentsClient
 import com.tencent.bkrepo.repository.dao.PackageDao
@@ -36,10 +36,12 @@ import com.tencent.bkrepo.repository.dao.PackageDependentsDao
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 import com.tencent.bkrepo.repository.service.packages.impl.PackageDependentsServiceImpl
 import org.springframework.context.annotation.Conditional
+import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
 
 @Service
-@Conditional(CommitEdgeEdgeCondition::class)
+@Conditional(CommitEdgeEdgePackageCondition::class)
+@Primary
 class EdgePackageDependentsServiceImpl(
     packageDao: PackageDao,
     packageDependentsDao: PackageDependentsDao,

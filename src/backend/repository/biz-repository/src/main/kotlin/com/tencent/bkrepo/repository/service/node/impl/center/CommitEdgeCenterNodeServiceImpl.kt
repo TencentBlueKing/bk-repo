@@ -35,8 +35,8 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.fs.server.api.FsNodeClient
@@ -104,7 +104,8 @@ class CommitEdgeCenterNodeServiceImpl(
         val repo = repositoryDao.findByNameAndType(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
 
-        if (!ClusterUtils.containsSrcCluster(repo.clusterNames)) {
+        val enabledCheck = clusterProperties.commitEdge.repo.check
+        if (enabledCheck && !ClusterUtils.containsSrcCluster(repo.clusterNames)) {
             throw ErrorCodeException(CommonMessageCode.OPERATION_CROSS_CLUSTER_NOT_ALLOWED)
         }
         return repo
@@ -133,7 +134,9 @@ class CommitEdgeCenterNodeServiceImpl(
 
     override fun buildTNode(request: NodeCreateRequest): TNode {
         val node = super.buildTNode(request)
-        node.clusterNames = setOf(SecurityUtils.getClusterName() ?: clusterProperties.self.name!!)
+        SecurityUtils.getClusterName()?.let {
+            node.clusterNames = setOf(it)
+        }
         return node
     }
 
@@ -237,15 +240,15 @@ class CommitEdgeCenterNodeServiceImpl(
     }
 
     override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
-        return CommitEdgeCenterNodeMoveCopySupport(this, clusterProperties).copyNode(copyRequest)
+        return CommitEdgeCenterNodeMoveCopySupport(this).copyNode(copyRequest)
     }
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
-        return CommitEdgeCenterNodeMoveCopySupport(this, clusterProperties).moveNode(moveRequest)
+        return CommitEdgeCenterNodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     override fun renameNode(renameRequest: NodeRenameRequest) {
-        return CommitEdgeCenterNodeRenameSupport(this).renameNode(renameRequest)
+        return CommitEdgeCenterNodeRenameSupport(this, clusterProperties).renameNode(renameRequest)
     }
 
     companion object {

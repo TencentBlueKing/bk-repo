@@ -29,7 +29,8 @@ package com.tencent.bkrepo.repository.service.node.impl.edge
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.reportMetadataToCenter
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
@@ -88,22 +89,36 @@ abstract class EdgeNodeBaseService(
 
     override fun buildTNode(request: NodeCreateRequest): TNode {
         val node = super.buildTNode(request)
-        node.clusterNames = setOf(clusterProperties.self.name!!)
+        if (reportMetadataToCenter(request.projectId, request.repoName)) {
+            node.clusterNames = setOf(clusterProperties.self.name!!)
+        }
         return node
     }
 
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
-        centerNodeClient.createNode(createRequest)
+        if (reportMetadataToCenter(createRequest.projectId, createRequest.repoName)) {
+            centerNodeClient.createNode(createRequest)
+        }
         return super.createNode(createRequest)
     }
 
     override fun updateNode(updateRequest: NodeUpdateRequest) {
-        centerNodeClient.updateNode(updateRequest)
+        val node = nodeDao.findNode(updateRequest.projectId, updateRequest.repoName, updateRequest.fullPath)
+        if (node?.clusterNames?.isEmpty() == false) {
+            centerNodeClient.updateNode(updateRequest)
+        }
         super.updateNode(updateRequest)
     }
 
     override fun updateNodeAccessDate(updateAccessDateRequest: NodeUpdateAccessDateRequest) {
-        centerNodeClient.updateNodeAccessDate(updateAccessDateRequest)
+        val node = nodeDao.findNode(
+            updateAccessDateRequest.projectId,
+            updateAccessDateRequest.repoName,
+            updateAccessDateRequest.fullPath
+        )
+        if (node?.clusterNames?.isEmpty() == false) {
+            centerNodeClient.updateNodeAccessDate(updateAccessDateRequest)
+        }
         super.updateNodeAccessDate(updateAccessDateRequest)
     }
 }

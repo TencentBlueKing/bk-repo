@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.service.feign
 
+import com.tencent.bkrepo.common.api.constant.COMMIT_EDGE_HEADER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import feign.RequestInterceptor
@@ -50,6 +51,9 @@ class CustomFeignClientsConfiguration : FeignClientsConfiguration() {
             // 设置Accept-Language请求头
             HttpContextHolder.getRequestOrNull()?.getHeader(HttpHeaders.ACCEPT_LANGUAGE)?.let {
                 requestTemplate.header(HttpHeaders.ACCEPT_LANGUAGE, it)
+            }
+            HttpContextHolder.getRequestOrNull()?.getHeader(COMMIT_EDGE_HEADER)?.let {
+                requestTemplate.header(COMMIT_EDGE_HEADER, it)
             }
         }
     }
