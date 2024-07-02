@@ -84,7 +84,6 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
-import java.time.Duration
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Conditional
@@ -101,7 +100,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDate
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -387,13 +386,7 @@ class RepositoryServiceImpl(
     }
 
     override fun statRepo(projectId: String, repoName: String): NodeSizeInfo {
-        val today = LocalDate.now().atStartOfDay()
-        var projectMetrics = projectMetricsRepository.findByProjectIdAndCreatedDate(projectId, today)
-        // 可能当天任务还没有统计出来，则查询前一天的数据
-        if (projectMetrics == null) {
-            val yesterday = today.minusDays(1)
-            projectMetrics = projectMetricsRepository.findByProjectIdAndCreatedDate(projectId, yesterday)
-        }
+        val projectMetrics = projectService.getProjectMetricsInfo(projectId)
         val repoMetrics = projectMetrics?.repoMetrics?.firstOrNull { it.repoName == repoName }
         return NodeSizeInfo(
             subNodeCount = repoMetrics?.num ?: 0,
@@ -574,7 +567,7 @@ class RepositoryServiceImpl(
         proxyChannelService.deleteProxy(proxyRepository)
         logger.info(
             "Success to delete private proxy channel [${proxy.name}]" +
-                    " in repo[${repository.projectId}|${repository.name}]",
+                " in repo[${repository.projectId}|${repository.name}]",
         )
     }
 
