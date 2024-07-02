@@ -101,7 +101,6 @@ class StreamService(
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
         val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
         val artifactFile = ArtifactFileFactory.buildChunked(credentials)
-
         val fileConsumer = ArtifactFileConsumer(
             storageManager,
             repo,
@@ -122,6 +121,7 @@ class StreamService(
             stream.saveAs()
         }
         stream.startPublish()
+        logger.info("User[$userId] publish stream $streamId")
         return stream
     }
 
