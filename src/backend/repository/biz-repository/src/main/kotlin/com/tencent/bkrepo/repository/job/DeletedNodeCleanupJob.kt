@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.repository.job
 
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao

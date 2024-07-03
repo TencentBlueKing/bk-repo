@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,34 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.api
+package com.tencent.bkrepo.common.artifact.metrics
 
-import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
-import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-
-
-/**
- * 节点分享服务接口
- */
-@Api("节点分享服务接口")
-@Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeShareClient", primary = false)
-@RequestMapping("/service/node/share")
-interface NodeShareClient {
-    @ApiOperation("创建分享链接")
-    @PostMapping("/create")
-    fun create(userId: String, artifactInfo: ArtifactInfo, request: ShareRecordCreateRequest): Response<ShareRecordInfo>
-
-    @ApiOperation("检查token")
-    @PostMapping("/token")
-    fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): Response<ShareRecordInfo>
+enum class TransferUserAgent {
+    // 构建机
+    BUILDER,
+    // 制品库/蓝盾页面
+    BK_WEB,
+    // api调用
+    OPENAPI,
+    // 制品库客户端或者蓝盾客户端
+    BK_CLIENT;
 }

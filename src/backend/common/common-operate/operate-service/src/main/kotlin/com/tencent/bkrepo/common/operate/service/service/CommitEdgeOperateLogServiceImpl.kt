@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
 import com.tencent.bkrepo.common.operate.service.config.OperateProperties
 import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
 import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterOperateLogClient
 

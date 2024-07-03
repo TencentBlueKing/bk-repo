@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.maven.service.impl.center
 
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import com.tencent.bkrepo.maven.dao.MavenMetadataDao
 import com.tencent.bkrepo.maven.service.MavenMetadataService
 import org.springframework.context.annotation.Conditional

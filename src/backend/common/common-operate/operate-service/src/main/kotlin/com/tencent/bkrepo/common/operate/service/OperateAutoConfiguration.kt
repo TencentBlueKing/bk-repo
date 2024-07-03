@@ -41,7 +41,7 @@ import com.tencent.bkrepo.common.operate.service.service.CommitEdgeOperateLogSer
 import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
 import com.tencent.bkrepo.common.operate.service.service.ProjectUsageStatisticsServiceImpl
 import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication

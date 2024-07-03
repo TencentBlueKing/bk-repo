@@ -25,22 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.cluster
+package com.tencent.bkrepo.repository.controller.service
 
-import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
-import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import org.springframework.context.annotation.Condition
-import org.springframework.context.annotation.ConditionContext
-import org.springframework.core.type.AnnotatedTypeMetadata
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.cluster.ClusterNodeShareClient
+import com.tencent.bkrepo.repository.pojo.share.ClusterShareRecordCreateRequest
+import com.tencent.bkrepo.repository.pojo.share.ClusterShareTokenCheckRequest
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
+import com.tencent.bkrepo.repository.service.file.ShareService
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * [ClusterArchitecture.COMMIT_EDGE]组网方式的[ClusterNodeType.EDGE]节点
- */
-class CommitEdgeEdgeCondition : Condition {
-    override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {
-        val clusterRoleType = context.environment.getProperty("cluster.role", ClusterNodeType::class.java)
-        val clusterArchitecture =
-            context.environment.getProperty("cluster.architecture", ClusterArchitecture::class.java)
-        return clusterRoleType == ClusterNodeType.EDGE && clusterArchitecture == ClusterArchitecture.COMMIT_EDGE
+@RestController
+class ClusterNodeShareController(
+    private val shareService: ShareService
+): ClusterNodeShareClient {
+    override fun create(
+        request: ClusterShareRecordCreateRequest
+    ): Response<ShareRecordInfo> {
+        return ResponseBuilder.success(shareService.create(request.userId, request.artifactInfo, request.createRequest))
+    }
+
+    override fun checkToken(request: ClusterShareTokenCheckRequest): Response<ShareRecordInfo> {
+        return ResponseBuilder.success(shareService.checkToken(request.userId, request.token, request.artifactInfo))
     }
 }
