@@ -839,27 +839,33 @@
                             fullPath
                         }).then(res => {
                             this.refreshNodeChange()
-                            if (folder && totalRecords === res.deletedNumber) {
-                                this.$bkMessage({
-                                    theme: 'success',
-                                    message: this.$t('delete') + this.$t('space') + this.$t('success')
-                                })
-                            } else if (!folder && res.deletedNumber === 1) {
-                                this.$bkMessage({
-                                    theme: 'success',
-                                    message: this.$t('delete') + this.$t('space') + this.$t('success')
-                                })
+                            if (folder) {
+                                if (totalRecords === res.deletedNumber) {
+                                    this.$bkMessage({
+                                        theme: 'success',
+                                        message: this.$t('delete') + this.$t('space') + this.$t('success')
+                                    })
+                                } else {
+                                    const failNum = totalRecords - res.deletedNumber
+                                    this.$bkMessage({
+                                        theme: 'error',
+                                        message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
+                                    })
+                                }
                             } else {
-                                const failNum = folder ? totalRecords - res.deletedNumber : 1
-                                this.$bkMessage({
-                                    theme: 'error',
-                                    message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
-                                })
+                                if (res.deletedNumber === 1) {
+                                    this.$bkMessage({
+                                        theme: 'success',
+                                        message: this.$t('delete') + this.$t('space') + this.$t('success')
+                                    })
+                                } else {
+                                    const failNum = 1
+                                    this.$bkMessage({
+                                        theme: 'error',
+                                        message: this.$t('delete') + this.$t('space') + res.deletedNumber + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('success') + ',' + this.$t('delete') + this.$t('space') + failNum + this.$t('per') + this.$t('file') + this.$t('space') + this.$t('fail')
+                                    })
+                                }
                             }
-                            this.$bkMessage({
-                                theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
-                            })
                         }).catch(e => {
                             if (e.status === 403) {
                                 this.getPermissionUrl({

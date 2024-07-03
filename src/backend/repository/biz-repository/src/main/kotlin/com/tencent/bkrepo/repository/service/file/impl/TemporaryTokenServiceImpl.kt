@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.DefaultCondition
+import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
 import com.tencent.bkrepo.repository.model.TTemporaryToken
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
