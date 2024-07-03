@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.artifact.resolve.response
 
-import com.sun.org.slf4j.internal.LoggerFactory
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
@@ -50,6 +49,7 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import java.io.IOException
 import java.time.LocalDateTime
