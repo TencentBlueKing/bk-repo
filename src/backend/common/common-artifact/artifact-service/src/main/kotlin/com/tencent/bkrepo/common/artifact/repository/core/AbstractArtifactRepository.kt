@@ -147,7 +147,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val range = HeaderUtils.getHeader(HttpHeaders.RANGE) ?: StringPool.DASH
             logger.warn(
                 "User[$principal],ip[$clientAddress] download artifact[$artifactInfo] failed[$code]$message" +
-                    " X_FORWARDED_FOR: $xForwardedFor, range: $range"
+                    " X_FORWARDED_FOR: $xForwardedFor, range: $range", exception
             )
             ArtifactMetrics.getDownloadFailedCounter().increment()
         } catch (exception: ArtifactNotFoundException){

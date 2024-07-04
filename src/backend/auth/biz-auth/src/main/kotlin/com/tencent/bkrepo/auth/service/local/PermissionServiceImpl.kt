@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
+import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
@@ -45,9 +46,7 @@ import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType.SYSTEM
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
-import com.tencent.bkrepo.auth.dao.repository.AccountRepository
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.PermissionHelper
 import com.tencent.bkrepo.auth.helper.UserHelper
@@ -56,6 +55,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.UPDATE
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -69,14 +69,13 @@ import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 
 open class PermissionServiceImpl constructor(
     private val roleRepository: RoleRepository,
-    private val account: AccountRepository,
+    private val accountDao: AccountDao,
     private val permissionDao: PermissionDao,
     private val userDao: UserDao,
     private val personalPathDao: PersonalPathDao,
@@ -332,19 +331,19 @@ open class PermissionServiceImpl constructor(
 
     override fun checkPlatformPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            if (appId == null) return true
-            val platform = account.findOneByAppId(appId!!) ?: run {
-                logger.info("can not find platform [$appId]")
-                return false
-            }
-
+            val platform = accountDao.findOneByAppId(appId!!) ?: return false
+            // 非平台账号
+            if (!permHelper.isPlatformApp(platform)) return false
+            // 不限制scope
             if (platform.scope == null) return true
+            // 平台账号，限制scope
+            if (!platform.scope!!.contains(ResourceType.lookup(resourceType))) return false
+            // 校验平台账号权限范围
             when (resourceType) {
-                SYSTEM.name -> return true
                 PROJECT.name -> {
                     return permHelper.checkPlatformProject(projectId, platform.scopeDesc)
                 }
-                else -> return false
+                else -> return true
             }
         }
     }
@@ -374,8 +373,7 @@ open class PermissionServiceImpl constructor(
                 && permHelper.updatePermissionById(request.permissionId, TPermission::roles.name, request.roles)
     }
 
-    override fun getOrCreatePersonalPath(projectId: String, repoName: String): String {
-        val userId = SecurityUtils.getUserId()
+    override fun getOrCreatePersonalPath(projectId: String, repoName: String, userId: String): String {
         val personalPath = "$defaultPersonalPrefix/$userId"
         personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName) ?: run {
             logger.info("personal path [$projectId, $repoName, $personalPath ] not exist , create")

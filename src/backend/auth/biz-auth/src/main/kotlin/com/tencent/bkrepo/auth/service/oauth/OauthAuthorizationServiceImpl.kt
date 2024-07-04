@@ -30,6 +30,7 @@ package com.tencent.bkrepo.auth.service.oauth
 import cn.hutool.core.codec.Base64Decoder
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.tencent.bkrepo.auth.config.OauthProperties
+import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.model.TOauthToken
@@ -41,7 +42,6 @@ import com.tencent.bkrepo.auth.pojo.oauth.IdToken
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKey
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
-import com.tencent.bkrepo.auth.dao.repository.AccountRepository
 import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.pojo.oauth.OidcConfiguration
 import com.tencent.bkrepo.auth.pojo.oauth.UserInfo
@@ -76,7 +76,7 @@ import java.util.concurrent.TimeUnit
 
 @Service
 class OauthAuthorizationServiceImpl(
-    private val accountRepository: AccountRepository,
+    private val accountDao: AccountDao,
     private val oauthTokenRepository: OauthTokenRepository,
     private val userService: UserService,
     private val redisOperation: RedisOperation,
@@ -87,8 +87,8 @@ class OauthAuthorizationServiceImpl(
     override fun authorized(authorizeRequest: AuthorizeRequest): AuthorizedResult {
         with(authorizeRequest) {
             val userId = SecurityUtils.getUserId()
-            val client = accountRepository.findById(clientId)
-                .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
+            val client =
+                accountDao.findById(clientId) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST)
             val code = OauthUtils.generateCode()
 
             val userIdKey = "$clientId:$code:userId"
@@ -186,8 +186,7 @@ class OauthAuthorizationServiceImpl(
         clientSecret: String?
     ): TOauthToken {
         Preconditions.checkNotBlank(clientSecret, "client_secret")
-        val client = accountRepository.findById(clientId)
-            .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
+        val client = accountDao.findById(clientId) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST)
         client.credentials.find {
             it.authorizationGrantType == AuthorizationGrantType.CLIENT_CREDENTIALS && it.secretKey == clientSecret
         } ?: throw ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST)
@@ -323,7 +322,7 @@ class OauthAuthorizationServiceImpl(
             null
         } else {
             tOauthToken.issuedAt.epochSecond + tOauthToken.expireSeconds -
-                Instant.now(Clock.systemDefaultZone()).epochSecond
+                    Instant.now(Clock.systemDefaultZone()).epochSecond
         }
     )
 
@@ -348,15 +347,14 @@ class OauthAuthorizationServiceImpl(
             throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "clientSecret or codeVerifier")
         }
 
-        val client = accountRepository.findById(clientId)
-            .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
+        val client = accountDao.findById(clientId) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST)
 
         val credential = if (clientSecret.isNullOrBlank()) {
             client.credentials.find { it.authorizationGrantType == AuthorizationGrantType.AUTHORIZATION_CODE }
         } else {
             client.credentials.find {
                 it.secretKey == clientSecret &&
-                    it.authorizationGrantType == AuthorizationGrantType.AUTHORIZATION_CODE
+                        it.authorizationGrantType == AuthorizationGrantType.AUTHORIZATION_CODE
             }
         }
         if (credential == null) {

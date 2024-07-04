@@ -34,7 +34,6 @@ package com.tencent.bkrepo.repository.service.packages.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackageVersion
@@ -42,7 +41,6 @@ import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
 import com.tencent.bkrepo.repository.service.packages.StageService
 import org.slf4j.LoggerFactory
-import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -50,7 +48,6 @@ import java.time.LocalDateTime
  * 制品晋级服务接口实现类
  */
 @Service
-@Conditional(DefaultCondition::class)
 class StageServiceImpl(
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao

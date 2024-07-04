@@ -57,4 +57,20 @@ data class ArtifactMetricsProperties(
      * 是否使用influxdb存储指标数据
      */
     var useInfluxDb: Boolean = true,
+    /**
+     * 页面host
+     */
+    var host: String = "",
+    /**
+     * 构建机agent列表
+     */
+    var builderAgentList: List<String> = emptyList(),
+    /**
+     * 客户端agent列表
+     */
+    var clientAgentList: List<String> = emptyList(),
+    /**
+     * web 平台账号id
+     */
+    var webPlatformId: String = ""
 )

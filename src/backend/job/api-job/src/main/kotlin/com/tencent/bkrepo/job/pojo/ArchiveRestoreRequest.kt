@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,17 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.cluster
+package com.tencent.bkrepo.job.pojo
 
-import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
-import org.springframework.context.annotation.Condition
-import org.springframework.context.annotation.ConditionContext
-import org.springframework.core.type.AnnotatedTypeMetadata
-
-class DefaultCondition: Condition {
-    override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {
-        val clusterArchitecture =
-            context.environment.getProperty("cluster.architecture", ClusterArchitecture::class.java)
-        return clusterArchitecture != ClusterArchitecture.COMMIT_EDGE
-    }
-}
+/**
+ * 恢复已归档或已压缩的制品请求
+ */
+data class ArchiveRestoreRequest(
+    /**
+     * 制品所属项目
+     */
+    val projectId: String,
+    /**
+     * 制品所属仓库
+     */
+    val repoName: String? = null,
+    /**
+     * 制品路径前缀
+     */
+    val prefix: String? = null,
+    /**
+     * 制品元数据，所有元数据均匹配才会恢复
+     */
+    val metadata: Map<String, String> = emptyMap(),
+)

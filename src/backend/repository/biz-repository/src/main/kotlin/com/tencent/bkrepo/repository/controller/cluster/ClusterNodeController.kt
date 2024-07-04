@@ -47,6 +47,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeService
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
 
 @RestController
 class ClusterNodeController(
@@ -118,6 +119,17 @@ class ClusterNodeController(
             permissionManager.checkRepoPermission(PermissionAction.DELETE, projectId, repoName)
             return ResponseBuilder.success(nodeService.deleteNodes(this))
         }
+    }
+
+    override fun deleteNodeLastModifiedBeforeDate(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        date: LocalDateTime,
+        operator: String
+    ): Response<NodeDeleteResult> {
+        permissionManager.checkNodePermission(PermissionAction.DELETE, projectId, repoName, fullPath)
+        return ResponseBuilder.success(nodeService.deleteBeforeDate(projectId, repoName, date, operator, fullPath))
     }
 
     override fun restoreNode(nodeRestoreRequest: NodeRestoreRequest): Response<NodeRestoreResult> {

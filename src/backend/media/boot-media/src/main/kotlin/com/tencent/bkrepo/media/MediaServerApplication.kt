@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,38 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.cluster
+package com.tencent.bkrepo.media
 
-import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
-import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
+import com.tencent.bkrepo.common.service.condition.MicroService
+import org.springframework.boot.runApplication
 
 /**
- * 集群信息
+ * 通用文件微服务启动类
  */
-@ConfigurationProperties("cluster")
-data class ClusterProperties(
-    /**
-     * 节点角色
-     */
-    var role: ClusterNodeType = ClusterNodeType.CENTER,
-    /**
-     * 部署区域
-     */
-    var region: String? = null,
-    /**
-     * 中心节点信息
-     */
-    @NestedConfigurationProperty
-    var center: ClusterInfo = ClusterInfo(),
-    /**
-     * 自身节点信息
-     */
-    @NestedConfigurationProperty
-    var self: ClusterInfo = ClusterInfo(),
-    /**
-     * 组网方式
-     */
-    var architecture: ClusterArchitecture = ClusterArchitecture.STANDALONE
-)
+@MicroService
+class MediaServerApplication
+
+fun main(args: Array<String>) {
+    runApplication<MediaServerApplication>(*args)
+}

@@ -44,6 +44,7 @@ import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
@@ -182,7 +183,8 @@ class PermissionController @Autowired constructor(
         @RequestParam repoName: String
     ): Response<String> {
         preCheckUserInProject(AuthPermissionType.REPO, projectId, repoName)
-        return ResponseBuilder.success(permissionService.getOrCreatePersonalPath(projectId, repoName))
+        val userId = SecurityUtils.getUserId()
+        return ResponseBuilder.success(permissionService.getOrCreatePersonalPath(projectId, repoName, userId))
     }
 
     @ApiOperation("查询外部用户组")

@@ -37,6 +37,7 @@ import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.redis.RedisOperation
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -50,8 +51,10 @@ class OauthAuthorizationServiceTest {
 
     @Autowired
     private lateinit var accountService: AccountService
+
     @Autowired
     private lateinit var oauthAuthorizationService: OauthAuthorizationService
+
     @Autowired
     private lateinit var redisOperation: RedisOperation
 
@@ -68,16 +71,17 @@ class OauthAuthorizationServiceTest {
     fun setUp() {
         HttpContextHolder.getRequest().setAttribute(USER_KEY, userId)
         account = try {
-            accountService.deleteAccount(appId)
-            accountService.createAccount(buildCreateAccountRequest())
+            accountService.deleteAccount(appId, userId)
+            accountService.createAccount(buildCreateAccountRequest(), userId)
         } catch (exception: ErrorCodeException) {
-            accountService.createAccount(buildCreateAccountRequest())
+            accountService.createAccount(buildCreateAccountRequest(), userId)
         }
     }
 
     @AfterEach
     fun tearDown() {
-        accountService.deleteAccount(appId)
+        val userId = SecurityUtils.getUserId()
+        accountService.deleteAccount(appId, userId)
     }
 
     private fun buildCreateAccountRequest(

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.model
 
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.springframework.data.mongodb.core.index.TextIndexDefinition.TextIndexDefinitionBuilder
 import java.time.LocalDateTime
 
@@ -43,6 +44,7 @@ data class TNode(
     val deleted: LocalDateTime? = null,
     val archived: Boolean? = null,
     val compressed: Boolean? = null,
+    val metadata: List<MetadataModel> = emptyList(),
 ) {
     companion object {
         fun pathIndex() = TextIndexDefinitionBuilder()

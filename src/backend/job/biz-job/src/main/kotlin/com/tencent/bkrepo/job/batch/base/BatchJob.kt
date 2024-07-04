@@ -168,7 +168,7 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
             )
             SpringContextUtils.publishEvent(event)
         } catch (e: Exception) {
-            logger.info("Job[${getJobName()}] execution failed.", e)
+            logger.error("Job[${getJobName()}] execution failed.", e)
         } finally {
             inProcess = false
         }
