@@ -104,14 +104,14 @@ open class ArtifactAccessRecorder(
     /**
      * 清理访问记录
      */
-    fun cleanup(): Long {
+    open fun cleanup(): Long {
         val beforeDateTime = LocalDateTime.now().minus(preloadProperties.accessRecordKeepDuration)
         val result = artifactAccessRecordDao.delete(beforeDateTime)
         logger.info("${result.deletedCount} artifact access record was deleted")
         return result.deletedCount
     }
 
-    fun generateStrategy() {
+    open fun generateStrategy() {
         // TODO
     }
 
