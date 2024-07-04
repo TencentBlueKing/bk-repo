@@ -182,7 +182,11 @@ class EmptyFolderCleanup(
         } else {
             update.set(SIZE, 0).set(NODE_NUM, 0)
         }
-        mongoTemplate.updateFirst(query, update, collectionName)
+        try {
+            mongoTemplate.updateFirst(query, update, collectionName)
+        } catch (e: Exception) {
+            logger.error("delete $objectId failed, error: $e")
+        }
     }
 
     /**
