@@ -185,7 +185,7 @@ class EmptyFolderCleanup(
         try {
             mongoTemplate.updateFirst(query, update, collectionName)
         } catch (e: Exception) {
-            logger.error("delete $objectId failed, error: $e")
+            logger.error("delete $objectId in collection $collectionName failed, error: $e")
         }
     }
 
