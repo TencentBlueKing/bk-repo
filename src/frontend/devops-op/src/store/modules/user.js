@@ -72,33 +72,11 @@ const actions = {
   },
 
   // get user info
-  getInfo({ commit }) {
+  async getInfo({ commit }) {
     const uid = getBkUid()
-    if (uid && MODE_CONFIG !== MODE_CONFIG_STAND_ALONE) {
-      return new Promise((resolve, reject) => {
-        userInfoById(uid).then(response => {
-          const { data } = response
-          const { name, userId, admin } = data
-          const roles = admin ? [ROLE_ADMIN] : [ROLE_USER]
-          // roles must be a non-empty array
-          if (!roles || roles.length <= 0) {
-            reject('getInfo: roles must be a non-null array!')
-          }
-
-          const avatar = ''
-          commit('SET_USER_ID', userId)
-          commit('SET_NAME', name)
-          commit('SET_ADMIN', admin)
-          commit('SET_ROLES', roles)
-          commit('SET_AVATAR', avatar)
-          resolve({ name, userId, roles })
-        })
-      })
-    }
+    const user = (uid && MODE_CONFIG !== MODE_CONFIG_STAND_ALONE) ? uid : (await getUser()).user
     return new Promise((resolve, reject) => {
-      userInfo().then(res => {
-        return userInfoById(res.data.userId)
-      }).then(response => {
+      userInfoById(user).then(response => {
         const { data } = response
         const { name, userId, admin } = data
         const roles = admin ? [ROLE_ADMIN] : [ROLE_USER]
@@ -138,6 +116,15 @@ const actions = {
       resolve()
     })
   }
+}
+
+async function getUser() {
+  return new Promise((resolve, reject) => {
+    userInfo().then(res => {
+      const user = res.data.userId
+      resolve({ user })
+    })
+  })
 }
 
 export default {

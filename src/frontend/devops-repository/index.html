@@ -74,8 +74,6 @@
         }
 
         window.getLoginUrl = function (cUrl = location.href) {
-            console.log(MODE_CONFIG)
-            console.log(LOGIN_SERVICE_URL)
             if (/\{+curl\}+/i.test(LOGIN_SERVICE_URL)) {
                 return LOGIN_SERVICE_URL.replace(/\{+curl\}+/i, encodeURIComponent(cUrl))
             } else if (/=%s/.test(LOGIN_SERVICE_URL)) {

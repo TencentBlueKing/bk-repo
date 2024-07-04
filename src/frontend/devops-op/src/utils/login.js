@@ -8,9 +8,7 @@ export const MODE_CONFIG_STAND_ALONE = 'standalone'
 // export const MODE_CONFIG_SAAS = 'saas'
 
 function getLoginUrl(redirectUrl) {
-  console.log(MODE_CONFIG)
-  console.log(LOGIN_SERVICE_URL)
-  const cUrl = location.origin + (redirectUrl || '')
+  const cUrl = location.origin + '/admin' + (redirectUrl || '')
   if (/{+curl}+/i.test(LOGIN_SERVICE_URL)) {
     return LOGIN_SERVICE_URL.replace(/{+curl}+/i, encodeURIComponent(cUrl))
   } else if (/=%s/.test(LOGIN_SERVICE_URL)) {

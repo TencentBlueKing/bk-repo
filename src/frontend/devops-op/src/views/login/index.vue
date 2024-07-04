@@ -50,7 +50,6 @@
 <script>
 
 import { sidebarTitle } from '@/settings'
-import { MODE_CONFIG, MODE_CONFIG_STAND_ALONE } from '@/utils/login'
 
 export default {
   name: 'Login',
@@ -76,11 +75,6 @@ export default {
         this.redirect = route.query && route.query.redirect
       },
       immediate: true
-    }
-  },
-  created() {
-    if (MODE_CONFIG !== MODE_CONFIG_STAND_ALONE) {
-      this.gotoMain()
     }
   },
   methods: {
@@ -109,11 +103,6 @@ export default {
         } else {
           return false
         }
-      })
-    },
-    gotoMain() {
-      this.$store.dispatch('user/login', this.loginForm).then(() => {
-        this.$router.push({ path: this.redirect || '/' })
       })
     }
   }

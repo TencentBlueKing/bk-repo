@@ -9,7 +9,7 @@ function resolve(dir) {
 const envDist = process.env && process.env.dist ? process.env.dist : 'frontend'
 const dist = resolve(`../${envDist}/${process.env.VUE_APP_BASE_DIR}`)
 const targetDist = path.join(__dirname, `../${envDist}/ui`)
-const fileName =  process.env.NODE_ENV !== 'development'? `${targetDist}/frontend#admin#index.html`: `index.html`
+const fileName = process.env.NODE_ENV !== 'development' ? `${targetDist}/frontend#admin#index.html` : `index.html`
 
 module.exports = {
   publicPath: `/${process.env.VUE_APP_BASE_DIR}`,

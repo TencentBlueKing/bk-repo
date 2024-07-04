@@ -5,6 +5,7 @@ import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
 import { getBkUid, getToken } from '@/utils/auth' // get token from cookie
 import { toLoginPage } from '@/utils/login'
+import { ROLE_ADMIN } from '@/store/modules/user'
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
@@ -39,15 +40,20 @@ router.beforeEach(async(to, from, next) => {
           // note: roles must be a object array! such as: ['admin'] or ,['developer','editor']
           const { roles } = await store.dispatch('user/getInfo')
 
-          // generate accessible routes map based on roles
-          const accessRoutes = await store.dispatch('permission/generateRoutes', roles)
+          // 由于现阶段菜单没配置权限分类，理论上op只有admin可以看,暂时权限不够的跳转404
+          if (!roles.includes(ROLE_ADMIN)) {
+            router.push(`/404`)
+          } else {
+            // generate accessible routes map based on roles
+            const accessRoutes = await store.dispatch('permission/generateRoutes', roles)
 
-          // dynamically add accessible routes
-          router.addRoutes(accessRoutes)
+            // dynamically add accessible routes
+            router.addRoutes(accessRoutes)
 
-          // hack method to ensure that addRoutes is complete
-          // set the replace: true, so the navigation will not leave a history record
-          next({ ...to, replace: true })
+            // hack method to ensure that addRoutes is complete
+            // set the replace: true, so the navigation will not leave a history record
+            next({ ...to, replace: true })
+          }
         } catch (error) {
           // remove token and go to login page to re-login
           await store.dispatch('user/resetToken')
@@ -65,11 +71,7 @@ router.beforeEach(async(to, from, next) => {
       next()
     } else {
       // other pages that do not have permission to access are redirected to the login page.
-      if (bkUid) {
-        router.push(`/login?redirect=${to.path}`)
-      } else {
-        toLoginPage(to.path)
-      }
+      toLoginPage(to.path)
       NProgress.done()
     }
   }
