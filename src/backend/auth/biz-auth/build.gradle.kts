@@ -44,5 +44,4 @@ dependencies {
     implementation("com.tencent.bk.sdk:crypto-java-sdk")
     implementation("io.micrometer:micrometer-registry-prometheus")
     api(project(":router-controller:api-router-controller"))
-    implementation("com.tencent.bk.sdk:bk-notice-java-sdk:${Versions.Notice}")
 }

@@ -31,41 +31,32 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bk.sdk.notice.config.BkNoticeConfig
 import com.tencent.bk.sdk.notice.impl.BkNoticeClient
 import com.tencent.bk.sdk.notice.model.resp.AnnouncementDTO
-import com.tencent.bk.sdk.notice.config.BkNoticeConfig
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.config.BkNoticeProperties
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.servlet.LocaleResolver
 
 @RestController
 @RequestMapping("/api/notice")
-class NoticeController (
-    private val bkNoticeProperties: BkNoticeProperties
-){
-
-    @GetMapping("page/{pageNumber}/{pageSize}")
-    fun getNotice(
-        @RequestHeader("Accept-Language")
-        bkLanguage: String,
-        @PathVariable pageNumber: Int,
-        @PathVariable pageSize: Int
+class NoticeController(
+    private val properties: BkNoticeProperties,
+    private val localeResolver: LocaleResolver,
+) {
+    @GetMapping
+    fun listAnnouncements(
+        @RequestParam(required = false, defaultValue = "0") offset: Int = 0,
+        @RequestParam(required = false, defaultValue = "20") limit: Int = 20
     ): Response<List<AnnouncementDTO>> {
-        with(bkNoticeProperties) {
-            val bkNoticeConfig = BkNoticeConfig(
-                apiBaseUrl,
-                appCode,
-                appSecret
-            )
-            return ResponseBuilder.success(
-                BkNoticeClient(bkNoticeConfig).
-                getCurrentAnnouncements(bkLanguage.toLowerCase(), pageSize, pageNumber)
-            )
-        }
+        val bkNoticeConfig = BkNoticeConfig(properties.apiBaseUrl, properties.appCode, properties.appSecret)
+        val lang = localeResolver.resolveLocale(HttpContextHolder.getRequest()).toLanguageTag().toLowerCase()
+        return ResponseBuilder.success(BkNoticeClient(bkNoticeConfig).getCurrentAnnouncements(lang, offset, limit))
     }
 }

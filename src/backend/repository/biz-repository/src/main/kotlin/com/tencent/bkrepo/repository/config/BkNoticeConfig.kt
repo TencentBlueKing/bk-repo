@@ -32,8 +32,16 @@
 package com.tencent.bkrepo.repository.config
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.web.servlet.LocaleResolver
+import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver
 
 @Configuration
 @EnableConfigurationProperties(BkNoticeProperties::class)
-class BkNoticeConfig
+class BkNoticeConfig {
+    @Bean
+    fun localeResolver(): LocaleResolver {
+        return AcceptHeaderLocaleResolver()
+    }
+}
