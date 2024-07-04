@@ -57,6 +57,7 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeEventFactory
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
 
 /**
@@ -122,7 +123,7 @@ open class NodeMoveCopySupport(
     /**
      * 移动/复制节点
      */
-    private fun doMoveCopy(
+    protected fun doMoveCopy(
         context: MoveCopyContext,
         node: TNode,
         dstPath: String,
@@ -241,6 +242,7 @@ open class NodeMoveCopySupport(
                 dstRepo = dstRepo,
                 dstCredentials = dstCredentials,
                 dstNode = dstNode,
+                dstNodeFolder = destNodeFolder,
                 overwrite = overwrite,
                 operator = request.operator,
                 move = move
@@ -322,7 +324,7 @@ open class NodeMoveCopySupport(
             }
             val srcRootNodePath = toPath(srcNode.fullPath)
             val listOption = NodeListOption(includeFolder = true, includeMetadata = true, deep = true, sort = false)
-            val query = NodeQueryHelper.nodeListQuery(srcNode.projectId, srcNode.repoName, srcRootNodePath, listOption)
+            val query = buildSubNodesQuery(this, srcRootNodePath, listOption)
             // 目录下的节点 -> 创建好的目录
             nodeDao.stream(query).stream().forEach {
                 doMoveCopy(this, it, it.path.replaceFirst(srcRootNodePath, dstRootNodePath), it.name)
@@ -330,10 +332,21 @@ open class NodeMoveCopySupport(
         }
     }
 
+    open fun buildSubNodesQuery(
+        context: MoveCopyContext,
+        srcRootNodePath: String,
+        listOption: NodeListOption
+    ): Query {
+        with(context) {
+            val query = NodeQueryHelper.nodeListQuery(srcNode.projectId, srcNode.repoName, srcRootNodePath, listOption)
+            return query
+        }
+    }
+
     /**
      * 移动/复制文件
      */
-    private fun moveCopyFile(context: MoveCopyContext) {
+    open fun moveCopyFile(context: MoveCopyContext) {
         with(context) {
             val dstPath = if (dstNode?.folder == true) toPath(dstNode.fullPath) else resolveParent(dstFullPath)
             val dstName = if (dstNode?.folder == true) srcNode.name else resolveName(dstFullPath)
@@ -362,6 +375,7 @@ open class NodeMoveCopySupport(
         val dstRepo: TRepository,
         val dstCredentials: StorageCredentials?,
         val dstNode: TNode?,
+        val dstNodeFolder: Boolean?,
         val overwrite: Boolean,
         val operator: String,
         val move: Boolean

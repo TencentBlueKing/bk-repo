@@ -60,8 +60,7 @@
                                 </bk-form-item>
                                 <bk-form-item :label="$t('whiteUser')" :label-width="150"
                                     :property="`${type}.whitelistUser`" error-display-type="normal">
-                                    <bk-input v-if="isCommunity" class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
-                                    <bk-member-selector v-else v-model="repoBaseInfo[type].whitelistUser" class="member-selector" :placeholder="$t('whiteUserPlaceholder')"></bk-member-selector>
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
                                 </bk-form-item>
                             </template>
                         </bk-form-item>
@@ -343,7 +342,7 @@
                             if (i.type === 'IP_SEGMENT') {
                                 const curRules = {
                                     ipSegment: i.rules.ipSegment.join(','),
-                                    whitelistUser: this.isCommunity ? i.rules.whitelistUser.join(',') : i.rules.whitelistUser,
+                                    whitelistUser: i.rules.whitelistUser.join(','),
                                     officeNetwork: i.rules.officeNetwork
                                 }
                                 this.repoBaseInfo[i.type.toLowerCase()] = {

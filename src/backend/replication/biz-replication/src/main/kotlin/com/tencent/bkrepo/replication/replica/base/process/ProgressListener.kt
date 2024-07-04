@@ -69,7 +69,7 @@ class ProgressListener {
             return
         }
         val progress = contextMap[task.id]!!
-        progress.replicatedBytes[key]!!.addAndGet(written)
+        progress.replicatedBytes[key]?.addAndGet(written)
         if (LocalDateTime.now().minusSeconds(RECORD_TIME_INTERVAL).isAfter(progress.lastRecordTime)) {
             progress.lastRecordTime = LocalDateTime.now()
             updateProgress(task)
