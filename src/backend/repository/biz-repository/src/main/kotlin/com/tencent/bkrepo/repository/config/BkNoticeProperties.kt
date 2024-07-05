@@ -33,7 +33,7 @@ package com.tencent.bkrepo.repository.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties("repository.notice")
+@ConfigurationProperties("notice")
 data class BkNoticeProperties(
     var appCode: String = "",
     var appSecret: String = "",
