@@ -27,11 +27,6 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
-import com.tencent.bkrepo.common.artifact.constant.CUSTOM
-import com.tencent.bkrepo.common.artifact.constant.LOG
-import com.tencent.bkrepo.common.artifact.constant.PIPELINE
-import com.tencent.bkrepo.common.artifact.constant.REPORT
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -39,7 +34,6 @@ import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
-import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.StatUtils.specialRepoRunCheck
 import com.tencent.bkrepo.job.config.properties.InactiveProjectEmptyFolderCleanupJobProperties
 import org.slf4j.LoggerFactory
@@ -95,10 +89,6 @@ class InactiveProjectEmptyFolderCleanupJob(
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         if (statProjectCheck(row.projectId, context)) return
-        // 暂时只清理generic类型仓库下的空目录
-        if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
-                row.projectId, row.repoName
-            ).type != RepositoryType.GENERIC) return
         val node = emptyFolderCleanup.buildNode(
             id = row.id,
             projectId = row.projectId,
@@ -129,7 +119,13 @@ class InactiveProjectEmptyFolderCleanupJob(
         require(context is EmptyFolderCleanupJobContext)
         super.onRunCollectionFinished(collectionName, context)
         logger.info("will filter empty folder in $collectionName")
-        emptyFolderCleanup.emptyFolderHandler(collectionName, context, runCollection = true)
+        emptyFolderCleanup.emptyFolderHandler(
+            collection = collectionName,
+            context = context,
+            deletedEmptyFolder = properties.deletedEmptyFolder,
+            runCollection = true,
+            deleteFolderRepos = properties.deleteFolderRepos
+        )
     }
 
     data class Node(
@@ -156,6 +152,5 @@ class InactiveProjectEmptyFolderCleanupJob(
         private val logger = LoggerFactory.getLogger(InactiveProjectEmptyFolderCleanupJob::class.java)
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
         private const val COLLECTION_NAME_PREFIX = "node_"
-        private val TARGET_REPO_LIST = listOf(REPORT, LOG, PIPELINE, CUSTOM, "remote-mirrors")
     }
 }

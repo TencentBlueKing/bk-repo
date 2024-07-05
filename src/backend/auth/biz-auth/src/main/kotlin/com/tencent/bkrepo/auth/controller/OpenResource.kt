@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.service.PermissionService
@@ -85,6 +86,16 @@ open class OpenResource(private val permissionService: PermissionService) {
         if (!isAdminFromApi()) {
             logger.warn("user not match admin [$userContext]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
+        }
+    }
+
+    /**
+     * the userContext should be admin
+     * only use in user api
+     */
+    fun preCheckGrantTypes(grantTypes: Set<AuthorizationGrantType>) {
+        if (grantTypes.contains(AuthorizationGrantType.PLATFORM) || grantTypes.isEmpty()) {
+            preCheckUserAdmin()
         }
     }
 
@@ -147,7 +158,7 @@ open class OpenResource(private val permissionService: PermissionService) {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
-    
+
 
     fun isContextUserProjectAdmin(projectId: String): Boolean {
         val userId = SecurityUtils.getUserId()

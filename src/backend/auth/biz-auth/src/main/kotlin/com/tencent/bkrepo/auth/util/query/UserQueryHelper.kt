@@ -13,7 +13,7 @@ object UserQueryHelper {
             Criteria.where(TUser::pwd.name).`is`(hashPwd),
             Criteria.where("tokens.id").`is`(pwd),
             Criteria.where("tokens.id").`is`(sm3HashPwd)
-        ).and(TUser::userId.name).`is`(userId)
+        ).and(TUser::userId.name).`is`(userId).and(TUser::locked.name).`is`(false)
         return query(criteria)
     }
 

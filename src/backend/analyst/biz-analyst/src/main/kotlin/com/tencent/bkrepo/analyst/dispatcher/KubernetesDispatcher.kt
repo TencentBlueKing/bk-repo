@@ -52,8 +52,6 @@ import io.kubernetes.client.openapi.apis.CoreV1Api
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Duration
-import kotlin.math.max
-import kotlin.math.min
 
 class KubernetesDispatcher(
     executionCluster: KubernetesJobExecutionCluster,
@@ -159,9 +157,9 @@ class KubernetesDispatcher(
             token = subtask.token!!,
             heartbeatTimeout = scannerProperties.heartbeatTimeout
         )
-        val requestStorageSize = maxStorageSize(subtask.packageSize)
-        val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize)
         val k8sProps = executionCluster.kubernetesProperties
+        val resReq = ResourceRequirements.calculate(scanner, k8sProps)
+        val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize)
         val body = v1Job {
             apiVersion = "batch/v1"
             kind = "Job"
@@ -182,14 +180,14 @@ class KubernetesDispatcher(
                             addImagePullSecretsItemIfNeed(scanner, k8sProps)
                             resources {
                                 requests(
-                                    cpu = k8sProps.requestCpu,
-                                    memory = k8sProps.requestMem,
-                                    ephemeralStorage = requestStorageSize
+                                    cpu = resReq.requestCpu,
+                                    memory = resReq.requestMem,
+                                    ephemeralStorage = resReq.requestStorage
                                 )
                                 limits(
-                                    cpu = k8sProps.limitCpu,
-                                    memory = k8sProps.limitMem,
-                                    ephemeralStorage = k8sProps.limitStorage
+                                    cpu = resReq.limitCpu,
+                                    memory = resReq.limitMem,
+                                    ephemeralStorage = resReq.limitStorage
                                 )
                             }
                         }
@@ -262,12 +260,6 @@ class KubernetesDispatcher(
 
     private fun jobName(subtask: SubScanTask) = "bkrepo-analyst-${subtask.scanner.name}-${subtask.taskId}"
 
-    private fun maxStorageSize(fileSize: Long): Long {
-        val k8sProps = executionCluster.kubernetesProperties
-        val requestStorage = max(k8sProps.requestStorage, fileSize * MAX_FILE_SIZE_MULTIPLIER)
-        return min(k8sProps.limitStorage, requestStorage)
-    }
-
     private fun ignoreApiException(action: () -> Boolean): Boolean {
         try {
             return action()
@@ -279,11 +271,6 @@ class KubernetesDispatcher(
 
     companion object {
         private val logger = LoggerFactory.getLogger(KubernetesDispatcher::class.java)
-
-        /**
-         * 最大允许的单文件大小为待扫描文件大小3倍
-         */
-        private const val MAX_FILE_SIZE_MULTIPLIER = 3L
 
         /**
          * 创建Job最大重试次数

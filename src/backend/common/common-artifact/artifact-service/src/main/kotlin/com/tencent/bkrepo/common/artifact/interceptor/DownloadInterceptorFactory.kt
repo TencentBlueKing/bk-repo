@@ -57,9 +57,9 @@ class DownloadInterceptorFactory(
     companion object {
         private val logger = LoggerFactory.getLogger(DownloadInterceptorFactory::class.java)
         private lateinit var properties: DownloadInterceptorProperties
-        private const val ANDROID_APP_USER_AGENT = "BKCI_APP"
-        private const val ANDROID_APP_USER_AGENT_NEW = "BK_CI APP"
-        private const val IOS_APP_USER_AGENT = "com.apple.appstored"
+        const val ANDROID_APP_USER_AGENT = "BKCI_APP"
+        const val ANDROID_APP_USER_AGENT_NEW = "BK_CI APP"
+        const val IOS_APP_USER_AGENT = "com.apple.appstored"
         private const val INTERCEPTORS = "interceptors"
         private const val TYPE = "type"
         private val forbidRule = mapOf(

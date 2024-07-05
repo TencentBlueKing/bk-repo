@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.DefaultCondition
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
@@ -67,7 +66,6 @@ import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildUpdatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
-import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -78,7 +76,6 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-@Conditional(DefaultCondition::class)
 class PackageServiceImpl(
     repositoryDao: RepositoryDao,
     packageDao: PackageDao,

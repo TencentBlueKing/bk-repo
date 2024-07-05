@@ -63,6 +63,8 @@ const val RECORD_RESERVE_DAYS = "recordReserveDays"
 const val REPLICA_TYPE = "replicaType"
 const val NAME = "name"
 const val SIZE = "size"
+const val NODE_NUM = "nodeNum"
+
 
 /**
  * 缓存类型

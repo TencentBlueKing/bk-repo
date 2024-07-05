@@ -34,8 +34,10 @@ import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
+import com.tencent.bkrepo.job.NODE_NUM
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
+import com.tencent.bkrepo.job.SIZE
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
@@ -108,6 +110,8 @@ class EmptyFolderCleanup(
     fun emptyFolderHandler(
         collection: String,
         context: EmptyFolderCleanupJobContext,
+        deletedEmptyFolder: Boolean,
+        deleteFolderRepos: List<String>,
         projectId: String = StringPool.EMPTY,
         runCollection: Boolean = false,
     ) {
@@ -126,15 +130,33 @@ class EmptyFolderCleanup(
                     path = folderInfo.fullPath,
                     collectionName = collection
                 )) {
+                val deletedFlag = deletedFolderFlag(
+                    repoName = folderInfo.repoName,
+                    deletedEmptyFolder = deletedEmptyFolder,
+                    deleteFolderRepos = deleteFolderRepos
+                )
                 logger.info(
                     "will delete empty folder ${folderInfo.fullPath}" +
-                        " in repo ${folderInfo.projectId}|${folderInfo.repoName}"
+                        " in repo ${folderInfo.projectId}|${folderInfo.repoName} " +
+                        "with config deletedFlag: $deletedFlag"
                 )
-                doEmptyFolderDelete(entry.value.id, collection)
+                doEmptyFolderDelete(entry.value.id, collection, deletedFlag)
                 context.totalDeletedNum.increment()
             }
         }
         clearContextCache(projectId, context, collection, runCollection)
+    }
+
+    /**
+     * 只针对指定的generic仓库可以进行删除
+     * 即使全局配置的deletedEmptyFolder是true
+     */
+    private fun deletedFolderFlag(
+        repoName: String, deletedEmptyFolder: Boolean,
+        deleteFolderRepos: List<String>,
+    ): Boolean {
+        // 暂时只删除特殊仓库下的空目录
+        return (repoName in deleteFolderRepos) && deletedEmptyFolder
     }
 
     /**
@@ -163,7 +185,8 @@ class EmptyFolderCleanup(
      */
     private fun doEmptyFolderDelete(
         objectId: String?,
-        collectionName: String
+        collectionName: String,
+        deletedEmptyFolder: Boolean,
     ) {
         if (objectId.isNullOrEmpty()) return
         val query = Query(
@@ -171,10 +194,17 @@ class EmptyFolderCleanup(
                 .and(FOLDER).isEqualTo(true)
         )
         val deleteTime = LocalDateTime.now()
-        val update = Update()
-            .set(LAST_MODIFIED_DATE, deleteTime)
-            .set(DELETED_DATE, deleteTime)
-        mongoTemplate.updateFirst(query, update, collectionName)
+        val update = Update().set(LAST_MODIFIED_DATE, deleteTime)
+        if (deletedEmptyFolder) {
+            update.set(DELETED_DATE, deleteTime)
+        } else {
+            update.set(SIZE, 0).set(NODE_NUM, 0)
+        }
+        try {
+            mongoTemplate.updateFirst(query, update, collectionName)
+        } catch (e: Exception) {
+            logger.error("delete $objectId in collection $collectionName failed, error: $e")
+        }
     }
 
     /**

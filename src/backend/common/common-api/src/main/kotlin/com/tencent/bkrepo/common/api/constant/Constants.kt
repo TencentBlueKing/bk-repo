@@ -113,6 +113,8 @@ const val MS_REQUEST_SRC_CLUSTER = "X-BKREPO-MS-CLUSTER"
 
 const val PROXY_HEADER_NAME = "X-BKREPO-PROXY-NAME"
 
+const val COMMIT_EDGE_HEADER = "X-BKREPO-COMMIT-EDGE"
+
 /**
  * 验证是否允许下载时，写入request attributes的key
  */

@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import java.io.IOException
 import java.time.LocalDateTime
@@ -198,7 +199,12 @@ open class DefaultArtifactResourceWriter(
             }
         } catch (exception: IOException) {
             val message = exception.message.orEmpty()
-            val status = if (isClientBroken(exception)) HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
+            val status = if (isClientBroken(exception)) {
+                HttpStatus.BAD_REQUEST
+            } else {
+                logger.warn("write zip stream failed", exception)
+                HttpStatus.INTERNAL_SERVER_ERROR
+            }
             throw ArtifactResponseException(message, status)
         } finally {
             resource.artifactMap.values.forEach { it.closeQuietly() }
@@ -232,6 +238,7 @@ open class DefaultArtifactResourceWriter(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(DefaultArtifactResourceWriter::class.java)
         private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK)
     }
 }
