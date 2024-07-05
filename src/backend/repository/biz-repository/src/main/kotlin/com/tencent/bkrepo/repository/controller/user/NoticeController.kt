@@ -52,8 +52,8 @@ class NoticeController(
 ) {
     @GetMapping
     fun listAnnouncements(
-        @RequestParam(required = false, defaultValue = "0") offset: Int = 0,
-        @RequestParam(required = false, defaultValue = "20") limit: Int = 20
+        @RequestParam(required = false) offset: Int? = null,
+        @RequestParam(required = false) limit: Int? = null,
     ): Response<List<AnnouncementDTO>> {
         val bkNoticeConfig = BkNoticeConfig(properties.apiBaseUrl, properties.appCode, properties.appSecret)
         val lang = localeResolver.resolveLocale(HttpContextHolder.getRequest()).toLanguageTag().toLowerCase()
