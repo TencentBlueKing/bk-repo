@@ -130,7 +130,7 @@ class InactiveProjectNodeFolderStatJob(
         if (properties.userMemory) return
         // 每次任务启动前要将redis上对应的key清理， 避免干扰
         collectionNames().forEach {
-            val key = KEY_PREFIX + FolderUtils.buildCacheKey(
+            val key = KEY_PREFIX + StringPool.COLON + FolderUtils.buildCacheKey(
                 collectionName = it, projectId = StringPool.EMPTY
             )
             nodeFolderStat.removeRedisKey(key)

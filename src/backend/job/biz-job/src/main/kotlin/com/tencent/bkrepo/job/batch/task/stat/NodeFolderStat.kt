@@ -144,7 +144,7 @@ class NodeFolderStat(
         if (context.folderCache.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
         val storedFolderPrefix = if (collectionName.isNullOrEmpty()) {
-            FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)
+            FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)+StringPool.COLON
         } else {
             FolderUtils.buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
         }
@@ -163,7 +163,7 @@ class NodeFolderStat(
                     projectId = folderInfo.projectId, repoName = folderInfo.repoName,
                     fullPath = folderInfo.fullPath, tag = NODE_NUM
                 )
-                val key = keyPrefix + FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)
+                val key = keyPrefix + StringPool.COLON + FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)
                 // hkey为projectId:repoName:fullPath:size或者nodenum, hvalue为对应值,
                 hashCommands.hIncrBy(key.toByteArray(), sizeHKey.toByteArray(), entry.value.capSize.toLong())
                 hashCommands.hIncrBy(key.toByteArray(), nodeNumHKey.toByteArray(), entry.value.nodeNum.toLong())
@@ -245,7 +245,7 @@ class NodeFolderStat(
         } else {
             FolderUtils.buildCacheKey(collectionName = null, projectId = projectId)
         }
-        val key = keyPrefix + keySuffix
+        val key = keyPrefix + StringPool.COLON + keySuffix
         storeRedisCacheToDB(key, collectionName, runCollection)
     }
 

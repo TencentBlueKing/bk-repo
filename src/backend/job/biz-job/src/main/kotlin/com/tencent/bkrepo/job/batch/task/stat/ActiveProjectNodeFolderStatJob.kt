@@ -70,7 +70,8 @@ class ActiveProjectNodeFolderStatJob(
     override fun beforeRunProject(projectId: String) {
         if (properties.userMemory) return
         // 每次任务启动前要将redis上对应的key清理， 避免干扰
-        val key = KEY_PREFIX + FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
+        val key = KEY_PREFIX + StringPool.COLON +
+            FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
         nodeFolderStat.removeRedisKey(key)
     }
 
@@ -118,7 +119,7 @@ class ActiveProjectNodeFolderStatJob(
             )
         }
 
-        logger.info("store memory cache to db with projectId $projectId")
+        logger.info("store cache to db with projectId $projectId")
         if (properties.userMemory) {
             nodeFolderStat.storeMemoryCacheToDB(context, collection, projectId)
         } else {
