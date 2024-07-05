@@ -66,6 +66,7 @@ import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildUpdatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -234,12 +235,16 @@ class PackageServiceImpl(
             } else {
                 // create new
                 val newVersion = buildPackageVersion(request, tPackage.id!!)
-                packageVersionDao.save(newVersion)
-                // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
-                update.inc(TPackage::versions.name)
-                packageDao.upsert(query, update)
-                logger.info("Create package version[$newVersion] success")
-                publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+                try {
+                    packageVersionDao.save(newVersion)
+                    // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
+                    update.inc(TPackage::versions.name)
+                    packageDao.upsert(query, update)
+                    logger.info("Create package version[$newVersion] success")
+                    publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+                } catch (exception: DuplicateKeyException) {
+                    logger.warn("Create version[$newVersion] error: [${exception.message}]")
+                }
             }
             populateCluster(tPackage)
         }
