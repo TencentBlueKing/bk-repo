@@ -342,9 +342,10 @@ repository:
   config:
     # 节点被删除后多久清理数据
     deletedNodeReserveDays: 15
-    appCode: ""
-    appSecret: ""
-    apiBaseUrl: ""
+    notice:
+      appCode: ""
+      appSecret: ""
+      apiBaseUrl: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
