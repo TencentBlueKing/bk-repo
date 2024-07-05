@@ -68,9 +68,8 @@ class DevopsPipelineService(
         return ciAuthService.isProjectSuperAdmin(
             user = uid,
             projectCode = projectId,
-            action = BkAuthPermission.DOWNLOAD,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
-            permissionAction = permissionAction
+            action = permissionAction
         ) || ciAuthService.validateUserResourcePermission(
             user = uid,
             projectCode = projectId,

@@ -68,7 +68,6 @@ class BkciAuthServiceTest {
         val result1 = bkciAuthService.isProjectSuperAdmin(
             "aa",
             "bkrepo",
-            BkAuthPermission.DOWNLOAD,
             BkAuthResourceType.PIPELINE_DEFAULT,
             PermissionAction.READ.toString()
         )

@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.auth.service.bkdevops
 
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import org.springframework.beans.factory.annotation.Autowired
@@ -46,9 +45,8 @@ class DevopsProjectService @Autowired constructor(private val ciAuthService: CIA
         return ciAuthService.isProjectSuperAdmin(
             user = user,
             projectCode = projectCode,
-            action = BkAuthPermission.DOWNLOAD,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
-            permissionAction = permissionAction
+            action = permissionAction
         ) || ciAuthService.isProjectMember(user, projectCode)
     }
 
