@@ -65,7 +65,8 @@ class ActiveProjectEmptyFolderCleanupJob(
     override fun beforeRunProject(projectId: String) {
         if (properties.userMemory) return
         // 每次任务启动前要将redis上对应的key清理， 避免干扰
-        val key = KEY_PREFIX + FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
+        val key = KEY_PREFIX + StringPool.COLON +
+            FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
         emptyFolderCleanup.removeRedisKey(key)
     }
 
@@ -141,6 +142,6 @@ class ActiveProjectEmptyFolderCleanupJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveProjectEmptyFolderCleanupJob::class.java)
-        private val KEY_PREFIX = "activeEmptyFolder"
+        private const val KEY_PREFIX = "activeEmptyFolder"
     }
 }

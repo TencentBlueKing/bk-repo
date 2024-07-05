@@ -139,7 +139,7 @@ class EmptyFolderCleanup(
         if (context.folders.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
         val storedFolderPrefix = if (collectionName.isNullOrEmpty()) {
-            FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)
+            FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)+StringPool.COLON
         } else {
             FolderUtils.buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
         }
@@ -154,7 +154,7 @@ class EmptyFolderCleanup(
                     fullPath = folderInfo.fullPath, tag = NODE_NUM
                 )
 
-                val key = keyPrefix + FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)
+                val key = keyPrefix + StringPool.COLON + FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)
                 hashCommands.hIncrBy(key.toByteArray(), nodeNumHKey.toByteArray(), entry.value.nodeNum.toLong())
                 entry.value.id?.let {
                     val idHKey = FolderUtils.buildCacheKey(
@@ -189,25 +189,14 @@ class EmptyFolderCleanup(
         for (entry in context.folders) {
             if (!entry.key.startsWith(prefix) || entry.value.nodeNum.toLong() > 0) continue
             val folderInfo = extractFolderInfoFromCacheKey(entry.key, runCollection) ?: continue
-            if (emptyFolderDoubleCheck(
-                    projectId = folderInfo.projectId,
-                    repoName = folderInfo.repoName,
-                    path = folderInfo.fullPath,
-                    collectionName = collection
-                )) {
-                val deletedFlag = deletedFolderFlag(
-                    repoName = folderInfo.repoName,
-                    deletedEmptyFolder = deletedEmptyFolder,
-                    deleteFolderRepos = deleteFolderRepos
-                )
-                logger.info(
-                    "will delete empty folder ${folderInfo.fullPath}" +
-                        " in repo ${folderInfo.projectId}|${folderInfo.repoName} " +
-                        "with config deletedFlag: $deletedFlag"
-                )
-                doEmptyFolderDelete(entry.value.id, collection, deletedFlag)
-                context.totalDeletedNum.increment()
-            }
+            emptyFolderHandler(
+                folderInfo = folderInfo,
+                context = context,
+                collection = collection,
+                deleteFolderRepos = deleteFolderRepos,
+                deletedEmptyFolder = deletedEmptyFolder,
+                id = entry.value.id!!,
+            )
         }
         clearContextCache(projectId, context, collection, runCollection)
     }
@@ -227,7 +216,7 @@ class EmptyFolderCleanup(
         } else {
             FolderUtils.buildCacheKey(collectionName = null, projectId = projectId)
         }
-        val key = keyPrefix + keySuffix
+        val key = keyPrefix + StringPool.COLON + keySuffix
         val hashOps = redisTemplate.opsForHash<String, String>()
         val options = ScanOptions.scanOptions().build()
         redisTemplate.execute { connection ->
@@ -240,28 +229,46 @@ class EmptyFolderCleanup(
                     key, entry, folderInfo, hashOps
                 )
                 if (statInfo.nodeNum > 0) continue
-                if (emptyFolderDoubleCheck(
-                        projectId = folderInfo.projectId,
-                        repoName = folderInfo.repoName,
-                        path = folderInfo.fullPath,
-                        collectionName = collection
-                    )) {
-                    val deletedFlag = deletedFolderFlag(
-                        repoName = folderInfo.repoName,
-                        deletedEmptyFolder = deletedEmptyFolder,
-                        deleteFolderRepos = deleteFolderRepos
-                    )
-                    logger.info(
-                        "will delete empty folder ${folderInfo.fullPath}" +
-                            " in repo ${folderInfo.projectId}|${folderInfo.repoName} " +
-                            "with config deletedFlag: $deletedFlag"
-                    )
-                    doEmptyFolderDelete(statInfo.id, collection, deletedFlag)
-                    context.totalDeletedNum.increment()
-                }
+                emptyFolderHandler(
+                    folderInfo = folderInfo,
+                    context = context,
+                    collection = collection,
+                    deleteFolderRepos = deleteFolderRepos,
+                    deletedEmptyFolder = deletedEmptyFolder,
+                    id = statInfo.id!!,
+                )
             }
         }
         redisTemplate.delete(key)
+    }
+
+    private fun emptyFolderHandler(
+        folderInfo: FolderInfo,
+        collection: String,
+        deletedEmptyFolder: Boolean,
+        deleteFolderRepos: List<String>,
+        id: String,
+        context: EmptyFolderCleanupJobContext,
+        ) {
+        if (emptyFolderDoubleCheck(
+                projectId = folderInfo.projectId,
+                repoName = folderInfo.repoName,
+                path = folderInfo.fullPath,
+                collectionName = collection
+            )) {
+            val deletedFlag = deletedFolderFlag(
+                repoName = folderInfo.repoName,
+                deletedEmptyFolder = deletedEmptyFolder,
+                deleteFolderRepos = deleteFolderRepos
+            )
+            logger.info(
+                "will delete empty folder ${folderInfo.fullPath}" +
+                    " in repo ${folderInfo.projectId}|${folderInfo.repoName} " +
+                    "with config deletedFlag: $deletedFlag"
+            )
+            doEmptyFolderDelete(id, collection, deletedFlag)
+            context.totalDeletedNum.increment()
+        }
     }
 
     /**
