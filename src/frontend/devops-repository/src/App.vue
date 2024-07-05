@@ -106,6 +106,7 @@
 </script>
 <style lang="scss">
 @import '@repository/scss/index';
+@import '@blueking/notice-component-vue2/dist/style.css';
 .navigation-message-theme{
     padding: 0 !important;
 }
