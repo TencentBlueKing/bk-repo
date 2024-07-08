@@ -15,7 +15,7 @@ export default {
     },
     watch: {
         '$route.fullPath' (val) { // 同步地址到蓝鲸Devops
-            this.$syncUrl?.(val.replace(/^\/[a-zA-Z0-9]+\//, '/'))
+            this.$syncUrl?.(val)
         }
     },
     created () {
