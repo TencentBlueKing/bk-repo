@@ -32,24 +32,24 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
-import com.tencent.bkrepo.auth.dao.PermissionDao
-import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.dao.AccountDao
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.dao.AccountDao
+import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
+import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
@@ -88,10 +88,18 @@ class DevopsPermissionServiceImpl constructor(
 ) {
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
-        // 用户为系统管理员，或者当前项目管理员
-        if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)
-            || isDevopsProjectMember(userId, projectId, READ.name)
-        ) return getAllRepoByProjectId(projectId)
+        // 用户为系统管理员
+        if (isUserSystemAdmin(userId)) return getAllRepoByProjectId(projectId)
+        val projectEnabled = queryProjectEnabledStatus(projectId)
+        // 项目已禁用
+        if (!projectEnabled) {
+            return emptyList()
+        }
+        // 用户为当前项目管理员
+        if (isUserLocalProjectAdmin(userId, projectId)
+            || isDevopsProjectMember(userId, projectId, READ.name)) {
+            return getAllRepoByProjectId(projectId)
+        }
 
         return super.listPermissionRepo(projectId, userId, appId)
     }
@@ -153,6 +161,7 @@ class DevopsPermissionServiceImpl constructor(
             logger.debug("check devops permission request [$request]")
 
             if (isUserSystemAdmin(uid)) return true
+            if (!projectEnabled) return false
 
             // 用户不为系统管理员，必须为项目下权限
             if (projectId == null) return false
@@ -185,7 +194,7 @@ class DevopsPermissionServiceImpl constructor(
                 return false
             }
             return isDevopsProjectMember(uid, projectId!!, action)
-                    || checkBkIamV3ProjectPermission(projectId!!, uid, action)
+                || checkBkIamV3ProjectPermission(projectId!!, uid, action)
         }
     }
 
@@ -227,7 +236,7 @@ class DevopsPermissionServiceImpl constructor(
         logger.debug("check repo not in devops request [$request]")
         with(request) {
             val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action) ||
-                    isUserLocalProjectUser(uid, projectId!!)
+                isUserLocalProjectUser(uid, projectId!!)
             if (needCheckPathPermission(resourceType, projectId!!, repoName!!)) {
                 return checkNodeAction(request, null, isDevopsProjectMember)
             }

@@ -35,23 +35,32 @@ import com.tencent.bkrepo.auth.api.ServicePipelineClient
 import com.tencent.bkrepo.auth.service.bkauth.DevopsPipelineService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.ProjectClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class ServicePipelineController : ServicePipelineClient {
+class ServicePipelineController(
+    private val projectClient: ProjectClient
+) : ServicePipelineClient {
     @Autowired
     private var bkAuthPipelineService: DevopsPipelineService? = null
 
     override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
+        if (!projectEnabledCheck(projectId)) return ResponseBuilder.success(emptyList())
         return bkAuthPipelineService?.let {
             ResponseBuilder.success(bkAuthPipelineService!!.listPermissionPipelines(uid, projectId))
         } ?: ResponseBuilder.success(emptyList())
     }
 
     override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {
+        if (!projectEnabledCheck(projectId)) return ResponseBuilder.success(false)
         return bkAuthPipelineService?.let {
             ResponseBuilder.success((bkAuthPipelineService!!.hasPermission(uid, projectId, pipelineId, null)))
         } ?: ResponseBuilder.success(false)
+    }
+
+    private fun projectEnabledCheck(projectId: String): Boolean {
+        return projectClient.isProjectEnabled(projectId).data!!
     }
 }

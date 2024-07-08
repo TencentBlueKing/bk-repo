@@ -196,6 +196,7 @@ open class PermissionServiceImpl constructor(
             if (user.locked) return false
             // check user admin permission
             if (user.admin || isUserLocalProjectAdmin(uid, projectId)) return true
+            if (!projectEnabled) return false
             val roles = user.roles
             if (permHelper.isRepoOrNodePermission(resourceType)) {
                 // check role repo admin
@@ -268,8 +269,17 @@ open class PermissionServiceImpl constructor(
         }
         val roles = user.roles
 
-        // 用户为系统管理员、项目管理员、项目用户
-        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
+        // 用户为系统管理员
+        if (user.admin) {
+            return getAllRepoByProjectId(projectId)
+        }
+        // 项目是否禁用
+        val projectEnabled = queryProjectEnabledStatus(projectId)
+        if (!projectEnabled) {
+            return emptyList()
+        }
+        //项目管理员、项目用户
+        if (isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
             return getAllRepoByProjectId(projectId)
         }
 
@@ -400,6 +410,10 @@ open class PermissionServiceImpl constructor(
 
     override fun listExternalRoleByProject(projectId: String, source: RoleSource): List<ExternalRoleResult> {
         return emptyList()
+    }
+
+    fun queryProjectEnabledStatus(projectId: String): Boolean {
+        return projectClient.isProjectEnabled(projectId).data!!
     }
 
     fun isUserLocalProjectAdmin(userId: String, projectId: String?): Boolean {

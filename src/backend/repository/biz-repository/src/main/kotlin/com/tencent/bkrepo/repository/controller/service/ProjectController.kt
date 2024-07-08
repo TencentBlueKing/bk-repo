@@ -69,4 +69,8 @@ class ProjectController(
     override fun getProjectMetrics(name: String): Response<ProjectMetricsInfo?> {
         return ResponseBuilder.success(projectService.getProjectMetricsInfo(name))
     }
+
+    override fun isProjectEnabled(name: String): Response<Boolean> {
+        return ResponseBuilder.success(projectService.isProjectEnabled(name))
+    }
 }

@@ -48,7 +48,6 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
-import com.tencent.bkrepo.common.artifact.exception.ProjectNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
@@ -65,7 +64,6 @@ import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -110,14 +108,13 @@ open class PermissionManager(
         projectId: String,
         userId: String = SecurityUtils.getUserId()
     ) {
-        if (!queryProjectEnabledStatus(projectId)) {
-            throw PermissionException()
-        }
+        val projectEnabled = queryProjectEnabledStatus(projectId)
         checkPermission(
             type = ResourceType.PROJECT,
             action = action,
             projectId = projectId,
-            userId = userId
+            userId = userId,
+            projectEnabled = projectEnabled
         )
     }
 
@@ -137,14 +134,11 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
-        if (!queryProjectEnabledStatus(projectId)) {
-            throw PermissionException()
-        }
+        val projectEnabled = queryProjectEnabledStatus(projectId)
         val repoInfo = queryRepositoryInfo(projectId, repoName)
-        if (isReadPublicRepo(action, repoInfo, public)) {
-            return
-        }
-        if (allowReadSystemRepo(action, repoInfo, userId)) {
+        if (isReadPublicOrSystemRepoCheck(
+                action, repoInfo, public, userId, projectEnabled
+            )) {
             return
         }
         checkPermission(
@@ -153,7 +147,8 @@ open class PermissionManager(
             projectId = projectId,
             repoName = repoName,
             anonymous = anonymous,
-            userId = userId
+            userId = userId,
+            projectEnabled = projectEnabled
         )
     }
 
@@ -175,14 +170,11 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
-        if (!queryProjectEnabledStatus(projectId)) {
-            throw PermissionException()
-        }
+        val projectEnabled = queryProjectEnabledStatus(projectId)
         val repoInfo = queryRepositoryInfo(projectId, repoName)
-        if (isReadPublicRepo(action, repoInfo, public)) {
-            return
-        }
-        if (allowReadSystemRepo(action, repoInfo, userId)) {
+        if (isReadPublicOrSystemRepoCheck(
+                action, repoInfo, public, userId, projectEnabled
+            )) {
             return
         }
         // 禁止批量下载流水线节点
@@ -197,7 +189,8 @@ open class PermissionManager(
             repoName = repoName,
             paths = path.toList(),
             anonymous = anonymous,
-            userId = userId
+            userId = userId,
+            projectEnabled = projectEnabled
         )
     }
 
@@ -228,6 +221,25 @@ open class PermissionManager(
         }
     }
 
+    /**
+     * 判读READ操作是否对应public仓库或者系统级公开仓库
+     */
+    private fun isReadPublicOrSystemRepoCheck(
+        action: PermissionAction,
+        repoInfo: RepositoryInfo,
+        public: Boolean? = null,
+        userId: String = SecurityUtils.getUserId(),
+        projectEnabled: Boolean
+    ): Boolean {
+        if (isReadPublicRepo(action, repoInfo, public) && projectEnabled) {
+            return true
+        }
+        if (allowReadSystemRepo(action, repoInfo, userId, projectEnabled)) {
+            return true
+        }
+        return false
+    }
+
 
     /**
      * 判断是否为public仓库且为READ操作
@@ -250,10 +262,14 @@ open class PermissionManager(
     private fun allowReadSystemRepo(
         action: PermissionAction,
         repoInfo: RepositoryInfo,
-        userId: String = SecurityUtils.getUserId()
+        userId: String = SecurityUtils.getUserId(),
+        projectEnabled: Boolean
     ): Boolean {
         if (SecurityUtils.isServiceRequest()) {
             return true
+        }
+        if (!projectEnabled) {
+            return false
         }
         if (action != PermissionAction.READ) {
             return false
@@ -275,10 +291,7 @@ open class PermissionManager(
      * 查询项目信息
      */
     open fun queryProjectEnabledStatus(projectId: String): Boolean {
-        val projectInfo = projectClient.getProjectInfo(projectId).data ?: throw ProjectNotFoundException(projectId)
-        return projectInfo.metadata.firstOrNull {
-            it.key == ProjectMetadata.KEY_ENABLED
-        }?.value as? Boolean ?: true
+        return projectClient.isProjectEnabled(projectId).data!!
     }
 
     /**
@@ -298,7 +311,8 @@ open class PermissionManager(
         repoName: String? = null,
         paths: List<String>? = null,
         anonymous: Boolean = false,
-        userId: String = SecurityUtils.getUserId()
+        userId: String = SecurityUtils.getUserId(),
+        projectEnabled: Boolean = true
     ) {
         // 判断是否开启认证
         if (!httpAuthProperties.enabled) {
@@ -307,7 +321,7 @@ open class PermissionManager(
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 
-        if (userId == ANONYMOUS_USER && platformId != null && anonymous) {
+        if (userId == ANONYMOUS_USER && platformId != null && anonymous && projectEnabled) {
             return
         }
 
@@ -332,7 +346,8 @@ open class PermissionManager(
             action = action.toString(),
             projectId = projectId,
             repoName = repoName,
-            path = paths?.first()
+            path = paths?.first(),
+            projectEnabled = projectEnabled
         )
         if (checkPermissionFromAuthService(checkRequest) != true) {
             // 无权限，响应403错误
