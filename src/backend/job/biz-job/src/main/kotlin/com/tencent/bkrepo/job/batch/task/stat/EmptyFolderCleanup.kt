@@ -135,7 +135,7 @@ class EmptyFolderCleanup(
         projectId: String = StringPool.EMPTY,
         collectionName: String? = null
     ) {
-        if (!force && context.folders.size < 50000) return
+        if (!force && context.folders.size < 100000) return
         if (context.folders.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
         val storedFolderPrefix = if (collectionName.isNullOrEmpty()) {
@@ -224,7 +224,8 @@ class EmptyFolderCleanup(
             val cursor = hashCommands.hScan(key.toByteArray(), options)
             while (cursor.hasNext()) {
                 val entry: Map.Entry<ByteArray, ByteArray> = cursor.next()
-                val folderInfo = extractFolderInfoFromCacheKey(String(entry.key), runCollection) ?: continue
+                val keyStr = String(entry.key).substringBeforeLast(StringPool.COLON)
+                val folderInfo = extractFolderInfoFromCacheKey(keyStr) ?: continue
                 val statInfo = getFolderStatInfo(
                     key, entry, folderInfo, hashOps
                 )

@@ -140,7 +140,7 @@ class NodeFolderStat(
         force: Boolean = false,
         collectionName: String?
     ) {
-        if (!force && context.folderCache.size < 50000) return
+        if (!force && context.folderCache.size < 100000) return
         if (context.folderCache.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
         val storedFolderPrefix = if (collectionName.isNullOrEmpty()) {
@@ -246,7 +246,7 @@ class NodeFolderStat(
             FolderUtils.buildCacheKey(collectionName = null, projectId = projectId)
         }
         val key = keyPrefix + StringPool.COLON + keySuffix
-        storeRedisCacheToDB(key, collectionName, runCollection)
+        storeRedisCacheToDB(key, collectionName)
     }
 
     /**
@@ -255,7 +255,6 @@ class NodeFolderStat(
     private fun storeRedisCacheToDB(
         key: String,
         collectionName: String?,
-        runCollection: Boolean = false
     ) {
         val hashOps = redisTemplate.opsForHash<String, String>()
         val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
@@ -265,7 +264,8 @@ class NodeFolderStat(
             val cursor = hashCommands.hScan(key.toByteArray(), options)
             while (cursor.hasNext()) {
                 val entry: Map.Entry<ByteArray, ByteArray> = cursor.next()
-                val folderInfo = extractFolderInfoFromCacheKey(String(entry.key), runCollection) ?: continue
+                val keyStr = String(entry.key).substringBeforeLast(StringPool.COLON)
+                val folderInfo = extractFolderInfoFromCacheKey(keyStr) ?: continue
                 val statInfo = getFolderStatInfo(
                     key, entry, folderInfo, hashOps
                 )

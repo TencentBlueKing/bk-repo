@@ -142,8 +142,6 @@ class InactiveProjectNodeFolderStatJob(
         require(context is NodeFolderJobContext)
         // 当表执行完成后，将属于该表的所有记录写入数据库
         logger.info("store memory cache to db withe table $collectionName")
-        nodeFolderStat.storeMemoryCacheToDB(context, collectionName, runCollection = true)
-
         if (!properties.userMemory) {
             nodeFolderStat.updateRedisCache(
                 context = context,
