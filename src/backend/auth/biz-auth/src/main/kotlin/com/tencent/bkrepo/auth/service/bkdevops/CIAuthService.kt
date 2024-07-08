@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service.bkauth
+package com.tencent.bkrepo.auth.service.bkdevops
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.cache.CacheBuilder
@@ -121,14 +121,13 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
     fun isProjectSuperAdmin(
         user: String,
         projectCode: String,
-        action: BkAuthPermission,
         resourceType: BkAuthResourceType,
-        permissionAction: String?
+        action: String?
     ): Boolean {
 
         if (!devopsAuthConfig.enableSuperAdmin) return false
 
-        if (permissionAction != PermissionAction.READ.toString()) return false
+        if (action != PermissionAction.READ.toString()) return false
 
         val cacheKey = "superAdmin::$user::$projectCode"
         val cacheResult = resourcePermissionCache.getIfPresent(cacheKey)
@@ -139,7 +138,7 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
         var hasPermission = false
 
         val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/local/manager/" +
-                "projects/$projectCode?resourceType=${resourceType.value}&action=${action.value}"
+                "projects/$projectCode?resourceType=${resourceType.value}&action=${BkAuthPermission.DOWNLOAD.value}"
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode)
                 .header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken()).get().build()
