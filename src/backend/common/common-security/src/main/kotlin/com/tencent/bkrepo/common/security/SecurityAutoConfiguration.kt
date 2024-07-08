@@ -52,7 +52,7 @@ import com.tencent.bkrepo.common.security.manager.proxy.ProxyPermissionManager
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.security.proxy.ProxyAuthConfiguration
 import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -97,6 +97,7 @@ class SecurityAutoConfiguration {
     ): PermissionManager {
         return if (clusterProperties.role == ClusterNodeType.EDGE
             && clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+            && clusterProperties.commitEdge.auth.center
         ) {
             EdgePermissionManager(
                 projectClient = projectClient,

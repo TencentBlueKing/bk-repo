@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,22 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.cluster
+package com.tencent.bkrepo.common.artifact.metrics
 
-import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
-import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import org.springframework.context.annotation.Condition
-import org.springframework.context.annotation.ConditionContext
-import org.springframework.core.type.AnnotatedTypeMetadata
-
-/**
- * [ClusterArchitecture.COMMIT_EDGE]组网方式的[ClusterNodeType.EDGE]节点
- */
-class CommitEdgeEdgeCondition : Condition {
-    override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {
-        val clusterRoleType = context.environment.getProperty("cluster.role", ClusterNodeType::class.java)
-        val clusterArchitecture =
-            context.environment.getProperty("cluster.architecture", ClusterArchitecture::class.java)
-        return clusterRoleType == ClusterNodeType.EDGE && clusterArchitecture == ClusterArchitecture.COMMIT_EDGE
-    }
+enum class TransferUserAgent {
+    // 构建机
+    BUILDER,
+    // 制品库/蓝盾页面
+    BK_WEB,
+    // api调用
+    OPENAPI,
+    // 制品库客户端或者蓝盾客户端
+    BK_CLIENT;
 }

@@ -31,8 +31,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterPackageCondition
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -47,6 +47,7 @@ import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.packages.impl.PackageServiceImpl
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
+import org.springframework.context.annotation.Primary
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 
@@ -54,7 +55,8 @@ import org.springframework.stereotype.Service
  * CommitEdge组网方式的Center节点Package管理服务
  */
 @Service
-@Conditional(CommitEdgeCenterCondition::class)
+@Conditional(CommitEdgeCenterPackageCondition::class)
+@Primary
 class CommitEdgeCenterPackageServiceImpl(
     repositoryDao: RepositoryDao,
     packageDao: PackageDao,

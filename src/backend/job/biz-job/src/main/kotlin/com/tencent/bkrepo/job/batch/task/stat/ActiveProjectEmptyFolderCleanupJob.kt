@@ -27,15 +27,9 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
-import com.tencent.bkrepo.common.artifact.constant.CUSTOM
-import com.tencent.bkrepo.common.artifact.constant.LOG
-import com.tencent.bkrepo.common.artifact.constant.PIPELINE
-import com.tencent.bkrepo.common.artifact.constant.REPORT
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
-import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.ActiveProjectEmptyFolderCleanupJobProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -68,10 +62,6 @@ class ActiveProjectEmptyFolderCleanupJob(
     override fun runRow(row: StatNode, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         try {
-            // 暂时只清理generic类型仓库下的空目录
-            if (row.repoName !in TARGET_REPO_LIST && RepositoryCommonUtils.getRepositoryDetail(
-                    row.projectId, row.repoName
-                ).type != RepositoryType.GENERIC) return
             val node = emptyFolderCleanup.buildNode(
                 id = row.id,
                 projectId = row.projectId,
@@ -104,11 +94,16 @@ class ActiveProjectEmptyFolderCleanupJob(
     override fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         logger.info("will filter empty folder in project $projectId")
-        emptyFolderCleanup.emptyFolderHandler(collection, context, properties.deletedEmptyFolder, projectId)
+        emptyFolderCleanup.emptyFolderHandler(
+            collection = collection,
+            context = context,
+            deletedEmptyFolder = properties.deletedEmptyFolder,
+            projectId = projectId,
+            deleteFolderRepos = properties.deleteFolderRepos
+        )
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveProjectEmptyFolderCleanupJob::class.java)
-        private val TARGET_REPO_LIST = listOf(REPORT, LOG, PIPELINE, CUSTOM, "remote-mirrors")
     }
 }

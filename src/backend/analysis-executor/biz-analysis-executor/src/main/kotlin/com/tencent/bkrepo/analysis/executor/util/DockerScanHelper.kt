@@ -61,7 +61,7 @@ class DockerScanHelper(
         val maxScanDuration = task.scanner.maxScanDuration(scannerInputFile.length())
         // 创建容器
         val maxFileSize = maxFileSize(scannerInputFile.length())
-        val hostConfig = DockerUtils.dockerHostConfig(binds, maxFileSize, task.scanner.memory)
+        val hostConfig = DockerUtils.dockerHostConfig(binds, maxFileSize, task.scanner.limitMem)
         val containerId = dockerClient.createContainer(
             image = image,
             hostConfig = hostConfig,
