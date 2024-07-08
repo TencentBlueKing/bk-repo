@@ -42,39 +42,6 @@
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <template v-if="repoBaseInfo.type === 'generic' || repoBaseInfo.type === 'ddc'">
-                <bk-form-item v-for="type in genericInterceptorsList" :key="type"
-                    :label="$t(`${type}Download`)" :property="`${type}.enable`">
-                    <bk-radio-group v-model="repoBaseInfo[type].enable">
-                        <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
-                        <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
-                    </bk-radio-group>
-                    <template v-if="repoBaseInfo[type].enable && ['mobile', 'web'].includes(type)">
-                        <bk-form-item :label="$t('fileName')" :label-width="80" class="mt10"
-                            :property="`${type}.filename`" required error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].filename"></bk-input>
-                            <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('fileNameRule')"></i>
-                        </bk-form-item>
-                        <bk-form-item :label="$t('metadata')" :label-width="80"
-                            :property="`${type}.metadata`" required error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
-                            <a class="f12 ml5" href="https://docs.bkci.net/services/bkrepo/meta" target="__blank">{{ $t('viewMetadataDocument') }}</a>
-                        </bk-form-item>
-                    </template>
-                    <template v-if="repoBaseInfo[type].enable && type === 'ip_segment'">
-                        <bk-form-item :label="$t('IP')" :label-width="80" class="mt10"
-                            :property="`${type}.ipSegment`" :required="!repoBaseInfo[type].officeNetwork" error-display-type="normal">
-                            <bk-input class="w250 mr10" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
-                            <bk-checkbox v-model="repoBaseInfo[type].officeNetwork">{{ $t('office_networkDownload') }}</bk-checkbox>
-                            <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('office_networkDownloadTips')"></i>
-                        </bk-form-item>
-                        <bk-form-item :label="$t('whiteUser')" :label-width="80"
-                            :property="`${type}.whitelistUser`" error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
-                        </bk-form-item>
-                    </template>
-                </bk-form-item>
-            </template>
             <template v-if="repoBaseInfo.type === 'rpm'">
                 <bk-form-item :label="$t('enabledFileLists')">
                     <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
