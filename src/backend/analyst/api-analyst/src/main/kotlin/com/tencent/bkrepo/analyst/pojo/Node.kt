@@ -66,5 +66,9 @@ data class Node(
     /**
      * package大小
      */
-    var packageSize: Long
+    var packageSize: Long,
+    /**
+     * 最后修改人
+     */
+    val lastModifiedBy: String,
 )

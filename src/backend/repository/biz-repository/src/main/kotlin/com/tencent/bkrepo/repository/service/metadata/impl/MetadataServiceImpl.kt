@@ -42,7 +42,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
-import com.tencent.bkrepo.common.service.cluster.DefaultCondition
+import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -90,7 +90,7 @@ class MetadataServiceImpl(
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
+            checkNodeCluster(node)
             val oldMetadata = node.metadata ?: ArrayList()
             val newMetadata = MetadataUtils.compatibleConvertAndCheck(
                 metadata,
@@ -150,6 +150,10 @@ class MetadataServiceImpl(
             publishEvent(buildMetadataDeletedEvent(this))
             logger.info("Delete metadata[$keyList] on node[/$projectId/$repoName$fullPath] success.")
         }
+    }
+
+    fun checkNodeCluster(node: TNode) {
+        return
     }
 
     private fun checkIfModifyPipelineMetadata(node: TNode, newMetadataKeys: Collection<String>) {

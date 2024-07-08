@@ -41,7 +41,7 @@ import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.service.cluster.DefaultCondition
+import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.listener.ResourcePermissionListener
@@ -74,6 +74,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.regex
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
@@ -231,7 +232,14 @@ class ProjectServiceImpl(
     }
 
     override fun getProjectMetricsInfo(name: String): ProjectMetricsInfo? {
-        return convert(projectMetricsRepository.findFirstByProjectIdOrderByCreatedDateDesc(name))
+        val today = LocalDate.now().atStartOfDay()
+        var metrics = projectMetricsRepository.findByProjectIdAndCreatedDate(name, today)
+        // 可能当天任务还没有统计出来，则查询前一天的数据
+        if (metrics == null) {
+            val yesterday = today.minusDays(1)
+            metrics = projectMetricsRepository.findByProjectIdAndCreatedDate(name, yesterday)
+        }
+        return convert(metrics)
     }
 
     override fun updateProject(name: String, request: ProjectUpdateRequest): Boolean {

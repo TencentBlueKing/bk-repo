@@ -27,9 +27,8 @@
 
 package com.tencent.bkrepo.replication.replica.replicator.commitedge
 
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeCenterCondition
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
@@ -40,7 +39,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Component
 import java.time.temporal.ChronoUnit
@@ -53,7 +51,7 @@ class CenterClusterReplicator(
     private val replicationProperties: ReplicationProperties,
     private val clusterProperties: ClusterProperties,
     private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService
-) : ClusterReplicator(localDataManager, clusterArtifactReplicationHandler, replicationProperties) {
+): ClusterReplicator(localDataManager, clusterArtifactReplicationHandler, replicationProperties) {
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         if (node.sha256 == FAKE_SHA256) {

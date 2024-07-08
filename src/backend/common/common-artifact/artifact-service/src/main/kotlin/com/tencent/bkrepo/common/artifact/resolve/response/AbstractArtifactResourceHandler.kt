@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.util.unit.DataSize
 import java.io.IOException
@@ -115,10 +116,12 @@ abstract class AbstractArtifactResourceHandler(
             // org.springframework.http.converter.HttpMessageNotWritableException异常，会重定向到/error页面
             // 又因为/error页面不存在，最终返回404，所以要对IOException进行包装，在上一层捕捉处理
             val message = exception.message.orEmpty()
-            val status = if (IOExceptionUtils.isClientBroken(exception))
+            val status = if (IOExceptionUtils.isClientBroken(exception)){
                 HttpStatus.BAD_REQUEST
-            else
+            } else {
+                logger.warn("write range stream failed", exception)
                 HttpStatus.INTERNAL_SERVER_ERROR
+            }
             throw ArtifactResponseException(message, status)
         }
     }
@@ -131,4 +134,7 @@ abstract class AbstractArtifactResourceHandler(
         return if (isRangeRequest) HttpStatus.PARTIAL_CONTENT.value else HttpStatus.OK.value
     }
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(AbstractArtifactResourceHandler::class.java)
+    }
 }

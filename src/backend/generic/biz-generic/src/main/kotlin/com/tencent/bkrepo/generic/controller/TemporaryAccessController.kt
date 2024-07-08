@@ -104,6 +104,7 @@ class TemporaryAccessController(
     }
 
     @Router
+    @CrossOrigin
     @GetMapping("/download/$GENERIC_MAPPING_URI")
     fun downloadByToken(
         artifactInfo: GenericArtifactInfo,

@@ -21,15 +21,39 @@
       <el-form-item label="扫描结束后是否清理" prop="cleanWorkDir" required>
         <el-switch v-model="scanner.cleanWorkDir" />
       </el-form-item>
-      <el-form-item label="执行扫描所需内存" prop="memory" required>
-        <el-input v-model.number="scanner.memory" type="number">
+      <el-form-item label="执行扫描所需最大内存" prop="limitMem" required>
+        <el-input v-model.number="scanner.limitMem" type="number">
           <template slot="append">Byte</template>
         </el-input>
+      </el-form-item>
+      <el-form-item label="执行扫描所需最小内存" prop="requestMem" required>
+        <el-input v-model.number="scanner.requestMem" type="number">
+          <template slot="append">Byte</template>
+        </el-input>
+      </el-form-item>
+      <el-form-item label="执行扫描所需最大存储空间" prop="limitStorage" required>
+        <el-input v-model.number="scanner.limitStorage" type="number">
+          <template slot="append">Byte</template>
+        </el-input>
+      </el-form-item>
+      <el-form-item label="执行扫描所需最小存储空间" prop="requestStorage" required>
+        <el-input v-model.number="scanner.requestStorage" type="number">
+          <template slot="append">Byte</template>
+        </el-input>
+      </el-form-item>
+      <el-form-item label="执行扫描所需最大CPU" prop="limitCpu" required>
+        <el-input v-model.number="scanner.limitCpu" type="number" />
+      </el-form-item>
+      <el-form-item label="执行扫描所需最小Cpu" prop="requestCpu" required>
+        <el-input v-model.number="scanner.requestCpu" type="number" />
       </el-form-item>
       <el-form-item label="1MB最大允许扫描时间" prop="maxScanDurationPerMb" required>
         <el-input v-model.number="scanner.maxScanDurationPerMb" type="number">
           <template slot="append">ms</template>
         </el-input>
+      </el-form-item>
+      <el-form-item label="不支持的制品名称正则 (多个正则用换行分隔)" prop="unsupportedArtifactNameRegex">
+        <el-input v-model="unsupportedArtifactNameRegex" type="textarea" />
       </el-form-item>
       <el-form-item label="支持的文件类型" prop="supportFileNameExt">
         <el-tooltip effect="dark" content="仅扫描GENERIC包时生效" placement="top-start">
@@ -153,7 +177,11 @@ export default {
       scanTypes: scanTypes,
       repoTypes: repoTypes,
       dispatchers: [],
+      unsupportedArtifactNameRegex: '',
       rules: {
+        'unsupportedArtifactNameRegex': [
+          { validator: this.validateUnsupportedArtifactNameRegex, trigger: 'change' }
+        ],
         'knowledgeBase.endpoint': [
           { validator: this.validateUrl, trigger: 'change' }
         ],
@@ -208,6 +236,20 @@ export default {
     }
   },
   methods: {
+    validateUnsupportedArtifactNameRegex(rule, value, callback) {
+      this.unsupportedArtifactNameRegex.split('\n').forEach(v => {
+        let isValid = true
+        try {
+          new RegExp(v)
+        } catch (e) {
+          isValid = false
+        }
+        if (!isValid) {
+          callback(`正则${v}不符合规则`)
+        }
+      })
+      callback()
+    },
     validateUrl(rule, value, callback) {
       this.regexValidate(rule, value, callback, URL_REGEX)
     },
@@ -264,6 +306,7 @@ export default {
     handleCreateOrUpdate(scanner) {
       this.$refs['form'].validate((valid) => {
         if (valid) {
+          scanner.unsupportedArtifactNameRegex = this.unsupportedArtifactNameRegex.split('\n')
           // 根据是否为创建模式发起不同请求
           let reqPromise
           let msg
@@ -304,6 +347,7 @@ export default {
         this.scanner = this.newScanner(type)
       } else {
         this.scanner = _.cloneDeep(this.updatingScanner)
+        this.unsupportedArtifactNameRegex = this.scanner.unsupportedArtifactNameRegex.join('\n')
       }
       this.$nextTick(() => {
         this.$refs['form'].clearValidate()
@@ -315,11 +359,17 @@ export default {
         description: '',
         rootPath: type,
         cleanWorkDir: true,
-        memory: 32 * 1024 * 1024 * 1024,
+        limitMem: 32 * 1024 * 1024 * 1024,
+        requestMem: 16 * 1024 * 1024 * 1024,
+        limitStorage: 128 * 1024 * 1024 * 1024,
+        requestStorage: 16 * 1024 * 1024 * 1024,
+        limitCpu: 16.0,
+        requestCpu: 4.0,
         maxScanDurationPerMb: 6000,
         supportFileNameExt: [],
         supportPackageTypes: [],
-        supportScanTypes: []
+        supportScanTypes: [],
+        unsupportedArtifactNameRegex: []
       }
       if (type === SCANNER_TYPE_ARROWHEAD) {
         scanner.knowledgeBase = {}
