@@ -139,7 +139,7 @@ class EmptyFolderCleanup(
         if (context.folders.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
         val storedFolderPrefix = if (collectionName.isNullOrEmpty()) {
-            FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)+StringPool.COLON
+            FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId) + StringPool.COLON
         } else {
             FolderUtils.buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
         }
@@ -154,7 +154,9 @@ class EmptyFolderCleanup(
                     fullPath = folderInfo.fullPath, tag = NODE_NUM
                 )
 
-                val key = keyPrefix + StringPool.COLON + FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)
+                val key = keyPrefix + StringPool.COLON + FolderUtils.buildCacheKey(
+                    collectionName = collectionName, projectId = projectId
+                )
                 hashCommands.hIncrBy(key.toByteArray(), nodeNumHKey.toByteArray(), entry.value.nodeNum.toLong())
                 entry.value.id?.let {
                     val idHKey = FolderUtils.buildCacheKey(
@@ -250,7 +252,7 @@ class EmptyFolderCleanup(
         deleteFolderRepos: List<String>,
         id: String,
         context: EmptyFolderCleanupJobContext,
-        ) {
+    ) {
         if (emptyFolderDoubleCheck(
                 projectId = folderInfo.projectId,
                 repoName = folderInfo.repoName,

@@ -204,7 +204,7 @@ class InactiveProjectNodeFolderStatJob(
     companion object {
         private val logger = LoggerFactory.getLogger(InactiveProjectNodeFolderStatJob::class.java)
         private const val COLLECTION_NAME_PREFIX = "node_"
-        private val KEY_PREFIX = "inactiveProjectNode"
+        private const val KEY_PREFIX = "inactiveProjectNode"
 
     }
 }

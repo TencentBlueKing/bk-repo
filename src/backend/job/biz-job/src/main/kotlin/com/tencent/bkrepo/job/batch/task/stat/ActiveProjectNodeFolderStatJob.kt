@@ -134,6 +134,6 @@ class ActiveProjectNodeFolderStatJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveProjectNodeFolderStatJob::class.java)
-        private val KEY_PREFIX = "activeProjectNode"
+        private const val KEY_PREFIX = "activeProjectNode"
     }
 }

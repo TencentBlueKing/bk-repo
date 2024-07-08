@@ -189,6 +189,6 @@ class InactiveProjectEmptyFolderCleanupJob(
         private val logger = LoggerFactory.getLogger(InactiveProjectEmptyFolderCleanupJob::class.java)
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
         private const val COLLECTION_NAME_PREFIX = "node_"
-        private val KEY_PREFIX = "inactiveEmptyFolder"
+        private const val KEY_PREFIX = "inactiveEmptyFolder"
     }
 }
