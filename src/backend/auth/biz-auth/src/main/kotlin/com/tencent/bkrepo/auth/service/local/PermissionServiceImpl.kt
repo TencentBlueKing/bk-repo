@@ -195,8 +195,10 @@ open class PermissionServiceImpl constructor(
             // check user locked
             if (user.locked) return false
             // check user admin permission
-            if (user.admin || isUserLocalProjectAdmin(uid, projectId)) return true
+            if (user.admin) return true
+            // check project enabled status
             if (!projectEnabled) return false
+            if (isUserLocalProjectAdmin(uid, projectId)) return true
             val roles = user.roles
             if (permHelper.isRepoOrNodePermission(resourceType)) {
                 // check role repo admin
