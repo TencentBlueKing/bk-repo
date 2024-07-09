@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.repository.pojo.share
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-
 data class ClusterShareTokenCheckRequest(
     val userId: String,
-    val artifactInfo: ArtifactInfo,
+    val projectId: String,
+    val repoName: String,
+    val fullPath: String,
     val token: String
 )
