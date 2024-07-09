@@ -39,8 +39,8 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.Composite
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -89,11 +89,6 @@ class CommitEdgeCenterRepositoryServiceImpl(
     servicePermissionClient,
     projectMetricsRepository
 ) {
-
-    override fun determineStorageKey(request: RepoCreateRequest, projectCredentialsKey: String?): String? {
-        return repositoryProperties.defaultStorageCredentialsKey
-    }
-
     override fun buildTRepository(
         request: RepoCreateRequest,
         repoConfiguration: RepositoryConfiguration,

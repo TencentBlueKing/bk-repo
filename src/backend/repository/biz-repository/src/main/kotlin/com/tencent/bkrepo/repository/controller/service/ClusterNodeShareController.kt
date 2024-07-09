@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.cluster.ClusterNodeShareClient
 import com.tencent.bkrepo.repository.pojo.share.ClusterShareRecordCreateRequest
@@ -43,10 +44,16 @@ class ClusterNodeShareController(
     override fun create(
         request: ClusterShareRecordCreateRequest
     ): Response<ShareRecordInfo> {
-        return ResponseBuilder.success(shareService.create(request.userId, request.artifactInfo, request.createRequest))
+        with(request) {
+            val artifactInfo = ArtifactInfo(projectId, repoName, fullPath)
+            return ResponseBuilder.success(shareService.create(userId, artifactInfo, createRequest))
+        }
     }
 
     override fun checkToken(request: ClusterShareTokenCheckRequest): Response<ShareRecordInfo> {
-        return ResponseBuilder.success(shareService.checkToken(request.userId, request.token, request.artifactInfo))
+        with(request) {
+            val artifactInfo = ArtifactInfo(projectId, repoName, fullPath)
+            return ResponseBuilder.success(shareService.checkToken(userId, token, artifactInfo))
+        }
     }
 }
