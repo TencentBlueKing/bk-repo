@@ -70,6 +70,7 @@ import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.exception.ConflictException
+import com.tencent.bkrepo.maven.exception.MavenArtifactFormatException
 import com.tencent.bkrepo.maven.exception.MavenArtifactNotFoundException
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import com.tencent.bkrepo.maven.exception.MavenRequestForbiddenException
@@ -333,7 +334,13 @@ class MavenLocalRepository(
 
             val fileSuffix = packaging
             if (packaging == "pom") {
-                val mavenPomModel = context.getArtifactFile().getInputStream().use { MavenXpp3Reader().read(it) }
+                val mavenPomModel = context.getArtifactFile().getInputStream().use {
+                    try {
+                        MavenXpp3Reader().read(it)
+                    } catch (e: Exception) {
+                        throw MavenArtifactFormatException(MavenMessageCode.MAVEN_ARTIFACT_FORMAT_ERROR, packaging)
+                    }
+                }
                 val verNotBlank = StringUtils.isNotBlank(mavenPomModel.version)
                 val isPom = mavenPomModel.packaging.equals("pom", ignoreCase = true)
                 if (!verNotBlank || !isPom) {
