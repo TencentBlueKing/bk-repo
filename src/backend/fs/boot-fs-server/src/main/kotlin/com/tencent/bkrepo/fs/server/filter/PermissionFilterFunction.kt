@@ -94,6 +94,8 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
             "/node/set-length/**",
             "/block/**",
         )
-        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/service", "/token", "/ioa", "/client/metrics/push")
+        private val uncheckedUrlPrefixList = listOf(
+            "/login", "/devx/login", "/service", "/token", "/ioa", "/client/metrics/push"
+        )
     }
 }

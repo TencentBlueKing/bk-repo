@@ -118,6 +118,8 @@ class DevXAccessFilter(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevXAccessFilter::class.java)
-        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/service", "/token", "/ioa", "/client/metrics/push")
+        private val uncheckedUrlPrefixList = listOf(
+            "/login", "/devx/login", "/service", "/token", "/ioa", "/client/metrics/push"
+        )
     }
 }
