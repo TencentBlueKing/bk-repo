@@ -141,11 +141,18 @@ class ArtifactCacheMetrics(
      * 统计访问的缓存文件大小分布
      */
     private fun recordAccessCacheFileSize(size: Long) {
+        val fileSizeThreshold = storageProperties.receive.fileSizeThreshold.toBytes()
+        val minExpectedVal = if (fileSizeThreshold <= 0) {
+            // minimumExpectedValue must be greater than 0.
+            1.0
+        } else {
+            fileSizeThreshold.toDouble()
+        }
         DistributionSummary.builder(CACHE_ACCESS_FILE_SIZE)
             .description("storage cache file size")
             .baseUnit(BaseUnits.BYTES)
             .publishPercentileHistogram()
-            .minimumExpectedValue(storageProperties.receive.fileSizeThreshold.toBytes().toDouble())
+            .minimumExpectedValue(minExpectedVal)
             .maximumExpectedValue(MAX_CACHE_FILE_SIZE)
             .register(registry)
             .record(size.toDouble())
