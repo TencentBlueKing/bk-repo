@@ -217,14 +217,14 @@ open class PermissionManager(
 
 
     /**
-     * 判断是否为public仓库且为READ操作
+     * 判断是否为public仓库且为READ或DOWNLOAD操作
      */
     private fun isReadPublicRepo(
         action: PermissionAction,
         repoInfo: RepositoryInfo,
         public: Boolean? = null
     ): Boolean {
-        if (action != PermissionAction.READ) {
+        if (action != PermissionAction.READ && action != PermissionAction.DOWNLOAD) {
             return false
         }
         return public ?: repoInfo.public
@@ -242,7 +242,7 @@ open class PermissionManager(
         if (SecurityUtils.isServiceRequest()) {
             return true
         }
-        if (action != PermissionAction.READ) {
+        if (action != PermissionAction.READ && action != PermissionAction.DOWNLOAD) {
             return false
         }
         val platformId = SecurityUtils.getPlatformId()
@@ -315,10 +315,10 @@ open class PermissionManager(
             // 无权限，响应403错误
             val reason: String?
             if (repoName.isNullOrEmpty()) {
-                val param = arrayOf(userId, action, projectId )
+                val param = arrayOf(userId, action, projectId)
                 reason = LocaleMessageUtils.getLocalizedMessage("permission.project.denied", param)
             } else {
-                val param = arrayOf(userId, action, projectId, repoName )
+                val param = arrayOf(userId, action, projectId, repoName)
                 reason = LocaleMessageUtils.getLocalizedMessage("permission.repo.denied", param)
             }
             throw PermissionException(reason)
