@@ -1,5 +1,6 @@
 <template>
     <div class="bkrepo-main flex-column">
+        <notice-component v-if="!ciMode && !isSubSaas" api-url="/web/repository/api/notice" />
         <Header v-if="!ciMode && !isSubSaas" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
@@ -9,6 +10,7 @@
 </template>
 
 <script>
+    import NoticeComponent from '@blueking/notice-component-vue2'
     import { subEnv } from '@blueking/sub-saas'
     import mixin from '@repository/AppMixin'
     import Header from '@repository/components/Header'
@@ -16,7 +18,7 @@
     import cookies from 'js-cookie'
     import { mapActions } from 'vuex'
     export default {
-        components: { Header, Login },
+        components: { NoticeComponent, Header, Login },
         mixins: [mixin],
         data () {
             return {
@@ -104,6 +106,7 @@
 </script>
 <style lang="scss">
 @import '@repository/scss/index';
+@import '@blueking/notice-component-vue2/dist/style.css';
 .navigation-message-theme{
     padding: 0 !important;
 }

@@ -1100,6 +1100,16 @@
     "@babel/helper-validator-identifier" "^7.22.5"
     to-fast-properties "^2.0.0"
 
+"@blueking/notice-component-vue2@^2.0.5":
+  version "2.0.5"
+  resolved "https://mirrors.tencent.com/npm/@blueking/notice-component-vue2/-/notice-component-vue2-2.0.5.tgz#11ab0c10928448ad6e3ac8dd79fc744e6e9f20d0"
+  integrity sha512-yXlJF/NPWb4FNkzanVsNz99ibBy3WKC3K0vdZxCaNOscIBhjWpOJvPhcyD6FaUgX4hiqBHFJlag4FwWWpS6kBQ==
+
+"@blueking/sub-saas@0.0.0-beta.9":
+  version "0.0.0-beta.9"
+  resolved "https://mirrors.tencent.com/npm/@blueking/sub-saas/-/sub-saas-0.0.0-beta.9.tgz#a8741b6298802930696ff390f214fcaad6c0783b"
+  integrity sha512-w+/xGPKUqOYHrvrZxamXZBzni5wzlfv0ZZWMBIVAY82t4SVNx/K4HH9cFvFAhI5cSY04eCc2C5LMJYwkcN/6Zg==
+
 "@commitlint/cli@^9.1.1":
   version "9.1.2"
   resolved "https://mirrors.tencent.com/npm/@commitlint/cli/-/cli-9.1.2.tgz#3773699ea2ee6192f8dc14dd09b479baaaa13cd3"
@@ -2724,7 +2734,7 @@
   optionalDependencies:
     prettier "^1.18.2 || ^2.0.0"
 
-"@vue/vue-loader-v15@npm:vue-loader@^15.9.7", vue-loader@^15.9.8:
+"@vue/vue-loader-v15@npm:vue-loader@^15.9.7":
   version "15.10.1"
   resolved "https://mirrors.tencent.com/npm/vue-loader/-/vue-loader-15.10.1.tgz#c451c4cd05a911aae7b5dbbbc09fb913fb3cca18"
   integrity sha512-SaPHK1A01VrNthlix6h1hq4uJu7S/z0kdLUb6klubo738NeQoLbS6V9/d8Pv19tU0XdQKju3D1HSKuI8wJ5wMA==
@@ -5250,10 +5260,10 @@ electron-to-chromium@^1.4.431:
   resolved "https://mirrors.tencent.com/npm/electron-to-chromium/-/electron-to-chromium-1.4.433.tgz#305ef5f8ea5fe65d252aae4b0e1088f9e4842533"
   integrity sha512-MGO1k0w1RgrfdbLVwmXcDhHHuxCn2qRgR7dYsJvWFKDttvYPx6FNzCGG0c/fBBvzK2LDh3UV7Tt9awnHnvAAUQ==
 
-element-ui@2.15.6:
-  version "2.15.6"
-  resolved "https://mirrors.tencent.com/npm/element-ui/-/element-ui-2.15.6.tgz#c9609add35af5a686a4b7685dc1d757c75e01df3"
-  integrity sha512-rcYXEKd/j2G0AgficAOk1Zd1AsnHRkhmrK4yLHmNOiimU2JfsywgfKUjMoFuT6pQx0luhovj8lFjpE4Fnt58Iw==
+element-ui@2.15.14:
+  version "2.15.14"
+  resolved "https://mirrors.tencent.com/npm/element-ui/-/element-ui-2.15.14.tgz#3c34df79467636592812d720d2e6784e7a6ec2ea"
+  integrity sha512-2v9fHL0ZGINotOlRIAJD5YuVB8V7WKxrE9Qy7dXhRipa035+kF7WuU/z+tEmLVPBcJ0zt8mOu1DKpWcVzBK8IA==
   dependencies:
     async-validator "~1.8.1"
     babel-helper-vue-jsx-merge-props "^2.0.0"
@@ -12585,6 +12595,17 @@ vue-i18n@^8.18.1:
   version "8.28.2"
   resolved "https://mirrors.tencent.com/npm/vue-i18n/-/vue-i18n-8.28.2.tgz#913558066e274395c0a9f40b2f3393d5c2636840"
   integrity sha512-C5GZjs1tYlAqjwymaaCPDjCyGo10ajUphiwA922jKt9n7KPpqR7oM1PCwYzhB/E7+nT3wfdG3oRre5raIT1rKA==
+
+vue-loader@^15.9.8:
+  version "15.10.1"
+  resolved "https://mirrors.tencent.com/npm/vue-loader/-/vue-loader-15.10.1.tgz#c451c4cd05a911aae7b5dbbbc09fb913fb3cca18"
+  integrity sha512-SaPHK1A01VrNthlix6h1hq4uJu7S/z0kdLUb6klubo738NeQoLbS6V9/d8Pv19tU0XdQKju3D1HSKuI8wJ5wMA==
+  dependencies:
+    "@vue/component-compiler-utils" "^3.1.0"
+    hash-sum "^1.0.2"
+    loader-utils "^1.1.0"
+    vue-hot-reload-api "^2.3.0"
+    vue-style-loader "^4.1.0"
 
 vue-loader@^17.0.0:
   version "17.2.2"
