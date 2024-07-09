@@ -66,6 +66,7 @@ import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildUpdatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -198,7 +199,7 @@ class PackageServiceImpl(
             // 先查询包是否存在，不存在先创建包
             val tPackage = findOrCreatePackage(buildPackage(request))
             // 检查版本是否存在
-            val oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
+            var oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
             val query = Query(
                 where(TPackage::projectId).isEqualTo(projectId).apply {
                     and(TPackage::repoName).isEqualTo(repoName)
@@ -214,32 +215,34 @@ class PackageServiceImpl(
                 .set(TPackage::historyVersion.name, tPackage.historyVersion.toMutableSet().apply { add(versionName) })
             // 检查本次上传是创建还是覆盖。
             if (oldVersion != null) {
-                checkPackageVersionOverwrite(overwrite, packageName, oldVersion)
-                // overwrite
-                oldVersion.apply {
-                    lastModifiedBy = request.createdBy
-                    lastModifiedDate = LocalDateTime.now()
-                    size = request.size
-                    manifestPath = request.manifestPath
-                    artifactPath = request.artifactPath
-                    stageTag = request.stageTag.orEmpty()
-                    metadata = MetadataUtils.compatibleConvertAndCheck(request.metadata, packageMetadata)
-                    tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
-                    extension = request.extension.orEmpty()
-                }
-                packageVersionDao.save(oldVersion)
-                packageDao.upsert(query, update)
-                logger.info("Update package version[$oldVersion] success")
-                publishEvent(buildUpdatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+                updateExistVersion(
+                    oldVersion = oldVersion,
+                    request = request,
+                    realIpAddress = realIpAddress,
+                    packageQuery = query,
+                    packageUpdate = update
+                )
             } else {
                 // create new
                 val newVersion = buildPackageVersion(request, tPackage.id!!)
-                packageVersionDao.save(newVersion)
-                // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
-                update.inc(TPackage::versions.name)
-                packageDao.upsert(query, update)
-                logger.info("Create package version[$newVersion] success")
-                publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+                try {
+                    packageVersionDao.save(newVersion)
+                    // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
+                    update.inc(TPackage::versions.name)
+                    packageDao.upsert(query, update)
+                    logger.info("Create package version[$newVersion] success")
+                    publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+                } catch (exception: DuplicateKeyException) {
+                    logger.warn("Create version[$newVersion] error: [${exception.message}]")
+                    oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
+                    updateExistVersion(
+                        oldVersion = oldVersion!!,
+                        request = request,
+                        realIpAddress = realIpAddress,
+                        packageQuery = query,
+                        packageUpdate = update
+                    )
+                }
             }
             populateCluster(tPackage)
         }
@@ -463,6 +466,37 @@ class PackageServiceImpl(
     override fun getPackageCount(projectId: String, repoName: String): Long {
         val query = PackageQueryHelper.packageListQuery(projectId, repoName, null)
         return packageDao.count(query)
+    }
+
+    /**
+     * 更新已经存在的版本信息
+     */
+    private fun updateExistVersion(
+        oldVersion: TPackageVersion,
+        request: PackageVersionCreateRequest,
+        realIpAddress: String?,
+        packageQuery: Query,
+        packageUpdate: Update
+    ) {
+        with(request) {
+            checkPackageVersionOverwrite(overwrite, packageName, oldVersion)
+            // overwrite
+            oldVersion.apply {
+                lastModifiedBy = request.createdBy
+                lastModifiedDate = LocalDateTime.now()
+                size = request.size
+                manifestPath = request.manifestPath
+                artifactPath = request.artifactPath
+                stageTag = request.stageTag.orEmpty()
+                metadata = MetadataUtils.compatibleConvertAndCheck(request.metadata, packageMetadata)
+                tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
+                extension = request.extension.orEmpty()
+            }
+            packageVersionDao.save(oldVersion)
+            packageDao.upsert(packageQuery, packageUpdate)
+            logger.info("Update package version[$oldVersion] success")
+            publishEvent(buildUpdatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+        }
     }
 
     /**

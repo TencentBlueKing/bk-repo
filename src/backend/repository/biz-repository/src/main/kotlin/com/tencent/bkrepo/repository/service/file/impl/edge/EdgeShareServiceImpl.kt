@@ -65,10 +65,22 @@ class EdgeShareServiceImpl(
         artifactInfo: ArtifactInfo,
         request: ShareRecordCreateRequest
     ): ShareRecordInfo {
-        return centerShareClient.create(ClusterShareRecordCreateRequest(userId, artifactInfo, request)).data!!
+        return centerShareClient.create(ClusterShareRecordCreateRequest(
+            userId = userId,
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            fullPath = artifactInfo.getArtifactFullPath(),
+            createRequest = request
+        )).data!!
     }
 
     override fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): ShareRecordInfo {
-        return centerShareClient.checkToken(ClusterShareTokenCheckRequest(userId, artifactInfo, token)).data!!
+        return centerShareClient.checkToken(ClusterShareTokenCheckRequest(
+            userId = userId,
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            fullPath = artifactInfo.getArtifactFullPath(),
+            token = token
+        )).data!!
     }
 }

@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service.bkauth
+package com.tencent.bkrepo.auth.service.bkdevops
 
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
@@ -68,9 +68,8 @@ class DevopsPipelineService(
         return ciAuthService.isProjectSuperAdmin(
             user = uid,
             projectCode = projectId,
-            action = BkAuthPermission.DOWNLOAD,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
-            permissionAction = permissionAction
+            action = permissionAction
         ) || ciAuthService.validateUserResourcePermission(
             user = uid,
             projectCode = projectId,
