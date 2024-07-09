@@ -31,6 +31,7 @@ import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
@@ -239,6 +240,10 @@ abstract class AbstractReplicaService(
                 size = node.size.toString()
             )
             val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
+            if (node.sha256 == FAKE_SHA256) {
+                logger.warn("Node $fullPath in repo ${node.projectId}|${node.repoName} is link node.")
+                return
+            }
             runActionAndPrintLog(context, record) {
                 when (context.detail.conflictStrategy) {
                     ConflictStrategy.SKIP -> false

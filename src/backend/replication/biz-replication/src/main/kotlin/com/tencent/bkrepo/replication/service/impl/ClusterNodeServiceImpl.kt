@@ -226,8 +226,7 @@ class ClusterNodeServiceImpl(
 
     override fun updateClusterNodeStatus(request: ClusterNodeStatusUpdateRequest) {
         with(request) {
-            val tClusterNode = clusterNodeDao.findByName(name)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
+            val tClusterNode = clusterNodeDao.findByName(name) ?: return
             val clusterNode = tClusterNode.copy(
                 status = status,
                 errorReason = errorReason,

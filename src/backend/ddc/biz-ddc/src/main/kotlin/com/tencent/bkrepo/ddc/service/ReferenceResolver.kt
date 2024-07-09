@@ -90,7 +90,7 @@ class ReferenceResolver(
     private fun resolveObject(projectId: String, repoName: String, blobId: ContentHash): Pair<Blob, CbObject>? {
         return try {
             val blob = blobService.getBlob(projectId, repoName, blobId.toString())
-            val blobBytes = blobService.loadBlob(blob).readBytes()
+            val blobBytes = blobService.loadBlob(blob).use { it.readBytes() }
             val cb = CbObject(ByteBuffer.wrap(blobBytes))
             Pair(blob, cb)
         } catch (_: BlobNotFoundException) {

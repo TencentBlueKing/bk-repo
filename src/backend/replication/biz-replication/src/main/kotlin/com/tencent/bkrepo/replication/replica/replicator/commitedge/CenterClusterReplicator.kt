@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.replicator.commitedge
 
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
@@ -39,6 +40,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Component
 import java.time.temporal.ChronoUnit
@@ -54,6 +56,10 @@ class CenterClusterReplicator(
 ): ClusterReplicator(localDataManager, clusterArtifactReplicationHandler, replicationProperties) {
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
+        if (node.sha256 == FAKE_SHA256) {
+            logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
+            return false
+        }
         node.clusterNames?.firstOrNull { it != clusterProperties.self.name }
             ?: return super.replicaFile(context, node)
         val edgeReplicaTaskRecord = edgeReplicaTaskRecordService.createNodeReplicaTaskRecord(
@@ -90,5 +96,9 @@ class CenterClusterReplicator(
         )
         edgeReplicaTaskRecordService.waitTaskFinish(edgeReplicaTaskRecord.id!!, estimateTime, ChronoUnit.SECONDS)
         return true
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(CenterClusterReplicator::class.java)
     }
 }

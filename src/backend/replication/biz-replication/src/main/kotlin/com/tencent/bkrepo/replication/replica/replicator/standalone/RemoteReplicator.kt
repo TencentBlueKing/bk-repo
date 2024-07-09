@@ -69,7 +69,7 @@ class RemoteReplicator : Replicator {
     ): Boolean {
         if (!checkSourceType(packageVersion))
             throw ArtifactSourceCheckException(
-                "Current version is coming from the proxy or replication source, so ignore it"
+                "Current version is coming from the proxy source, so ignore it"
             )
         if (!remotePackageConstraint(context, packageSummary, packageVersion))
             throw RegexCheckException("Error occurred while checking the rules for package and version")
@@ -77,11 +77,11 @@ class RemoteReplicator : Replicator {
     }
 
     /**
-     * 只针对version中元数据 sourceType为ArtifactChannel.LOCAL的package才推送
+     * 只针对version中元数据 sourceType不是ArtifactChannel.PROXY的package才推送
      */
     private fun checkSourceType(packageVersion: PackageVersion): Boolean {
         if (packageVersion.metadata.isEmpty() || packageVersion.metadata[SOURCE_TYPE] == null) return true
-        return packageVersion.metadata[SOURCE_TYPE] == ArtifactChannel.LOCAL
+        return packageVersion.metadata[SOURCE_TYPE] != ArtifactChannel.PROXY
     }
 
     /**

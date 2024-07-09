@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServicePipelineClient
-import com.tencent.bkrepo.auth.service.bkauth.DevopsPipelineService
+import com.tencent.bkrepo.auth.service.bkdevops.DevopsPipelineService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired

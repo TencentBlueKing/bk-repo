@@ -37,6 +37,7 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
 
@@ -50,9 +51,9 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface ClusterNodeShareClient {
     @ApiOperation("创建分享链接")
     @PostMapping("/create")
-    fun create(request: ClusterShareRecordCreateRequest): Response<ShareRecordInfo>
+    fun create(@RequestBody request: ClusterShareRecordCreateRequest): Response<ShareRecordInfo>
 
     @ApiOperation("检查token")
     @PostMapping("/token")
-    fun checkToken(request: ClusterShareTokenCheckRequest): Response<ShareRecordInfo>
+    fun checkToken(@RequestBody request: ClusterShareTokenCheckRequest): Response<ShareRecordInfo>
 }
