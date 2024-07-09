@@ -89,7 +89,6 @@ class MavenExceptionHandler {
         mavenResponse(exception)
     }
 
-
     private fun mavenResponse(exception: ErrorCodeException) {
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
         val errorResponse = MavenExceptionResponse(exception.status.toString(), errorMessage)
