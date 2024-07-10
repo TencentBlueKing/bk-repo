@@ -221,19 +221,26 @@ abstract class AbstractReplicaService(
             }
             // 查询子节点
             var pageNumber = DEFAULT_PAGE_NUMBER
-            do {
-                val nodes = localDataManager.listNodePage(
+            var nodes = localDataManager.listNodePage(
+                projectId = replicaContext.localProjectId,
+                repoName = replicaContext.localRepoName,
+                fullPath = node.fullPath,
+                pageNumber = pageNumber,
+                pageSize = PAGE_SIZE
+            )
+            while (nodes.isNotEmpty()) {
+                nodes.forEach {
+                    replicaByPath(this, it)
+                }
+                pageNumber++
+                nodes = localDataManager.listNodePage(
                     projectId = replicaContext.localProjectId,
                     repoName = replicaContext.localRepoName,
                     fullPath = node.fullPath,
                     pageNumber = pageNumber,
                     pageSize = PAGE_SIZE
                 )
-                nodes.forEach {
-                    replicaByPath(this, it)
-                }
-                pageNumber++
-            } while (nodes.isNotEmpty())
+            }
         }
     }
 
