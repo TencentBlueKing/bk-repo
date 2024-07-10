@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache
+package com.tencent.bkrepo.job.batch.task.cache.preload
 
 import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob

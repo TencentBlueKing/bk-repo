@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":common:common-operate:operate-service"))
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("io.micrometer:micrometer-registry-prometheus")
+    implementation("io.milvus:milvus-sdk-java:${Versions.Milvus}")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
     testImplementation("org.mockito.kotlin:mockito-kotlin")

@@ -25,25 +25,47 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache
+package com.tencent.bkrepo.job.batch.task.cache.preload
 
-import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
-import com.tencent.bkrepo.job.batch.base.DefaultContextJob
+import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.ArtifactPreloadStrategyGenerateJobProperties
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusServiceClientProperties
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStoreProperties
+import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
+import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
+import kotlin.reflect.KClass
 
-/**
- * 根据缓存访问记录生成预加载策略
- */
 @Component
-@EnableConfigurationProperties(ArtifactPreloadStrategyGenerateJobProperties::class)
-class ArtifactPreloadStrategyGenerateJob(
-    properties: ArtifactPreloadStrategyGenerateJobProperties,
-    private val artifactAccessRecorder: ArtifactAccessRecorder?,
-) : DefaultContextJob(properties) {
-    override fun doStart0(jobContext: JobContext) {
-        artifactAccessRecorder?.generateStrategy()
+@EnableConfigurationProperties(
+    ArtifactAccessLogEmbeddingJobProperties::class,
+    AiProperties::class,
+    MilvusVectorStoreProperties::class,
+    MilvusServiceClientProperties::class
+)
+class ArtifactAccessLogEmbeddingJob(
+    properties: ArtifactAccessLogEmbeddingJobProperties
+) : DefaultContextMongoDbJob<TProjectMetrics>(properties) {
+    override fun collectionNames(): List<String> {
+        TODO("Not yet implemented")
+    }
+
+    override fun buildQuery(): Query {
+        TODO("Not yet implemented")
+    }
+
+    override fun mapToEntity(row: Map<String, Any?>): TProjectMetrics {
+        TODO("Not yet implemented")
+    }
+
+    override fun entityClass(): KClass<TProjectMetrics> {
+        TODO("Not yet implemented")
+    }
+
+    override fun run(row: TProjectMetrics, collectionName: String, context: JobContext) {
+        TODO("Not yet implemented")
     }
 }

@@ -25,29 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
-import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
-import com.tencent.bkrepo.job.batch.base.DefaultContextJob
-import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.ArtifactPreloadPlanExecuteJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.stereotype.Component
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 执行预加载计划将制品加载到缓存中
- */
-@Component
-@EnableConfigurationProperties(ArtifactPreloadPlanExecuteJobProperties::class)
-class ArtifactPreloadPlanExecuteJob(
-    properties: ArtifactPreloadPlanExecuteJobProperties,
-    private val preloadPlanService: ArtifactPreloadPlanService?,
-    private val preloadProperties: ArtifactPreloadProperties?,
-) : DefaultContextJob(properties) {
-    override fun doStart0(jobContext: JobContext) {
-        if (preloadProperties?.enabled == true) {
-            preloadPlanService?.executePlans()
-        }
-    }
-}
+@ConfigurationProperties("spring.ai")
+data class AiProperties(
+    var embeddingServiceUrl: String = "",
+    var embeddingServiceToken: String = "",
+)

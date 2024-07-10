@@ -70,4 +70,5 @@ object Versions {
     const val TiKa = "2.9.1"
     const val FFmpegPlatform = "6.0-1.5.9"
     const val JavaCpp = "1.5.9"
+    const val Milvus = "2.4.1"
 }
