@@ -76,9 +76,9 @@ class CommitEdgeCenterNodeRenameSupport(
         return if (isEdgeRequest()) {
             where(TNode::clusterNames).ne(SecurityUtils.getClusterName())
         } else {
-            Criteria().orOperator(
-                where(TNode::clusterNames).exists(false),
-                where(TNode::clusterNames).ne(listOf(clusterProperties.self.name))
+            Criteria().andOperator(
+                where(TNode::clusterNames).ne(listOf(clusterProperties.self.name)),
+                where(TNode::clusterNames).ne(null)
             )
         }
     }
