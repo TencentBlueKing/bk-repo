@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.repository.service.metadata.impl.edge
 
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils.ignoreException
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.nodeLevelNotFoundError
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterMetadataClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -67,7 +67,7 @@ class EdgeMetadataServiceImpl(
         ignoreException(
             projectId = request.projectId,
             repoName = request.repoName,
-            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = nodeLevelNotFoundError
         ) {
             centerMetadataClient.saveMetadata(request)
         }
@@ -78,7 +78,7 @@ class EdgeMetadataServiceImpl(
         ignoreException(
             projectId = request.projectId,
             repoName = request.repoName,
-            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = nodeLevelNotFoundError
         ) {
             centerMetadataClient.deleteMetadata(request)
         }
@@ -89,7 +89,7 @@ class EdgeMetadataServiceImpl(
         ignoreException(
             projectId = request.projectId,
             repoName = request.repoName,
-            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = nodeLevelNotFoundError
         ) {
             centerMetadataClient.addForbidMetadata(request)
         }
