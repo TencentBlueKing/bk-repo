@@ -48,6 +48,7 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -261,6 +262,31 @@ class LocalDataManager(
             throw NodeNotFoundException("$projectId/$repoName")
         }
         return nodes
+    }
+
+    /**
+     * 查询目录下的文件列表
+     */
+    fun listNodePage(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        pageNumber: Int,
+        pageSize: Int,
+    ): List<NodeInfo> {
+        val option = NodeListOption(
+            pageNumber = pageNumber,
+            pageSize = pageSize,
+            includeFolder = true,
+            includeMetadata = true,
+            deep = false
+        )
+        return nodeClient.listNodePage(
+            projectId = projectId,
+            repoName = repoName,
+            path = fullPath,
+            option = option
+        ).data?.records ?: emptyList()
     }
 
     /**

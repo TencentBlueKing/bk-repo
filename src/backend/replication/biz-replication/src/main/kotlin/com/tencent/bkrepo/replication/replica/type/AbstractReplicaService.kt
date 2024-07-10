@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.type
 
 import com.google.common.base.Throwables
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -184,7 +185,7 @@ abstract class AbstractReplicaService(
                     fullPath = constraint.path!!
                 ).nodeInfo
                 replicaByPath(this, nodeInfo)
-            }  catch (throwable: Throwable) {
+            } catch (throwable: Throwable) {
                 logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
                 setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
                 throw throwable
@@ -219,13 +220,20 @@ abstract class AbstractReplicaService(
                 return
             }
             // 查询子节点
-            localDataManager.listNode(
-                projectId = replicaContext.localProjectId,
-                repoName = replicaContext.localRepoName,
-                fullPath = node.fullPath
-            ).forEach {
-                replicaByPath(this, it)
-            }
+            var pageNumber = DEFAULT_PAGE_NUMBER
+            do {
+                val nodes = localDataManager.listNodePage(
+                    projectId = replicaContext.localProjectId,
+                    repoName = replicaContext.localRepoName,
+                    fullPath = node.fullPath,
+                    pageNumber = pageNumber,
+                    pageSize = PAGE_SIZE
+                )
+                nodes.forEach {
+                    replicaByPath(this, it)
+                }
+                pageNumber++
+            } while (nodes.isNotEmpty())
         }
     }
 
