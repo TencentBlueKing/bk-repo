@@ -113,7 +113,9 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
      * 只支持指定表删除
      */
     override fun remove(query: Query): DeleteResult {
-        var collectionName = determineCollectionName(query)
+        val shardingValue = determineCollectionName(query.queryObject)
+        require(shardingValue is Document && shardingValue.size == 1) { "Remove only works on particular table!" }
+        val collectionName = determineCollectionName(query)
         return determineMongoTemplate().remove(query, collectionName)
     }
 
