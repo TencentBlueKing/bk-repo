@@ -226,7 +226,7 @@ class DevopsPermissionServiceImpl constructor(
             if (needCheckPathPermission(resourceType, projectId!!, repoName!!)) {
                 return checkNodeAction(request, null, isDevopsProjectMember)
             }
-            return isDevopsProjectMember
+            return super.checkPermission(request) || isDevopsProjectMember
         }
     }
 

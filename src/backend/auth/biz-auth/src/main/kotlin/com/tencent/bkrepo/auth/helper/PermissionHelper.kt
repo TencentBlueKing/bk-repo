@@ -92,10 +92,10 @@ class PermissionHelper constructor(
         if (queryRoles.isEmpty()) return false
 
         val result = roleRepository.findByTypeAndProjectIdAndAdminAndRepoNameAndIdIn(
-            projectId = request.projectId!!,
             type = RoleType.REPO,
-            repoName = request.repoName!!,
+            projectId = request.projectId!!,
             admin = true,
+            repoName = request.repoName!!,
             ids = queryRoles
         )
         if (result.isNotEmpty()) return true
