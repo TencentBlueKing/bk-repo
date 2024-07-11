@@ -53,7 +53,7 @@ class RepoModeServiceImpl(
             return RepoModeStatus(result.id!!, result.accessControl, result.accessControl, result.officeDenyGroupSet)
         }
         val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, false)
-        return RepoModeStatus(id, false, false, emptySet())
+        return RepoModeStatus(id = id)
     }
 
 
