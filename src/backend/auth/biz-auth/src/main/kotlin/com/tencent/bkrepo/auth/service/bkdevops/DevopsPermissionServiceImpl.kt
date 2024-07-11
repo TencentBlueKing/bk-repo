@@ -43,6 +43,8 @@ import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
@@ -194,17 +196,24 @@ class DevopsPermissionServiceImpl constructor(
                 return false
             }
             when (repoName) {
-                CUSTOM, LOG, REPORT -> {
+                CUSTOM, LOG -> {
                     return checkDevopsCustomPermission(request)
                 }
                 PIPELINE -> {
                     return checkDevopsPipelinePermission(request)
+                }
+                REPORT -> {
+                    return checkDevopsReportPermission(request.action)
                 }
                 else -> {
                     return checkRepoNotInDevops(request)
                 }
             }
         }
+    }
+
+    private fun checkDevopsReportPermission(action: String): Boolean {
+        return action == READ.name || action == WRITE.name || action == VIEW.name
     }
 
     private fun checkDevopsCustomPermission(request: CheckPermissionRequest): Boolean {
