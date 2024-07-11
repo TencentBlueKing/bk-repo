@@ -27,13 +27,18 @@
 
 package com.tencent.bkrepo.replication.manager
 
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ProjectNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -46,9 +51,10 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -56,8 +62,14 @@ import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.io.InputStream
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 本地数据管理类
@@ -72,6 +84,7 @@ class LocalDataManager(
     private val storageService: StorageService,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val storageProperties: StorageProperties,
+    private val mongoTemplate: MongoTemplate,
 ) {
 
     /**
@@ -274,19 +287,17 @@ class LocalDataManager(
         pageNumber: Int,
         pageSize: Int,
     ): List<NodeInfo> {
-        val option = NodeListOption(
-            pageNumber = pageNumber,
-            pageSize = pageSize,
-            includeFolder = true,
-            includeMetadata = true,
-            deep = false
-        )
-        return nodeClient.listNodePage(
-            projectId = projectId,
-            repoName = repoName,
-            path = fullPath,
-            option = option
-        ).data?.records ?: emptyList()
+        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val nodePath = PathUtils.toPath(fullPath)
+        val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
+            .and(REPO_NAME).isEqualTo(repoName)
+            .and(DELETED).isEqualTo(null)
+            .and(NODE_PATH).isEqualTo(nodePath)
+
+        val query = Query(criteria)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val records = mongoTemplate.find(query.with(pageRequest), Node::class.java, collectionName)
+        return records.map { convert(it)!! }
     }
 
     /**
@@ -322,5 +333,72 @@ class LocalDataManager(
         findRepoByName(projectId, repoName)
         val projectMetrics = projectClient.getProjectMetrics(projectId).data ?: return 0
         return projectMetrics.repoMetrics.firstOrNull { it.repoName == repoName }?.size ?: 0
+    }
+
+    data class Node(
+        var createdBy: String,
+        var createdDate: LocalDateTime,
+        var lastModifiedBy: String,
+        var lastModifiedDate: LocalDateTime,
+        var lastAccessDate: LocalDateTime? = null,
+
+        var folder: Boolean,
+        var path: String,
+        var name: String,
+        var fullPath: String,
+        var size: Long,
+        var expireDate: LocalDateTime? = null,
+        var sha256: String? = null,
+        var md5: String? = null,
+        var deleted: LocalDateTime? = null,
+        var copyFromCredentialsKey: String? = null,
+        var copyIntoCredentialsKey: String? = null,
+        var metadata: MutableList<MetadataModel>? = null,
+        var clusterNames: Set<String>? = null,
+        var nodeNum: Long? = null,
+        var archived: Boolean? = null,
+        var compressed: Boolean? = null,
+        var projectId: String,
+        var repoName: String,
+        var id: String? = null
+    )
+
+    private fun convert(node: Node?): NodeInfo? {
+        return node?.let {
+            NodeInfo(
+                id = it.id,
+                createdBy = it.createdBy,
+                createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedBy = it.lastModifiedBy,
+                lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                projectId = it.projectId,
+                repoName = it.repoName,
+                folder = it.folder,
+                path = it.path,
+                name = it.name,
+                fullPath = it.fullPath,
+                size = if (it.size < 0L) 0L else it.size,
+                nodeNum = it.nodeNum?.let { nodeNum ->
+                    if (nodeNum < 0L) 0L else nodeNum
+                },
+                sha256 = it.sha256,
+                md5 = it.md5,
+                metadata = null,
+                nodeMetadata = it.metadata,
+                copyFromCredentialsKey = it.copyFromCredentialsKey,
+                copyIntoCredentialsKey = it.copyIntoCredentialsKey,
+                deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
+                clusterNames = it.clusterNames,
+                archived = it.archived,
+                compressed = it.compressed,
+            )
+        }
+    }
+
+    companion object {
+        private const val DELETED = "deleted"
+        private const val NODE_PATH = "path"
+
     }
 }
