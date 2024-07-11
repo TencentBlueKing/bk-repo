@@ -114,7 +114,9 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
      */
     override fun remove(query: Query): DeleteResult {
         val shardingValue = determineCollectionName(query.queryObject)
-        require(shardingValue is Document && shardingValue.size == 1) { "Remove only works on particular table!" }
+        if (shardingValue is Document && shardingValue.size > 1) {
+            throw IllegalArgumentException("Remove only works on particular table!")
+        }
         val collectionName = determineCollectionName(query)
         return determineMongoTemplate().remove(query, collectionName)
     }
