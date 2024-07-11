@@ -34,6 +34,7 @@ import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -57,16 +58,19 @@ class NodeCommonUtilsTest @Autowired constructor(
 ) : JobBaseTest() {
     @MockBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
-
+    @MockBean
+    lateinit var separationTaskService: SeparationTaskService
     @BeforeAll
     fun beforeAll() {
         NodeCommonUtils.mongoTemplate = mongoTemplate
         NodeCommonUtils.migrateRepoStorageService = migrateRepoStorageService
+        NodeCommonUtils.separationTaskService = separationTaskService
     }
 
     @Test
     fun `throw IllegalStateException when repo was migrating`() {
         whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
+        whenever(separationTaskService.findDistinctSeparationDate()).thenReturn(emptySet())
         val node = NodeCommonUtils.Node(
             "",
             UT_PROJECT_ID,
