@@ -45,9 +45,9 @@ import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.auth.service.bkauth.DevopsPermissionServiceImpl
-import com.tencent.bkrepo.auth.service.bkauth.DevopsPipelineService
-import com.tencent.bkrepo.auth.service.bkauth.DevopsProjectService
+import com.tencent.bkrepo.auth.service.bkdevops.DevopsPermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkdevops.DevopsPipelineService
+import com.tencent.bkrepo.auth.service.bkdevops.DevopsProjectService
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.auth.service.local.AccountServiceImpl

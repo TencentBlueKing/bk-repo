@@ -54,7 +54,7 @@ class S3Storage(
     private val executor: ThreadPoolTaskExecutor,
 ) : AbstractEncryptorFileStorage<S3Credentials, S3Client>() {
 
-    private var defaultTransferManager: TransferManager? = null
+    private val defaultTransferManager by lazy { createTransferManager(defaultClient) }
 
     override fun store(path: String, name: String, file: File, client: S3Client, storageClass: String?) {
         val transferManager = getTransferManager(client)
@@ -120,10 +120,7 @@ class S3Storage(
 
     private fun getTransferManager(client: S3Client): TransferManager {
         return if (client == defaultClient) {
-            if (defaultTransferManager == null) {
-                defaultTransferManager = createTransferManager(defaultClient)
-            }
-            defaultTransferManager!!
+            defaultTransferManager
         } else {
             createTransferManager(client)
         }

@@ -29,11 +29,12 @@ package com.tencent.bkrepo.repository.service.node.impl.edge
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils.ignoreException
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.nodeLevelNotFoundError
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.repoLevelNotFoundError
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.fs.server.api.FsNodeClient
@@ -125,7 +126,7 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = deleteRequest.projectId,
             repoName = deleteRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = repoLevelNotFoundError
         ) {
             centerNodeClient.deleteNode(deleteRequest)
         }
@@ -137,7 +138,7 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = nodesDeleteRequest.projectId,
             repoName = nodesDeleteRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = repoLevelNotFoundError
         ) {
             centerNodeClient.deleteNodes(nodesDeleteRequest)
         }
@@ -175,7 +176,11 @@ class EdgeNodeServiceImpl(
         operator: String,
         path: String
     ): NodeDeleteResult {
-        ignoreException(projectId, repoName, listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND)) {
+        ignoreException(
+            projectId = projectId,
+            repoName = repoName,
+            messageCodes = repoLevelNotFoundError
+        ) {
             centerNodeClient.deleteNodeLastModifiedBeforeDate(projectId, repoName, path, date, operator)
         }
         return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
@@ -186,7 +191,7 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = moveRequest.projectId,
             repoName = moveRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = nodeLevelNotFoundError
         ) {
             moveRequest.destNodeFolder = nodeDao.findNode(
                 projectId = moveRequest.destProjectId ?: moveRequest.projectId,
@@ -203,7 +208,7 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = copyRequest.projectId,
             repoName = copyRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = nodeLevelNotFoundError
         ) {
             copyRequest.destNodeFolder = nodeDao.findNode(
                 projectId = copyRequest.destProjectId ?: copyRequest.projectId,
@@ -220,7 +225,7 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = renameRequest.projectId,
             repoName = renameRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = nodeLevelNotFoundError
         ) {
             centerNodeClient.renameNode(renameRequest)
         }
@@ -237,7 +242,13 @@ class EdgeNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
-        centerNodeClient.restoreNode(NodeRestoreRequest(artifact, nodeRestoreOption))
+        ignoreException(
+            projectId = artifact.projectId,
+            repoName = artifact.repoName,
+            messageCodes = nodeLevelNotFoundError
+        ) {
+            centerNodeClient.restoreNode(NodeRestoreRequest(artifact, nodeRestoreOption))
+        }
         return NodeRestoreSupport(this).restoreNode(artifact, nodeRestoreOption)
     }
 

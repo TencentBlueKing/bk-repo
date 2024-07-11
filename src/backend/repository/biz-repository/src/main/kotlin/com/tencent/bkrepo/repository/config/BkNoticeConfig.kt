@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,16 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.enums
+package com.tencent.bkrepo.repository.config
 
-enum class PermissionAction {
-    MANAGE,
-    WRITE,
-    READ,
-    DOWNLOAD,
-    VIEW,
-    UPDATE,
-    DELETE;
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.web.servlet.LocaleResolver
+import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver
 
-    fun id() = this.name.toLowerCase()
+@Configuration
+@EnableConfigurationProperties(BkNoticeProperties::class)
+class BkNoticeConfig {
+    @Bean
+    fun localeResolver(): LocaleResolver {
+        return AcceptHeaderLocaleResolver()
+    }
 }

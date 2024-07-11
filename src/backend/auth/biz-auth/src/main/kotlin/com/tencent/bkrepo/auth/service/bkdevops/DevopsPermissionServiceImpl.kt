@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service.bkauth
+package com.tencent.bkrepo.auth.service.bkdevops
 
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.dao.PermissionDao
@@ -45,8 +45,6 @@ import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
@@ -196,14 +194,11 @@ class DevopsPermissionServiceImpl constructor(
                 return false
             }
             when (repoName) {
-                CUSTOM, LOG -> {
+                CUSTOM, LOG, REPORT -> {
                     return checkDevopsCustomPermission(request)
                 }
                 PIPELINE -> {
                     return checkDevopsPipelinePermission(request)
-                }
-                REPORT -> {
-                    return checkDevopsReportPermission(action)
                 }
                 else -> {
                     return checkRepoNotInDevops(request)
@@ -237,10 +232,6 @@ class DevopsPermissionServiceImpl constructor(
 
     private fun needCheckPathPermission(resourceType: String, projectId: String, repoName: String): Boolean {
         return devopsAuthConfig.enablePathCheck && resourceType == NODE.name && needNodeCheck(projectId, repoName)
-    }
-
-    private fun checkDevopsReportPermission(action: String): Boolean {
-        return action == READ.name || action == WRITE.name || action == VIEW.name
     }
 
     private fun checkDevopsPipelinePermission(request: CheckPermissionRequest): Boolean {

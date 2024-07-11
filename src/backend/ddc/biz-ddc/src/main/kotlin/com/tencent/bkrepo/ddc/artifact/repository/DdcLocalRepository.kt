@@ -211,7 +211,7 @@ class DdcLocalRepository(
         val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
         when (contentType) {
             MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
-                val payload = context.getArtifactFile().getInputStream().readBytes()
+                val payload = context.getArtifactFile().getInputStream().use { it.readBytes() }
                 val ref = referenceService.create(Reference.from(artifactInfo, payload))
                 if (ref.inlineBlob == null) {
                     // inlineBlob为null时表示inlineBlob过大，需要存到文件中

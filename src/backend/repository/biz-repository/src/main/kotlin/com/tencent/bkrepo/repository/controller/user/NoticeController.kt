@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,29 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.controller.service
+package com.tencent.bkrepo.repository.controller.user
 
-import com.tencent.bkrepo.auth.api.ServicePipelineClient
-import com.tencent.bkrepo.auth.service.bkdevops.DevopsPipelineService
+import com.tencent.bk.sdk.notice.config.BkNoticeConfig
+import com.tencent.bk.sdk.notice.impl.BkNoticeClient
+import com.tencent.bk.sdk.notice.model.resp.AnnouncementDTO
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.repository.config.BkNoticeProperties
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.LocaleResolver
 
 @RestController
-class ServicePipelineController : ServicePipelineClient {
-    @Autowired
-    private var bkAuthPipelineService: DevopsPipelineService? = null
-
-    override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
-        return bkAuthPipelineService?.let {
-            ResponseBuilder.success(bkAuthPipelineService!!.listPermissionPipelines(uid, projectId))
-        } ?: ResponseBuilder.success(emptyList())
-    }
-
-    override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {
-        return bkAuthPipelineService?.let {
-            ResponseBuilder.success((bkAuthPipelineService!!.hasPermission(uid, projectId, pipelineId, null)))
-        } ?: ResponseBuilder.success(false)
+@RequestMapping("/api/notice")
+class NoticeController(
+    private val properties: BkNoticeProperties,
+    private val localeResolver: LocaleResolver,
+) {
+    @GetMapping
+    fun listAnnouncements(
+        @RequestParam(required = false) offset: Int? = null,
+        @RequestParam(required = false) limit: Int? = null,
+    ): Response<List<AnnouncementDTO>> {
+        val bkNoticeConfig = BkNoticeConfig(properties.apiBaseUrl, properties.appCode, properties.appSecret)
+        val lang = localeResolver.resolveLocale(HttpContextHolder.getRequest()).toLanguageTag().toLowerCase()
+        return ResponseBuilder.success(BkNoticeClient(bkNoticeConfig).getCurrentAnnouncements(lang, offset, limit))
     }
 }

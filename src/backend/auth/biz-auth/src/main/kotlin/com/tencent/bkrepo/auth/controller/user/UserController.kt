@@ -153,18 +153,6 @@ class UserController @Autowired constructor(
     }
 
     @ApiOperation("更新用户信息")
-    @PutMapping("/{uid}")
-    @Deprecated("更换url", ReplaceWith("updateUserInfoById"))
-    fun updateById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
-        preCheckContextUser(uid)
-        if (request.admin != null && request.admin) {
-            preCheckPlatformPermission()
-        }
-        userService.updateUserById(uid, request)
-        return ResponseBuilder.success(true)
-    }
-
-    @ApiOperation("更新用户信息")
     @PutMapping("/update/info/{uid}")
     fun updateUserInfoById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         preCheckContextUser(uid)

@@ -41,4 +41,5 @@ dependencies {
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")
+    implementation("com.tencent.bk.sdk:bk-notice-java-sdk:${Versions.Notice}")
 }

@@ -136,8 +136,8 @@ class ReferenceService(
         val ref = Reference.from(tRef)
         if (ref.inlineBlob == null) {
             val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
-            ref.inlineBlob = nodeClient.getNodeDetail(projectId, repoName, ref.fullPath()).data?.let {
-                storageManager.loadArtifactInputStream(it, repo.storageCredentials)?.readBytes()
+            ref.inlineBlob = nodeClient.getNodeDetail(projectId, repoName, ref.fullPath()).data?.let { node ->
+                storageManager.loadArtifactInputStream(node, repo.storageCredentials)?.use { it.readBytes() }
             }
         }
 
