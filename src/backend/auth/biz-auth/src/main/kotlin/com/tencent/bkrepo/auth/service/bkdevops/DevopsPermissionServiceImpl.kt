@@ -221,12 +221,11 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkRepoNotInDevops(request: CheckPermissionRequest): Boolean {
         logger.debug("check repo not in devops request [$request]")
         with(request) {
-            val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action) ||
-                    isUserLocalProjectUser(uid, projectId!!)
+            val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action)
             if (needCheckPathPermission(resourceType, projectId!!, repoName!!)) {
                 return checkNodeAction(request, null, isDevopsProjectMember)
             }
-            return isDevopsProjectMember
+            return super.checkPermission(request) || isDevopsProjectMember
         }
     }
 
