@@ -68,4 +68,7 @@ object Versions {
     const val IamJavaSdk = "1.0.30-SNAPSHOT"
     const val Dom4j = "2.1.0"
     const val TiKa = "2.9.1"
+    const val FFmpegPlatform = "6.0-1.5.9"
+    const val JavaCpp = "1.5.9"
+    const val Notice = "1.0.0"
 }

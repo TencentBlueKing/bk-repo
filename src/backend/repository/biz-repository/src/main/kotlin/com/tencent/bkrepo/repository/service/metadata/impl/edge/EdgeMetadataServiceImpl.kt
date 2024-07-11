@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.repository.service.metadata.impl.edge
 
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.ignoreException
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.nodeLevelNotFoundError
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterMetadataClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -62,17 +64,35 @@ class EdgeMetadataServiceImpl(
     }
 
     override fun saveMetadata(request: MetadataSaveRequest) {
-        centerMetadataClient.saveMetadata(request)
+        ignoreException(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            messageCodes = nodeLevelNotFoundError
+        ) {
+            centerMetadataClient.saveMetadata(request)
+        }
         super.saveMetadata(request)
     }
 
     override fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean) {
-        centerMetadataClient.deleteMetadata(request)
+        ignoreException(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            messageCodes = nodeLevelNotFoundError
+        ) {
+            centerMetadataClient.deleteMetadata(request)
+        }
         super.deleteMetadata(request, allowDeleteSystemMetadata)
     }
 
     override fun addForbidMetadata(request: MetadataSaveRequest) {
-        centerMetadataClient.addForbidMetadata(request)
+        ignoreException(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            messageCodes = nodeLevelNotFoundError
+        ) {
+            centerMetadataClient.addForbidMetadata(request)
+        }
         super.addForbidMetadata(request)
     }
 }

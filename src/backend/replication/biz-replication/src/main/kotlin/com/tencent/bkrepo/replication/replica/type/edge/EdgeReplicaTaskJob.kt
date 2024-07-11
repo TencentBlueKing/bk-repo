@@ -33,19 +33,20 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.UrlUtils
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
-import com.tencent.bkrepo.replication.util.OkHttpClientPool
+import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.executor.ManualThreadPoolExecutor
-import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
+import com.tencent.bkrepo.replication.util.OkHttpClientPool
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import okhttp3.Request
@@ -85,8 +86,10 @@ class EdgeReplicaTaskJob(
                 try {
                     if (executor.activeCount == executor.maximumPoolSize) {
                         Thread.sleep(5000)
-                        logger.info("executing replica task count is ${executor.maximumPoolSize}, " +
-                            "stop claim task from center")
+                        logger.info(
+                            "executing replica task count is ${executor.maximumPoolSize}, " +
+                                "stop claim task from center"
+                        )
                         continue
                     }
                     claimTaskFromCenter()
@@ -99,8 +102,10 @@ class EdgeReplicaTaskJob(
 
     private fun claimTaskFromCenter() {
         val url = UrlUtils.extractDomain(clusterProperties.center.url)
-            .plus("/replication/cluster/task/edge/claim" +
-                "?clusterName=${clusterProperties.self.name}&replicatingNum=${executor.activeCount}")
+            .plus(
+                "/replication/cluster/task/edge/claim" +
+                    "?clusterName=${clusterProperties.self.name}&replicatingNum=${executor.activeCount}"
+            )
         val request = Request.Builder().url(url).get().build()
         try {
             okhttpClient.newCall(request).execute().use {
@@ -145,6 +150,10 @@ class EdgeReplicaTaskJob(
             try {
                 val nodeInfo = nodeClient.getNodeDetail(projectId, repoName, fullPath!!).data?.nodeInfo
                     ?: throw NodeNotFoundException(fullPath!!)
+                if (nodeInfo.sha256 == FAKE_SHA256) {
+                    logger.warn("Node $fullPath in repo ${nodeInfo.projectId}|${nodeInfo.repoName} is link node.")
+                    return
+                }
                 replicaContext.replicator.replicaFile(replicaContext, nodeInfo)
                 status = ExecutionStatus.SUCCESS
             } catch (e: Exception) {

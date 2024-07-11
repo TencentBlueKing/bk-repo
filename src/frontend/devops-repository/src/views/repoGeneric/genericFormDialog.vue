@@ -149,8 +149,8 @@
                     repoName: this.repoName,
                     fullPath: this.genericForm.path.replace(/\/+/g, '/')
                 }).catch(err => {
+                    this.webError = true
                     if (err.status === 403) {
-                        this.webError = true
                         this.getPermissionUrl({
                             body: {
                                 projectId: this.projectId,
@@ -191,8 +191,8 @@
                     fullPath: this.genericForm.path,
                     newFullPath: this.genericForm.path.replace(/[^/]*$/, this.genericForm.name)
                 }).catch(err => {
+                    this.webError = true
                     if (err.status === 403) {
-                        this.webError = true
                         this.getPermissionUrl({
                             body: {
                                 projectId: this.projectId,
@@ -236,8 +236,8 @@
                     repoName: this.repoName,
                     fullPath: path
                 }).catch(err => {
+                    this.webError = true
                     if (err.status === 403) {
-                        this.webError = true
                         this.getPermissionUrl({
                             body: {
                                 projectId: this.projectId,

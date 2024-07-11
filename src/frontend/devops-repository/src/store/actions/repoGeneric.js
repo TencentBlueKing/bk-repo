@@ -301,7 +301,8 @@ export default {
             `generic/${projectId}/${repoName}${path}?preview=true`, {
                 headers: {
                     range: 'bytes=0-52428800'
-                }
+                },
+                withCredentials: false
             }
         )
     },

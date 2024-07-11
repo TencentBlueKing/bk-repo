@@ -30,8 +30,11 @@ package com.tencent.bkrepo.repository.service.node.impl.edge
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.ignoreException
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.nodeLevelNotFoundError
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.repoLevelNotFoundError
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.fs.server.api.FsNodeClient
@@ -120,13 +123,25 @@ class EdgeNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
-        centerNodeClient.deleteNode(deleteRequest)
+        ignoreException(
+            projectId = deleteRequest.projectId,
+            repoName = deleteRequest.repoName,
+            messageCodes = repoLevelNotFoundError
+        ) {
+            centerNodeClient.deleteNode(deleteRequest)
+        }
         return NodeDeleteSupport(this).deleteNode(deleteRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
-        centerNodeClient.deleteNodes(nodesDeleteRequest)
+        ignoreException(
+            projectId = nodesDeleteRequest.projectId,
+            repoName = nodesDeleteRequest.repoName,
+            messageCodes = repoLevelNotFoundError
+        ) {
+            centerNodeClient.deleteNodes(nodesDeleteRequest)
+        }
         return NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
     }
 
@@ -161,24 +176,59 @@ class EdgeNodeServiceImpl(
         operator: String,
         path: String
     ): NodeDeleteResult {
+        ignoreException(
+            projectId = projectId,
+            repoName = repoName,
+            messageCodes = repoLevelNotFoundError
+        ) {
+            centerNodeClient.deleteNodeLastModifiedBeforeDate(projectId, repoName, path, date, operator)
+        }
         return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
-        centerNodeClient.moveNode(moveRequest)
+        ignoreException(
+            projectId = moveRequest.projectId,
+            repoName = moveRequest.repoName,
+            messageCodes = nodeLevelNotFoundError
+        ) {
+            moveRequest.destNodeFolder = nodeDao.findNode(
+                projectId = moveRequest.destProjectId ?: moveRequest.projectId,
+                repoName = moveRequest.destRepoName ?: moveRequest.srcRepoName,
+                fullPath = moveRequest.destPath ?: moveRequest.destFullPath
+            )?.folder
+            centerNodeClient.moveNode(moveRequest)
+        }
         return NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
-        centerNodeClient.copyNode(copyRequest)
+        ignoreException(
+            projectId = copyRequest.projectId,
+            repoName = copyRequest.repoName,
+            messageCodes = nodeLevelNotFoundError
+        ) {
+            copyRequest.destNodeFolder = nodeDao.findNode(
+                projectId = copyRequest.destProjectId ?: copyRequest.projectId,
+                repoName = copyRequest.destRepoName ?: copyRequest.srcRepoName,
+                fullPath = copyRequest.destPath ?: copyRequest.destFullPath
+            )?.folder
+            centerNodeClient.copyNode(copyRequest)
+        }
         return NodeMoveCopySupport(this).copyNode(copyRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun renameNode(renameRequest: NodeRenameRequest) {
-        centerNodeClient.renameNode(renameRequest)
+        ignoreException(
+            projectId = renameRequest.projectId,
+            repoName = renameRequest.repoName,
+            messageCodes = nodeLevelNotFoundError
+        ) {
+            centerNodeClient.renameNode(renameRequest)
+        }
         NodeRenameSupport(this).renameNode(renameRequest)
     }
 
@@ -192,7 +242,13 @@ class EdgeNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
-        centerNodeClient.restoreNode(NodeRestoreRequest(artifact, nodeRestoreOption))
+        ignoreException(
+            projectId = artifact.projectId,
+            repoName = artifact.repoName,
+            messageCodes = nodeLevelNotFoundError
+        ) {
+            centerNodeClient.restoreNode(NodeRestoreRequest(artifact, nodeRestoreOption))
+        }
         return NodeRestoreSupport(this).restoreNode(artifact, nodeRestoreOption)
     }
 

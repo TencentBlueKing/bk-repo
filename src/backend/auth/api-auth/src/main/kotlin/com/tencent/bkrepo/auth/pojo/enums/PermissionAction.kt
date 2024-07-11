@@ -35,6 +35,7 @@ enum class PermissionAction {
     MANAGE,
     WRITE,
     READ,
+    DOWNLOAD,
     VIEW,
     UPDATE,
     DELETE;

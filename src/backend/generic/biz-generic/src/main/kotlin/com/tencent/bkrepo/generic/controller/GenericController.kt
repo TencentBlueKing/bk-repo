@@ -101,7 +101,7 @@ class GenericController(
         return ResponseBuilder.success()
     }
 
-    @Permission(ResourceType.NODE, PermissionAction.READ)
+    @Permission(ResourceType.NODE, PermissionAction.DOWNLOAD)
     @GetMapping(GENERIC_MAPPING_URI)
     @Router
     fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
@@ -160,7 +160,7 @@ class GenericController(
         val artifacts = batchDownloadPaths.paths.map { GenericArtifactInfo(projectId, repoName, it) }
             .distinctBy { it.getArtifactFullPath() }
         permissionManager.checkNodePermission(
-            action = PermissionAction.READ,
+            action = PermissionAction.DOWNLOAD,
             projectId = projectId,
             repoName = repoName,
             path = *artifacts.map { it.getArtifactFullPath() }.toTypedArray(),

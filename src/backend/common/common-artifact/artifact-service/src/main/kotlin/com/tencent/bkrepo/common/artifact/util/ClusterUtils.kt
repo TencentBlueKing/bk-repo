@@ -27,16 +27,35 @@
 
 package com.tencent.bkrepo.common.artifact.util
 
+import com.tencent.bkrepo.common.api.constant.COMMIT_EDGE_HEADER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import org.slf4j.LoggerFactory
+import org.springframework.util.AntPathMatcher
 
 /**
  * 集群操作工具类
  */
 object ClusterUtils {
+
+    private val logger = LoggerFactory.getLogger(ClusterUtils::class.java)
+    private val matcher = AntPathMatcher()
+
+    val nodeLevelNotFoundError = listOf(
+        ArtifactMessageCode.NODE_NOT_FOUND,
+        ArtifactMessageCode.REPOSITORY_NOT_FOUND,
+        ArtifactMessageCode.PROJECT_NOT_FOUND
+    )
+
+    val repoLevelNotFoundError = listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND, ArtifactMessageCode.PROJECT_NOT_FOUND)
 
     /**
      * 检查请求来源cluster是否是资源的唯一拥有者
@@ -82,5 +101,59 @@ object ClusterUtils {
      */
     fun isUniqueSrcCluster(clusterNames: Set<String>?): Boolean {
         return containsSrcCluster(clusterNames) && (clusterNames == null || clusterNames.size <= 1)
+    }
+
+    /**
+     * 判断元数据是否上报到center
+     */
+    fun reportMetadataToCenter(projectId: String, repoName: String? = null): Boolean {
+        logger.debug("report to center: ${HeaderUtils.getHeader(COMMIT_EDGE_HEADER)}")
+        return if (repoName == null) {
+            HeaderUtils.getHeader(COMMIT_EDGE_HEADER)?.toBoolean() == true
+        } else {
+            HeaderUtils.getHeader(COMMIT_EDGE_HEADER)?.toBoolean() == true && enabledCommitEdge(projectId, repoName)
+        }
+    }
+
+    /**
+     * 判断是否为Edge节点的请求
+     */
+    fun isEdgeRequest(): Boolean {
+        return !SecurityUtils.getClusterName().isNullOrEmpty()
+    }
+
+    /**
+     * 判断仓库是否启用commit-edge
+     */
+    private fun enabledCommitEdge(projectId: String, repoName: String): Boolean {
+        val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
+        val enabledRepos = clusterProperties.commitEdge.repo.enabledRepoList
+        enabledRepos.forEach {
+            if (matcher.match(it, "$projectId/$repoName")) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Edge请求Center时，忽略特定错误
+     */
+    fun ignoreException(
+        projectId: String,
+        repoName: String,
+        messageCodes: List<MessageCode> = emptyList(),
+        function: () -> Response<Any>
+    ) {
+        try {
+            if (enabledCommitEdge(projectId, repoName)) {
+                function.invoke()
+                return
+            }
+        } catch (e: RemoteErrorCodeException) {
+            if (!messageCodes.map { it.getCode() }.contains(e.errorCode)) {
+                throw e
+            }
+        }
     }
 }
