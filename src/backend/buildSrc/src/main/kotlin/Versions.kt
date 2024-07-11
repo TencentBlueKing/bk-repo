@@ -39,7 +39,7 @@ object Versions {
     const val Redline = "1.2.10"
     const val SkyWalkingApmToolkit = "8.10.0"
     const val Gson = "2.9.0"
-    const val ProtobufJava = "3.19.4"
+    const val ProtobufJava = "3.24.0"
     const val Guava = "31.1-jre"
     const val Shedlock = "4.12.0"
     const val JGit = "5.11.0.202103091610-r"

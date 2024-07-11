@@ -66,6 +66,7 @@ allprojects {
             dependency("commons-io:commons-io:${Versions.CommonsIO}")
             dependency("com.squareup.okhttp3:okhttp:${Versions.OKhttp}")
             dependency("com.google.guava:guava:${Versions.Guava}")
+            dependency("com.google.protobuf:protobuf-java:${Versions.ProtobufJava}")
             dependency("com.google.protobuf:protobuf-java-util:${Versions.ProtobufJava}")
             dependency("com.tencent.polaris:polaris-discovery-factory:${Versions.Polaris}")
             dependency("org.apache.commons:commons-text:${Versions.CommonsText}")
