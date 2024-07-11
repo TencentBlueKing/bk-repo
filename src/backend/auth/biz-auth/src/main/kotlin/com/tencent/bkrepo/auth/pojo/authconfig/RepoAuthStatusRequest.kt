@@ -32,9 +32,10 @@
 package com.tencent.bkrepo.auth.pojo.authconfig
 
 data class RepoAuthStatusRequest(
-    val status: Boolean,
     val projectId: String,
     val repoName: String,
+    val status: Boolean = false,
+    val officeDenyGroupSet: Set<String> = emptySet()
 
 )
 
