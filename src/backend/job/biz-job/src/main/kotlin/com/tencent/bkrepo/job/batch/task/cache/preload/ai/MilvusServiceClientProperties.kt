@@ -40,12 +40,6 @@ data class MilvusServiceClientProperties(
     val keepAliveTimeMs: Long = 55000L,
     val keepAliveTimeoutMs: Long = 20000L,
     val rpcDeadlineMs: Long = 0L,
-    val clientKeyPath: String? = null,
-    val clientPemPath: String? = null,
-    val caPemPath: String? = null,
-    val serverPemPath: String? = null,
-    val serverName: String? = null,
-    val secure: Boolean = false,
     val idleTimeoutMs: Long = TimeUnit.MILLISECONDS.convert(24L, TimeUnit.HOURS),
     val username: String = "root",
     val password: String = "milvus"

@@ -34,6 +34,7 @@ import io.milvus.grpc.DataType
 import io.milvus.param.MetricType
 import io.milvus.param.R
 import io.milvus.param.collection.CreateCollectionParam
+import io.milvus.param.collection.DropCollectionParam
 import io.milvus.param.collection.FieldType
 import io.milvus.param.collection.FlushParam
 import io.milvus.param.collection.HasCollectionParam
@@ -166,7 +167,7 @@ class MilvusVectorStore(
         this.createCollection()
     }
 
-    private fun isDatabaseCollectionExists(): Boolean {
+    override fun collectionExists(): Boolean {
         return milvusClient.hasCollection(
             HasCollectionParam.newBuilder()
                 .withDatabaseName(config.databaseName)
@@ -176,8 +177,8 @@ class MilvusVectorStore(
     }
 
     // used by the test as well
-    private fun createCollection() {
-        if (!isDatabaseCollectionExists()) {
+    override fun createCollection() {
+        if (!collectionExists()) {
             val docIdFieldType = FieldType.newBuilder()
                 .withName(DOC_ID_FIELD_NAME)
                 .withDataType(DataType.VarChar)
@@ -253,6 +254,18 @@ class MilvusVectorStore(
 
         if (loadCollectionStatus.exception != null) {
             throw RuntimeException("Collection loading failed!", loadCollectionStatus.exception)
+        }
+    }
+
+    override fun dropCollection() {
+        val exception = milvusClient.dropCollection(
+            DropCollectionParam.newBuilder()
+                .withDatabaseName(config.databaseName)
+                .withCollectionName(config.collectionName)
+                .build()
+        ).exception
+        if (exception != null) {
+            throw RuntimeException("Failed to drop collection[${config.collectionName}]", exception)
         }
     }
 

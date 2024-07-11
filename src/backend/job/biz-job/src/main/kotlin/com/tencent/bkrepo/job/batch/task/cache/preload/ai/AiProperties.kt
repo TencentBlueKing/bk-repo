@@ -33,4 +33,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class AiProperties(
     var embeddingServiceUrl: String = "",
     var embeddingServiceToken: String = "",
+    var databaseName: String = "",
+    var collectionPrefix: String = "artifact_access_log_",
 )

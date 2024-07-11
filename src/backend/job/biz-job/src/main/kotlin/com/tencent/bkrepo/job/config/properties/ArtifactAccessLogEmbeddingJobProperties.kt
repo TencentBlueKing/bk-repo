@@ -33,4 +33,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class ArtifactAccessLogEmbeddingJobProperties(
     override var enabled: Boolean = false,
     override var cron: String = "0 0 0 * * ?",
+    /**
+     * 需要将访问记录保存到向量数据库的项目
+     */
+    var projects: Set<String> = emptySet()
 ) : MongodbJobProperties(enabled)

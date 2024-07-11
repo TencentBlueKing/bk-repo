@@ -45,4 +45,10 @@ interface VectorStore {
     fun similaritySearch(query: String): List<Document> {
         return this.similaritySearch(SearchRequest(query))
     }
+
+    fun createCollection()
+
+    fun dropCollection()
+
+    fun collectionExists(): Boolean
 }
