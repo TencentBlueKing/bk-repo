@@ -45,6 +45,7 @@ import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
 import io.milvus.client.MilvusServiceClient
 import org.bson.types.ObjectId
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -57,6 +58,7 @@ import java.time.LocalDateTime
 
 @Component
 @EnableConfigurationProperties(ArtifactAccessLogEmbeddingJobProperties::class)
+@ConditionalOnProperty("job.artifact-access-log-embedding.enabled")
 class ArtifactAccessLogEmbeddingJob(
     private val aiProperties: AiProperties,
     private val properties: ArtifactAccessLogEmbeddingJobProperties,
@@ -76,6 +78,9 @@ class ArtifactAccessLogEmbeddingJob(
             val content = it.key
             val metadata = mapOf(METADATA_KEY_ACCESS_HOUR to it.value.joinToString(","))
             Document(content = content, metadata = metadata)
+        }
+        if (documents.isEmpty()) {
+            return
         }
 
         // 旧表存在时表示新表创建失败或者尚未创建，尝试删除未完成创建的新表

@@ -44,7 +44,17 @@ dependencies {
     implementation(project(":common:common-operate:operate-service"))
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation("io.milvus:milvus-sdk-java:${Versions.Milvus}")
+    implementation("io.milvus:milvus-sdk-java:${Versions.Milvus}") {
+        exclude(group = "org.slf4j")
+        exclude(group = "org.apache.logging.log4j")
+        exclude(group = "org.testcontainers")
+        exclude(group = "com.azure")
+        exclude(group = "com.amazonaws")
+        exclude(group = "io.minio")
+        exclude(group = "org.apache.hadoop")
+        exclude(group = "org.apache.parquet")
+        exclude(group = "com.squareup.okhttp3")
+    }
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
