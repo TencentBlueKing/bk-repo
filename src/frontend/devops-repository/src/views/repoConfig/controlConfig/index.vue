@@ -183,6 +183,7 @@
                 repoName: this.repoName
             }).then((res) => {
                 this.rootDirectoryPermission = res.status
+                this.blackList = res.officeDenyGroupSet
             })
             this.getRoleListHandler()
         },
