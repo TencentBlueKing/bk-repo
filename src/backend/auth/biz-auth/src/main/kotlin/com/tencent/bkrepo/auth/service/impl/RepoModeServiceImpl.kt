@@ -55,7 +55,16 @@ class RepoModeServiceImpl(
     override fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus {
         val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName)
         if (result != null) {
-            return RepoModeStatus(result.id!!, result.accessControl, result.accessControl, result.officeDenyGroupSet)
+            var officeDenyGroupSet = emptySet<String>()
+            if (result.officeDenyGroupSet != null) {
+                officeDenyGroupSet = result.officeDenyGroupSet!!
+            }
+            return RepoModeStatus(
+                id = result.id!!,
+                status = result.accessControl,
+                controlEnable = result.accessControl,
+                officeDenyGroupSet = officeDenyGroupSet
+            )
         }
         val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, false, emptySet())
         return RepoModeStatus(id = id)
