@@ -35,6 +35,7 @@ data class RepoAuthStatusRequest(
     val projectId: String,
     val repoName: String,
     val status: Boolean = false,
+    val controlEnable: Boolean = false,
     val officeDenyGroupSet: Set<String> = emptySet()
 
 )

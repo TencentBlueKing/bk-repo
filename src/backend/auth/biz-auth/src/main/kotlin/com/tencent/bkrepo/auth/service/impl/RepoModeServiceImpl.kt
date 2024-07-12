@@ -44,11 +44,11 @@ class RepoModeServiceImpl(
     override fun createOrUpdateConfig(
         projectId: String,
         repoName: String,
-        status: Boolean,
+        controlEnable: Boolean,
         officeDenyGroupSet: Set<String>
     ): RepoModeStatus {
-        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, status, officeDenyGroupSet)
-        return RepoModeStatus(id, status)
+        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, controlEnable, officeDenyGroupSet)
+        return RepoModeStatus(id, controlEnable, controlEnable, officeDenyGroupSet)
     }
 
 

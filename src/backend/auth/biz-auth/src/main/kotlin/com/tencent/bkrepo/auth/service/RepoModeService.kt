@@ -40,7 +40,7 @@ interface RepoModeService {
     fun createOrUpdateConfig(
         projectId: String,
         repoName: String,
-        status: Boolean,
+        controlEnable: Boolean,
         officeDenyGroupSet: Set<String>
     ): RepoModeStatus
 
