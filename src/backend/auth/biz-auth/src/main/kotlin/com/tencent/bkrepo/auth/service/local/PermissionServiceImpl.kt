@@ -51,6 +51,7 @@ import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.PermissionHelper
 import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.model.TPersonalPath
+import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
@@ -415,6 +416,10 @@ open class PermissionServiceImpl constructor(
         return user.admin
     }
 
+    fun getUserInfo(userId: String): TUser? {
+        return userDao.findFirstByUserId(userId)
+    }
+
     fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
         with(request) {
             if (checkRepoAccessControl(projectId!!, repoName!!)) {
@@ -422,7 +427,6 @@ open class PermissionServiceImpl constructor(
             }
             return permHelper.checkNodeActionWithOutCtrl(request, userRoles, isProjectUser)
         }
-
     }
 
     fun needNodeCheck(projectId: String, repoName: String): Boolean {
@@ -433,6 +437,14 @@ open class PermissionServiceImpl constructor(
     override fun checkRepoAccessControl(projectId: String, repoName: String): Boolean {
         val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName) ?: return false
         return result.accessControl
+    }
+
+    override fun checkRepoAccessDenyGroup(projectId: String, repoName: String, roles: Set<String>): Boolean {
+        logger.info("check user in access deny group")
+        val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName) ?: return false
+        if (result.officeDenyGroupSet == null) return false
+        if (result.officeDenyGroupSet!!.intersect(roles).isNotEmpty()) return true
+        return false
     }
 
     companion object {

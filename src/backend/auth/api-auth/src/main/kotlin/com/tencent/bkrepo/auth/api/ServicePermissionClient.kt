@@ -86,7 +86,7 @@ interface ServicePermissionClient {
     @PostMapping("/check")
     fun checkPermission(
         @ApiParam(value = "校验权限信息")
-        @RequestBody request: CheckPermissionRequest
+        @RequestBody request: CheckPermissionRequest,
     ): Response<Boolean>
 
 }
