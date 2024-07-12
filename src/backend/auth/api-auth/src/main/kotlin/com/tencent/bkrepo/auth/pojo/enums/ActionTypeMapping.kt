@@ -41,7 +41,8 @@ enum class ActionTypeMapping(val resType: String, val pAction: String) {
     REPO_DELETE(ResourceType.REPO.name, PermissionAction.DELETE.name),
     NODE_CREATE(ResourceType.REPO.name, PermissionAction.WRITE.name),
     NODE_VIEW(ResourceType.NODE.name, PermissionAction.VIEW.name),
-    NODE_DOWNLOAD(ResourceType.NODE.name, PermissionAction.READ.name),
+    NODE_READ(ResourceType.NODE.name, PermissionAction.READ.name),
+    NODE_DOWNLOAD(ResourceType.NODE.name, PermissionAction.DOWNLOAD.name),
     NODE_EDIT(ResourceType.NODE.name, PermissionAction.UPDATE.name),
     NODE_WRITE(ResourceType.NODE.name, PermissionAction.WRITE.name),
     NODE_DELETE(ResourceType.NODE.name, PermissionAction.DELETE.name);
