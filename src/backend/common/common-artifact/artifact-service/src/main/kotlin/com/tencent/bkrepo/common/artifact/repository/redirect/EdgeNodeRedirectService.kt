@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.artifact.repository.redirect
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -37,12 +38,14 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
+import java.net.URL
 import java.time.Duration
 import javax.servlet.http.HttpServletRequest
 
@@ -88,10 +91,15 @@ class EdgeNodeRedirectService(
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterName)
         val edgeDomain = getEdgeDomain(clusterInfo)
         val request = downloadContext.request
-        val requestPath = buildPath(request)
         val queryString = buildQueryString(request)
-        val token = createTempToken(downloadContext)
-        val redirectUrl = "$edgeDomain$GENERIC_SERVICE_NAME$requestPath?token=$token&$queryString"
+        val referer = HeaderUtils.getHeader(HttpHeaders.REFERER)
+        val redirectUrl = if (referer != null && URL(referer).path.startsWith("/ui")) {
+            "${edgeDomain}web/$GENERIC_SERVICE_NAME${request.requestURI}?$queryString"
+        } else {
+            val requestPath = buildPath(request)
+            val token = createTempToken(downloadContext)
+            "$edgeDomain$GENERIC_SERVICE_NAME$requestPath?token=$token&$queryString"
+        }
         downloadContext.response.sendRedirect(redirectUrl)
     }
 
