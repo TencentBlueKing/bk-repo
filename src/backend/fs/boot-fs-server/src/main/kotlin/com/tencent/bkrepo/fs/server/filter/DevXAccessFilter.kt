@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.fs.server.filter
 
+import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
+import com.tencent.bkrepo.common.api.constant.HEADER_DEVX_ACCESS_FROM
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.IpUtils
@@ -74,6 +76,7 @@ class DevXAccessFilter(
             }
 
             devXProperties.srcHeaderValues[1] -> {
+                request.exchange().attributes[HEADER_DEVX_ACCESS_FROM] = DEVX_ACCESS_FROM_OFFICE
                 devXProperties.restrictedUserPrefix.forEach { checkUserSuffixAndPrefix(user, prefix = it) }
                 devXProperties.restrictedUserSuffix.forEach { checkUserSuffixAndPrefix(user, suffix = it) }
             }
@@ -91,13 +94,13 @@ class DevXAccessFilter(
     }
 
     private suspend fun checkIpBelongToProject(projectId: String, srcIp: String, isRetry: Boolean = false) {
-        val projectIps = if(isRetry){
+        val projectIps = if (isRetry) {
             DevxWorkspaceUtils.getLatestIpList(projectId).awaitSingle()
         } else {
             DevxWorkspaceUtils.getIpList(projectId).awaitSingle()
         }
         val notBelong = srcIp !in projectIps &&
-            !projectIps.any { it.contains('/') && IpUtils.isInRange(srcIp, it) }
+                !projectIps.any { it.contains('/') && IpUtils.isInRange(srcIp, it) }
         if (notBelong && !isRetry && !DevxWorkspaceUtils.knownIllegalIp(srcIp, projectId)) {
             return checkIpBelongToProject(projectId, srcIp, true)
         }

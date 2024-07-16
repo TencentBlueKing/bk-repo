@@ -30,7 +30,10 @@ package com.tencent.bkrepo.fs.server.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
+import com.tencent.bkrepo.common.api.constant.HEADER_DEVX_ACCESS_FROM
 import com.tencent.bkrepo.fs.server.api.RAuthClient
+import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import kotlinx.coroutines.reactor.awaitSingle
 
 /**
@@ -47,6 +50,12 @@ class PermissionService(
             projectId = projectId,
             repoName = repoName
         )
+
+        //  devx 是否需要auth 校验仓库维度的访问黑名单
+        val devxAccessFrom = ReactiveRequestContextHolder.getWebExchange().attributes[HEADER_DEVX_ACCESS_FROM]
+        if (devxAccessFrom == DEVX_ACCESS_FROM_OFFICE) {
+            checkRequest.requestSource = DEVX_ACCESS_FROM_OFFICE
+        }
         return rAuthClient.checkPermission(checkRequest).awaitSingle().data ?: false
     }
 
