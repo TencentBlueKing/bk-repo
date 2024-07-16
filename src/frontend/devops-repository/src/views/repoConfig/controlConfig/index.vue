@@ -55,7 +55,7 @@
                             :name="option.name">
                         </bk-option>
                     </bk-select>
-                    <bk-link v-if="roleList.length === 0" theme="primary" @click="manageUserGroup" style="margin-right: auto;margin-left: 10px">{{ $t('userGroup') }}</bk-link>
+                    <bk-link theme="primary" @click="manageUserGroup" style="margin-right: auto;margin-left: 10px">{{ $t('userGroup') }}</bk-link>
                 </div>
             </bk-form-item>
             <bk-form-item>
