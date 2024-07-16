@@ -57,12 +57,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.UPDATE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.permission.Permission
-import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
+import com.tencent.bkrepo.auth.pojo.permission.*
 import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.PermissionService
@@ -196,21 +191,39 @@ open class PermissionServiceImpl constructor(
             // check user locked
             if (user.locked) return false
             // check user admin permission
-            if (user.admin || isUserLocalProjectAdmin(uid, projectId)) return true
-            val roles = user.roles
+            if (user.admin) return true
+            // user is not system admin and projectId is null
+            if (projectId == null) return false
+
+            if (isUserLocalProjectAdmin(uid, projectId!!)) return true
+            val context = CheckPermissionContext(
+                userId = uid,
+                roles = user.roles,
+                resourceType = resourceType,
+                action = action,
+                projectId = projectId!!,
+                repoName = repoName,
+                path = path,
+            )
+
             if (permHelper.isRepoOrNodePermission(resourceType)) {
-                // check role repo admin
-                if (permHelper.checkRepoAdmin(request, roles)) return true
-                // check repo read action
-                if (permHelper.checkRepoReadAction(request, roles)) return true
-                //  check project user
-                val isProjectUser = isUserLocalProjectUser(uid, projectId!!)
-                if (permHelper.checkProjectReadAction(request, isProjectUser)) return true
-                // check node action
-                if (needNodeCheck(projectId!!, repoName!!) && checkNodeAction(request, roles, isProjectUser)) {
-                    return true
-                }
+                return checkRepoOrNodePermission(context)
             }
+        }
+        return false
+    }
+
+    fun checkRepoOrNodePermission(context: CheckPermissionContext): Boolean {
+        // check role repo admin
+        if (permHelper.checkRepoAdmin(context)) return true
+        // check repo read action
+        if (permHelper.checkRepoReadAction(context)) return true
+        //  check project user
+        val isProjectUser = isUserLocalProjectUser(context.userId, context.projectId)
+        if (permHelper.checkProjectReadAction(context, isProjectUser)) return true
+        // check node action
+        if (needNodeCheck(context.projectId, context.repoName!!) && checkNodeAction(context, isProjectUser)) {
+            return true
         }
         return false
     }
@@ -403,7 +416,7 @@ open class PermissionServiceImpl constructor(
         return emptyList()
     }
 
-    fun isUserLocalProjectAdmin(userId: String, projectId: String?): Boolean {
+    fun isUserLocalProjectAdmin(userId: String, projectId: String): Boolean {
         return permHelper.isUserLocalProjectAdmin(userId, projectId)
     }
 
@@ -420,12 +433,12 @@ open class PermissionServiceImpl constructor(
         return userDao.findFirstByUserId(userId)
     }
 
-    fun checkNodeAction(request: CheckPermissionRequest, userRoles: List<String>?, isProjectUser: Boolean): Boolean {
+    fun checkNodeAction(request: CheckPermissionContext, isProjectUser: Boolean): Boolean {
         with(request) {
-            if (checkRepoAccessControl(projectId!!, repoName!!)) {
-                return permHelper.checkNodeActionWithCtrl(request, userRoles)
+            if (checkRepoAccessControl(projectId, repoName!!)) {
+                return permHelper.checkNodeActionWithCtrl(request)
             }
-            return permHelper.checkNodeActionWithOutCtrl(request, userRoles, isProjectUser)
+            return permHelper.checkNodeActionWithOutCtrl(request, isProjectUser)
         }
     }
 

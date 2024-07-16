@@ -52,7 +52,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DOWNLOAD
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionContext
 import com.tencent.bkrepo.auth.util.scope.RuleUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -84,19 +84,20 @@ class PermissionHelper constructor(
         }
     }
 
-    fun checkRepoAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
+    fun checkRepoAdmin(context: CheckPermissionContext): Boolean {
         // check role repo admin
         var queryRoles = emptyList<String>()
-        if (roles.isNotEmpty() && request.projectId != null && request.repoName != null) {
+        val roles = context.roles
+        if (roles.isNotEmpty() && context.repoName != null) {
             queryRoles = roles.filter { !it.isNullOrEmpty() }.toList()
         }
         if (queryRoles.isEmpty()) return false
 
         val result = roleRepository.findByTypeAndProjectIdAndAdminAndRepoNameAndIdIn(
             type = RoleType.REPO,
-            projectId = request.projectId!!,
+            projectId = context.projectId,
             admin = true,
-            repoName = request.repoName!!,
+            repoName = context.repoName!!,
             ids = queryRoles
         )
         if (result.isNotEmpty()) return true
@@ -185,9 +186,9 @@ class PermissionHelper constructor(
         return resourceType == NODE.name || resourceType == REPO.name
     }
 
-    fun checkProjectReadAction(request: CheckPermissionRequest, isProjectUser: Boolean): Boolean {
+    fun checkProjectReadAction(request: CheckPermissionContext, isProjectUser: Boolean): Boolean {
         val readeOrdownload = request.action == READ.name || request.action == DOWNLOAD.name
-        return request.projectId != null && readeOrdownload && isProjectUser
+        return  readeOrdownload && isProjectUser
     }
 
     fun getPermissionPathFromConfig(
@@ -233,10 +234,10 @@ class PermissionHelper constructor(
         return excludePath.distinct().filter { !filterPath.contains(it) }
     }
 
-    fun checkRepoReadAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
-        with(request) {
+    fun checkRepoReadAction(context: CheckPermissionContext): Boolean {
+        with(context) {
             return resourceType == REPO.name && action == READ.name &&
-                    permissionDao.listPermissionInRepo(projectId!!, repoName!!, uid, roles).isNotEmpty()
+                    permissionDao.listPermissionInRepo(projectId, repoName!!, userId, roles).isNotEmpty()
         }
     }
 
@@ -352,55 +353,40 @@ class PermissionHelper constructor(
         return permissionDao.updateById(id, key, value)
     }
 
-    fun checkNodeActionWithOutCtrl(
-        request: CheckPermissionRequest,
-        userRoles: List<String>?,
-        isProjectUser: Boolean
-    ): Boolean {
-        with(request) {
+    fun checkNodeActionWithOutCtrl(context: CheckPermissionContext, isProjectUser: Boolean): Boolean {
+        with(context) {
             if (resourceType != NODE.name || path == null) return false
-            val roles = getUserRoles(uid, userRoles)
-            val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
+            val result = permissionDao.listInPermission(projectId, repoName!!, userId, resourceType, roles)
             result.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
 
                 if (checkExcludePatternAction(it.excludePattern, path!!, it.actions, action)) return false
             }
 
-            val noPermissionResult = permissionDao.listNoPermission(projectId!!, repoName!!, uid, resourceType, roles)
+            val noPermissionResult =
+                permissionDao.listNoPermission(projectId, repoName!!, userId, resourceType, roles)
             noPermissionResult.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
             }
-            val personalPathCheck = checkPersonalPath(uid, projectId!!, repoName!!, path!!)
+            val personalPathCheck = checkPersonalPath(userId, projectId, repoName!!, path!!)
             if (personalPathCheck != null) return personalPathCheck
         }
         return isProjectUser
     }
 
-    fun checkNodeActionWithCtrl(request: CheckPermissionRequest, userRoles: List<String>?): Boolean {
-        with(request) {
+    fun checkNodeActionWithCtrl(context: CheckPermissionContext): Boolean {
+        with(context) {
             if (resourceType != NODE.name || path == null) return false
-            val roles = getUserRoles(uid, userRoles)
-            val result = permissionDao.listInPermission(projectId!!, repoName!!, uid, resourceType, roles)
+            val result = permissionDao.listInPermission(projectId, repoName!!, userId, resourceType, roles)
             result.forEach {
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return true
             }
-            val personalPathCheck = checkPersonalPath(uid, projectId!!, repoName!!, path!!)
+            val personalPathCheck = checkPersonalPath(userId, projectId, repoName!!, path!!)
             if (personalPathCheck != null) return personalPathCheck
             return false
         }
     }
 
-    private fun getUserRoles(userId: String, userRoles: List<String>?): List<String> {
-        var roles = userRoles
-        if (roles == null) {
-            val user = userDao.findFirstByUserId(userId) ?: run {
-                throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-            }
-            roles = user.roles
-        }
-        return roles
-    }
 
     private fun checkPersonalPath(userId: String, projectId: String, repoName: String, path: String): Boolean? {
         // check personal path
@@ -409,8 +395,7 @@ class PermissionHelper constructor(
         return null
     }
 
-    fun isUserLocalProjectAdmin(userId: String, projectId: String?): Boolean {
-        if (projectId == null) return false
+    fun isUserLocalProjectAdmin(userId: String, projectId: String): Boolean {
         val roleIdArray = mutableListOf<String>()
         roleRepository.findByTypeAndProjectIdAndAdmin(RoleType.PROJECT, projectId, true).forEach {
             roleIdArray.add(it.id!!)
