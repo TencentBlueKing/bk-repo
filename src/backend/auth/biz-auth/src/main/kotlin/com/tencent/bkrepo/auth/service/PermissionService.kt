@@ -81,12 +81,6 @@ interface PermissionService {
      */
     fun checkRepoAccessControl(projectId: String, repoName: String): Boolean
 
-    /**
-     * 校验是否在访问控制组
-     * true , 代码需要拦截
-     */
-    fun checkRepoAccessDenyGroup(projectId: String, repoName: String, roles: Set<String>): Boolean
-
     fun createPermission(request: CreatePermissionRequest): Boolean
 
     fun listPermission(projectId: String, repoName: String?, resourceType: String): List<Permission>

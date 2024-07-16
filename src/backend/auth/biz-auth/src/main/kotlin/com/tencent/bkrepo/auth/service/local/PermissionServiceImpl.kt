@@ -70,6 +70,7 @@ import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -213,13 +214,13 @@ open class PermissionServiceImpl constructor(
             )
 
             if (permHelper.isRepoOrNodePermission(resourceType)) {
-                return checkRepoOrNodePermission(context)
+                return checkLocalRepoOrNodePermission(context)
             }
         }
         return false
     }
 
-    fun checkRepoOrNodePermission(context: CheckPermissionContext): Boolean {
+    fun checkLocalRepoOrNodePermission(context: CheckPermissionContext): Boolean {
         // check role repo admin
         if (permHelper.checkRepoAdmin(context)) return true
         // check repo read action
@@ -233,6 +234,7 @@ open class PermissionServiceImpl constructor(
         }
         return false
     }
+
 
     override fun listPermissionProject(userId: String): List<String> {
         logger.debug("list permission project request : $userId ")
@@ -458,11 +460,24 @@ open class PermissionServiceImpl constructor(
         return result.accessControl
     }
 
-    override fun checkRepoAccessDenyGroup(projectId: String, repoName: String, roles: Set<String>): Boolean {
-        logger.info("check user in access deny group")
-        val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName) ?: return false
-        if (result.officeDenyGroupSet == null) return false
-        if (result.officeDenyGroupSet!!.intersect(roles).isNotEmpty()) return true
+    /**
+     * 校验是否在访问控制组
+     * true , 代码需要拦截
+     */
+    fun checkRepoAccessDenyGroup(
+        projectId: String,
+        repoName: String?,
+        roles: Set<String>,
+        requestSource: String?
+    ): Boolean {
+        logger.info("check user in access deny group [$projectId, $repoName, $roles]")
+        // 仅校验repo下的请求
+        if (repoName == null) return true
+        if (requestSource != null && requestSource == DEVX_ACCESS_FROM_OFFICE) {
+            val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName) ?: return false
+            if (result.officeDenyGroupSet == null) return false
+            if (result.officeDenyGroupSet!!.intersect(roles).isNotEmpty()) return true
+        }
         return false
     }
 

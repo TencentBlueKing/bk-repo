@@ -56,7 +56,6 @@ import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
-import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -162,7 +161,9 @@ class DevopsPermissionServiceImpl constructor(
 
             // 用户不为系统管理员，必须为项目下权限
             if (projectId == null) return false
-
+            // 开启仓库内请求拦截
+            if (checkRepoAccessDenyGroup(projectId!!, repoName, user.roles.toSet(), requestSource)) return false
+            // 用户为系统管理员
             if (isDevopsProjectAdmin(uid, projectId!!) || isUserLocalProjectAdmin(uid, projectId!!)) {
                 logger.debug("user is devops/local project admin [$uid, $projectId]")
                 return true
@@ -181,7 +182,7 @@ class DevopsPermissionServiceImpl constructor(
             val pass = when (resourceType) {
                 PROJECT.name -> checkProjectPermission(context)
                 REPO.name, NODE.name -> {
-                    checkRepoOrNodePermission(context, requestSource)
+                    checkRepoOrNodePermission(context)
                 }
                 else -> throw RuntimeException("resource type not supported: $resourceType")
             }
@@ -207,14 +208,8 @@ class DevopsPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkRepoOrNodePermission(context: CheckPermissionContext, requestSource: String?): Boolean {
+    fun checkRepoOrNodePermission(context: CheckPermissionContext): Boolean {
         with(context) {
-            // 校验访问来源控制
-            if (requestSource != null && requestSource == DEVX_ACCESS_FROM_OFFICE) {
-                if (super.checkRepoAccessDenyGroup(projectId, repoName!!, roles.toSet())) {
-                    return false
-                }
-            }
             if (action == MANAGE.name) {
                 logger.debug("project request need manage permission [$context]")
                 return false
@@ -258,7 +253,7 @@ class DevopsPermissionServiceImpl constructor(
             if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
                 return checkNodeAction(context, isDevopsProjectMember)
             }
-            return isDevopsProjectMember || super.checkRepoOrNodePermission(context)
+            return isDevopsProjectMember || super.checkLocalRepoOrNodePermission(context)
         }
     }
 
