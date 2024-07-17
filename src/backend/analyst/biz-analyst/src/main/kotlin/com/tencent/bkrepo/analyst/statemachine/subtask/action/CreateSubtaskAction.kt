@@ -48,6 +48,7 @@ import com.tencent.bkrepo.statemachine.TransitResult
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
@@ -63,6 +64,7 @@ class CreateSubtaskAction(
 ) : SubtaskAction {
 
     @Autowired
+    @Lazy
     private lateinit var self: CreateSubtaskAction
 
     override fun execute(source: String, target: String, event: Event): TransitResult {

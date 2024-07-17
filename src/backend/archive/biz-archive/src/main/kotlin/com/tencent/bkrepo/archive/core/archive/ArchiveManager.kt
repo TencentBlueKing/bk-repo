@@ -23,6 +23,8 @@ import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import org.apache.tika.Tika
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
@@ -37,10 +39,15 @@ import java.util.function.Function
 class ArchiveManager(
     private val archiveProperties: ArchiveProperties,
     private val fileProvider: PriorityFileProvider,
-    private val archiveFileDao: ArchiveFileDao,
-    private val archiveFileRepository: ArchiveFileRepository,
     private val storageService: StorageService,
 ) : Function<TArchiveFile, Mono<TaskResult>> {
+    @Autowired
+    @Lazy
+    private lateinit var archiveFileDao: ArchiveFileDao
+
+    @Autowired
+    @Lazy
+    private lateinit var archiveFileRepository: ArchiveFileRepository
 
     private val tika = Tika()
     private val compressPool = ArchiveUtils.newFixedAndCachedThreadPool(
