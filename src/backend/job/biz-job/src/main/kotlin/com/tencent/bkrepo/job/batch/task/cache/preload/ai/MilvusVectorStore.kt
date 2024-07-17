@@ -126,7 +126,7 @@ class MilvusVectorStore(
             .withMetricType(config.metricType)
             .withOutFields(SEARCH_OUTPUT_FIELDS)
             .withTopK(request.topK)
-            .withVectors(embedding)
+            .withFloatVectors(listOf(embedding))
             .withVectorFieldName(EMBEDDING_FIELD_NAME)
 
         if (nativeFilterExpressions.isNotBlank()) {

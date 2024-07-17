@@ -148,7 +148,7 @@ class ArtifactAccessLogEmbeddingJob(
                 val fullPath = it[TOperateLog::resourceKey.name] as String
                 val createdDate = TimeUtils.parseMongoDateTimeStr(it[TOperateLog::createdDate.name].toString())!!
                 val createdTimestamp = createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                val accessTime = accessTimeMap.getOrPut("$projectId/$repoName/$fullPath") { HashSet() }
+                val accessTime = accessTimeMap.getOrPut("$projectId/$repoName$fullPath") { HashSet() }
                 accessTime.add(createdTimestamp)
             }
 
