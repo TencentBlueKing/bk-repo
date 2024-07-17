@@ -162,7 +162,7 @@ class DevopsPermissionServiceImpl constructor(
             // 用户不为系统管理员，必须为项目下权限
             if (projectId == null) return false
             // 开启仓库内请求拦截
-            if (checkRepoAccessDenyGroup(projectId!!, repoName, user.roles.toSet(), requestSource)) return false
+            if (checkRepoAccessDenyGroup(uid, projectId!!, repoName, user.roles.toSet(), requestSource)) return false
             // 用户为系统管理员
             if (isDevopsProjectAdmin(uid, projectId!!) || isUserLocalProjectAdmin(uid, projectId!!)) {
                 logger.debug("user is devops/local project admin [$uid, $projectId]")
@@ -208,7 +208,7 @@ class DevopsPermissionServiceImpl constructor(
         }
     }
 
-    fun checkRepoOrNodePermission(context: CheckPermissionContext): Boolean {
+    private fun checkRepoOrNodePermission(context: CheckPermissionContext): Boolean {
         with(context) {
             if (action == MANAGE.name) {
                 logger.debug("project request need manage permission [$context]")

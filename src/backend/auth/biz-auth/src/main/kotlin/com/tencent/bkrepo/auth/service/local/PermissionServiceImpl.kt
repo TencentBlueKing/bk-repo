@@ -465,12 +465,13 @@ open class PermissionServiceImpl constructor(
      * true , 代码需要拦截
      */
     fun checkRepoAccessDenyGroup(
+        userId: String,
         projectId: String,
         repoName: String?,
         roles: Set<String>,
         requestSource: String?
     ): Boolean {
-        logger.info("check user in access deny group [$projectId, $repoName]")
+        logger.info("check user in access deny group [$userId, $projectId, $repoName]")
         // 仅校验repo下的请求
         if (repoName == null) return false
         if (requestSource != null && requestSource == DEVX_ACCESS_FROM_OFFICE) {
