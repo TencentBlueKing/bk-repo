@@ -32,7 +32,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("job.artifact-access-log-embedding")
 class ArtifactAccessLogEmbeddingJobProperties(
     override var enabled: Boolean = false,
-    override var cron: String = "0 0 0 * * ?",
+    override var cron: String = "0 0 0 2 * ?",
     /**
      * 需要将访问记录保存到向量数据库的项目
      */

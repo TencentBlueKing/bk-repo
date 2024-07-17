@@ -57,6 +57,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Component
 @EnableConfigurationProperties(ArtifactAccessLogEmbeddingJobProperties::class)
@@ -98,7 +99,7 @@ class ArtifactAccessLogEmbeddingJob(
     private fun VectorStore.findAccessLogAndInsert(projectId: String) {
         val documents = findData(projectId).map {
             val content = it.key
-            val metadata = mapOf(METADATA_KEY_ACCESS_HOUR to it.value.joinToString(","))
+            val metadata = mapOf(METADATA_KEY_ACCESS_TIMESTAMP to it.value.joinToString(","))
             Document(content = content, metadata = metadata)
         }
         if (documents.isNotEmpty()) {
@@ -122,13 +123,13 @@ class ArtifactAccessLogEmbeddingJob(
     /**
      * 获取访问记录
      */
-    private fun findData(projectId: String): Map<String, Set<Int>> {
+    private fun findData(projectId: String): Map<String, Set<Long>> {
         val collectionName = collectionName()
         val pageSize = BATCH_SIZE
         var lastId = ObjectId(MIN_OBJECT_ID)
         var querySize: Int
         val criteria = buildCriteria(projectId)
-        val accessTimeMap = HashMap<String, MutableSet<Int>>()
+        val accessTimeMap = HashMap<String, MutableSet<Long>>()
         do {
             val query = Query(criteria)
                 .addCriteria(Criteria.where(ID).gt(lastId))
@@ -145,9 +146,10 @@ class ArtifactAccessLogEmbeddingJob(
             data.forEach {
                 val repoName = it[TOperateLog::repoName.name] as String
                 val fullPath = it[TOperateLog::resourceKey.name] as String
-                val hour = TimeUtils.parseMongoDateTimeStr(it[TOperateLog::createdDate.name].toString())!!.hour
+                val createdDate = TimeUtils.parseMongoDateTimeStr(it[TOperateLog::createdDate.name].toString())!!
+                val createdTimestamp = createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
                 val accessTime = accessTimeMap.getOrPut("$projectId/$repoName/$fullPath") { HashSet() }
-                accessTime.add(hour)
+                accessTime.add(createdTimestamp)
             }
 
             querySize = data.size
@@ -174,6 +176,6 @@ class ArtifactAccessLogEmbeddingJob(
         /**
          * 访问时间点key
          */
-        const val METADATA_KEY_ACCESS_HOUR = "accessHour"
+        const val METADATA_KEY_ACCESS_TIMESTAMP = "accessTimestamp"
     }
 }
