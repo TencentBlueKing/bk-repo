@@ -177,7 +177,8 @@ class MilvusVectorStore(
     }
 
     // used by the test as well
-    override fun createCollection() {
+    override fun createCollection(): Boolean {
+        var created = false
         if (!collectionExists()) {
             val docIdFieldType = FieldType.newBuilder()
                 .withName(DOC_ID_FIELD_NAME)
@@ -217,6 +218,7 @@ class MilvusVectorStore(
             if (collectionStatus.exception != null) {
                 throw RuntimeException("Failed to create collection", collectionStatus.exception)
             }
+            created = true
         }
 
         val indexDescriptionResponse = milvusClient
@@ -255,6 +257,7 @@ class MilvusVectorStore(
         if (loadCollectionStatus.exception != null) {
             throw RuntimeException("Collection loading failed!", loadCollectionStatus.exception)
         }
+        return created
     }
 
     override fun dropCollection() {

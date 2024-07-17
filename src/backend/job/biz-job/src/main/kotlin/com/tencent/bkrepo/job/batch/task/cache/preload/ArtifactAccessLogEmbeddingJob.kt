@@ -45,6 +45,7 @@ import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
 import io.milvus.client.MilvusServiceClient
 import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
@@ -54,6 +55,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.time.LocalDateTime
 
 @Component
@@ -66,45 +68,49 @@ class ArtifactAccessLogEmbeddingJob(
     private val milvusClient: MilvusServiceClient,
     private val embeddingModel: EmbeddingModel,
 ) : DefaultContextJob(properties) {
+
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(7L)
+
     override fun doStart0(jobContext: JobContext) {
-        properties.projects.forEach { findAndInsertToVectorStore(it) }
+        val oldVectorStore = createVectorStore(2L)
+        val vectorStore = createVectorStore(1L)
+
+        if (oldVectorStore.collectionExists()) {
+            logger.info("old collection exists, maybe new collection created failed, try to drop new collection")
+            vectorStore.dropCollection()
+        } else if (vectorStore.collectionExists()) {
+            logger.info("new collection already created and filled data, skip create")
+            return
+        }
+
+        vectorStore.createCollection()
+        logger.info("create new collection success, start to fill data")
+
+        properties.projects.forEach { vectorStore.findAccessLogAndInsert(it) }
+
+        oldVectorStore.dropCollection()
+        logger.info("drop old collection success")
     }
 
     /**
      * 获取访问记录并写入向量数据库
      */
-    private fun findAndInsertToVectorStore(projectId: String) {
+    private fun VectorStore.findAccessLogAndInsert(projectId: String) {
         val documents = findData(projectId).map {
             val content = it.key
             val metadata = mapOf(METADATA_KEY_ACCESS_HOUR to it.value.joinToString(","))
             Document(content = content, metadata = metadata)
         }
-        if (documents.isEmpty()) {
-            return
+        if (documents.isNotEmpty()) {
+            insert(documents)
+            logger.info("insert ${documents.size} data of [$projectId] success")
         }
-
-        // 旧表存在时表示新表创建失败或者尚未创建，尝试删除未完成创建的新表
-        val oldSeq = MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.now().minusMonths(2L), 1)
-        val oldCollectionName = "${aiProperties.collectionPrefix}$oldSeq"
-        val oldVectorStore = createVectorStore(oldCollectionName)
-
-        val seq = MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.now().minusMonths(1L), 1)
-        val collectionName = "${aiProperties.collectionPrefix}$seq"
-        val vectorStore = createVectorStore(collectionName)
-
-        if (oldVectorStore.collectionExists()) {
-            vectorStore.dropCollection()
-        }
-
-        // 创建新表
-        vectorStore.createCollection()
-        vectorStore.insert(documents)
-
-        // 删除旧表
-        oldVectorStore.dropCollection()
     }
 
-    private fun createVectorStore(collectionName: String): VectorStore {
+    private fun createVectorStore(minusMonth: Long): VectorStore {
+        val seq = MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.now().minusMonths(minusMonth), 1)
+        val collectionName = "${aiProperties.collectionPrefix}$seq"
+
         val config = MilvusVectorStoreProperties(
             databaseName = aiProperties.databaseName,
             collectionName = collectionName,
@@ -163,6 +169,8 @@ class ArtifactAccessLogEmbeddingJob(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ArtifactAccessLogEmbeddingJob::class.java)
+
         /**
          * 访问时间点key
          */

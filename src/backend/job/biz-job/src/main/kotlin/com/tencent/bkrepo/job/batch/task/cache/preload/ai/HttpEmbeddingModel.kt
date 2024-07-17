@@ -68,7 +68,7 @@ class HttpEmbeddingModel(
 
     private fun buildReq(api: String) = Request.Builder()
         .url("${properties.embeddingServiceUrl}$api")
-        .header(HttpHeaders.AUTHORIZATION, "$BEARER_AUTH_PREFIX ${properties.embeddingServiceToken}")
+        .header(HttpHeaders.AUTHORIZATION, "$BEARER_AUTH_PREFIX${properties.embeddingServiceToken}")
 
     private data class EmbeddingRequest(
         val input: List<String>

@@ -46,7 +46,7 @@ interface VectorStore {
         return this.similaritySearch(SearchRequest(query))
     }
 
-    fun createCollection()
+    fun createCollection(): Boolean
 
     fun dropCollection()
 
