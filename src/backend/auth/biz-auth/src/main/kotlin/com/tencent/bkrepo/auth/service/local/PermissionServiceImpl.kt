@@ -471,9 +471,9 @@ open class PermissionServiceImpl constructor(
         roles: Set<String>,
         requestSource: String?
     ): Boolean {
-        logger.info("check user in access deny group [$userId, $projectId, $repoName]")
         // 仅校验repo下的请求
         if (repoName == null) return false
+        logger.info("check user in access deny group [$userId, $projectId, $repoName, $requestSource]")
         if (requestSource != null && requestSource == DEVX_ACCESS_FROM_OFFICE) {
             val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName) ?: return false
             if (result.officeDenyGroupSet == null) return false
