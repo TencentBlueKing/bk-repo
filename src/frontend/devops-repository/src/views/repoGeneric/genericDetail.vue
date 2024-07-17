@@ -5,6 +5,7 @@
             :title="detailSlider.data.name"
             @click.native.stop="() => {}"
             :quick-close="true"
+            @hidden="resetHistory"
             :width="720">
             <template #content>
                 <bk-tab class="detail-container" type="unborder-card" :active.sync="tabName">
@@ -86,6 +87,41 @@
                             </bk-table>
                         </div>
                     </bk-tab-panel>
+                    <bk-tab-panel v-if="userInfo.admin || userInfo.manage" name="downloadRecord" :label="$t('downloadHistory')">
+                        <div class="version-metadata display-block" :data-title="$t('downloadHistory')">
+                            <bk-table
+                                :data="downloadRecord"
+                                :outer-border="false"
+                                :row-border="false"
+                            >
+                                <template #empty>
+                                    <empty-data :is-loading="detailSlider.loading"></empty-data>
+                                </template>
+                                <bk-table-column :label="$t('downloader')">
+                                    <template #default="{ row }">
+                                        {{ row.userId }}
+                                    </template>
+                                </bk-table-column>
+                                <bk-table-column :label="$t('downloadDate')">
+                                    <template #default="{ row }">
+                                        {{ formatDate(row.createdDate) }}
+                                    </template>
+                                </bk-table-column>
+                            </bk-table>
+                            <div class="p10 bk-page bk-page-align-right bk-page-small">
+                                <bk-pagination
+                                    size="small"
+                                    :align="pagination.align"
+                                    :current.sync="pagination.current"
+                                    @change="current => handlerPaginationChange({ current })"
+                                    :limit="pagination.limit"
+                                    :show-limit="false"
+                                    :limit-list="pagination.limitList"
+                                    :count="pagination.count"
+                                />
+                            </div>
+                        </div>
+                    </bk-tab-panel>
                 </bk-tab>
             </template>
         </bk-sideslider>
@@ -140,7 +176,15 @@
                 },
                 showIamDenyDialog: false,
                 showData: {},
-                hasErr: false
+                hasErr: false,
+                downloadRecord: [],
+                pagination: {
+                    count: 0,
+                    current: 1,
+                    limit: 15,
+                    limitList: [15],
+                    align: 'left'
+                }
             }
         },
         computed: {
@@ -164,13 +208,17 @@
             }
         },
         methods: {
-            ...mapActions(['getNodeDetail', 'addMetadata', 'deleteMetadata', 'getPermissionUrl']),
+            formatDate,
+            ...mapActions(['getNodeDetail', 'addMetadata', 'deleteMetadata', 'getPermissionUrl', 'getDownloadRecord']),
             setData (data) {
                 this.detailSlider = {
                     ...this.detailSlider,
                     ...data
                 }
                 this.getDetail()
+                if (this.userInfo.admin || this.userInfo.manage) {
+                    this.getDownloadHistory()
+                }
             },
             getDetail () {
                 this.detailSlider.loading = true
@@ -282,6 +330,27 @@
                     })
                     this.getDetail()
                 })
+            },
+            getDownloadHistory () {
+                this.getDownloadRecord({
+                    projectId: this.detailSlider.projectId,
+                    repoName: this.detailSlider.repoName,
+                    path: this.detailSlider.path,
+                    pageNumber: this.pagination.current,
+                    pageSize: this.pagination.limit
+                }).then(res => {
+                    this.downloadRecord = res.records
+                    this.pagination.count = res.totalRecords
+                })
+            },
+            handlerPaginationChange ({ current = 1 }) {
+                this.pagination.current = current
+                this.getDownloadHistory()
+            },
+            resetHistory () {
+                this.downloadRecord = []
+                this.pagination.count = 0
+                this.pagination.current = 1
             }
         }
     }

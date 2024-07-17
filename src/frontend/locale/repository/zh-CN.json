@@ -874,5 +874,8 @@
     "bkci": "蓝盾",
     "rootDirectoryPermission": "访问控制：",
     "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权",
-    "errMsg": "错误信息"
+    "errMsg": "错误信息",
+    "downloadHistory": "下载历史(最近一年)",
+    "downloadDate": "下载时间",
+    "downloader": "下载用户"
 }
