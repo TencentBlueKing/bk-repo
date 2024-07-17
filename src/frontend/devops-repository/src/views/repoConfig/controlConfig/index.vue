@@ -41,7 +41,7 @@
                     </template>
                 </bk-form-item>
             </template>
-            <bk-form-item :label="$t('blackUserList')" property="blackList" error-display-type="normal">
+            <bk-form-item :label="$t('blackUserList')" property="blackList" error-display-type="normal" v-if="isDevx">
                 <div class="mb10 flex-between-center">
                     <bk-select
                         v-model="blackList"
@@ -154,6 +154,9 @@
             },
             isCommunity () {
                 return RELEASE_MODE === 'community'
+            },
+            isDevx () {
+                return RELEASE_MODE === 'devx'
             },
             genericInterceptorsList () {
                 return this.isCommunity ? ['mobile', 'web'] : ['mobile', 'web', 'ip_segment']
