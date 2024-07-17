@@ -152,14 +152,14 @@
             repoType () {
                 return this.$route.params.repoType
             },
-            isCommunity () {
-                return RELEASE_MODE === 'community'
-            },
             isDevx () {
                 return RELEASE_MODE === 'devx'
             },
+            isTencent () {
+                return RELEASE_MODE === 'tencent'
+            },
             genericInterceptorsList () {
-                return this.isCommunity ? ['mobile', 'web'] : ['mobile', 'web', 'ip_segment']
+                return this.isTencent ? ['mobile', 'web', 'ip_segment'] : ['mobile', 'web']
             },
             rules () {
                 return {
