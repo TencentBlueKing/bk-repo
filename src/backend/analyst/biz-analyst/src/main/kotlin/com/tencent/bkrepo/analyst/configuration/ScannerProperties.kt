@@ -46,6 +46,14 @@ data class ScannerProperties(
      */
     var baseUrl: String = "http://localhost",
     /**
+     * 后端服务认证用户名，后端服务使用mirrors认证方式时必填，仅需要一个非匿名的用户身份，无需任何权限
+     */
+    var username: String? = null,
+    /**
+     * 后端服务认证密码
+     */
+    var password: String? = null,
+    /**
      * 前端baseUrl
      */
     var frontEndBaseUrl: String = "http://localhost/ui",
