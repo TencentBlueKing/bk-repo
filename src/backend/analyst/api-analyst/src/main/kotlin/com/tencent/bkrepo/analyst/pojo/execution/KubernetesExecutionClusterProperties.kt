@@ -7,8 +7,16 @@ data class KubernetesExecutionClusterProperties(
     val namespace: String = "default",
     @ApiModelProperty("k8s api server url")
     val apiServer: String? = null,
+    @ApiModelProperty("certificateAuthorityData，未配置时取当前环境的~/.kube/config，或者当前部署的service account")
+    val certificateAuthorityData: String? = null,
+    // token认证
     @ApiModelProperty("用于访问apiServer时进行认证，未配置时取当前环境的~/.kube/config，或者当前部署的service account")
     val token: String? = null,
+    // client cert认证
+    @ApiModelProperty("clientCertificateData，未配置时取当前环境的~/.kube/config，或者当前部署的service account")
+    val clientCertificateData: String? = null,
+    @ApiModelProperty("clientKeyData，未配置时取当前环境的~/.kube/config，或者当前部署的service account")
+    val clientKeyData: String? = null,
     @ApiModelProperty("容器limit mem")
     val limitMem: Long = 32 * GB,
     @ApiModelProperty("容器 request mem")
