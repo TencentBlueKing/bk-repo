@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,36 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.job.separation.service
 
-import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
-import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
-import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
-import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask
+import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
+import org.springframework.data.domain.PageRequest
+import java.time.LocalDateTime
 
-/**
- * Job配置
- * */
-@Configuration
-@EnableConfigurationProperties(
-    JobProperties::class,
-    MigrateRepoStorageProperties::class,
-    DataSeparationConfig::class,
-)
-class JobConfig {
-    @Bean
-    fun blockThreadPoolTaskExecutorDecorator(
-        threadPoolTaskExecutor: ThreadPoolTaskExecutor,
-        properties: TaskExecutionProperties
-    ): BlockThreadPoolTaskExecutorDecorator {
-        return BlockThreadPoolTaskExecutorDecorator(
-            threadPoolTaskExecutor,
-            properties.pool.queueCapacity,
-            Runtime.getRuntime().availableProcessors()
-        )
-    }
+interface SeparationTaskService {
+
+    fun createSeparationTask(request: SeparationTaskRequest)
+
+    fun findDistinctSeparationDate(
+        projectId: String? = null, repoName: String? = null
+    ): Set<LocalDateTime>
+
+    fun findTasks(state: String? = null, pageRequest: PageRequest): Page<SeparationTask>
+
+    fun reInitTaskState(taskId: String)
+
+    fun repoSeparationCheck(projectId: String, repoName: String): Boolean
 }
