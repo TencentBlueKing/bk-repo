@@ -157,7 +157,9 @@ class KubernetesDispatcher(
             baseUrl = scannerProperties.baseUrl,
             subtaskId = subtask.taskId,
             token = subtask.token!!,
-            heartbeatTimeout = scannerProperties.heartbeatTimeout
+            heartbeatTimeout = scannerProperties.heartbeatTimeout,
+            username = scannerProperties.username,
+            password = scannerProperties.password,
         )
         val requestStorageSize = maxStorageSize(subtask.packageSize)
         val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize)

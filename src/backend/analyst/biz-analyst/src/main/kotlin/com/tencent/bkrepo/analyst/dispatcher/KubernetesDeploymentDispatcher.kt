@@ -253,6 +253,14 @@ class KubernetesDeploymentDispatcher(
         command.add("--keep-running")
         command.add("--heartbeat")
         command.add((scannerProperties.heartbeatTimeout.seconds / 2L).toString())
+        scannerProperties.username?.let {
+            command.add("--username")
+            command.add(it)
+        }
+        scannerProperties.password?.let {
+            command.add("--password")
+            command.add(it)
+        }
         return command
     }
 
