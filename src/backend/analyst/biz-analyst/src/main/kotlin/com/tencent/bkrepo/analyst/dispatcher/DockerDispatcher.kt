@@ -97,7 +97,9 @@ class DockerDispatcher(
                 baseUrl = scannerProperties.baseUrl,
                 subtaskId = subtask.taskId,
                 token = subtask.token!!,
-                heartbeatTimeout = scannerProperties.heartbeatTimeout
+                heartbeatTimeout = scannerProperties.heartbeatTimeout,
+                username = scannerProperties.username,
+                password = scannerProperties.password,
             )
             val containerId = dockerClient.createContainer(
                 image = scanner.image,
