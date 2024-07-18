@@ -33,6 +33,8 @@ import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.util.ClientBuilder
 import io.kubernetes.client.util.Config
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication
+import io.kubernetes.client.util.credentials.ClientCertificateAuthentication
+import org.apache.commons.codec.binary.Base64
 import java.time.Duration
 
 fun buildCommand(
@@ -56,6 +58,17 @@ fun createClient(k8sProps: KubernetesExecutionClusterProperties): ApiClient {
         ClientBuilder()
             .setBasePath(k8sProps.apiServer)
             .setAuthentication(AccessTokenAuthentication(k8sProps.token))
+            .build()
+    } else if (k8sProps.clientKeyData != null && k8sProps.clientCertificateData != null) {
+        require(k8sProps.certificateAuthorityData != null)
+        require(k8sProps.apiServer != null)
+        val cert = Base64.decodeBase64(k8sProps.clientCertificateData)
+        val key = Base64.decodeBase64(k8sProps.clientKeyData)
+        val ca = Base64.decodeBase64(k8sProps.certificateAuthorityData)
+        ClientBuilder()
+            .setAuthentication(ClientCertificateAuthentication(cert, key))
+            .setCertificateAuthority(ca)
+            .setBasePath(k8sProps.apiServer)
             .build()
     } else {
         // 可通过KUBECONFIG环境变量设置config file路径
