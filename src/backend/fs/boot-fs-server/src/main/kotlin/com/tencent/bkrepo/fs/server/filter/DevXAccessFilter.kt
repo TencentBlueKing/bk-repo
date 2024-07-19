@@ -91,13 +91,13 @@ class DevXAccessFilter(
     }
 
     private suspend fun checkIpBelongToProject(projectId: String, srcIp: String, isRetry: Boolean = false) {
-        val projectIps = if(isRetry){
+        val projectIps = if (isRetry) {
             DevxWorkspaceUtils.getLatestIpList(projectId).awaitSingle()
         } else {
             DevxWorkspaceUtils.getIpList(projectId).awaitSingle()
         }
         val notBelong = srcIp !in projectIps &&
-            !projectIps.any { it.contains('/') && IpUtils.isInRange(srcIp, it) }
+                !projectIps.any { it.contains('/') && IpUtils.isInRange(srcIp, it) }
         if (notBelong && !isRetry && !DevxWorkspaceUtils.knownIllegalIp(srcIp, projectId)) {
             return checkIpBelongToProject(projectId, srcIp, true)
         }

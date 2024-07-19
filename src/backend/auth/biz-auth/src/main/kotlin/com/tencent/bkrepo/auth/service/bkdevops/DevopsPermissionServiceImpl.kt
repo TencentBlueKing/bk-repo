@@ -51,6 +51,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionContext
 import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
@@ -153,19 +154,36 @@ class DevopsPermissionServiceImpl constructor(
         with(request) {
             logger.debug("check devops permission request [$request]")
 
-            if (isUserSystemAdmin(uid)) return true
+            // 用户不存在
+            val user = getUserInfo(uid) ?: return false
+            // 系统管理员用户
+            if (user.admin) return true
 
             // 用户不为系统管理员，必须为项目下权限
             if (projectId == null) return false
-
-            if (isDevopsProjectAdmin(uid, projectId!!) || isUserLocalProjectAdmin(uid, projectId)) {
+            // 开启仓库内请求拦截
+            if (checkRepoAccessDenyGroup(uid, projectId!!, repoName, user.roles.toSet(), requestSource)) return false
+            // 用户为系统管理员
+            if (isDevopsProjectAdmin(uid, projectId!!) || isUserLocalProjectAdmin(uid, projectId!!)) {
                 logger.debug("user is devops/local project admin [$uid, $projectId]")
                 return true
             }
 
+            val context = CheckPermissionContext(
+                userId = uid,
+                roles = user.roles,
+                resourceType = resourceType,
+                action = action,
+                projectId = projectId!!,
+                repoName = repoName,
+                path = path,
+            )
+
             val pass = when (resourceType) {
-                PROJECT.name -> checkProjectPermission(request)
-                REPO.name, NODE.name -> checkRepoOrNodePermission(request)
+                PROJECT.name -> checkProjectPermission(context)
+                REPO.name, NODE.name -> {
+                    checkRepoOrNodePermission(context)
+                }
                 else -> throw RuntimeException("resource type not supported: $resourceType")
             }
 
@@ -178,36 +196,36 @@ class DevopsPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkProjectPermission(request: CheckPermissionRequest): Boolean {
-        with(request) {
+    private fun checkProjectPermission(context: CheckPermissionContext): Boolean {
+        with(context) {
             // 只有用户为非项目管理员，代码才会走到这里, action为MANAGE需要项目管理员权限
             if (action == MANAGE.name) {
-                logger.debug("project request need manage permission [$request]")
+                logger.debug("project request need manage permission [$context]")
                 return false
             }
-            return isDevopsProjectMember(uid, projectId!!, action)
-                    || checkBkIamV3ProjectPermission(projectId!!, uid, action)
+            return isDevopsProjectMember(userId, projectId, action)
+                    || checkBkIamV3ProjectPermission(projectId, userId, action)
         }
     }
 
-    private fun checkRepoOrNodePermission(request: CheckPermissionRequest): Boolean {
-        with(request) {
+    private fun checkRepoOrNodePermission(context: CheckPermissionContext): Boolean {
+        with(context) {
             if (action == MANAGE.name) {
-                logger.debug("project request need manage permission [$request]")
+                logger.debug("project request need manage permission [$context]")
                 return false
             }
             when (repoName) {
                 CUSTOM, LOG -> {
-                    return checkDevopsCustomPermission(request)
+                    return checkDevopsCustomPermission(context)
                 }
                 PIPELINE -> {
-                    return checkDevopsPipelinePermission(request)
+                    return checkDevopsPipelinePermission(context)
                 }
                 REPORT -> {
-                    return checkDevopsReportPermission(request.action)
+                    return checkDevopsReportPermission(context.action)
                 }
                 else -> {
-                    return checkRepoNotInDevops(request)
+                    return checkRepoNotInDevops(context)
                 }
             }
         }
@@ -217,25 +235,25 @@ class DevopsPermissionServiceImpl constructor(
         return action == READ.name || action == WRITE.name || action == VIEW.name || action == DOWNLOAD.name
     }
 
-    private fun checkDevopsCustomPermission(request: CheckPermissionRequest): Boolean {
-        logger.debug("check devops custom permission request [$request]")
-        with(request) {
-            val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action)
-            if (needCheckPathPermission(resourceType, projectId!!, repoName!!)) {
-                return checkNodeAction(request, null, isDevopsProjectMember)
+    private fun checkDevopsCustomPermission(context: CheckPermissionContext): Boolean {
+        logger.debug("check devops custom permission request [$context]")
+        with(context) {
+            val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action)
+            if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
+                return checkNodeAction(context, isDevopsProjectMember)
             }
             return isDevopsProjectMember
         }
     }
 
-    private fun checkRepoNotInDevops(request: CheckPermissionRequest): Boolean {
-        logger.debug("check repo not in devops request [$request]")
-        with(request) {
-            val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action)
-            if (needCheckPathPermission(resourceType, projectId!!, repoName!!)) {
-                return checkNodeAction(request, null, isDevopsProjectMember)
+    private fun checkRepoNotInDevops(context: CheckPermissionContext): Boolean {
+        logger.debug("check repo not in devops request [$context]")
+        with(context) {
+            val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action)
+            if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
+                return checkNodeAction(context, isDevopsProjectMember)
             }
-            return isDevopsProjectMember || super.checkPermission(request)
+            return isDevopsProjectMember || super.checkLocalRepoOrNodePermission(context)
         }
     }
 
@@ -243,16 +261,16 @@ class DevopsPermissionServiceImpl constructor(
         return devopsAuthConfig.enablePathCheck && resourceType == NODE.name && needNodeCheck(projectId, repoName)
     }
 
-    private fun checkDevopsPipelinePermission(request: CheckPermissionRequest): Boolean {
-        with(request) {
+    private fun checkDevopsPipelinePermission(context: CheckPermissionContext): Boolean {
+        with(context) {
             return when (resourceType) {
-                REPO.name -> isDevopsProjectMember(uid, projectId!!, action)
+                REPO.name -> isDevopsProjectMember(userId, projectId, action)
                 NODE.name -> {
                     val pipelineId = parsePipelineId(path ?: return false) ?: return false
-                    val pipelinePass = pipelinePermission(uid, projectId!!, pipelineId, action)
+                    val pipelinePass = pipelinePermission(userId, projectId, pipelineId, action)
                     if (pipelinePass) return true
-                    logger.warn("devops pipeline permission widen to project permission [$request]")
-                    return isDevopsProjectMember(uid, projectId!!, action)
+                    logger.warn("devops pipeline permission widen to project permission [$context]")
+                    return isDevopsProjectMember(userId, projectId, action)
                 }
                 else -> throw RuntimeException("resource type not supported: $resourceType")
             }

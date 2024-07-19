@@ -36,6 +36,8 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
+import com.tencent.bkrepo.common.api.constant.HEADER_DEVX_ACCESS_FROM
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.IpUtils
@@ -104,6 +106,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
             }
 
             devXProperties.srcHeaderValues[1] -> {
+                request.setAttribute(HEADER_DEVX_ACCESS_FROM, DEVX_ACCESS_FROM_OFFICE)
                 devXProperties.restrictedUserPrefix.forEach { checkUserSuffixAndPrefix(user, prefix = it) }
                 devXProperties.restrictedUserSuffix.forEach { checkUserSuffixAndPrefix(user, suffix = it) }
                 true
