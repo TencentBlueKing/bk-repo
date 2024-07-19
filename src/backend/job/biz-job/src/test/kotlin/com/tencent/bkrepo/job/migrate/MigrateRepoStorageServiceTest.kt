@@ -194,7 +194,10 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         // 达到时间间隔
         migrateRepoStorageTaskDao.updateFirst(
             Query(Criteria.where(ID).isEqualTo(taskId)),
-            Update().set(TMigrateRepoStorageTask::startDate.name, LocalDateTime.now().minus(properties.correctInterval)),
+            Update().set(
+                TMigrateRepoStorageTask::startDate.name,
+                LocalDateTime.now().minus(properties.correctInterval),
+            ),
         )
         task = migrateRepoStorageService.tryExecuteTask()
         assertNotNull(task)
