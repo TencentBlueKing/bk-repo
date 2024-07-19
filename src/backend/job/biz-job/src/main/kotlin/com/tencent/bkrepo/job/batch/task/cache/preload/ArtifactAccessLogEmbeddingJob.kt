@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.METADATA_KEY_ACCESS_TIMESTAMP
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
@@ -53,6 +54,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
@@ -167,15 +169,10 @@ class ArtifactAccessLogEmbeddingJob(
     private fun buildCriteria(projectId: String): Criteria {
         return Criteria
             .where(TOperateLog::projectId.name).isEqualTo(projectId)
-            .and(TOperateLog::type.name).isEqualTo(EventType.NODE_DOWNLOADED.name)
+            .and(TOperateLog::type.name).inValues(EventType.NODE_DOWNLOADED.name, EventType.NODE_CREATED.name)
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactAccessLogEmbeddingJob::class.java)
-
-        /**
-         * 访问时间点key
-         */
-        const val METADATA_KEY_ACCESS_TIMESTAMP = "accessTimestamp"
     }
 }

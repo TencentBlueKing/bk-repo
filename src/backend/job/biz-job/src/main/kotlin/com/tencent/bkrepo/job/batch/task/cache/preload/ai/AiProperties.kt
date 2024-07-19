@@ -35,4 +35,8 @@ data class AiProperties(
     var embeddingServiceToken: String = "",
     var databaseName: String = "default",
     var collectionPrefix: String = "artifact_access_log_",
+    /**
+     * 默认相似度阈值，用于过滤相似路径查询结果
+     */
+    var defaultSimilarityThreshold: Double = 0.99,
 )

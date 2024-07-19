@@ -42,7 +42,7 @@ enum class PreloadStrategyType {
     CUSTOM_GENERATED,
 
     /**
-     * 智能预加载策略，通过BkBase中的模型预测预加载时间
+     * 智能预加载策略
      */
     INTELLIGENT
 }
