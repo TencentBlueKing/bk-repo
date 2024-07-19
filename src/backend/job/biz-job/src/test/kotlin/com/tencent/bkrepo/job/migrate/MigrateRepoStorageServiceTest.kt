@@ -75,6 +75,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.test.context.TestPropertySource
 import java.time.LocalDateTime
 
 @DisplayName("迁移服务测试")
@@ -88,6 +89,7 @@ import java.time.LocalDateTime
     ExecutingTaskRecorder::class,
     StorageProperties::class,
 )
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class MigrateRepoStorageServiceTest @Autowired constructor(
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     private val migrateRepoStorageService: MigrateRepoStorageService,
@@ -108,6 +110,9 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
 
     @MockBean(name = "correctExecutor")
     private lateinit var mockCorrectExecutor: TaskExecutor
+
+    @Autowired
+    private lateinit var repositoryCommonUtils: RepositoryCommonUtils
 
     @BeforeEach
     fun beforeEach() {
@@ -148,7 +153,8 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
 
         // 修改任务时间使其超时
         val update = Update().set(
-            TMigrateRepoStorageTask::lastModifiedDate.name, LocalDateTime.now().minus(properties.timeout)
+            TMigrateRepoStorageTask::lastModifiedDate.name,
+            LocalDateTime.now().minus(properties.timeout),
         )
         migrateRepoStorageTaskDao.updateFirst(Query(Criteria.where(ID).isEqualTo(task.id!!)), update)
 
@@ -179,7 +185,7 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         migrateRepoStorageTaskDao.updateFirst(
             Query(Criteria.where(ID).isEqualTo(taskId)),
             Update().set(TMigrateRepoStorageTask::state.name, MIGRATE_FINISHED.name)
-                .set(TMigrateRepoStorageTask::startDate.name, LocalDateTime.now())
+                .set(TMigrateRepoStorageTask::startDate.name, LocalDateTime.now()),
         )
         task = migrateRepoStorageService.tryExecuteTask()
         assertNull(task)
@@ -188,7 +194,7 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         // 达到时间间隔
         migrateRepoStorageTaskDao.updateFirst(
             Query(Criteria.where(ID).isEqualTo(taskId)),
-            Update().set(TMigrateRepoStorageTask::startDate.name, LocalDateTime.now().minus(properties.correctInterval))
+            Update().set(TMigrateRepoStorageTask::startDate.name, LocalDateTime.now().minus(properties.correctInterval)),
         )
         task = migrateRepoStorageService.tryExecuteTask()
         assertNotNull(task)
@@ -207,12 +213,12 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
     private fun buildCreateRequest(dstKey: String? = UT_STORAGE_CREDENTIALS_KEY) = CreateMigrateRepoStorageTaskRequest(
         projectId = UT_PROJECT_ID,
         repoName = UT_REPO_NAME,
-        dstCredentialsKey = dstKey
+        dstCredentialsKey = dstKey,
     )
 
     private fun initMock() {
         whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyOrNull())).thenReturn(
-            Response(0, "", buildRepo())
+            Response(0, "", buildRepo()),
         )
         whenever(storageCredentialsClient.findByKey(anyString()))
             .thenReturn(Response(0, data = FileSystemCredentials()))
