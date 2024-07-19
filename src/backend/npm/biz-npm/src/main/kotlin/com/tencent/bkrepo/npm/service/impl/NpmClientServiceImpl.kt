@@ -45,8 +45,6 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.handler.NpmDependentHandler
-import com.tencent.bkrepo.npm.handler.NpmPackageHandler
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.CREATED
 import com.tencent.bkrepo.npm.constants.LATEST
@@ -55,16 +53,19 @@ import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
+import com.tencent.bkrepo.npm.constants.TGZ_FULL_PATH_WITH_DASH_SEPARATOR
 import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmBadRequestException
 import com.tencent.bkrepo.npm.exception.NpmTagNotExistException
+import com.tencent.bkrepo.npm.handler.NpmDependentHandler
+import com.tencent.bkrepo.npm.handler.NpmPackageHandler
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
+import com.tencent.bkrepo.npm.model.properties.PackageProperties
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
-import com.tencent.bkrepo.npm.model.properties.PackageProperties
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.metadata.disttags.DistTags
@@ -502,7 +503,9 @@ class NpmClientServiceImpl(
         val iterator = npmPackageMetaData.versions.map.entries.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
-            val tgzFullPath = NpmUtils.getTgzPath(npmPackageMetaData.name!!, entry.key)
+            val pathWithDash = entry.value.dist?.tarball?.substringAfter(npmPackageMetaData.name!!)
+                ?.contains(TGZ_FULL_PATH_WITH_DASH_SEPARATOR) ?: true
+            val tgzFullPath = NpmUtils.getTgzPath(npmPackageMetaData.name!!, entry.key, pathWithDash)
             if (entry.value.any().containsKey("deprecated")) {
                 metadataClient.saveMetadata(
                     MetadataSaveRequest(
