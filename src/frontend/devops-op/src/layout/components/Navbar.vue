@@ -34,6 +34,7 @@ import { mapGetters } from 'vuex'
 import Breadcrumb from '@/components/Breadcrumb'
 import Hamburger from '@/components/Hamburger'
 import { toLoginPage } from '@/utils/login'
+import { getBkUid } from '@/utils/auth'
 
 export default {
   components: {
@@ -42,7 +43,7 @@ export default {
   },
   data() {
     return {
-      userName: localStorage.getItem('userName')
+      userName: localStorage.getItem('userName') || getBkUid()
     }
   },
   computed: {
