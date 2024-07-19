@@ -618,3 +618,53 @@
     "traceId": null
   }
   ```
+## 恢复归档节点
+
+- API: POST /repository/api/node/archive/restore
+
+- API 名称: restore_archive_node
+
+- 功能说明：
+
+  - 中文：恢复归档节点，根据路径或者指定元数据恢复归档的节点
+  - English：restore archive node 
+
+- 请求体
+
+  ``` json
+  {
+    "projectId": "",
+    "repoName": "",
+    "path": "",
+    "metadata": {
+      "buildId": "xxxx"
+    }
+  }
+  ```
+
+- 请求字段说明
+
+  | 字段        | 类型     | 是否必须 | 默认值       | 说明       | Description  |
+    |-----------|--------| -------- |-----------|----------|--------------|
+  | projectId | string | 是       | 无         | 项目名称     | project name |
+  | repoName  | string | 是       | 无         | 仓库名称     | repo name    |
+  | path      | string | 否       | null      | 恢复路径，可以是前缀 | path         |
+  | metadata  | map    | 否       | empty map | 元数据 | 元数据key,value |
+- 响应体
+
+  ```json
+  {
+      "code": 0,
+      "message": null,
+      "data": [
+          "/file1",
+          "/file2"
+      ],
+      "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  恢复的文件列表
+  
