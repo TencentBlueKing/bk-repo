@@ -155,7 +155,9 @@ class KubernetesDispatcher(
             baseUrl = scannerProperties.baseUrl,
             subtaskId = subtask.taskId,
             token = subtask.token!!,
-            heartbeatTimeout = scannerProperties.heartbeatTimeout
+            heartbeatTimeout = scannerProperties.heartbeatTimeout,
+            username = scannerProperties.username,
+            password = scannerProperties.password,
         )
         val k8sProps = executionCluster.kubernetesProperties
         val resReq = ResourceRequirements.calculate(scanner, k8sProps)

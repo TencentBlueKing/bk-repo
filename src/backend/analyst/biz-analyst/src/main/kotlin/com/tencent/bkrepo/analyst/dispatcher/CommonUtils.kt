@@ -38,7 +38,13 @@ import org.apache.commons.codec.binary.Base64
 import java.time.Duration
 
 fun buildCommand(
-    cmd: String, baseUrl: String, subtaskId: String, token: String, heartbeatTimeout: Duration
+    cmd: String,
+    baseUrl: String,
+    subtaskId: String,
+    token: String,
+    heartbeatTimeout: Duration,
+    username: String?,
+    password: String?,
 ): List<String> {
     val command = ArrayList<String>()
     command.addAll(cmd.split(" "))
@@ -50,6 +56,14 @@ fun buildCommand(
     command.add(subtaskId)
     command.add("--heartbeat")
     command.add((heartbeatTimeout.seconds / 2L).toString())
+    username?.let {
+        command.add("--username")
+        command.add(it)
+    }
+    password?.let {
+        command.add("--password")
+        command.add(it)
+    }
     return command
 }
 
@@ -78,7 +92,7 @@ fun createClient(k8sProps: KubernetesExecutionClusterProperties): ApiClient {
 
 fun ApiException.string(): String {
     return "message: $message\n" +
-            "code: $code\n" +
-            "headers: $responseHeaders\n" +
-            "body: $responseBody"
+        "code: $code\n" +
+        "headers: $responseHeaders\n" +
+        "body: $responseBody"
 }
