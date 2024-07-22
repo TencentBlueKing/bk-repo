@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload
 
+import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
@@ -54,7 +55,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
@@ -147,7 +147,14 @@ class ArtifactAccessLogEmbeddingJob(
             // 记录制品访问时间
             data.forEach {
                 val repoName = it[TOperateLog::repoName.name] as String
-                val fullPath = it[TOperateLog::resourceKey.name] as String
+                val resourceKey = it[TOperateLog::resourceKey.name] as String
+                val fullPath = if (repoName == PIPELINE) {
+                    // 流水线仓库路径/p-xxx/b-xxx/xxx中的流水线id与构建id不参与相似度计算
+                    val secondSlashIndex = resourceKey.indexOf("/", 1)
+                    resourceKey.substring(resourceKey.indexOf("/"), secondSlashIndex + 1)
+                } else {
+                    resourceKey
+                }
                 val createdDate = TimeUtils.parseMongoDateTimeStr(it[TOperateLog::createdDate.name].toString())!!
                 val createdTimestamp = createdDate.atZone(ZoneId.systemDefault()).toInstant().epochSecond
                 val accessTime = accessTimeMap.getOrPut("/$projectId/$repoName$fullPath") { HashSet() }
@@ -169,7 +176,7 @@ class ArtifactAccessLogEmbeddingJob(
     private fun buildCriteria(projectId: String): Criteria {
         return Criteria
             .where(TOperateLog::projectId.name).isEqualTo(projectId)
-            .and(TOperateLog::type.name).inValues(EventType.NODE_DOWNLOADED.name, EventType.NODE_CREATED.name)
+            .and(TOperateLog::type.name).isEqualTo(EventType.NODE_DOWNLOADED.name)
     }
 
     companion object {
