@@ -31,7 +31,6 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
-import com.tencent.bkrepo.fs.server.api.NodeClient
 import com.tencent.bkrepo.fs.server.api.RGenericClient
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
@@ -81,32 +80,29 @@ class NodeOperationsHandler(
     private val rRepositoryClient: RRepositoryClient,
     private val fileNodeService: FileNodeService
 ) {
-    private val nodeClient = NodeClient(rRepositoryClient, rGenericClient)
 
     suspend fun getNode(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val nodeDetail = nodeClient.getNodeDetail(
+            val nodeDetail = rRepositoryClient.getNodeDetail(
                 projectId = projectId,
-                repo = ReactiveArtifactContextHolder.getRepoDetail(),
-                fullPath = fullPath,
-                category = category
-            )
-            return nodeDetail
-                ?.let { ReactiveResponseBuilder.success(it.nodeInfo.toNode()) }
-                ?: ServerResponse.notFound().buildAndAwait()
+                repoName = repoName,
+                fullPath = fullPath
+            ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
+            return ReactiveResponseBuilder.success(nodeDetail.nodeInfo.toNode())
         }
     }
 
     suspend fun listNodes(request: ServerRequest): ServerResponse {
         val pageRequest = NodePageRequest(request)
         with(pageRequest) {
-            val nodes = nodeClient.listNodes(
-                projectId = projectId,
-                repo = ReactiveArtifactContextHolder.getRepoDetail(),
+            val nodes = rRepositoryClient.listNodePage(
                 path = fullPath,
+                projectId = projectId,
+                repoName = repoName,
                 option = listOption
-            )
-            return nodes?.let { ReactiveResponseBuilder.success(it) } ?: ServerResponse.notFound().buildAndAwait()
+            ).awaitSingle().data?.records?.map { it.toNode() }?.toList()
+                ?: return ServerResponse.notFound().buildAndAwait()
+            return ReactiveResponseBuilder.success(nodes)
         }
     }
 
@@ -226,12 +222,11 @@ class NodeOperationsHandler(
 
     suspend fun info(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val nodeDetail = nodeClient.getNodeDetail(
+            val nodeDetail = rRepositoryClient.getNodeDetail(
                 projectId = projectId,
-                repo = ReactiveArtifactContextHolder.getRepoDetail(),
-                fullPath = fullPath,
-                category = category
-            ) ?: return ServerResponse.notFound().buildAndAwait()
+                repoName = repoName,
+                fullPath = fullPath
+            ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
             val range = try {
                 request.resolveRange(nodeDetail.size)
             } catch (e: IllegalArgumentException) {
