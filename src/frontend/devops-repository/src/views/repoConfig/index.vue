@@ -1,6 +1,6 @@
 <template>
     <div class="repo-config-container" v-bkloading="{ isLoading }">
-        <bk-tab class="repo-config-tab page-tab" type="unborder-card" :active.sync="tabName">
+        <bk-tab class="repo-config-tab page-tab" type="unborder-card" :active.sync="tabName" ref="tab">
             <bk-tab-panel name="baseInfo" :label="$t('repoBaseInfo')">
                 <bk-form ref="repoBaseInfo" class="repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules">
                     <bk-form-item :label="$t('repoName')">
@@ -11,12 +11,6 @@
                     </bk-form-item>
                     <bk-form-item :label="$t('repoAddress')">
                         <span>{{repoAddress}}</span>
-                    </bk-form-item>
-                    <bk-form-item :label="$t('accessPermission')">
-                        <card-radio-group
-                            v-model="available"
-                            :list="availableList">
-                        </card-radio-group>
                     </bk-form-item>
                     <bk-form-item :label="$t('isDisplay')">
                         <bk-radio-group v-model="repoBaseInfo.display">
@@ -76,18 +70,18 @@
             <bk-tab-panel v-if="showCleanConfigTab" name="cleanConfig" :label="$t('cleanConfig')">
                 <clean-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></clean-config>
             </bk-tab-panel>
-            <bk-tab-panel render-directive="if" v-if="showPermissionConfigTab" name="permissionConfig" :label="$t('permissionConfig')">
-                <permission-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></permission-config>
-            </bk-tab-panel>
             <bk-tab-panel render-directive="if" v-if="showControlConfigTab" name="controlConfig" :label="$t('rootDirectoryPermissionTitle')">
-                <control-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></control-config>
+                <control-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler" @showPermissionConfigTab="changePermissionConfigTabStatus"></control-config>
             </bk-tab-panel>
         </bk-tab>
+        <div class="showPermissionConfigTab" v-if="showPermissionConfig && tabName === 'controlConfig'">
+            <span style="font-weight: 500;font-size: larger;margin-left: 20px">{{ $t('permissionConfig')}}</span>
+            <permission-config style="margin-top: 10px;margin-left: 20px" :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></permission-config>
+        </div>
         <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
-    import CardRadioGroup from '@repository/components/CardRadioGroup'
     import proxyConfig from '@repository/views/repoConfig/proxyConfig'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import permissionConfig from './permissionConfig/permissionConfig'
@@ -98,7 +92,6 @@
     export default {
         name: 'repoConfig',
         components: {
-            CardRadioGroup,
             proxyConfig,
             iamDenyDialog,
             permissionConfig,
@@ -106,43 +99,6 @@
             controlConfig
         },
         data () {
-            const filenameRule = [
-                {
-                    required: true,
-                    message: this.$t('pleaseFileName'),
-                    trigger: 'blur'
-                }
-            ]
-            const metadataRule = [
-                {
-                    required: true,
-                    message: this.$t('pleaseMetadata'),
-                    trigger: 'blur'
-                },
-                {
-                    regex: /^[^\s]+:[^\s]+/,
-                    message: this.$t('metadataRule'),
-                    trigger: 'blur'
-                }
-            ]
-            const ipSegmentRule = [
-                {
-                    required: true,
-                    message: this.$t('pleaseIpSegment'),
-                    trigger: 'blur'
-                },
-                {
-                    validator: function (val) {
-                        const ipList = val.split(',')
-                        return ipList.every(ip => {
-                            if (!ip) return true
-                            return /(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\b\/([0-9]|[1-2][0-9]|3[0-2])\b)/.test(ip)
-                        })
-                    },
-                    message: this.$t('ipSegmentRule'),
-                    trigger: 'blur'
-                }
-            ]
             return {
                 specialRepoEnum,
                 tabName: 'baseInfo',
@@ -180,12 +136,10 @@
                         }
                     }
                 },
-                filenameRule,
-                metadataRule,
-                ipSegmentRule,
                 showIamDenyDialog: false,
                 showData: {},
-                rbacStatus: false
+                rbacStatus: false,
+                showPermissionConfig: false
             }
         },
         computed: {
@@ -205,16 +159,8 @@
             showCleanConfigTab () {
                 return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
             },
-            showPermissionConfigTab () {
-                if (this.permissionConfig === true) {
-                    return ['generic', 'ddc'].includes(this.repoType)
-                        && (this.userInfo.admin || this.userInfo.manage)
-                } else {
-                    return false
-                }
-            },
             showControlConfigTab () {
-                return (this.userInfo.admin || this.userInfo.manage) && this.repoName !== 'pipeline'
+                return this.userInfo.admin || this.userInfo.manage
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo
@@ -225,27 +171,6 @@
             },
             isCommunity () {
                 return RELEASE_MODE === 'community'
-            },
-            genericInterceptorsList () {
-                return this.isCommunity ? ['mobile', 'web'] : ['mobile', 'web', 'ip_segment']
-            },
-            available: {
-                get () {
-                    if (this.repoBaseInfo.public) return 'public'
-                    if (this.repoBaseInfo.system) return 'system'
-                    return 'project'
-                },
-                set (val) {
-                    this.repoBaseInfo.public = val === 'public'
-                    this.repoBaseInfo.system = val === 'system'
-                }
-            },
-            availableList () {
-                return [
-                    { label: this.$t('openProjectLabel'), value: 'project', tip: this.$t('openProjectTip') },
-                    // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: this.$t('openPublicLabel'), value: 'public', tip: this.$t('openPublicTip') }
-                ]
             },
             rules () {
                 return {
@@ -451,6 +376,16 @@
                 }).finally(() => {
                     this.repoBaseInfo.loading = false
                 })
+            },
+            changePermissionConfigTabStatus (val) {
+                this.showPermissionConfig = val
+                this.$nextTick(() => {
+                    if (val) {
+                        this.$refs.tab.$el.style.height = '60%'
+                    } else {
+                        this.$refs.tab.$el.style.height = '100%'
+                    }
+                })
             }
         }
     }
@@ -460,7 +395,7 @@
     height: 100%;
     background-color: white;
     .repo-config-tab {
-        height: 100%;
+        height: 60%;
         ::v-deep .bk-tab-section {
             height: calc(100% - 60px);
             overflow-y: auto;
@@ -473,6 +408,18 @@
                 }
                 width: 250px;
             }
+        }
+    }
+    .showPermissionConfigTab {
+        background-image: none!important;
+        margin-top: 10px;
+        &:before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 10px;
+            bottom: 40%;
+            background-color: var(--bgWeightColor);
         }
     }
 }

@@ -2,7 +2,6 @@
     <div class="permission-container" v-bkloading="{ isLoading }">
         <div class="mb10 flex-between-center">
             <bk-button icon="plus" theme="primary" @click="showCreatePermission">{{ $t('add') }}</bk-button>
-            <bk-link theme="primary" @click="showUserGroup" style="margin-right: auto;margin-left: 10px">{{ $t('userGroup') }}</bk-link>
         </div>
         <div class="permission-head">
             <div class="permission-name">{{$t('name')}}</div>
