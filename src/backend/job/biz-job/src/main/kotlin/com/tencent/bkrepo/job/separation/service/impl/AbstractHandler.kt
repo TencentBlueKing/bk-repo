@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
-import com.tencent.bkrepo.job.FILE_REFERENCE_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
@@ -42,6 +41,7 @@ import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationProgress
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
+import com.tencent.bkrepo.job.separation.util.SeparationUtils.getFileReferenceCollectionName
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -113,15 +113,16 @@ open class AbstractHandler(
     }
 
     fun increment(sha256: String, credentialsKey: String?, inc: Long) {
+        val collectionName = getFileReferenceCollectionName(sha256)
         val criteria = Criteria.where(FileReferenceInfo::sha256.name).`is`(sha256)
             .and(FileReferenceInfo::credentialsKey.name).`is`(credentialsKey)
         val query = Query(criteria)
         val update = Update().inc(FileReferenceInfo::count.name, inc)
         try {
-            mongoTemplate.upsert(query, update, FILE_REFERENCE_COLLECTION_NAME)
+            mongoTemplate.upsert(query, update, collectionName)
         } catch (exception: DuplicateKeyException) {
             // retry because upsert operation is not atomic
-            mongoTemplate.upsert(query, update, FILE_REFERENCE_COLLECTION_NAME)
+            mongoTemplate.upsert(query, update, collectionName)
         }
         logger.info("Increment hot node reference [$inc] of file [$sha256] on credentialsKey [$credentialsKey].")
     }

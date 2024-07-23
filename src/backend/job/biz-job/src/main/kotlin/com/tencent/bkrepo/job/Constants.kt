@@ -106,7 +106,6 @@ const val SEPARATE = "SEPARATE"
 const val PACKAGE_COLLECTION_NAME = "package"
 const val PACKAGE_VERSION_COLLECTION_NAME = "package_version"
 const val PACKAGE_DOWNLOADS_COLLECTION_NAME = "package_downloads"
-const val FILE_REFERENCE_COLLECTION_NAME = "file_reference"
 const val SEPARATION_TASK_COLLECTION_NAME = "separation_task"
 
 const val PACKAGE_VERSION = "version"
