@@ -81,16 +81,3 @@ object HashShardingUtils : ShardingUtils {
         return if (n < 0) 1 else if (n >= MAXIMUM_CAPACITY) MAXIMUM_CAPACITY else n + 1
     }
 }
-
-fun main() {
-    println(HashShardingUtils.shardingSequenceFor("ads", 256))
-    println(HashShardingUtils.shardingSequenceFor("fcd-bvt-sub-sys", 256))
-    println(HashShardingUtils.shardingSequenceFor("test", 256))
-    println(HashShardingUtils.shardingSequenceFor("tencent_pypi", 256))
-    println(HashShardingUtils.shardingSequenceFor("wxg", 256))
-    println(HashShardingUtils.shardingSequenceFor("pcg", 256))
-
-
-    println(HashShardingUtils.shardingSequenceFor("mirrors_outer", 256))
-
-}
