@@ -36,5 +36,5 @@ class DataSeparationJobProperties(
     override var enabled: Boolean = false,
     override var cron: String = Scheduled.CRON_DISABLED,
     // 任务处于running 状态超过多久没有更新数据，则判断任务已经中断
-    var waitTime: Duration = Duration.ofMillis(60),
+    var waitTime: Duration = Duration.ofMinutes(120)
 ) : MongodbJobProperties(enabled)
