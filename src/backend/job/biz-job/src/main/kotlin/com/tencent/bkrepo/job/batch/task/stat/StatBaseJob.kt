@@ -105,6 +105,8 @@ open class StatBaseJob(
         }
     }
 
+    open fun beforeRunProject(projectId: String) {}
+
     open fun runRow(row: StatNode, context: JobContext) {}
 
     open fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {}
@@ -151,6 +153,7 @@ open class StatBaseJob(
         action: (String) -> Unit,
     ) {
         semaphore.acquire()
+        beforeRunProject(projectId)
         futureList.add(
             executor.submit(
                 Callable {

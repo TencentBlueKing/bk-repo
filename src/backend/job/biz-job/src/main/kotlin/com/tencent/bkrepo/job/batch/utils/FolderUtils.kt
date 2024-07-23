@@ -80,4 +80,20 @@ object FolderUtils {
             null
         }
     }
+
+    /**
+     * 从缓存key中解析出collectionName
+     */
+    fun extractCollectionNameFromCacheKey(key: String, runCollection: Boolean = false): String? {
+        val values = key.split(StringPool.COLON)
+        return try {
+            if (runCollection) {
+                values.firstOrNull()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
