@@ -31,15 +31,21 @@ import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStore
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
+import io.milvus.client.MilvusServiceClient
 import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.random.Random
 
 class ArtifactSimilarityPreloadPlanGenerator(
-    private val vectorStore: VectorStore,
+    private val embeddingModel: EmbeddingModel,
+    private val milvusClient: MilvusServiceClient,
     private val aiProperties: AiProperties,
     private val preloadProperties: ArtifactPreloadProperties,
 ) : ArtifactPreloadPlanGenerator {
@@ -76,7 +82,9 @@ class ArtifactSimilarityPreloadPlanGenerator(
                 topK = 10,
                 similarityThreshold = aiProperties.defaultSimilarityThreshold
             )
-            val docs = vectorStore.similaritySearch(searchReq)
+            val docs = createVectorStore(0L).similaritySearch(searchReq).ifEmpty {
+                createVectorStore(1L).similaritySearch(searchReq)
+            }
             if (docs.isEmpty()) {
                 return null
             }
@@ -93,5 +101,18 @@ class ArtifactSimilarityPreloadPlanGenerator(
                 .atZone(ZoneId.systemDefault())
                 .toEpochSecond() * 1000
         }
+    }
+
+    private fun createVectorStore(minusMonth: Long): VectorStore {
+        // 根据上个月的历史访问数据进行预测
+        val seq = MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.now().minusMonths(minusMonth), 1)
+        val collectionName = "${aiProperties.collectionPrefix}$seq"
+        val config = MilvusVectorStoreProperties(
+            databaseName = aiProperties.databaseName,
+            collectionName = collectionName,
+            embeddingDimension = embeddingModel.dimensions(),
+        )
+        return MilvusVectorStore(config, milvusClient, embeddingModel)
+
     }
 }

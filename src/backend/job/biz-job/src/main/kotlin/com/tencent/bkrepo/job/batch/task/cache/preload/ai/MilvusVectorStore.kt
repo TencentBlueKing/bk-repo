@@ -176,6 +176,10 @@ class MilvusVectorStore(
         ).data
     }
 
+    override fun collectionName(): String {
+        return config.collectionName
+    }
+
     // used by the test as well
     override fun createCollection(): Boolean {
         var created = false

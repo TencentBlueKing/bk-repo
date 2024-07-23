@@ -29,16 +29,12 @@ package com.tencent.bkrepo.job.batch.task.cache.preload
 
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStore
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStoreProperties
 import io.milvus.client.MilvusServiceClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.time.LocalDateTime
 
 @Configuration
 @ConditionalOnProperty("job.artifact-access-log-embedding.enabled")
@@ -50,16 +46,6 @@ class PreloadConfig {
         aiProperties: AiProperties,
         preloadProperties: ArtifactPreloadProperties,
     ): ArtifactPreloadPlanGenerator {
-        // 根据上个月的历史访问数据进行预测
-        val seq = MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.now().minusMonths(1), 1)
-        val collectionName = "${aiProperties.collectionPrefix}$seq"
-        val config = MilvusVectorStoreProperties(
-            databaseName = aiProperties.databaseName,
-            collectionName = collectionName,
-            embeddingDimension = embeddingModel.dimensions(),
-        )
-        val vectorStore = MilvusVectorStore(config, milvusClient, embeddingModel)
-
-        return ArtifactSimilarityPreloadPlanGenerator(vectorStore, aiProperties, preloadProperties)
+        return ArtifactSimilarityPreloadPlanGenerator(embeddingModel, milvusClient, aiProperties, preloadProperties)
     }
 }

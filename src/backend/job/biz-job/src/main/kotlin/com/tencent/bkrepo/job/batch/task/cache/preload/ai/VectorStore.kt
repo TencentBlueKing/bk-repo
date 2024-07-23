@@ -51,4 +51,6 @@ interface VectorStore {
     fun dropCollection()
 
     fun collectionExists(): Boolean
+
+    fun collectionName(): String
 }

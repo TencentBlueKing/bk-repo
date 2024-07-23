@@ -56,6 +56,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
@@ -72,34 +73,56 @@ class ArtifactAccessLogEmbeddingJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7L)
 
     override fun doStart0(jobContext: JobContext) {
-        val oldVectorStore = createVectorStore(2L)
-        val vectorStore = createVectorStore(1L)
-
-        if (oldVectorStore.collectionExists()) {
-            logger.info("old collection exists, maybe new collection created failed, try to drop new collection")
-            vectorStore.dropCollection()
-        } else if (vectorStore.collectionExists()) {
-            logger.info("new collection already created and filled data, skip create")
-            return
+        val oldVectorStore = createVectorStore(1L)
+        val vectorStore = createVectorStore(0L)
+        if (!oldVectorStore.collectionExists()) {
+            // 上个月的数据不存在时，使用上个月的访问记录生成数据
+            logger.info("collection[${oldVectorStore.collectionName()}] not exists, try to create and insert data")
+            oldVectorStore.createCollection()
+            oldVectorStore.findAccessLogAndInsert(1L)
+            logger.info("insert data into collection[${oldVectorStore.collectionName()}] success")
         }
 
-        vectorStore.createCollection()
-        logger.info("create new collection success, start to fill data")
+        // 生成当月数据
+        if (!vectorStore.collectionExists()) {
+            // 当月数据不存在时候，使用月初至今的访问记录生成数据
+            logger.info("collection[${vectorStore.collectionName()}] not exists, try to create and insert data")
+            vectorStore.createCollection()
+            val startOfToday = LocalDate.now().atStartOfDay()
+            vectorStore.findAccessLogAndInsert(0L, before = startOfToday)
+        } else {
+            // 已有数据，使用昨日数据生成记录
+            logger.info("collection[${vectorStore.collectionName()}] exists, insert data of last day")
+            val startOfToday = LocalDate.now().atStartOfDay()
+            val startOfLastDay = LocalDate.now().minusDays(1L).atStartOfDay()
+            vectorStore.findAccessLogAndInsert(0L, after = startOfLastDay, before = startOfToday)
+        }
+        logger.info("insert data into collection[${vectorStore.collectionName()}] success")
 
-        properties.projects.forEach { vectorStore.findAccessLogAndInsert(it) }
-
-        oldVectorStore.dropCollection()
-        logger.info("drop old collection success")
+        // 删除过期数据
+        val deprecatedVectorStore = createVectorStore(2L)
+        if (deprecatedVectorStore.collectionExists()) {
+            logger.info("deprecated collection[${deprecatedVectorStore.collectionName()}] exists")
+            deprecatedVectorStore.dropCollection()
+            logger.info("drop collection [${deprecatedVectorStore.collectionName()}] success")
+        }
     }
 
     /**
      * 获取访问记录并写入向量数据库
      */
-    private fun VectorStore.findAccessLogAndInsert(projectId: String) {
-        val documents = findData(projectId).map { Document(content = it, metadata = emptyMap()) }
-        if (documents.isNotEmpty()) {
-            insert(documents)
-            logger.info("insert ${documents.size} data of [$projectId] success")
+    private fun VectorStore.findAccessLogAndInsert(
+        minusMonth: Long,
+        after: LocalDateTime? = null,
+        before: LocalDateTime? = null
+    ) {
+        properties.projects.forEach { projectId ->
+            val documents =
+                findData(projectId, minusMonth, after, before).map { Document(content = it, metadata = emptyMap()) }
+            if (documents.isNotEmpty()) {
+                insert(documents)
+                logger.info("insert ${documents.size} data of [$projectId] into collection[${collectionName()}] success")
+            }
         }
     }
 
@@ -118,12 +141,21 @@ class ArtifactAccessLogEmbeddingJob(
     /**
      * 获取有访问记录的路径
      */
-    private fun findData(projectId: String): Set<String> {
-        val collectionName = collectionName()
+    private fun findData(
+        projectId: String,
+        minusMonth: Long,
+        after: LocalDateTime?,
+        before: LocalDateTime?,
+    ): Set<String> {
+        val collectionName = collectionName(minusMonth)
+        if (!mongoTemplate.collectionExists(collectionName)) {
+            logger.warn("mongo collection[$collectionName] not exists")
+            return emptySet()
+        }
         val pageSize = BATCH_SIZE
         var lastId = ObjectId(MIN_OBJECT_ID)
         var querySize: Int
-        val criteria = buildCriteria(projectId)
+        val criteria = buildCriteria(projectId, after, before)
         val accessPaths = HashSet<String>()
         do {
             val query = Query(criteria)
@@ -159,16 +191,19 @@ class ArtifactAccessLogEmbeddingJob(
         return accessPaths
     }
 
-    private fun collectionName(): String {
+    private fun collectionName(minusMonth: Long): String {
         // 查询上个月的记录
-        val seq = MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.now().minusMonths(1L), 1)
+        val seq = MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.now().minusMonths(minusMonth), 1)
         return "artifact_oplog_$seq"
     }
 
-    private fun buildCriteria(projectId: String): Criteria {
-        return Criteria
+    private fun buildCriteria(projectId: String, after: LocalDateTime?, before: LocalDateTime?): Criteria {
+        val criteria = Criteria
             .where(TOperateLog::projectId.name).isEqualTo(projectId)
             .and(TOperateLog::type.name).isEqualTo(EventType.NODE_DOWNLOADED.name)
+        after?.let { criteria.and(TOperateLog::createdDate.name).gte(it) }
+        before?.let { criteria.and(TOperateLog::createdDate.name).lt(it) }
+        return criteria
     }
 
     companion object {
