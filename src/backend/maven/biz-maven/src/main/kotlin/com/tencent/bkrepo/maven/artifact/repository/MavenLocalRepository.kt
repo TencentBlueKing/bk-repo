@@ -1327,7 +1327,7 @@ class MavenLocalRepository(
         fullPath: String,
         repoType: String,
     ) {
-            if (!mavenProperties.autoRecovery) return
+        if (!mavenProperties.autoRecovery) return
         if (mavenProperties.recoveryTopic.isNullOrEmpty()) return
         val event = buildNodeSeparationRecoveryEvent(
             projectId = projectId,

@@ -126,7 +126,7 @@ class DataSeparatorImpl(
     ) {
         with(context) {
             validatePackageParams(pkg)
-            val criteria = buildPackageCriteria(projectId, repoName, separationDate, pkg)
+            val criteria = buildPackageCriteria(projectId, repoName, pkg)
             val pageSize = BATCH_SIZE
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
@@ -150,11 +150,10 @@ class DataSeparatorImpl(
 
     private fun buildPackageCriteria(
         projectId: String, repoName: String,
-        separationDate: LocalDateTime, pkg: PackageFilterInfo?
+        pkg: PackageFilterInfo?
     ): Criteria {
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
-            .and(LAST_MODIFIED_DATE).lte(separationDate)
         if (pkg != null) {
             if (pkg.packageKey.isNullOrEmpty()) {
                 if (!pkg.packageKeyRegex.isNullOrEmpty()) {
