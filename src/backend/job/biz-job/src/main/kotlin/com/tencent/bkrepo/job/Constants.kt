@@ -95,8 +95,3 @@ const val JOB_TASK_RUNNING_STATUS = "job.running.status"
 const val JOB_TASK_RUNNING_STATUS_DESC = "任务执行状态"
 
 val IGNORE_PROJECT_PREFIX_LIST = listOf(CODE_PROJECT_PREFIX, CLOSED_SOURCE_PREFIX)
-
-/**
- * 向量数据库metadata中存放访问时间点的key
- */
-const val METADATA_KEY_ACCESS_TIMESTAMP = "accessTimestamp"

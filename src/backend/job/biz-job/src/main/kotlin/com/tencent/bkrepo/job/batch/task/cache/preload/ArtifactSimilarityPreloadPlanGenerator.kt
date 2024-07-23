@@ -27,19 +27,21 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload
 
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import com.tencent.bkrepo.job.METADATA_KEY_ACCESS_TIMESTAMP
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
 import java.time.LocalDateTime
+import java.time.ZoneId
 import kotlin.random.Random
 
 class ArtifactSimilarityPreloadPlanGenerator(
     private val vectorStore: VectorStore,
     private val aiProperties: AiProperties,
+    private val preloadProperties: ArtifactPreloadProperties,
 ) : ArtifactPreloadPlanGenerator {
     override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
         with(param) {
@@ -66,7 +68,9 @@ class ArtifactSimilarityPreloadPlanGenerator(
      */
     private fun calculateExecuteTime(param: ArtifactPreloadPlanGenerateParam): Long? {
         with(param) {
-            // 查询相似路径
+            val preloadHourOfDay = preloadProperties.preloadHourOfDay.sorted().ifEmpty { return null }
+
+            // 查询相似路径，没有相似路径时不执行预加载
             val searchReq = SearchRequest(
                 query = "/$projectId/$repoName$fullPath",
                 topK = 10,
@@ -77,26 +81,17 @@ class ArtifactSimilarityPreloadPlanGenerator(
                 return null
             }
 
-            // 获取相似路径的历史访问时间
-            val accessTimestamps = docs
-                .flatMap { it.metadata[METADATA_KEY_ACCESS_TIMESTAMP].toString().split(",") }
-                .map { it.toLong() }
-                .sorted()
-
-            if (accessTimestamps.isNotEmpty()) {
-                // TODO 根据历史访问时间预测下次访问时间
-                return System.currentTimeMillis() + Random.nextLong(0, RANDOM_SECONDS) * 1000L
-            }
-
-            // 没有相似路径时不执行预加载
-            return null
+            val now = LocalDateTime.now()
+            val preloadHour = preloadHourOfDay.firstOrNull { it > now.hour }
+                ?: (preloadHourOfDay.first { (it + 24) > now.hour } + 24)
+            return now
+                // 设置预加载时间
+                .plusHours((preloadHour - now.hour).toLong())
+                // 减去随机时间，避免同时多文件触发加载
+                .minusSeconds(Random.nextLong(0, preloadProperties.maxRandomSeconds))
+                // 转化为毫秒时间戳
+                .atZone(ZoneId.systemDefault())
+                .toEpochSecond() * 1000
         }
-    }
-
-    companion object {
-        /**
-         * 随机时间，避免同时加载过多文件
-         */
-        private const val RANDOM_SECONDS = 600L
     }
 }

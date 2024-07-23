@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.job.BATCH_SIZE
-import com.tencent.bkrepo.job.METADATA_KEY_ACCESS_TIMESTAMP
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
@@ -43,7 +42,6 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStore
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
-import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
 import io.milvus.client.MilvusServiceClient
 import org.bson.types.ObjectId
@@ -59,7 +57,6 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneId
 
 @Component
 @EnableConfigurationProperties(ArtifactAccessLogEmbeddingJobProperties::class)
@@ -99,11 +96,7 @@ class ArtifactAccessLogEmbeddingJob(
      * 获取访问记录并写入向量数据库
      */
     private fun VectorStore.findAccessLogAndInsert(projectId: String) {
-        val documents = findData(projectId).map {
-            val content = it.key
-            val metadata = mapOf(METADATA_KEY_ACCESS_TIMESTAMP to it.value.joinToString(","))
-            Document(content = content, metadata = metadata)
-        }
+        val documents = findData(projectId).map { Document(content = it, metadata = emptyMap()) }
         if (documents.isNotEmpty()) {
             insert(documents)
             logger.info("insert ${documents.size} data of [$projectId] success")
@@ -123,15 +116,15 @@ class ArtifactAccessLogEmbeddingJob(
     }
 
     /**
-     * 获取访问记录
+     * 获取有访问记录的路径
      */
-    private fun findData(projectId: String): Map<String, Set<Long>> {
+    private fun findData(projectId: String): Set<String> {
         val collectionName = collectionName()
         val pageSize = BATCH_SIZE
         var lastId = ObjectId(MIN_OBJECT_ID)
         var querySize: Int
         val criteria = buildCriteria(projectId)
-        val accessTimeMap = HashMap<String, MutableSet<Long>>()
+        val accessPaths = HashSet<String>()
         do {
             val query = Query(criteria)
                 .addCriteria(Criteria.where(ID).gt(lastId))
@@ -147,26 +140,23 @@ class ArtifactAccessLogEmbeddingJob(
             // 记录制品访问时间
             data.forEach {
                 val repoName = it[TOperateLog::repoName.name] as String
-                val resourceKey = it[TOperateLog::resourceKey.name] as String
-                val fullPath = if (repoName == PIPELINE) {
+                val fullPath = it[TOperateLog::resourceKey.name] as String
+                val projectRepoFullPath = if (repoName == PIPELINE) {
                     // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
-                    val secondSlashIndex = resourceKey.indexOf("/", 1)
-                    val pipelinePath = resourceKey.substring(0, secondSlashIndex)
-                    val artifactPath = resourceKey.substring(resourceKey.indexOf("/", secondSlashIndex + 1))
+                    val secondSlashIndex = fullPath.indexOf("/", 1)
+                    val pipelinePath = fullPath.substring(0, secondSlashIndex)
+                    val artifactPath = fullPath.substring(fullPath.indexOf("/", secondSlashIndex + 1))
                     pipelinePath + artifactPath
                 } else {
-                    resourceKey
+                    fullPath
                 }
-                val createdDate = TimeUtils.parseMongoDateTimeStr(it[TOperateLog::createdDate.name].toString())!!
-                val createdTimestamp = createdDate.atZone(ZoneId.systemDefault()).toInstant().epochSecond
-                val accessTime = accessTimeMap.getOrPut("/$projectId/$repoName$fullPath") { HashSet() }
-                accessTime.add(createdTimestamp)
+                accessPaths.add("/$projectId/$repoName$projectRepoFullPath")
             }
 
             querySize = data.size
             lastId = data.last()[ID] as ObjectId
         } while (querySize == pageSize && shouldRun())
-        return accessTimeMap
+        return accessPaths
     }
 
     private fun collectionName(): String {
