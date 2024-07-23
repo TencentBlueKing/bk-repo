@@ -80,15 +80,22 @@ class SeparationTaskServiceImpl(
                     separationTaskDao.save(task)
                 }
                 RESTORE -> {
-                    val separatedDates = findDistinctSeparationDate(projectId, repoName)
-                    if (separatedDates.isEmpty()) {
-                        logger.warn("no cold data has been stored in $projectId|$repoName")
-                        throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::type.name)
-                    }
-                    separatedDates.forEach {
-                        val task = buildSeparationTask(request, it)
+                    if (separateAt.isNullOrEmpty()) {
+                        val separatedDates = findDistinctSeparationDate(projectId, repoName)
+                        if (separatedDates.isEmpty()) {
+                            logger.warn("no cold data has been stored in $projectId|$repoName")
+                            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::type.name)
+                        }
+                        separatedDates.forEach {
+                            val task = buildSeparationTask(request, it)
+                            separationTaskDao.save(task)
+                        }
+                    } else {
+                        val date = LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
+                        val task = buildSeparationTask(request, date)
                         separationTaskDao.save(task)
                     }
+
                 }
                 else -> {
                     logger.warn("unsupported task type $type")
@@ -194,10 +201,12 @@ class SeparationTaskServiceImpl(
     }
 
     private fun buildSeparationTask(
-        request: SeparationTaskRequest, restoreDate: LocalDateTime? = null
+        request: SeparationTaskRequest,
+        restoreDate: LocalDateTime? = null,
+        userId: String = SecurityUtils.getUserId()
     ): TSeparationTask {
         with(request) {
-            val userId = SecurityUtils.getUserId()
+            val userId = userId
             val date = restoreDate ?: LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
             val separateDate = LocalDateTime.of(date.toLocalDate(), LocalTime.MAX)
             return TSeparationTask(
