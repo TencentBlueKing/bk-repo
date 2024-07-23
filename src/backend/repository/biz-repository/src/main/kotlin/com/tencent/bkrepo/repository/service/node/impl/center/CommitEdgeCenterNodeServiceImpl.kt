@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.center
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -84,7 +85,8 @@ class CommitEdgeCenterNodeServiceImpl(
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
     override val fsNodeClient: FsNodeClient,
-    val clusterProperties: ClusterProperties
+    val clusterProperties: ClusterProperties,
+    val archiveClient: ArchiveClient,
 ) : NodeServiceImpl(
     nodeDao,
     repositoryDao,
@@ -97,7 +99,8 @@ class CommitEdgeCenterNodeServiceImpl(
     servicePermissionClient,
     routerControllerClient,
     routerControllerProperties,
-    fsNodeClient
+    fsNodeClient,
+    archiveClient
 ) {
 
     override fun checkRepo(projectId: String, repoName: String): TRepository {
