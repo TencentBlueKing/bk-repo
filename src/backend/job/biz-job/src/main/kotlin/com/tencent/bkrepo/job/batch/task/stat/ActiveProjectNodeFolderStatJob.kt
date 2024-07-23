@@ -101,7 +101,7 @@ class ActiveProjectNodeFolderStatJob(
     /**
      * 最长加锁时间
      */
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(14)
 
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveProjectNodeFolderStatJob::class.java)

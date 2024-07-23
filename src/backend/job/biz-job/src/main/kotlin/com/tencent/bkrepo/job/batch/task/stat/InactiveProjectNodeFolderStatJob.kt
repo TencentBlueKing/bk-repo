@@ -81,7 +81,7 @@ class InactiveProjectNodeFolderStatJob(
     /**
      * 最长加锁时间
      */
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(14)
 
     fun statProjectCheck(
         projectId: String,
