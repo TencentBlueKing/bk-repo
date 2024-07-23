@@ -149,9 +149,11 @@ class ArtifactAccessLogEmbeddingJob(
                 val repoName = it[TOperateLog::repoName.name] as String
                 val resourceKey = it[TOperateLog::resourceKey.name] as String
                 val fullPath = if (repoName == PIPELINE) {
-                    // 流水线仓库路径/p-xxx/b-xxx/xxx中的流水线id与构建id不参与相似度计算
+                    // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
                     val secondSlashIndex = resourceKey.indexOf("/", 1)
-                    resourceKey.substring(resourceKey.indexOf("/"), secondSlashIndex + 1)
+                    val pipelinePath = resourceKey.substring(0, secondSlashIndex)
+                    val artifactPath = resourceKey.substring(resourceKey.indexOf("/", secondSlashIndex + 1))
+                    pipelinePath + artifactPath
                 } else {
                     resourceKey
                 }
