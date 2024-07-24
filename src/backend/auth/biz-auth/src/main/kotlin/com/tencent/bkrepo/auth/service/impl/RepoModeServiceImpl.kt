@@ -57,10 +57,10 @@ class RepoModeServiceImpl(
         if (repoDetail.public) return null
         var controlMode = accessControlMode
         if (accessControlMode == null) {
-            controlMode = AccessControlMode.FREE
+            controlMode = AccessControlMode.DEFAULT
         }
 
-        if (accessControlMode == AccessControlMode.FREE &&
+        if (accessControlMode == AccessControlMode.DEFAULT &&
             permissionDao.listByResourceAndRepo(ResourceType.NODE.name, projectId, repoName).isNotEmpty()
         ) {
             controlMode = AccessControlMode.DIR_CTRL
@@ -72,7 +72,7 @@ class RepoModeServiceImpl(
 
 
     override fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus {
-        var controlMode = AccessControlMode.FREE
+        var controlMode = AccessControlMode.DEFAULT
         var officeDenyGroupSet = emptySet<String>()
         if (permissionDao.listByResourceAndRepo(ResourceType.NODE.name, projectId, repoName).isNotEmpty()) {
             controlMode = AccessControlMode.DIR_CTRL

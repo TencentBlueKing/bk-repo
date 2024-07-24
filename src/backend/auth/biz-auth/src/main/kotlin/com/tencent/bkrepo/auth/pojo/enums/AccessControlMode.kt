@@ -35,7 +35,7 @@ enum class AccessControlMode {
     // 严格模式
     STRICT,
     // 任意下载
-    FREE,
+    DEFAULT,
     // 目录控制
     DIR_CTRL
 }
