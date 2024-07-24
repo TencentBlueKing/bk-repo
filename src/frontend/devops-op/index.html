@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title><%= htmlWebpackPlugin.options.title %></title>
+</head>
+<body>
+<script>
+  var PAAS_SERVICE_URL = '__BK_HTTP_SCHEMA__://__BK_REPO_PAAS_FQDN__'
+  var DEVOPS_SITE_URL = '__BK_HTTP_SCHEMA__://__BK_CI_FQDN__'
+  var LOGIN_SERVICE_URL = /^https?/.test(PAAS_SERVICE_URL)
+    ? PAAS_SERVICE_URL + '/login/'
+    : '__BK_REPO_PAAS_LOGIN_URL__'
+  // standalone: 独立部署模式
+  // ci: ci模式接入devops平台
+  // saas: saas模式接入蓝鲸底座
+  var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
+  // 是否显示项目设置菜单
+  var SHOW_PROJECT_CONFIG_MENU = MODE_CONFIG !== 'ci'
+  // 是否显示制品分析菜单
+  var SHOW_ANALYST_MENU = '__BK_REPO_SHOW_ANALYST_MENU__' || 'false'
+  SHOW_ANALYST_MENU = SHOW_ANALYST_MENU === 'true'
+  var ADD_FROM_LOGOUT = '__IS_FROM_LOGOUT__' || 'not'
+  // 区分社区版与内部版  community -> 社区   tencent -> 内部
+  var RELEASE_MODE = '__BK_REPO_RELEASE_MODE__' || 'community'
+</script>
+<script>
+  const inIframe = self !== top
+  // iframe内使用ci模式
+  if (MODE_CONFIG === 'saas' && inIframe) {
+    MODE_CONFIG = 'ci'
+  }
+  window.MODE_CONFIG = MODE_CONFIG
+  window.LOGIN_SERVICE_URL = LOGIN_SERVICE_URL
+
+  window.getLoginUrl = function (cUrl = location.href) {
+    if (/\{+curl\}+/i.test(LOGIN_SERVICE_URL)) {
+      return LOGIN_SERVICE_URL.replace(/\{+curl\}+/i, encodeURIComponent(cUrl))
+    } else if (/=%s/.test(LOGIN_SERVICE_URL)) {
+      return LOGIN_SERVICE_URL.replace(/%s/, cUrl)
+    } else {
+      const loginUrl = new URL(LOGIN_SERVICE_URL)
+      if (/=$/.test(loginUrl.search)) {
+        return LOGIN_SERVICE_URL + cUrl
+      } else {
+        loginUrl.searchParams.set('c_url', cUrl)
+        return loginUrl.href
+      }
+    }
+  }
+</script>
+<div id="app"></div>
+<!-- built files will be auto injected -->
+</body>
+</html>

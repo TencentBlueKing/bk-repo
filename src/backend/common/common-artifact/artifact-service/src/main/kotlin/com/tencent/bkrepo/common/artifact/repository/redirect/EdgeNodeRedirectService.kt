@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
@@ -88,10 +89,15 @@ class EdgeNodeRedirectService(
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterName)
         val edgeDomain = getEdgeDomain(clusterInfo)
         val request = downloadContext.request
-        val requestPath = buildPath(request)
         val queryString = buildQueryString(request)
-        val token = createTempToken(downloadContext)
-        val redirectUrl = "$edgeDomain$GENERIC_SERVICE_NAME$requestPath?token=$token&$queryString"
+        val apiType = HeaderUtils.getHeader(HEADER_BKREPO_API_TYPE)
+        val redirectUrl = if (apiType.equals("web", ignoreCase = true)) {
+            "${edgeDomain}web/$GENERIC_SERVICE_NAME${request.requestURI}?$queryString"
+        } else {
+            val requestPath = buildPath(request)
+            val token = createTempToken(downloadContext)
+            "$edgeDomain$GENERIC_SERVICE_NAME$requestPath?token=$token&$queryString"
+        }
         downloadContext.response.sendRedirect(redirectUrl)
     }
 
@@ -163,5 +169,6 @@ class EdgeNodeRedirectService(
         const val TEMPORARY_REQUEST_PREFIX = "/temporary/download" // 临时链接下载前缀
         const val SHARE_REQUEST_PREFIX = "/api/share" // 共享链接下载前缀
         const val REPO_LIST_REQUEST_PREFIX = "/api/list" // 仓库列表下载前缀
+        const val HEADER_BKREPO_API_TYPE = "X-BKREPO-API-TYPE"
     }
 }

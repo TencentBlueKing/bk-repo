@@ -34,13 +34,13 @@ import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
-import com.tencent.bkrepo.job.NODE_NUM
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SIZE
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
+import com.tencent.bkrepo.job.pojo.FolderInfo
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -48,12 +48,16 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.redis.core.HashOperations
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.ScanOptions
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 @Component
 class EmptyFolderCleanup(
     private val mongoTemplate: MongoTemplate,
+    private val redisTemplate: RedisTemplate<String, String>,
 ) {
 
     fun buildNode(
@@ -76,9 +80,15 @@ class EmptyFolderCleanup(
         )
     }
 
-    fun collectEmptyFolder(
+    fun removeRedisKey(key: String) {
+        redisTemplate.delete(key)
+    }
+
+    fun collectEmptyFolderWithMemory(
         row: Node,
         context: EmptyFolderCleanupJobContext,
+        useMemory: Boolean,
+        keyPrefix: String,
         collectionName: String? = null
     ) {
         if (row.folder) {
@@ -105,9 +115,66 @@ class EmptyFolderCleanup(
                 folderMetric.nodeNum.increment()
             }
         }
+        if (!useMemory) {
+            collectEmptyFolderWithRedis(
+                context = context,
+                keyPrefix = keyPrefix,
+                projectId = row.projectId,
+                collectionName = collectionName
+            )
+        }
     }
 
-    fun emptyFolderHandler(
+    /**
+     * 将存储在内存中的临时记录更新到redis
+     */
+    fun collectEmptyFolderWithRedis(
+        context: EmptyFolderCleanupJobContext,
+        force: Boolean = false,
+        keyPrefix: String,
+        projectId: String = StringPool.EMPTY,
+        collectionName: String? = null
+    ) {
+        if (!force && context.folders.size < 100000) return
+        if (context.folders.isEmpty()) return
+        val movedToRedis: MutableList<String> = mutableListOf()
+        val storedFolderPrefix = if (collectionName.isNullOrEmpty()) {
+            FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId) + StringPool.COLON
+        } else {
+            FolderUtils.buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
+        }
+        // 避免每次设置值都创建一个 Redis 连接
+        redisTemplate.execute { connection ->
+            val hashCommands = connection.hashCommands()
+            for (entry in context.folders) {
+                if (!entry.key.startsWith(storedFolderPrefix)) continue
+                val folderInfo = extractFolderInfoFromCacheKey(entry.key, collectionName != null) ?: continue
+                val nodeNumHKey = FolderUtils.buildCacheKey(
+                    projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                    fullPath = folderInfo.fullPath, tag = NODE_NUM
+                )
+
+                val key = keyPrefix + StringPool.COLON + FolderUtils.buildCacheKey(
+                    collectionName = collectionName, projectId = projectId
+                )
+                hashCommands.hIncrBy(key.toByteArray(), nodeNumHKey.toByteArray(), entry.value.nodeNum.toLong())
+                entry.value.id?.let {
+                    val idHKey = FolderUtils.buildCacheKey(
+                        projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                        fullPath = folderInfo.fullPath, tag = NODE_ID
+                    )
+                    hashCommands.hSet(key.toByteArray(), idHKey.toByteArray(), entry.value.id!!.toByteArray())
+                }
+                movedToRedis.add(entry.key)
+            }
+            null
+        }
+        for (key in movedToRedis) {
+            context.folders.remove(key)
+        }
+    }
+
+    fun emptyFolderHandlerWithMemory(
         collection: String,
         context: EmptyFolderCleanupJobContext,
         deletedEmptyFolder: Boolean,
@@ -124,27 +191,116 @@ class EmptyFolderCleanup(
         for (entry in context.folders) {
             if (!entry.key.startsWith(prefix) || entry.value.nodeNum.toLong() > 0) continue
             val folderInfo = extractFolderInfoFromCacheKey(entry.key, runCollection) ?: continue
-            if (emptyFolderDoubleCheck(
-                    projectId = folderInfo.projectId,
-                    repoName = folderInfo.repoName,
-                    path = folderInfo.fullPath,
-                    collectionName = collection
-                )) {
-                val deletedFlag = deletedFolderFlag(
-                    repoName = folderInfo.repoName,
-                    deletedEmptyFolder = deletedEmptyFolder,
-                    deleteFolderRepos = deleteFolderRepos
-                )
-                logger.info(
-                    "will delete empty folder ${folderInfo.fullPath}" +
-                        " in repo ${folderInfo.projectId}|${folderInfo.repoName} " +
-                        "with config deletedFlag: $deletedFlag"
-                )
-                doEmptyFolderDelete(entry.value.id, collection, deletedFlag)
-                context.totalDeletedNum.increment()
-            }
+            emptyFolderHandler(
+                folderInfo = folderInfo,
+                context = context,
+                collection = collection,
+                deleteFolderRepos = deleteFolderRepos,
+                deletedEmptyFolder = deletedEmptyFolder,
+                id = entry.value.id!!,
+            )
         }
         clearContextCache(projectId, context, collection, runCollection)
+    }
+
+    fun emptyFolderHandlerWithRedis(
+        collection: String,
+        keyPrefix: String,
+        deletedEmptyFolder: Boolean,
+        deleteFolderRepos: List<String>,
+        context: EmptyFolderCleanupJobContext,
+        runCollection: Boolean = false,
+        projectId: String = StringPool.EMPTY,
+    ) {
+
+        val keySuffix = if (runCollection) {
+            FolderUtils.buildCacheKey(collectionName = collection, projectId = projectId)
+        } else {
+            FolderUtils.buildCacheKey(collectionName = null, projectId = projectId)
+        }
+        val key = keyPrefix + StringPool.COLON + keySuffix
+        val hashOps = redisTemplate.opsForHash<String, String>()
+        val options = ScanOptions.scanOptions().build()
+        redisTemplate.execute { connection ->
+            val hashCommands = connection.hashCommands()
+            val cursor = hashCommands.hScan(key.toByteArray(), options)
+            while (cursor.hasNext()) {
+                val entry: Map.Entry<ByteArray, ByteArray> = cursor.next()
+                val keyStr = String(entry.key).substringBeforeLast(StringPool.COLON)
+                val folderInfo = extractFolderInfoFromCacheKey(keyStr) ?: continue
+                val statInfo = getFolderStatInfo(
+                    key, entry, folderInfo, hashOps
+                )
+                if (statInfo.nodeNum > 0) continue
+                emptyFolderHandler(
+                    folderInfo = folderInfo,
+                    context = context,
+                    collection = collection,
+                    deleteFolderRepos = deleteFolderRepos,
+                    deletedEmptyFolder = deletedEmptyFolder,
+                    id = statInfo.id!!,
+                )
+            }
+        }
+        redisTemplate.delete(key)
+    }
+
+    private fun emptyFolderHandler(
+        folderInfo: FolderInfo,
+        collection: String,
+        deletedEmptyFolder: Boolean,
+        deleteFolderRepos: List<String>,
+        id: String,
+        context: EmptyFolderCleanupJobContext,
+    ) {
+        if (emptyFolderDoubleCheck(
+                projectId = folderInfo.projectId,
+                repoName = folderInfo.repoName,
+                path = folderInfo.fullPath,
+                collectionName = collection
+            )) {
+            val deletedFlag = deletedFolderFlag(
+                repoName = folderInfo.repoName,
+                deletedEmptyFolder = deletedEmptyFolder,
+                deleteFolderRepos = deleteFolderRepos
+            )
+            logger.info(
+                "will delete empty folder ${folderInfo.fullPath}" +
+                    " in repo ${folderInfo.projectId}|${folderInfo.repoName} " +
+                    "with config deletedFlag: $deletedFlag"
+            )
+            doEmptyFolderDelete(id, collection, deletedFlag)
+            context.totalDeletedNum.increment()
+        }
+    }
+
+    /**
+     * 从redis中获取对应目录的统计信息
+     */
+    private fun getFolderStatInfo(
+        key: String,
+        entry: Map.Entry<ByteArray, ByteArray>,
+        folderInfo: FolderInfo,
+        hashOps: HashOperations<String, String, String>
+    ): StatInfo {
+        val id: String
+        val nodeNum: Long
+        if (String(entry.key).endsWith(SIZE)) {
+            val nodeNumKey = FolderUtils.buildCacheKey(
+                projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                fullPath = folderInfo.fullPath, tag = NODE_NUM
+            )
+            id = String(entry.value)
+            nodeNum = hashOps.get(key, nodeNumKey)?.toLongOrNull() ?: 0
+        } else {
+            val idKey = FolderUtils.buildCacheKey(
+                projectId = folderInfo.projectId, repoName = folderInfo.repoName,
+                fullPath = folderInfo.fullPath, tag = NODE_ID
+            )
+            nodeNum = String(entry.value).toLongOrNull() ?: 0
+            id = hashOps.get(key, idKey) ?: StringPool.EMPTY
+        }
+        return StatInfo(id, nodeNum)
     }
 
     /**
@@ -237,8 +393,17 @@ class EmptyFolderCleanup(
         val repoName: String,
     )
 
+    data class StatInfo(
+        var id: String?,
+        var nodeNum: Long
+    )
+
+
     companion object {
         private val logger = LoggerFactory.getLogger(EmptyFolderCleanup::class.java)
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
+        private const val NODE_NUM = "nodeNum"
+        private const val NODE_ID = "nodeId"
+
     }
 }

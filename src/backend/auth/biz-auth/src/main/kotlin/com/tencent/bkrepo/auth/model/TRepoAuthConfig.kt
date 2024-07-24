@@ -46,6 +46,7 @@ data class TRepoAuthConfig(
     var projectId: String,
     var repoName: String,
     var accessControl: Boolean,
+    var officeDenyGroupSet: Set<String>?,
     var lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime
 )

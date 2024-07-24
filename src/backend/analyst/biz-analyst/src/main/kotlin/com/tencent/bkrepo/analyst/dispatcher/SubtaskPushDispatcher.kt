@@ -57,6 +57,8 @@ abstract class SubtaskPushDispatcher<T : ExecutionCluster>(
                 executor.execute { doDispatch(subtask) }
             }
             logger.info("[$dispatchedTaskCount] subtask was dispatched to cluster[${executionCluster.name}]")
+        } catch (e: Exception) {
+            logger.error("cluster [${executionCluster.name}] dispatch failed", e)
         } finally {
             lock.unlock()
         }

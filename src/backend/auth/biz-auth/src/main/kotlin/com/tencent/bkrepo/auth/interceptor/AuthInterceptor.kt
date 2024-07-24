@@ -33,12 +33,13 @@ package com.tencent.bkrepo.auth.interceptor
 
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_AUTH_MODE_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_CHECK_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_TOKEN_DECREMENT_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_TOKEN_DELETE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_TOKEN_INFO_PREFIX
@@ -242,8 +243,8 @@ class AuthInterceptor(
             AUTH_API_ROLE_PREFIX,
             AUTH_API_PERMISSION_PREFIX,
             AUTH_API_OAUTH_PREFIX,
-            AUTH_API_AUTH_MODE_PREFIX
-
+            AUTH_API_AUTH_MODE_PREFIX,
+            AUTH_CLUSTER_PREFIX
         )
 
         private val anonymousAccessApiSet = setOf(

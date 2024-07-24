@@ -872,7 +872,10 @@
     "bkciUserGroup":"蓝盾用户组",
     "userSource":"用户来源",
     "bkci": "蓝盾",
-    "rootDirectoryPermission": "访问控制：",
+    "rootDirectoryPermissionTitle": "访问控制",
+    "rootDirectoryPermission": "项目内访问控制",
     "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权",
-    "errMsg": "错误信息"
+    "errMsg": "错误信息",
+    "blackUserList": "办公网访问黑名单",
+    "controlConfigPlaceholder": "选择用户组"
 }

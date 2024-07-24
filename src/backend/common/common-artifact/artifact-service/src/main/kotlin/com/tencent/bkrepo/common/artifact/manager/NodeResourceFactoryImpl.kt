@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.artifact.manager
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.manager.resource.FsNodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.LocalNodeResource
@@ -69,11 +70,12 @@ class NodeResourceFactoryImpl(
         storageCredentials: StorageCredentials?,
     ): NodeResource {
         val digest = nodeInfo.sha256.orEmpty()
-        if (clusterProperties.role == ClusterNodeType.EDGE) {
-            return RemoteNodeResource(digest, range, storageCredentials, centerClusterInfo, storageService)
-        }
         if (isFsFile(nodeInfo)) {
             return FsNodeResource(nodeInfo, fsNodeClient, range, storageService, storageCredentials)
+        }
+        if (clusterProperties.role == ClusterNodeType.EDGE &&
+            clusterProperties.architecture != ClusterArchitecture.COMMIT_EDGE) {
+            return RemoteNodeResource(digest, range, storageCredentials, centerClusterInfo, storageService)
         }
         val clusterName = getClusterName(nodeInfo)
         if (!inLocal(nodeInfo) && clusterName != null) {

@@ -49,13 +49,19 @@ class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
         )
     }
 
-    fun upsertProjectRepo(projectId: String, repoName: String, status: Boolean): String {
+    fun upsertProjectRepo(
+        projectId: String,
+        repoName: String,
+        status: Boolean,
+        officeDenyGroupSet: Set<String>
+    ): String {
         val query = Query.query(
             Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId)
                 .and(TRepoAuthConfig::repoName.name).`is`(repoName)
         )
         val options = FindAndModifyOptions().returnNew(true).upsert(true)
         val update = Update().set(TRepoAuthConfig::accessControl.name, status)
+            .set(TRepoAuthConfig::officeDenyGroupSet.name, officeDenyGroupSet)
             .set(TRepoAuthConfig::lastModifiedBy.name, SecurityUtils.getUserId())
             .set(TRepoAuthConfig::lastModifiedDate.name, LocalDateTime.now())
         return this.findAndModify(query, update, options, TRepoAuthConfig::class.java)!!.id!!

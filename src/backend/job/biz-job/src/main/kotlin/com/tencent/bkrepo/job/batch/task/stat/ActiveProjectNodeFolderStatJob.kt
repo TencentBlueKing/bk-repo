@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
+import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.config.properties.ActiveProjectNodeFolderStatJobProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -46,7 +48,7 @@ import java.time.Duration
 @Component
 @EnableConfigurationProperties(ActiveProjectNodeFolderStatJobProperties::class)
 class ActiveProjectNodeFolderStatJob(
-    properties: ActiveProjectNodeFolderStatJobProperties,
+    val properties: ActiveProjectNodeFolderStatJobProperties,
     executor: ThreadPoolTaskExecutor,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
@@ -65,6 +67,14 @@ class ActiveProjectNodeFolderStatJob(
         return Criteria().and(FOLDER).`is`(false)
     }
 
+    override fun beforeRunProject(projectId: String) {
+        if (properties.userMemory) return
+        // 每次任务启动前要将redis上对应的key清理， 避免干扰
+        val key = KEY_PREFIX + StringPool.COLON +
+            FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
+        nodeFolderStat.removeRedisKey(key)
+    }
+
     override fun runRow(row: StatNode, context: JobContext) {
         require(context is NodeFolderJobContext)
         val node = nodeFolderStat.buildNode(
@@ -76,7 +86,12 @@ class ActiveProjectNodeFolderStatJob(
             folder = row.folder,
             size = row.size
         )
-        nodeFolderStat.collectNode(node, context)
+        nodeFolderStat.collectNode(
+            node = node,
+            context = context,
+            useMemory = properties.userMemory,
+            keyPrefix = KEY_PREFIX
+        )
     }
 
     override fun createJobContext(): NodeFolderJobContext {
@@ -94,8 +109,22 @@ class ActiveProjectNodeFolderStatJob(
      */
     override fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {
         require(context is NodeFolderJobContext)
-        logger.info("store memory cache to db with projectId $projectId")
-        nodeFolderStat.storeMemoryCacheToDB(context, collection, projectId)
+        if (!properties.userMemory) {
+            nodeFolderStat.updateRedisCache(
+                context = context,
+                force = true,
+                keyPrefix = KEY_PREFIX,
+                collectionName = null,
+                projectId = projectId
+            )
+        }
+
+        logger.info("store cache to db with projectId $projectId")
+        if (properties.userMemory) {
+            nodeFolderStat.storeMemoryCacheToDB(context, collection, projectId)
+        } else {
+            nodeFolderStat.storeRedisCacheToDB(context, KEY_PREFIX, collection, projectId)
+        }
     }
 
     /**
@@ -105,5 +134,6 @@ class ActiveProjectNodeFolderStatJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveProjectNodeFolderStatJob::class.java)
+        private const val KEY_PREFIX = "activeProjectNode"
     }
 }

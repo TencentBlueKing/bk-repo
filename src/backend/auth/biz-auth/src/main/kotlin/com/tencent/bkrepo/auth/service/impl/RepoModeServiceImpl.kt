@@ -41,19 +41,33 @@ class RepoModeServiceImpl(
     private val repoAuthConfigDao: RepoAuthConfigDao
 ) : RepoModeService {
 
-    override fun createOrUpdateConfig(projectId: String, repoName: String, status: Boolean): RepoModeStatus {
-        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, status)
-        return RepoModeStatus(id, status)
+    override fun createOrUpdateConfig(
+        projectId: String,
+        repoName: String,
+        controlEnable: Boolean,
+        officeDenyGroupSet: Set<String>
+    ): RepoModeStatus {
+        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, controlEnable, officeDenyGroupSet)
+        return RepoModeStatus(id, controlEnable, controlEnable, officeDenyGroupSet)
     }
 
 
     override fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus {
         val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName)
         if (result != null) {
-            return RepoModeStatus(result.id!!, result.accessControl)
+            var officeDenyGroupSet = emptySet<String>()
+            if (result.officeDenyGroupSet != null) {
+                officeDenyGroupSet = result.officeDenyGroupSet!!
+            }
+            return RepoModeStatus(
+                id = result.id!!,
+                status = result.accessControl,
+                controlEnable = result.accessControl,
+                officeDenyGroupSet = officeDenyGroupSet
+            )
         }
-        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, false)
-        return RepoModeStatus(id, false)
+        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, false, emptySet())
+        return RepoModeStatus(id = id)
     }
 
 
