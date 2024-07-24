@@ -39,6 +39,7 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStorePrope
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
 import io.milvus.client.MilvusClient
+import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.random.Random
@@ -77,8 +78,9 @@ class ArtifactSimilarityPreloadPlanGenerator(
             val preloadHourOfDay = preloadProperties.preloadHourOfDay.sorted().ifEmpty { return null }
 
             // 查询相似路径，没有相似路径时不执行预加载
+            val projectPath = "/$projectId/$repoName$fullPath"
             val searchReq = SearchRequest(
-                query = "/$projectId/$repoName$fullPath",
+                query = projectPath,
                 topK = 10,
                 similarityThreshold = aiProperties.defaultSimilarityThreshold
             )
@@ -86,13 +88,14 @@ class ArtifactSimilarityPreloadPlanGenerator(
                 createVectorStore(1L).similaritySearch(searchReq)
             }
             if (docs.isEmpty()) {
+                logger.info("no similarity path found for [$projectPath]")
                 return null
             }
 
             val now = LocalDateTime.now()
             val preloadHour = preloadHourOfDay.firstOrNull { it > now.hour }
                 ?: (preloadHourOfDay.first { (it + 24) > now.hour } + 24)
-            return now
+            val preloadTimestamp = now
                 // 设置预加载时间
                 .plusHours((preloadHour - now.hour).toLong())
                 // 减去随机时间，避免同时多文件触发加载
@@ -100,6 +103,10 @@ class ArtifactSimilarityPreloadPlanGenerator(
                 // 转化为毫秒时间戳
                 .atZone(ZoneId.systemDefault())
                 .toEpochSecond() * 1000
+            logger.info(
+                "similarity path[${docs.first().content}] found for [$projectPath], will preload on $preloadTimestamp"
+            )
+            return preloadTimestamp
         }
     }
 
@@ -113,6 +120,9 @@ class ArtifactSimilarityPreloadPlanGenerator(
             embeddingDimension = embeddingModel.dimensions(),
         )
         return MilvusVectorStore(config, milvusClient, embeddingModel)
+    }
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(ArtifactSimilarityPreloadPlanGenerator::class.java)
     }
 }
