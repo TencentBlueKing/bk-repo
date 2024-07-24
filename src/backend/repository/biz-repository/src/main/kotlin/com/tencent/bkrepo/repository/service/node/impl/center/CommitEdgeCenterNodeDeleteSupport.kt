@@ -65,6 +65,10 @@ class CommitEdgeCenterNodeDeleteSupport(
         fullPath: String,
         operator: String
     ): NodeDeleteResult {
+        val clusterName = SecurityUtils.getClusterName()
+        if (clusterName.isNullOrEmpty()) {
+            return super.deleteByPath(projectId, repoName, fullPath, operator)
+        }
         val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
         val node = nodeDao.findNode(projectId, repoName, normalizedFullPath)
             ?: return NodeDeleteResult(0,0, LocalDateTime.now())
