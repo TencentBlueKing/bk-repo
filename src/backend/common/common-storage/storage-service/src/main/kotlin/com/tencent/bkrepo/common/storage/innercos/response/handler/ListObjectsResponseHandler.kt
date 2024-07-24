@@ -22,7 +22,7 @@ class ListObjectsResponseHandler(val client: CosClient, val req: ListObjectsRequ
         private var it = response.contents.iterator()
         private var nextMarker = response.nextMarker
         override fun hasNext(): Boolean {
-            if (!it.hasNext() && nextMarker.isNotEmpty()) {
+            if (!it.hasNext() && nextMarker?.isNotEmpty() == true) {
                 load()
             }
             return it.hasNext()

@@ -17,7 +17,7 @@ data class ListObjectsResponse(
     @JacksonXmlProperty(localName = "MaxKeys")
     var maxKeys: Int = 0,
     @JacksonXmlProperty(localName = "NextMarker")
-    var nextMarker: String = "",
+    var nextMarker: String? = null,
     @JacksonXmlElementWrapper(useWrapping = false)
     @JacksonXmlProperty(localName = "Contents")
     var contents: List<Content> = mutableListOf(),
