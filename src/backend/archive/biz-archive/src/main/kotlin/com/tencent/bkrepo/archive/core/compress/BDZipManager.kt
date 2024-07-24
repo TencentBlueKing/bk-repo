@@ -23,6 +23,8 @@ import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoSink
@@ -39,13 +41,22 @@ import java.util.function.Function
  * */
 @Component
 class BDZipManager(
-    private val compressFileDao: CompressFileDao,
     private val archiveProperties: ArchiveProperties,
-    private val fileReferenceClient: FileReferenceClient,
-    private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
     private val fileProvider: PriorityFileProvider,
 ) : Function<TCompressFile, Mono<TaskResult>> {
+    @Autowired
+    @Lazy
+    private lateinit var compressFileDao: CompressFileDao
+
+    @Autowired
+    @Lazy
+    private lateinit var fileReferenceClient: FileReferenceClient
+
+    @Autowired
+    @Lazy
+    private lateinit var compressFileRepository: CompressFileRepository
+
     private val workDir = archiveProperties.gc.path.toPath()
 
     val workThreadPool = ArchiveUtils.newFixedAndCachedThreadPool(
