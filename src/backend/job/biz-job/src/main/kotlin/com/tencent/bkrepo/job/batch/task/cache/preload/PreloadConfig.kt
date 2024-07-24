@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import io.milvus.client.MilvusServiceClient
+import io.milvus.client.MilvusClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -41,7 +41,7 @@ import org.springframework.context.annotation.Configuration
 class PreloadConfig {
     @Bean("INTELLIGENT")
     fun artifactSimilarityPreloadPlanGenerator(
-        milvusClient: MilvusServiceClient,
+        milvusClient: MilvusClient,
         embeddingModel: EmbeddingModel,
         aiProperties: AiProperties,
         preloadProperties: ArtifactPreloadProperties,

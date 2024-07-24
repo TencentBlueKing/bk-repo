@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
 import com.alibaba.fastjson.JSONObject
-import io.milvus.client.MilvusServiceClient
+import io.milvus.client.MilvusClient
 import io.milvus.common.clientenum.ConsistencyLevelEnum
 import io.milvus.grpc.DataType
 import io.milvus.param.MetricType
@@ -54,7 +54,7 @@ import org.springframework.beans.factory.InitializingBean
  */
 class MilvusVectorStore(
     private val config: MilvusVectorStoreProperties,
-    private val milvusClient: MilvusServiceClient,
+    private val milvusClient: MilvusClient,
     private val embeddingModel: EmbeddingModel,
 ) : VectorStore, InitializingBean {
 

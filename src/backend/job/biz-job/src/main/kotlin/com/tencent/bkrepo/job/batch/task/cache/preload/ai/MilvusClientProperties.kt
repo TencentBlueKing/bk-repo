@@ -31,7 +31,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import java.util.concurrent.TimeUnit
 
 @ConfigurationProperties("spring.ai.vectorstore.milvus.client")
-data class MilvusServiceClientProperties(
+data class MilvusClientProperties(
     var host: String = "localhost",
     var port: Int = 19530,
     var uri: String? = null,

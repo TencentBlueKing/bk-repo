@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
+import io.milvus.client.MilvusClient
 import io.milvus.client.MilvusServiceClient
 import io.milvus.param.ConnectParam
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -39,7 +40,7 @@ import java.util.concurrent.TimeUnit
 @EnableConfigurationProperties(
     AiProperties::class,
     MilvusVectorStoreProperties::class,
-    MilvusServiceClientProperties::class
+    MilvusClientProperties::class
 )
 @ConditionalOnProperty("job.artifact-access-log-embedding.enabled")
 class SpringAiConfiguration {
@@ -50,7 +51,7 @@ class SpringAiConfiguration {
     }
 
     @Bean
-    fun milvusClient(properties: MilvusServiceClientProperties): MilvusServiceClient {
+    fun milvusClient(properties: MilvusClientProperties): MilvusClient {
         with(properties) {
             val builder = ConnectParam.newBuilder()
                 .withHost(host)

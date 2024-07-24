@@ -43,7 +43,7 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStore
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
-import io.milvus.client.MilvusServiceClient
+import io.milvus.client.MilvusClient
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -66,7 +66,7 @@ class ArtifactAccessLogEmbeddingJob(
     private val aiProperties: AiProperties,
     private val properties: ArtifactAccessLogEmbeddingJobProperties,
     private val mongoTemplate: MongoTemplate,
-    private val milvusClient: MilvusServiceClient,
+    private val milvusClient: MilvusClient,
     private val embeddingModel: EmbeddingModel,
 ) : DefaultContextJob(properties) {
 
@@ -175,7 +175,9 @@ class ArtifactAccessLogEmbeddingJob(
                 TOperateLog::createdDate.name
             )
             val data = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
-
+            if (data.isEmpty()) {
+                break
+            }
             // 记录制品访问时间
             data.forEach {
                 val repoName = it[TOperateLog::repoName.name] as String
@@ -208,8 +210,12 @@ class ArtifactAccessLogEmbeddingJob(
         val criteria = Criteria
             .where(TOperateLog::projectId.name).isEqualTo(projectId)
             .and(TOperateLog::type.name).isEqualTo(EventType.NODE_DOWNLOADED.name)
-        after?.let { criteria.and(TOperateLog::createdDate.name).gte(it) }
-        before?.let { criteria.and(TOperateLog::createdDate.name).lt(it) }
+        if (after != null && before != null) {
+            criteria.and(TOperateLog::createdDate.name).gte(after).lt(before)
+        } else {
+            after?.let { criteria.and(TOperateLog::createdDate.name).gte(it) }
+            before?.let { criteria.and(TOperateLog::createdDate.name).lt(it) }
+        }
         return criteria
     }
 

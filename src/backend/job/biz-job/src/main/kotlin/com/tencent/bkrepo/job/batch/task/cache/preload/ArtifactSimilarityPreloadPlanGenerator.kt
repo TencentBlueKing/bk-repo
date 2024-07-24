@@ -38,14 +38,14 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStore
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
-import io.milvus.client.MilvusServiceClient
+import io.milvus.client.MilvusClient
 import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.random.Random
 
 class ArtifactSimilarityPreloadPlanGenerator(
     private val embeddingModel: EmbeddingModel,
-    private val milvusClient: MilvusServiceClient,
+    private val milvusClient: MilvusClient,
     private val aiProperties: AiProperties,
     private val preloadProperties: ArtifactPreloadProperties,
 ) : ArtifactPreloadPlanGenerator {
