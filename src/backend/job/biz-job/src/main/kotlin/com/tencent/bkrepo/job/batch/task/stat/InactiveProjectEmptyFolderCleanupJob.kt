@@ -102,7 +102,8 @@ class InactiveProjectEmptyFolderCleanupJob(
         )
         emptyFolderCleanup.collectEmptyFolderWithMemory(
             row = node, context = context, collectionName = collectionName,
-            keyPrefix = KEY_PREFIX, useMemory = properties.userMemory
+            keyPrefix = KEY_PREFIX, useMemory = properties.userMemory,
+            cacheNumLimit = properties.cacheNumLimit
         )
     }
 
@@ -132,6 +133,7 @@ class InactiveProjectEmptyFolderCleanupJob(
                 force = true,
                 keyPrefix = KEY_PREFIX,
                 collectionName = collectionName,
+                cacheNumLimit = properties.cacheNumLimit
             )
         }
         if (properties.userMemory) {

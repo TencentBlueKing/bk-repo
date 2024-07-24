@@ -89,8 +89,9 @@ class EmptyFolderCleanup(
         context: EmptyFolderCleanupJobContext,
         useMemory: Boolean,
         keyPrefix: String,
-        collectionName: String? = null
-    ) {
+        collectionName: String? = null,
+        cacheNumLimit: Long,
+        ) {
         if (row.folder) {
             val folderKey = FolderUtils.buildCacheKey(
                 collectionName = collectionName, projectId = row.projectId,
@@ -120,7 +121,8 @@ class EmptyFolderCleanup(
                 context = context,
                 keyPrefix = keyPrefix,
                 projectId = row.projectId,
-                collectionName = collectionName
+                collectionName = collectionName,
+                cacheNumLimit = cacheNumLimit
             )
         }
     }
@@ -133,9 +135,10 @@ class EmptyFolderCleanup(
         force: Boolean = false,
         keyPrefix: String,
         projectId: String = StringPool.EMPTY,
-        collectionName: String? = null
-    ) {
-        if (!force && context.folders.size < 100000) return
+        collectionName: String? = null,
+        cacheNumLimit: Long,
+        ) {
+        if (!force && context.folders.size < cacheNumLimit) return
         if (context.folders.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
         val storedFolderPrefix = if (collectionName.isNullOrEmpty()) {
@@ -172,6 +175,7 @@ class EmptyFolderCleanup(
         for (key in movedToRedis) {
             context.folders.remove(key)
         }
+        movedToRedis.clear()
     }
 
     fun emptyFolderHandlerWithMemory(
