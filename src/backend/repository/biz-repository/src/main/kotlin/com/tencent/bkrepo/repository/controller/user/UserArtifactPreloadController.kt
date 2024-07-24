@@ -77,7 +77,7 @@ class UserArtifactPreloadController(
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         permissionManager.checkRepoPermission(PermissionAction.MANAGE, request.projectId, request.repoName)
         val strategy = preloadStrategyService.create(
-            request.copy(operator = SecurityUtils.getUserId(), type = PreloadStrategyType.CUSTOM.name)
+            request.copy(operator = SecurityUtils.getUserId())
         )
         return ResponseBuilder.success(strategy)
     }

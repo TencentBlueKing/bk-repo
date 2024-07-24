@@ -98,6 +98,7 @@ class ArtifactSimilarityPreloadPlanGenerator(
             val preloadTimestamp = now
                 // 设置预加载时间
                 .plusHours((preloadHour - now.hour).toLong())
+                .withMinute(0)
                 // 减去随机时间，避免同时多文件触发加载
                 .minusSeconds(Random.nextLong(0, preloadProperties.maxRandomSeconds))
                 // 转化为毫秒时间戳
