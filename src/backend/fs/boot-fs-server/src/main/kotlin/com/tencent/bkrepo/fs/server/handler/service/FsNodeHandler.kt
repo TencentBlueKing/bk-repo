@@ -28,11 +28,11 @@
 package com.tencent.bkrepo.fs.server.handler.service
 
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.request.service.DeleteBlocksRequest
 import com.tencent.bkrepo.fs.server.request.service.ListBlocksRequest
 import com.tencent.bkrepo.fs.server.request.service.RestoreBlocksRequest
-import com.tencent.bkrepo.fs.server.service.BlockNodeService
 import com.tencent.bkrepo.fs.server.service.FileNodeService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import kotlinx.coroutines.reactor.awaitSingle
@@ -56,20 +56,5 @@ class FsNodeHandler(
             val range = Range(startPos, endPos, nodeDetail.size)
             return ReactiveResponseBuilder.success(fileNodeService.info(nodeDetail, range))
         }
-    }
-
-    suspend fun restoreBlock(request: ServerRequest): ServerResponse {
-        with(RestoreBlocksRequest(request)) {
-            blockNodeService.restoreBlocks(projectId, repoName, fullPath, nodeCreateDate, nodeDeleteDate)
-            return ReactiveResponseBuilder.success()
-        }
-    }
-
-    suspend fun deleteBlock(request: ServerRequest): ServerResponse {
-        with(DeleteBlocksRequest(request)) {
-            blockNodeService.deleteBlocks(projectId, repoName, fullPath)
-            return ReactiveResponseBuilder.success()
-        }
-
     }
 }

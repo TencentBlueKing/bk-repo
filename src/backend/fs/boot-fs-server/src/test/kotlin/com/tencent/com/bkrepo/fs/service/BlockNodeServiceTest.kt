@@ -6,9 +6,9 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
-import com.tencent.bkrepo.fs.server.model.TBlockNode
-import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
-import com.tencent.bkrepo.fs.server.service.BlockNodeService
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.dao.BlockNodeDao
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.com.bkrepo.fs.UT_PROJECT_ID
@@ -36,7 +36,7 @@ import reactor.core.publisher.Mono
 import java.time.LocalDateTime
 
 @DataMongoTest
-@Import(BlockNodeRepository::class)
+@Import(BlockNodeDao::class)
 @SpringBootConfiguration
 @EnableAutoConfiguration
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
@@ -49,13 +49,13 @@ class BlockNodeServiceTest {
     lateinit var blockNodeService: BlockNodeService
 
     @Autowired
-    lateinit var blockNodeRepository: BlockNodeRepository
+    lateinit var blockNodeDao: BlockNodeDao
     private val storageCredentials = FileSystemCredentials()
 
     @BeforeEach
     fun beforeEach() {
         val criteria = where(TBlockNode::repoName).isEqualTo(UT_REPO_NAME)
-        runBlocking { blockNodeRepository.remove(Query(criteria)) }
+        runBlocking { blockNodeDao.remove(Query(criteria)) }
     }
 
     @DisplayName("测试创建块")

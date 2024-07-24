@@ -30,12 +30,12 @@ package com.tencent.bkrepo.fs.server.storage
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.RepositoryCache
-import com.tencent.bkrepo.fs.server.model.TBlockNode
-import com.tencent.bkrepo.fs.server.service.BlockNodeService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

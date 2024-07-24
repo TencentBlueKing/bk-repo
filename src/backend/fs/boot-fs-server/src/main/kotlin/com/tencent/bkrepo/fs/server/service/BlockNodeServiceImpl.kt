@@ -27,124 +27,27 @@
 
 package com.tencent.bkrepo.fs.server.service
 
-import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
-import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.metadata.dao.BlockNodeDao
+import com.tencent.bkrepo.common.metadata.service.blocknode.impl.AbstractBlockNodeService
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
-import com.tencent.bkrepo.fs.server.constant.ID
-import com.tencent.bkrepo.fs.server.model.TBlockNode
-import com.tencent.bkrepo.fs.server.repository.BlockNodeRepository
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import kotlinx.coroutines.reactor.awaitSingle
-import org.slf4j.LoggerFactory
-import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.gt
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.lt
-import org.springframework.data.mongodb.core.query.where
-import java.time.LocalDateTime
 
 /**
  * 文件块服务
  * */
 class BlockNodeServiceImpl(
-    private val blockNodeRepository: BlockNodeRepository,
+    blockNodeDao: BlockNodeDao,
     private val rRepositoryClient: RRepositoryClient
-) : BlockNodeService {
+) : AbstractBlockNodeService(blockNodeDao) {
 
-    override suspend fun createBlock(
-        blockNode: TBlockNode,
-        storageCredentials: StorageCredentials?
-    ): TBlockNode {
-        with(blockNode) {
-            val bn = blockNodeRepository.save(blockNode)
-            rRepositoryClient.increment(blockNode.sha256, storageCredentials?.key).awaitSingle()
-            logger.info("Create block node[$projectId/$repoName$nodeFullPath-$startPos] ,sha256[$sha256] success.")
-            return bn
-        }
+    override suspend fun incFileRef(sha256: String, credentialsKey: String?) {
+        rRepositoryClient.increment(sha256, credentialsKey).awaitSingle()
     }
 
-    override suspend fun listBlocks(
-        range: Range,
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        createdDate: String
-    ): List<TBlockNode> {
-        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-            .and(TBlockNode::projectId.name).isEqualTo(projectId)
-            .and(TBlockNode::repoName.name).isEqualTo(repoName)
-            .and(TBlockNode::deleted).isEqualTo(null)
-            .and(TBlockNode::createdDate).gt(LocalDateTime.parse(createdDate))
-            .norOperator(
-                TBlockNode::startPos.gt(range.end),
-                TBlockNode::endPos.lt(range.start)
-            )
-        val query = Query(criteria).with(Sort.by(TBlockNode::createdDate.name))
-        return blockNodeRepository.find(query)
-    }
-
-    override suspend fun deleteBlocks(
-        projectId: String,
-        repoName: String,
-        fullPath: String
-    ) {
-        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-            .and(TBlockNode::projectId.name).isEqualTo(projectId)
-            .and(TBlockNode::repoName.name).isEqualTo(repoName)
-            .and(TBlockNode::deleted).isEqualTo(null)
-        val update = Update().set(TBlockNode::deleted.name, LocalDateTime.now())
-        blockNodeRepository.updateMulti(Query(criteria), update)
-        logger.info("Delete node blocks[$projectId/$repoName$fullPath] success.")
-    }
-
-    override suspend fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {
-        val nodeDetail = rRepositoryClient.getNodeDetail(projectId, repoName, dstFullPath).awaitSingle().data
+    override suspend fun getNodeDetail(projectId: String, repoName: String, dstFullPath: String): NodeDetail {
+        return rRepositoryClient.getNodeDetail(projectId, repoName, dstFullPath).awaitSingle().data
             ?: throw NodeNotFoundException(dstFullPath)
-        if (nodeDetail.folder) {
-            val criteria = where(TBlockNode::nodeFullPath).regex("^${EscapeUtils.escapeRegex(fullPath)}/")
-                .and(TBlockNode::projectId.name).isEqualTo(projectId)
-                .and(TBlockNode::repoName.name).isEqualTo(repoName)
-                .and(TBlockNode::deleted).isEqualTo(null)
-            val blocks = blockNodeRepository.find(Query(criteria))
-            blocks.forEach {
-                val update = Update().set(TBlockNode::nodeFullPath.name, it.nodeFullPath.replace(fullPath, dstFullPath))
-                val query = Query(Criteria.where(ID).isEqualTo(it.id).and(TBlockNode::repoName).isEqualTo(repoName))
-                blockNodeRepository.updateMulti(query, update)
-            }
-        } else {
-            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-                .and(TBlockNode::projectId.name).isEqualTo(projectId)
-                .and(TBlockNode::repoName.name).isEqualTo(repoName)
-                .and(TBlockNode::deleted).isEqualTo(null)
-            val update = Update().set(TBlockNode::nodeFullPath.name, dstFullPath)
-            blockNodeRepository.updateMulti(Query(criteria), update)
-        }
-        logger.info("Move node[$projectId/$repoName$fullPath] to node[$projectId/$repoName$dstFullPath] success.")
-    }
-
-    override suspend fun restoreBlocks(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        nodeCreateDate: LocalDateTime,
-        nodeDeleteDate: LocalDateTime
-    ) {
-        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-            .and(TBlockNode::projectId.name).isEqualTo(projectId)
-            .and(TBlockNode::repoName.name).isEqualTo(repoName)
-            .and(TBlockNode::createdDate).gt(nodeCreateDate).lt(nodeDeleteDate)
-        val update = Update().set(TBlockNode::deleted.name, null)
-        val result = blockNodeRepository.updateMulti(Query(criteria), update)
-        logger.info("Restore ${result.modifiedCount} blocks node[$projectId/$repoName$fullPath] " +
-            "between $nodeCreateDate and $nodeDeleteDate success.")
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(BlockNodeServiceImpl::class.java)
     }
 }

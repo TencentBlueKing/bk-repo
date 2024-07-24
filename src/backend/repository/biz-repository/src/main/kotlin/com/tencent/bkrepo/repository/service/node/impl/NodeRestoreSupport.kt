@@ -35,8 +35,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.isRoot
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -58,6 +58,7 @@ import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeletedPointQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeRestoreUpdate
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.FindAndModifyOptions
@@ -73,7 +74,7 @@ open class NodeRestoreSupport(
 ) : NodeRestoreOperation {
 
     val nodeDao: NodeDao = nodeBaseService.nodeDao
-    val fsNodeClient: FsNodeClient = nodeBaseService.fsNodeClient
+    val blockNodeService: BlockNodeService = nodeBaseService.blockNodeService
 
     override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         with(artifact) {
@@ -178,13 +179,15 @@ open class NodeRestoreSupport(
             val deletedNode = nodeDao.findAndModify(query, nodeRestoreUpdate(), option, TNode::class.java)
             if (deletedNode?.sha256 == FAKE_SHA256 || deletedNode?.metadata?.find { it.key == FS_ATTR_KEY } != null) {
                 try {
-                    fsNodeClient.restoreBlockResources(
-                        projectId = projectId,
-                        repoName = repoName,
-                        fullPath = fullPath,
-                        nodeCreateDate = deletedNode.createdDate.toString(),
-                        nodeDeleteDate = deletedNode.deleted!!.toString()
-                    )
+                    runBlocking {
+                        blockNodeService.restoreBlocks(
+                            projectId = projectId,
+                            repoName = repoName,
+                            fullPath = fullPath,
+                            nodeCreateDate = deletedNode.createdDate,
+                            nodeDeleteDate = deletedNode.deleted!!
+                        )
+                    }
                 } catch (e: Exception) {
                     logger.error("restore block resources failed: $projectId/$repoName/$fullPath", e)
                     nodeDao.save(deletedNode)
@@ -202,7 +205,7 @@ open class NodeRestoreSupport(
         with(node) {
             val query = nodeQuery(projectId, repoName, fullPath)
             if (node.sha256 == FAKE_SHA256 || node.metadata?.find { it.key == FS_ATTR_KEY } != null) {
-                fsNodeClient.deleteBlockResources(projectId, repoName, fullPath)
+                runBlocking { blockNodeService.deleteBlocks(projectId, repoName, fullPath) }
             }
             nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(userId))
         }
