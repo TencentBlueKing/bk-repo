@@ -86,7 +86,7 @@ class ArtifactAccessLogEmbeddingJob(
 
         if (!lastMonthCollectionExists) {
             // 上个月的数据不存在时，使用上个月的访问记录生成数据
-            logger.info("collection[${lastMonthVectorStore.collectionName()}] not exists, try to create and insert data")
+            logger.info("collection[${lastMonthVectorStore.collectionName()}] not exists, try to create")
             lastMonthVectorStore.createCollection()
             lastMonthVectorStore.findAccessLogAndInsert(1L)
             logger.info("insert data into collection[${lastMonthVectorStore.collectionName()}] success")
@@ -94,7 +94,7 @@ class ArtifactAccessLogEmbeddingJob(
 
         if (!curMonthCollectionExists) {
             // 当月数据不存在时候，使用月初至今的访问记录生成数据
-            logger.info("collection[${curMonthVectorStore.collectionName()}] not exists, try to create and insert data")
+            logger.info("collection[${curMonthVectorStore.collectionName()}] not exists, try to create")
             curMonthVectorStore.createCollection()
             curMonthVectorStore.findAccessLogAndInsert(0L, before = LocalDate.now().atStartOfDay())
         } else {
