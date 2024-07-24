@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.common.storage.innercos.response
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class Content(
     @JacksonXmlProperty(localName = "Key")
     var key: String = "",
