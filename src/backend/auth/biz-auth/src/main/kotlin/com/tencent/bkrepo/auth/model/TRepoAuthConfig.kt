@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.model
 
+import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -46,6 +47,7 @@ data class TRepoAuthConfig(
     var projectId: String,
     var repoName: String,
     var accessControl: Boolean,
+    var accessControlMode: AccessControlMode?,
     var officeDenyGroupSet: Set<String>?,
     var lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime
