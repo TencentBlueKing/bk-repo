@@ -73,31 +73,38 @@ class ArtifactAccessLogEmbeddingJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7L)
 
     override fun doStart0(jobContext: JobContext) {
-        val oldVectorStore = createVectorStore(1L)
-        val vectorStore = createVectorStore(0L)
-        if (!oldVectorStore.collectionExists()) {
-            // 上个月的数据不存在时，使用上个月的访问记录生成数据
-            logger.info("collection[${oldVectorStore.collectionName()}] not exists, try to create and insert data")
-            oldVectorStore.createCollection()
-            oldVectorStore.findAccessLogAndInsert(1L)
-            logger.info("insert data into collection[${oldVectorStore.collectionName()}] success")
+        val lastMonthVectorStore = createVectorStore(1L)
+        val curMonthVectorStore = createVectorStore(0L)
+        var lastMonthCollectionExists = lastMonthVectorStore.collectionExists()
+        val curMonthCollectionExists = curMonthVectorStore.collectionExists()
+
+        if (lastMonthCollectionExists && !curMonthCollectionExists) {
+            // 可能由于数据生成过程被中断导致存在上月数据不存在当月数据，需要删除重新生成
+            lastMonthVectorStore.dropCollection()
+            lastMonthCollectionExists = false
         }
 
-        // 生成当月数据
-        if (!vectorStore.collectionExists()) {
+        if (!lastMonthCollectionExists) {
+            // 上个月的数据不存在时，使用上个月的访问记录生成数据
+            logger.info("collection[${lastMonthVectorStore.collectionName()}] not exists, try to create and insert data")
+            lastMonthVectorStore.createCollection()
+            lastMonthVectorStore.findAccessLogAndInsert(1L)
+            logger.info("insert data into collection[${lastMonthVectorStore.collectionName()}] success")
+        }
+
+        if (!curMonthCollectionExists) {
             // 当月数据不存在时候，使用月初至今的访问记录生成数据
-            logger.info("collection[${vectorStore.collectionName()}] not exists, try to create and insert data")
-            vectorStore.createCollection()
-            val startOfToday = LocalDate.now().atStartOfDay()
-            vectorStore.findAccessLogAndInsert(0L, before = startOfToday)
+            logger.info("collection[${curMonthVectorStore.collectionName()}] not exists, try to create and insert data")
+            curMonthVectorStore.createCollection()
+            curMonthVectorStore.findAccessLogAndInsert(0L, before = LocalDate.now().atStartOfDay())
         } else {
             // 已有数据，使用昨日数据生成记录
-            logger.info("collection[${vectorStore.collectionName()}] exists, insert data of last day")
+            logger.info("collection[${curMonthVectorStore.collectionName()}] exists, insert data of last day")
             val startOfToday = LocalDate.now().atStartOfDay()
             val startOfLastDay = LocalDate.now().minusDays(1L).atStartOfDay()
-            vectorStore.findAccessLogAndInsert(0L, after = startOfLastDay, before = startOfToday)
+            curMonthVectorStore.findAccessLogAndInsert(0L, after = startOfLastDay, before = startOfToday)
         }
-        logger.info("insert data into collection[${vectorStore.collectionName()}] success")
+        logger.info("insert data into collection[${curMonthVectorStore.collectionName()}] success")
 
         // 删除过期数据
         val deprecatedVectorStore = createVectorStore(2L)
@@ -121,7 +128,7 @@ class ArtifactAccessLogEmbeddingJob(
                 findData(projectId, minusMonth, after, before).map { Document(content = it, metadata = emptyMap()) }
             if (documents.isNotEmpty()) {
                 insert(documents)
-                logger.info("insert ${documents.size} data of [$projectId] into collection[${collectionName()}] success")
+                logger.info("[$projectId] insert ${documents.size} data into collection[${collectionName()}] success")
             }
         }
     }
