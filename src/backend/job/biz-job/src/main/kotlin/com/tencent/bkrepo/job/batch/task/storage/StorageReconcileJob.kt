@@ -57,7 +57,7 @@ class StorageReconcileJob(
         var deleted = 0L
         fileStorage.listAll(StringPool.ROOT, storageCredentials).map { it.toFile().name }.forEach {
             total++
-            if (!bf.mightContain(it)) {
+            if (it.length == SHA256_LEN && !bf.mightContain(it)) {
                 logger.info("File [$it] miss ref.")
                 fileReferenceClient.increment(it, storageCredentials.key, 0)
                 deleted++
@@ -89,5 +89,6 @@ class StorageReconcileJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(StorageReconcileJob::class.java)
+        private const val SHA256_LEN = 64
     }
 }
