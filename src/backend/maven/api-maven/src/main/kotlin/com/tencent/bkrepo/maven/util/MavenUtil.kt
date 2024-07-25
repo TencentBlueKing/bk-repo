@@ -25,16 +25,48 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.maven.util
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.scheduling.annotation.Scheduled
-import java.time.Duration
+import com.google.common.io.ByteStreams
+import com.google.common.io.CharStreams
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import org.apache.commons.lang3.StringUtils
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 
-@ConfigurationProperties("job.data-separation")
-class DataSeparationJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = Scheduled.CRON_DISABLED,
-    // 任务处于running 状态超过多久没有更新数据，则判断任务已经中断
-    var waitTime: Duration = Duration.ofMinutes(120)
-) : MongodbJobProperties(enabled)
+object MavenUtil {
+    private const val MAX_DIGEST_CHARS_NEEDED = 128
+
+    /**
+     * 从流中导出摘要
+     * */
+    fun extractDigest(inputStream: InputStream): String {
+        inputStream.use {
+            val reader = InputStreamReader(
+                ByteStreams
+                    .limit(inputStream, MAX_DIGEST_CHARS_NEEDED.toLong()),
+                StandardCharsets.UTF_8
+            )
+            return CharStreams.toString(reader)
+        }
+    }
+
+    /**
+     * 提取出对应的artifactId和groupId
+     */
+    fun extractGroupIdAndArtifactId(packageKey: String): Pair<String, String> {
+        val params = PackageKeys.resolveGav(packageKey)
+        val artifactId = params.split(":").last()
+        val groupId = params.split(":").first()
+        return Pair(artifactId, groupId)
+    }
+
+    /**
+     * 获取对应package存储的节点路径
+     */
+    fun extractPath(packageKey: String): String {
+        val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
+        return StringUtils.join(groupId.split("."), "/") + "/$artifactId"
+    }
+}

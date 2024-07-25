@@ -102,12 +102,13 @@ class InactiveProjectEmptyFolderCleanupJob(
         )
         emptyFolderCleanup.collectEmptyFolderWithMemory(
             row = node, context = context, collectionName = collectionName,
-            keyPrefix = KEY_PREFIX, useMemory = properties.userMemory
+            keyPrefix = KEY_PREFIX, useMemory = properties.userMemory,
+            cacheNumLimit = properties.cacheNumLimit
         )
     }
 
     override fun getLockAtMostFor(): Duration {
-        return Duration.ofDays(1)
+        return Duration.ofDays(14)
     }
 
     override fun createJobContext(): EmptyFolderCleanupJobContext {
@@ -132,6 +133,7 @@ class InactiveProjectEmptyFolderCleanupJob(
                 force = true,
                 keyPrefix = KEY_PREFIX,
                 collectionName = collectionName,
+                cacheNumLimit = properties.cacheNumLimit
             )
         }
         if (properties.userMemory) {

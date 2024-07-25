@@ -86,7 +86,8 @@ class ActiveProjectEmptyFolderCleanupJob(
                 row = node,
                 context = context,
                 keyPrefix = KEY_PREFIX,
-                useMemory = properties.userMemory
+                useMemory = properties.userMemory,
+                cacheNumLimit = properties.cacheNumLimit
             )
         } catch (e: Exception) {
             logger.error("run empty folder clean for Node $row failed, ${e.message}")
@@ -94,7 +95,7 @@ class ActiveProjectEmptyFolderCleanupJob(
     }
 
     override fun getLockAtMostFor(): Duration {
-        return Duration.ofDays(1)
+        return Duration.ofDays(14)
     }
 
     override fun createJobContext(): EmptyFolderCleanupJobContext {
@@ -117,7 +118,8 @@ class ActiveProjectEmptyFolderCleanupJob(
                 force = true,
                 keyPrefix = KEY_PREFIX,
                 collectionName = null,
-                projectId = projectId
+                projectId = projectId,
+                cacheNumLimit = properties.cacheNumLimit
             )
         }
         if (properties.userMemory) {

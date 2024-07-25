@@ -69,6 +69,8 @@ data class DataSeparationConfig(
     var restoreTaskConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
     // 允许同时执行的fix任务数
     var fixTaskConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
+    // 是否允许自动恢复
+    var enableAutoRecovery: Boolean = false
 )
 
 

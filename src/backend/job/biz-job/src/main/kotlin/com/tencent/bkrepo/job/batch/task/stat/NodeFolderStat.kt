@@ -82,7 +82,8 @@ class NodeFolderStat(
         useMemory: Boolean,
         keyPrefix: String,
         collectionName: String? = null,
-    ) {
+        cacheNumLimit: Long,
+        ) {
         //只统计非目录类节点；没有根目录这个节点，不需要统计
         if (node.path == PathUtils.ROOT) {
             return
@@ -99,15 +100,16 @@ class NodeFolderStat(
                 context = context,
                 collectionName = collectionName
             )
-            if (!useMemory) {
-                // 避免每次请求都去请求redis， 先将数据缓存在本地cache中，到达上限后更新到redis
-                updateRedisCache(
-                    context = context,
-                    collectionName = collectionName,
-                    keyPrefix = keyPrefix,
-                    projectId = node.projectId
-                )
-            }
+        }
+        if (!useMemory) {
+            // 避免每次请求都去请求redis， 先将数据缓存在本地cache中，到达上限后更新到redis
+            updateRedisCache(
+                context = context,
+                collectionName = collectionName,
+                keyPrefix = keyPrefix,
+                projectId = node.projectId,
+                cacheNumLimit = cacheNumLimit
+            )
         }
     }
 
@@ -138,9 +140,10 @@ class NodeFolderStat(
         keyPrefix: String,
         projectId: String = StringPool.EMPTY,
         force: Boolean = false,
-        collectionName: String?
-    ) {
-        if (!force && context.folderCache.size < 100000) return
+        collectionName: String?,
+        cacheNumLimit: Long,
+        ) {
+        if (!force && context.folderCache.size < cacheNumLimit) return
         if (context.folderCache.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
         val storedFolderPrefix = if (collectionName.isNullOrEmpty()) {
@@ -176,6 +179,7 @@ class NodeFolderStat(
         for (key in movedToRedis) {
             context.folderCache.remove(key)
         }
+        movedToRedis.clear()
     }
 
     fun removeRedisKey(key: String) {

@@ -20,12 +20,14 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.TestPropertySource
 import java.time.LocalDateTime
 
 @DisplayName("归档任务服务测试")
 @DataMongoTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Import(ArchiveJobServiceImpl::class)
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class ArchiveJobServiceImplTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
     private val service: ArchiveJobServiceImpl,

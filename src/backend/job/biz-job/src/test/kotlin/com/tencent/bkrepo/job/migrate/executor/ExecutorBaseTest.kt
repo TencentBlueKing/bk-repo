@@ -65,6 +65,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.test.context.TestPropertySource
 import java.time.LocalDateTime
 
 @DataMongoTest
@@ -78,6 +79,7 @@ import java.time.LocalDateTime
     StorageProperties::class,
 )
 @ComponentScan(basePackages = ["com.tencent.bkrepo.job.migrate"])
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 open class ExecutorBaseTest {
     @Autowired
     protected lateinit var migrateRepoStorageProperties: MigrateRepoStorageProperties

@@ -29,6 +29,8 @@ package com.tencent.bkrepo.job.separation.service.impl.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.job.separation.pojo.RecoveryNodeInfo
+import com.tencent.bkrepo.job.separation.pojo.RecoveryVersionInfo
 import com.tencent.bkrepo.job.separation.pojo.VersionSeparationInfo
 import com.tencent.bkrepo.job.separation.service.RepoSpecialDataSeparator
 
@@ -81,5 +83,12 @@ object RepoSpecialSeparationMappings {
         val mapper = mappers[versionSeparationInfo.type]
         check(mapper != null) { "mapper[${versionSeparationInfo.type}] not found" }
         mapper.removeRestoredRepoSpecialData(versionSeparationInfo)
+    }
+
+    fun getRecoveryPackageVersionData(recoveryInfo: RecoveryNodeInfo): RecoveryVersionInfo {
+        val type = RepositoryType.ofValueOrDefault(recoveryInfo.repoType)
+        val mapper = mappers[type]
+        check(mapper != null) { "mapper[${type}] not found" }
+        return mapper.getRecoveryPackageVersionData(recoveryInfo)
     }
 }

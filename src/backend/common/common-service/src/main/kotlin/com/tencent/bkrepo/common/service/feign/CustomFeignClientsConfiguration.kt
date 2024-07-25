@@ -31,20 +31,14 @@ import com.tencent.bkrepo.common.api.constant.COMMIT_EDGE_HEADER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import feign.RequestInterceptor
-import org.springframework.boot.autoconfigure.AutoConfigureAfter
-import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JAutoConfiguration
 import org.springframework.cloud.openfeign.FeignClientsConfiguration
 import org.springframework.context.annotation.Configuration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.context.annotation.Bean
 
-/**
- * 需要配置FeignClientsConfiguration在Resilience4JAutoConfiguration之后配置feign才会使用resilience4j进行熔断隔离
- */
 @Configuration
 @ConditionalOnClass(FeignClientsConfiguration::class)
-@AutoConfigureAfter(Resilience4JAutoConfiguration::class)
-class CustomFeignClientsConfiguration : FeignClientsConfiguration() {
+class CustomFeignClientsConfiguration {
     @Bean
     fun requestInterceptor(): RequestInterceptor {
         return RequestInterceptor { requestTemplate ->

@@ -51,6 +51,7 @@ enum class EventType(val msgKey: String) {
     NODE_DOWNLOADED("artifact.event.node-downloaded"),
     NODE_CLEAN("artifact.event.node-clean"),
     NODE_UPDATE_ACCESS_DATE("artifact.event.node-update-access-date"),
+    NODE_SEPARATION_RECOVERY("artifact.event.node-separation-recovery"),
 
     // METADATA
     METADATA_DELETED("artifact.event.metadata-deleted"),

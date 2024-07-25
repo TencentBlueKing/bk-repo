@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.otel.resource
+package com.tencent.bkrepo.job.separation.pojo
 
-import io.opentelemetry.api.common.Attributes
-import io.opentelemetry.sdk.resources.Resource
-import java.util.function.Supplier
-
-/**
- * Otel自定义资源配置
- */
-class OtelResourceProvider(
-    private val properties: OtelResourceProperties
-) {
-
-    fun provide(): Supplier<Resource> {
-        val attributesBuilder = Attributes.builder()
-        properties.attributes.forEach(attributesBuilder::put)
-        return Supplier {
-            Resource.create(
-                attributesBuilder.build()
-            )
-        }
-    }
-}
+data class RecoveryVersionInfo(
+    val projectId: String,
+    val repoName: String,
+    val packageKey: String,
+    val version: String,
+)
