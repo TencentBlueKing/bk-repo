@@ -137,6 +137,21 @@ const val ACCESS_FROM_API = "api"
 const val ACCESS_FROM_WEB = "web"
 
 /**
+ * 用于标记devx访问来源, office or others
+ */
+const val HEADER_DEVX_ACCESS_FROM = "X-BKREPO-DEVX-ACCESS-FROM"
+
+/**
+ * devx 访问来源, office
+ */
+const val DEVX_ACCESS_FROM_OFFICE = "devx_office"
+
+/**
+ * devx 访问来源, others
+ */
+const val DEVX_ACCESS_FROM_OTHERS = "others"
+
+/**
  * b3 trace header
  */
 const val B3_TRACE = "b3"

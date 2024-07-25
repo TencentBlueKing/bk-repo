@@ -38,6 +38,7 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.TestPropertySource
 
 @DisplayName("文件找不到错误自动修复策略测试")
 @DataMongoTest
@@ -49,6 +50,7 @@ import org.springframework.data.mongodb.core.query.Query
     MigrateFailedNodeDao::class,
     ArchiveMigrateFailedNodeDao::class,
 )
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class FileNotFoundAutoFixStrategyTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
     private val strategy: FileNotFoundAutoFixStrategy,

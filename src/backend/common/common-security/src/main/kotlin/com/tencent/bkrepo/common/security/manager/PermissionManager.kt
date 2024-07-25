@@ -42,6 +42,8 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
+import com.tencent.bkrepo.common.api.constant.HEADER_DEVX_ACCESS_FROM
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -311,6 +313,11 @@ open class PermissionManager(
             repoName = repoName,
             path = paths?.first()
         )
+        //  devx 是否需要auth 校验仓库维度的访问黑名单
+        val devxAccessFrom = HttpContextHolder.getRequest().getAttribute(HEADER_DEVX_ACCESS_FROM)
+        if (devxAccessFrom == DEVX_ACCESS_FROM_OFFICE) {
+            checkRequest.requestSource = DEVX_ACCESS_FROM_OFFICE
+        }
         if (checkPermissionFromAuthService(checkRequest) != true) {
             // 无权限，响应403错误
             val reason: String?

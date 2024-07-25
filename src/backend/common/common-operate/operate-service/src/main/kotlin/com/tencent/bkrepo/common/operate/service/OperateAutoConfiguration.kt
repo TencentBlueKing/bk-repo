@@ -67,7 +67,8 @@ class OperateAutoConfiguration {
         clusterProperties: ClusterProperties
     ): OperateLogService {
         return if (clusterProperties.role == ClusterNodeType.EDGE &&
-            clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+            clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE &&
+            clusterProperties.commitEdge.oplog.enabled
         ) {
             CommitEdgeOperateLogServiceImpl(operateProperties, operateLogDao, permissionManager, clusterProperties)
         } else {

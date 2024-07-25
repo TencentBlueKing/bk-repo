@@ -12,6 +12,7 @@ import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -46,6 +48,9 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
     @MockBean
     private lateinit var storageCredentialsClient: StorageCredentialsClient
 
+    @MockBean
+    lateinit var separationTaskService: SeparationTaskService
+
     @BeforeAll
     fun beforeAll() {
         createRepo()
@@ -59,6 +64,8 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
         whenever(storageCredentialsClient.findByKey(anyOrNull())).thenReturn(
             Response(code = 0, data = InnerCosCredentials())
         )
+        whenever(separationTaskService.repoSeparationCheck(anyString(), anyString()))
+            .thenReturn(false)
     }
 
     @Test

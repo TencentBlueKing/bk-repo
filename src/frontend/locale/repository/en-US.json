@@ -871,7 +871,10 @@
     "bkciUserGroup":"BKCI User Group",
     "userSource":"User Source",
     "bkci": "BKCI",
-    "rootDirectoryPermission": "Access Control:",
+    "rootDirectoryPermissionTitle": "Access Control",
+    "rootDirectoryPermission": "Access Control",
     "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth.",
-    "errMsg": "Error Message"
+    "errMsg": "Error Message",
+    "blackUserList": "Blacklist",
+    "controlConfigPlaceholder": "Select User Group"
 }

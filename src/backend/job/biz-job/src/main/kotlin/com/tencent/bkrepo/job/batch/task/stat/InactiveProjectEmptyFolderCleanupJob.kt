@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -34,6 +35,7 @@ import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
+import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.StatUtils.specialRepoRunCheck
 import com.tencent.bkrepo.job.config.properties.InactiveProjectEmptyFolderCleanupJobProperties
 import org.slf4j.LoggerFactory
@@ -98,14 +100,19 @@ class InactiveProjectEmptyFolderCleanupJob(
             folder = row.folder,
             size = row.size
         )
-        emptyFolderCleanup.collectEmptyFolder(node, context, collectionName)
+        emptyFolderCleanup.collectEmptyFolderWithMemory(
+            row = node, context = context, collectionName = collectionName,
+            keyPrefix = KEY_PREFIX, useMemory = properties.userMemory,
+            cacheNumLimit = properties.cacheNumLimit
+        )
     }
 
     override fun getLockAtMostFor(): Duration {
-        return Duration.ofDays(1)
+        return Duration.ofDays(14)
     }
 
     override fun createJobContext(): EmptyFolderCleanupJobContext {
+        beforeRunCollection()
         val temp = mutableMapOf<String, Boolean>()
         activeProjectService.getActiveProjects().forEach {
             temp[it] = true
@@ -119,13 +126,45 @@ class InactiveProjectEmptyFolderCleanupJob(
         require(context is EmptyFolderCleanupJobContext)
         super.onRunCollectionFinished(collectionName, context)
         logger.info("will filter empty folder in $collectionName")
-        emptyFolderCleanup.emptyFolderHandler(
-            collection = collectionName,
-            context = context,
-            deletedEmptyFolder = properties.deletedEmptyFolder,
-            runCollection = true,
-            deleteFolderRepos = properties.deleteFolderRepos
-        )
+
+        if (!properties.userMemory) {
+            emptyFolderCleanup.collectEmptyFolderWithRedis(
+                context = context,
+                force = true,
+                keyPrefix = KEY_PREFIX,
+                collectionName = collectionName,
+                cacheNumLimit = properties.cacheNumLimit
+            )
+        }
+        if (properties.userMemory) {
+            emptyFolderCleanup.emptyFolderHandlerWithMemory(
+                collection = collectionName,
+                context = context,
+                deletedEmptyFolder = properties.deletedEmptyFolder,
+                runCollection = true,
+                deleteFolderRepos = properties.deleteFolderRepos
+            )
+        } else {
+            emptyFolderCleanup.emptyFolderHandlerWithRedis(
+                collection = collectionName,
+                keyPrefix = KEY_PREFIX,
+                context = context,
+                deletedEmptyFolder = properties.deletedEmptyFolder,
+                runCollection = true,
+                deleteFolderRepos = properties.deleteFolderRepos
+            )
+        }
+    }
+
+    private fun beforeRunCollection() {
+        if (properties.userMemory) return
+        // 每次任务启动前要将redis上对应的key清理， 避免干扰
+        collectionNames().forEach {
+            val key = KEY_PREFIX + StringPool.COLON + FolderUtils.buildCacheKey(
+                collectionName = it, projectId = StringPool.EMPTY
+            )
+            emptyFolderCleanup.removeRedisKey(key)
+        }
     }
 
     data class Node(
@@ -152,5 +191,6 @@ class InactiveProjectEmptyFolderCleanupJob(
         private val logger = LoggerFactory.getLogger(InactiveProjectEmptyFolderCleanupJob::class.java)
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
         private const val COLLECTION_NAME_PREFIX = "node_"
+        private const val KEY_PREFIX = "inactiveEmptyFolder"
     }
 }

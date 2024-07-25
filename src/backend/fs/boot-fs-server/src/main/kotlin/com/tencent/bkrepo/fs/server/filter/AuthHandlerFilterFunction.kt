@@ -79,7 +79,7 @@ class AuthHandlerFilterFunction(
     }
 
     companion object {
-        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/ioa")
+        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/ioa", "/client/metrics/push")
         private val logger = LoggerFactory.getLogger(AuthHandlerFilterFunction::class.java)
     }
 }

@@ -46,6 +46,7 @@ import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.TransitResult
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
@@ -62,6 +63,7 @@ class ReuseResultAction(
     private val publisher: ApplicationEventPublisher
 ) : SubtaskAction {
     @Autowired
+    @Lazy
     private lateinit var self: ReuseResultAction
 
     override fun execute(source: String, target: String, event: Event): TransitResult {

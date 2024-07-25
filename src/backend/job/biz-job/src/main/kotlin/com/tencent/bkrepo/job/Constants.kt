@@ -95,3 +95,18 @@ const val JOB_TASK_RUNNING_STATUS = "job.running.status"
 const val JOB_TASK_RUNNING_STATUS_DESC = "任务执行状态"
 
 val IGNORE_PROJECT_PREFIX_LIST = listOf(CODE_PROJECT_PREFIX, CLOSED_SOURCE_PREFIX)
+
+
+/**
+ * 数据降冷
+ */
+const val RESTORE = "RESTORE"
+const val SEPARATE = "SEPARATE"
+
+const val PACKAGE_COLLECTION_NAME = "package"
+const val PACKAGE_VERSION_COLLECTION_NAME = "package_version"
+const val PACKAGE_DOWNLOADS_COLLECTION_NAME = "package_downloads"
+const val SEPARATION_TASK_COLLECTION_NAME = "separation_task"
+
+const val PACKAGE_VERSION = "version"
+const val PACKAGE_DOWNLOAD_DATE = "date"

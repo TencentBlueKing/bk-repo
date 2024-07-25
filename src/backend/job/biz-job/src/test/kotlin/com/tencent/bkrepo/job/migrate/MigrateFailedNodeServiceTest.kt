@@ -28,6 +28,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.test.context.TestPropertySource
 import java.time.LocalDateTime
 
 @DisplayName("迁移失败节点服务测试")
@@ -39,6 +40,7 @@ import java.time.LocalDateTime
     MigrateRepoStorageTaskDao::class,
     MigrateFailedNodeFixer::class,
 )
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class MigrateFailedNodeServiceTest @Autowired constructor(
     private val migrateFailedNodeService: MigrateFailedNodeService,
     private val migrateFailedNodeDao: MigrateFailedNodeDao,

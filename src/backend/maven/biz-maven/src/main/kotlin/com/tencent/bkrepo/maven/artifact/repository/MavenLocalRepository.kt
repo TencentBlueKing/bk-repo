@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.event.node.NodeSeparationRecoveryEvent
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -54,6 +55,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.config.MavenProperties
 import com.tencent.bkrepo.maven.constants.FULL_PATH
 import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
 import com.tencent.bkrepo.maven.constants.METADATA_KEY_ARTIFACT_ID
@@ -70,6 +72,7 @@ import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.exception.ConflictException
+import com.tencent.bkrepo.maven.exception.MavenArtifactFormatException
 import com.tencent.bkrepo.maven.exception.MavenArtifactNotFoundException
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import com.tencent.bkrepo.maven.exception.MavenRequestForbiddenException
@@ -110,6 +113,7 @@ import org.apache.maven.artifact.repository.metadata.SnapshotVersion
 import org.apache.maven.artifact.repository.metadata.Versioning
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer
+import org.apache.maven.model.Model
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -126,7 +130,8 @@ import java.util.regex.Pattern
 @Component
 class MavenLocalRepository(
     private val stageClient: StageClient,
-    private val mavenMetadataService: MavenMetadataService
+    private val mavenMetadataService: MavenMetadataService,
+    private val mavenProperties: MavenProperties,
 ) : LocalRepository() {
 
     @Value("\${maven.domain:http://127.0.0.1:25803}")
@@ -333,7 +338,7 @@ class MavenLocalRepository(
 
             val fileSuffix = packaging
             if (packaging == "pom") {
-                val mavenPomModel = context.getArtifactFile().getInputStream().use { MavenXpp3Reader().read(it) }
+                val mavenPomModel = pomReader(context)
                 val verNotBlank = StringUtils.isNotBlank(mavenPomModel.version)
                 val isPom = mavenPomModel.packaging.equals("pom", ignoreCase = true)
                 if (!verNotBlank || !isPom) {
@@ -382,6 +387,16 @@ class MavenLocalRepository(
                 return
             } else {
                 super.onUpload(context)
+            }
+        }
+    }
+
+    private fun pomReader(context: ArtifactUploadContext): Model {
+        return context.getArtifactFile().getInputStream().use {
+            try {
+                MavenXpp3Reader().read(it)
+            } catch (e: Exception) {
+                throw MavenArtifactFormatException(MavenMessageCode.MAVEN_ARTIFACT_FORMAT_ERROR, "pom")
             }
         }
     }
@@ -698,7 +713,20 @@ class MavenLocalRepository(
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = getNodeInfoForDownload(context)
+            val originalFullPath = artifactInfo.getArtifactFullPath()
+            val node = try {
+                getNodeInfoForDownload(context)
+            } catch (e: MavenArtifactNotFoundException) {
+                sendSeparationRecoveryEvent(
+                    artifactInfo.projectId, artifactInfo.repoName, originalFullPath, context.repo.type.name
+                )
+                throw e
+            }
+            if (node == null) {
+                sendSeparationRecoveryEvent(
+                    artifactInfo.projectId, artifactInfo.repoName, originalFullPath, context.repo.type.name
+                )
+            }
             node?.metadata?.get(HashType.SHA1.ext)?.let {
                 response.addHeader(X_CHECKSUM_SHA1, it.toString())
             }
@@ -1291,6 +1319,42 @@ class MavenLocalRepository(
         } else {
             null
         }
+    }
+
+    private fun sendSeparationRecoveryEvent(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        repoType: String,
+    ) {
+        if (!mavenProperties.autoRecovery) return
+        if (mavenProperties.recoveryTopic.isNullOrEmpty()) return
+        val event = buildNodeSeparationRecoveryEvent(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            repoType = repoType
+        )
+        messageSupplier.delegateToSupplier(
+            data = event,
+            topic = mavenProperties.recoveryTopic!!,
+            key = event.getFullResourceKey(),
+        )
+    }
+
+    private fun buildNodeSeparationRecoveryEvent(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        repoType: String,
+    ): NodeSeparationRecoveryEvent {
+        return NodeSeparationRecoveryEvent(
+            projectId = projectId,
+            repoName = repoName,
+            resourceKey = fullPath,
+            userId = SecurityUtils.getUserId(),
+            repoType = repoType
+        )
     }
 
     companion object {

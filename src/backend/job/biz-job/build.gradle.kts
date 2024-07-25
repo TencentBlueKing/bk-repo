@@ -39,6 +39,7 @@ dependencies {
     implementation(project(":repository:api-repository"))
     implementation(project(":helm:api-helm"))
     implementation(project(":oci:api-oci"))
+    implementation(project(":maven:api-maven"))
     implementation(project(":replication:api-replication"))
     implementation(project(":archive:api-archive"))
     implementation(project(":common:common-operate:operate-service"))
