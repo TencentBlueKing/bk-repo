@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog
-import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
@@ -58,6 +57,7 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlin.system.measureTimeMillis
 
 @Component
 @EnableConfigurationProperties(ArtifactAccessLogEmbeddingJobProperties::class)
@@ -124,11 +124,10 @@ class ArtifactAccessLogEmbeddingJob(
         before: LocalDateTime? = null
     ) {
         properties.projects.forEach { projectId ->
-            val documents =
-                findData(projectId, minusMonth, after, before).map { Document(content = it, metadata = emptyMap()) }
-            if (documents.isNotEmpty()) {
-                insert(documents)
-                logger.info("[$projectId] insert ${documents.size} data into collection[${collectionName()}] success")
+            processDataBatch(projectId, minusMonth, after, before) { paths ->
+                val documents = paths.map { Document(content = it, metadata = emptyMap()) }
+                val elapsed = measureTimeMillis { insert(documents) }
+                logger.info("[$projectId] insert ${documents.size} data into [${collectionName()}] in $elapsed ms")
             }
         }
     }
@@ -148,22 +147,22 @@ class ArtifactAccessLogEmbeddingJob(
     /**
      * 获取有访问记录的路径
      */
-    private fun findData(
+    private fun processDataBatch(
         projectId: String,
         minusMonth: Long,
         after: LocalDateTime?,
         before: LocalDateTime?,
-    ): Set<String> {
+        handler: (paths: Set<String>) -> Unit,
+    ) {
         val collectionName = collectionName(minusMonth)
         if (!mongoTemplate.collectionExists(collectionName)) {
             logger.warn("mongo collection[$collectionName] not exists")
-            return emptySet()
+            return
         }
-        val pageSize = BATCH_SIZE
+        val pageSize = properties.batchSize
         var lastId = ObjectId(MIN_OBJECT_ID)
         var querySize: Int
         val criteria = buildCriteria(projectId, after, before)
-        val accessPaths = HashSet<String>()
         do {
             val query = Query(criteria)
                 .addCriteria(Criteria.where(ID).gt(lastId))
@@ -179,7 +178,7 @@ class ArtifactAccessLogEmbeddingJob(
                 break
             }
             // 记录制品访问时间
-            data.forEach {
+            val accessPaths = data.mapTo(HashSet(pageSize)) {
                 val repoName = it[TOperateLog::repoName.name] as String
                 val fullPath = it[TOperateLog::resourceKey.name] as String
                 val projectRepoFullPath = if (repoName == PIPELINE) {
@@ -191,13 +190,13 @@ class ArtifactAccessLogEmbeddingJob(
                 } else {
                     fullPath
                 }
-                accessPaths.add("/$projectId/$repoName$projectRepoFullPath")
+                "/$projectId/$repoName$projectRepoFullPath"
             }
 
+            handler(accessPaths)
             querySize = data.size
             lastId = data.last()[ID] as ObjectId
         } while (querySize == pageSize && shouldRun())
-        return accessPaths
     }
 
     private fun collectionName(minusMonth: Long): String {

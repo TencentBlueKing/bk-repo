@@ -28,15 +28,33 @@
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
 
 @ConfigurationProperties("spring.ai")
 data class AiProperties(
+    /**
+     * 向量化服务URL
+     * 服务需要实现[com.tencent.bkrepo.job.batch.task.cache.preload.ai.HttpEmbeddingModel]中调用的接口
+     */
     var embeddingServiceUrl: String = "",
+    /**
+     * 向量化服务token，会在请求头Authorization中携带用于认证
+     */
     var embeddingServiceToken: String = "",
+    /**
+     * 调用向量化接口超时时间
+     */
+    var embeddingTimeout: Duration = Duration.ofMinutes(1L),
+    /**
+     * 向量数据库名
+     */
     var databaseName: String = "default",
+    /**
+     * 向量数据库表名前缀
+     */
     var collectionPrefix: String = "artifact_access_log_",
     /**
      * 默认相似度阈值，用于过滤相似路径查询结果
      */
-    var defaultSimilarityThreshold: Double = 0.99,
+    var defaultSimilarityThreshold: Double = 0.95,
 )

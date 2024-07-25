@@ -62,17 +62,14 @@ class MilvusVectorStore(
         val docIdArray = ArrayList<String>()
         val contentArray = ArrayList<String>()
         val metadataArray = ArrayList<JSONObject>()
-        val embeddingArray = ArrayList<List<Float>>()
+        val embeddingArray = embeddingModel.embed(documents.map { it.content })
 
         for (document in documents) {
-            val embedding = embeddingModel.embed(document)
-
             docIdArray.add(document.id)
             // Use a (future) DocumentTextLayoutFormatter instance to extract
             // the content used to compute the embeddings
             contentArray.add(document.content)
             metadataArray.add(JSONObject(document.metadata))
-            embeddingArray.add(embedding)
         }
 
         val fields: MutableList<InsertParam.Field> = ArrayList()

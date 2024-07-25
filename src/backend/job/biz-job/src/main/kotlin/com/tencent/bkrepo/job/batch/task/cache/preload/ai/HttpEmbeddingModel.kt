@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class HttpEmbeddingModel(
@@ -43,7 +44,7 @@ class HttpEmbeddingModel(
 ) : EmbeddingModel {
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .readTimeout(Duration.ofSeconds(15L))
+            .readTimeout(properties.embeddingTimeout)
             .writeTimeout(Duration.ofSeconds(15L))
             .connectTimeout(Duration.ofSeconds(15L))
             .retryOnConnectionFailure(true)
@@ -55,9 +56,11 @@ class HttpEmbeddingModel(
     }
 
     override fun embed(texts: List<String>): List<List<Float>> {
+        val start = System.currentTimeMillis()
         val body = EmbeddingRequest(texts).toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val req = buildReq("/embeddings").post(body).build()
         val res = client.newCall(req).execute()
+        logger.info("embed [${texts.size}] texts in ${System.currentTimeMillis() - start} ms")
         if (res.isSuccessful) {
             return res.body!!.byteStream().readJsonString<EmbeddingResponse>().data
         } else {
@@ -77,4 +80,8 @@ class HttpEmbeddingModel(
     private data class EmbeddingResponse(
         val data: List<List<Float>>
     )
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(HttpEmbeddingModel::class.java)
+    }
 }
