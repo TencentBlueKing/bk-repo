@@ -46,7 +46,7 @@ data class TRepoAuthConfig(
     var id: String? = null,
     var projectId: String,
     var repoName: String,
-    var accessControl: Boolean,
+    var accessControl: Boolean?,
     var accessControlMode: AccessControlMode?,
     var officeDenyGroupSet: Set<String>?,
     var lastModifiedBy: String,

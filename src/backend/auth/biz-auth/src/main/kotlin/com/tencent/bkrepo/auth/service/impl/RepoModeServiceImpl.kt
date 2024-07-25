@@ -86,7 +86,7 @@ class RepoModeServiceImpl(
                 controlMode = result.accessControlMode!!
             }
             // 老的数据， 严格模式直接切换
-            if (result.accessControl && result.accessControlMode == null) {
+            if (result.accessControl != null && result.accessControl!! && result.accessControlMode == null) {
                 controlMode = AccessControlMode.STRICT
             }
         }
