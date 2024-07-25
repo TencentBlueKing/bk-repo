@@ -303,12 +303,33 @@
             async save () {
                 await this.$refs.controlForm.validate()
                 try {
-                    await Promise.all([this.saveRepoConfig(), this.saveRepoMode()])
-                    this.$emit('refresh')
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: this.$t('save') + this.$t('space') + this.$t('success')
+                    let count = 0
+                    const modeBody = {
+                        projectId: this.projectId,
+                        repoName: this.repoName,
+                        controlEnable: this.rootDirectoryPermission,
+                        officeDenyGroupSet: this.blackList
+                    }
+                    const configBody = this.getRepoConfigBody()
+                    await this.updateRepoInfo({
+                        projectId: this.projectId,
+                        name: this.repoName,
+                        body: configBody
+                    }).then(
+                        count = count + 1
+                    )
+                    await this.createOrUpdateRootPermission({
+                        body: modeBody
+                    }).then(() => {
+                        count = count + 1
                     })
+                    if (count === 2) {
+                        this.$emit('refresh')
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: this.$t('save') + this.$t('space') + this.$t('success')
+                        })
+                    }
                 } catch (e) {
                     this.$emit('refresh')
                     this.$bkMessage({
@@ -317,18 +338,7 @@
                     })
                 }
             },
-            saveRepoMode () {
-                const body = {
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    controlEnable: this.rootDirectoryPermission,
-                    officeDenyGroupSet: this.blackList
-                }
-                this.createOrUpdateRootPermission({
-                    body: body
-                })
-            },
-            saveRepoConfig () {
+            getRepoConfigBody () {
                 const interceptors = []
                 if (this.repoType === 'generic') {
                     ['mobile', 'web', 'ip_segment'].forEach(type => {
@@ -374,11 +384,7 @@
                 if (!specialRepoEnum.includes(this.baseData.name)) {
                     body.configuration.settings.bkiamv3Check = this.baseData.configuration.settings.bkiamv3Check
                 }
-                this.updateRepoInfo({
-                    projectId: this.projectId,
-                    name: this.repoName,
-                    body
-                })
+                return body
             }
         }
     }

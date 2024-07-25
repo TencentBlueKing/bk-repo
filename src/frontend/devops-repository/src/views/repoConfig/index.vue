@@ -395,7 +395,7 @@
     height: 100%;
     background-color: white;
     .repo-config-tab {
-        height: 60%;
+        height: 100%;
         ::v-deep .bk-tab-section {
             height: calc(100% - 60px);
             overflow-y: auto;
