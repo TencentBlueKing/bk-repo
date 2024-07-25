@@ -1,14 +1,14 @@
 <template>
     <div>
         <bk-form class="control-config-container" :label-width="120" :model="controlConfigs" ref="controlForm" :rules="rules">
-            <bk-form-item :label="$t('rootDirectoryPermission')">
-                <bk-radio-group v-model="rootDirectoryPermission">
-                    <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
-                    <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
-                    <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('rootDirectoryPermissionTip')"></i>
-                </bk-radio-group>
+            <bk-form-item :label="$t('accessPermission')">
+                <card-radio-group
+                    class="permission-card"
+                    v-model="available"
+                    :list="availableList">
+                </card-radio-group>
             </bk-form-item>
-            <template v-if="repoType === 'generic'">
+            <template v-if="(repoType === 'generic' || repoType === 'ddc') && repoName !== 'pipeline'">
                 <bk-form-item v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
                     <bk-radio-group v-model="controlConfigs[type].enable">
@@ -55,10 +55,10 @@
                             :name="option.name">
                         </bk-option>
                     </bk-select>
-                    <bk-link theme="primary" @click="manageUserGroup" style="margin-right: auto;margin-left: 10px">{{ $t('userGroup') }}</bk-link>
+                    <bk-link theme="primary" @click="manageUserGroup" style="margin-right: auto;margin-left: 10px">{{ $t('manage') + $t('space') + $t('userGroup') }}</bk-link>
                 </div>
             </bk-form-item>
-            <bk-form-item>
+            <bk-form-item v-if="repoName !== 'pipeline'">
                 <bk-button theme="primary" @click="save()">{{$t('save')}}</bk-button>
             </bk-form-item>
         </bk-form>
@@ -67,12 +67,13 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
-    import AddUserDialog from '@/components/AddUserDialog/addUserDialog'
-    import { specialRepoEnum } from '@/store/publicEnum'
+    import AddUserDialog from '@repository/components/AddUserDialog/addUserDialog'
+    import { specialRepoEnum } from '@repository/store/publicEnum'
+    import CardRadioGroup from '@repository/components/CardRadioGroup'
 
     export default {
         name: 'controlConfig',
-        components: { AddUserDialog },
+        components: { CardRadioGroup, AddUserDialog },
         props: {
             baseData: Object
         },
@@ -115,7 +116,7 @@
                 }
             ]
             return {
-                rootDirectoryPermission: false,
+                rootDirectoryPermission: '',
                 controlConfigs: {
                     mobile: {
                         enable: false,
@@ -161,6 +162,63 @@
             genericInterceptorsList () {
                 return this.isTencent ? ['mobile', 'web', 'ip_segment'] : ['mobile', 'web']
             },
+            available: {
+                get () {
+                    if (this.baseData.name === 'pipeline') return 'pipeline'
+                    if (this.baseData.public) {
+                        return 'public'
+                    }
+                    if (this.rootDirectoryPermission === 'DIR_CTRL') {
+                        return 'folder'
+                    }
+                    if (this.rootDirectoryPermission === 'STRICT') {
+                        return 'strict'
+                    }
+                    return 'default'
+                },
+                set (val) {
+                    if (val === 'public') {
+                        this.$emit('showPermissionConfigTab', false)
+                        this.baseData.public = true
+                        this.rootDirectoryPermission = null
+                    } else if (val === 'folder') {
+                        this.$emit('showPermissionConfigTab', true)
+                        this.baseData.public = false
+                        this.rootDirectoryPermission = 'DIR_CTRL'
+                    } else if (val === 'strict') {
+                        this.$emit('showPermissionConfigTab', true)
+                        this.baseData.public = false
+                        this.rootDirectoryPermission = 'STRICT'
+                    } else if (val === 'default') {
+                        this.$emit('showPermissionConfigTab', false)
+                        this.baseData.public = false
+                        this.rootDirectoryPermission = 'DEFAULT'
+                    } else {
+                        console.log('流水线仓')
+                    }
+                }
+            },
+            availableList () {
+                if (this.baseData.repoType === 'generic' || this.baseData.repoType === 'ddc') {
+                    if (this.baseData.name === 'pipeline') {
+                        return [
+                            { label: this.$t('permissionTitle.pipeline'), value: 'pipeline', tip: this.$t('permissionTip.pipeline') }
+                        ]
+                    } else {
+                        return [
+                            { label: this.$t('permissionTitle.default'), value: 'default', tip: this.$t('permissionTip.default') },
+                            { label: this.$t('permissionTitle.strict'), value: 'strict', tip: this.$t('permissionTip.strict') },
+                            { label: this.$t('permissionTitle.folder'), value: 'folder', tip: this.$t('permissionTip.folder') },
+                            { label: this.$t('permissionTitle.public'), value: 'public', tip: this.$t('permissionTip.public') }
+                        ]
+                    }
+                } else {
+                    return [
+                        { label: this.$t('permissionTitle.default'), value: 'default', tip: this.$t('permissionTip.default') },
+                        { label: this.$t('permissionTitle.public'), value: 'public', tip: this.$t('permissionTip.public') }
+                    ]
+                }
+            },
             rules () {
                 return {
                     'mobile.filename': this.filenameRule,
@@ -185,7 +243,10 @@
                 projectId: this.projectId,
                 repoName: this.repoName
             }).then((res) => {
-                this.rootDirectoryPermission = res.status
+                this.rootDirectoryPermission = res.controlEnable
+                if (this.rootDirectoryPermission && this.baseData.name !== 'pipeline') {
+                    this.$emit('showPermissionConfigTab', true)
+                }
                 this.blackList = res.officeDenyGroupSet
             })
             this.getRoleListHandler()
@@ -327,67 +388,27 @@
 </script>
 <style lang="scss" scoped>
 .control-config-container {
-    .user-list {
+    .permission-card {
         display: grid;
-        grid-template: auto / repeat(4, 1fr);
-        gap: 10px;
-        max-height: 300px;
-        max-width: 700px;
-        overflow-y: auto;
-        .user-item {
-            height: 32px;
-            border: 1px solid var(--borderWeightColor);
-            background-color: var(--bgLighterColor);
-            .user-name {
-                max-width: 100px;
-                margin-left: 5px;
+        grid-template: auto / repeat(2, 1fr);
+        max-width: 500px;
+        ::v-deep .bk-form-radio-button {
+            margin-top: 10px;
+            .card-radio {
+                min-width: 180px;
+                max-width: 315px;
+                height: 90px;
+                .card-tip {
+                    word-break: break-all;
+                    white-space: normal;
+                    width: 300px;
+                }
             }
-        }
-    }
-    .bkre-user-select {
-        width: 300px;
-        background-color: #FFFFFF1A;
-        &:hover {
-            background-color: rgba(255, 255, 255, 0.4);
-        }
-    }
-}
-.update-role-group-dialog {
-    .bk-dialog-body {
-        height: 500px;
-    }
-    ::v-deep .usersTextarea .bk-textarea-wrapper .bk-form-textarea{
-        height: 500px;
-    }
-    .user-list {
-        display: grid;
-        grid-template: auto / repeat(3, 1fr);
-        gap: 10px;
-        max-height: 300px;
-        overflow-y: auto;
-        .user-item {
-            height: 32px;
-            border: 1px solid var(--borderWeightColor);
-            background-color: var(--bgLighterColor);
-            .user-name {
-                max-width: 100px;
-                margin-left: 5px;
-            }
-        }
-    }
-    .update-user-list {
-        display: grid;
-        grid-template: auto / repeat(1, 1fr);
-        gap: 10px;
-        max-height: 500px;
-        overflow-y: auto;
-        .update-user-item {
-            height: 32px;
-            border: 1px solid var(--borderWeightColor);
-            background-color: var(--bgLighterColor);
-            .update-user-name {
-                max-width: 100px;
-                margin-left: 5px;
+            .bk-radio-button-text {
+                height: auto;
+                line-height: initial;
+                padding: 0;
+                border: 0 none;
             }
         }
     }
