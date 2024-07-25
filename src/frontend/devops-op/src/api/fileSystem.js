@@ -9,7 +9,7 @@ export function queryFileSystemClient(body) {
     method: 'get',
     params: {
       pageNumber: body.pageNumber,
-      pageSize: DEFAULT_PAGE_SIZE,
+      pageSize: body.pageSize,
       projectId: body.projectId === '' ? null : body.projectId,
       repoName: body.repoName === '' ? null : body.repoName,
       online: body.online === '' ? null : body.online,
