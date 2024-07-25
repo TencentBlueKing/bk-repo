@@ -108,7 +108,7 @@ class InactiveProjectEmptyFolderCleanupJob(
     }
 
     override fun getLockAtMostFor(): Duration {
-        return Duration.ofDays(1)
+        return Duration.ofDays(14)
     }
 
     override fun createJobContext(): EmptyFolderCleanupJobContext {

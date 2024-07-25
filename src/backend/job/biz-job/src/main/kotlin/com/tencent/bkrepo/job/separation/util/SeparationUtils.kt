@@ -38,10 +38,16 @@ import java.util.concurrent.TimeUnit
 object SeparationUtils {
 
     private const val NODE_COLLECTION_PREFIX = "node_"
+    private const val FILE_REFERENCE_COLLECTION_NAME_PREFIX = "file_reference_"
 
     fun getNodeCollectionName(projectId: String): String {
         return NODE_COLLECTION_PREFIX +
             HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT).toString()
+    }
+
+    fun getFileReferenceCollectionName(sha256: String): String {
+        return FILE_REFERENCE_COLLECTION_NAME_PREFIX +
+            HashShardingUtils.shardingSequenceFor(sha256, SHARDING_COUNT).toString()
     }
 
     /**

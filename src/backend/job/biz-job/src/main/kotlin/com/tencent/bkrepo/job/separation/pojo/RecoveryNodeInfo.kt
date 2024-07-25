@@ -25,16 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.config.properties
+package com.tencent.bkrepo.job.separation.pojo
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.scheduling.annotation.Scheduled
-import java.time.Duration
-
-@ConfigurationProperties("job.data-separation")
-class DataSeparationJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = Scheduled.CRON_DISABLED,
-    // 任务处于running 状态超过多久没有更新数据，则判断任务已经中断
-    var waitTime: Duration = Duration.ofMinutes(120)
-) : MongodbJobProperties(enabled)
+data class RecoveryNodeInfo(
+    val projectId: String,
+    val repoName: String,
+    val fullPath: String,
+    val repoType: String,
+)
