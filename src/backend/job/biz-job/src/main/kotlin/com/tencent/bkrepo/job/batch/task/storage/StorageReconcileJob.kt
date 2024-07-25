@@ -25,8 +25,9 @@ import org.springframework.stereotype.Component
 import java.nio.charset.StandardCharsets
 
 /**
- * 设计目标
- * 1. 找出未引用的cos
+ * 实际存储与文件引用进行对账，删除存储中多余的文件。
+ * 支持安全模式，在安全模式下，不区分数据库中的存储实例，
+ * 只要数据库存在文件引用，就不会删除实际存储。
  * */
 @Component
 @EnableConfigurationProperties(StorageReconcileJobProperties::class)
@@ -50,15 +51,32 @@ class StorageReconcileJob(
         }
     }
 
+    /**
+     * 存储对账，只会处理sha256为文件名的文件
+     * 通过二次确认，以保证不会存在误删
+     * 1. 先加载引用快照
+     * 2. 比对实际存储中的文件，筛选出待删除文件列表
+     * 3. 再次加载引用快照，从待删除文件列表中确定需要删除的文件。
+     * */
     private fun reconcile(storageCredentials: StorageCredentials) {
         logger.info("Start reconcile storage [${storageCredentials.key}]")
-        val bf = buildBloomFilter(storageCredentials)
+        val firstRefSnapshot = buildBloomFilter(storageCredentials)
         var total = 0L
         var deleted = 0L
+        val pendingDeleteList = mutableSetOf<String>()
         fileStorage.listAll(StringPool.ROOT, storageCredentials).map { it.toFile().name }.forEach {
             total++
-            if (it.length == SHA256_LEN && !bf.mightContain(it)) {
+            if (it.length == SHA256_LEN && !firstRefSnapshot.mightContain(it)) {
+                // 准备删除
                 logger.info("File [$it] miss ref.")
+                pendingDeleteList.add(it)
+            }
+        }
+        // 二次确认
+        val secondRefSnapshot = buildBloomFilter(storageCredentials)
+        pendingDeleteList.forEach {
+            if (!secondRefSnapshot.mightContain(it)) {
+                logger.info("Delete file [$it]")
                 fileReferenceClient.increment(it, storageCredentials.key, 0)
                 deleted++
             }
@@ -73,7 +91,14 @@ class StorageReconcileJob(
             bloomFilterProp.expectedNodes,
             bloomFilterProp.fpp,
         )
-        val query = Query(Criteria.where(CREDENTIALS).isEqualTo(storageCredentials.key))
+        val criteria = Criteria.where(CREDENTIALS).apply {
+            if (!properties.safeMode) {
+                isEqualTo(storageCredentials.key)
+            } else {
+                logger.info("Work in safe mode")
+            }
+        }
+        val query = Query(criteria)
         query.fields().include(SHA256)
         NodeCommonUtils.forEachRefByCollectionParallel(query) {
             val sha256 = it[SHA256]?.toString()
