@@ -103,7 +103,7 @@
         :current-page="clientQuery.pageNumber"
         :page-size="clientQuery.pageSize"
         :page-sizes="[10, 20, 50, 100]"
-        layout="sizes, total, prev, pager, next, jumper"
+        layout="total, sizes, prev, pager, next, jumper"
         :total="total"
         @current-change="handleCurrentChange"
         @size-change="handleSizeChange"
