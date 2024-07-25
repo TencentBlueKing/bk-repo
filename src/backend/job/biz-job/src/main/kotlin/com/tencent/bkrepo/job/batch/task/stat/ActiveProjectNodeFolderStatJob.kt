@@ -90,7 +90,8 @@ class ActiveProjectNodeFolderStatJob(
             node = node,
             context = context,
             useMemory = properties.userMemory,
-            keyPrefix = KEY_PREFIX
+            keyPrefix = KEY_PREFIX,
+            cacheNumLimit = properties.cacheNumLimit
         )
     }
 
@@ -115,7 +116,8 @@ class ActiveProjectNodeFolderStatJob(
                 force = true,
                 keyPrefix = KEY_PREFIX,
                 collectionName = null,
-                projectId = projectId
+                projectId = projectId,
+                cacheNumLimit = properties.cacheNumLimit
             )
         }
 

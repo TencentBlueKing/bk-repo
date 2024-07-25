@@ -111,7 +111,8 @@ class InactiveProjectNodeFolderStatJob(
             context = context,
             useMemory = properties.userMemory,
             keyPrefix = KEY_PREFIX,
-            collectionName = collectionName
+            collectionName = collectionName,
+            cacheNumLimit = properties.cacheNumLimit
         )
     }
 
@@ -148,6 +149,7 @@ class InactiveProjectNodeFolderStatJob(
                 force = true,
                 keyPrefix = KEY_PREFIX,
                 collectionName = collectionName,
+                cacheNumLimit = properties.cacheNumLimit
             )
         }
 
