@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
-import com.tencent.bkrepo.common.artifact.cache.pojo.PreloadStrategyType
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadStrategyService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
