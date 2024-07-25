@@ -28,7 +28,7 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import kotlin.random.Random
 
 @DisplayName("存储对账Job测试")
-@DataMongoTest
+@DataMongoTest(properties = ["job.file-reference-cleanup.expectedNodes=100"])
 class StorageReconcileJobTest @Autowired constructor(
     private val storageReconcileJob: StorageReconcileJob,
     private val storageService: StorageService,
