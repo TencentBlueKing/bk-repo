@@ -19,6 +19,7 @@ import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
@@ -91,9 +92,9 @@ class StorageReconcileJob(
             bloomFilterProp.expectedNodes,
             bloomFilterProp.fpp,
         )
-        val criteria = Criteria.where(CREDENTIALS).apply {
+        val criteria = Criteria().apply {
             if (!properties.safeMode) {
-                isEqualTo(storageCredentials.key)
+                where(CREDENTIALS).isEqualTo(storageCredentials.key)
             } else {
                 logger.info("Work in safe mode")
             }
