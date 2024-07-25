@@ -194,7 +194,7 @@
                         this.baseData.public = false
                         this.rootDirectoryPermission = 'DEFAULT'
                     } else {
-                        console.log('流水线仓')
+                        this.$emit('showPermissionConfigTab', false)
                     }
                 }
             },
@@ -243,10 +243,7 @@
                 projectId: this.projectId,
                 repoName: this.repoName
             }).then((res) => {
-                this.rootDirectoryPermission = res.controlEnable
-                if (this.rootDirectoryPermission && this.baseData.name !== 'pipeline') {
-                    this.$emit('showPermissionConfigTab', true)
-                }
+                this.rootDirectoryPermission = res.accessControlMode
                 this.blackList = res.officeDenyGroupSet
             })
             this.getRoleListHandler()
