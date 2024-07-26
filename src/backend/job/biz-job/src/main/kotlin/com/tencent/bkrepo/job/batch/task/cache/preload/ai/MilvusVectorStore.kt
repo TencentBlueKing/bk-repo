@@ -118,6 +118,7 @@ class MilvusVectorStore(
         val embedding: List<Float> = embeddingModel.embed(request.query)
 
         val searchParamBuilder = SearchParam.newBuilder()
+            .withDatabaseName(config.databaseName)
             .withCollectionName(config.collectionName)
             .withConsistencyLevel(ConsistencyLevelEnum.STRONG)
             .withMetricType(config.metricType)
