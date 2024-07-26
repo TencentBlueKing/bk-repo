@@ -395,7 +395,7 @@
                 const body = {
                     projectId: this.projectId,
                     repoName: this.repoBaseInfo.name,
-                    controlEnable: this.accessControl
+                    accessControlMode: this.accessControl
                 }
                 this.createOrUpdateRootPermission({
                     body: body

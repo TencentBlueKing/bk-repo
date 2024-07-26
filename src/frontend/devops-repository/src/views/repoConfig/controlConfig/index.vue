@@ -307,7 +307,7 @@
                     const modeBody = {
                         projectId: this.projectId,
                         repoName: this.repoName,
-                        controlEnable: this.rootDirectoryPermission,
+                        accessControlMode: this.rootDirectoryPermission,
                         officeDenyGroupSet: this.blackList
                     }
                     const configBody = this.getRepoConfigBody()
