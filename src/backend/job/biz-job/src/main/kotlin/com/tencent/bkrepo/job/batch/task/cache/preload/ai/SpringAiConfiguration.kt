@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit
 @Configuration
 @EnableConfigurationProperties(
     AiProperties::class,
-    MilvusVectorStoreProperties::class,
     MilvusClientProperties::class
 )
 @ConditionalOnProperty("job.artifact-access-log-embedding.enabled")

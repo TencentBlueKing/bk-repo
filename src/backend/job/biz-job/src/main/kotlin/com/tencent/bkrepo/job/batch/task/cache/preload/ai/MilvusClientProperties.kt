@@ -35,12 +35,12 @@ data class MilvusClientProperties(
     var host: String = "localhost",
     var port: Int = 19530,
     var uri: String? = null,
-    val token: String? = null,
-    val connectTimeoutMs: Long = 10000L,
-    val keepAliveTimeMs: Long = 55000L,
-    val keepAliveTimeoutMs: Long = 20000L,
-    val rpcDeadlineMs: Long = 0L,
-    val idleTimeoutMs: Long = TimeUnit.MILLISECONDS.convert(24L, TimeUnit.HOURS),
-    val username: String = "root",
-    val password: String = "milvus"
+    var token: String? = null,
+    var connectTimeoutMs: Long = 10000L,
+    var keepAliveTimeMs: Long = 55000L,
+    var keepAliveTimeoutMs: Long = 20000L,
+    var rpcDeadlineMs: Long = 0L,
+    var idleTimeoutMs: Long = TimeUnit.MILLISECONDS.convert(24L, TimeUnit.HOURS),
+    var username: String = "root",
+    var password: String = "milvus"
 )

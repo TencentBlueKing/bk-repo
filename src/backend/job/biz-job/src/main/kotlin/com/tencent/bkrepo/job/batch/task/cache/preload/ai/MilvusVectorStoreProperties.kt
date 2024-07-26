@@ -29,14 +29,12 @@ package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
 import io.milvus.param.IndexType
 import io.milvus.param.MetricType
-import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties("spring.ai.vectorstore.milvus")
 data class MilvusVectorStoreProperties(
     var databaseName: String = "default",
-    val collectionName: String = "vector_store",
-    val embeddingDimension: Int = 1536,
-    val indexType: IndexType = IndexType.IVF_FLAT,
-    val metricType: MetricType = MetricType.COSINE,
-    val indexParameters: String = "{\"nlist\":1024}",
+    var collectionName: String = "vector_store",
+    var embeddingDimension: Int = 1536,
+    var indexType: IndexType = IndexType.IVF_FLAT,
+    var metricType: MetricType = MetricType.COSINE,
+    var indexParameters: String = "{\"nlist\":1024}",
 )
