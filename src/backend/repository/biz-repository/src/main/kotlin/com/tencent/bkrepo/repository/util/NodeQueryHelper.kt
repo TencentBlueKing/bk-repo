@@ -33,7 +33,10 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
+import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
@@ -79,6 +82,32 @@ object NodeQueryHelper {
         return Query(criteria)
     }
 
+    fun queryArchiveNode(projectId: String, repoName: String, path: String?, metadata: Map<String, String>): Query {
+        val criteria = Criteria.where(TNode::folder.name).isEqualTo(false)
+            .and(TNode::deleted).isEqualTo(null)
+            .and(TNode::sha256).ne(FAKE_SHA256)
+            .and(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .orOperator(
+                Criteria.where(TNode::archived.name).isEqualTo(true),
+                Criteria.where(TNode::compressed.name).isEqualTo(true),
+            )
+        path?.let { criteria.and(TNode::fullPath).regex("^${MongoEscapeUtils.escapeRegex(it)}") }
+        val metadataCriteria = metadata.map {
+            val elemCriteria = Criteria().andOperator(
+                MetadataModel::key.isEqualTo(it.key),
+                MetadataModel::value.isEqualTo(it.value),
+            )
+            Criteria.where(TNode::metadata.name).elemMatch(elemCriteria)
+        }
+        if (metadataCriteria.isNotEmpty()) {
+            val allCriteria = metadataCriteria.toMutableList()
+            allCriteria.add(criteria)
+            return Query(Criteria().andOperator(allCriteria))
+        }
+        return Query(criteria)
+    }
+
     fun nodeListCriteria(projectId: String, repoName: String, path: String, option: NodeListOption): Criteria {
         val nodePath = toPath(path)
         val criteria = where(TNode::projectId).isEqualTo(projectId)
@@ -98,12 +127,12 @@ object NodeQueryHelper {
         } else if (option.hasPermissionPath?.isNotEmpty() == true) {
             Criteria().andOperator(
                 criteria,
-                Criteria().orOperator(buildHasPermissionPathCriteria(option.hasPermissionPath!!))
+                Criteria().orOperator(buildHasPermissionPathCriteria(option.hasPermissionPath!!)),
             )
         } else if (option.noPermissionPath.isNotEmpty()) {
             Criteria().andOperator(
                 criteria,
-                Criteria().norOperator(buildNoPermissionPathCriteria(option.noPermissionPath))
+                Criteria().norOperator(buildNoPermissionPathCriteria(option.noPermissionPath)),
             )
         } else {
             criteria
@@ -114,7 +143,7 @@ object NodeQueryHelper {
         projectId: String,
         repoName: String,
         path: String,
-        option: NodeListOption
+        option: NodeListOption,
     ): Query {
         val query = Query(nodeListCriteria(projectId, repoName, path, option))
         if (option.sortProperty.isNotEmpty()) {
@@ -180,7 +209,7 @@ object NodeQueryHelper {
         repoName: String,
         path: String,
         deleted: LocalDateTime,
-        deep: Boolean
+        deep: Boolean,
     ): Query {
         val nodePath = toPath(path)
         val criteria = where(TNode::projectId).isEqualTo(projectId)
@@ -210,6 +239,7 @@ object NodeQueryHelper {
             expireDate?.let { set(TNode::expireDate.name, expireDate) } ?: run { unset(TNode::expireDate.name) }
         }
     }
+
     fun nodeSetLength(newLength: Long, operator: String): Update {
         return update(operator).apply {
             set(TNode::size.name, newLength)
@@ -234,7 +264,7 @@ object NodeQueryHelper {
     fun ServicePermissionClient.listPermissionPaths(
         userId: String,
         projectId: String,
-        repoName: String
+        repoName: String,
     ): Pair<List<String>?, List<String>> {
         val result = listPermissionPath(userId, projectId, repoName).data!!
         if (result.status) {

@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.job.separation.service
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.job.separation.pojo.RecoveryNodeInfo
+import com.tencent.bkrepo.job.separation.pojo.RecoveryVersionInfo
 import com.tencent.bkrepo.job.separation.pojo.VersionSeparationInfo
 
 /**
@@ -76,4 +78,9 @@ interface RepoSpecialDataSeparator {
      * 根据条件删除已恢复的仓库特定冷数据
      */
     fun removeRestoredRepoSpecialData(versionSeparationInfo: VersionSeparationInfo)
+
+    /**
+     * 获取待恢复节点对应的包版本信息
+     */
+    fun getRecoveryPackageVersionData(recoveryInfo: RecoveryNodeInfo): RecoveryVersionInfo
 }

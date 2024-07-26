@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
@@ -137,6 +138,9 @@ open class ServiceBaseTest {
 
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
+
+    @MockBean
+    lateinit var archiveClient: ArchiveClient
 
 
     fun initMock() {

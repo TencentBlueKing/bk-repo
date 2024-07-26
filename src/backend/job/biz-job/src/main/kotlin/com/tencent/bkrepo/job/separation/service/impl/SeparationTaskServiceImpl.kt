@@ -80,19 +80,13 @@ class SeparationTaskServiceImpl(
                     separationTaskDao.save(task)
                 }
                 RESTORE -> {
-                    val separatedDates = findDistinctSeparationDate(projectId, repoName)
-                    if (separatedDates.isEmpty()) {
-                        logger.warn("no cold data has been stored in $projectId|$repoName")
-                        throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::type.name)
-                    }
-                    separatedDates.forEach {
-                        val task = buildSeparationTask(request, it)
-                        separationTaskDao.save(task)
-                    }
+                    createRestoreTask(request)
                 }
                 else -> {
                     logger.warn("unsupported task type $type")
-                    throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::type.name)
+                    throw BadRequestException(
+                        CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::type.name
+                    )
                 }
             }
 
@@ -128,6 +122,28 @@ class SeparationTaskServiceImpl(
         val exist = separationTaskDao.exist(projectId, repoName, SeparationTaskState.FINISHED.name)
         val failedExist = separationFailedRecordDao.exist(projectId, repoName)
         return exist || failedExist
+    }
+
+    private fun createRestoreTask(request: SeparationTaskRequest) {
+        with(request) {
+            if (separateAt.isNullOrEmpty()) {
+                val separatedDates = findDistinctSeparationDate(projectId, repoName)
+                if (separatedDates.isEmpty()) {
+                    logger.warn("no cold data has been stored in $projectId|$repoName")
+                    throw BadRequestException(
+                        CommonMessageCode.PARAMETER_INVALID, SeparationTaskRequest::type.name
+                    )
+                }
+                separatedDates.forEach {
+                    val task = buildSeparationTask(request, it)
+                    separationTaskDao.save(task)
+                }
+            } else {
+                val date = LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
+                val task = buildSeparationTask(request, date)
+                separationTaskDao.save(task)
+            }
+        }
     }
 
     private fun getRepoInfo(projectId: String, repoName: String): RepositoryDetail {
@@ -194,10 +210,12 @@ class SeparationTaskServiceImpl(
     }
 
     private fun buildSeparationTask(
-        request: SeparationTaskRequest, restoreDate: LocalDateTime? = null
+        request: SeparationTaskRequest,
+        restoreDate: LocalDateTime? = null,
+        userId: String = SecurityUtils.getUserId()
     ): TSeparationTask {
         with(request) {
-            val userId = SecurityUtils.getUserId()
+            val userId = userId
             val date = restoreDate ?: LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
             val separateDate = LocalDateTime.of(date.toLocalDate(), LocalTime.MAX)
             return TSeparationTask(

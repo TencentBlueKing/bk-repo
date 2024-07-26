@@ -49,12 +49,13 @@ import java.util.concurrent.ConcurrentHashMap
 @Component
 @Suppress("TooManyFunctions")
 class ScannerMetrics(
-    private val meterRegistry: MeterRegistry,
     private val scannerProperties: ScannerProperties,
     @Qualifier(SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME)
     private val scanTaskSchedulerThreadPool: ThreadPoolTaskExecutor,
     private val distributedCountFactory: DistributedCountFactory
 ) : MeterBinder {
+
+    private lateinit var meterRegistry: MeterRegistry
 
     /**
      * 记录各状态任务数量的Map，key为状态，value为任务数量
@@ -83,6 +84,7 @@ class ScannerMetrics(
     }
 
     override fun bindTo(registry: MeterRegistry) {
+        this.meterRegistry = registry
         taskGauge(
             scanTaskSchedulerThreadPool,
             { threadPoolExecutor.queue.size.toDouble() },

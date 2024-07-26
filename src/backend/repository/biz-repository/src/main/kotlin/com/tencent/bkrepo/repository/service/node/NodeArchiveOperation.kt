@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service.node
 
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 
 /**
@@ -15,4 +16,9 @@ interface NodeArchiveOperation {
      * 恢复节点
      * */
     fun restoreNode(nodeArchiveRequest: NodeArchiveRequest)
+
+    /**
+     * 恢复归档节点
+     * */
+    fun restoreNode(nodeRestoreRequest: NodeArchiveRestoreRequest): List<String>
 }

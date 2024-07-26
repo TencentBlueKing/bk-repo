@@ -17,6 +17,8 @@ import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.MeterBinder
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -29,15 +31,33 @@ import java.util.concurrent.TimeUnit
  * */
 @Component
 class ArchiveMetrics(
-    val archiveFileRepository: ArchiveFileRepository,
-    val compressFileRepository: CompressFileRepository,
-    val bdZipManager: BDZipManager,
     val fileProvider: PriorityFileProvider,
-    val archiveManager: ArchiveManager,
-    private val archiveFileDao: ArchiveFileDao,
-    private val compressFileDao: CompressFileDao,
 ) : MeterBinder {
     lateinit var registry: MeterRegistry
+
+    @Autowired
+    @Lazy
+    private lateinit var archiveFileRepository: ArchiveFileRepository
+
+    @Autowired
+    @Lazy
+    private lateinit var compressFileRepository: CompressFileRepository
+
+    @Autowired
+    @Lazy
+    private lateinit var archiveManager: ArchiveManager
+
+    @Autowired
+    @Lazy
+    private lateinit var bdZipManager: BDZipManager
+
+    @Autowired
+    @Lazy
+    private lateinit var archiveFileDao: ArchiveFileDao
+
+    @Autowired
+    @Lazy
+    private lateinit var compressFileDao: CompressFileDao
 
     private var fileArchiveSizeTotal = 0L
     private var fileCompressSizeTotal = 0L

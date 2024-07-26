@@ -48,6 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.TestPropertySource
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -55,6 +56,7 @@ import java.time.format.DateTimeFormatter
 @DisplayName("Node遍历工具测试")
 @DataMongoTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class NodeIteratorTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) {

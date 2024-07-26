@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.job.separation.service.impl.repo
 
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
@@ -38,6 +37,8 @@ import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.repo.SeparationMavenMetadataDao
 import com.tencent.bkrepo.job.separation.model.TSeparationNode
 import com.tencent.bkrepo.job.separation.model.repo.TSeparationMavenMetadataRecord
+import com.tencent.bkrepo.job.separation.pojo.RecoveryNodeInfo
+import com.tencent.bkrepo.job.separation.pojo.RecoveryVersionInfo
 import com.tencent.bkrepo.job.separation.pojo.VersionSeparationInfo
 import com.tencent.bkrepo.job.separation.pojo.query.MavenMetadata
 import com.tencent.bkrepo.job.separation.pojo.query.NodeBaseInfo
@@ -45,7 +46,10 @@ import com.tencent.bkrepo.job.separation.pojo.query.NodeDetailInfo
 import com.tencent.bkrepo.job.separation.service.RepoSpecialDataSeparator
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import com.tencent.bkrepo.job.separation.util.SeparationUtils.getNodeCollectionName
-import org.apache.commons.lang3.StringUtils
+import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
+import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
+import com.tencent.bkrepo.maven.util.MavenUtil.extractGroupIdAndArtifactId
+import com.tencent.bkrepo.maven.util.MavenUtil.extractPath
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
@@ -104,7 +108,7 @@ class MavenRepoSpecialDataSeparatorHandler(
         accessCheck: Boolean
     ): MutableMap<String, String> {
         with(versionSeparationInfo) {
-            val packagePath = extractPath(packageKey)
+            val packagePath = PathUtils.normalizeFullPath(extractPath(packageKey))
             val versionPath = PathUtils.combinePath(packagePath, version)
             val nodeCollectionName = getNodeCollectionName(projectId)
             // 目录节点保持不变，空目录节点清理job会对降冷的仓库禁用
@@ -142,7 +146,7 @@ class MavenRepoSpecialDataSeparatorHandler(
 
     override fun getRestoreNodesOfVersion(versionSeparationInfo: VersionSeparationInfo): MutableMap<String, String> {
         with(versionSeparationInfo) {
-            val packagePath = extractPath(packageKey)
+            val packagePath = PathUtils.normalizeFullPath(extractPath(packageKey))
             val versionPath = PathUtils.combinePath(packagePath, version)
             var pageNumber = 0
             val pageSize = BATCH_SIZE
@@ -200,6 +204,22 @@ class MavenRepoSpecialDataSeparatorHandler(
                     )
                 }
             }
+        }
+    }
+
+    override fun getRecoveryPackageVersionData(recoveryInfo: RecoveryNodeInfo): RecoveryVersionInfo {
+        with(recoveryInfo) {
+            val mavenGAVC = fullPath.toMavenGAVC()
+            val version = mavenGAVC.version
+            val artifactId = mavenGAVC.artifactId
+            val groupId = mavenGAVC.groupId.formatSeparator("/", ".")
+            val packageKey = PackageKeys.ofGav(groupId, artifactId)
+            return RecoveryVersionInfo(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = packageKey,
+                version = version
+            )
         }
     }
 
@@ -269,25 +289,6 @@ class MavenRepoSpecialDataSeparatorHandler(
                 mongoTemplate.upsert(existQuery, update, MAVEN_METADATA_COLLECTION_NAME)
             }
         }
-    }
-
-    /**
-     * 提取出对应的artifactId和groupId
-     */
-    private fun extractGroupIdAndArtifactId(packageKey: String): Pair<String, String> {
-        val params = PackageKeys.resolveGav(packageKey)
-        val artifactId = params.split(":").last()
-        val groupId = params.split(":").first()
-        return Pair(artifactId, groupId)
-    }
-
-    /**
-     * 获取对应package存储的节点路径
-     */
-    private fun extractPath(packageKey: String): String {
-        val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
-        return PathUtils.UNIX_SEPARATOR +
-            StringUtils.join(groupId.split(CharPool.DOT), PathUtils.UNIX_SEPARATOR) + "/$artifactId"
     }
 
     companion object {

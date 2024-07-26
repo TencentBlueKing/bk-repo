@@ -83,7 +83,7 @@ class InactiveProjectNodeFolderStatJob(
     /**
      * 最长加锁时间
      */
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(14)
 
     fun statProjectCheck(
         projectId: String,
@@ -111,7 +111,8 @@ class InactiveProjectNodeFolderStatJob(
             context = context,
             useMemory = properties.userMemory,
             keyPrefix = KEY_PREFIX,
-            collectionName = collectionName
+            collectionName = collectionName,
+            cacheNumLimit = properties.cacheNumLimit
         )
     }
 
@@ -148,6 +149,7 @@ class InactiveProjectNodeFolderStatJob(
                 force = true,
                 keyPrefix = KEY_PREFIX,
                 collectionName = collectionName,
+                cacheNumLimit = properties.cacheNumLimit
             )
         }
 

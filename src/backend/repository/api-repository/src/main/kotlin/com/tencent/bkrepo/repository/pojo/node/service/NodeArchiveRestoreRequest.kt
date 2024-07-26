@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,15 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.authconfig
+package com.tencent.bkrepo.repository.pojo.node.service
 
-import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
+import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import io.swagger.annotations.ApiModelProperty
 
-data class RepoAuthStatusRequest(
+/**
+ * 节点恢复选项
+ */
+data class NodeArchiveRestoreRequest(
+    @ApiModelProperty("项目id")
     val projectId: String,
+    @ApiModelProperty("仓库名称")
     val repoName: String,
-    val accessControlMode: AccessControlMode?,
-    val officeDenyGroupSet: Set<String> = emptySet()
-
-)
-
+    @ApiModelProperty("路径")
+    val path: String?,
+    @ApiModelProperty("元数据")
+    val metadata: Map<String, String> = emptyMap(),
+    @ApiModelProperty("恢复限制个数")
+    val limit: Int = 10000,
+    override val operator: String,
+) : ServiceRequest

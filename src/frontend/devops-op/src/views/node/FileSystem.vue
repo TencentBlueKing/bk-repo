@@ -102,9 +102,11 @@
         v-if="total>0"
         :current-page="clientQuery.pageNumber"
         :page-size="clientQuery.pageSize"
-        layout="total, prev, pager, next, jumper"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
         :total="total"
         @current-change="handleCurrentChange"
+        @size-change="handleSizeChange"
       />
     </div>
     <file-system-status-record-dialog :visible.sync="showDialog" :param="param" />
@@ -131,6 +133,7 @@ export default {
         projectId: '',
         repoName: '',
         pageNumber: 1,
+        pageSize: 10,
         online: '',
         ip: '',
         version: '',
@@ -191,6 +194,10 @@ export default {
       this.currentPage = val
       this.changeRouteQueryParams(val)
     },
+    handleSizeChange(val) {
+      this.clientQuery.pageSize = val
+      this.changeRouteQueryParams(1)
+    },
     changeRouteQueryParams(pageNum) {
       const query = {
         page: String(pageNum)
@@ -200,6 +207,7 @@ export default {
       query.online = this.clientQuery.online
       query.ip = this.clientQuery.ip
       query.version = this.clientQuery.version
+      query.pageSize = this.clientQuery.pageSize
       this.$router.push({ path: '/nodes/FileSystem', query: query })
     },
     onRouteUpdate(route) {
@@ -208,6 +216,7 @@ export default {
       clientQuery.projectId = query.projectId ? query.projectId : ''
       clientQuery.repoName = query.repoName ? query.repoName : ''
       clientQuery.pageNumber = query.page ? Number(query.page) : 1
+      clientQuery.pageSize = query.pageSize ? Number(query.pageSize) : 10
       clientQuery.online = query.online ? query.online : ''
       clientQuery.ip = query.ip ? query.ip : ''
       clientQuery.version = query.version ? query.version : ''

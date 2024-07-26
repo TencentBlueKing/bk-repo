@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger
 class ArtifactMetrics(
     private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
     tagProvider: ArtifactTransferTagProvider,
-    meterRegistry: MeterRegistry,
     properties: ArtifactMetricsProperties
 ) : MeterBinder {
 
@@ -58,13 +57,14 @@ class ArtifactMetrics(
 
     init {
         Companion.tagProvider = tagProvider
-        Companion.meterRegistry = meterRegistry
         Companion.properties = properties
-        lruMeterFilter = LruMeterFilter(METER_LIMIT_PREFIX, meterRegistry, properties.maxMeters)
-        meterRegistry.config().meterFilter(lruMeterFilter)
+
     }
 
     override fun bindTo(meterRegistry: MeterRegistry) {
+        Companion.meterRegistry = meterRegistry
+        lruMeterFilter = LruMeterFilter(METER_LIMIT_PREFIX, Companion.meterRegistry, properties.maxMeters)
+        Companion.meterRegistry.config().meterFilter(lruMeterFilter)
         Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadingCount) { it.get().toDouble() }
             .description(ARTIFACT_UPLOADING_COUNT_DESC)
             .register(meterRegistry)
