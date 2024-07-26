@@ -169,9 +169,11 @@
                         return 'public'
                     }
                     if (this.rootDirectoryPermission === 'DIR_CTRL') {
+                        this.$emit('showPermissionConfigTab', true)
                         return 'folder'
                     }
                     if (this.rootDirectoryPermission === 'STRICT') {
+                        this.$emit('showPermissionConfigTab', true)
                         return 'strict'
                     }
                     return 'default'
