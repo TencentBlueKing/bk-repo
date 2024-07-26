@@ -42,6 +42,10 @@ data class AiProperties(
      */
     var embeddingServiceToken: String = "",
     /**
+     * 模型维度
+     */
+    var dimenssion: Int = 384,
+    /**
      * 调用向量化接口超时时间
      */
     var embeddingTimeout: Duration = Duration.ofMinutes(1L),
