@@ -60,7 +60,8 @@ class StorageReconcileJob(
      * 3. 再次加载引用快照，从待删除文件列表中确定需要删除的文件。
      * */
     private fun reconcile(storageCredentials: StorageCredentials) {
-        logger.info("Start reconcile storage [${storageCredentials.key}]")
+        val credentialsKey = storageCredentials.key
+        logger.info("Start reconcile storage [$credentialsKey]")
         val firstRefSnapshot = buildBloomFilter(storageCredentials)
         var total = 0L
         var deleted = 0L
@@ -73,16 +74,16 @@ class StorageReconcileJob(
                 pendingDeleteList.add(it)
             }
         }
-        // 二次确认
-        val secondRefSnapshot = buildBloomFilter(storageCredentials)
+        // 二次确认,因为待确认的文件数量远低于总体数量，所以这里采用直接查表，效率更高些。
         pendingDeleteList.forEach {
-            if (!secondRefSnapshot.mightContain(it)) {
+            val exists = fileReferenceClient.exists(it, credentialsKey).data ?: true
+            if (!exists) {
                 logger.info("Delete file [$it]")
-                fileReferenceClient.increment(it, storageCredentials.key, 0)
+                fileReferenceClient.increment(it, credentialsKey, 0)
                 deleted++
             }
         }
-        logger.info("Reconcile storage [${storageCredentials.key}] successful, deleted[$deleted], total[$total].")
+        logger.info("Reconcile storage [$credentialsKey] successful, deleted[$deleted], total[$total].")
     }
 
     private fun buildBloomFilter(storageCredentials: StorageCredentials): BloomFilter<CharSequence> {

@@ -148,10 +148,6 @@ class CosClient(val credentials: InnerCosCredentials) {
         null
     }
 
-    init {
-        this.listObjects(ListObjectsRequest())
-    }
-
     private val useChunkedLoad = (watchDog != null) && (downloadThreadPool != null)
 
     private val fastFallbackTimeout = config.timeout shr 1
