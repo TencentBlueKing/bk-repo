@@ -72,6 +72,9 @@ class StorageReconcileJobTest @Autowired constructor(
             checked++
             ResponseBuilder.success(true)
         }
+        `when`(fileReferenceClient.exists(anyString(), isNull())).then {
+            ResponseBuilder.success(false)
+        }
         repeat(10) {
             val file = createTempArtifactFile()
             storageService.store(file.getFileSha256(), file, null)
