@@ -114,7 +114,7 @@ class CommitEdgeCenterNodeServiceImpl(
         return repo
     }
 
-    override fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String): LocalDateTime? {
+    override fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
             if (existNode != null) {
@@ -126,13 +126,22 @@ class CommitEdgeCenterNodeServiceImpl(
                     ClusterUtils.checkIsSrcCluster(existNode.clusterNames)
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
+                    deleteOverwriteByFullPath(projectId, repoName, fullPath, operator)
+                    quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
                 }
             } else {
                 quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
             }
-            return null
         }
+    }
+
+    override fun deleteOverwriteByFullPath(projectId: String, repoName: String, fullPath: String, operator: String) {
+        return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteOverwriteByFullPath(
+            projectId,
+            repoName,
+            fullPath,
+            operator
+        )
     }
 
     override fun buildTNode(request: NodeCreateRequest): TNode {

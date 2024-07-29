@@ -57,6 +57,13 @@ interface NodeDeleteOperation {
     fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long
 
     /**
+     * 根据fullpath删除原有已经存在的数据
+     * 不会进行已删除节点数据返回
+     * 不会进行容量清理，需要自行进行容量清理
+     */
+    fun deleteOverwriteByFullPath(projectId: String, repoName: String, fullPath: String, operator: String)
+
+    /**
      * 根据全路径删除文件或者目录
      */
     fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String): NodeDeleteResult
