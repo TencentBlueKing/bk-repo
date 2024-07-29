@@ -113,8 +113,12 @@ class CommitEdgeCenterNodeDeleteSupport(
         var deletedSize = 0L
         var deletedNum = 0L
         val option = NodeListOption(includeFolder = false, deep = true)
+        val timeCriteria = Criteria().orOperator(
+            Criteria().and(TNode::lastAccessDate).lt(date).and(TNode::lastModifiedDate).lt(date),
+            Criteria().and(TNode::lastAccessDate).`is`(null).and(TNode::lastModifiedDate).lt(date),
+        )
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
-            .and(TNode::createdDate).lt(date)
+            .andOperator(timeCriteria)
             .and(TNode::clusterNames).isEqualTo(clusterName)
         val pageSize = 1
         var queryCount: Int
