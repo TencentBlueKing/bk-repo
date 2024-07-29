@@ -60,12 +60,6 @@ class RepoModeServiceImpl(
             controlMode = AccessControlMode.DEFAULT
         }
 
-        if (accessControlMode == AccessControlMode.DEFAULT &&
-            permissionDao.listByResourceAndRepo(ResourceType.NODE.name, projectId, repoName).isNotEmpty()
-        ) {
-            controlMode = AccessControlMode.DIR_CTRL
-        }
-
         val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, controlMode!!, officeDenyGroupSet)
         return RepoModeStatus(id, accessControlMode, officeDenyGroupSet)
     }

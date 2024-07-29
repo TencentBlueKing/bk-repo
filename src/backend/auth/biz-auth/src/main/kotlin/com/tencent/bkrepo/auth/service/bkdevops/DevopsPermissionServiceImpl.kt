@@ -258,7 +258,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     private fun needCheckPathPermission(resourceType: String, projectId: String, repoName: String): Boolean {
-        return devopsAuthConfig.enablePathCheck && resourceType == NODE.name && needNodeCheck(projectId, repoName)
+        return resourceType == NODE.name && needNodeCheck(projectId, repoName)
     }
 
     private fun checkDevopsPipelinePermission(context: CheckPermissionContext): Boolean {
