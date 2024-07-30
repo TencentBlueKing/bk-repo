@@ -4,8 +4,9 @@ import { Message } from 'element-ui'
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
 import { getBkUid, getToken } from '@/utils/auth' // get token from cookie
-import { toLoginPage } from '@/utils/login'
+import { MODE_CONFIG, MODE_CONFIG_STAND_ALONE, toLoginPage } from '@/utils/login'
 import { ROLE_ADMIN } from '@/store/modules/user'
+import { userInfo } from '@/api/user'
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
@@ -20,7 +21,7 @@ router.beforeEach(async(to, from, next) => {
 
   // determine whether the user has logged in
   // const bkTicket = getBkTicket()
-  const bkUid = getBkUid()
+  const bkUid = getBkUid() || store.getters.name
   const token = getToken()
   // const hasToken = token || bkTicket || bkUid
   const hasToken = token || bkUid
@@ -71,6 +72,16 @@ router.beforeEach(async(to, from, next) => {
       next()
     } else {
       // other pages that do not have permission to access are redirected to the login page.
+      if (MODE_CONFIG !== MODE_CONFIG_STAND_ALONE) {
+        try {
+          const response = await fetch(userInfo)
+          if (response.ok) {
+            await store.dispatch('user/getInfo')
+          }
+        } catch (error) {
+          console.error(error)
+        }
+      }
       toLoginPage(to.path)
       NProgress.done()
     }
