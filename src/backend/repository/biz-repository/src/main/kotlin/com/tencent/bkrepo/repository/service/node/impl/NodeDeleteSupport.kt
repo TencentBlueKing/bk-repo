@@ -208,7 +208,7 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPaths: List<String>? = null,
-        queryDeleted: Boolean = true
+        decreaseVolume: Boolean = true
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
@@ -226,7 +226,7 @@ open class NodeDeleteSupport(
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }
-            if (queryDeleted) {
+            if (decreaseVolume) {
                 var deletedCriteria = criteria.and(TNode::deleted).isEqualTo(deleteTime)
                 fullPaths?.let {
                     // 节点删除接口返回的数据排除目录
