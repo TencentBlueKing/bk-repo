@@ -114,7 +114,7 @@ open class NodeDeleteSupport(
         }
     }
 
-    override fun deleteOverwriteByFullPath(
+    override fun deleteByFullPathWithoutDecreaseVolume(
         projectId: String,
         repoName: String,
         fullPath: String,

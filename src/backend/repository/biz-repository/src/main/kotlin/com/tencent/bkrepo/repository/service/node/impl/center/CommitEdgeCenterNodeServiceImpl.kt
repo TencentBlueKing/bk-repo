@@ -126,7 +126,7 @@ class CommitEdgeCenterNodeServiceImpl(
                     ClusterUtils.checkIsSrcCluster(existNode.clusterNames)
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    deleteOverwriteByFullPath(projectId, repoName, fullPath, operator)
+                    deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
                     quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
                 }
             } else {
@@ -135,8 +135,8 @@ class CommitEdgeCenterNodeServiceImpl(
         }
     }
 
-    override fun deleteOverwriteByFullPath(projectId: String, repoName: String, fullPath: String, operator: String) {
-        return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteOverwriteByFullPath(
+    override fun deleteByFullPathWithoutDecreaseVolume(projectId: String, repoName: String, fullPath: String, operator: String) {
+        return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteByFullPathWithoutDecreaseVolume(
             projectId,
             repoName,
             fullPath,

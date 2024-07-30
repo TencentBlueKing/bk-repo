@@ -403,7 +403,7 @@ abstract class NodeBaseService(
                 } else {
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    deleteOverwriteByFullPath(projectId, repoName, fullPath, operator)
+                    deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
                     quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
                 }
             } else {
