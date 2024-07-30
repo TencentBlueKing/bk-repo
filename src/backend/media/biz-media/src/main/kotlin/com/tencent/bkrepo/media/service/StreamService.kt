@@ -13,13 +13,14 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties
-import com.tencent.bkrepo.media.stream.ArtifactFileConsumer
+import com.tencent.bkrepo.media.stream.MediaArtifactFileConsumer
 import com.tencent.bkrepo.media.stream.ArtifactFileRecordingListener
 import com.tencent.bkrepo.media.stream.ClientStream
 import com.tencent.bkrepo.media.stream.MediaType
 import com.tencent.bkrepo.media.stream.RemuxRecordingListener
 import com.tencent.bkrepo.media.stream.StreamManger
 import com.tencent.bkrepo.media.stream.StreamMode
+import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -38,6 +39,7 @@ class StreamService(
     private val storageManager: StorageManager,
     private val storageProperties: StorageProperties,
     private val streamManger: StreamManger,
+    private val transcodeService: TranscodeService,
 ) : ArtifactService() {
 
     /**
@@ -74,7 +76,7 @@ class StreamService(
             fullPathSet = setOf(STREAM_PATH),
             type = TokenType.UPLOAD,
         )
-        val token = tokenService.createToken(temporaryTokenRequest)
+        val token = tokenService.createToken(temporaryTokenRequest).firstOrNull()
         return "${mediaProperties.serverAddress}/$projectId/$repoName$STREAM_PATH?token=$token"
     }
 
@@ -100,12 +102,13 @@ class StreamService(
         val repoId = ArtifactContextHolder.RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
         val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
-        val fileConsumer = ArtifactFileConsumer(
+        val fileConsumer = MediaArtifactFileConsumer(
             storageManager,
+            transcodeService,
             repo,
             userId,
             STREAM_PATH,
-            mediaProperties.fileExpireDays,
+            getTranscodeConfig(projectId),
         )
         val recordingListener = if (remux) {
             RemuxRecordingListener(credentials.upload.location, scheduler, saveType, fileConsumer)
@@ -130,7 +133,13 @@ class StreamService(
         repository.download(context)
     }
 
+    private fun getTranscodeConfig(projectId: String): TranscodeConfig? {
+        val transcodeConfig = mediaProperties.transcodeConfig
+        return transcodeConfig[projectId] ?: transcodeConfig[DEFAULT]
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(StreamService::class.java)
+        private const val DEFAULT = "default"
     }
 }

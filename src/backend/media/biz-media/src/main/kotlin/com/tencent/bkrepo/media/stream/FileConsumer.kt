@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.media.stream
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import java.io.File
 import java.util.function.Consumer
 
@@ -14,4 +15,6 @@ interface FileConsumer : Consumer<File> {
      * @param name 文件名
      * */
     fun accept(file: File, name: String)
+
+    fun accept(file: ArtifactFile, name: String)
 }

@@ -1,0 +1,8 @@
+server.port: 25913
+spring.application.name: job-schedule
+
+devops:
+  schedule:
+    server:
+      auth:
+        access-token: xxx
