@@ -36,8 +36,8 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.fs.server.api.FsNodeClient
@@ -135,7 +135,9 @@ class CommitEdgeCenterNodeServiceImpl(
         }
     }
 
-    override fun deleteByFullPathWithoutDecreaseVolume(projectId: String, repoName: String, fullPath: String, operator: String) {
+    override fun deleteByFullPathWithoutDecreaseVolume(
+        projectId: String, repoName: String, fullPath: String, operator: String
+    ) {
         return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteByFullPathWithoutDecreaseVolume(
             projectId,
             repoName,
