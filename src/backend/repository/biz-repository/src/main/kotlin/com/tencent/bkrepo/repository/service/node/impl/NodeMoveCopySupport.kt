@@ -180,7 +180,10 @@ open class NodeMoveCopySupport(
             // 文件 -> 文件 & 允许覆盖: 删除old
             if (existNode?.folder == false && overwrite) {
                 quotaService.checkRepoQuota(existNode.projectId, existNode.repoName, node.size - existNode.size)
-                nodeBaseService.deleteByPath(existNode.projectId, existNode.repoName, existNode.fullPath, operator)
+                nodeBaseService.deleteByFullPathWithoutDecreaseVolume(
+                    existNode.projectId, existNode.repoName, existNode.fullPath, operator
+                )
+                quotaService.decreaseUsedVolume(existNode.projectId, existNode.repoName, existNode.size)
             }
         }
     }
