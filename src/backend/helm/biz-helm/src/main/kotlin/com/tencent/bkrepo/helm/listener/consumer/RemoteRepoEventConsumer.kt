@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component
 @Component("remoteRepo")
 class RemoteRepoEventConsumer(
     private val remoteEventJobExecutor: RemoteEventJobExecutor
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
     /**
      * 允许接收的事件类型
@@ -53,7 +53,7 @@ class RemoteRepoEventConsumer(
         EventType.REPO_REFRESHED
     )
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         if (!acceptTypes.contains(message.payload.type)) {
             return
         }

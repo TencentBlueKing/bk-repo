@@ -10,15 +10,14 @@ import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 import java.util.concurrent.Executors
-import java.util.function.Consumer
 
-@Component("artifactEventFs")
+@Component
 class NodeModifyListener(
     private val rRepositoryClient: RRepositoryClient,
     private val fileNodeService: FileNodeService
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         val event = message.payload
         val type = event.type
         // 覆盖创建也会先删除，再创建。所以这里只需关注删除事件即可。

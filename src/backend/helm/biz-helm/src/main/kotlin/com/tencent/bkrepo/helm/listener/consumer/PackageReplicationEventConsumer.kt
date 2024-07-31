@@ -39,10 +39,10 @@ import java.util.function.Consumer
  * 消费基于MQ传递的事件
  * 消费分发同步的Package， 用于更新index文件
  */
-@Component("packageReplication")
+@Component
 class PackageReplicationEventConsumer(
     private val remoteEventJobExecutor: RemoteEventJobExecutor
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
     /**
      * 允许接收的事件类型
@@ -52,7 +52,7 @@ class PackageReplicationEventConsumer(
         EventType.VERSION_UPDATED,
     )
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         if (!acceptTypes.contains(message.payload.type)) {
             return
         }

@@ -30,10 +30,12 @@ package com.tencent.bkrepo.analyst.configuration
 import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskDispatcherFactory
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
+import com.tencent.bkrepo.analyst.event.ScanEventConsumer
 import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
 import com.tencent.bkrepo.analyst.service.impl.ProjectUsageStatisticsServiceImpl
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
@@ -45,6 +47,7 @@ import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.function.Consumer
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(
@@ -83,5 +86,15 @@ class ScannerConfiguration {
         client: ObjectProvider<ProjectUsageStatisticsClient>
     ): ProjectUsageStatisticsService {
         return ProjectUsageStatisticsServiceImpl(client)
+    }
+
+
+    @Bean("scanEventConsumer")
+    fun scanEventConsumer(
+        scanEventConsumer: ScanEventConsumer
+    ): Consumer<ArtifactEvent> {
+        return Consumer {
+            scanEventConsumer.accept(it)
+        }
     }
 }

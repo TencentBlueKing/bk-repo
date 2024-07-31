@@ -43,7 +43,7 @@ import java.util.function.Consumer
 @Component("thirdPartyReplication")
 class ThirdPartyReplicationEventConsumer(
     private val eventExecutor: EventExecutor
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
     /**
      * 允许接收的事件类型
@@ -52,7 +52,7 @@ class ThirdPartyReplicationEventConsumer(
         EventType.REPLICATION_THIRD_PARTY
     )
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         if (!acceptTypes.contains(message.payload.type)) {
             return
         }
