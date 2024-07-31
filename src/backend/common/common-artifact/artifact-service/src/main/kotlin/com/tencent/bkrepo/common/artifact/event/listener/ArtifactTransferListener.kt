@@ -106,7 +106,8 @@ class ArtifactTransferListener(
                     host = artifactMetricsProperties.host,
                     builderAgentList = artifactMetricsProperties.builderAgentList,
                     clientAgentList = artifactMetricsProperties.clientAgentList
-                ).name
+                ).name,
+                userId = SecurityUtils.getUserId()
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
@@ -151,7 +152,8 @@ class ArtifactTransferListener(
                     host = artifactMetricsProperties.host,
                     builderAgentList = artifactMetricsProperties.builderAgentList,
                     clientAgentList = artifactMetricsProperties.clientAgentList
-                ).name
+                ).name,
+                userId = SecurityUtils.getUserId()
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
@@ -207,7 +209,8 @@ class ArtifactTransferListener(
                     host = artifactMetricsProperties.host,
                     builderAgentList = artifactMetricsProperties.builderAgentList,
                     clientAgentList = artifactMetricsProperties.clientAgentList
-                ).name
+                ).name,
+                userId = SecurityUtils.getUserId()
             )
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(
