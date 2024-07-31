@@ -25,24 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.pojo
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
-/**
- * 预加载策略类型
- */
-enum class PreloadStrategyType {
-    /**
-     * 自定义类型，自定义需要预加载的文件与预加载时间
-     */
-    CUSTOM,
-
-    /**
-     * 系统生成的自定义类型
-     */
-    CUSTOM_GENERATED,
-
-    /**
-     * 智能预加载策略
-     */
-    INTELLIGENT
+data class SearchRequest(
+    var query: String,
+    var topK: Int = DEFAULT_TOP_K,
+    var similarityThreshold: Double = SIMILARITY_THRESHOLD_ACCEPT_ALL,
+    var filterExpression: String? = null
+) {
+    companion object {
+        private const val DEFAULT_TOP_K = 4
+        private const val SIMILARITY_THRESHOLD_ACCEPT_ALL = 0.0
+    }
 }

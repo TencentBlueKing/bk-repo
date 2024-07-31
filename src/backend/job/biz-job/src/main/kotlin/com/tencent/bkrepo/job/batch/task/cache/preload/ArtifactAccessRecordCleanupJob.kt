@@ -25,24 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.pojo
+package com.tencent.bkrepo.job.batch.task.cache.preload
+
+import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
+import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.properties.ArtifactAccessRecordCleanupJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
- * 预加载策略类型
+ * 制品访问记录清理
  */
-enum class PreloadStrategyType {
-    /**
-     * 自定义类型，自定义需要预加载的文件与预加载时间
-     */
-    CUSTOM,
-
-    /**
-     * 系统生成的自定义类型
-     */
-    CUSTOM_GENERATED,
-
-    /**
-     * 智能预加载策略
-     */
-    INTELLIGENT
+@Component
+@EnableConfigurationProperties(ArtifactAccessRecordCleanupJobProperties::class)
+class ArtifactAccessRecordCleanupJob(
+    properties: ArtifactAccessRecordCleanupJobProperties,
+    private val recorder: ArtifactAccessRecorder?,
+) : DefaultContextJob(properties) {
+    override fun doStart0(jobContext: JobContext) {
+        recorder?.cleanup()
+    }
 }

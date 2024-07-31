@@ -25,24 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.pojo
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
-/**
- * 预加载策略类型
- */
-enum class PreloadStrategyType {
-    /**
-     * 自定义类型，自定义需要预加载的文件与预加载时间
-     */
-    CUSTOM,
+interface EmbeddingModel {
+
+    fun embed(document: Document): List<Float> {
+        return this.embed(document.content)
+    }
 
     /**
-     * 系统生成的自定义类型
+     * 对指定文本进行向量化
+     *
+     * @param text 需要向量化的文本
+     *
+     * @return [text]对应的向量
      */
-    CUSTOM_GENERATED,
+    fun embed(text: String): List<Float>
 
     /**
-     * 智能预加载策略
+     * 批量向量化文本
+     *
+     * @param texts 文本列表
+     *
+     * @return 向量化结果列表
      */
-    INTELLIGENT
+    fun embed(texts: List<String>): List<List<Float>>
+
+    /**
+     * 获取模型生成的向量维度
+     */
+    fun dimensions(): Int {
+        return this.embed("Test String").size
+    }
 }

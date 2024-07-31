@@ -74,12 +74,12 @@ class ArtifactPreloadPlanServiceImpl(
         if (!properties.enabled) {
             return
         }
-        val option = NodeListOption(pageSize = MAX_PAGE_SIZE, includeFolder = false)
+        val option = NodeListOption(pageSize = properties.maxNodes, includeFolder = false)
         val res = nodeClient.listPageNodeBySha256(sha256, option)
         val nodes = res.data?.records ?: return
-        if (nodes.size >= MAX_PAGE_SIZE) {
+        if (nodes.size >= properties.maxNodes) {
             // 限制查询出来的最大node数量，避免预加载计划创建时间过久
-            logger.warn("nodes of sha256[$sha256] exceed max page size[$MAX_PAGE_SIZE]")
+            logger.warn("nodes of sha256[$sha256] exceed max page size[${properties.maxNodes}]")
             return
         }
         // node属于同一项目仓库的概率较大，缓存避免频繁查询策略
@@ -179,6 +179,5 @@ class ArtifactPreloadPlanServiceImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactPreloadPlanServiceImpl::class.java)
         private const val REPO_ID_DELIMITERS = "/"
-        private const val MAX_PAGE_SIZE = 1000
     }
 }

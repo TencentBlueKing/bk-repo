@@ -25,24 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.pojo
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai
+
+import org.bson.types.ObjectId
 
 /**
- * 预加载策略类型
+ * 表示一份向量化后的文档及其关联数据
+ *
+ * 升级到jdk17后迁移到spring-ai
  */
-enum class PreloadStrategyType {
+data class Document(
     /**
-     * 自定义类型，自定义需要预加载的文件与预加载时间
+     * 用于向量化的文档内容
      */
-    CUSTOM,
-
+    val content: String,
     /**
-     * 系统生成的自定义类型
+     * 携带的元数据
+     * value 只能为string, int, float, boolean
      */
-    CUSTOM_GENERATED,
-
+    val metadata: Map<String, Any> = emptyMap(),
     /**
-     * 智能预加载策略
+     * 唯一id
      */
-    INTELLIGENT
-}
+    val id: String = ObjectId.get().toHexString(),
+)

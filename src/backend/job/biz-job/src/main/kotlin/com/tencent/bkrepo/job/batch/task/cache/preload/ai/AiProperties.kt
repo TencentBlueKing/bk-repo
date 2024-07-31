@@ -25,24 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.pojo
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
-/**
- * 预加载策略类型
- */
-enum class PreloadStrategyType {
-    /**
-     * 自定义类型，自定义需要预加载的文件与预加载时间
-     */
-    CUSTOM,
+import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
 
+@ConfigurationProperties("spring.ai")
+data class AiProperties(
     /**
-     * 系统生成的自定义类型
+     * 向量化服务URL
+     * 服务需要实现[com.tencent.bkrepo.job.batch.task.cache.preload.ai.HttpEmbeddingModel]中调用的接口
      */
-    CUSTOM_GENERATED,
-
+    var embeddingServiceUrl: String = "",
     /**
-     * 智能预加载策略
+     * 向量化服务token，会在请求头Authorization中携带用于认证
      */
-    INTELLIGENT
-}
+    var embeddingServiceToken: String = "",
+    /**
+     * 模型维度
+     */
+    var dimenssion: Int = 384,
+    /**
+     * 调用向量化接口超时时间
+     */
+    var embeddingTimeout: Duration = Duration.ofMinutes(1L),
+    /**
+     * 向量数据库名
+     */
+    var databaseName: String = "default",
+    /**
+     * 向量数据库表名前缀
+     */
+    var collectionPrefix: String = "artifact_access_log_",
+    /**
+     * 默认相似度阈值，用于过滤相似路径查询结果
+     */
+    var defaultSimilarityThreshold: Double = 0.95,
+)

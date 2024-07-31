@@ -25,24 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.pojo
+package com.tencent.bkrepo.job.batch.task.cache.preload
+
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
+import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
+import com.tencent.bkrepo.job.batch.base.DefaultContextJob
+import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.config.properties.ArtifactPreloadPlanExecuteJobProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
- * 预加载策略类型
+ * 执行预加载计划将制品加载到缓存中
  */
-enum class PreloadStrategyType {
-    /**
-     * 自定义类型，自定义需要预加载的文件与预加载时间
-     */
-    CUSTOM,
-
-    /**
-     * 系统生成的自定义类型
-     */
-    CUSTOM_GENERATED,
-
-    /**
-     * 智能预加载策略
-     */
-    INTELLIGENT
+@Component
+@EnableConfigurationProperties(ArtifactPreloadPlanExecuteJobProperties::class)
+class ArtifactPreloadPlanExecuteJob(
+    properties: ArtifactPreloadPlanExecuteJobProperties,
+    private val preloadPlanService: ArtifactPreloadPlanService?,
+    private val preloadProperties: ArtifactPreloadProperties?,
+) : DefaultContextJob(properties) {
+    override fun doStart0(jobContext: JobContext) {
+        if (preloadProperties?.enabled == true) {
+            preloadPlanService?.executePlans()
+        }
+    }
 }

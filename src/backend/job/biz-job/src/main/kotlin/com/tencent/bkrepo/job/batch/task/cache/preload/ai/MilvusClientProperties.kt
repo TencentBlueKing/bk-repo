@@ -25,24 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.pojo
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
-/**
- * 预加载策略类型
- */
-enum class PreloadStrategyType {
-    /**
-     * 自定义类型，自定义需要预加载的文件与预加载时间
-     */
-    CUSTOM,
+import org.springframework.boot.context.properties.ConfigurationProperties
+import java.util.concurrent.TimeUnit
 
-    /**
-     * 系统生成的自定义类型
-     */
-    CUSTOM_GENERATED,
-
-    /**
-     * 智能预加载策略
-     */
-    INTELLIGENT
-}
+@ConfigurationProperties("spring.ai.vectorstore.milvus.client")
+data class MilvusClientProperties(
+    var host: String = "localhost",
+    var port: Int = 19530,
+    var uri: String? = null,
+    var token: String? = null,
+    var connectTimeoutMs: Long = 10000L,
+    var keepAliveTimeMs: Long = 55000L,
+    var keepAliveTimeoutMs: Long = 20000L,
+    var rpcDeadlineMs: Long = 0L,
+    var idleTimeoutMs: Long = TimeUnit.MILLISECONDS.convert(24L, TimeUnit.HOURS),
+    var username: String = "root",
+    var password: String = "milvus"
+)

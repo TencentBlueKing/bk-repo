@@ -25,24 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cache.pojo
+package com.tencent.bkrepo.job.batch.task.cache.preload
 
-/**
- * 预加载策略类型
- */
-enum class PreloadStrategyType {
-    /**
-     * 自定义类型，自定义需要预加载的文件与预加载时间
-     */
-    CUSTOM,
+import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
+import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
+import io.milvus.client.MilvusClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-    /**
-     * 系统生成的自定义类型
-     */
-    CUSTOM_GENERATED,
-
-    /**
-     * 智能预加载策略
-     */
-    INTELLIGENT
+@Configuration
+@ConditionalOnProperty("job.artifact-access-log-embedding.enabled")
+class PreloadConfig {
+    @Bean("INTELLIGENT")
+    fun artifactSimilarityPreloadPlanGenerator(
+        milvusClient: MilvusClient,
+        embeddingModel: EmbeddingModel,
+        aiProperties: AiProperties,
+        preloadProperties: ArtifactPreloadProperties,
+    ): ArtifactPreloadPlanGenerator {
+        return ArtifactSimilarityPreloadPlanGenerator(embeddingModel, milvusClient, aiProperties, preloadProperties)
+    }
 }
