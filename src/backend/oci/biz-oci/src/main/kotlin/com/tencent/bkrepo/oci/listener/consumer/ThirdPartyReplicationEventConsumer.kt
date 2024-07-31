@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component
  * 消费基于MQ传递的事件
  * 对应destination为对应ArtifactEvent.topic
  */
-@Component("thirdPartyReplication")
+@Component
 class ThirdPartyReplicationEventConsumer(
     private val eventExecutor: EventExecutor
 ) {

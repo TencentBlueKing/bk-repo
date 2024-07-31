@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component
  * 构件事件消费者，用于实时同步
  * 对应destination为对应ArtifactEvent.topic
  */
-@Component("remoteRepo")
+@Component
 class RemoteRepoEventConsumer(
     private val remoteEventJobExecutor: RemoteEventJobExecutor
 ) {
