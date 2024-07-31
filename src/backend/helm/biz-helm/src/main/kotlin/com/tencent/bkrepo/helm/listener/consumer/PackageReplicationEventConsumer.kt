@@ -33,7 +33,6 @@ import com.tencent.bkrepo.helm.listener.base.RemoteEventJobExecutor
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
-import java.util.function.Consumer
 
 /**
  * 消费基于MQ传递的事件

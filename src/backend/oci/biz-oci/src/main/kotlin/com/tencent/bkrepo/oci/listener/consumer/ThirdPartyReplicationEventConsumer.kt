@@ -33,7 +33,6 @@ import com.tencent.bkrepo.oci.listener.base.EventExecutor
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
-import java.util.function.Consumer
 
 
 /**
