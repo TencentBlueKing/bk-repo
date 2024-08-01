@@ -27,8 +27,8 @@ class TokenService(
     private val temporaryTokenClient: ServiceTemporaryTokenClient,
 ) {
 
-    fun createToken(tokenCreateRequest: TemporaryTokenCreateRequest): String {
-        return temporaryTokenClient.createToken(tokenCreateRequest).data?.firstOrNull()?.token.orEmpty()
+    fun createToken(tokenCreateRequest: TemporaryTokenCreateRequest): List<String> {
+        return temporaryTokenClient.createToken(tokenCreateRequest).data?.map { it.token }.orEmpty()
     }
 
     /**
