@@ -58,7 +58,6 @@ import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeletedPointQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeRestoreUpdate
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.FindAndModifyOptions
@@ -179,15 +178,13 @@ open class NodeRestoreSupport(
             val deletedNode = nodeDao.findAndModify(query, nodeRestoreUpdate(), option, TNode::class.java)
             if (deletedNode?.sha256 == FAKE_SHA256 || deletedNode?.metadata?.find { it.key == FS_ATTR_KEY } != null) {
                 try {
-                    runBlocking {
-                        blockNodeService.restoreBlocks(
-                            projectId = projectId,
-                            repoName = repoName,
-                            fullPath = fullPath,
-                            nodeCreateDate = deletedNode.createdDate,
-                            nodeDeleteDate = deletedNode.deleted!!
-                        )
-                    }
+                    blockNodeService.restoreBlocks(
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = fullPath,
+                        nodeCreateDate = deletedNode.createdDate,
+                        nodeDeleteDate = deletedNode.deleted!!
+                    )
                 } catch (e: Exception) {
                     logger.error("restore block resources failed: $projectId/$repoName/$fullPath", e)
                     nodeDao.save(deletedNode)
@@ -205,7 +202,7 @@ open class NodeRestoreSupport(
         with(node) {
             val query = nodeQuery(projectId, repoName, fullPath)
             if (node.sha256 == FAKE_SHA256 || node.metadata?.find { it.key == FS_ATTR_KEY } != null) {
-                runBlocking { blockNodeService.deleteBlocks(projectId, repoName, fullPath) }
+                blockNodeService.deleteBlocks(projectId, repoName, fullPath)
             }
             nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(userId))
         }

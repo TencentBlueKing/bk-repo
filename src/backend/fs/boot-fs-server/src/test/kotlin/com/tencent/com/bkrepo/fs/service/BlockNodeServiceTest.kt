@@ -4,11 +4,11 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.dao.RBlockNodeDao
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
-import com.tencent.bkrepo.common.metadata.model.TBlockNode
-import com.tencent.bkrepo.common.metadata.dao.BlockNodeDao
-import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.com.bkrepo.fs.UT_PROJECT_ID
@@ -36,7 +36,7 @@ import reactor.core.publisher.Mono
 import java.time.LocalDateTime
 
 @DataMongoTest
-@Import(BlockNodeDao::class)
+@Import(RBlockNodeDao::class)
 @SpringBootConfiguration
 @EnableAutoConfiguration
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
@@ -46,10 +46,10 @@ class BlockNodeServiceTest {
     lateinit var rRepositoryClient: RRepositoryClient
 
     @Autowired
-    lateinit var blockNodeService: BlockNodeService
+    lateinit var blockNodeService: RBlockNodeService
 
     @Autowired
-    lateinit var blockNodeDao: BlockNodeDao
+    lateinit var blockNodeDao: RBlockNodeDao
     private val storageCredentials = FileSystemCredentials()
 
     @BeforeEach

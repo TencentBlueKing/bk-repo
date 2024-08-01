@@ -27,11 +27,9 @@
 
 package com.tencent.bkrepo.common.metadata.dao
 
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
 
 @Configuration
-@Import(
-    BlockNodeDao::class
-)
+@ComponentScan(basePackages = ["com.tencent.bkrepo.common.metadata.dao"])
 class MetadataDaoConfiguration

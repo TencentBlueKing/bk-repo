@@ -34,8 +34,6 @@ import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Service
 
 @Service
@@ -45,16 +43,12 @@ class BlockNodeServiceImpl(
     private val nodeDao: NodeDao
 ) : AbstractBlockNodeService(blockNodeDao) {
 
-    override suspend fun incFileRef(sha256: String, credentialsKey: String?) {
-        withContext(Dispatchers.IO) {
-            fileReferenceService.increment(sha256, credentialsKey)
-        }
+    override fun incFileRef(sha256: String, credentialsKey: String?) {
+        fileReferenceService.increment(sha256, credentialsKey)
     }
 
-    override suspend fun getNodeDetail(projectId: String, repoName: String, dstFullPath: String): NodeDetail {
-        return withContext(Dispatchers.IO) {
-            val node = nodeDao.findNode(projectId, repoName, dstFullPath) ?: throw NodeNotFoundException(dstFullPath)
-            NodeBaseService.convertToDetail(node)!!
-        }
+    override fun getNodeDetail(projectId: String, repoName: String, dstFullPath: String): NodeDetail {
+        val node = nodeDao.findNode(projectId, repoName, dstFullPath) ?: throw NodeNotFoundException(dstFullPath)
+        return NodeBaseService.convertToDetail(node)!!
     }
 }
