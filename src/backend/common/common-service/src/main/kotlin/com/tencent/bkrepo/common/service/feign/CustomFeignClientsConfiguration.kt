@@ -48,8 +48,6 @@ import org.springframework.context.annotation.Configuration
 @ConditionalOnClass(FeignClientsConfiguration::class)
 class CustomFeignClientsConfiguration {
 
-    private val feignClientsConfiguration = FeignClientsConfiguration()
-
     @Bean
     fun requestInterceptor(): RequestInterceptor {
         return RequestInterceptor { requestTemplate ->
@@ -67,8 +65,11 @@ class CustomFeignClientsConfiguration {
     fun errorCodeDecoder() = ErrorCodeDecoder()
 
     @Bean
-    @ConditionalOnMissingBean(FeignLoggerFactory::class)
-    fun feignLoggerFactory(): FeignLoggerFactory {
+    fun feignClientsConfiguration() = FeignClientsConfiguration()
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun feignLoggerFactory(feignClientsConfiguration: FeignClientsConfiguration): FeignLoggerFactory {
         return feignClientsConfiguration.feignLoggerFactory()
     }
 
@@ -77,19 +78,23 @@ class CustomFeignClientsConfiguration {
     fun feignEncoder(
         formWriterProvider: ObjectProvider<AbstractFormWriter>,
         customizers: ObjectProvider<HttpMessageConverterCustomizer>,
+        feignClientsConfiguration: FeignClientsConfiguration,
     ): Encoder {
         return feignClientsConfiguration.feignEncoder(formWriterProvider, customizers)
     }
 
     @Bean
     @ConditionalOnMissingBean
-    fun feignRetryer(): Retryer {
+    fun feignRetryer(feignClientsConfiguration: FeignClientsConfiguration): Retryer {
         return feignClientsConfiguration.feignRetryer()
     }
 
     @Bean
     @ConditionalOnMissingBean
-    fun feignDecoder(customizers: ObjectProvider<HttpMessageConverterCustomizer>): Decoder {
+    fun feignDecoder(
+        customizers: ObjectProvider<HttpMessageConverterCustomizer>,
+        feignClientsConfiguration: FeignClientsConfiguration,
+    ): Decoder {
         return feignClientsConfiguration.feignDecoder(customizers)
     }
 }
