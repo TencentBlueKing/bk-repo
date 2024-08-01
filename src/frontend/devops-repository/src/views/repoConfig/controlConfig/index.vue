@@ -417,5 +417,12 @@
             }
         }
     }
+    .bkre-user-select {
+        width: 300px;
+        background-color: #FFFFFF1A;
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+    }
 }
 </style>
