@@ -110,7 +110,6 @@ class HelmReplicationRefreshJob(
 
     private fun filterReplicationVersion(versionData: PackageVersionData): Boolean {
         with(versionData) {
-            // 避免误删，只删除最后更新时间是前一天的镜像
             if (metadata.isEmpty()) return false
             val sourceType = metadata.firstOrNull { it[METADATA_KEY] == SOURCE_TYPE }
                 ?.get(METADATA_VALUE) as? String ?: return false
