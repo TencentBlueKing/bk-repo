@@ -251,6 +251,8 @@ gateway:
   secretKey: ""
   ## 部署模式，standalone: 独立模式，ci: 与ci搭配模式 , saas模式: 蓝鲸saas部署模式
   deployMode: standalone
+  ## 发行模式，社区版不用填写
+  releaseMode:
   ## 网关认证模式，ticket, 校验bk_ticket token ，校验bk_token
   authMode: token
   ## bkci 域名
