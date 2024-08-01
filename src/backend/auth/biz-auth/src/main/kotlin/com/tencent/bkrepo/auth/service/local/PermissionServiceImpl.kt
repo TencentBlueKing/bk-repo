@@ -406,7 +406,7 @@ open class PermissionServiceImpl constructor(
         return permHelper.isUserLocalProjectAdmin(userId, projectId)
     }
 
-    fun isUserLocalProjectUser(userId: String, projectId: String): Boolean {
+    private fun isUserLocalProjectUser(userId: String, projectId: String): Boolean {
         return permHelper.isUserLocalProjectUser(userId, projectId)
     }
 

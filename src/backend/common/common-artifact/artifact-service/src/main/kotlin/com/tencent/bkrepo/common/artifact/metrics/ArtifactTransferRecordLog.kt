@@ -46,6 +46,7 @@ class ArtifactTransferRecordLog(
     val repoName: String = record.repoName
     val agent: String = record.agent
     val fullPath: String = record.fullPath
+    val userId: String = record.userId
     val service: String? = commonTag["service"]
     val instance: String? = commonTag["instance"]
     val host: String? = commonTag["host"]

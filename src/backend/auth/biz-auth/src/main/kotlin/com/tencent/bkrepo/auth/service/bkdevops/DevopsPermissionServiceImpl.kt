@@ -43,6 +43,9 @@ import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DOWNLOAD
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
@@ -194,17 +197,24 @@ class DevopsPermissionServiceImpl constructor(
                 return false
             }
             when (repoName) {
-                CUSTOM, LOG, REPORT -> {
+                CUSTOM, LOG -> {
                     return checkDevopsCustomPermission(request)
                 }
                 PIPELINE -> {
                     return checkDevopsPipelinePermission(request)
+                }
+                REPORT -> {
+                    return checkDevopsReportPermission(request.action)
                 }
                 else -> {
                     return checkRepoNotInDevops(request)
                 }
             }
         }
+    }
+
+    private fun checkDevopsReportPermission(action: String): Boolean {
+        return action == READ.name || action == WRITE.name || action == VIEW.name || action == DOWNLOAD.name
     }
 
     private fun checkDevopsCustomPermission(request: CheckPermissionRequest): Boolean {
@@ -221,12 +231,11 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkRepoNotInDevops(request: CheckPermissionRequest): Boolean {
         logger.debug("check repo not in devops request [$request]")
         with(request) {
-            val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action) ||
-                    isUserLocalProjectUser(uid, projectId!!)
+            val isDevopsProjectMember = isDevopsProjectMember(uid, projectId!!, action)
             if (needCheckPathPermission(resourceType, projectId!!, repoName!!)) {
                 return checkNodeAction(request, null, isDevopsProjectMember)
             }
-            return isDevopsProjectMember
+            return isDevopsProjectMember || super.checkPermission(request)
         }
     }
 

@@ -27,8 +27,9 @@
 
 package com.tencent.bkrepo.repository.service.fs.impl.edge
 
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.reportMetadataToCenter
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterFsNodeClient
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -53,18 +54,28 @@ class EdgeFsServiceImpl(
         by lazy { FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.self.name) }
 
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
-        centerNodeClient.createNode(createRequest)
-        return super.createNode(createRequest)
+        with(createRequest) {
+            if (reportMetadataToCenter(projectId, repoName)) {
+                centerNodeClient.createNode(this)
+            }
+            return super.createNode(this)
+        }
     }
 
     override fun setLength(setLengthRequest: NodeSetLengthRequest) {
-        centerNodeClient.setLength(setLengthRequest)
-        super.setLength(setLengthRequest)
+        with(setLengthRequest) {
+            if (reportMetadataToCenter(projectId, repoName)) {
+                centerNodeClient.setLength(this)
+            }
+            super.setLength(this)
+        }
     }
 
     override fun buildTNode(request: NodeCreateRequest): TNode {
         val tNode = super.buildTNode(request)
-        tNode.clusterNames = setOf(clusterProperties.self.name!!)
+        if (reportMetadataToCenter(request.projectId, request.repoName)) {
+            tNode.clusterNames = setOf(clusterProperties.self.name!!)
+        }
         return tNode
     }
 }

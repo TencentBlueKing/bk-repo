@@ -49,6 +49,7 @@ import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DOWNLOAD
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -92,10 +93,10 @@ class PermissionHelper constructor(
         if (queryRoles.isEmpty()) return false
 
         val result = roleRepository.findByTypeAndProjectIdAndAdminAndRepoNameAndIdIn(
-            projectId = request.projectId!!,
             type = RoleType.REPO,
-            repoName = request.repoName!!,
+            projectId = request.projectId!!,
             admin = true,
+            repoName = request.repoName!!,
             ids = queryRoles
         )
         if (result.isNotEmpty()) return true
@@ -185,7 +186,8 @@ class PermissionHelper constructor(
     }
 
     fun checkProjectReadAction(request: CheckPermissionRequest, isProjectUser: Boolean): Boolean {
-        return request.projectId != null && request.action == READ.name && isProjectUser
+        val readeOrdownload = request.action == READ.name || request.action == DOWNLOAD.name
+        return request.projectId != null && readeOrdownload && isProjectUser
     }
 
     fun getPermissionPathFromConfig(
