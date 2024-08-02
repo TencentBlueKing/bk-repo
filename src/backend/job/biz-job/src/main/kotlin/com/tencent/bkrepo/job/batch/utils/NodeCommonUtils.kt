@@ -55,6 +55,7 @@ class NodeCommonUtils(
         lateinit var separationTaskService: SeparationTaskService
         private const val COLLECTION_NAME_PREFIX = "node_"
         private const val SEPARATION_COLLECTION_NAME_PREFIX = "separation_node_"
+        private const val FILE_REFERENCE_COLLECTION_NAME_PREFIX = "file_reference_"
         private val workPool = ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             Runtime.getRuntime().availableProcessors(),
@@ -133,6 +134,19 @@ class NodeCommonUtils(
             val futures = mutableListOf<Future<*>>()
             for (i in 0 until SHARDING_COUNT) {
                 val collection = COLLECTION_NAME_PREFIX.plus(i)
+                futures.add(workPool.submit { findByCollection(query, batchSize, collection, consumer) })
+            }
+            futures.forEach { it.get() }
+        }
+
+        fun forEachRefByCollectionParallel(
+            query: Query,
+            batchSize: Int = BATCH_SIZE,
+            consumer: Consumer<Map<String, Any?>>,
+        ) {
+            val futures = mutableListOf<Future<*>>()
+            for (i in 0 until SHARDING_COUNT) {
+                val collection = FILE_REFERENCE_COLLECTION_NAME_PREFIX.plus(i)
                 futures.add(workPool.submit { findByCollection(query, batchSize, collection, consumer) })
             }
             futures.forEach { it.get() }

@@ -40,8 +40,8 @@ import okhttp3.Response
 class CompleteMultipartUploadResponseHandler : HttpResponseHandler<PutObjectResponse>() {
     override fun handle(response: Response): PutObjectResponse {
         return PutObjectResponse(
-            readXmlValue(response)[ETAG].toString(),
-            response.header(RESPONSE_CRC64)
+            readXmlToMap(response)[ETAG].toString(),
+            response.header(RESPONSE_CRC64),
         )
     }
 }
