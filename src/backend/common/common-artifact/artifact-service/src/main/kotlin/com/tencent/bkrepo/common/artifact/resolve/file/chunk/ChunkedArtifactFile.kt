@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -47,6 +48,7 @@ class ChunkedArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageProperties: StorageProperties,
     private val storageCredentials: StorageCredentials,
+    private val requestLimitCheckService: RequestLimitCheckService
 ) : ArtifactFile {
 
     /**
@@ -71,6 +73,7 @@ class ChunkedArtifactFile(
             storageProperties.monitor,
             path,
             randomPath = true,
+            requestLimitCheckService = requestLimitCheckService
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {

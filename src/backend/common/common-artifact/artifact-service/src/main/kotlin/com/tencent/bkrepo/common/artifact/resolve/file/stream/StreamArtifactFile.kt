@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -47,7 +48,8 @@ open class StreamArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageProperties: StorageProperties,
     private val storageCredentials: StorageCredentials,
-    private val contentLength: Long? = null
+    private val contentLength: Long? = null,
+    private val requestLimitCheckService: RequestLimitCheckService
 ) : ArtifactFile {
 
     /**
@@ -83,7 +85,8 @@ open class StreamArtifactFile(
             storageProperties.receive,
             storageProperties.monitor,
             receivePath,
-            randomPath = !useLocalPath
+            randomPath = !useLocalPath,
+            requestLimitCheckService = requestLimitCheckService
         )
         if (!storageProperties.receive.resolveLazily) {
             init()
