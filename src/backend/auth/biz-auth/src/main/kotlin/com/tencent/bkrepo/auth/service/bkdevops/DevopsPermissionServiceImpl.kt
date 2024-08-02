@@ -122,10 +122,13 @@ class DevopsPermissionServiceImpl constructor(
         return allProjectList.distinct()
     }
 
+    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+        if (isDevopsProjectAdmin(userId, projectId)) return null
+        return super.listPermissionPath(userId, projectId, repoName)
+    }
+
     override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
-        if (isDevopsProjectAdmin(userId, projectId)) {
-            return emptyList()
-        }
+        if (isDevopsProjectAdmin(userId, projectId)) return emptyList()
         return super.listNoPermissionPath(userId, projectId, repoName)
     }
 
@@ -258,7 +261,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     private fun needCheckPathPermission(resourceType: String, projectId: String, repoName: String): Boolean {
-        return devopsAuthConfig.enablePathCheck && resourceType == NODE.name && needNodeCheck(projectId, repoName)
+        return resourceType == NODE.name && needNodeCheck(projectId, repoName)
     }
 
     private fun checkDevopsPipelinePermission(context: CheckPermissionContext): Boolean {

@@ -52,6 +52,8 @@ import com.tencent.bkrepo.auth.helper.PermissionHelper
 import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.model.TPersonalPath
 import com.tencent.bkrepo.auth.model.TUser
+import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.DEFAULT
+import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.STRICT
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
@@ -452,17 +454,18 @@ open class PermissionServiceImpl constructor(
 
     fun needNodeCheck(projectId: String, repoName: String): Boolean {
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
-        return projectPermission.isNotEmpty()
+        val repoCheckConfig = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName) ?: return false
+        return projectPermission.isNotEmpty() && repoCheckConfig.accessControlMode != DEFAULT
     }
 
     override fun checkRepoAccessControl(projectId: String, repoName: String): Boolean {
         val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName) ?: return false
-        return result.accessControl
+        return result.accessControlMode != null && result.accessControlMode == STRICT
     }
 
     /**
      * 校验是否在访问控制组
-     * true , 代码需要拦截
+     * true,代码需要拦截
      */
     fun checkRepoAccessDenyGroup(
         userId: String,

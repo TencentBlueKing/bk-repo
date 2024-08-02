@@ -1,8 +1,9 @@
 package com.tencent.bkrepo.auth.pojo.permission
 
+import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
+
 data class RepoModeStatus(
     val id: String,
-    val status: Boolean = false,
-    val controlEnable: Boolean =false,
+    val accessControlMode: AccessControlMode?,
     val officeDenyGroupSet: Set<String> = emptySet()
 )
