@@ -56,7 +56,6 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
-import java.util.function.Consumer
 
 /**
  * 构件事件消费者，用于触发制品更新扫描
@@ -71,7 +70,7 @@ class ScanEventConsumer(
     private val scanPlanDao: ScanPlanDao,
     private val projectScanConfigurationService: ProjectScanConfigurationService,
     private val executor: ThreadPoolTaskExecutor
-) : Consumer<ArtifactEvent> {
+) {
 
     /**
      * 允许接收的事件类型
@@ -82,7 +81,7 @@ class ScanEventConsumer(
         EventType.VERSION_UPDATED
     )
 
-    override fun accept(event: ArtifactEvent) {
+    fun accept(event: ArtifactEvent) {
         if (!acceptTypes.contains(event.type)) {
             return
         }

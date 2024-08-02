@@ -49,19 +49,18 @@ import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 import java.time.format.DateTimeFormatter
-import java.util.function.Consumer
 
 /**
  * 消费降冷自动恢复事件
  */
-@Component("separationRecovery")
+@Component
 class SeparationRecoveryEventConsumer(
     private val separationTaskService: SeparationTaskService,
     private val dataSeparationConfig: DataSeparationConfig,
     private val separationPackageDao: SeparationPackageDao,
     private val separationPackageVersionDao: SeparationPackageVersionDao,
     private val separationNodeDao: SeparationNodeDao
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
     /**
      * 允许接收的事件类型
@@ -70,7 +69,7 @@ class SeparationRecoveryEventConsumer(
         EventType.NODE_SEPARATION_RECOVERY,
     )
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         if (!dataSeparationConfig.enableAutoRecovery) return
         if (!acceptTypes.contains(message.payload.type)) {
             return
