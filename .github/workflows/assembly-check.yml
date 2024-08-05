@@ -38,6 +38,6 @@ jobs:
       run: |
         ./gradlew clean
         ./gradlew boot-assembly:build -x test
-        java -server -Dlogging.path=boot-assembly/build/libs/bkrepo/logs -Dstorage.filesystem.path=boot-assembly/build/libs/bkrepo/bkrepo boot-assembly/build/libs/boot-assembly-1.0.0-RELEASE.jar &
+        java -jar -Dlogging.path=boot-assembly/build/libs/bkrepo/logs -Dstorage.filesystem.path=boot-assembly/build/libs/bkrepo/bkrepo boot-assembly/build/libs/boot-assembly-1.0.0-RELEASE.jar &
         sleep 60
         curl http://localhost:8080/helm/blueking/helm-local/index.yaml
