@@ -93,7 +93,9 @@ abstract class AbstractBandwidthRateLimiterService(
                 throw e
             }
         } finally {
-            interceptorChain.doAfterLimitCheck(resLimitInfo.resource, resLimitInfo.resourceLimit, flag, exception, permits)
+            interceptorChain.doAfterLimitCheck(
+                resLimitInfo.resource, resLimitInfo.resourceLimit, flag, exception, permits
+            )
         }
     }
 

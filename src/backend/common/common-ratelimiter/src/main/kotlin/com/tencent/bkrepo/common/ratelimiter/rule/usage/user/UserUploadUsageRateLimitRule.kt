@@ -50,7 +50,6 @@ open class UserUploadUsageRateLimitRule(
 ) : RateLimitRule {
 
 
-
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
         var resLimitInfo = findConfigRule(resInfo.resource, resInfo.extraResource)
         if (resLimitInfo == null) {
@@ -104,7 +103,9 @@ open class UserUploadUsageRateLimitRule(
     /**
      * 根据资源获取配置
      */
-    private fun findConfigRule(resource: String, extraResource: List<String>, userPattern: Boolean = false): ResLimitInfo? {
+    private fun findConfigRule(
+        resource: String, extraResource: List<String>, userPattern: Boolean = false
+    ): ResLimitInfo? {
         var realResource = resource
         if (realResource.isBlank()) {
             return null

@@ -54,7 +54,8 @@ class DistributedSlidingWindowRateLimiter(
                 val nowStr = System.currentTimeMillis().toString()
                 val nanoTime = System.nanoTime().toString()
                 val results = redisTemplate.execute(
-                    redisScript, getKeys(key), limit.toString(), (interval * limitUnit.toSeconds(1)).toString(), permits.toString(), nowStr, nanoTime
+                    redisScript, getKeys(key), limit.toString(),
+                    (interval * limitUnit.toSeconds(1)).toString(), permits.toString(), nowStr, nanoTime
                 )
                 acquireResult = results[0] == 1L
             }

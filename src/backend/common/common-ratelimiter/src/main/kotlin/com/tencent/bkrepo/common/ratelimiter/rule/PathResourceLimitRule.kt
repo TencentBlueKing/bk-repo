@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.ratelimiter.rule
 
-import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.rule.common.PathNode
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
@@ -35,7 +34,6 @@ import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
 /**

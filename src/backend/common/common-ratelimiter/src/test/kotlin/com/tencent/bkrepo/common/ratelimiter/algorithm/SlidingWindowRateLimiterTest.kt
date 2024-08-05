@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
-import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
 class SlidingWindowRateLimiterTest {

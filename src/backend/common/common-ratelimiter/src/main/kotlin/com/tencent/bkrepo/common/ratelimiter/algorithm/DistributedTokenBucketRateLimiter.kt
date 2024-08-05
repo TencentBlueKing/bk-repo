@@ -51,7 +51,8 @@ class DistributedTokenBucketRateLimiter(
                 val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
                 val nowStr = (System.currentTimeMillis()/1000).toString()
                 val results = redisTemplate.execute(
-                    redisScript, getKeys(key), permitsPerSecond.toString(), capacity.toString(), permits.toString(), nowStr
+                    redisScript, getKeys(key), permitsPerSecond.toString(),
+                    capacity.toString(), permits.toString(), nowStr
                 )
                 acquireResult = results[0] == 1L
             }
@@ -66,7 +67,6 @@ class DistributedTokenBucketRateLimiter(
     private fun getKeys(key: String): List<String> {
         return listOf(key, "$key.timestamp")
     }
-
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(DistributedTokenBucketRateLimiter::class.java)

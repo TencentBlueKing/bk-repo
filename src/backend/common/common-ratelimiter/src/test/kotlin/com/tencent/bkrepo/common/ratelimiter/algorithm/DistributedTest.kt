@@ -35,7 +35,7 @@ import org.springframework.data.redis.core.RedisTemplate
 
 @DataRedisTest
 @ImportAutoConfiguration(RedisTestConfiguration::class, RedisAutoConfiguration::class)
-abstract class DistributedTest {
+open class DistributedTest {
 
 
     @Autowired

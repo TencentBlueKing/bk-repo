@@ -51,7 +51,8 @@ class DistributedLeakyRateLimiter(
                 val redisScript = DefaultRedisScript(LuaScript.leakyRateLimiterScript, List::class.java)
                 val nowStr = (System.currentTimeMillis()/1000).toString()
                 val results = redisTemplate.execute(
-                    redisScript, getKeys(key), permitsPerSecond.toString(), capacity.toString(), permits.toString(), nowStr
+                    redisScript, getKeys(key), permitsPerSecond.toString(),
+                    capacity.toString(), permits.toString(), nowStr
                 )
                 acquireResult = results[0] == 1L
             }
