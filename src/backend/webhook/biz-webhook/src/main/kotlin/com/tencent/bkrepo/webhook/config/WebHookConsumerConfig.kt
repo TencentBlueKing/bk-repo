@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.webhook.config
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.webhook.executor.ArtifactEventConsumer
+import com.tencent.bkrepo.webhook.executor.WebhookArtifactEventConsumer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.Message
@@ -43,10 +43,10 @@ class WebHookConsumerConfig {
 
     @Bean("artifactEventWebhook")
     fun artifactEventConsumer(
-        artifactEventConsumer: ArtifactEventConsumer
+        webhookArtifactEventConsumer: WebhookArtifactEventConsumer
     ): Consumer<Message<ArtifactEvent>> {
         return Consumer {
-            artifactEventConsumer.accept(it)
+            webhookArtifactEventConsumer.accept(it)
         }
     }
 }
