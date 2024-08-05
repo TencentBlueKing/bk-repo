@@ -38,6 +38,8 @@ jobs:
       run: |
         ./gradlew clean
         ./gradlew boot-assembly:build -x test
-        /dev/shm/bkrepo ./scripts/bk-repo-all-in-one-startup.sh &
+    - name: Assembly test
+      working-directory: scripts/
+        ./bk-repo-all-in-one-startup.sh &
         sleep 60
         curl http://localhost:8080/helm/blueking/helm-local/index.yaml
