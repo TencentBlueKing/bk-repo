@@ -4,11 +4,11 @@ name: Build assembly application and test
 # events but only for the master branch
 on:
   push:
-    branches: [ issue_2459 ]
+    branches: [ master ]
     paths:
     - 'src/backend/**'
   pull_request:
-    branches: [ issue_2459, release-* ]
+    branches: [ master, release-* ]
     paths:
     - 'src/backend/**'
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
