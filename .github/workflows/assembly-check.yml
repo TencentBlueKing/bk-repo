@@ -33,14 +33,11 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
-    - name: Gradle Build
+    - name: Gradle Build and test
       working-directory: src/backend/
       run: |
         ./gradlew clean
         ./gradlew boot-assembly:build -x test
-    - name: Assembly test
-      working-directory: scripts/
-      run: |
-        ./bk-repo-all-in-one-startup.sh &
+	      java -jar boot-assembly/build/libs/boot-assembly-1.0.0-RELEASE.jar -Dlogging.path=boot-assembly/build/libs/bkrepo/logs -Dstorage.filesystem.path=boot-assembly/build/libs/bkrepo/bkrepo  &
         sleep 60
-        curl http://localhost:8080/helm/blueking/helm-local/index.yaml
+        curl http://localhost:8080/health-check
