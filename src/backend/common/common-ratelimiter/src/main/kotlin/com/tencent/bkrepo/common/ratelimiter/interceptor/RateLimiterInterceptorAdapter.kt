@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
  * 限流算法执行前后校验拦截器
  */
 abstract class RateLimiterInterceptorAdapter : RateLimiterInterceptor {
-    override fun beforeLimitCheck(resource: String) = Unit
+    override fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit) = Unit
 
     override fun afterLimitCheck(
         resource: String, resourceLimit: ResourceLimit?,

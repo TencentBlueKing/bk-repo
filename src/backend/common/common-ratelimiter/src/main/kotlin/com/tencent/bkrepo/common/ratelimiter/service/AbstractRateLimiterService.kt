@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.MonitorRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
+import com.tencent.bkrepo.common.ratelimiter.interceptor.TargetRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule
@@ -82,7 +83,10 @@ abstract class AbstractRateLimiterService(
     private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
     private val interceptorChain: RateLimiterInterceptorChain =
-        RateLimiterInterceptorChain(mutableListOf(MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics)))
+        RateLimiterInterceptorChain(mutableListOf(
+            MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics),
+            TargetRateLimiterInterceptorAdaptor()
+        ))
 
     // 限流规则配置
     var rateLimitRule: RateLimitRule? = null
@@ -117,7 +121,7 @@ abstract class AbstractRateLimiterService(
                 return
             }
             resource = resLimitInfo?.resource!!
-            interceptorChain.doBeforeLimitCheck(resource)
+            interceptorChain.doBeforeLimitCheck(resource, resourceLimit)
             val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit)
             pass = rateLimiter.tryAcquire(applyPermits)
             if (!pass) {

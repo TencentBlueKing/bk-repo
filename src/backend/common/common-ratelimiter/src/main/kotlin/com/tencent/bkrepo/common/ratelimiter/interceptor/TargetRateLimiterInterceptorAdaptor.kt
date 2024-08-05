@@ -27,33 +27,26 @@
 
 package com.tencent.bkrepo.common.ratelimiter.interceptor
 
-import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
+import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
-import java.time.Duration
+import org.springframework.beans.factory.annotation.Value
 
 /**
- * 限流相关指标采集拦截器
+ * 执行限流机器判断
  */
-class MonitorRateLimiterInterceptorAdaptor(
-    private val rateLimiterMetrics: RateLimiterMetrics
-) : RateLimiterInterceptorAdapter() {
+class TargetRateLimiterInterceptorAdaptor : RateLimiterInterceptorAdapter() {
 
-    private val startTime: ThreadLocal<Long> = ThreadLocal()
+    @Value("\${spring.cloud.client.ip-address}")
+    private lateinit var host: String
 
     override fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit) {
-        startTime.set(System.nanoTime())
+        if (!resourceLimit.targets.contains(host)) {
+            throw InvalidResourceException("targets not contain $host")
+        }
     }
 
     override fun afterLimitCheck(
         resource: String, resourceLimit: ResourceLimit?,
         result: Boolean, e: Exception?, applyPermits: Long
-    ) {
-        val startNano = startTime.get()
-        startTime.remove()
-        val duration = Duration.ofNanos(System.nanoTime() - startNano)
-        rateLimiterMetrics.collectMetrics(
-            resource = resource, result = result, e = e,
-            duration = duration, applyPermits = applyPermits,
-        )
-    }
+    ) = Unit
 }

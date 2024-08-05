@@ -52,4 +52,6 @@ data class ResourceLimit(
     var interval: Long? = null,
     // 生效范围
     var scope: String = WorkScope.LOCAL.name,
+    // 指定机器上运行
+    var targets: List<String> = emptyList()
 )

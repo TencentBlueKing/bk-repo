@@ -37,7 +37,7 @@ interface RateLimiterInterceptor {
     /**
      * 限流判断前处理
      */
-    fun beforeLimitCheck(resource: String)
+    fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit)
 
     /**
      * 限流判断后处理

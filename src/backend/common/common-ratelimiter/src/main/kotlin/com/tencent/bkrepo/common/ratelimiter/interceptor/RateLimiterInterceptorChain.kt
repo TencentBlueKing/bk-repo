@@ -36,9 +36,9 @@ class RateLimiterInterceptorChain(
     private val interceptors: MutableList<RateLimiterInterceptor> = mutableListOf()
 ) {
 
-    fun doBeforeLimitCheck(resource: String) {
+    fun doBeforeLimitCheck(resource: String, resourceLimit: ResourceLimit) {
         this.interceptors.forEach {
-            it.beforeLimitCheck(resource)
+            it.beforeLimitCheck(resource, resourceLimit)
         }
     }
 
