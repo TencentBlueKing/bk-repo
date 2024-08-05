@@ -38,6 +38,6 @@ jobs:
       run: |
         ./gradlew clean
         ./gradlew boot-assembly:build -x test
-        java -jar boot-assembly/build/libs/boot-assembly-1.0.0-RELEASE.jar &
+        ./bk-repo-all-in-one-startup.sh &
         sleep 60
-        curl http://localhost:8080/health-check
+        curl http://localhost:8080/helm/blueking/helm-local/index.yaml
