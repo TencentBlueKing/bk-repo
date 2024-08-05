@@ -39,9 +39,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.AbstractArtifactResou
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
-import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
-import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
-import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -55,10 +52,10 @@ import javax.servlet.http.HttpServletResponse
 /**
  * S3协议的响应输出
  */
-class S3ArtifactResourceWriter (
+class S3ArtifactResourceWriter(
     storageProperties: StorageProperties,
     requestLimitCheckService: RequestLimitCheckService
-    ) : AbstractArtifactResourceHandler(
+) : AbstractArtifactResourceHandler(
     storageProperties, requestLimitCheckService
 ) {
 

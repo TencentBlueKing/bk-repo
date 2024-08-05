@@ -41,5 +41,7 @@ data class RateLimiterProperties(
     // 限流配置
     var rules: List<ResourceLimit> = mutableListOf(),
     // 等待时间，单位毫秒
-    var sleepTime: Long = 10
+    var sleepTime: Long = 10,
+    // 重试次数
+    var retryNum: Int = 10
 )

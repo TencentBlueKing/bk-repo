@@ -63,7 +63,7 @@ open class UserUploadUsageRateLimiterService(
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
         val result = mutableListOf<String>()
         result.add("$userId:/$projectId/")
-        result.add(userId)
+        result.add("$userId:")
         return result
     }
 

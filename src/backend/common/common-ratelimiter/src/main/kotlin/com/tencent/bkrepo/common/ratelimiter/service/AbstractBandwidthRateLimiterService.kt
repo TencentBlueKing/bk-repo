@@ -64,18 +64,23 @@ abstract class AbstractBandwidthRateLimiterService(
         val resLimitInfo = getBandwidthRateLimit(request) ?: return null
         val rateLimiter = getAlgorithmOfRateLimiter(resLimitInfo.resource, resLimitInfo.resourceLimit)
         return CommonRateLimitInputStream(
-            inputStream, rateLimiter, rateLimiterProperties.sleepTime, rateLimiterProperties.dryRun
+            inputStream, rateLimiter, rateLimiterProperties.sleepTime,
+            rateLimiterProperties.retryNum, rateLimiterProperties.dryRun
         )
     }
 
     fun bandwidthRateLimit(request: HttpServletRequest, permits: Long) {
         val resLimitInfo = getBandwidthRateLimit(request) ?: return
+        interceptorChain.doBeforeLimitCheck(resLimitInfo.resource, resLimitInfo.resourceLimit)
         val rateLimiter = getAlgorithmOfRateLimiter(resLimitInfo.resource, resLimitInfo.resourceLimit)
         var flag = false
+        var exception: Exception? = null
+        var retryNum = 0
         try {
             while (!flag) {
                 flag = rateLimiter.tryAcquire(permits)
-                if (!flag) {
+                if (!flag && retryNum < rateLimiterProperties.retryNum) {
+                    retryNum++
                     Thread.sleep(rateLimiterProperties.sleepTime)
                 }
             }
@@ -84,8 +89,11 @@ abstract class AbstractBandwidthRateLimiterService(
                 logger.warn("${request.requestURI} has exceeded max rate limit: ${resLimitInfo.resourceLimit}")
                 return
             } else {
+                exception = e
                 throw e
             }
+        } finally {
+            interceptorChain.doAfterLimitCheck(resLimitInfo.resource, resLimitInfo.resourceLimit, flag, exception, permits)
         }
     }
 

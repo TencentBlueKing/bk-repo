@@ -151,6 +151,13 @@ class RateLimiterAutoConfiguration {
     }
 
     @Bean
+    fun requestLimitCheckService(
+        rateLimiterProperties: RateLimiterProperties,
+    ): RequestLimitCheckService {
+        return RequestLimitCheckService(rateLimiterProperties)
+    }
+
+    @Bean
     @ConditionalOnWebApplication
     fun rateLimitHandlerInterceptorRegister(
         requestLimitCheckService: RequestLimitCheckService

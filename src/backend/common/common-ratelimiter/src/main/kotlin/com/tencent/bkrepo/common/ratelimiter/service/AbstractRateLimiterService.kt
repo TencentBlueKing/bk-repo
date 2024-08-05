@@ -82,7 +82,7 @@ abstract class AbstractRateLimiterService(
     // 资源对应限限流算法缓存
     private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
-    private val interceptorChain: RateLimiterInterceptorChain =
+    val interceptorChain: RateLimiterInterceptorChain =
         RateLimiterInterceptorChain(mutableListOf(
             MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics),
             TargetRateLimiterInterceptorAdaptor()
@@ -140,6 +140,7 @@ abstract class AbstractRateLimiterService(
             exception = e
             throw e
         } catch (e: InvalidResourceException) {
+            logger.warn("$resourceLimit is invalid")
             exception = e
             throw e
         } catch (e: Exception) {

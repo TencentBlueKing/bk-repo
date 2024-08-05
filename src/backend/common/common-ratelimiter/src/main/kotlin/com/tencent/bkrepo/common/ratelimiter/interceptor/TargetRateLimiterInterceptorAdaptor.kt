@@ -37,10 +37,10 @@ import org.springframework.beans.factory.annotation.Value
 class TargetRateLimiterInterceptorAdaptor : RateLimiterInterceptorAdapter() {
 
     @Value("\${spring.cloud.client.ip-address}")
-    private lateinit var host: String
+    private var host: String = "127.0.0.1"
 
     override fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit) {
-        if (!resourceLimit.targets.contains(host)) {
+        if (resourceLimit.targets.isNotEmpty() && !resourceLimit.targets.contains(host)) {
             throw InvalidResourceException("targets not contain $host")
         }
     }

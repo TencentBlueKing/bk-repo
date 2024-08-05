@@ -36,6 +36,7 @@ class CommonRateLimitInputStream(
     delegate: InputStream,
     private val rateLimiter: RateLimiter,
     private val sleepTime: Long,
+    private val retryNum: Int,
     private val dryRun: Boolean = false
 ) : DelegateInputStream(delegate) {
 
@@ -56,11 +57,13 @@ class CommonRateLimitInputStream(
 
     private fun acquire(permits: Int) {
         var flag = false
+        var failedNum = 0
         try {
             while (!flag) {
                 // TODO 当限制小于读取大小时，会进入死循环
                 flag = rateLimiter.tryAcquire(permits.toLong())
-                if (!flag) {
+                if (!flag && failedNum < retryNum) {
+                    failedNum++
                     Thread.sleep(sleepTime)
                 }
             }

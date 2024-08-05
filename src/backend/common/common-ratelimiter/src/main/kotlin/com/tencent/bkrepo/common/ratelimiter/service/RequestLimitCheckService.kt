@@ -38,37 +38,53 @@ import com.tencent.bkrepo.common.ratelimiter.service.usage.UploadUsageRateLimite
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUploadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.stereotype.Component
 import java.io.InputStream
 import javax.servlet.http.HttpServletRequest
 
-@Component
 class RequestLimitCheckService(
     private val rateLimiterProperties: RateLimiterProperties,
-    @Qualifier(RateLimiterAutoConfiguration.URL_RATELIMITER_SERVICE)
-    private val urlRateLimiterService: UrlRateLimiterService,
-    @Qualifier(RateLimiterAutoConfiguration.UPLOAD_USAGE_RATELIMITER_SERVICE)
-    private val uploadUsageRateLimiterService: UploadUsageRateLimiterService,
-    @Qualifier(RateLimiterAutoConfiguration.USER_URL_RATELIMITER_SERVICE)
-    private val userUrlRateLimiterService: UserUrlRateLimiterService,
-    @Qualifier(RateLimiterAutoConfiguration.USER_UPLOAD_USAGE_RATELIMITER_SERVICE)
-    private val userUploadUsageRateLimiterService: UserUploadUsageRateLimiterService,
-    @Qualifier(RateLimiterAutoConfiguration.DOWNLOAD_USAGE_RATELIMITER_SERVICE)
-    private val downloadUsageRateLimiterService: DownloadUsageRateLimiterService,
-    @Qualifier(RateLimiterAutoConfiguration.USER_DOWNLOAD_USAGE_RATELIMITER_SERVICE)
-    private val userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService,
-    @Qualifier(RateLimiterAutoConfiguration.DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE)
-    private val downloadBandwidthRateLimiterService: DownloadBandwidthRateLimiterService,
-    @Qualifier(RateLimiterAutoConfiguration.UPLOAD_BANDWIDTH_RATELIMITER_ERVICE)
-    private val uploadBandwidthRateLimiterService: UploadBandwidthRateLimiterService,
 ) {
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.URL_RATELIMITER_SERVICE)
+    private lateinit var urlRateLimiterService: UrlRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.UPLOAD_USAGE_RATELIMITER_SERVICE)
+    private lateinit var uploadUsageRateLimiterService: UploadUsageRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.USER_URL_RATELIMITER_SERVICE)
+    private lateinit var userUrlRateLimiterService: UserUrlRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.USER_UPLOAD_USAGE_RATELIMITER_SERVICE)
+    private lateinit var userUploadUsageRateLimiterService: UserUploadUsageRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.DOWNLOAD_USAGE_RATELIMITER_SERVICE)
+    private lateinit var downloadUsageRateLimiterService: DownloadUsageRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.USER_DOWNLOAD_USAGE_RATELIMITER_SERVICE)
+    private lateinit var userDownloadUsageRateLimiterService: UserDownloadUsageRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE)
+    private lateinit var downloadBandwidthRateLimiterService: DownloadBandwidthRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.UPLOAD_BANDWIDTH_RATELIMITER_ERVICE)
+    private lateinit var uploadBandwidthRateLimiterService: UploadBandwidthRateLimiterService
 
     fun preLimitCheck(request: HttpServletRequest) {
         if (!rateLimiterProperties.enabled) {
             return
         }
         // TODO 可以优化
+        // TODO 不能全部遍历， 只有有的才查询
         userUrlRateLimiterService.limit(request)
         userUploadUsageRateLimiterService.limit(request)
         urlRateLimiterService.limit(request)

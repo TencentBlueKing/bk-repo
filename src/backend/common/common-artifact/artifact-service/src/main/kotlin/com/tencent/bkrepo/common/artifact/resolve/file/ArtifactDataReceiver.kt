@@ -77,7 +77,7 @@ class ArtifactDataReceiver(
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
     private val originPath: Path = path,
-    private val requestLimitCheckService: RequestLimitCheckService
+    private val requestLimitCheckService: RequestLimitCheckService? = null
 ) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
@@ -190,7 +190,7 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
-            requestLimitCheckService.uploadBandwidthCheck(
+            requestLimitCheckService?.uploadBandwidthCheck(
                 HttpContextHolder.getRequest(), length.toLong()
             )
             writeData(chunk, offset, length)
@@ -209,7 +209,7 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
-            requestLimitCheckService.uploadBandwidthCheck(
+            requestLimitCheckService?.uploadBandwidthCheck(
                 HttpContextHolder.getRequest(), 1
             )
             checkFallback()
@@ -233,7 +233,7 @@ class ArtifactDataReceiver(
         }
         try {
 
-            val input = requestLimitCheckService.bandwidthCheck(
+            val input = requestLimitCheckService?.bandwidthCheck(
                 HttpContextHolder.getRequest(), source
             ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
             val buffer = ByteArray(bufferSize)
