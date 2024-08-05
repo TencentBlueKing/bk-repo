@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.reactive.dao
+package com.tencent.bkrepo.common.api.mongo
 
 /**
  * 分表字段

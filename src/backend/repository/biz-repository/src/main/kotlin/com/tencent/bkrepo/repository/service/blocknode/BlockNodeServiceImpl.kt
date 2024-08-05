@@ -34,9 +34,11 @@ import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
+import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
 
 @Service
+@Primary
 class BlockNodeServiceImpl(
     blockNodeDao: BlockNodeDao,
     private val fileReferenceService: FileReferenceService,
@@ -47,8 +49,8 @@ class BlockNodeServiceImpl(
         fileReferenceService.increment(sha256, credentialsKey)
     }
 
-    override fun getNodeDetail(projectId: String, repoName: String, dstFullPath: String): NodeDetail {
-        val node = nodeDao.findNode(projectId, repoName, dstFullPath) ?: throw NodeNotFoundException(dstFullPath)
+    override fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail {
+        val node = nodeDao.findNode(projectId, repoName, fullPath) ?: throw NodeNotFoundException(fullPath)
         return NodeBaseService.convertToDetail(node)!!
     }
 }

@@ -29,3 +29,6 @@ package com.tencent.bkrepo.common.metadata.constant
 
 const val SHARDING_COUNT = 256
 const val ID = "_id"
+
+const val FAKE_SHA256 = "0000000000000000000000000000000000000000000000000000000000000000"
+const val FAKE_MD5 = "00000000000000000000000000000000"

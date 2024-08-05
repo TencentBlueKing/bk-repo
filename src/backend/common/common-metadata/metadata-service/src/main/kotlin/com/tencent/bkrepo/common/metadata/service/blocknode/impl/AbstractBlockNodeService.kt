@@ -27,24 +27,22 @@
 
 package com.tencent.bkrepo.common.metadata.service.blocknode.impl
 
-import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.dao.BlockNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
+import com.tencent.bkrepo.common.metadata.util.BlockNodeQueryHelper
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.gt
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.lt
-import org.springframework.data.mongodb.core.query.where
 import java.time.LocalDateTime
 
 abstract class AbstractBlockNodeService(
@@ -67,16 +65,7 @@ abstract class AbstractBlockNodeService(
         fullPath: String,
         createdDate: String
     ): List<TBlockNode> {
-        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-            .and(TBlockNode::projectId.name).isEqualTo(projectId)
-            .and(TBlockNode::repoName.name).isEqualTo(repoName)
-            .and(TBlockNode::deleted).isEqualTo(null)
-            .and(TBlockNode::createdDate).gt(LocalDateTime.parse(createdDate))
-            .norOperator(
-                TBlockNode::startPos.gt(range.end),
-                TBlockNode::endPos.lt(range.start)
-            )
-        val query = Query(criteria).with(Sort.by(TBlockNode::createdDate.name))
+        val query = BlockNodeQueryHelper.listQuery(projectId, repoName, fullPath, createdDate, range)
         return blockNodeDao.find(query)
     }
 
@@ -85,11 +74,8 @@ abstract class AbstractBlockNodeService(
         repoName: String,
         fullPath: String
     ) {
-        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-            .and(TBlockNode::projectId.name).isEqualTo(projectId)
-            .and(TBlockNode::repoName.name).isEqualTo(repoName)
-            .and(TBlockNode::deleted).isEqualTo(null)
-        val update = Update().set(TBlockNode::deleted.name, LocalDateTime.now())
+        val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
+        val update = BlockNodeQueryHelper.deleteUpdate()
         blockNodeDao.updateMulti(Query(criteria), update)
         logger.info("Delete node blocks[$projectId/$repoName$fullPath] success.")
     }
@@ -97,10 +83,7 @@ abstract class AbstractBlockNodeService(
     override fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {
         val nodeDetail = getNodeDetail(projectId, repoName, dstFullPath)
         if (nodeDetail.folder) {
-            val criteria = where(TBlockNode::nodeFullPath).regex("^${EscapeUtils.escapeRegex(fullPath)}/")
-                .and(TBlockNode::projectId.name).isEqualTo(projectId)
-                .and(TBlockNode::repoName.name).isEqualTo(repoName)
-                .and(TBlockNode::deleted).isEqualTo(null)
+            val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, true)
             val blocks = blockNodeDao.find(Query(criteria))
             blocks.forEach {
                 val update = Update().set(TBlockNode::nodeFullPath.name, it.nodeFullPath.replace(fullPath, dstFullPath))
@@ -108,11 +91,8 @@ abstract class AbstractBlockNodeService(
                 blockNodeDao.updateMulti(query, update)
             }
         } else {
-            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-                .and(TBlockNode::projectId.name).isEqualTo(projectId)
-                .and(TBlockNode::repoName.name).isEqualTo(repoName)
-                .and(TBlockNode::deleted).isEqualTo(null)
-            val update = Update().set(TBlockNode::nodeFullPath.name, dstFullPath)
+            val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
+            val update = BlockNodeQueryHelper.moveUpdate(dstFullPath)
             blockNodeDao.updateMulti(Query(criteria), update)
         }
         logger.info("Move node[$projectId/$repoName$fullPath] to node[$projectId/$repoName$dstFullPath] success.")
@@ -127,19 +107,33 @@ abstract class AbstractBlockNodeService(
         nodeCreateDate: LocalDateTime,
         nodeDeleteDate: LocalDateTime
     ) {
-        val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
-            .and(TBlockNode::projectId.name).isEqualTo(projectId)
-            .and(TBlockNode::repoName.name).isEqualTo(repoName)
-            .and(TBlockNode::createdDate).gt(nodeCreateDate).lt(nodeDeleteDate)
-        val update = Update().set(TBlockNode::deleted.name, null)
+        val criteria =
+            BlockNodeQueryHelper.deletedCriteria(projectId, repoName, fullPath, nodeCreateDate, nodeDeleteDate)
+        val update = BlockNodeQueryHelper.restoreUpdate()
         val result = blockNodeDao.updateMulti(Query(criteria), update)
         logger.info("Restore ${result.modifiedCount} blocks node[$projectId/$repoName$fullPath] " +
             "between $nodeCreateDate and $nodeDeleteDate success.")
     }
 
+    override fun info(nodeDetail: NodeDetail, range: Range): List<RegionResource> {
+        with(nodeDetail) {
+            val blocks = listBlocks(range, projectId, repoName, fullPath, createdDate)
+            val blockResources = mutableListOf<RegionResource>()
+            if (sha256 != null && sha256 != FAKE_SHA256) {
+                val nodeData = RegionResource(sha256!!, 0, size, 0, size)
+                blockResources.add(nodeData)
+            }
+            blocks.forEach {
+                val res = RegionResource(it.sha256, it.startPos, it.size, 0, it.size)
+                blockResources.add(res)
+            }
+            return blockResources
+        }
+    }
+
     abstract fun incFileRef(sha256: String, credentialsKey: String?)
 
-    abstract fun getNodeDetail(projectId: String, repoName: String, dstFullPath: String): NodeDetail
+    abstract fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractBlockNodeService::class.java)

@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
@@ -54,7 +53,7 @@ class FileNodeService(
         storageCredentials: StorageCredentials?,
         range: Range
     ): ArtifactInputStream? {
-        val blocks = info(nodeDetail, range)
+        val blocks = blockNodeService.info(nodeDetail, range)
         return coStorageManager.loadArtifactInputStream(blocks, range, storageCredentials)
     }
 
@@ -62,19 +61,7 @@ class FileNodeService(
         nodeDetail: NodeDetail,
         range: Range
     ): List<RegionResource> {
-        with(nodeDetail) {
-            val blocks = blockNodeService.listBlocks(range, projectId, repoName, fullPath, createdDate)
-            val blockResources = mutableListOf<RegionResource>()
-            if (sha256 != null && sha256 != FAKE_SHA256) {
-                val nodeData = RegionResource(sha256!!, 0, size, 0, size)
-                blockResources.add(nodeData)
-            }
-            blocks.forEach {
-                val res = RegionResource(it.sha256, it.startPos, it.size, 0, it.size)
-                blockResources.add(res)
-            }
-            return blockResources
-        }
+        return blockNodeService.info(nodeDetail, range)
     }
 
     suspend fun deleteNodeBlocks(projectId: String, repoName: String, nodeFullPath: String) {

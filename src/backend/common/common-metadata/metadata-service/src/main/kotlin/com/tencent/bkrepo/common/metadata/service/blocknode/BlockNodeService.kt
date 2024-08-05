@@ -30,6 +30,8 @@ package com.tencent.bkrepo.common.metadata.service.blocknode
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.pojo.RegionResource
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import java.time.LocalDateTime
 
 interface BlockNodeService {
@@ -86,4 +88,12 @@ interface BlockNodeService {
         nodeCreateDate: LocalDateTime,
         nodeDeleteDate: LocalDateTime
     )
+
+    /**
+     * 查询节点对应范围的分块资源
+     */
+    fun info(
+        nodeDetail: NodeDetail,
+        range: Range
+    ): List<RegionResource>
 }

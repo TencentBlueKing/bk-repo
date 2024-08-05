@@ -46,8 +46,8 @@ class BlockNodeServiceImpl(
         rRepositoryClient.increment(sha256, credentialsKey).awaitSingle()
     }
 
-    override suspend fun getNodeDetail(projectId: String, repoName: String, dstFullPath: String): NodeDetail {
-        return rRepositoryClient.getNodeDetail(projectId, repoName, dstFullPath).awaitSingle().data
-            ?: throw NodeNotFoundException(dstFullPath)
+    override suspend fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail {
+        return rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data
+            ?: throw NodeNotFoundException(fullPath)
     }
 }
