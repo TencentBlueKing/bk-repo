@@ -33,6 +33,9 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
+    - name: Start MongoDB
+      run: |
+        docker run -d --name mongodb -p 27017:27017 mongo
     - name: Gradle Build and test
       working-directory: src/backend/
       run: |
