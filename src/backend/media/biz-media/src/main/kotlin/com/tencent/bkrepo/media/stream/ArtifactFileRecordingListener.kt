@@ -8,7 +8,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
  * */
 class ArtifactFileRecordingListener(
     private val artifactFile: ChunkedArtifactFile,
-    private val artifactFileConsumer: ArtifactFileConsumer,
+    private val fileConsumer: FileConsumer,
     private val type: MediaType,
     scheduler: ThreadPoolTaskScheduler,
 ) : AsyncStreamListener(scheduler) {
@@ -31,7 +31,7 @@ class ArtifactFileRecordingListener(
     private fun storeFile() {
         try {
             artifactFile.finish()
-            artifactFileConsumer.accept(artifactFile, name)
+            fileConsumer.accept(artifactFile, name)
         } finally {
             artifactFile.delete()
         }

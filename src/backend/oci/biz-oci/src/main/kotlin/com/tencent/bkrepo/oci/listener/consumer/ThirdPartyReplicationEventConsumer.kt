@@ -33,17 +33,16 @@ import com.tencent.bkrepo.oci.listener.base.EventExecutor
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
-import java.util.function.Consumer
 
 
 /**
  * 消费基于MQ传递的事件
  * 对应destination为对应ArtifactEvent.topic
  */
-@Component("thirdPartyReplication")
+@Component
 class ThirdPartyReplicationEventConsumer(
     private val eventExecutor: EventExecutor
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
     /**
      * 允许接收的事件类型
@@ -52,7 +51,7 @@ class ThirdPartyReplicationEventConsumer(
         EventType.REPLICATION_THIRD_PARTY
     )
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         if (!acceptTypes.contains(message.payload.type)) {
             return
         }

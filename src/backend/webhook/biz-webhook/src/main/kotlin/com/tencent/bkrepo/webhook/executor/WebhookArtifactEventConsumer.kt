@@ -43,18 +43,17 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 import java.util.regex.Pattern
 
 /**
  * 事件消息消费者
  */
-@Component("artifactEventWebhook")
-class ArtifactEventConsumer(
+@Component
+class WebhookArtifactEventConsumer(
     private val webHookDao: WebHookDao,
     private val webHookExecutor: WebHookExecutor,
     private val webHookProperties: WebHookProperties
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
     private val executors = ThreadPoolExecutor(
         100,
@@ -74,7 +73,7 @@ class ArtifactEventConsumer(
             )
         })
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         logger.info("accept artifact event: ${message.payload}, header: ${message.headers}")
         val task = Runnable { triggerWebHooks(message.payload) }.trace()
         executors.execute(task)
@@ -141,6 +140,6 @@ class ArtifactEventConsumer(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactEventConsumer::class.java)
+        private val logger = LoggerFactory.getLogger(WebhookArtifactEventConsumer::class.java)
     }
 }

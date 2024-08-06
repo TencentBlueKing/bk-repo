@@ -29,7 +29,7 @@
 | BK_REPO_GATEWAY_DNS_ADDR   | 网关dns解析服务地址      | 127.0.0.1:53                                                                                          |
 | BK_REPO_SERVICE_PREFIX     | bkrepo微服务前缀      | bkrepo-                                                                                               |
 | BK_REPO_DEPLOY_MODE        | bkrepo部署模式       | standalone / ci                                                                                       |
-
+| BK_REPO_RELEASE_MODE        | bkrepo发行模式       | devx / community                                                                                             |
 ## consul配置项
 
 | 配置项                     | 说明            | 示例      |

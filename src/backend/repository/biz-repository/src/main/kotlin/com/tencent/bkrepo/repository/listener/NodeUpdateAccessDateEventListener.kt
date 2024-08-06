@@ -42,17 +42,16 @@ import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.function.Consumer
 
 
 /**
  * 消费基于MQ传递的事件去更新对应access date
  */
-@Component("nodeUpdateAccessDate")
+@Component
 class NodeUpdateAccessDateEventListener(
     private val nodeDao: NodeDao,
     private val artifactEventProperties: ArtifactEventProperties,
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
     /**
      * 允许接收的事件类型
@@ -61,7 +60,7 @@ class NodeUpdateAccessDateEventListener(
         EventType.NODE_UPDATE_ACCESS_DATE,
     )
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         if (!acceptTypes.contains(message.payload.type)) {
             return
         }

@@ -77,6 +77,8 @@ spec:
               value: {{ include "bkrepo.authorization" . }}
             - name: BK_REPO_DEPLOY_MODE
               value: {{ .Values.gateway.deployMode }}
+            - name: BK_REPO_RELEASE_MODE
+              value: {{ .Values.gateway.releaseMode }}
             - name: BK_REPO_AUTH_MODE
               value: {{ .Values.gateway.authMode }}
             - name: BK_CI_HOST

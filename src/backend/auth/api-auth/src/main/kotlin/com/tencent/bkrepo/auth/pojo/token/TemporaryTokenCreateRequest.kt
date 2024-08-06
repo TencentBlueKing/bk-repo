@@ -52,5 +52,7 @@ data class TemporaryTokenCreateRequest(
     @ApiModelProperty("允许访问次数，为空表示无限制")
     val permits: Int? = null,
     @ApiModelProperty("token类型")
-    val type: TokenType
+    val type: TokenType,
+    @ApiModelProperty("创建人")
+    val createdBy: String? = null,
 )

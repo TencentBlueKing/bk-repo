@@ -86,6 +86,7 @@ const val ANALYSIS_EXECUTOR_SERVICE_NAME = "\${service.prefix:}analysis-executor
 const val HELM_SERVICE_NAME = "\${service.prefix:}helm\${service.suffix:}"
 const val OCI_SERVICE_NAME = "\${service.prefix:}docker\${service.suffix:}"
 const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"
+const val SCHEDULE_SERVICE_NAME = "\${service.prefix:}job-schedule\${service.suffix:}"
 const val FS_SERVER_SERVICE_NAME = "\${service.prefix:}fs-server\${service.suffix:}"
 const val MAVEN_SERVICE_NAME = "\${service.prefix:}maven\${service.suffix:}"
 const val ARCHIVE_SERVICE_NAME = "\${service.prefix:}archive\${service.suffix:}"

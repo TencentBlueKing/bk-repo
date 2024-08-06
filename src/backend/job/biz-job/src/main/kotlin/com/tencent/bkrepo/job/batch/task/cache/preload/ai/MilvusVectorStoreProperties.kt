@@ -25,25 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
-import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecorder
-import com.tencent.bkrepo.job.batch.base.DefaultContextJob
-import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.config.properties.ArtifactPreloadStrategyGenerateJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.stereotype.Component
+import io.milvus.param.IndexType
+import io.milvus.param.MetricType
 
-/**
- * 根据缓存访问记录生成预加载策略
- */
-@Component
-@EnableConfigurationProperties(ArtifactPreloadStrategyGenerateJobProperties::class)
-class ArtifactPreloadStrategyGenerateJob(
-    properties: ArtifactPreloadStrategyGenerateJobProperties,
-    private val artifactAccessRecorder: ArtifactAccessRecorder?,
-) : DefaultContextJob(properties) {
-    override fun doStart0(jobContext: JobContext) {
-        artifactAccessRecorder?.generateStrategy()
-    }
-}
+data class MilvusVectorStoreProperties(
+    var databaseName: String = "default",
+    var collectionName: String = "vector_store",
+    var embeddingDimension: Int = 1536,
+    var indexType: IndexType = IndexType.IVF_FLAT,
+    var metricType: MetricType = MetricType.COSINE,
+    var indexParameters: String = "{\"nlist\":1024}",
+)

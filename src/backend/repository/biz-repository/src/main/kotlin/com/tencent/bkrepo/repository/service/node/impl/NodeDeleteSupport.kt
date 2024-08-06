@@ -114,22 +114,24 @@ open class NodeDeleteSupport(
         }
     }
 
+    override fun deleteByFullPathWithoutDecreaseVolume(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String
+    ) {
+        val criteria = buildCriteria(projectId, repoName, fullPath)
+        val query = Query(criteria)
+        delete(query, operator, criteria, projectId, repoName, listOf(fullPath), false)
+    }
+
     override fun deleteByPath(
         projectId: String,
         repoName: String,
         fullPath: String,
         operator: String
     ): NodeDeleteResult {
-        val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
-        val normalizedPath = PathUtils.toPath(normalizedFullPath)
-        val escapedPath = PathUtils.escapeRegex(normalizedPath)
-        val criteria = where(TNode::projectId).isEqualTo(projectId)
-            .and(TNode::repoName).isEqualTo(repoName)
-            .and(TNode::deleted).isEqualTo(null)
-            .orOperator(
-                where(TNode::fullPath).regex("^$escapedPath"),
-                where(TNode::fullPath).isEqualTo(normalizedFullPath)
-            )
+        val criteria = buildCriteria(projectId, repoName, fullPath)
         val query = Query(criteria)
         return delete(query, operator, criteria, projectId, repoName, listOf(fullPath))
     }
@@ -173,10 +175,30 @@ open class NodeDeleteSupport(
             .andOperator(timeCriteria)
         val query = Query(criteria)
         val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName)
-        publishEvent(buildNodeCleanEvent(
-            projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString())
+        publishEvent(
+            buildNodeCleanEvent(
+                projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString()
+            )
         )
         return nodeDeleteResult
+    }
+
+    private fun buildCriteria(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+    ): Criteria {
+        val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
+        val normalizedPath = PathUtils.toPath(normalizedFullPath)
+        val escapedPath = PathUtils.escapeRegex(normalizedPath)
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::deleted).isEqualTo(null)
+            .orOperator(
+                where(TNode::fullPath).regex("^$escapedPath"),
+                where(TNode::fullPath).isEqualTo(normalizedFullPath)
+            )
+        return criteria
     }
 
     private fun delete(
@@ -185,7 +207,8 @@ open class NodeDeleteSupport(
         criteria: Criteria,
         projectId: String,
         repoName: String,
-        fullPaths: List<String>? = null
+        fullPaths: List<String>? = null,
+        decreaseVolume: Boolean = true
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
@@ -203,14 +226,16 @@ open class NodeDeleteSupport(
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }
-            var deletedCriteria = criteria.and(TNode::deleted).isEqualTo(deleteTime)
-            fullPaths?.let {
-                // 节点删除接口返回的数据排除目录
-                deletedCriteria = deletedCriteria.and(TNode::folder).isEqualTo(false)
-                deletedNum = nodeDao.count(Query(deletedCriteria))
+            if (decreaseVolume) {
+                var deletedCriteria = criteria.and(TNode::deleted).isEqualTo(deleteTime)
+                fullPaths?.let {
+                    // 节点删除接口返回的数据排除目录
+                    deletedCriteria = deletedCriteria.and(TNode::folder).isEqualTo(false)
+                    deletedNum = nodeDao.count(Query(deletedCriteria))
+                }
+                deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
+                quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             }
-            deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
-            quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             fullPaths?.forEach {
                 if (routerControllerProperties.enabled) {
                     routerControllerClient.removeNodes(projectId, repoName, it)

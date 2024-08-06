@@ -31,5 +31,6 @@ data class CommitEdgeProperties(
     var repo: RepoProperties = RepoProperties(),
     var `package`: PackageProperties = PackageProperties(),
     var auth: AuthProperties = AuthProperties(),
-    var oplog: OpLogProperties = OpLogProperties()
+    var oplog: OpLogProperties = OpLogProperties(),
+    var replication: ReplicationProperties = ReplicationProperties()
 )

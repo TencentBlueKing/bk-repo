@@ -153,6 +153,14 @@ class EdgeNodeServiceImpl(
         return NodeDeleteSupport(this).countDeleteNodes(nodesDeleteRequest)
     }
 
+    override fun deleteByFullPathWithoutDecreaseVolume(
+        projectId: String, repoName: String, fullPath: String, operator: String
+    ) {
+        return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
+            projectId, repoName, fullPath, operator
+        )
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteByPath(
         projectId: String,

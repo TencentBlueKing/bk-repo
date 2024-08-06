@@ -95,6 +95,8 @@ class EdgeReplicaTaskJob(
                     claimTaskFromCenter()
                 } catch (e: Exception) {
                     logger.error("execute replica task error: ", e)
+                } finally {
+                    Thread.sleep(clusterProperties.commitEdge.replication.getTaskInterval.toMillis())
                 }
             }
         }.start()

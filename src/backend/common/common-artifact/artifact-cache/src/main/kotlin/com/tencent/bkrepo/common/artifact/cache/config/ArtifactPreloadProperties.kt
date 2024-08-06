@@ -69,4 +69,20 @@ data class ArtifactPreloadProperties(
      * 允许同时预加载的制品个数
      */
     var preloadConcurrency: Int = 8,
+    /**
+     * 预加载策略未配置时间时使用的预加载时间，取值范围[0,24]，可配置多个，将选择离当前时间最近的一个作为预加载时间
+     */
+    var preloadHourOfDay: Set<Int> = emptySet(),
+    /**
+     * 减去随机时间，避免同时加载过多文件
+     */
+    var maxRandomSeconds: Long = 600L,
+    /**
+     * 根据sha256查询到的node数量超过该值时将不生成预加载计划，避免预加载计划创建时间过久
+     */
+    var maxNodes: Int = 10,
+    /**
+     * 是否仅模拟预加载，为true时不执行加载计划，仅输出一条日志
+     */
+    var mock: Boolean = false,
 )

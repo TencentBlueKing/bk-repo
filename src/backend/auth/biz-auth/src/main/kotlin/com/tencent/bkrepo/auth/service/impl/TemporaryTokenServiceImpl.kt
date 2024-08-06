@@ -66,9 +66,9 @@ class TemporaryTokenServiceImpl(
                     token = generateToken(),
                     permits = permits,
                     type = type,
-                    createdBy = SecurityUtils.getUserId(),
+                    createdBy = createdBy ?: SecurityUtils.getUserId(),
                     createdDate = LocalDateTime.now(),
-                    lastModifiedBy = SecurityUtils.getUserId(),
+                    lastModifiedBy = createdBy ?: SecurityUtils.getUserId(),
                     lastModifiedDate = LocalDateTime.now()
                 )
                 temporaryTokenRepository.save(temporaryToken)
