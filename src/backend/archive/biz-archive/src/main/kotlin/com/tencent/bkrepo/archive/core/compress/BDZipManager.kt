@@ -42,7 +42,6 @@ import java.util.function.Function
 @Component
 class BDZipManager(
     private val archiveProperties: ArchiveProperties,
-    private val storageService: StorageService,
     private val fileProvider: PriorityFileProvider,
 ) : Function<TCompressFile, Mono<TaskResult>> {
     @Autowired
@@ -52,6 +51,11 @@ class BDZipManager(
     @Autowired
     @Lazy
     private lateinit var fileReferenceClient: FileReferenceClient
+
+    @Autowired
+    @Lazy
+    private lateinit var storageService: StorageService
+
 
     @Autowired
     @Lazy

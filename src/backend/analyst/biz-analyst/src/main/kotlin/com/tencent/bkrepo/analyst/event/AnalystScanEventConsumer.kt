@@ -63,7 +63,7 @@ import org.springframework.stereotype.Component
  * 对应binding name为scanEventConsumer-in-0
  */
 @Component
-class ScanEventConsumer(
+class AnalystScanEventConsumer(
     private val spdxLicenseService: SpdxLicenseService,
     private val scanService: ScanService,
     private val scannerService: ScannerService,
@@ -287,6 +287,6 @@ class ScanEventConsumer(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ScanEventConsumer::class.java)
+        private val logger = LoggerFactory.getLogger(AnalystScanEventConsumer::class.java)
     }
 }

@@ -34,7 +34,7 @@ import io.micrometer.core.instrument.binder.MeterBinder
 import org.springframework.stereotype.Component
 
 @Component
-class DdcMeterBinder(private val registry: MeterRegistry) : MeterBinder {
+class DdcMeterBinder : MeterBinder {
     /**
      * ref inline加载耗时
      */
@@ -65,7 +65,11 @@ class DdcMeterBinder(private val registry: MeterRegistry) : MeterBinder {
      */
     lateinit var legacyRefStoreTimer: Timer
 
+    private lateinit var registry: MeterRegistry
+
+
     override fun bindTo(registry: MeterRegistry) {
+        this.registry = registry
         refInlineLoadTimer = Timer
             .builder(DDC_REF_LOAD)
             .tag("inline", "true")
