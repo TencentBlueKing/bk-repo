@@ -125,6 +125,14 @@ class NodeServiceImpl(
         return NodeDeleteSupport(this).countDeleteNodes(nodesDeleteRequest)
     }
 
+    override fun deleteByFullPathWithoutDecreaseVolume(
+        projectId: String, repoName: String, fullPath: String, operator: String
+    ) {
+        return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
+            projectId, repoName, fullPath, operator
+        )
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteByPath(
         projectId: String,
@@ -196,15 +204,15 @@ class NodeServiceImpl(
     }
 
     override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this,archiveClient).archiveNode(nodeArchiveRequest)
+        return NodeArchiveSupport(this, archiveClient).archiveNode(nodeArchiveRequest)
     }
 
     override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this,archiveClient).restoreNode(nodeArchiveRequest)
+        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeArchiveRequest)
     }
 
     override fun restoreNode(nodeRestoreRequest: NodeArchiveRestoreRequest): List<String> {
-        return NodeArchiveSupport(this,archiveClient).restoreNode(nodeRestoreRequest)
+        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeRestoreRequest)
     }
 
     override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {

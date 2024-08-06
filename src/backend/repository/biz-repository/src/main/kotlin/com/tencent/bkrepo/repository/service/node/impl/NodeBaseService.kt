@@ -392,7 +392,7 @@ abstract class NodeBaseService(
         return nodes
     }
 
-    open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String): LocalDateTime? {
+    open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
             if (existNode != null) {
@@ -403,12 +403,12 @@ abstract class NodeBaseService(
                 } else {
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
+                    deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
+                    quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
                 }
             } else {
                 quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
             }
-            return null
         }
     }
 
