@@ -30,7 +30,7 @@ package com.tencent.bkrepo.analyst.configuration
 import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskDispatcherFactory
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
-import com.tencent.bkrepo.analyst.event.ScanEventConsumer
+import com.tencent.bkrepo.analyst.event.AnalystScanEventConsumer
 import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.impl.OperateLogServiceImpl
@@ -91,10 +91,10 @@ class ScannerConfiguration {
 
     @Bean("scanEventConsumer")
     fun scanEventConsumer(
-        scanEventConsumer: ScanEventConsumer
+        analystScanEventConsumer: AnalystScanEventConsumer
     ): Consumer<ArtifactEvent> {
         return Consumer {
-            scanEventConsumer.accept(it)
+            analystScanEventConsumer.accept(it)
         }
     }
 }
