@@ -80,6 +80,7 @@ class CachedFileWriter(
             }
         } catch (ignore: FileAlreadyExistsException) {
             // 如果目录或者文件已存在则忽略
+            logger.info("initial temp file $tempFilePath failed: ${ignore.message}")
         } catch (exception: Exception) {
             logger.error("initial CacheFileWriter error: $exception", exception)
             close()
@@ -92,6 +93,7 @@ class CachedFileWriter(
                 it.write(i)
             } catch (ignored: Exception) {
                 // ignored
+                logger.info("write data to temp file $tempFilePath failed: ${ignored.message}")
                 close()
             }
         }
@@ -103,6 +105,7 @@ class CachedFileWriter(
                 it.write(buffer, off, length)
             } catch (ignored: Exception) {
                 // ignored
+                logger.info("write data to temp file $tempFilePath failed: ${ignored.message}")
                 close()
             }
         }
@@ -172,12 +175,13 @@ class CachedFileWriter(
             if (!cacheFilePath.existReal()) {
                 Files.move(tempFilePath, cacheFilePath)
                 listener?.onCacheFileWritten(filename, cacheFilePath)
-                logger.info("Success cache file $filename")
+                logger.info("Success cache file $filename, move temp file $tempFilePath to cache file $cacheFilePath")
             }
         } catch (ignore: FileAlreadyExistsException) {
             logger.info("File[$cacheFilePath] already exists")
         } catch (exception: Exception) {
-            logger.error("Finish CacheFileWriter error: $exception", exception)
+            logger.error("Finish CacheFileWriter error, " +
+                "move temp file $tempFilePath to cache file $cacheFilePath: $exception", exception)
         }
     }
 
