@@ -3,10 +3,9 @@ import store from './store'
 import { Message } from 'element-ui'
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
-import { getBkUid, getToken } from '@/utils/auth' // get token from cookie
+import { getBkUid, getTempUid, getToken, setTempUid } from '@/utils/auth' // get token from cookie
 import { MODE_CONFIG, MODE_CONFIG_STAND_ALONE, toLoginPage } from '@/utils/login'
 import { ROLE_ADMIN } from '@/store/modules/user'
-import { userInfo } from '@/api/user'
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
@@ -21,10 +20,11 @@ router.beforeEach(async(to, from, next) => {
 
   // determine whether the user has logged in
   // const bkTicket = getBkTicket()
-  const bkUid = getBkUid() || store.getters.name
+  const bkUid = getBkUid()
+  const tempUid = getTempUid()
   const token = getToken()
   // const hasToken = token || bkTicket || bkUid
-  const hasToken = token || bkUid
+  const hasToken = token || bkUid || tempUid
   if (hasToken) {
     if (to.path === '/login') {
       // if is logged in, redirect to the home page
@@ -74,9 +74,10 @@ router.beforeEach(async(to, from, next) => {
       // other pages that do not have permission to access are redirected to the login page.
       if (MODE_CONFIG !== MODE_CONFIG_STAND_ALONE) {
         try {
-          const response = await fetch(userInfo)
+          const response = await fetch('/web/auth/api/user/info')
           if (response.ok) {
-            await store.dispatch('user/getInfo')
+            const resJson = await response.json()
+            setTempUid(resJson.data.userId)
           }
         } catch (error) {
           console.error(error)
