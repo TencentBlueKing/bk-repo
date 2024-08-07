@@ -120,9 +120,9 @@ abstract class AbstractArtifactResourceHandler(
         val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
             return measureThroughput {
-                // TODO 不能写流时再去获取对应锁， 会导致变慢
                 val stream = requestLimitCheckService.bandwidthCheck(
-                    request, inputStream
+                    request, inputStream, storageProperties.response.circuitBreakerThreshold,
+                    inputStream.range.length
                 ) ?: recordAbleInputStream.rateLimit(
                     responseRateLimitWrapper(storageProperties.response.rateLimit)
                 )

@@ -72,5 +72,9 @@ data class ReceiveProperties(
     /**
      * 每秒接收数据量
      */
-    var rateLimit: DataSize = DataSize.ofBytes(-1)
+    var rateLimit: DataSize = DataSize.ofBytes(-1),
+    /**
+     * 限速熔断阈值，当仓库配置的rateLimit小于等于限速熔断阈值时则直接将请求断开
+     */
+    var circuitBreakerThreshold: DataSize = DataSize.ofKilobytes(1),
 )

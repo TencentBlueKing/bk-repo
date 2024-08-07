@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUploadUsageR
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.util.unit.DataSize
 import java.io.InputStream
 import javax.servlet.http.HttpServletRequest
 
@@ -100,17 +101,30 @@ class RequestLimitCheckService(
 
     }
 
-    fun bandwidthCheck(request: HttpServletRequest, inputStream: InputStream): CommonRateLimitInputStream? {
+    fun bandwidthCheck(
+        request: HttpServletRequest,
+        inputStream: InputStream,
+        circuitBreakerPerSecond: DataSize,
+        rangeLength: Long? = null,
+    ): CommonRateLimitInputStream? {
         if (!rateLimiterProperties.enabled) {
             return null
         }
-        return downloadBandwidthRateLimiterService.bandwidthRateLimit(request, inputStream)
+        return downloadBandwidthRateLimiterService.bandwidthRateLimit(
+            request, inputStream, circuitBreakerPerSecond, rangeLength
+        )
     }
 
-    fun uploadBandwidthCheck(request: HttpServletRequest, applyPermits: Long) {
+    fun uploadBandwidthCheck(
+        request: HttpServletRequest,
+        applyPermits: Long,
+        circuitBreakerPerSecond: DataSize,
+    ) {
         if (!rateLimiterProperties.enabled) {
             return
         }
-        uploadBandwidthRateLimiterService.bandwidthRateLimit(request, applyPermits)
+        uploadBandwidthRateLimiterService.bandwidthRateLimit(
+            request, applyPermits, circuitBreakerPerSecond
+        )
     }
 }

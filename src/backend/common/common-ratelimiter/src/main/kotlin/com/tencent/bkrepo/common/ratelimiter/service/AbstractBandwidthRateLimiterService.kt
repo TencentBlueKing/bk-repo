@@ -29,15 +29,19 @@ package com.tencent.bkrepo.common.ratelimiter.service
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
+import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import org.springframework.util.unit.DataSize
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -60,17 +64,26 @@ abstract class AbstractBandwidthRateLimiterService(
     fun bandwidthRateLimit(
         request: HttpServletRequest,
         inputStream: InputStream,
+        circuitBreakerPerSecond: DataSize,
+        rangeLength: Long? = null,
     ): CommonRateLimitInputStream? {
         val resLimitInfo = getBandwidthRateLimit(request) ?: return null
+        circuitBreakerCheck(resLimitInfo.resourceLimit, circuitBreakerPerSecond)
         val rateLimiter = getAlgorithmOfRateLimiter(resLimitInfo.resource, resLimitInfo.resourceLimit)
         return CommonRateLimitInputStream(
-            inputStream, rateLimiter, rateLimiterProperties.sleepTime,
-            rateLimiterProperties.retryNum, rateLimiterProperties.dryRun
+            delegate = inputStream, rateLimiter = rateLimiter, sleepTime = rateLimiterProperties.sleepTime,
+            retryNum = rateLimiterProperties.retryNum, rangeLength = rangeLength,
+            dryRun = rateLimiterProperties.dryRun, permitsNum = rateLimiterProperties.permitsNum
         )
     }
 
-    fun bandwidthRateLimit(request: HttpServletRequest, permits: Long) {
+    fun bandwidthRateLimit(
+        request: HttpServletRequest,
+        permits: Long,
+        circuitBreakerPerSecond: DataSize,
+    ) {
         val resLimitInfo = getBandwidthRateLimit(request) ?: return
+        circuitBreakerCheck(resLimitInfo.resourceLimit, circuitBreakerPerSecond)
         interceptorChain.doBeforeLimitCheck(resLimitInfo.resource, resLimitInfo.resourceLimit)
         val rateLimiter = getAlgorithmOfRateLimiter(resLimitInfo.resource, resLimitInfo.resourceLimit)
         var flag = false
@@ -95,6 +108,19 @@ abstract class AbstractBandwidthRateLimiterService(
         } finally {
             interceptorChain.doAfterLimitCheck(
                 resLimitInfo.resource, resLimitInfo.resourceLimit, flag, exception, permits
+            )
+        }
+    }
+
+    private fun circuitBreakerCheck(
+        resourceLimit: ResourceLimit,
+        circuitBreakerPerSecond: DataSize,
+    ) {
+        val permitsPerSecond = resourceLimit.limit /
+            TimeUnit.valueOf(resourceLimit.unit).toSeconds(1)
+        if (circuitBreakerPerSecond.toBytes() >= permitsPerSecond) {
+            throw OverloadException(
+                "The circuit breaker is activated when too many download requests are made to the service!"
             )
         }
     }

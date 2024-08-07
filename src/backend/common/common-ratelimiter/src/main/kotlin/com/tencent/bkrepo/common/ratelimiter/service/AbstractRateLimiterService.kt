@@ -105,7 +105,7 @@ abstract class AbstractRateLimiterService(
         if (ignoreRequest(request)) return
         var resource = buildResource(request)
         var resourceLimit: ResourceLimit? = null
-        var resLimitInfo: ResLimitInfo? = null
+        var resLimitInfo: ResLimitInfo?
         val applyPermits = getApplyPermits(request, applyPermits)
         var pass = false
         var exception: Exception? = null

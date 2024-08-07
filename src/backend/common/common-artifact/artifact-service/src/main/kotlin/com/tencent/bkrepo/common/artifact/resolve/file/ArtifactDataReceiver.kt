@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
+import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
@@ -191,11 +192,14 @@ class ArtifactDataReceiver(
         }
         try {
             requestLimitCheckService?.uploadBandwidthCheck(
-                HttpContextHolder.getRequest(), length.toLong()
+                HttpContextHolder.getRequest(), length.toLong(),
+                receiveProperties.circuitBreakerThreshold
             )
             writeData(chunk, offset, length)
         } catch (exception: IOException) {
             handleIOException(exception)
+        } catch (overloadEx: OverloadException) {
+            handleOverloadException(overloadEx)
         }
     }
 
@@ -210,7 +214,8 @@ class ArtifactDataReceiver(
         }
         try {
             requestLimitCheckService?.uploadBandwidthCheck(
-                HttpContextHolder.getRequest(), 1
+                HttpContextHolder.getRequest(), 1,
+                receiveProperties.circuitBreakerThreshold
             )
             checkFallback()
             outputStream.write(b)
@@ -219,6 +224,8 @@ class ArtifactDataReceiver(
             checkThreshold()
         } catch (exception: IOException) {
             handleIOException(exception)
+        } catch (overloadEx: OverloadException) {
+            handleOverloadException(overloadEx)
         }
     }
 
@@ -232,9 +239,8 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
-
             val input = requestLimitCheckService?.bandwidthCheck(
-                HttpContextHolder.getRequest(), source
+                HttpContextHolder.getRequest(), source, receiveProperties.circuitBreakerThreshold
             ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
             val buffer = ByteArray(bufferSize)
             input.use {
@@ -246,6 +252,8 @@ class ArtifactDataReceiver(
             }
         } catch (exception: IOException) {
             handleIOException(exception)
+        } catch (overloadEx: OverloadException) {
+            handleOverloadException(overloadEx)
         }
     }
 
@@ -334,14 +342,26 @@ class ArtifactDataReceiver(
      * 处理IO异常
      */
     private fun handleIOException(exception: IOException) {
-        finished = true
-        endTime = System.nanoTime()
-        close()
+        finishWithException()
         if (IOExceptionUtils.isClientBroken(exception)) {
             throw ArtifactReceiveException(exception.message.orEmpty())
         } else {
             throw exception
         }
+    }
+
+    /**
+     * 处理限流请求
+     */
+    private fun handleOverloadException(exception: OverloadException) {
+        finishWithException()
+        throw exception
+    }
+
+    private fun finishWithException() {
+        finished = true
+        endTime = System.nanoTime()
+        close()
     }
 
     /**

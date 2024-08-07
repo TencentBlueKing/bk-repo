@@ -46,7 +46,7 @@ class DistributedTokenBucketRateLimiter(
 ) : RateLimiter {
     override fun tryAcquire(permits: Long): Boolean {
         try {
-            var acquireResult = false
+            var acquireResult: Boolean
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
                 val nowStr = (System.currentTimeMillis()/1000).toString()

@@ -43,5 +43,7 @@ data class RateLimiterProperties(
     // 等待时间，单位毫秒
     var sleepTime: Long = 10,
     // 重试次数
-    var retryNum: Int = 10
+    var retryNum: Int = 10,
+    // 针对读流的请求，避免频繁去请求，每次申请固定大小
+    var permitsNum: Long = 1024 * 1024 * 1024
 )
