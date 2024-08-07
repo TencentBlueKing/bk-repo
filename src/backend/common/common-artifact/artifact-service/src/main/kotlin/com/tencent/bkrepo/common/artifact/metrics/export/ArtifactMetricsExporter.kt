@@ -74,6 +74,7 @@ class ArtifactMetricsExporter(
         labels[ArtifactTransferRecord::elapsed.name] = record.elapsed.toString()
         labels[ArtifactTransferRecord::type.name] = record.type
         labels[ArtifactTransferRecord::agent.name] = record.agent
+        labels[ArtifactTransferRecord::userId.name] = record.userId
         return labels
     }
 
