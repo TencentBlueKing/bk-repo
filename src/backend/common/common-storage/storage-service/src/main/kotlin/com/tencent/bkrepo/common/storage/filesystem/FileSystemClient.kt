@@ -75,10 +75,15 @@ class FileSystemClient(val root: String) {
         }
         if (!Files.exists(filePath)) {
             val file = filePath.createFile()
-            FileLockExecutor.executeInLock(inputStream) { input ->
-                FileLockExecutor.executeInLock(file) { output ->
-                    transfer(input, output, size)
+            try {
+                FileLockExecutor.executeInLock(inputStream) { input ->
+                    FileLockExecutor.executeInLock(file) { output ->
+                        transfer(input, output, size)
+                    }
                 }
+            } catch (e: Exception) {
+                Files.deleteIfExists(filePath)
+                throw e
             }
         }
         return filePath.toFile()
@@ -144,16 +149,26 @@ class FileSystemClient(val root: String) {
         if (!Files.exists(src)) {
             throw IOException("src[$src] file not exist")
         }
+        var create = false
         val targetFile = if (!Files.exists(target)) {
+            create = true
             target.createFile()
         } else {
             target.toFile()
         }
-        val file = src.toFile()
-        FileLockExecutor.executeInLock(file.inputStream()) { input ->
-            FileLockExecutor.executeInLock(targetFile) { output ->
-                transfer(input, output, file.length())
+        try {
+            val file = src.toFile()
+            FileLockExecutor.executeInLock(file.inputStream()) { input ->
+                FileLockExecutor.executeInLock(targetFile) { output ->
+                    transfer(input, output, file.length())
+                }
             }
+        } catch (e: Exception) {
+            // 为保证文件安全，写入失败后需要删除不完整的写入文件
+            if (create) {
+                Files.deleteIfExists(target)
+            }
+            throw e
         }
     }
 
