@@ -1,5 +1,5 @@
 import { login, userInfo, userInfoById } from '@/api/user'
-import { getToken, setToken, removeToken, getBkUid } from '@/utils/auth'
+import { getToken, setToken, removeToken, getBkUid, getTempUid } from '@/utils/auth'
 import { resetRouter } from '@/router'
 import { MODE_CONFIG, MODE_CONFIG_STAND_ALONE } from '@/utils/login'
 
@@ -73,7 +73,7 @@ const actions = {
 
   // get user info
   async getInfo({ commit }) {
-    const uid = getBkUid()
+    const uid = getBkUid() || getTempUid()
     const user = (uid && MODE_CONFIG !== MODE_CONFIG_STAND_ALONE) ? uid : (await getUser()).user
     return new Promise((resolve, reject) => {
       userInfoById(user).then(response => {
@@ -86,6 +86,7 @@ const actions = {
         }
 
         const avatar = ''
+        localStorage.setItem('userName', name)
         commit('SET_USER_ID', userId)
         commit('SET_NAME', name)
         commit('SET_ADMIN', admin)

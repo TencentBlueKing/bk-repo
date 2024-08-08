@@ -43,7 +43,7 @@ export default {
   },
   data() {
     return {
-      userName: localStorage.getItem('userName') || getBkUid()
+      userName: localStorage.getItem('userName')
     }
   },
   computed: {
