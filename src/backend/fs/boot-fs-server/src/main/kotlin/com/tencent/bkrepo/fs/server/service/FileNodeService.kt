@@ -30,26 +30,22 @@ package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 class FileNodeService(
-    private val blockNodeService: BlockNodeService,
+    private val blockNodeService: RBlockNodeService,
     private val coStorageManager: CoStorageManager
 ) {
 
     /**
      * 读取指定范围的文件
      * 使用块数据overlay节点数据，当节点数据不存在时，则合并块，同时块之间空的地方补0
-     * @param projectId 项目id
-     * @param repoName 仓库名
-     * @param fullPath 节点路径
+     * @param nodeDetail 节点详情
      * @param storageCredentials 仓库的存储实例
-     * @param digest 节点的sha56,当节点不存在时，可以为null
-     * @param size 节点的大小，当节点不存在时，可以为null
      * @param range 需要读取的文件范围
      * */
     suspend fun read(
@@ -57,7 +53,7 @@ class FileNodeService(
         storageCredentials: StorageCredentials?,
         range: Range
     ): ArtifactInputStream? {
-        val blocks = info(nodeDetail, range)
+        val blocks = blockNodeService.info(nodeDetail, range)
         return coStorageManager.loadArtifactInputStream(blocks, range, storageCredentials)
     }
 
@@ -65,19 +61,7 @@ class FileNodeService(
         nodeDetail: NodeDetail,
         range: Range
     ): List<RegionResource> {
-        with(nodeDetail) {
-            val blocks = blockNodeService.listBlocks(range, projectId, repoName, fullPath, createdDate)
-            val blockResources = mutableListOf<RegionResource>()
-            if (sha256 != null && sha256 != FAKE_SHA256) {
-                val nodeData = RegionResource(sha256!!, 0, size, 0, size)
-                blockResources.add(nodeData)
-            }
-            blocks.forEach {
-                val res = RegionResource(it.sha256, it.startPos, it.size, 0, it.size)
-                blockResources.add(res)
-            }
-            return blockResources
-        }
+        return blockNodeService.info(nodeDetail, range)
     }
 
     suspend fun deleteNodeBlocks(projectId: String, repoName: String, nodeFullPath: String) {

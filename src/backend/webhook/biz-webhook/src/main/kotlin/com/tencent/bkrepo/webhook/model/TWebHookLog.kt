@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.webhook.model
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.common.api.mongo.ShardingKey
 import com.tencent.bkrepo.webhook.constant.WebHookRequestStatus
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime

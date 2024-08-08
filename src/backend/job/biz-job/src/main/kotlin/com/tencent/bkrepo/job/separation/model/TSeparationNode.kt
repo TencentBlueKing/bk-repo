@@ -54,8 +54,8 @@
 
 package com.tencent.bkrepo.job.separation.model
 
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.common.api.mongo.ShardingDocument
+import com.tencent.bkrepo.common.api.mongo.ShardingKey
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_FOLDER_IDX
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_FOLDER_IDX_DEF
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_FULL_PATH_IDX

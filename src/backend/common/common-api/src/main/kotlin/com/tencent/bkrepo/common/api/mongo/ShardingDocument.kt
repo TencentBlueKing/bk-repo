@@ -29,20 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.dao.sharding
+package com.tencent.bkrepo.common.api.mongo
 
 /**
- * 分表字段
+ * 分表Document
  */
 @Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.FIELD)
-annotation class ShardingKey(
+@Target(AnnotationTarget.CLASS)
+annotation class ShardingDocument(
     /**
-     * 分表字段
+     * collection name
      */
-    val column: String = "",
-    /**
-     * 分表数，power of 2
-     */
-    val count: Int = 1
+    val collection: String = ""
 )

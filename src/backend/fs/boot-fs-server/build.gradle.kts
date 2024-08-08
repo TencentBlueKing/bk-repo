@@ -24,6 +24,7 @@ dependencies {
     api(project(":common:common-stream"))
     api(project(":fs:api-fs-server"))
     implementation("com.github.ben-manes.caffeine:caffeine:2.9.3")
+    implementation(project(":common:common-metadata:metadata-service"))
 
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")

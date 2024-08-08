@@ -31,10 +31,10 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -76,7 +76,7 @@ class NodeServiceImpl(
     override val servicePermissionClient: ServicePermissionClient,
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
-    override val fsNodeClient: FsNodeClient,
+    override val blockNodeService: BlockNodeService,
     private val archiveClient: ArchiveClient,
 ) : NodeBaseService(
     nodeDao,
@@ -90,7 +90,7 @@ class NodeServiceImpl(
     servicePermissionClient,
     routerControllerClient,
     routerControllerProperties,
-    fsNodeClient
+    blockNodeService
 ) {
 
     override fun computeSize(

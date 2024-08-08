@@ -33,7 +33,7 @@ import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.NodeAttribute
-import com.tencent.bkrepo.fs.server.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.fs.server.request.BlockRequest
 import com.tencent.bkrepo.fs.server.request.FlushRequest
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager

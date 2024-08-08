@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.common.operate.service.model
 
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.common.api.mongo.ShardingDocument
+import com.tencent.bkrepo.common.api.mongo.ShardingKey
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog.Companion.RESOURCE_KEY_IDX
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog.Companion.RESOURCE_KEY_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex

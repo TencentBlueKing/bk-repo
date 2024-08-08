@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.dao.BlockNodeDao
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
@@ -52,7 +53,6 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
@@ -97,7 +97,8 @@ import org.springframework.test.context.TestPropertySource
     HttpAuthProperties::class,
     SpringContextUtils::class,
     NodeDao::class,
-    RouterControllerProperties::class
+    RouterControllerProperties::class,
+    BlockNodeDao::class
 )
 @ComponentScan("com.tencent.bkrepo.repository.service")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
@@ -132,9 +133,6 @@ open class ServiceBaseTest {
 
     @MockBean
     lateinit var routerControllerClient: RouterControllerClient
-
-    @MockBean
-    lateinit var fsNodeClient: FsNodeClient
 
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
@@ -177,8 +175,6 @@ open class ServiceBaseTest {
         whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull(), any()))
             .then {}
         whenever(resourcePermissionListener.handle(any<ProjectCreatedEvent>())).then {}
-        whenever(fsNodeClient.restoreBlockResources(anyString(), anyString(), anyString(), anyString(), anyString()))
-            .then {}
     }
 
     fun initRepoForUnitTest(

@@ -42,4 +42,5 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")
     implementation("com.tencent.bk.sdk:bk-notice-java-sdk:${Versions.Notice}")
+    implementation(project(":common:common-metadata:metadata-service"))
 }
