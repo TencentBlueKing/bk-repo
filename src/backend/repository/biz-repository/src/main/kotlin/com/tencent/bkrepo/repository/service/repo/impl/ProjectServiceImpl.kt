@@ -29,11 +29,11 @@ package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.TOTAL_RECORDS_INFINITY
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
 import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.api.constant.TOTAL_RECORDS_INFINITY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -150,14 +150,10 @@ class ProjectServiceImpl(
         }
         val projectIdList = projectList.map { it.name }
         val existProjectMap = serviceBkiamV3ResourceClient.getExistRbacDefaultGroupProjectIds(projectIdList).data
-        val result = mutableListOf<ProjectInfo>()
-        for (project in projectList) {
-            if (!isProjectEnabled(project)) continue
-            val exist = existProjectMap?.get(project.name) ?: false
-            result.add(convert(project, exist)!!)
-
+        return projectList.map {
+            val exist = existProjectMap?.get(it.name) ?: false
+            convert(it, exist)!!
         }
-        return result
     }
 
     override fun isProjectEnabled(name: String): Boolean {
