@@ -307,10 +307,10 @@ open class PermissionManager(
         userId: String = SecurityUtils.getUserId(),
     ) {
         val isAdmin = isAdminUser(userId)
+        if (isAdmin) return
         val projectEnabled = queryProjectEnabledStatus(projectId)
-        if (!isAdmin && !projectEnabled) {
-            throw PermissionException("Project enabled status is false!")
-        }
+        if (projectEnabled) return
+        throw PermissionException("Project enabled status is false!")
     }
 
     /**
