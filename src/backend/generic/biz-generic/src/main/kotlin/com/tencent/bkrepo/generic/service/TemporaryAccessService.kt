@@ -116,12 +116,13 @@ class TemporaryAccessService(
     /**
      * 下载
      */
-    fun download(artifactInfo: GenericArtifactInfo) {
+    fun download(artifactInfo: GenericArtifactInfo, shareUserId: String) {
         with(artifactInfo) {
             val repo = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             HttpContextHolder.getRequest().setAttribute(REPO_KEY, repo)
             val context = ArtifactDownloadContext(repo)
+            context.shareUserId = shareUserId
             ArtifactContextHolder.getRepository(repo.category).download(context)
         }
     }
@@ -211,17 +212,19 @@ class TemporaryAccessService(
      * @param token 待校验token
      * @param artifactInfo 访问构件信息
      * @param type 访问类型
+     * @param appDownloadUser 蓝盾app下载用户
      */
     fun validateToken(
         token: String,
         artifactInfo: ArtifactInfo,
         type: TokenType,
+        appDownloadUser: String? = null
     ): TemporaryTokenInfo {
         val temporaryToken = checkToken(token)
         checkExpireTime(temporaryToken.expireDate)
         checkAccessType(temporaryToken.type, type)
         checkAccessResource(temporaryToken, artifactInfo)
-        checkAuthorization(temporaryToken)
+        checkAuthorization(temporaryToken, appDownloadUser)
         checkAccessPermits(temporaryToken.permits)
         return temporaryToken
     }
@@ -402,7 +405,7 @@ class TemporaryAccessService(
     /**
      * 检查授权用户和ip
      */
-    private fun checkAuthorization(tokenInfo: TemporaryTokenInfo) {
+    private fun checkAuthorization(tokenInfo: TemporaryTokenInfo, appDownloadUser: String?) {
         // 检查用户授权
         // 获取经过认证的uid
         val authenticatedUid = SecurityUtils.getUserId()
@@ -412,7 +415,7 @@ class TemporaryAccessService(
         }
         // 获取需要审计的uid
         val auditedUid = if (SecurityUtils.isAnonymous()) {
-            HttpContextHolder.getRequest().getHeader(AUTH_HEADER_UID) ?: tokenInfo.createdBy
+            HttpContextHolder.getRequest().getHeader(AUTH_HEADER_UID) ?: appDownloadUser ?: tokenInfo.createdBy
         } else {
             authenticatedUid
         }

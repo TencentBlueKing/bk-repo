@@ -62,6 +62,7 @@ import org.springframework.web.bind.annotation.RestController
 @Api("节点分享用户接口")
 @RestController
 @RequestMapping("/api/share")
+@Deprecated(message = "Replace with TemporaryAccessController")
 class UserShareController(
     private val permissionManager: PermissionManager,
     private val shareService: ShareService

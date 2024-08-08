@@ -4,7 +4,7 @@
 
 ## 创建分享下载链接
 
-- API: POST /repository/api/share/{projectId}/{repoName}/{fullPath}
+- API: POST /generic/temporary/url/create
 - API 名称: create_share_url
 - 功能说明：
   - 中文：创建分享下载链接
@@ -13,9 +13,15 @@
 
   ```json
   {
+    "projectId": "demo",
+    "repoName": "generic",
+    "fullPathSet" : ["/dir1/file1", "/dir2/file2"],
     "authorizedUserList": ["user1", "user2"],
     "authorizedIpList": ["192.168.1.1", "127.0.0.1"],
-    "expireSeconds": 3600
+    "expireSeconds": 3600,
+    "permits": 10,
+    "type": "DOWNLOAD",
+    "host": "https://bkrepo.example.com/generic"
   }
   ```
 
@@ -25,10 +31,13 @@
   |---|---|---|---|---|---|
   |projectId|string|是|无|项目名称|project name|
   |repoName|string|是|无|仓库名称|repo name|
-  |fullPath|string|是|无|完整路径|full path|
+  |fullPathSet|[string]|是|无|完整路径集合|full path set|
   |authorizedUserList|[string]|否|无|授权用户列表，若为空所有用户可下载|share user list|
   |authorizedIpList|[string]|否|无|授权ip列表，若为空所有ip可下载|share ip list|
   |expireSeconds|long|否|0|下载链接有效时间，单位秒|expire seconds|
+  |permits|int|否|null|允许访问次数，为空表示无限制|permits|
+  |type|enum|是|无|token类型|token type|
+  |host|string|否|无|指定临时访问链接host|host|
 
 - 响应体
 
@@ -36,22 +45,31 @@
   {
     "code": 0,
     "message": null,
-    "data": {
-      "projectId": "test",
-      "repoName": "generic-local",
-      "fullPath": "/test.txt",
-      "shareUrl": "/api/share/test/generic-local/test.json?token=bef56a14c33342beba7fdb5f63508d24",
-      "authorizedUserList": [
-        "user1",
-        "user2"
-      ],
-      "authorizedIpList": [
-        "192.168.1.1",
-        "127.0.0.1"
-      ],
-      "expireDate": "2020-08-13T12:35:38.541"
-    },
-    "traceId": null
+    "data": [
+        {
+            "projectId": "demo",
+            "repoName": "generic",
+            "fullPath": "/dir1/file1",
+            "url": "https://bkrepo.example.com/generic/temporary/download/demo/generic/dir1/file1?token=xxxxxxxxxxxxxxxxxxxxxx",
+            "authorizedUserList": ["user1", "user2"],
+            "authorizedIpList": ["192.168.1.1", "127.0.0.1"],
+            "expireDate": "2024-05-15T12:19:06.988",
+            "permits": 10,
+            "type": "DOWNLOAD"
+        },
+        {
+            "projectId": "demo",
+            "repoName": "generic",
+            "fullPath": "/dir2/file2",
+            "url": "https://bkrepo.example.com/generic/temporary/download/demo/generic/dir2/file2?token=xxxxxxxxxxxxxxxxxxxxxx",
+            "authorizedUserList": ["user1", "user2"],
+            "authorizedIpList": ["192.168.1.1", "127.0.0.1"],
+            "expireDate": "2024-05-15T12:19:06.988",
+            "permits": 10,
+            "type": "DOWNLOAD"
+        }
+    ],
+    "traceId": "1d7fdfb1ff560f162e24184c37f84aa3"
   }
   ```
 
@@ -62,85 +80,16 @@
   |projectId|string|项目id|project id|
   |repoName|string|仓库名称|repo name|
   |fullPath|string|完整路径|full path|
-  |shareUrl|string|分享下载链接|share url|
+  |url|string|分享下载链接|share url|
   |authorizedUserList|list|授权用户列表|authorized user list|
   |authorizedIpList|list|授权ip列表|authorized ip list|
   |expireDate|string|过期时间|expire date|
-
-## 创建分享下载链接（批量）
-
-- API: POST /repository/api/share/batch
-- API 名称: create_batch_share_url
-- 功能说明：
-  - 中文：创建分享下载链接（批量）
-  - English：create batch share url
-- 请求体
-
-  ```json
-  {
-    "projectId": "",
-    "repoName": "",
-    "fullPathList": "",
-    "authorizedUserList": ["user1", "user2"],
-    "authorizedIpList": ["192.168.1.1", "127.0.0.1"],
-    "expireSeconds": 3600
-  }
-  ```
-
-- 请求字段说明
-
-  |字段|类型|是否必须|默认值|说明|Description|
-  |---|---|---|---|---|---|
-  |projectId|string|是|无|项目名称|project name|
-  |repoName|string|是|无|仓库名称|repo name|
-  |fullPathList|string|是|无|完整路径列表|full path list|
-  |authorizedUserList|[string]|否|无|授权用户列表，若为空所有用户可下载|share user list|
-  |authorizedIpList|[string]|否|无|授权ip列表，若为空所有ip可下载|share ip list|
-  |expireSeconds|long|否|0|下载链接有效时间，单位秒|expire seconds|
-
-- 响应体
-
-  ``` json
-  {
-    "code": 0,
-    "message": null,
-    "data": {
-      [
-        "projectId": "test",
-        "repoName": "generic-local",
-        "fullPath": "/test.txt",
-        "shareUrl": "/api/share/test/generic-local/test.json?token=bef56a14c33342beba7fdb5f63508d24",
-        "authorizedUserList": [
-          "user1",
-          "user2"
-        ],
-        "authorizedIpList": [
-          "192.168.1.1",
-          "127.0.0.1"
-        ],
-        "expireDate": "2020-08-13T12:35:38.541"
-      ]
-    },
-    "traceId": null
-  }
-  ```
-
-
-- data字段说明
-
-  |字段|类型|说明|Description|
-  |---|---|---|---|
-  |projectId|string|项目id|project id|
-  |repoName|string|仓库名称|repo name|
-  |fullPath|string|完整路径|full path|
-  |shareUrl|string|分享下载链接|share url|
-  |authorizedUserList|[string]|授权用户列表|authorized user list|
-  |authorizedIpList|[string]|授权ip列表|authorized ip list|
-  |expireDate|string|过期时间|expire date|
+  |permits|int|允许访问次数，为空表示无限制|permits|
+  |type|enum|token类型|token type|
 
 ## 分享链接下载
 
-- API: GET /repository/api/share/{projectId}/{repoName}/{fullPath}?token=xxx
+- API: GET /generic/temporary/download/{projectId}/{repoName}/{fullPath}?token=xxx
 - API 名称: download_share_url
 - 功能说明：
   - 中文：分享链接下载，支持HEAD操作
