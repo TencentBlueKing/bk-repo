@@ -115,7 +115,7 @@ open class BkIamV3PermissionServiceImpl(
                     userId = uid,
                     projectId = projectId!!,
                     repoName = repoName,
-                    resourceType = resourceType.lowercase(Locale.getDefault()),
+                    resourceType = resourceType.lowercase(),
                     action = convertActionType(resourceType, action),
                     resourceId = resourceId,
                     appId = appId
