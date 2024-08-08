@@ -31,11 +31,11 @@ import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.pojo.enums.ActionTypeMapping
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
+import java.util.Locale
 
 /**
  * 对接蓝鲸权限中心V3 RBAC
@@ -114,7 +115,7 @@ open class BkIamV3PermissionServiceImpl(
                     userId = uid,
                     projectId = projectId!!,
                     repoName = repoName,
-                    resourceType = resourceType.toLowerCase(),
+                    resourceType = resourceType.lowercase(Locale.getDefault()),
                     action = convertActionType(resourceType, action),
                     resourceId = resourceId,
                     appId = appId
@@ -158,10 +159,6 @@ open class BkIamV3PermissionServiceImpl(
     }
 
     private fun listV3PermissionRepo(projectId: String, userId: String): List<String> {
-        val projectEnabled = queryProjectEnabledStatus(projectId)
-        if (!projectEnabled) {
-            return emptyList()
-        }
         val pList = bkiamV3Service.listPermissionResources(
             userId = userId,
             projectId = projectId,

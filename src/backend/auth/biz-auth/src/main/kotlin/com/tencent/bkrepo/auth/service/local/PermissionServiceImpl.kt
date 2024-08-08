@@ -291,17 +291,8 @@ open class PermissionServiceImpl constructor(
         }
         val roles = user.roles
 
-        // 用户为系统管理员
-        if (user.admin) {
-            return getAllRepoByProjectId(projectId)
-        }
-        // 项目是否禁用
-        val projectEnabled = queryProjectEnabledStatus(projectId)
-        if (!projectEnabled) {
-            return emptyList()
-        }
-        //项目管理员、项目用户
-        if (isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
+        // 用户为系统管理员、项目管理员、项目用户
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
             return getAllRepoByProjectId(projectId)
         }
 
@@ -432,14 +423,6 @@ open class PermissionServiceImpl constructor(
 
     override fun listExternalRoleByProject(projectId: String, source: RoleSource): List<ExternalRoleResult> {
         return emptyList()
-    }
-
-    fun queryProjectEnabledStatus(projectId: String): Boolean {
-        return try {
-            projectClient.isProjectEnabled(projectId).data!!
-        } catch (e: Exception) {
-            true
-        }
     }
 
     fun isUserLocalProjectAdmin(userId: String, projectId: String): Boolean {
