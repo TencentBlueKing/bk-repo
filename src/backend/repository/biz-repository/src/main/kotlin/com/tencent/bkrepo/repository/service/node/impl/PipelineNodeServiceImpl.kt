@@ -34,18 +34,14 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.node.PipelineNodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
 import org.springframework.stereotype.Service
 
 @Service
 class PipelineNodeServiceImpl(
     private val nodeService: NodeService,
-    private val servicePipelineClient: ServicePipelineClient,
-    private val projectService: ProjectService
-): PipelineNodeService {
+    private val servicePipelineClient: ServicePipelineClient
+) : PipelineNodeService {
     override fun listPipeline(userId: String, projectId: String, repoName: String): List<NodeInfo> {
-        // 判断项目是否禁用
-        if (!projectService.isProjectEnabled(projectId)) return emptyList()
         // 1. auth查询有权限的pipeline
         val pipelines = servicePipelineClient.listPermissionedPipelines(userId, projectId).data.orEmpty()
         // 2. 查询根节点下的目录
