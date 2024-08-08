@@ -40,7 +40,7 @@ import org.springframework.stereotype.Service
 class PipelineNodeServiceImpl(
     private val nodeService: NodeService,
     private val servicePipelineClient: ServicePipelineClient
-) : PipelineNodeService {
+): PipelineNodeService {
     override fun listPipeline(userId: String, projectId: String, repoName: String): List<NodeInfo> {
         // 1. auth查询有权限的pipeline
         val pipelines = servicePipelineClient.listPermissionedPipelines(userId, projectId).data.orEmpty()
