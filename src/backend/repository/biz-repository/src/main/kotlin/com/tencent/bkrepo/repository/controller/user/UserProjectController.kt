@@ -97,11 +97,11 @@ class UserProjectController(
     @ApiOperation("校验项目参数是否存在")
     @GetMapping("/exist")
     fun checkProjectExist(
-            @RequestAttribute userId: String,
-            @ApiParam(value = "项目ID", required = false)
-            @RequestParam name: String?,
-            @ApiParam(value = "项目ID", required = false)
-            @RequestParam displayName: String?
+        @RequestAttribute userId: String,
+        @ApiParam(value = "项目ID", required = false)
+        @RequestParam name: String?,
+        @ApiParam(value = "项目ID", required = false)
+        @RequestParam displayName: String?
     ): Response<Boolean> {
         return ResponseBuilder.success(projectService.checkProjectExist(name, displayName))
     }
@@ -109,10 +109,10 @@ class UserProjectController(
     @ApiOperation("编辑项目")
     @PutMapping("/{name}")
     fun updateProject(
-            @RequestAttribute userId: String,
-            @ApiParam(value = "项目ID", required = true)
-            @PathVariable name: String,
-            @RequestBody projectUpdateRequest: ProjectUpdateRequest
+        @RequestAttribute userId: String,
+        @ApiParam(value = "项目ID", required = true)
+        @PathVariable name: String,
+        @RequestBody projectUpdateRequest: ProjectUpdateRequest
     ): Response<Boolean> {
         permissionManager.checkProjectPermission(PermissionAction.UPDATE, name)
         return ResponseBuilder.success(projectService.updateProject(name, projectUpdateRequest))
@@ -153,5 +153,14 @@ class UserProjectController(
     ): Response<ProjectMetricsInfo?> {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         return ResponseBuilder.success(projectService.getProjectMetricsInfo(projectId))
+    }
+
+    @ApiOperation("获取项目启用/禁用状态")
+    @GetMapping("/enabled/{projectId}")
+    fun isProjectEnabled(
+        @ApiParam(value = "项目ID", required = true)
+        @PathVariable projectId: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(projectService.isProjectEnabled(projectId))
     }
 }

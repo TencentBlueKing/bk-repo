@@ -156,6 +156,19 @@ class ProjectServiceImpl(
         }
     }
 
+    override fun isProjectEnabled(name: String): Boolean {
+        val projectInfo = projectDao.findByName(name)
+            ?: throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
+        return isProjectEnabled(projectInfo)
+    }
+
+    private fun isProjectEnabled(project: TProject): Boolean {
+        val enabled = project.metadata.firstOrNull {
+            it.key == ProjectMetadata.KEY_ENABLED
+        }?.value as? Boolean ?: true
+        return enabled
+    }
+
     private fun checkPropertyAndDirection(option: ProjectListOption) {
         Preconditions.checkArgument(
             option.sortProperty?.none { !TProject::class.java.declaredFields.map { f -> f.name }.contains(it) },
@@ -318,6 +331,7 @@ class ProjectServiceImpl(
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     metadata = it.metadata,
                     credentialsKey = it.credentialsKey,
+                    rbacFlag = rbacFlag
                 )
             }
         }

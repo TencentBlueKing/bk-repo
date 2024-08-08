@@ -60,6 +60,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -79,6 +80,7 @@ import java.util.concurrent.TimeUnit
  * 权限管理类
  */
 open class PermissionManager(
+    private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
     private val permissionResource: ServicePermissionClient,
     private val externalPermissionResource: ServiceExternalPermissionClient,
@@ -108,11 +110,12 @@ open class PermissionManager(
         projectId: String,
         userId: String = SecurityUtils.getUserId()
     ) {
+        projectEnabledCheck(projectId, userId)
         checkPermission(
             type = ResourceType.PROJECT,
             action = action,
             projectId = projectId,
-            userId = userId
+            userId = userId,
         )
     }
 
@@ -132,11 +135,12 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
+        if (serviceRequestCheck()) return
+        projectEnabledCheck(projectId, userId)
         val repoInfo = queryRepositoryInfo(projectId, repoName)
-        if (isReadPublicRepo(action, repoInfo, public)) {
-            return
-        }
-        if (allowReadSystemRepo(action, repoInfo, userId)) {
+        if (isReadPublicOrSystemRepoCheck(
+                action, repoInfo, public, userId
+            )) {
             return
         }
         checkPermission(
@@ -145,7 +149,7 @@ open class PermissionManager(
             projectId = projectId,
             repoName = repoName,
             anonymous = anonymous,
-            userId = userId
+            userId = userId,
         )
     }
 
@@ -167,11 +171,12 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
+        if (serviceRequestCheck()) return
+        projectEnabledCheck(projectId, userId)
         val repoInfo = queryRepositoryInfo(projectId, repoName)
-        if (isReadPublicRepo(action, repoInfo, public)) {
-            return
-        }
-        if (allowReadSystemRepo(action, repoInfo, userId)) {
+        if (isReadPublicOrSystemRepoCheck(
+                action, repoInfo, public, userId
+            )) {
             return
         }
         // 禁止批量下载流水线节点
@@ -186,7 +191,7 @@ open class PermissionManager(
             repoName = repoName,
             paths = path.toList(),
             anonymous = anonymous,
-            userId = userId
+            userId = userId,
         )
     }
 
@@ -217,6 +222,24 @@ open class PermissionManager(
         }
     }
 
+    /**
+     * 判读READ操作是否对应public仓库或者系统级公开仓库
+     */
+    private fun isReadPublicOrSystemRepoCheck(
+        action: PermissionAction,
+        repoInfo: RepositoryInfo,
+        public: Boolean? = null,
+        userId: String = SecurityUtils.getUserId(),
+    ): Boolean {
+        if (isReadPublicRepo(action, repoInfo, public)) {
+            return true
+        }
+        if (allowReadSystemRepo(action, repoInfo, userId)) {
+            return true
+        }
+        return false
+    }
+
 
     /**
      * 判断是否为public仓库且为READ或DOWNLOAD操作
@@ -239,11 +262,8 @@ open class PermissionManager(
     private fun allowReadSystemRepo(
         action: PermissionAction,
         repoInfo: RepositoryInfo,
-        userId: String = SecurityUtils.getUserId()
+        userId: String = SecurityUtils.getUserId(),
     ): Boolean {
-        if (SecurityUtils.isServiceRequest()) {
-            return true
-        }
         if (action != PermissionAction.READ && action != PermissionAction.DOWNLOAD) {
             return false
         }
@@ -261,10 +281,36 @@ open class PermissionManager(
     }
 
     /**
+     * 查询项目信息
+     */
+    open fun queryProjectEnabledStatus(projectId: String): Boolean {
+        return try {
+            projectClient.isProjectEnabled(projectId).data!!
+        } catch (e: Exception) {
+            true
+        }
+    }
+
+    /**
      * 查询仓库信息
      */
     open fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
         return repositoryClient.getRepoInfo(projectId, repoName).data ?: throw RepoNotFoundException(repoName)
+    }
+
+    private fun serviceRequestCheck(): Boolean {
+        return SecurityUtils.isServiceRequest()
+    }
+
+    private fun projectEnabledCheck(
+        projectId: String,
+        userId: String = SecurityUtils.getUserId(),
+    ) {
+        val isAdmin = isAdminUser(userId)
+        if (isAdmin) return
+        val projectEnabled = queryProjectEnabledStatus(projectId)
+        if (projectEnabled) return
+        throw PermissionException("Project enabled status is false!")
     }
 
     /**
@@ -277,7 +323,7 @@ open class PermissionManager(
         repoName: String? = null,
         paths: List<String>? = null,
         anonymous: Boolean = false,
-        userId: String = SecurityUtils.getUserId()
+        userId: String = SecurityUtils.getUserId(),
     ) {
         // 判断是否开启认证
         if (!httpAuthProperties.enabled) {
@@ -311,7 +357,7 @@ open class PermissionManager(
             action = action.toString(),
             projectId = projectId,
             repoName = repoName,
-            path = paths?.first()
+            path = paths?.first(),
         )
         //  devx 是否需要auth 校验仓库维度的访问黑名单
         val devxAccessFrom = HttpContextHolder.getRequest().getAttribute(HEADER_DEVX_ACCESS_FROM)
@@ -459,14 +505,14 @@ open class PermissionManager(
                 }
                 logger.info(
                     "check external permission error, url[${request.url}], project[$projectId], repo[$repoName]," +
-                            " nodes$paths, code[${it.code}], response[$content]"
+                        " nodes$paths, code[${it.code}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
         } catch (e: IOException) {
             logger.error(
                 "check external permission error," + "url[${request.url}], project[$projectId], " +
-                        "repo[$repoName], nodes$paths, $e"
+                    "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
         }

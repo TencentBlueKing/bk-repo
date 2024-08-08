@@ -74,4 +74,8 @@ interface ProjectClient {
     @ApiOperation("项目仓库统计信息列表")
     @PostMapping("/metrics/{name}")
     fun getProjectMetrics(@ApiParam(value = "项目名") @PathVariable name: String): Response<ProjectMetricsInfo?>
+
+    @ApiOperation("获取项目启用/禁用状态")
+    @PostMapping("/enabled/{name}")
+    fun isProjectEnabled(@ApiParam(value = "项目名") @PathVariable name: String): Response<Boolean>
 }
