@@ -225,8 +225,20 @@
     "blueKingPermission": "Bk permission",
     "exist": "Exist",
     "createRepository": "New Repository",
-    "openProjectLabel": "Open within the project",
-    "openProjectTip": "Members of the project can use",
+    "permissionTitle": {
+        "default": "Default",
+        "strict": "Strict Mode",
+        "folder": "Specify Directory",
+        "public": "Public(Be Careful)",
+        "pipeline": "Pipeline"
+    },
+    "permissionTip": {
+        "default": "All members of the project can upload/download",
+        "strict": "Manage permissions by first-level directory. Only users with permissions can upload/download",
+        "folder": "Only the first-level directory is strictly authenticated, and all other directory project members can access it",
+        "public": "No authentication required, any terminal can download",
+        "pipeline": "Aligned with pipeline permissions, only this permission can upload/download/share products"
+    },
     "dockerRepoTip": "The docker repository name does not support capital English letters",
     "openPublicLabel": "Anonymous Download Supported",
     "openPublicTip": "No authentication, any terminal can download",
@@ -871,7 +883,10 @@
     "bkciUserGroup":"BKCI User Group",
     "userSource":"User Source",
     "bkci": "BKCI",
-    "rootDirectoryPermission": "Access Control:",
+    "rootDirectoryPermissionTitle": "Access Control",
+    "rootDirectoryPermission": "Access Control",
     "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth.",
-    "errMsg": "Error Message"
+    "errMsg": "Error Message",
+    "blackUserList": "Blacklist",
+    "controlConfigPlaceholder": "Select User Group"
 }

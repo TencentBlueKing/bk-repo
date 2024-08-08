@@ -86,6 +86,7 @@ const val ANALYSIS_EXECUTOR_SERVICE_NAME = "\${service.prefix:}analysis-executor
 const val HELM_SERVICE_NAME = "\${service.prefix:}helm\${service.suffix:}"
 const val OCI_SERVICE_NAME = "\${service.prefix:}docker\${service.suffix:}"
 const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"
+const val SCHEDULE_SERVICE_NAME = "\${service.prefix:}job-schedule\${service.suffix:}"
 const val FS_SERVER_SERVICE_NAME = "\${service.prefix:}fs-server\${service.suffix:}"
 const val MAVEN_SERVICE_NAME = "\${service.prefix:}maven\${service.suffix:}"
 const val ARCHIVE_SERVICE_NAME = "\${service.prefix:}archive\${service.suffix:}"
@@ -135,6 +136,21 @@ const val ACCESS_FROM_API = "api"
  * 来源于浏览器访问
  */
 const val ACCESS_FROM_WEB = "web"
+
+/**
+ * 用于标记devx访问来源, office or others
+ */
+const val HEADER_DEVX_ACCESS_FROM = "X-BKREPO-DEVX-ACCESS-FROM"
+
+/**
+ * devx 访问来源, office
+ */
+const val DEVX_ACCESS_FROM_OFFICE = "devx_office"
+
+/**
+ * devx 访问来源, others
+ */
+const val DEVX_ACCESS_FROM_OTHERS = "others"
 
 /**
  * b3 trace header

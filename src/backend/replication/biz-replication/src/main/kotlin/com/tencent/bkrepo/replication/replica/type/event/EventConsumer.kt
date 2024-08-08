@@ -29,19 +29,19 @@ package com.tencent.bkrepo.replication.replica.type.event
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import java.util.function.Consumer
+
 /**
  * 构件事件消费者，用于实时同步
  * 对应binding name为artifactEvent-in-0
  */
-abstract class EventConsumer : Consumer<ArtifactEvent> {
+open class EventConsumer {
 
     /**
      * 允许接收的事件类型
      */
     open fun getAcceptTypes(): Set<EventType> = emptySet()
 
-    override fun accept(message: ArtifactEvent) {
+    fun accept(message: ArtifactEvent) {
         if (!getAcceptTypes().contains(message.type)) {
             return
         }

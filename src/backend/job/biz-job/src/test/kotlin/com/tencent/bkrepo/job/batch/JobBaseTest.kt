@@ -31,7 +31,9 @@ import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
+import com.tencent.bkrepo.job.batch.file.ExpireFileResolverConfig
 import com.tencent.bkrepo.job.config.JobConfig
+import com.tencent.bkrepo.job.config.ScheduledTaskConfigurer
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -45,6 +47,7 @@ import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfigurati
 import org.springframework.cloud.sleuth.Tracer
 import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 import org.springframework.context.annotation.ComponentScan
+import org.springframework.context.annotation.FilterType
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 
@@ -60,10 +63,18 @@ import org.springframework.test.context.TestPropertySource
 @TestPropertySource(
     locations = [
         "classpath:bootstrap-ut.properties",
-        "classpath:job-ut.properties"
-    ]
+        "classpath:job-ut.properties",
+    ],
 )
-@ComponentScan(basePackages = ["com.tencent.bkrepo.job"])
+@ComponentScan(
+    basePackages = ["com.tencent.bkrepo.job"],
+    excludeFilters = [
+        ComponentScan.Filter(
+            type = FilterType.ASSIGNABLE_TYPE,
+            value = [ScheduledTaskConfigurer::class, ExpireFileResolverConfig::class],
+        ),
+    ],
+)
 @SpringBootConfiguration
 @EnableAutoConfiguration
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.center
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -35,8 +36,8 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.fs.server.api.FsNodeClient
@@ -84,7 +85,8 @@ class CommitEdgeCenterNodeServiceImpl(
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
     override val fsNodeClient: FsNodeClient,
-    val clusterProperties: ClusterProperties
+    val clusterProperties: ClusterProperties,
+    val archiveClient: ArchiveClient,
 ) : NodeServiceImpl(
     nodeDao,
     repositoryDao,
@@ -97,7 +99,8 @@ class CommitEdgeCenterNodeServiceImpl(
     servicePermissionClient,
     routerControllerClient,
     routerControllerProperties,
-    fsNodeClient
+    fsNodeClient,
+    archiveClient
 ) {
 
     override fun checkRepo(projectId: String, repoName: String): TRepository {
@@ -111,7 +114,7 @@ class CommitEdgeCenterNodeServiceImpl(
         return repo
     }
 
-    override fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String): LocalDateTime? {
+    override fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
             if (existNode != null) {
@@ -123,13 +126,24 @@ class CommitEdgeCenterNodeServiceImpl(
                     ClusterUtils.checkIsSrcCluster(existNode.clusterNames)
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    return deleteByPath(projectId, repoName, fullPath, operator).deletedTime
+                    deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
+                    quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
                 }
             } else {
                 quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
             }
-            return null
         }
+    }
+
+    override fun deleteByFullPathWithoutDecreaseVolume(
+        projectId: String, repoName: String, fullPath: String, operator: String
+    ) {
+        return CommitEdgeCenterNodeDeleteSupport(this, clusterProperties).deleteByFullPathWithoutDecreaseVolume(
+            projectId,
+            repoName,
+            fullPath,
+            operator
+        )
     }
 
     override fun buildTNode(request: NodeCreateRequest): TNode {

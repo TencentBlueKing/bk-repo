@@ -31,20 +31,23 @@ import com.tencent.bkrepo.common.api.constant.COMMIT_EDGE_HEADER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import feign.RequestInterceptor
-import org.springframework.boot.autoconfigure.AutoConfigureAfter
-import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JAutoConfiguration
-import org.springframework.cloud.openfeign.FeignClientsConfiguration
-import org.springframework.context.annotation.Configuration
+import feign.Retryer
+import feign.codec.Decoder
+import feign.codec.Encoder
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.cloud.openfeign.FeignClientsConfiguration
+import org.springframework.cloud.openfeign.FeignLoggerFactory
+import org.springframework.cloud.openfeign.support.AbstractFormWriter
+import org.springframework.cloud.openfeign.support.HttpMessageConverterCustomizer
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-/**
- * 需要配置FeignClientsConfiguration在Resilience4JAutoConfiguration之后配置feign才会使用resilience4j进行熔断隔离
- */
 @Configuration
 @ConditionalOnClass(FeignClientsConfiguration::class)
-@AutoConfigureAfter(Resilience4JAutoConfiguration::class)
-class CustomFeignClientsConfiguration : FeignClientsConfiguration() {
+class CustomFeignClientsConfiguration {
+
     @Bean
     fun requestInterceptor(): RequestInterceptor {
         return RequestInterceptor { requestTemplate ->
@@ -60,4 +63,38 @@ class CustomFeignClientsConfiguration : FeignClientsConfiguration() {
 
     @Bean
     fun errorCodeDecoder() = ErrorCodeDecoder()
+
+    @Bean
+    fun feignClientsConfiguration() = FeignClientsConfiguration()
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun feignLoggerFactory(feignClientsConfiguration: FeignClientsConfiguration): FeignLoggerFactory {
+        return feignClientsConfiguration.feignLoggerFactory()
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun feignEncoder(
+        formWriterProvider: ObjectProvider<AbstractFormWriter>,
+        customizers: ObjectProvider<HttpMessageConverterCustomizer>,
+        feignClientsConfiguration: FeignClientsConfiguration,
+    ): Encoder {
+        return feignClientsConfiguration.feignEncoder(formWriterProvider, customizers)
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun feignRetryer(feignClientsConfiguration: FeignClientsConfiguration): Retryer {
+        return feignClientsConfiguration.feignRetryer()
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun feignDecoder(
+        customizers: ObjectProvider<HttpMessageConverterCustomizer>,
+        feignClientsConfiguration: FeignClientsConfiguration,
+    ): Decoder {
+        return feignClientsConfiguration.feignDecoder(customizers)
+    }
 }

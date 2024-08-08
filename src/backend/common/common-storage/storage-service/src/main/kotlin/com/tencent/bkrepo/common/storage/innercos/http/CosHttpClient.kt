@@ -100,7 +100,11 @@ object CosHttpClient {
                 .append(response.code)
                 .appendLine("[${response.message}]")
                 .appendLine(response.headers)
-                .appendLine(response.body?.bytes()?.toString(Charset.forName("GB2312")))
+            try {
+                builder.appendLine(response.body?.bytes()?.toString(Charset.forName("GB2312")))
+            } catch (e: Exception) {
+                logger.warn("read body error", e)
+            }
         }
         val message = builder.toString()
         logger.warn(message)

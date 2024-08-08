@@ -1,14 +1,7 @@
 <template>
     <div class="permission-container" v-bkloading="{ isLoading }">
-        <div style="margin-bottom: 10px;font-size: larger;">
-            <span>{{ $t('rootDirectoryPermission') }}</span>
-            <bk-switcher style="margin-right: auto;" size="small" theme="primary" v-model="rootDirectoryPermission" @change="updateRepo" />
-            <span style="margin-right: auto;margin-left: 5px" size="small" theme="primary">{{ $t('rootDirectoryPermissionTip') }}</span>
-        </div>
-        <bk-divider align="left" />
         <div class="mb10 flex-between-center">
             <bk-button icon="plus" theme="primary" @click="showCreatePermission">{{ $t('add') }}</bk-button>
-            <bk-link theme="primary" @click="showUserGroup" style="margin-right: auto;margin-left: 10px">{{ $t('userGroup') }}</bk-link>
         </div>
         <div class="permission-head">
             <div class="permission-name">{{$t('name')}}</div>
@@ -90,13 +83,6 @@
                     this.permissionListPages = res
                 })
             })
-            this.getRootPermission({
-                projectId: this.projectId,
-                repoName: this.repoName
-            }).then((res) => {
-                this.id = res.id
-                this.rootDirectoryPermission = res.status
-            })
         },
         methods: {
             ...mapActions([
@@ -167,16 +153,6 @@
             showUserGroup () {
                 this.$router.push({
                     name: 'userGroup'
-                })
-            },
-            updateRepo () {
-                const body = {
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    status: this.rootDirectoryPermission
-                }
-                this.createOrUpdateRootPermission({
-                    body: body
                 })
             }
         }

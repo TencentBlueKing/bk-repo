@@ -29,6 +29,7 @@
 package com.tencent.bkrepo.auth.dao
 
 import com.tencent.bkrepo.auth.model.TRepoAuthConfig
+import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.springframework.data.mongodb.core.FindAndModifyOptions
@@ -49,13 +50,19 @@ class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
         )
     }
 
-    fun upsertProjectRepo(projectId: String, repoName: String, status: Boolean): String {
+    fun upsertProjectRepo(
+        projectId: String,
+        repoName: String,
+        accessControlMode: AccessControlMode,
+        officeDenyGroupSet: Set<String>
+    ): String {
         val query = Query.query(
             Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId)
                 .and(TRepoAuthConfig::repoName.name).`is`(repoName)
         )
         val options = FindAndModifyOptions().returnNew(true).upsert(true)
-        val update = Update().set(TRepoAuthConfig::accessControl.name, status)
+        val update = Update().set(TRepoAuthConfig::accessControlMode.name, accessControlMode)
+            .set(TRepoAuthConfig::officeDenyGroupSet.name, officeDenyGroupSet)
             .set(TRepoAuthConfig::lastModifiedBy.name, SecurityUtils.getUserId())
             .set(TRepoAuthConfig::lastModifiedDate.name, LocalDateTime.now())
         return this.findAndModify(query, update, options, TRepoAuthConfig::class.java)!!.id!!

@@ -30,5 +30,7 @@ package com.tencent.bkrepo.common.service.cluster.properties.commitedge
 data class CommitEdgeProperties(
     var repo: RepoProperties = RepoProperties(),
     var `package`: PackageProperties = PackageProperties(),
-    var auth: AuthProperties = AuthProperties()
+    var auth: AuthProperties = AuthProperties(),
+    var oplog: OpLogProperties = OpLogProperties(),
+    var replication: ReplicationProperties = ReplicationProperties()
 )

@@ -33,11 +33,17 @@
 package com.tencent.bkrepo.auth.service
 
 
+import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
 
 interface RepoModeService {
 
-    fun createOrUpdateConfig(projectId: String, repoName: String, status: Boolean): RepoModeStatus
+    fun createOrUpdateConfig(
+        projectId: String,
+        repoName: String,
+        accessControlMode: AccessControlMode?,
+        officeDenyGroupSet: Set<String>
+    ): RepoModeStatus?
 
     fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus
 

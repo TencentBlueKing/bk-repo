@@ -1,6 +1,7 @@
 import { login, userInfo, userInfoById } from '@/api/user'
-import { getToken, setToken, removeToken } from '@/utils/auth'
+import { getToken, setToken, removeToken, getBkUid, getTempUid } from '@/utils/auth'
 import { resetRouter } from '@/router'
+import { MODE_CONFIG, MODE_CONFIG_STAND_ALONE } from '@/utils/login'
 
 export const ROLE_ADMIN = 'ADMIN'
 export const ROLE_USER = 'USER'
@@ -50,27 +51,32 @@ const actions = {
     formData.append('uid', username)
     formData.append('token', password)
     return new Promise((resolve, reject) => {
-      login(formData).then(res => {
-        if (!res.data) {
-          reject(new Error('username or password is incorrect'))
-          return
-        }
-        const token = getToken()
-        commit('SET_TOKEN', token)
-        setToken(token)
+      const uid = getBkUid()
+      if (uid && MODE_CONFIG !== MODE_CONFIG_STAND_ALONE) {
         resolve()
-      }).catch(error => {
-        reject(error)
-      })
+      } else {
+        login(formData).then(res => {
+          if (!res.data) {
+            reject(new Error('username or password is incorrect'))
+            return
+          }
+          const token = getToken()
+          commit('SET_TOKEN', token)
+          setToken(token)
+          resolve()
+        }).catch(error => {
+          reject(error)
+        })
+      }
     })
   },
 
   // get user info
-  getInfo({ commit }) {
+  async getInfo({ commit }) {
+    const uid = getBkUid() || getTempUid()
+    const user = (uid && MODE_CONFIG !== MODE_CONFIG_STAND_ALONE) ? uid : (await getUser()).user
     return new Promise((resolve, reject) => {
-      userInfo().then(res => {
-        return userInfoById(res.data.userId)
-      }).then(response => {
+      userInfoById(user).then(response => {
         const { data } = response
         const { name, userId, admin } = data
         const roles = admin ? [ROLE_ADMIN] : [ROLE_USER]
@@ -80,6 +86,7 @@ const actions = {
         }
 
         const avatar = ''
+        localStorage.setItem('userName', name)
         commit('SET_USER_ID', userId)
         commit('SET_NAME', name)
         commit('SET_ADMIN', admin)
@@ -110,6 +117,15 @@ const actions = {
       resolve()
     })
   }
+}
+
+async function getUser() {
+  return new Promise((resolve, reject) => {
+    userInfo().then(res => {
+      const user = res.data.userId
+      resolve({ user })
+    })
+  })
 }
 
 export default {

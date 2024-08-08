@@ -34,6 +34,7 @@ package com.tencent.bkrepo.fs.server.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
@@ -113,11 +114,11 @@ class ClientService(
     suspend fun listClients(request: ClientListRequest): Page<ClientDetail> {
         val pageRequest = Pages.ofRequest(request.pageNumber, request.pageSize)
         val criteria = Criteria()
-        request.projectId?.let { criteria.and(TClient::projectId.name).isEqualTo(request.projectId) }
-        request.repoName?.let { criteria.and(TClient::repoName.name).isEqualTo(request.repoName) }
-        request.online?.let { criteria.and(TClient::online.name).isEqualTo(request.online) }
-        request.ip?.let { criteria.and(TClient::ip.name).isEqualTo(request.ip) }
-        request.version?.let { criteria.and(TClient::version.name).isEqualTo(request.version) }
+        request.projectId?.let { criteria.and(TClient::projectId.name).isEqualTo(it) }
+        request.repoName?.let { criteria.and(TClient::repoName.name).isEqualTo(it) }
+        request.online?.let { criteria.and(TClient::online.name).isEqualTo(it) }
+        request.ip?.let { criteria.and(TClient::ip.name).regex(convertToRegex(it)) }
+        request.version?.let { criteria.and(TClient::version.name).regex(convertToRegex(it)) }
         val query = Query(criteria)
         val count = clientRepository.count(query)
         val data = clientRepository.find(query.with(pageRequest))
@@ -277,6 +278,10 @@ class ClientService(
             os = client.os,
             arch = client.arch
         )
+    }
+
+    private fun convertToRegex(value: String): String {
+        return EscapeUtils.escapeRegexExceptWildcard(value).replace("*", ".*")
     }
 
     private fun TDailyClient.convert(): DailyClientDetail {

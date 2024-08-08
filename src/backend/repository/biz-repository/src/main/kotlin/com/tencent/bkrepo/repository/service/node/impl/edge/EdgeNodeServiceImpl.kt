@@ -27,13 +27,15 @@
 
 package com.tencent.bkrepo.repository.service.node.impl.edge
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils.ignoreException
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.nodeLevelNotFoundError
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils.repoLevelNotFoundError
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.fs.server.api.FsNodeClient
@@ -47,6 +49,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -86,7 +89,8 @@ class EdgeNodeServiceImpl(
     override val clusterProperties: ClusterProperties,
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
-    override val fsNodeClient: FsNodeClient
+    override val fsNodeClient: FsNodeClient,
+    val archiveClient: ArchiveClient,
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -100,10 +104,11 @@ class EdgeNodeServiceImpl(
     servicePermissionClient,
     routerControllerProperties,
     fsNodeClient,
-    clusterProperties
+    clusterProperties,
 ) {
     override fun computeSize(
-        artifact: ArtifactInfo, estimated: Boolean
+        artifact: ArtifactInfo,
+        estimated: Boolean,
     ): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact, estimated)
     }
@@ -125,7 +130,7 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = deleteRequest.projectId,
             repoName = deleteRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = repoLevelNotFoundError,
         ) {
             centerNodeClient.deleteNode(deleteRequest)
         }
@@ -137,7 +142,7 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = nodesDeleteRequest.projectId,
             repoName = nodesDeleteRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = repoLevelNotFoundError,
         ) {
             centerNodeClient.deleteNodes(nodesDeleteRequest)
         }
@@ -148,12 +153,20 @@ class EdgeNodeServiceImpl(
         return NodeDeleteSupport(this).countDeleteNodes(nodesDeleteRequest)
     }
 
+    override fun deleteByFullPathWithoutDecreaseVolume(
+        projectId: String, repoName: String, fullPath: String, operator: String
+    ) {
+        return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
+            projectId, repoName, fullPath, operator
+        )
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteByPath(
         projectId: String,
         repoName: String,
         fullPath: String,
-        operator: String
+        operator: String,
     ): NodeDeleteResult {
         return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
     }
@@ -163,7 +176,7 @@ class EdgeNodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPaths: List<String>,
-        operator: String
+        operator: String,
     ): NodeDeleteResult {
         return NodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
     }
@@ -173,9 +186,13 @@ class EdgeNodeServiceImpl(
         repoName: String,
         date: LocalDateTime,
         operator: String,
-        path: String
+        path: String,
     ): NodeDeleteResult {
-        ignoreException(projectId, repoName, listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND)) {
+        ignoreException(
+            projectId = projectId,
+            repoName = repoName,
+            messageCodes = repoLevelNotFoundError,
+        ) {
             centerNodeClient.deleteNodeLastModifiedBeforeDate(projectId, repoName, path, date, operator)
         }
         return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
@@ -186,12 +203,12 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = moveRequest.projectId,
             repoName = moveRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = nodeLevelNotFoundError,
         ) {
             moveRequest.destNodeFolder = nodeDao.findNode(
                 projectId = moveRequest.destProjectId ?: moveRequest.projectId,
                 repoName = moveRequest.destRepoName ?: moveRequest.srcRepoName,
-                fullPath = moveRequest.destPath ?: moveRequest.destFullPath
+                fullPath = moveRequest.destPath ?: moveRequest.destFullPath,
             )?.folder
             centerNodeClient.moveNode(moveRequest)
         }
@@ -203,12 +220,12 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = copyRequest.projectId,
             repoName = copyRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = nodeLevelNotFoundError,
         ) {
             copyRequest.destNodeFolder = nodeDao.findNode(
                 projectId = copyRequest.destProjectId ?: copyRequest.projectId,
                 repoName = copyRequest.destRepoName ?: copyRequest.srcRepoName,
-                fullPath = copyRequest.destPath ?: copyRequest.destFullPath
+                fullPath = copyRequest.destPath ?: copyRequest.destFullPath,
             )?.folder
             centerNodeClient.copyNode(copyRequest)
         }
@@ -220,7 +237,7 @@ class EdgeNodeServiceImpl(
         ignoreException(
             projectId = renameRequest.projectId,
             repoName = renameRequest.repoName,
-            messageCodes = listOf(ArtifactMessageCode.NODE_NOT_FOUND, ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            messageCodes = nodeLevelNotFoundError,
         ) {
             centerNodeClient.renameNode(renameRequest)
         }
@@ -237,7 +254,13 @@ class EdgeNodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
-        centerNodeClient.restoreNode(NodeRestoreRequest(artifact, nodeRestoreOption))
+        ignoreException(
+            projectId = artifact.projectId,
+            repoName = artifact.repoName,
+            messageCodes = nodeLevelNotFoundError,
+        ) {
+            centerNodeClient.restoreNode(NodeRestoreRequest(artifact, nodeRestoreOption))
+        }
         return NodeRestoreSupport(this).restoreNode(artifact, nodeRestoreOption)
     }
 
@@ -250,11 +273,15 @@ class EdgeNodeServiceImpl(
     }
 
     override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this).archiveNode(nodeArchiveRequest)
+        return NodeArchiveSupport(this, archiveClient).archiveNode(nodeArchiveRequest)
     }
 
     override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this).restoreNode(nodeArchiveRequest)
+        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeArchiveRequest)
+    }
+
+    override fun restoreNode(nodeRestoreRequest: NodeArchiveRestoreRequest): List<String> {
+        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeRestoreRequest)
     }
 
     override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {

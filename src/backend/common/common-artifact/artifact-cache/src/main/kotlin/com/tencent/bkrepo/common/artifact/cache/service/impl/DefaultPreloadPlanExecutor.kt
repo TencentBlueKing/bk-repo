@@ -102,19 +102,7 @@ class DefaultPreloadPlanExecutor(
             if (System.currentTimeMillis() - plan.executeTime > preloadProperties.planTimeout.toMillis()) {
                 throw RuntimeException("plan timeout[${plan.executeTime}], ${plan.artifactInfo()}")
             }
-            val cacheFile = Paths.get(credentials.cache.path, fileLocator.locate(plan.sha256), plan.sha256)
-            val cacheFileLock = Paths.get(credentials.cache.path, StringPool.TEMP, "${plan.sha256}.locked")
-            val throughput = if (cacheFile.existReal()) {
-                Files.setLastModifiedTime(cacheFile, FileTime.fromMillis(System.currentTimeMillis()))
-                logger.info("cache already exists, update LastModifiedTime, ${plan.artifactInfo()}")
-                null
-            } else if (cacheFileLock.existReal()) {
-                logger.info("cache file is loading, skip preload, ${plan.artifactInfo()}")
-                null
-            } else {
-                // 执行预加载
-                doLoad(plan.sha256, plan.size, credentials)
-            }
+            val throughput = load(plan, credentials)
             logger.info("preload success, ${plan.artifactInfo()}, throughput[$throughput]")
             listener?.onPreloadSuccess(plan)
         } catch (e: Exception) {
@@ -122,6 +110,27 @@ class DefaultPreloadPlanExecutor(
             logger.warn("preload failed, ${plan.artifactInfo()}", e)
         } finally {
             listener?.onPreloadFinished(plan)
+        }
+    }
+
+    private fun load(plan: ArtifactPreloadPlan, credentials: StorageCredentials): Throughput? {
+        if (preloadProperties.mock) {
+            logger.info("mock load cache, ${plan.artifactInfo()}")
+            return null
+        }
+
+        val cacheFile = Paths.get(credentials.cache.path, fileLocator.locate(plan.sha256), plan.sha256)
+        val cacheFileLock = Paths.get(credentials.cache.path, StringPool.TEMP, "${plan.sha256}.locked")
+        return if (cacheFile.existReal()) {
+            Files.setLastModifiedTime(cacheFile, FileTime.fromMillis(System.currentTimeMillis()))
+            logger.info("cache already exists, update LastModifiedTime, ${plan.artifactInfo()}")
+            null
+        } else if (cacheFileLock.existReal()) {
+            logger.info("cache file is loading, skip preload, ${plan.artifactInfo()}")
+            null
+        } else {
+            // 执行预加载
+            doLoad(plan.sha256, plan.size, credentials)
         }
     }
 

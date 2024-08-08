@@ -31,9 +31,13 @@
 
 package com.tencent.bkrepo.auth.pojo.authconfig
 
+import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
+
 data class RepoAuthStatusRequest(
-    val status: Boolean,
     val projectId: String,
-    val repoName: String
+    val repoName: String,
+    val accessControlMode: AccessControlMode?,
+    val officeDenyGroupSet: Set<String> = emptySet()
+
 )
 

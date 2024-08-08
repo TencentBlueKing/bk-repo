@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component
  * 构件事件消费者，用于实时同步
  * 对应binding name为artifactEvent-in-0
  */
-@Component("artifactEventReplication")
+@Component
 class ArtifactEventConsumer(
     private val replicaTaskService: ReplicaTaskService,
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor

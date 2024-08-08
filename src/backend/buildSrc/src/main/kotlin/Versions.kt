@@ -31,15 +31,13 @@ object Release {
 }
 
 object Versions {
-    const val DevopsBoot = "0.0.6"
-    const val Netty = "4.1.77.Final"
-    const val SpringCloudCircuitbreaker = "2.1.2"
+    const val DevopsBoot = "0.0.9"
     const val Jersey = "2.35"
     const val Jsoup = "1.17.2"
     const val Redline = "1.2.10"
     const val SkyWalkingApmToolkit = "8.10.0"
     const val Gson = "2.9.0"
-    const val ProtobufJava = "3.19.4"
+    const val ProtobufJava = "3.24.0"
     const val Guava = "31.1-jre"
     const val Shedlock = "4.12.0"
     const val JGit = "5.11.0.202103091610-r"
@@ -60,7 +58,7 @@ object Versions {
     const val DockerJava = "3.2.13"
     const val Mockk = "1.12.2"
     const val Swagger = "1.6.2"
-    const val SleuthOtel = "1.0.0-M13"
+    const val SleuthOtel = "1.1.4"
     const val KubernetesClient = "11.0.2"
     const val ReactiveFeign = "3.2.6"
     const val Jasypt = "3.0.5"
@@ -70,4 +68,7 @@ object Versions {
     const val TiKa = "2.9.1"
     const val FFmpegPlatform = "6.0-1.5.9"
     const val JavaCpp = "1.5.9"
+    const val Notice = "1.0.0"
+    const val SpringCloudFunction = "3.2.11"
+    const val Milvus = "2.4.1"
 }

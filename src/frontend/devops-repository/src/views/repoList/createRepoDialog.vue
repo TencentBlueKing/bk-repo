@@ -1,7 +1,7 @@
 <template>
     <canway-dialog
         v-model="show"
-        width="800"
+        width="900"
         height-num="603"
         :title="title"
         @cancel="cancel">
@@ -24,6 +24,7 @@
             </bk-form-item>
             <bk-form-item :label="$t('accessPermission')">
                 <card-radio-group
+                    class="permission-card"
                     v-model="available"
                     :list="availableList">
                 </card-radio-group>
@@ -42,39 +43,6 @@
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <template v-if="repoBaseInfo.type === 'generic' || repoBaseInfo.type === 'ddc'">
-                <bk-form-item v-for="type in genericInterceptorsList" :key="type"
-                    :label="$t(`${type}Download`)" :property="`${type}.enable`">
-                    <bk-radio-group v-model="repoBaseInfo[type].enable">
-                        <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
-                        <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
-                    </bk-radio-group>
-                    <template v-if="repoBaseInfo[type].enable && ['mobile', 'web'].includes(type)">
-                        <bk-form-item :label="$t('fileName')" :label-width="80" class="mt10"
-                            :property="`${type}.filename`" required error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].filename"></bk-input>
-                            <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('fileNameRule')"></i>
-                        </bk-form-item>
-                        <bk-form-item :label="$t('metadata')" :label-width="80"
-                            :property="`${type}.metadata`" required error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
-                            <a class="f12 ml5" href="https://docs.bkci.net/services/bkrepo/meta" target="__blank">{{ $t('viewMetadataDocument') }}</a>
-                        </bk-form-item>
-                    </template>
-                    <template v-if="repoBaseInfo[type].enable && type === 'ip_segment'">
-                        <bk-form-item :label="$t('IP')" :label-width="80" class="mt10"
-                            :property="`${type}.ipSegment`" :required="!repoBaseInfo[type].officeNetwork" error-display-type="normal">
-                            <bk-input class="w250 mr10" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
-                            <bk-checkbox v-model="repoBaseInfo[type].officeNetwork">{{ $t('office_networkDownload') }}</bk-checkbox>
-                            <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('office_networkDownloadTips')"></i>
-                        </bk-form-item>
-                        <bk-form-item :label="$t('whiteUser')" :label-width="80"
-                            :property="`${type}.whitelistUser`" error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
-                        </bk-form-item>
-                    </template>
-                </bk-form-item>
-            </template>
             <template v-if="repoBaseInfo.type === 'rpm'">
                 <bk-form-item :label="$t('enabledFileLists')">
                     <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
@@ -171,7 +139,8 @@
                 showIamDenyDialog: false,
                 showData: {},
                 title: this.$t('createRepository'),
-                rbacStatus: false
+                rbacStatus: false,
+                accessControl: ''
             }
         },
         computed: {
@@ -277,24 +246,44 @@
             available: {
                 get () {
                     if (this.repoBaseInfo.public) return 'public'
-                    if (this.repoBaseInfo.system) return 'system'
-                    return 'project'
+                    if (this.accessControl === 'DIR_CTRL') return 'folder'
+                    if (this.accessControl === 'STRICT') return 'strict'
+                    return 'default'
                 },
                 set (val) {
-                    this.repoBaseInfo.public = val === 'public'
-                    this.repoBaseInfo.system = val === 'system'
+                    if (val === 'public') {
+                        this.repoBaseInfo.public = true
+                        this.accessControl = null
+                    } else if (val === 'folder') {
+                        this.repoBaseInfo.public = false
+                        this.accessControl = 'DIR_CTRL'
+                    } else if (val === 'strict') {
+                        this.repoBaseInfo.public = false
+                        this.accessControl = 'STRICT'
+                    } else {
+                        this.repoBaseInfo.public = false
+                        this.accessControl = 'DEFAULT'
+                    }
                 }
             },
             availableList () {
-                return [
-                    { label: this.$t('openProjectLabel'), value: 'project', tip: this.$t('openProjectTip') },
-                    // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: this.$t('openPublicLabel'), value: 'public', tip: this.$t('openPublicTip') }
-                ]
+                if (this.repoBaseInfo.type === 'generic' || this.repoBaseInfo.type === 'ddc') {
+                    return [
+                        { label: this.$t('permissionTitle.default'), value: 'default', tip: this.$t('permissionTip.default') },
+                        { label: this.$t('permissionTitle.strict'), value: 'strict', tip: this.$t('permissionTip.strict') },
+                        { label: this.$t('permissionTitle.folder'), value: 'folder', tip: this.$t('permissionTip.folder') },
+                        { label: this.$t('permissionTitle.public'), value: 'public', tip: this.$t('permissionTip.public') }
+                    ]
+                } else {
+                    return [
+                        { label: this.$t('permissionTitle.default'), value: 'default', tip: this.$t('permissionTip.default') },
+                        { label: this.$t('permissionTitle.public'), value: 'public', tip: this.$t('permissionTip.public') }
+                    ]
+                }
             }
         },
         methods: {
-            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'getIamPermissionStatus']),
+            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'getIamPermissionStatus', 'createOrUpdateRootPermission']),
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
@@ -371,12 +360,7 @@
                 this.createRepo({
                     body: body
                 }).then(() => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: this.$t('create') + this.$t('space') + this.$t('repository') + this.$t('space') + this.$t('success')
-                    })
-                    this.cancel()
-                    this.$emit('refresh')
+                    this.saveRepoMode()
                 }).catch(err => {
                     if (err.status === 403) {
                         this.getPermissionUrl({
@@ -405,6 +389,30 @@
                     }
                 }).finally(() => {
                     this.loading = false
+                })
+            },
+            saveRepoMode () {
+                const body = {
+                    projectId: this.projectId,
+                    repoName: this.repoBaseInfo.name,
+                    accessControlMode: this.accessControl
+                }
+                this.createOrUpdateRootPermission({
+                    body: body
+                }).then(() => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: this.$t('create') + this.$t('space') + this.$t('repository') + this.$t('space') + this.$t('success')
+                    })
+                    this.cancel()
+                    this.$emit('refresh')
+                }).catch(() => {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: this.$t('create') + this.$t('space') + this.$t('repository') + this.$t('space') + this.$t('abnormal')
+                    })
+                    this.cancel()
+                    this.$emit('refresh')
                 })
             }
         }
@@ -438,6 +446,27 @@
             height: auto;
         }
         width: 250px;
+    }
+    .permission-card {
+        ::v-deep .bk-form-radio-button {
+            margin-top: 10px;
+            .card-radio {
+                min-width: 180px;
+                max-width: 315px;
+                height: 90px;
+                .card-tip {
+                    word-break: break-all;
+                    white-space: normal;
+                    width: 300px;
+                }
+            }
+            .bk-radio-button-text {
+                height: auto;
+                line-height: initial;
+                padding: 0;
+                border: 0 none;
+            }
+        }
     }
 }
 </style>

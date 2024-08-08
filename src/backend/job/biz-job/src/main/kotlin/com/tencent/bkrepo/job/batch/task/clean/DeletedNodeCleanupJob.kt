@@ -49,6 +49,7 @@ import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -73,7 +74,8 @@ class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val clusterProperties: ClusterProperties,
     private val migrateRepoStorageService: MigrateRepoStorageService,
-    private val storageCredentialsClient: StorageCredentialsClient
+    private val storageCredentialsClient: StorageCredentialsClient,
+    private val separationTaskService: SeparationTaskService,
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
 
     data class Node(
@@ -138,6 +140,10 @@ class DeletedNodeCleanupJob(
             logger.info("repo[${row.projectId}/${row.repoName}] storage was migrating, skip clean node[${row.sha256}]")
             return
         }
+        if (separationTaskService.repoSeparationCheck(row.projectId, row.repoName)) {
+            logger.info("repo[${row.projectId}/${row.repoName}] was doing separation, skip clean node[${row.sha256}]")
+            return
+        }
 
         if (row.folder) {
             cleanupFolderNode(context, row.id, collectionName)
@@ -168,7 +174,11 @@ class DeletedNodeCleanupJob(
             if (node.sha256.isNullOrEmpty() || node.sha256 == FAKE_SHA256) return
             try {
                 val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
-                if (!decrementFileReferences(node.sha256, credentialsKey)) {
+                val deletedDays = node.deleted?.let { Duration.between(it, LocalDateTime.now()).toDays() } ?: 0
+                val keepRefLostNode = deletedDays < properties.keepRefLostNodeDays
+                // 需要保留Node用于排查问题时不补偿创建引用，避免引用创建后node记录可以被正常删除
+                val createIfNotExists = !keepRefLostNode
+                if (!decrementFileReferences(node.sha256, credentialsKey, createIfNotExists)) {
                     logger.warn("Clean up node fail collection[$collectionName], node[$node]")
                     return
                 }
@@ -185,7 +195,7 @@ class DeletedNodeCleanupJob(
         context.fileCount.addAndGet(result?.deletedCount ?: 0)
     }
 
-    private fun decrementFileReferences(sha256: String, credentialsKey: String?): Boolean {
+    private fun decrementFileReferences(sha256: String, credentialsKey: String?, createIfNotExists: Boolean): Boolean {
         val collectionName = COLLECTION_FILE_REFERENCE + MongoShardingUtils.shardingSequence(sha256, SHARDING_COUNT)
         val criteria = buildCriteria(sha256, credentialsKey)
         criteria.and(FileReference::count.name).gt(0)
@@ -201,6 +211,13 @@ class DeletedNodeCleanupJob(
         val newQuery = Query(buildCriteria(sha256, credentialsKey))
         mongoTemplate.findOne<FileReference>(newQuery, collectionName) ?: run {
             logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]")
+            if (createIfNotExists) {
+                /* 早期FileReferenceCleanupJob在最终存储不存在时，不会判断对应的node是否存在而是直接删除引用，
+                 * 导致出现node存在而引用不存在的情况，此处为这些引用缺失的数据补偿创建引用以清理对应的node及存储
+                 */
+                mongoTemplate.upsert(newQuery, Update().inc(FileReference::count.name, 0), collectionName)
+                return true
+            }
             return false
         }
 
@@ -253,7 +270,9 @@ class DeletedNodeCleanupJob(
             keySet.add(defaultCredentials.key)
         }
         keySet.forEach {
-            decrementFileReferences(sha256, it)
+            // 由于不确定node在哪个存储，此处无法确定为丢失引用的node创建哪个存储的引用，因此引用丢失时不补偿创建引用
+            // StorageReconcileJob中会为缺少引用的存储文件补偿创建引用
+            decrementFileReferences(sha256, it, false)
         }
     }
 

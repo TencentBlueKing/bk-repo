@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
@@ -44,6 +45,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -74,7 +76,8 @@ class NodeServiceImpl(
     override val servicePermissionClient: ServicePermissionClient,
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
-    override val fsNodeClient: FsNodeClient
+    override val fsNodeClient: FsNodeClient,
+    private val archiveClient: ArchiveClient,
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -120,6 +123,14 @@ class NodeServiceImpl(
 
     override fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long {
         return NodeDeleteSupport(this).countDeleteNodes(nodesDeleteRequest)
+    }
+
+    override fun deleteByFullPathWithoutDecreaseVolume(
+        projectId: String, repoName: String, fullPath: String, operator: String
+    ) {
+        return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
+            projectId, repoName, fullPath, operator
+        )
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -193,11 +204,15 @@ class NodeServiceImpl(
     }
 
     override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this).archiveNode(nodeArchiveRequest)
+        return NodeArchiveSupport(this, archiveClient).archiveNode(nodeArchiveRequest)
     }
 
     override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this).restoreNode(nodeArchiveRequest)
+        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeArchiveRequest)
+    }
+
+    override fun restoreNode(nodeRestoreRequest: NodeArchiveRestoreRequest): List<String> {
+        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeRestoreRequest)
     }
 
     override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {

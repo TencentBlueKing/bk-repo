@@ -77,9 +77,10 @@ class ProjectDailyAvgMetricsJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     private fun doStoreProjectDailyAvgRecord(currentDate: LocalDateTime) {
-        val yesterday = currentDate.minusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-        logger.info("start to store avg record for $yesterday")
-        val criteria = Criteria.where(ProjectMetricsDailyRecord::createdDay.name).isEqualTo(yesterday)
+        val yesterday = currentDate.minusDays(1)
+        val yesterdayStr = yesterday.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+        logger.info("start to store avg record for $yesterdayStr")
+        val criteria = Criteria.where(ProjectMetricsDailyRecord::createdDay.name).isEqualTo(yesterdayStr)
         val query = Query(criteria)
         val data = mongoTemplate.findDistinct(
             query, ProjectMetricsDailyRecord::projectId.name,
@@ -101,25 +102,25 @@ class ProjectDailyAvgMetricsJob(
                 projectId = it,
                 capSize = capSize,
                 count = count,
-                currentDate = currentDate
+                yesterday = yesterday
             )
         }
     }
 
     private fun handleProjectDailyAvgRecord(
-        projectId: String, capSize: Long, count: Int, currentDate: LocalDateTime
+        projectId: String, capSize: Long, count: Int, yesterday: LocalDateTime
     ) {
         val query = Query(where(ProjectInfo::name).isEqualTo(projectId))
         val projectInfo = mongoTemplate.find(query, ProjectInfo::class.java, COLLECTION_NAME_PROJECT)
             .firstOrNull() ?: return
         val usage = (capSize.toDouble() / (count * 1024 * 1024 * 1024L))
             .toBigDecimal().setScale(2, BigDecimal.ROUND_HALF_UP).toDouble()
-        storeDailyAvgRecord(projectInfo, currentDate, usage)
+        storeDailyAvgRecord(projectInfo, yesterday, usage)
     }
 
     private fun storeDailyAvgRecord(
         projectInfo: ProjectInfo,
-        currentDate: LocalDateTime,
+        yesterday: LocalDateTime,
         usage: Double,
     ) {
         val productId = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_PRODUCT_ID }?.value as? Int
@@ -129,13 +130,13 @@ class ProjectDailyAvgMetricsJob(
             ?: false
         val dailyRecord = TProjectMetricsDailyAvgRecord(
             projectId = projectInfo.name,
-            costDate = convertToCostDate(currentDate),
+            costDate = convertToCostDate(yesterday),
             name = projectInfo.displayName,
             usage = usage,
             bgName = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_BG_NAME }?.value as? String
                 ?: StringPool.EMPTY,
             flag = covertToFlag(projectInfo.name, bgId, productId, enabled),
-            costDateDay = currentDate.minusDays(1).format(
+            costDateDay = yesterday.format(
                 DateTimeFormatter.ofPattern("yyyyMMdd")
             ),
         )
@@ -176,14 +177,14 @@ class ProjectDailyAvgMetricsJob(
         }
     }
 
-    private fun convertToCostDate(currentDate: LocalDateTime): String {
-        val day = currentDate.minusDays(1).dayOfMonth
+    private fun convertToCostDate(yesterday: LocalDateTime): String {
+        val day = yesterday.dayOfMonth
         val minusMonth = if (day >= properties.monthStartDay) {
             -1
         } else {
             0
         }
-        return currentDate.minusMonths(minusMonth.toLong()).format(
+        return yesterday.minusMonths(minusMonth.toLong()).format(
             DateTimeFormatter.ofPattern("yyyyMM")
         )
     }

@@ -44,7 +44,7 @@ data class ArtifactPreloadStrategyCreateRequest(
     @ApiModelProperty("限制只对最近一段时间内创建的制品执行预加载")
     val recentSeconds: Long,
     @ApiModelProperty("预加载执行时间")
-    val preloadCron: String,
+    val preloadCron: String? = null,
     @ApiModelProperty("策略类型")
     val type: String = PreloadStrategyType.CUSTOM.name,
     @ApiModelProperty("操作人")

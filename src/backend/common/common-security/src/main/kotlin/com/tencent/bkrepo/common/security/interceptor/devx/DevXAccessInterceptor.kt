@@ -32,7 +32,12 @@ import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
+import com.tencent.bkrepo.common.api.constant.HEADER_DEVX_ACCESS_FROM
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.IpUtils
@@ -48,6 +53,8 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -56,10 +63,24 @@ import javax.servlet.http.HttpServletResponse
  * */
 open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : HandlerInterceptor {
     private val httpClient = OkHttpClient.Builder().build()
+    private val executor by lazy {
+        Executors.newFixedThreadPool(
+            Runtime.getRuntime().availableProcessors(),
+            ThreadFactoryBuilder().setNameFormat("devx-access-%d").build(),
+        )
+    }
     private val projectIpsCache: LoadingCache<String, Set<String>> = CacheBuilder.newBuilder()
         .maximumSize(devXProperties.cacheSize)
-        .expireAfterWrite(devXProperties.cacheExpireTime)
-        .build(CacheLoader.from { key -> listIpFromProject(key) + listCvmIpFromProject(key) + listIpFromProps(key) })
+        .refreshAfterWrite(devXProperties.cacheExpireTime)
+        .build(object : CacheLoader<String, Set<String>>() {
+            override fun load(key: String): Set<String> {
+                return listIpFromProject(key) + listCvmIpFromProject(key) + listIpFromProps(key)
+            }
+
+            override fun reload(key: String, oldValue: Set<String>): ListenableFuture<Set<String>> {
+                return Futures.submit(Callable { load(key) }, executor)
+            }
+        })
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val user = SecurityUtils.getUserId()
@@ -85,6 +106,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
             }
 
             devXProperties.srcHeaderValues[1] -> {
+                request.setAttribute(HEADER_DEVX_ACCESS_FROM, DEVX_ACCESS_FROM_OFFICE)
                 devXProperties.restrictedUserPrefix.forEach { checkUserSuffixAndPrefix(user, prefix = it) }
                 devXProperties.restrictedUserSuffix.forEach { checkUserSuffixAndPrefix(user, suffix = it) }
                 true

@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
@@ -47,6 +48,14 @@ object ClusterUtils {
 
     private val logger = LoggerFactory.getLogger(ClusterUtils::class.java)
     private val matcher = AntPathMatcher()
+
+    val nodeLevelNotFoundError = listOf(
+        ArtifactMessageCode.NODE_NOT_FOUND,
+        ArtifactMessageCode.REPOSITORY_NOT_FOUND,
+        ArtifactMessageCode.PROJECT_NOT_FOUND
+    )
+
+    val repoLevelNotFoundError = listOf(ArtifactMessageCode.REPOSITORY_NOT_FOUND, ArtifactMessageCode.PROJECT_NOT_FOUND)
 
     /**
      * 检查请求来源cluster是否是资源的唯一拥有者

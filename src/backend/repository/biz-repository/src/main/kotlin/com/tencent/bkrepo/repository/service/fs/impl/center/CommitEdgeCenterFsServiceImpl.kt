@@ -47,7 +47,7 @@ class CommitEdgeCenterFsServiceImpl(
 ) {
     override fun buildTNode(request: NodeCreateRequest): TNode {
         val tNode = super.buildTNode(request)
-        tNode.clusterNames = setOf(SecurityUtils.getClusterName() ?: clusterProperties.self.name!!)
+        tNode.clusterNames = SecurityUtils.getClusterName()?.let { setOf(it) }
         return tNode
     }
 }

@@ -4,13 +4,14 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.exception.RepoMigratingException
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
-import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
@@ -18,6 +19,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
+import java.time.LocalDateTime
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
@@ -28,10 +30,12 @@ import java.util.function.Consumer
 class NodeCommonUtils(
     mongoTemplate: MongoTemplate,
     migrateRepoStorageService: MigrateRepoStorageService,
+    separationTaskService: SeparationTaskService
 ) {
     init {
         Companion.mongoTemplate = mongoTemplate
         Companion.migrateRepoStorageService = migrateRepoStorageService
+        Companion.separationTaskService = separationTaskService
     }
 
     data class Node(
@@ -48,7 +52,10 @@ class NodeCommonUtils(
     companion object {
         lateinit var mongoTemplate: MongoTemplate
         lateinit var migrateRepoStorageService: MigrateRepoStorageService
+        lateinit var separationTaskService: SeparationTaskService
         private const val COLLECTION_NAME_PREFIX = "node_"
+        private const val SEPARATION_COLLECTION_NAME_PREFIX = "separation_node_"
+        private const val FILE_REFERENCE_COLLECTION_NAME_PREFIX = "file_reference_"
         private val workPool = ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             Runtime.getRuntime().availableProcessors(),
@@ -92,6 +99,30 @@ class NodeCommonUtils(
                     return true
                 }
             }
+            // 加上冷表检查
+            return separationNodeExist(query, storageCredentialsKey)
+        }
+
+        private fun separationNodeExist(query: Query, storageCredentialsKey: String?): Boolean {
+            val separationDates = separationTaskService.findDistinctSeparationDate()
+            for (date in separationDates) {
+                val collection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
+                    MonthRangeShardingUtils.shardingSequenceFor(date, 1)
+                )
+                val find = mongoTemplate.find(query, Node::class.java, collection)
+                    .distinctBy { it.projectId + it.repoName }
+                    .any {
+                        // node正在迁移时无法判断是否存在于存储[storageCredentialsKey]上
+                        if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
+                            throw RepoMigratingException("repo[${it.projectId}/${it.repoName}] was migrating")
+                        }
+                        val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
+                        repo.storageCredentials?.key == storageCredentialsKey
+                    }
+                if (find) {
+                    return true
+                }
+            }
             return false
         }
 
@@ -104,6 +135,36 @@ class NodeCommonUtils(
             for (i in 0 until SHARDING_COUNT) {
                 val collection = COLLECTION_NAME_PREFIX.plus(i)
                 futures.add(workPool.submit { findByCollection(query, batchSize, collection, consumer) })
+            }
+            futures.forEach { it.get() }
+        }
+
+        fun forEachRefByCollectionParallel(
+            query: Query,
+            batchSize: Int = BATCH_SIZE,
+            consumer: Consumer<Map<String, Any?>>,
+        ) {
+            val futures = mutableListOf<Future<*>>()
+            for (i in 0 until SHARDING_COUNT) {
+                val collection = FILE_REFERENCE_COLLECTION_NAME_PREFIX.plus(i)
+                futures.add(workPool.submit { findByCollection(query, batchSize, collection, consumer) })
+            }
+            futures.forEach { it.get() }
+        }
+
+        fun forEachColdNodeByCollectionParallel(
+            query: Query,
+            batchSize: Int = BATCH_SIZE,
+            consumer: Consumer<Map<String, Any?>>,
+        ) {
+            val futures = mutableListOf<Future<*>>()
+            val separationDates = separationTaskService.findDistinctSeparationDate()
+            for (date in separationDates) {
+                val collection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
+                    MonthRangeShardingUtils.shardingSequenceFor(date, 1)
+                )
+                futures.add(workPool.submit { findByCollection(query, batchSize, collection, consumer) })
+
             }
             futures.forEach { it.get() }
         }

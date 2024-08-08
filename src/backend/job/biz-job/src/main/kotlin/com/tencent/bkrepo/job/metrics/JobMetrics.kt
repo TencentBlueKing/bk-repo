@@ -53,10 +53,11 @@ import org.springframework.stereotype.Component
 @Component
 class JobMetrics(
     val threadPoolTaskExecutor: BlockThreadPoolTaskExecutorDecorator,
-    private val registry: MeterRegistry
 ) : MeterBinder {
+    private lateinit var registry: MeterRegistry
 
     override fun bindTo(registry: MeterRegistry) {
+        this.registry = registry
         Gauge.builder(JOB_ASYNC_TASK_ACTIVE_COUNT, threadPoolTaskExecutor) { it.activeCount().toDouble() }
             .description(JOB_ASYNC_TASK_ACTIVE_COUNT_DESC)
             .register(registry)

@@ -231,8 +231,20 @@
     "blueKingPermission": "蓝鲸权限校验",
     "exist": "已存在",
     "createRepository": "创建仓库",
-    "openProjectLabel": "项目内公开",
-    "openProjectTip": "项目内成员可以使用",
+    "permissionTitle": {
+        "default": "默认",
+        "strict": "严格模式",
+        "folder": "指定目录控制模式",
+        "public": "公开模式(请谨慎使用)",
+        "pipeline": "流水线内联模式"
+    },
+    "permissionTip": {
+        "default": "项目下的成员均可上传/下载",
+        "strict": "按一级目录管理权限，仅开通权限的用户可以上传/下载",
+        "folder": "仅指定一级目录进行严格鉴权，其余的项目成员均可访问",
+        "public": "不鉴权，任意终端均可下载",
+        "pipeline": "和流水线权限对齐，仅有此权限才能上传/下载/分享制品"
+    },
     "dockerRepoTip": "docker仓库名称不支持大写英文字母",
     "openPublicLabel": "可匿名下载",
     "openPublicTip": "不鉴权，任意终端都可下载",
@@ -872,7 +884,10 @@
     "bkciUserGroup":"蓝盾用户组",
     "userSource":"用户来源",
     "bkci": "蓝盾",
-    "rootDirectoryPermission": "访问控制：",
+    "rootDirectoryPermissionTitle": "访问控制",
+    "rootDirectoryPermission": "项目内访问控制",
     "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权",
-    "errMsg": "错误信息"
+    "errMsg": "错误信息",
+    "blackUserList": "办公网访问黑名单",
+    "controlConfigPlaceholder": "可选择多个用户组"
 }

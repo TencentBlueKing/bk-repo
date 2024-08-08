@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
+import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.config.properties.ActiveProjectEmptyFolderCleanupJobProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -45,7 +47,7 @@ import java.time.Duration
 @Component
 @EnableConfigurationProperties(ActiveProjectEmptyFolderCleanupJobProperties::class)
 class ActiveProjectEmptyFolderCleanupJob(
-    private val properties: ActiveProjectEmptyFolderCleanupJobProperties,
+    val properties: ActiveProjectEmptyFolderCleanupJobProperties,
     executor: ThreadPoolTaskExecutor,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
@@ -57,6 +59,15 @@ class ActiveProjectEmptyFolderCleanupJob(
         require(jobContext is EmptyFolderCleanupJobContext)
         doStatStart(jobContext, jobContext.activeProjects.keys)
         logger.info("empty folder cleanup job for active projects finished")
+    }
+
+
+    override fun beforeRunProject(projectId: String) {
+        if (properties.userMemory) return
+        // 每次任务启动前要将redis上对应的key清理， 避免干扰
+        val key = KEY_PREFIX + StringPool.COLON +
+            FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
+        emptyFolderCleanup.removeRedisKey(key)
     }
 
     override fun runRow(row: StatNode, context: JobContext) {
@@ -71,14 +82,20 @@ class ActiveProjectEmptyFolderCleanupJob(
                 folder = row.folder,
                 size = row.size
             )
-            emptyFolderCleanup.collectEmptyFolder(node, context)
+            emptyFolderCleanup.collectEmptyFolderWithMemory(
+                row = node,
+                context = context,
+                keyPrefix = KEY_PREFIX,
+                useMemory = properties.userMemory,
+                cacheNumLimit = properties.cacheNumLimit
+            )
         } catch (e: Exception) {
             logger.error("run empty folder clean for Node $row failed, ${e.message}")
         }
     }
 
     override fun getLockAtMostFor(): Duration {
-        return Duration.ofDays(1)
+        return Duration.ofDays(14)
     }
 
     override fun createJobContext(): EmptyFolderCleanupJobContext {
@@ -94,16 +111,39 @@ class ActiveProjectEmptyFolderCleanupJob(
     override fun onRunProjectFinished(collection: String, projectId: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         logger.info("will filter empty folder in project $projectId")
-        emptyFolderCleanup.emptyFolderHandler(
-            collection = collection,
-            context = context,
-            deletedEmptyFolder = properties.deletedEmptyFolder,
-            projectId = projectId,
-            deleteFolderRepos = properties.deleteFolderRepos
-        )
+
+        if (!properties.userMemory) {
+            emptyFolderCleanup.collectEmptyFolderWithRedis(
+                context = context,
+                force = true,
+                keyPrefix = KEY_PREFIX,
+                collectionName = null,
+                projectId = projectId,
+                cacheNumLimit = properties.cacheNumLimit
+            )
+        }
+        if (properties.userMemory) {
+            emptyFolderCleanup.emptyFolderHandlerWithMemory(
+                collection = collection,
+                context = context,
+                deletedEmptyFolder = properties.deletedEmptyFolder,
+                projectId = projectId,
+                deleteFolderRepos = properties.deleteFolderRepos
+            )
+        } else {
+            emptyFolderCleanup.emptyFolderHandlerWithRedis(
+                collection = collection,
+                keyPrefix = KEY_PREFIX,
+                context = context,
+                deletedEmptyFolder = properties.deletedEmptyFolder,
+                projectId = projectId,
+                deleteFolderRepos = properties.deleteFolderRepos
+            )
+        }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveProjectEmptyFolderCleanupJob::class.java)
+        private const val KEY_PREFIX = "activeEmptyFolder"
     }
 }

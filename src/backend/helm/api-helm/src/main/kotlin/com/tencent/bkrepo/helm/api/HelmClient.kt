@@ -66,6 +66,15 @@ interface HelmClient {
         @PathVariable repoName: String
     ): Response<Void>
 
+    @ApiOperation("当仓库有版本replication时，刷新index文件")
+    @PostMapping("/{projectId}/{repoName}/replication")
+    fun refreshIndexForReplication(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageName: String,
+        @RequestParam packageKey: String,
+        @RequestParam packageVersion: String,
+    ): Response<Void>
 
     @ApiOperation("删除仓库下的包版本")
     @DeleteMapping("version/delete/{projectId}/{repoName}")

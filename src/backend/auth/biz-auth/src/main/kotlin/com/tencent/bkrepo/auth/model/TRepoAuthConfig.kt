@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.model
 
+import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -39,13 +40,15 @@ import java.time.LocalDateTime
 @Document("repo_auth_mode")
 @CompoundIndexes(
     CompoundIndex(name = "repo_idx", def = "{'projectId': 1, 'repoName': 1}", background = true, unique = true),
-    CompoundIndex(name = "access_ctrl_idx", def = "{'accessControl': 1}", background = true)
+    CompoundIndex(name = "access_ctrl_mode_idx", def = "{'accessControlMode': 1}", background = true)
 )
 data class TRepoAuthConfig(
     var id: String? = null,
     var projectId: String,
     var repoName: String,
-    var accessControl: Boolean,
+    var accessControl: Boolean?,
+    var accessControlMode: AccessControlMode?,
+    var officeDenyGroupSet: Set<String>?,
     var lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime
 )
