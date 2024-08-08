@@ -104,7 +104,6 @@ open class BkIamV3PermissionServiceImpl(
     fun checkBkIamV3Permission(request: CheckPermissionRequest): Boolean {
         with(request) {
             if (projectId == null) return false
-            if (!projectEnabled) return false
             val resourceId = bkiamV3Service.getResourceId(
                 resourceType, projectId, repoName, path
             ) ?: StringPool.EMPTY

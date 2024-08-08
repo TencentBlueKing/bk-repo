@@ -169,7 +169,6 @@ class DevopsPermissionServiceImpl constructor(
             val user = getUserInfo(uid) ?: return false
             // 系统管理员用户
             if (user.admin) return true
-            if (!projectEnabled) return false
 
             // 用户不为系统管理员，必须为项目下权限
             if (projectId == null) return false

@@ -110,13 +110,12 @@ open class PermissionManager(
         projectId: String,
         userId: String = SecurityUtils.getUserId()
     ) {
-        val projectEnabled = queryProjectEnabledStatus(projectId)
+        projectEnabledCheck(projectId, userId)
         checkPermission(
             type = ResourceType.PROJECT,
             action = action,
             projectId = projectId,
             userId = userId,
-            projectEnabled = projectEnabled
         )
     }
 
@@ -136,10 +135,11 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
-        val projectEnabled = queryProjectEnabledStatus(projectId)
+        if (serviceRequestCheck()) return
+        projectEnabledCheck(projectId, userId)
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicOrSystemRepoCheck(
-                action, repoInfo, public, userId, projectEnabled
+                action, repoInfo, public, userId
             )) {
             return
         }
@@ -150,7 +150,6 @@ open class PermissionManager(
             repoName = repoName,
             anonymous = anonymous,
             userId = userId,
-            projectEnabled = projectEnabled
         )
     }
 
@@ -172,10 +171,11 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId()
     ) {
-        val projectEnabled = queryProjectEnabledStatus(projectId)
+        if (serviceRequestCheck()) return
+        projectEnabledCheck(projectId, userId)
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicOrSystemRepoCheck(
-                action, repoInfo, public, userId, projectEnabled
+                action, repoInfo, public, userId
             )) {
             return
         }
@@ -192,7 +192,6 @@ open class PermissionManager(
             paths = path.toList(),
             anonymous = anonymous,
             userId = userId,
-            projectEnabled = projectEnabled
         )
     }
 
@@ -231,12 +230,11 @@ open class PermissionManager(
         repoInfo: RepositoryInfo,
         public: Boolean? = null,
         userId: String = SecurityUtils.getUserId(),
-        projectEnabled: Boolean
     ): Boolean {
-        if (isReadPublicRepo(action, repoInfo, public) && projectEnabled) {
+        if (isReadPublicRepo(action, repoInfo, public)) {
             return true
         }
-        if (allowReadSystemRepo(action, repoInfo, userId, projectEnabled)) {
+        if (allowReadSystemRepo(action, repoInfo, userId)) {
             return true
         }
         return false
@@ -265,14 +263,7 @@ open class PermissionManager(
         action: PermissionAction,
         repoInfo: RepositoryInfo,
         userId: String = SecurityUtils.getUserId(),
-        projectEnabled: Boolean
     ): Boolean {
-        if (SecurityUtils.isServiceRequest()) {
-            return true
-        }
-        if (!projectEnabled) {
-            return false
-        }
         if (action != PermissionAction.READ && action != PermissionAction.DOWNLOAD) {
             return false
         }
@@ -293,7 +284,11 @@ open class PermissionManager(
      * 查询项目信息
      */
     open fun queryProjectEnabledStatus(projectId: String): Boolean {
-        return projectClient.isProjectEnabled(projectId).data!!
+        return try {
+            projectClient.isProjectEnabled(projectId).data!!
+        } catch (e: Exception) {
+            true
+        }
     }
 
     /**
@@ -301,6 +296,21 @@ open class PermissionManager(
      */
     open fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
         return repositoryClient.getRepoInfo(projectId, repoName).data ?: throw RepoNotFoundException(repoName)
+    }
+
+    private fun serviceRequestCheck(): Boolean {
+        return SecurityUtils.isServiceRequest()
+    }
+
+    private fun projectEnabledCheck(
+        projectId: String,
+        userId: String = SecurityUtils.getUserId(),
+    ) {
+        val isAdmin = isAdminUser(userId)
+        val projectEnabled = queryProjectEnabledStatus(projectId)
+        if (!isAdmin && !projectEnabled) {
+            throw PermissionException("Project enabled status is false!")
+        }
     }
 
     /**
@@ -314,7 +324,6 @@ open class PermissionManager(
         paths: List<String>? = null,
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId(),
-        projectEnabled: Boolean = true
     ) {
         // 判断是否开启认证
         if (!httpAuthProperties.enabled) {
@@ -323,7 +332,7 @@ open class PermissionManager(
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 
-        if (userId == ANONYMOUS_USER && platformId != null && anonymous && projectEnabled) {
+        if (userId == ANONYMOUS_USER && platformId != null && anonymous) {
             return
         }
 
@@ -349,7 +358,6 @@ open class PermissionManager(
             projectId = projectId,
             repoName = repoName,
             path = paths?.first(),
-            projectEnabled = projectEnabled
         )
         //  devx 是否需要auth 校验仓库维度的访问黑名单
         val devxAccessFrom = HttpContextHolder.getRequest().getAttribute(HEADER_DEVX_ACCESS_FROM)
