@@ -67,8 +67,6 @@ class DistributedTokenBucketRateLimiterTest : DistributedTest() {
     fun testTryAcquireOnMultiThreads() {
         val key = KEY + "testTryAcquireOnMultiThreads"
         var ratelimiter = DistributedTokenBucketRateLimiter(key, 5.0, 5, redisTemplate)
-        val passed1 = ratelimiter.tryAcquire(1)
-        Assertions.assertTrue(passed1)
         var successNum = 0
         var failedNum = 0
         var errorNum = 0

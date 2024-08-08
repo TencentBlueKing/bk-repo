@@ -25,7 +25,6 @@ class RandomAccessArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageCredentials: StorageCredentials,
     storageProperties: StorageProperties,
-    private val requestLimitCheckService: RequestLimitCheckService
 ) : ArtifactFile {
 
     /**
@@ -47,7 +46,6 @@ class RandomAccessArtifactFile(
         val path = storageCredentials.upload.location.toPath()
         receiver = ArtifactDataReceiver(
             storageProperties.receive, storageProperties.monitor, path,
-            requestLimitCheckService = requestLimitCheckService
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {

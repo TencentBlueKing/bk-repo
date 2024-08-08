@@ -62,7 +62,7 @@ class CommonRateLimitInputStream(
     }
 
     private fun tryAcquire(bytes: Int) {
-        if (rangeLength == null) {
+        if (rangeLength == null || rangeLength <= 0) {
             acquire(bytes.toLong())
         } else {
             // 避免频繁申请，增加耗时，降低申请频率， 每次申请一定数量

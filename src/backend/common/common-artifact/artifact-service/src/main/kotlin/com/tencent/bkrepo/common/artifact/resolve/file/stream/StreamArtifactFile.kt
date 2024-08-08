@@ -49,7 +49,7 @@ open class StreamArtifactFile(
     private val storageProperties: StorageProperties,
     private val storageCredentials: StorageCredentials,
     private val contentLength: Long? = null,
-    private val requestLimitCheckService: RequestLimitCheckService
+    private val requestLimitCheckService: RequestLimitCheckService? = null
 ) : ArtifactFile {
 
     /**
@@ -86,7 +86,7 @@ open class StreamArtifactFile(
             storageProperties.monitor,
             receivePath,
             randomPath = !useLocalPath,
-            requestLimitCheckService = requestLimitCheckService
+            requestLimitCheckService = requestLimitCheckService,
         )
         if (!storageProperties.receive.resolveLazily) {
             init()

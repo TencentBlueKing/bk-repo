@@ -68,6 +68,7 @@ abstract class AbstractBandwidthRateLimiterService(
         rangeLength: Long? = null,
     ): CommonRateLimitInputStream? {
         val resLimitInfo = getBandwidthRateLimit(request) ?: return null
+        logger.info("will check the bandwidth with length $rangeLength of ${resLimitInfo.resource}")
         circuitBreakerCheck(resLimitInfo.resourceLimit, circuitBreakerPerSecond)
         val rateLimiter = getAlgorithmOfRateLimiter(resLimitInfo.resource, resLimitInfo.resourceLimit)
         return CommonRateLimitInputStream(

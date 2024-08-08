@@ -48,7 +48,6 @@ class ChunkedArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageProperties: StorageProperties,
     private val storageCredentials: StorageCredentials,
-    private val requestLimitCheckService: RequestLimitCheckService
 ) : ArtifactFile {
 
     /**
@@ -73,7 +72,6 @@ class ChunkedArtifactFile(
             storageProperties.monitor,
             path,
             randomPath = true,
-            requestLimitCheckService = requestLimitCheckService
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {

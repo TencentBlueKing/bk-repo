@@ -78,8 +78,9 @@ class ArtifactDataReceiver(
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
     private val originPath: Path = path,
-    private val requestLimitCheckService: RequestLimitCheckService? = null
-) : StorageHealthMonitor.Observer, AutoCloseable {
+    private val requestLimitCheckService: RequestLimitCheckService? = null,
+    private val contentLength: Long? = null,
+    ) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
      * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
@@ -240,7 +241,8 @@ class ArtifactDataReceiver(
         }
         try {
             val input = requestLimitCheckService?.bandwidthCheck(
-                HttpContextHolder.getRequest(), source, receiveProperties.circuitBreakerThreshold
+                HttpContextHolder.getRequest(), source, receiveProperties.circuitBreakerThreshold,
+                contentLength
             ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
             val buffer = ByteArray(bufferSize)
             input.use {
