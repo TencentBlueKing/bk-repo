@@ -435,7 +435,11 @@ open class PermissionServiceImpl constructor(
     }
 
     fun queryProjectEnabledStatus(projectId: String): Boolean {
-        return projectClient.isProjectEnabled(projectId).data!!
+        return try {
+            projectClient.isProjectEnabled(projectId).data!!
+        } catch (e: Exception) {
+            true
+        }
     }
 
     fun isUserLocalProjectAdmin(userId: String, projectId: String): Boolean {
