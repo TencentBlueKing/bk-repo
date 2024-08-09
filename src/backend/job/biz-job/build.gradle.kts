@@ -56,6 +56,7 @@ dependencies {
         exclude(group = "org.apache.parquet")
         exclude(group = "com.squareup.okhttp3")
     }
+    implementation("com.tencent.devops:devops-schedule-common")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
