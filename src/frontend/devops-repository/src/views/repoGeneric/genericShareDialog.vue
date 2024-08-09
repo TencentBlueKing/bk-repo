@@ -146,7 +146,7 @@
                     fullPathSet: [path],
                     type: 'DOWNLOAD',
                     host: `${location.origin}/web/generic`,
-                    needsNotify: Boolean(user.length),
+                    needsNotify: true,
                     ...(ip.length ? { authorizedIpSet: ip } : {}),
                     ...(user.length ? { authorizedUserSet: user } : {}),
                     ...(Number(time) > 0 ? { expireSeconds: Number(time) * 86400 } : {}),
