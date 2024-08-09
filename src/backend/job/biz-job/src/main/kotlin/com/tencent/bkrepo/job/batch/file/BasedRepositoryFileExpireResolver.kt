@@ -93,11 +93,23 @@ class BasedRepositoryFileExpireResolver(
                 // 获取每个的sha256
                 val sha256 = ret[SHA256].toString()
                 val fullPath = ret[FULL_PATH].toString()
-                temp.add(sha256)
-                logger.info("Retain node $projectId/$repoName$fullPath, $sha256.")
+                var fileExtensionCheck = true
+                it.fileExtension?.let { fileExtensionCheck = checkFileExtension(it, fullPath) }
+                if (fileExtensionCheck) {
+                    temp.add(sha256)
+                    logger.info("Retain node $projectId/$repoName$fullPath, $sha256.")
+                }
             }
         }
         return temp
+    }
+
+    private fun checkFileExtension(fileExtension: List<String> , fullPath: String ) : Boolean {
+        var fileExtensionCheck = true
+        if (!fileExtension.contains("/") && !fileExtension.any { fullPath.endsWith(it) }) {
+            fileExtensionCheck = false
+        }
+        return fileExtensionCheck
     }
 
     private fun convertRepoConfigToFileCache(repoConfig: RepoConfig):TFileCache {

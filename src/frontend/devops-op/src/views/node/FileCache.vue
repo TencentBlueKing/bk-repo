@@ -46,10 +46,20 @@
     <el-table v-loading="loading" :data="fileCaches" style="width: 100%">
       <el-table-column prop="projectId" label="项目Id" />
       <el-table-column prop="repoName" label="仓库名称" />
-      <el-table-column prop="pathPrefix" label="路径前缀匹配" width="780">
+      <el-table-column prop="pathPrefix" label="路径前缀匹配" width="480">
         <template slot-scope="scope">
           <div
             v-for="(item,index) in scope.row.pathPrefix"
+            :key="index"
+          >
+            <span> {{ item }}</span>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column prop="fileExtension" label="文件后缀匹配" width="280">
+        <template slot-scope="scope">
+          <div
+            v-for="(item,index) in scope.row.fileExtension"
             :key="index"
           >
             <span> {{ item }}</span>
@@ -87,8 +97,8 @@
       :visible.sync="showDialog"
       :updating-file-caches="updatingFileCache"
       :repo-config="fileCacheConf"
-      @created="getDates"
-      @updated="getDates"
+      @created="updated"
+      @updated="updated"
     />
   </div>
 </template>
@@ -101,6 +111,7 @@ import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 
 export default {
+  inject: ['reload'],
   name: 'FileCache',
   components: { CreateOrUpdateFileCacheDialog },
   data() {
@@ -254,6 +265,9 @@ export default {
           return projectFilter && repoFilter
         })
       }
+    },
+    updated() {
+      this.reload()
     }
   }
 }

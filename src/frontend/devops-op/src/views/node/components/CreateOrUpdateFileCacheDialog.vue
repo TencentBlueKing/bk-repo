@@ -39,31 +39,60 @@
       <el-form-item label="保存时间(天)" prop="days" :rules="[{ required: true, message: '保存天数不能为空'}]">
         <el-input-number v-model="fileCache.days" controls-position="right" :min="0" />
       </el-form-item>
-      <el-form-item
-        v-for="(item,index) in fileCache.pathPrefix"
-        :key="index"
-        label="路径前缀"
-        prop="pathPrefix"
-      >
-        <el-input
-          v-model="fileCache.pathPrefix[index]"
-          style="height: 40px ; width: 500px;"
-          placeholder="请输入数据（如/1）"
-          min="0"
-          @input="updateInput()"
-        />
-        <i
-          class="el-icon-circle-close"
-          style="color: red"
-          @click.prevent="removeDomain(item)"
-        />
-        <i
-          v-if="index === fileCache.pathPrefix.length - 1"
-          class="el-icon-circle-plus-outline"
-          style="margin: 0px 20px"
-          @click.prevent="addDomain()"
-        />
-      </el-form-item>
+      <div style="overflow-y: auto; max-height: 180px">
+        <el-form-item
+          v-for="(item,index) in fileCache.pathPrefix"
+          :key="index"
+          label="路径前缀"
+          prop="pathPrefix"
+        >
+          <el-input
+            v-model="fileCache.pathPrefix[index]"
+            style="height: 40px ; width: 500px;"
+            placeholder="请输入数据（如/1）"
+            min="0"
+            @input="updateInput()"
+          />
+          <i
+            class="el-icon-circle-close"
+            style="color: red"
+            @click.prevent="removeDomain(item)"
+          />
+          <i
+            v-if="index === fileCache.pathPrefix.length - 1"
+            class="el-icon-circle-plus-outline"
+            style="margin: 0px 20px"
+            @click.prevent="addDomain()"
+          />
+        </el-form-item>
+      </div>
+      <div style="overflow-y: auto; max-height: 180px; margin-top: 10px">
+        <el-form-item
+          v-for="(item,index) in fileCache.fileExtension"
+          :key="index"
+          label="文件后缀"
+          prop="pathPrefix"
+        >
+          <el-input
+            v-model="fileCache.fileExtension[index]"
+            style="height: 40px ; width: 500px;"
+            placeholder="请输入数据（如.txt）"
+            min="0"
+            @input="updateInput()"
+          />
+          <i
+            class="el-icon-circle-close"
+            style="color: red"
+            @click.prevent="removeFileDomain(item)"
+          />
+          <i
+            v-if="index === fileCache.fileExtension.length - 1"
+            class="el-icon-circle-plus-outline"
+            style="margin: 0px 20px"
+            @click.prevent="addFileDomain()"
+          />
+        </el-form-item>
+      </div>
     </el-form>
     <div slot="footer">
       <el-button @click="close">取 消</el-button>
@@ -170,7 +199,10 @@ export default {
           if (fileCache.pathPrefix.length === 1 && fileCache.pathPrefix[0].trim() === '') {
             fileCache.pathPrefix = ['/']
           }
-          fileCache.pathPrefix = Array.from(new Set(fileCache.pathPrefix)).filter(path => path.trim() !== '')
+          if (fileCache.fileExtension.length === 1 && fileCache.fileExtension[0].trim() === '') {
+            fileCache.fileExtension = ['/']
+          }
+          fileCache.fileExtension = Array.from(new Set(fileCache.fileExtension)).filter(path => path.trim() !== '')
           // 根据是否为创建模式发起不同请求
           let reqPromise
           let msg
@@ -217,6 +249,9 @@ export default {
       if (this.createMode) {
         this.fileCache = this.newFileCache()
       } else {
+        if (!this.updatingFileCaches.fileExtension || this.updatingFileCaches.fileExtension.length === 0) {
+          this.updatingFileCaches.fileExtension = ['']
+        }
         this.fileCache = _.cloneDeep(this.updatingFileCaches)
       }
       this.$nextTick(() => {
@@ -229,6 +264,7 @@ export default {
         repoName: '',
         paths: '',
         pathPrefix: [''],
+        fileExtension: [''],
         days: '',
         size: ''
       }
@@ -254,8 +290,17 @@ export default {
         this.fileCache.pathPrefix.splice(index, 1)
       }
     },
+    removeFileDomain(item) {
+      const index = this.fileCache.fileExtension.indexOf(item)
+      if (index !== -1 && this.fileCache.fileExtension.length !== 1) {
+        this.fileCache.fileExtension.splice(index, 1)
+      }
+    },
     addDomain() {
       this.fileCache.pathPrefix.push('')
+    },
+    addFileDomain() {
+      this.fileCache.fileExtension.push('')
     }
   }
 }</script>
