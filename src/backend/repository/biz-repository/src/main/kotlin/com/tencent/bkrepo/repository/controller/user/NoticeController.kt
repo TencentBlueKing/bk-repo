@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bk.sdk.notice.config.BkNoticeConfig
 import com.tencent.bk.sdk.notice.impl.BkNoticeClient
 import com.tencent.bk.sdk.notice.model.resp.AnnouncementDTO
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -55,8 +56,11 @@ class NoticeController(
         @RequestParam(required = false) offset: Int? = null,
         @RequestParam(required = false) limit: Int? = null,
     ): Response<List<AnnouncementDTO>> {
+        if (properties.apiBaseUrl.isBlank() || properties.appCode.isBlank() || properties.appSecret.isBlank()) {
+            return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "Config parameters has uncorrected empty")
+        }
         val bkNoticeConfig = BkNoticeConfig(properties.apiBaseUrl, properties.appCode, properties.appSecret)
-        val lang = localeResolver.resolveLocale(HttpContextHolder.getRequest()).toLanguageTag().toLowerCase()
+        val lang = localeResolver.resolveLocale(HttpContextHolder.getRequest()).toLanguageTag().lowercase()
         return ResponseBuilder.success(BkNoticeClient(bkNoticeConfig).getCurrentAnnouncements(lang, offset, limit))
     }
 }
