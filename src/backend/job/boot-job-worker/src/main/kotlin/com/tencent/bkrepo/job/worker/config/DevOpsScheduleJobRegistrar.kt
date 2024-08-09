@@ -181,7 +181,6 @@ class DevOpsScheduleJobRegistrar(
         const val SYSTEM_JOB_PREFIX = "SYSTEM_JOB_"
         private const val RPC_CREATE_JOB = "/job/create"
         private const val RPC_DELETE_JOB = "/job/delete"
-        private const val RPC_UPDATE_JOB = "/job/delete"
         private const val RPC_START_JOB = "/job/start"
         private const val RPC_LIST_JOB = "/job/list"
         private const val RPC_LIST_GROUP = "/worker/group/list"
