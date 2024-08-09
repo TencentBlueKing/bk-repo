@@ -49,7 +49,7 @@ import kotlin.reflect.KClass
 /**
  * 清理被标记为删除的node，同时减少文件引用
  */
-@Component("JobServiceDeletedBlockNodeCleanupJob")
+@Component
 @EnableConfigurationProperties(DeletedBlockNodeCleanupJobProperties::class)
 class DeletedBlockNodeCleanupJob(
     private val properties: DeletedBlockNodeCleanupJobProperties,

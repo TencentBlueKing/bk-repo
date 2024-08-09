@@ -51,7 +51,7 @@ import java.time.LocalDateTime
 /**
  * 清理被标记为删除的node，同时减少文件引用
  */
-@Component
+@Component("JobServiceDeletedNodeCleanupJob")
 class DeletedNodeCleanupJob(
     private val nodeDao: NodeDao,
     private val repositoryDao: RepositoryDao,
