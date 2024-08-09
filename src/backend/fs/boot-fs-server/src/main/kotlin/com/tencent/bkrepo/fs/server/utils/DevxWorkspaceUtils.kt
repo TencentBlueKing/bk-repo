@@ -30,6 +30,8 @@ package com.tencent.bkrepo.fs.server.utils
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXCvmWorkspace
@@ -38,6 +40,8 @@ import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.common.security.interceptor.devx.PageResponse
 import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import com.tencent.bkrepo.fs.server.response.DevxTokenInfo
+import com.tencent.devops.api.pojo.Response
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
@@ -168,6 +172,26 @@ class DevxWorkspaceUtils(
                     }
                     res?.data?.records?.mapTo(HashSet()) { it.ip } ?: emptySet()
                 }
+        }
+
+        suspend fun validateToken(devxToken: String): Mono<DevxTokenInfo> {
+            return httpClient
+                .get()
+                .uri("${devXProperties.validateTokenUrl}?dToken=$devxToken")
+                .header("X-DEVOPS-BK-TOKEN", devXProperties.authToken)
+                .exchangeToMono {
+                    mono { parseDevxTokenInfo(it) }
+                }
+        }
+
+        private suspend fun parseDevxTokenInfo(response: ClientResponse): DevxTokenInfo {
+            return if (response.statusCode() != HttpStatus.OK) {
+                val errorMsg = response.awaitBody<String>()
+                logger.error("${response.statusCode()} $errorMsg")
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, "token")
+            } else {
+                response.awaitBody<Response<DevxTokenInfo>>().data!!
+            }
         }
 
         private fun <T, R> WebClient.RequestHeadersSpec<*>.doRequest(
