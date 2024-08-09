@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.resolve.response.AbstractArtifactResourceHandler
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -51,13 +52,17 @@ import javax.servlet.http.HttpServletResponse
 /**
  * S3协议的响应输出
  */
-class S3ArtifactResourceWriter (
-    storageProperties: StorageProperties
-) : AbstractArtifactResourceHandler(storageProperties) {
+class S3ArtifactResourceWriter(
+    storageProperties: StorageProperties,
+    requestLimitCheckService: RequestLimitCheckService
+) : AbstractArtifactResourceHandler(
+    storageProperties, requestLimitCheckService
+) {
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
         responseRateLimitCheck()
+        downloadRateLimitCheck(resource)
         return writeArtifact(resource)
     }
 

@@ -35,6 +35,9 @@ import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
+import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
@@ -75,7 +78,9 @@ class ArtifactDataReceiver(
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
     private val originPath: Path = path,
-) : StorageHealthMonitor.Observer, AutoCloseable {
+    private val requestLimitCheckService: RequestLimitCheckService? = null,
+    private val contentLength: Long? = null,
+    ) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
      * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
@@ -187,9 +192,15 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
+            requestLimitCheckService?.uploadBandwidthCheck(
+                HttpContextHolder.getRequest(), length.toLong(),
+                receiveProperties.circuitBreakerThreshold
+            )
             writeData(chunk, offset, length)
         } catch (exception: IOException) {
             handleIOException(exception)
+        } catch (overloadEx: OverloadException) {
+            handleOverloadException(overloadEx)
         }
     }
 
@@ -203,6 +214,10 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
+            requestLimitCheckService?.uploadBandwidthCheck(
+                HttpContextHolder.getRequest(), 1,
+                receiveProperties.circuitBreakerThreshold
+            )
             checkFallback()
             outputStream.write(b)
             listener.data(b)
@@ -210,6 +225,8 @@ class ArtifactDataReceiver(
             checkThreshold()
         } catch (exception: IOException) {
             handleIOException(exception)
+        } catch (overloadEx: OverloadException) {
+            handleOverloadException(overloadEx)
         }
     }
 
@@ -223,7 +240,10 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
-            val input = source.rateLimit(receiveProperties.rateLimit.toBytes())
+            val input = requestLimitCheckService?.bandwidthCheck(
+                HttpContextHolder.getRequest(), source, receiveProperties.circuitBreakerThreshold,
+                contentLength
+            ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
             val buffer = ByteArray(bufferSize)
             input.use {
                 var bytes = input.read(buffer)
@@ -234,6 +254,8 @@ class ArtifactDataReceiver(
             }
         } catch (exception: IOException) {
             handleIOException(exception)
+        } catch (overloadEx: OverloadException) {
+            handleOverloadException(overloadEx)
         }
     }
 
@@ -322,14 +344,26 @@ class ArtifactDataReceiver(
      * 处理IO异常
      */
     private fun handleIOException(exception: IOException) {
-        finished = true
-        endTime = System.nanoTime()
-        close()
+        finishWithException()
         if (IOExceptionUtils.isClientBroken(exception)) {
             throw ArtifactReceiveException(exception.message.orEmpty())
         } else {
             throw exception
         }
+    }
+
+    /**
+     * 处理限流请求
+     */
+    private fun handleOverloadException(exception: OverloadException) {
+        finishWithException()
+        throw exception
+    }
+
+    private fun finishWithException() {
+        finished = true
+        endTime = System.nanoTime()
+        close()
     }
 
     /**

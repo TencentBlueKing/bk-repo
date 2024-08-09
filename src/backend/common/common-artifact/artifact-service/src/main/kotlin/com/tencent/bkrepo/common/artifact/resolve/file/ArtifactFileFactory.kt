@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.chunk.RandomAccessArtifac
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
 import com.tencent.bkrepo.common.bksync.BlockChannel
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -54,17 +55,20 @@ import java.io.InputStream
 class ArtifactFileFactory(
     storageProperties: StorageProperties,
     storageHealthMonitorHelper: StorageHealthMonitorHelper,
+    private val limitCheckService: RequestLimitCheckService
 ) {
 
     init {
         monitorHelper = storageHealthMonitorHelper
         properties = storageProperties
+        requestLimitCheckService = limitCheckService
     }
 
     companion object {
 
         private lateinit var monitorHelper: StorageHealthMonitorHelper
         private lateinit var properties: StorageProperties
+        private lateinit var requestLimitCheckService: RequestLimitCheckService
 
         const val ARTIFACT_FILES = "artifact.files"
 
@@ -89,19 +93,25 @@ class ArtifactFileFactory(
          * 构造分块接收数据的artifact file
          */
         fun buildChunked(): ChunkedArtifactFile {
-            return ChunkedArtifactFile(getMonitor(), properties, getStorageCredentials()).apply {
+            return ChunkedArtifactFile(
+                getMonitor(), properties, getStorageCredentials(),
+            ).apply {
                 track(this)
             }
         }
 
         fun buildChunked(storageCredentials: StorageCredentials): ChunkedArtifactFile {
-            return ChunkedArtifactFile(getMonitor(storageCredentials), properties, storageCredentials).apply {
+            return ChunkedArtifactFile(
+                getMonitor(storageCredentials), properties, storageCredentials,
+            ).apply {
                 track(this)
             }
         }
 
         fun buildDfsArtifactFile(): RandomAccessArtifactFile {
-            return RandomAccessArtifactFile(getMonitor(), getStorageCredentials(), properties).apply {
+            return RandomAccessArtifactFile(
+                getMonitor(), getStorageCredentials(), properties,
+            ).apply {
                 track(this)
             }
         }
@@ -112,11 +122,8 @@ class ArtifactFileFactory(
          */
         fun build(inputStream: InputStream, contentLength: Long? = null): ArtifactFile {
             return StreamArtifactFile(
-                inputStream,
-                getMonitor(),
-                properties,
-                getStorageCredentials(),
-                contentLength,
+                inputStream, getMonitor(), properties, getStorageCredentials(), contentLength,
+                requestLimitCheckService = requestLimitCheckService
             ).apply {
                 track(this)
             }
@@ -137,10 +144,8 @@ class ArtifactFileFactory(
          */
         fun build(multipartFile: MultipartFile, storageCredentials: StorageCredentials): ArtifactFile {
             return MultipartArtifactFile(
-                multipartFile,
-                getMonitor(storageCredentials),
-                properties,
-                storageCredentials,
+                multipartFile, getMonitor(storageCredentials), properties, storageCredentials,
+                requestLimitCheckService = requestLimitCheckService
             ).apply {
                 track(this)
             }

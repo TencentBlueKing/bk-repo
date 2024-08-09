@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils.isClientBroken
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -55,6 +56,7 @@ import java.io.IOException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import javax.servlet.http.HttpServletRequest
@@ -64,8 +66,11 @@ import javax.servlet.http.HttpServletResponse
  * ArtifactResourceWriter默认实现
  */
 open class DefaultArtifactResourceWriter(
-    private val storageProperties: StorageProperties
-) : AbstractArtifactResourceHandler(storageProperties) {
+    private val storageProperties: StorageProperties,
+    private val requestLimitCheckService: RequestLimitCheckService
+) : AbstractArtifactResourceHandler(
+    storageProperties, requestLimitCheckService
+) {
 
     @Throws(ArtifactResponseException::class)
     override fun write(resource: ArtifactResource): Throughput {
@@ -88,7 +93,7 @@ open class DefaultArtifactResourceWriter(
         val name = resource.getSingleName()
         val range = resource.getSingleStream().range
         val cacheControl = resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL)?.toString()
-            ?: resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL.toLowerCase())?.toString()
+            ?: resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL.lowercase(Locale.getDefault()))?.toString()
             ?: StringPool.NO_CACHE
 
         response.bufferSize = getBufferSize(range.length)

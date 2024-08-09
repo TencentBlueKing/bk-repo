@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.multipart
 
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -37,9 +38,11 @@ class MultipartArtifactFile(
     private val multipartFile: MultipartFile,
     monitor: StorageHealthMonitor,
     storageProperties: StorageProperties,
-    storageCredentials: StorageCredentials
+    storageCredentials: StorageCredentials,
+    requestLimitCheckService: RequestLimitCheckService
 ) : StreamArtifactFile(
-    multipartFile.inputStream, monitor, storageProperties, storageCredentials, multipartFile.size
+    multipartFile.inputStream, monitor, storageProperties, storageCredentials, multipartFile.size,
+    requestLimitCheckService
 ) {
     fun getOriginalFilename() = multipartFile.originalFilename.orEmpty()
 }
