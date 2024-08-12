@@ -33,7 +33,8 @@ package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
@@ -93,7 +94,6 @@ class FavoriteController(
     @ApiOperation("删除收藏")
     @DeleteMapping("/delete/{id}")
     fun removeFavorite(
-        @RequestAttribute userId: String,
         @PathVariable id: String
     ): Response<Void> {
         favoriteService.getFavoriteById(id)?.let {
@@ -102,10 +102,9 @@ class FavoriteController(
             } else {
                 permissionManager.checkNodePermission(PermissionAction.VIEW, it.projectId, it.repoName, it.path)
             }
-            favoriteService.removeFavorite(id)
-            return ResponseBuilder.success()
-        }
-        return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id not existed")
+        }?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
+        favoriteService.removeFavorite(id)
+        return ResponseBuilder.success()
     }
 
     @ApiOperation("收藏文件夹分页查询")

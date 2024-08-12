@@ -27,7 +27,9 @@
 
 package com.tencent.bkrepo.job.controller.user
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -61,85 +63,61 @@ class FileCacheController(
 
     @PostMapping("/update")
     fun update(@RequestBody request:FileCacheRequest):Response<Void> {
-        request.id?.let {
-            var checkStatus = updateCheck(request)
-            if (checkStatus.status) {
-                return ResponseBuilder.success()
-            } else {
-                return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, checkStatus.msg)
-            }
-        } ?: let {
-            return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id is null")
-        }
+        updateCheck(request)
+        update(request)
+        return ResponseBuilder.success()
     }
 
-    fun updateCheck(request: FileCacheRequest):CheckStatus {
-        fileCacheService.getById(request.id!!)?.let {
-            var fileCacheCheckRequest = FileCacheCheckRequest(
-                projectId = request.projectId,
-                repoName = request.repoName,
-                days = request.days,
-                size = request.size
+    fun updateCheck(request: FileCacheRequest) {
+        with(request) {
+            if (id.isNullOrBlank()) {
+                throw NotFoundException(CommonMessageCode.PARAMETER_EMPTY, "ID")
+            }
+            fileCacheService.getById(request.id!!)?:
+                throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "ID")
+            val fileCacheCheckRequest = FileCacheCheckRequest(
+                repoName = repoName,
+                projectId = projectId,
+                days = days,
+                size = size
             )
             fileCacheService.checkExist(fileCacheCheckRequest)?.let {
-                if( it.id != request.id) {
-                    var checkStatus = CheckStatus(
-                        status = false,
-                        msg = "has same config"
-                    )
-                    return checkStatus
-                }
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, "$projectId/$repoName/$days/$size")
             }
-            fileCacheService.update(request)
-            var checkStatus = CheckStatus(
-                status = true,
-                msg = ""
-            )
-            return checkStatus
         }
-        var checkStatus = CheckStatus(
-            status = false,
-            msg = "id not existed"
-        )
-        return checkStatus
     }
 
     // 新增
     @PostMapping("/create")
     fun create(@RequestBody request:FileCacheRequest):Response<Void> {
-        var fileCacheCheckRequest = FileCacheCheckRequest(
-            repoName = request.repoName,
-            projectId = request.projectId,
-            days = request.days,
-            size = request.size
-        )
-        fileCacheService.checkExist(fileCacheCheckRequest)?.let {
-            return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "has same config")
+        with(request) {
+            val fileCacheCheckRequest = FileCacheCheckRequest(
+                repoName = repoName,
+                projectId = projectId,
+                days = days,
+                size = size
+            )
+            fileCacheService.checkExist(fileCacheCheckRequest)?.let {
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, "$projectId/$repoName/$days/$size")
+            }
+            fileCacheService.create(request)
+            return ResponseBuilder.success()
         }
-        fileCacheService.create(request)
-        return ResponseBuilder.success()
     }
 
     // 删除
     @DeleteMapping("/delete/{id}")
     fun delete(@PathVariable id:String): Response<Void> {
-        fileCacheService.getById(id)?.let {
-            fileCacheService.delete(id)
-            return ResponseBuilder.success()
-        }
-        return ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "id not existed")
+        fileCacheService.getById(id)?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
+        fileCacheService.delete(id)
+        return ResponseBuilder.success()
     }
 
     // 获取配置中的属性
     @GetMapping("/config")
     fun getConfig(): Response<String> {
-        var config = properties
+        val config = properties
         return ResponseBuilder.success(config.toJsonString())
     }
 
 }
-
-data class CheckStatus(
-    val status: Boolean,
-    val msg: String
-)
