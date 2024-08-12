@@ -45,7 +45,7 @@ class RefreshJobPropertiesListener(private val jobRegistrar: JobRegistrar) : Sma
     private val pattern = "-[a-z]".toRegex()
     override fun onApplicationEvent(event: ApplicationEvent) {
         if (event is EnvironmentChangeEvent) {
-            val keys = event.keys.map { JOB_PROP_KEY_REGEX.find(it)?.value.orEmpty() }
+            val keys = event.keys.mapNotNull { JOB_PROP_KEY_REGEX.find(it)?.value }
             refreshKeys.addAll(keys)
             return
         }
