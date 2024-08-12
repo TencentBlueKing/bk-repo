@@ -51,15 +51,17 @@ class RefreshJobPropertiesListener(private val jobRegistrar: JobRegistrar) : Sma
         }
         if (event is RefreshScopeRefreshedEvent && refreshKeys.isNotEmpty()) {
             refreshKeys.forEach { key ->
-                val jobName = key.substring(4, key.indexOf(".", 4))
-                    .replace(pattern) { it.value.last().uppercase() } + JOB_SUFFIX
                 try {
+                    val jobName = key.substring(4, key.indexOf(".", 4))
+                        .replace(pattern) { it.value.last().uppercase() } + JOB_SUFFIX
                     val jobBean = SpringContextUtils.getBean(BatchJob::class.java, jobName)
                     logger.info("Job [$jobName] config updated")
                     val job = JobUtils.parseBatchJob(jobBean)
                     jobRegistrar.update(job)
                 } catch (_: NoSuchBeanDefinitionException) {
                     // ignore
+                } catch (e: Exception) {
+                    logger.error("Refresh key [$key] failed.")
                 }
             }
             refreshKeys.clear()
