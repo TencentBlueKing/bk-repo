@@ -888,5 +888,9 @@
     "rootDirectoryPermissionTip": "After Open, Member access path in the repo need auth.",
     "errMsg": "Error Message",
     "blackUserList": "Blacklist",
-    "controlConfigPlaceholder": "Select User Group"
+    "controlConfigPlaceholder": "Select User Group",
+    "hasSelectTip": "{0} items selected,",
+    "changeSelectAllTip": "Select full data",
+    "selectAllTip": "{0} pieces of total data have been selected，",
+    "clearSelectTip":"Clear selection"
 }
