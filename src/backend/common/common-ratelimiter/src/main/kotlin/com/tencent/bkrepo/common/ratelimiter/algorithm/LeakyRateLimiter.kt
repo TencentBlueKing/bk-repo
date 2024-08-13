@@ -63,7 +63,9 @@ class LeakyRateLimiter(
         }
     }
 
-    fun allow(permits: Long): Boolean {
+    override fun removeCacheLimit(key: String) {}
+
+    private fun allow(permits: Long): Boolean {
         if (water == 0L) {
             lastLeakTime = System.currentTimeMillis()
             water += permits

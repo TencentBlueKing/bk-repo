@@ -58,6 +58,7 @@ open class PathResourceLimitRule(
         if (!resourcePath.startsWith("/")) {
             throw InvalidResourceException(resourcePath)
         }
+        // TODO 配置/*/blueking/* 能识别/api/node/blueking/generic-local
         addPathNode(resourcePath, resourceLimit)
     }
 

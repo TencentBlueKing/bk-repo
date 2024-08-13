@@ -31,4 +31,6 @@ interface RateLimiter {
 
     fun tryAcquire(permits: Long): Boolean
 
+    fun removeCacheLimit(key: String)
+
 }

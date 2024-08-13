@@ -67,4 +67,6 @@ class FixedWindowRateLimiter(
             throw AcquireLockFailedException("fix window tryLock is interrupted by lock timeout: $e")
         }
     }
+
+    override fun removeCacheLimit(key: String) {}
 }

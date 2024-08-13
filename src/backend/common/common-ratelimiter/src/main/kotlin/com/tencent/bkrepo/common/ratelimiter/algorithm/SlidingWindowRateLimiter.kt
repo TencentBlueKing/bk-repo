@@ -74,7 +74,9 @@ class SlidingWindowRateLimiter(
         }
     }
 
-    fun allow(permits: Long): Boolean {
+    override fun removeCacheLimit(key: String) {}
+
+    private fun allow(permits: Long): Boolean {
         val currentTimeMillis = System.currentTimeMillis()
         // 1. 计算当前时间窗口
         val currentIndex = (currentTimeMillis % windowSize / (windowSize / subWindowNum)).toInt()

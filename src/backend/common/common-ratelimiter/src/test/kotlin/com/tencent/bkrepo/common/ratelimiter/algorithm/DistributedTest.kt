@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.ratelimiter.algorithm
 
+import com.tencent.bkrepo.common.ratelimiter.rule.BaseRuleTest
 import com.tencent.bkrepo.common.redis.RedisAutoConfiguration
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
@@ -35,8 +36,7 @@ import org.springframework.data.redis.core.RedisTemplate
 
 @DataRedisTest
 @ImportAutoConfiguration(RedisTestConfiguration::class, RedisAutoConfiguration::class)
-open class DistributedTest {
-
+open class DistributedTest : BaseRuleTest() {
 
     @Autowired
     lateinit var redisTemplate: RedisTemplate<String, String>

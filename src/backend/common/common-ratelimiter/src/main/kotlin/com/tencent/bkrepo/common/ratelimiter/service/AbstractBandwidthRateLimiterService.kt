@@ -113,7 +113,7 @@ abstract class AbstractBandwidthRateLimiterService(
         }
     }
 
-    private fun circuitBreakerCheck(
+    fun circuitBreakerCheck(
         resourceLimit: ResourceLimit,
         circuitBreakerPerSecond: DataSize,
     ) {
@@ -129,7 +129,7 @@ abstract class AbstractBandwidthRateLimiterService(
     /**
      * 获取对应资源限流规则配置
      */
-    private fun getBandwidthRateLimit(request: HttpServletRequest): ResLimitInfo? {
+    fun getBandwidthRateLimit(request: HttpServletRequest): ResLimitInfo? {
         if (!rateLimiterProperties.enabled) {
             return null
         }

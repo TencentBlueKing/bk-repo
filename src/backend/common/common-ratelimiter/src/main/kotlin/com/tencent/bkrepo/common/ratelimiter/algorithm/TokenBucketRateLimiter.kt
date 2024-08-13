@@ -48,4 +48,5 @@ class TokenBucketRateLimiter(
         }
     }
 
+    override fun removeCacheLimit(key: String) {}
 }

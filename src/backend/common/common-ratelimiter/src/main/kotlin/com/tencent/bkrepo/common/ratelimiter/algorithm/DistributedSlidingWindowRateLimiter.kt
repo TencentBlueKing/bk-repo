@@ -71,6 +71,11 @@ class DistributedSlidingWindowRateLimiter(
         return listOf(key)
     }
 
+    override fun removeCacheLimit(key: String) {
+        getKeys(key).forEach {
+            redisTemplate.delete(it)
+        }
+    }
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(DistributedSlidingWindowRateLimiter::class.java)

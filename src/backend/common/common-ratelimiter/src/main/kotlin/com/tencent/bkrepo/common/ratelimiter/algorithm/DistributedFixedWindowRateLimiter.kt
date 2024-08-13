@@ -62,6 +62,10 @@ class DistributedFixedWindowRateLimiter(
         }
     }
 
+    override fun removeCacheLimit(key: String) {
+        redisTemplate.delete(key)
+    }
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(DistributedFixedWindowRateLimiter::class.java)
     }

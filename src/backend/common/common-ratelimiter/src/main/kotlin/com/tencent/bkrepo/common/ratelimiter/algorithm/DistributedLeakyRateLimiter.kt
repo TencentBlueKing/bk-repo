@@ -68,6 +68,11 @@ class DistributedLeakyRateLimiter(
         return listOf(key, "$key.timestamp")
     }
 
+    override fun removeCacheLimit(key: String) {
+        getKeys(key).forEach {
+            redisTemplate.delete(it)
+        }
+    }
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(DistributedLeakyRateLimiter::class.java)

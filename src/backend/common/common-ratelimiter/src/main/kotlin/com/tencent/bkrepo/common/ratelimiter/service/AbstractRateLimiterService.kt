@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorC
 import com.tencent.bkrepo.common.ratelimiter.interceptor.TargetRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.DownloadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
@@ -83,10 +84,12 @@ abstract class AbstractRateLimiterService(
     private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
     val interceptorChain: RateLimiterInterceptorChain =
-        RateLimiterInterceptorChain(mutableListOf(
-            MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics),
-            TargetRateLimiterInterceptorAdaptor()
-        ))
+        RateLimiterInterceptorChain(
+            mutableListOf(
+                MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics),
+                TargetRateLimiterInterceptorAdaptor()
+            )
+        )
 
     // 限流规则配置
     var rateLimitRule: RateLimitRule? = null
@@ -228,7 +231,7 @@ abstract class AbstractRateLimiterService(
                     TokenBucketRateLimiter(permitsPerSecond)
                 } else {
                     if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
-                        throw AcquireLockFailedException("Resource limit config $resourceLimit is illegal")
+                        throw InvalidResourceException("Resource limit config $resourceLimit is illegal")
                     }
                     val permitsPerSecond = resourceLimit.limit / unit.toSeconds(1).toDouble()
                     DistributedTokenBucketRateLimiter(
@@ -248,13 +251,12 @@ abstract class AbstractRateLimiterService(
             }
             Algorithms.LEAKY_BUCKET.name -> {
                 if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
-                    throw AcquireLockFailedException("Resource limit config $resourceLimit is illegal")
+                    throw InvalidResourceException("Resource limit config $resourceLimit is illegal")
                 }
                 val rate = resourceLimit.limit / unit.toSeconds(1).toDouble()
                 if (resourceLimit.scope == WorkScope.LOCAL.name) {
                     LeakyRateLimiter(rate, resourceLimit.capacity!!)
                 } else {
-
                     DistributedLeakyRateLimiter(
                         resource, rate, resourceLimit.capacity!!, redisTemplate!!
                     )
@@ -268,9 +270,9 @@ abstract class AbstractRateLimiterService(
 
     fun getRepoInfo(request: HttpServletRequest): Pair<String?, String?> {
         val projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
-            as LinkedHashMap<*, *>)["projectId"] as String?
+            as Map<*, *>)["projectId"] as String?
         val repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
-            as LinkedHashMap<*, *>)["repoName"] as String?
+            as Map<*, *>)["repoName"] as String?
         if (projectId.isNullOrEmpty()) {
             throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
         }
@@ -280,7 +282,7 @@ abstract class AbstractRateLimiterService(
     /**
      * 配置规则刷新
      */
-    private fun refreshRateLimitRule() {
+    fun refreshRateLimitRule() {
         if (!rateLimiterProperties.enabled) return
         val usageRuleConfigs = rateLimiterProperties.rules.filter {
             it.limitDimension in getLimitDimensions()
@@ -289,7 +291,7 @@ abstract class AbstractRateLimiterService(
         val newRuleHashCode = usageRuleConfigs.hashCode()
         if (currentRuleHashCode == newRuleHashCode) {
             if (rateLimiterCache.size > rateLimiterProperties.cacheCapacity) {
-                rateLimiterCache.clear()
+                clearLimiterCache()
             }
             return
         }
@@ -301,13 +303,19 @@ abstract class AbstractRateLimiterService(
             UserUploadUsageRateLimitRule::class.java -> UserUploadUsageRateLimitRule()
             UserUrlRateLimitRule::class.java -> UserUrlRateLimitRule()
             UploadBandwidthRateLimitRule::class.java -> UploadBandwidthRateLimitRule()
+            DownloadBandwidthRateLimitRule::class.java -> DownloadBandwidthRateLimitRule()
             else -> return
         }
         usageRules.addRateLimitRules(usageRuleConfigs)
         rateLimitRule = usageRules
-        rateLimiterCache.clear()
+        clearLimiterCache()
         currentRuleHashCode = newRuleHashCode
         logger.info("rules in ${this.javaClass.simpleName} for request has been refreshed!")
+    }
+
+    private fun clearLimiterCache() {
+        rateLimiterCache.forEach { it.value.removeCacheLimit(it.key) }
+        rateLimiterCache.clear()
     }
 
     /**
