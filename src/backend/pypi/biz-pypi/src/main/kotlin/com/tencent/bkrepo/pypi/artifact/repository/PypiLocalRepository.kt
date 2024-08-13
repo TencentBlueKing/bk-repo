@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
@@ -90,7 +91,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class PypiLocalRepository(
-    private val stageClient: StageClient
+    private val stageClient: StageClient,
+    private val pypiProperties: PypiProperties
 ) : LocalRepository() {
 
     /**
@@ -324,30 +326,46 @@ class PypiLocalRepository(
                 return buildPypiPageContent(PACKAGE_INDEX_TITLE, buildPackageListContent(nodeList))
             }
             // 请求中带包名，返回对应包的文件列表。
-            else {
-                // 客户端标准化包名规则：1.连续的[-_.]转换为单个"-"；2.转换为全小写。此处需要以反向规则查询
-                var pageNumber = 1
-                val nodeList = mutableListOf<Map<String, Any?>>()
-                do {
-                    val queryModel = NodeQueryBuilder()
-                        .select(NAME, FULL_PATH, METADATA, SHA256)
-                        .sortByAsc(NAME)
-                        .page(pageNumber, PAGE_SIZE)
-                        .projectId(projectId)
-                        .repoName(repoName)
-                        .path("^/${packageName!!.replace("-", NON_ALPHANUMERIC_SEQ_REGEX)}/", OperationType.REGEX_I)
-                        .excludeFolder()
-                        .build()
-                    val records = nodeClient.queryWithoutCount(queryModel).data!!.records
-                    nodeList.addAll(records)
-                    pageNumber++
-                } while (records.size == PAGE_SIZE)
-                nodeList.ifEmpty { throw PypiSimpleNotFoundException(packageName!!) }
+            val nodes = nodeClient.listNode(
+                projectId = projectId,
+                repoName = repoName,
+                path = "/$packageName",
+                includeFolder = false,
+                deep = true,
+                includeMetadata = true
+            ).data
+            if (!nodes.isNullOrEmpty()) {
                 return buildPypiPageContent(
                     String.format(VERSION_INDEX_TITLE, packageName),
-                    buildPackageFileNodeListContent(nodeList)
+                    buildPackageFileListContent(nodes)
                 )
             }
+            if (!pypiProperties.enableRegexQuery) {
+                throw PypiSimpleNotFoundException(packageName!!)
+            }
+            logger.info("not found nodeList by packageName[$packageName], use regex query")
+            // 客户端标准化包名规则：1.连续的[-_.]转换为单个"-"；2.转换为全小写。此处需要以反向规则查询
+            var pageNumber = 1
+            val nodeList = mutableListOf<Map<String, Any?>>()
+            do {
+                val queryModel = NodeQueryBuilder()
+                    .select(NAME, FULL_PATH, METADATA, SHA256)
+                    .sortByAsc(NAME)
+                    .page(pageNumber, PAGE_SIZE)
+                    .projectId(projectId)
+                    .repoName(repoName)
+                    .path("^/${packageName!!.replace("-", NON_ALPHANUMERIC_SEQ_REGEX)}/", OperationType.REGEX_I)
+                    .excludeFolder()
+                    .build()
+                val records = nodeClient.queryWithoutCount(queryModel).data!!.records
+                nodeList.addAll(records)
+                pageNumber++
+            } while (records.size == PAGE_SIZE)
+            nodeList.ifEmpty { throw PypiSimpleNotFoundException(packageName!!) }
+            return buildPypiPageContent(
+                String.format(VERSION_INDEX_TITLE, packageName),
+                buildPackageFileNodeListContent(nodeList)
+            )
         }
     }
 
@@ -372,19 +390,58 @@ class PypiLocalRepository(
                         ?.get("value").toString()
                 )
             } catch (ignore: IllegalArgumentException) {
-                SemVersion(0,0,0)
+                SemVersion(0, 0, 0)
             }
         }
         // data-requires-python属性值中的"<"和">"需要转换为HTML编码
         sortedNodeList.forEachIndexed { i, node ->
-            val href = "../../packages${node[FULL_PATH]}#sha256=${node[SHA256]}"
             val requiresPython = (node[NODE_METADATA] as List<Map<String, Any?>>)
                 .find { it["key"] == REQUIRES_PYTHON }?.get("value")?.toString()?.ifBlank { null }
-                ?.let { " $REQUIRES_PYTHON_ATTR=\"${HtmlUtils.partialEncode(it)}\"" } ?: ""
-            builder.append("$INDENT<a href=\"$href\"$requiresPython rel=\"internal\">${node[NAME]}</a>$LINE_BREAK")
+            builder.append(
+                buildPackageFileNodeLink(
+                    fullPath = node[FULL_PATH].toString(),
+                    name = node[NAME].toString(),
+                    sha256 = node[SHA256]?.toString(),
+                    requiresPython = requiresPython
+                )
+            )
             if (i != nodeList.size - 1) builder.append("\n")
         }
         return builder.toString()
+    }
+
+    /**
+     * 对应包中的文件列表
+     * [nodeList]
+     */
+    private fun buildPackageFileListContent(nodeList: List<NodeInfo>): String {
+        val builder = StringBuilder()
+        val sortedNodeList = nodeList.sortedBy {
+            try {
+                SemVersionParser.parse(it.metadata?.get("version").toString())
+            } catch (ignore: IllegalArgumentException) {
+                SemVersion(0, 0, 0)
+            }
+        }
+        sortedNodeList.forEachIndexed { i, node ->
+            val requiresPython = node.nodeMetadata
+                ?.find { it.key == REQUIRES_PYTHON }?.value?.toString()?.ifBlank { null }
+            builder.append(buildPackageFileNodeLink(node.fullPath, node.name, node.sha256, requiresPython))
+            if (i != nodeList.size - 1) builder.append("\n")
+        }
+        return builder.toString()
+    }
+
+    private fun buildPackageFileNodeLink(
+        fullPath: String,
+        name: String,
+        sha256: String?,
+        requiresPython: String?
+    ): String {
+        val href = "../../packages$fullPath#sha256=$sha256"
+        val requiresPythonAttr = requiresPython
+            ?.let { " $REQUIRES_PYTHON_ATTR=\"${HtmlUtils.partialEncode(it)}\"" } ?: ""
+        return "$INDENT<a href=\"$href\"$requiresPythonAttr rel=\"internal\">$name</a>$LINE_BREAK"
     }
 
     /**
