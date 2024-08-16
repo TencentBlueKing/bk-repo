@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.common.api.mongo.ShardingDocument
+import com.tencent.bkrepo.common.api.mongo.ShardingKey
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.model.TNode.Companion.ARCHIVED_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.ARCHIVED_IDX_DEF
