@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.file.impl.center
 
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils.isEdgeRequest
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
@@ -42,11 +43,13 @@ import org.springframework.stereotype.Service
 class CommitEdgeCenterShareServiceImpl(
     repositoryService: RepositoryService,
     nodeService: NodeService,
-    mongoTemplate: MongoTemplate
+    mongoTemplate: MongoTemplate,
+    temporaryTokenClient: ServiceTemporaryTokenClient,
 ) : ShareServiceImpl(
     repositoryService,
     nodeService,
-    mongoTemplate
+    mongoTemplate,
+    temporaryTokenClient
 ) {
     override fun checkNode(artifactInfo: ArtifactInfo) {
         if (isEdgeRequest()) {

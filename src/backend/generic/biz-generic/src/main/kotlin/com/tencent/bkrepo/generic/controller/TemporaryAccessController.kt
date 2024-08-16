@@ -62,6 +62,7 @@ import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.TemporaryAccessService
 import com.tencent.bkrepo.generic.service.UploadService
+import io.swagger.annotations.ApiOperation
 import org.springframework.http.HttpMethod
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -101,6 +102,22 @@ class TemporaryAccessController(
             }
             return ResponseBuilder.success(temporaryAccessService.createUrl(request))
         }
+    }
+
+    @ApiOperation("下载分享文件")
+    @Router
+    @CrossOrigin
+    @GetMapping("/share/$GENERIC_MAPPING_URI")
+    fun download(
+        @RequestAttribute userId: String,
+        @RequestParam token: String,
+        @RequestParam("userId") downloadUserId: String?,
+        artifactInfo: GenericArtifactInfo
+    ) {
+        val downloadUser = downloadUserId ?: userId
+        val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD)
+        temporaryAccessService.downloadByShare(downloadUser, tokenInfo.createdBy, artifactInfo)
+        temporaryAccessService.decrementPermits(tokenInfo)
     }
 
     @Router

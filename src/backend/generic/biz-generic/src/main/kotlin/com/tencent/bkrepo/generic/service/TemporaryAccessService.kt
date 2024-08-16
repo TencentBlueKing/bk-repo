@@ -36,10 +36,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
-import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.constant.*
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -51,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.event.ChunkArtifactTransferEvent
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
@@ -123,6 +121,34 @@ class TemporaryAccessService(
             HttpContextHolder.getRequest().setAttribute(REPO_KEY, repo)
             val context = ArtifactDownloadContext(repo)
             ArtifactContextHolder.getRepository(repo.category).download(context)
+        }
+    }
+
+    fun downloadByShare(userId: String, shareBy: String, artifactInfo: ArtifactInfo) {
+        logger.info("share artifact[$artifactInfo] download user: $userId")
+        checkAlphaApkDownloadUser(userId, artifactInfo, shareBy)
+        with(artifactInfo) {
+            val downloadUser = if (userId == ANONYMOUS_USER) shareBy else userId
+            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
+            context.shareUserId = shareBy
+            val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+            repository.download(context)
+        }
+    }
+
+    /**
+     * 加固签名的apk包，匿名下载时，使用分享人身份下载
+     */
+    private fun checkAlphaApkDownloadUser(userId: String, artifactInfo: ArtifactInfo, shareUserId: String) {
+        val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo)
+            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val appStageKey = nodeDetail.metadata.keys.find { it.equals(BK_CI_APP_STAGE_KEY, true) }
+            ?: return
+        val alphaApk = nodeDetail.metadata[appStageKey]?.toString().equals(ALPHA, true)
+        if (alphaApk && userId == ANONYMOUS_USER) {
+            HttpContextHolder.getRequest().setAttribute(USER_KEY, shareUserId)
         }
     }
 
@@ -429,5 +455,7 @@ class TemporaryAccessService(
         private val logger = LoggerFactory.getLogger(TemporaryAccessService::class.java)
         private const val TEMPORARY_DOWNLOAD_ENDPOINT = "/temporary/download"
         private const val TEMPORARY_UPLOAD_ENDPOINT = "/temporary/upload"
+        private const val BK_CI_APP_STAGE_KEY = "BK-CI-APP-STAGE"
+        private const val ALPHA = "Alpha"
     }
 }
