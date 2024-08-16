@@ -28,19 +28,13 @@
 package com.tencent.bkrepo.common.ratelimiter.stream
 
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
-import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import java.io.InputStream
 
 class CommonRateLimitInputStream(
     delegate: InputStream,
-    private val rateLimiter: RateLimiter,
-    private val sleepTime: Long,
-    private val retryNum: Int,
-    private val rangeLength: Long? = null,
-    private val dryRun: Boolean = false,
-    private val permitsNum: Long = 1024 * 1024 * 1024,
+    private val rateCheckContext: RateCheckContext
 ) : DelegateInputStream(delegate) {
 
     private var bytesRead: Long = 0
@@ -48,30 +42,44 @@ class CommonRateLimitInputStream(
 
     override fun read(): Int {
         tryAcquire(1)
-        return super.read()
+        val data = super.read()
+        if (data != -1) {
+            bytesRead++
+        }
+        return data
     }
 
     override fun read(byteArray: ByteArray): Int {
         tryAcquire(byteArray.size)
-        return super.read(byteArray)
+        val readLen = super.read(byteArray)
+        if (readLen != -1) {
+            bytesRead += readLen
+        }
+        return readLen
     }
 
     override fun read(byteArray: ByteArray, off: Int, len: Int): Int {
         tryAcquire(len)
-        return super.read(byteArray, off, len)
+        val readLen = super.read(byteArray, off, len)
+        if (readLen != -1) {
+            bytesRead += readLen
+        }
+        return readLen
     }
 
     private fun tryAcquire(bytes: Int) {
-        if (rangeLength == null || rangeLength <= 0) {
-            acquire(bytes.toLong())
-        } else {
-            // 避免频繁申请，增加耗时，降低申请频率， 每次申请一定数量
-            val permits = (rangeLength - bytesRead).coerceAtMost(permitsNum)
-            if (bytesRead == 0L || bytesRead / permitsNum > applyNum) {
-                acquire(permits)
-                applyNum = bytesRead / permitsNum
+        with(rateCheckContext) {
+            if (rangeLength == null || rangeLength!! <= 0) {
+                // 当不知道文件大小时，没办法进行大小预估，无法降低申请频率， 只能每次读取都进行判断
+                acquire(bytes.toLong())
+            } else {
+                // 避免频繁申请，增加耗时，降低申请频率， 每次申请一定数量
+                if (bytesRead == 0L || (bytesRead / permitsOnce) > applyNum) {
+                    val permits = (rangeLength!! - bytesRead).coerceAtMost(permitsOnce)
+                    acquire(permits)
+                    applyNum = bytesRead / permitsOnce
+                }
             }
-            bytesRead += bytes
         }
     }
 
@@ -80,21 +88,23 @@ class CommonRateLimitInputStream(
         var failedNum = 0
         try {
             while (!flag) {
-                // TODO 当限制小于读取大小时，会进入死循环
-                flag = rateLimiter.tryAcquire(permits)
-                if (!flag && failedNum < retryNum) {
+                // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果达到等待轮次上限后还是无法获取，则抛异常结束
+                flag = rateCheckContext.rateLimiter.tryAcquire(permits)
+                if (!flag && failedNum < rateCheckContext.waitRound) {
                     failedNum++
-                    Thread.sleep(sleepTime)
+                    try {
+                        Thread.sleep(rateCheckContext.latency)
+                    } catch (ignore: InterruptedException) {
+                    }
                 }
-                if (!flag && failedNum > retryNum) {
-                    throw OverloadException("inputstream")
+                if (!flag && failedNum >= rateCheckContext.waitRound) {
+                    if (rateCheckContext.dryRun) {
+                        return
+                    }
+                    throw OverloadException("request reached bandwidth limit")
                 }
             }
-        } catch (e: AcquireLockFailedException) {
-            if (dryRun) {
-                return
-            }
-            throw e
+        } catch (ignore: AcquireLockFailedException) {
         }
     }
 }

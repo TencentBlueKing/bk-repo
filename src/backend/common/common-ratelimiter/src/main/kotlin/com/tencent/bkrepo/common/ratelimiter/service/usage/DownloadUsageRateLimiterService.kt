@@ -51,7 +51,7 @@ class DownloadUsageRateLimiterService(
 
     override fun getApplyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
         if (applyPermits == null) {
-            throw AcquireLockFailedException("response content is null")
+            throw AcquireLockFailedException("apply permits is null")
         }
         return applyPermits
     }

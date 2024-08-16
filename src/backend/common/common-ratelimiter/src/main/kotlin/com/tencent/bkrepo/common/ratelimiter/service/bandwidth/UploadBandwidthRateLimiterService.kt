@@ -31,6 +31,7 @@ package com.tencent.bkrepo.common.ratelimiter.service.bandwidth
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
+import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule
@@ -61,7 +62,10 @@ open class UploadBandwidthRateLimiterService(
     }
 
     override fun getApplyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
-        throw UnsupportedOperationException()
+        if (applyPermits == null) {
+            throw AcquireLockFailedException("apply permits is null")
+        }
+        return applyPermits
     }
 
     override fun getLimitDimensions(): List<String> {

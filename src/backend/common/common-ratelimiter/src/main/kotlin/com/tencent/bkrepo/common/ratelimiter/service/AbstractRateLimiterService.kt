@@ -101,59 +101,38 @@ abstract class AbstractRateLimiterService(
         taskScheduler.scheduleWithFixedDelay(this::refreshRateLimitRule, rateLimiterProperties.refreshDuration * 1000)
     }
 
+    /**
+     * 获取对应资源限流规则配置
+     */
+    fun getResLimitInfo(request: HttpServletRequest): ResLimitInfo? {
+        if (!rateLimiterProperties.enabled) {
+            return null
+        }
+        val resInfo = ResInfo(
+            resource = buildResource(request),
+            extraResource = buildExtraResource(request)
+        )
+        val resLimitInfo = rateLimitRule?.getRateLimitRule(resInfo)
+        if (resLimitInfo == null) {
+            logger.info("no rule in ${this.javaClass.simpleName} for request ${request.requestURI}")
+            return null
+        }
+        return resLimitInfo
+    }
+
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
         if (!rateLimiterProperties.enabled) {
             return
         }
         if (ignoreRequest(request)) return
-        var resource = buildResource(request)
-        var resourceLimit: ResourceLimit? = null
-        var resLimitInfo: ResLimitInfo?
-        val applyPermits = getApplyPermits(request, applyPermits)
-        var pass = false
-        var exception: Exception? = null
-        try {
-            val resInfo = ResInfo(
-                resource = resource,
-                extraResource = buildExtraResource(request)
-            )
-            resLimitInfo = rateLimitRule?.getRateLimitRule(resInfo)
-            resourceLimit = resLimitInfo?.resourceLimit
-            if (resourceLimit == null) {
-                logger.info("no rule in ${this.javaClass.simpleName} for request ${request.requestURI}")
-                return
-            }
-            resource = resLimitInfo?.resource!!
-            interceptorChain.doBeforeLimitCheck(resource, resourceLimit)
-            val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit)
-            pass = rateLimiter.tryAcquire(applyPermits)
-            if (!pass) {
-                logger.warn("resourceLimit for $resource is $resourceLimit")
-                val msg = "$resource has exceeded max rate limit: ${resourceLimit.limit} /${resourceLimit.unit}"
-                if (rateLimiterProperties.dryRun) {
-                    logger.warn(msg)
-                } else {
-                    throw OverloadException(msg)
-                }
-            }
-        } catch (e: OverloadException) {
-            pass = false
-            throw e
-        } catch (e: AcquireLockFailedException) {
-            exception = e
-            throw e
-        } catch (e: InvalidResourceException) {
-            logger.warn("$resourceLimit is invalid")
-            exception = e
-            throw e
-        } catch (e: Exception) {
-            val newException = AcquireLockFailedException("internal error: $e")
-            exception = newException
-            throw newException
-        } finally {
-            interceptorChain.doAfterLimitCheck(resource, resourceLimit, pass, exception, applyPermits)
+        val resLimitInfo = getResLimitInfo(request) ?: return
+        rateLimitCatch(
+            request = request,
+            resLimitInfo = resLimitInfo,
+            applyPermits = applyPermits,
+        ) { rateLimiter, permits ->
+            rateLimiter.tryAcquire(permits)
         }
-
     }
 
     override fun addInterceptor(interceptor: RateLimiterInterceptor) {
@@ -318,6 +297,78 @@ abstract class AbstractRateLimiterService(
         rateLimiterCache.clear()
     }
 
+    private fun beforeRateLimitCheck(
+        request: HttpServletRequest,
+        applyPermits: Long? = null,
+        resLimitInfo: ResLimitInfo,
+        circuitBreakerPerSecond: Long? = null,
+    ): Pair<RateLimiter, Long> {
+        with(resLimitInfo) {
+            val realPermits = getApplyPermits(request, applyPermits)
+            circuitBreakerCheck(resourceLimit, circuitBreakerPerSecond)
+            interceptorChain.doBeforeLimitCheck(resource, resourceLimit)
+            val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit)
+            return Pair(rateLimiter, realPermits)
+        }
+    }
+
+    private fun afterRateLimitCheck(
+        resLimitInfo: ResLimitInfo,
+        pass: Boolean,
+        realPermits: Long,
+        exception: Exception? = null,
+    ) {
+        with(resLimitInfo) {
+            interceptorChain.doAfterLimitCheck(resource, resourceLimit, pass, exception, realPermits)
+        }
+    }
+
+    fun rateLimitCatch(
+        request: HttpServletRequest,
+        resLimitInfo: ResLimitInfo,
+        applyPermits: Long? = null,
+        circuitBreakerPerSecond: Long? = null,
+        action: (RateLimiter, Long) -> Boolean
+    ) {
+        var exception: Exception? = null
+        var pass = false
+        var realPermits: Long = 0
+        with(resLimitInfo) {
+            try {
+                val (rateLimiter, permits) = beforeRateLimitCheck(
+                    request = request,
+                    applyPermits = applyPermits,
+                    resLimitInfo = resLimitInfo,
+                    circuitBreakerPerSecond = circuitBreakerPerSecond
+                )
+                realPermits = permits
+                pass = action(rateLimiter, realPermits)
+                if (!pass) {
+                    val msg = "$resource has exceeded max rate limit: " +
+                        "${resourceLimit.limit} /${resourceLimit.unit}"
+                    if (rateLimiterProperties.dryRun) {
+                        logger.warn(msg)
+                    } else {
+                        throw OverloadException(msg)
+                    }
+                }
+            } catch (e: OverloadException) {
+                throw e
+            } catch (e: AcquireLockFailedException) {
+                logger.warn("acquire lock failed for for $resource with $resourceLimit, e: ${e.message}")
+                exception = e
+            } catch (e: InvalidResourceException) {
+                logger.warn("$resourceLimit is invalid $resource , e: ${e.message}")
+                exception = e
+            } catch (e: Exception) {
+                logger.error("internal error: $e")
+                exception = e
+            } finally {
+                afterRateLimitCheck(resLimitInfo, pass, realPermits, exception)
+            }
+        }
+    }
+
     /**
      * 获取对应限流算法实现
      */
@@ -334,6 +385,23 @@ abstract class AbstractRateLimiterService(
             }
         }
         return rateLimiter
+    }
+
+    /**
+     * （特殊操作）如果配置的限流规则比熔断配置小，则直接限流
+     */
+    fun circuitBreakerCheck(
+        resourceLimit: ResourceLimit,
+        circuitBreakerPerSecond: Long? = null,
+    ) {
+        if (circuitBreakerPerSecond == null) return
+        val permitsPerSecond = resourceLimit.limit /
+            TimeUnit.valueOf(resourceLimit.unit).toSeconds(1)
+        if (circuitBreakerPerSecond >= permitsPerSecond) {
+            throw OverloadException(
+                "The circuit breaker is activated when too many download requests are made to the service!"
+            )
+        }
     }
 
     companion object {

@@ -25,21 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.interceptor
+package com.tencent.bkrepo.common.ratelimiter.stream
 
-import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
-import org.springframework.web.servlet.HandlerInterceptor
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 
-/**
- * 针对http请求添加限流拦截
- */
-class RateLimitHandlerInterceptor(
-    private val requestLimitCheckService: RequestLimitCheckService
-) : HandlerInterceptor {
-    override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        requestLimitCheckService.preLimitCheck(request)
-        return super.preHandle(request, response, handler)
-    }
-}
+data class RateCheckContext(
+    var rateLimiter: RateLimiter,
+    var latency: Long,
+    var waitRound: Int,
+    var rangeLength: Long? = null,
+    var dryRun: Boolean = false,
+    var permitsOnce: Long = 1024 * 1024 * 1024,
+)

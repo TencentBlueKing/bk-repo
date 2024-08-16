@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
-import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
+import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.DownloadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 
@@ -124,9 +123,13 @@ class DownloadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest()
 
     @Test
     fun getApplyPermitsTest() {
-        Assertions.assertThrows(UnsupportedOperationException::class.java) {
+        Assertions.assertThrows(AcquireLockFailedException::class.java) {
             (rateLimiterService as DownloadBandwidthRateLimiterService).getApplyPermits(request, null)
         }
+        Assertions.assertEquals(
+            10,
+            (rateLimiterService as DownloadBandwidthRateLimiterService).getApplyPermits(request, 10)
+        )
     }
 
     @Test
@@ -198,65 +201,5 @@ class DownloadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest()
     @Test
     fun limitTest() {
         Assertions.assertThrows(UnsupportedOperationException::class.java) { rateLimiterService.limit(request) }
-    }
-
-    @Test
-    fun bandwidthRateLimitTest() {
-
-    }
-
-    @Test
-    fun bandwidthRateLimit1Test() {
-
-    }
-
-    @Test
-    fun circuitBreakerCheckTest() {
-        val l1 = ResourceLimit(
-            algo = Algorithms.TOKEN_BUCKET.name, resource = "/project3/",
-            limitDimension = LimitDimension.DOWNLOAD_BANDWIDTH.name, limit = 1, capacity = 5,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
-        )
-
-        val circuitBreakerPerSecond = DataSize.ofBytes(1)
-
-        Assertions.assertThrows(OverloadException::class.java) {
-            (rateLimiterService as DownloadBandwidthRateLimiterService).circuitBreakerCheck(l1, circuitBreakerPerSecond)
-        }
-
-        l1.limit = 1024
-        (rateLimiterService as DownloadBandwidthRateLimiterService).circuitBreakerCheck(l1, circuitBreakerPerSecond)
-    }
-
-    @Test
-    fun getBandwidthRateLimitTest() {
-        val l1 = ResourceLimit(
-            algo = Algorithms.FIXED_WINDOW.name, resource = "/*/",
-            limitDimension = LimitDimension.DOWNLOAD_BANDWIDTH.name, limit = 10,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
-        )
-
-        var resourceLimit = (rateLimiterService as DownloadBandwidthRateLimiterService).getBandwidthRateLimit(request)
-        Assertions.assertNotNull(resourceLimit)
-        Assertions.assertEquals("/blueking/", resourceLimit!!.resource)
-        assertEqualsLimitInfo(l1, resourceLimit.resourceLimit)
-
-        l1.resource = "/blueking/generic-local/"
-        rateLimiterProperties.rules = listOf(l1)
-        (rateLimiterService as DownloadBandwidthRateLimiterService).refreshRateLimitRule()
-        resourceLimit = (rateLimiterService as DownloadBandwidthRateLimiterService).getBandwidthRateLimit(request)
-        Assertions.assertNotNull(resourceLimit)
-        Assertions.assertEquals("/blueking/generic-local/", resourceLimit!!.resource)
-        assertEqualsLimitInfo(l1, resourceLimit.resourceLimit)
-
-        l1.resource = "/test/"
-        rateLimiterProperties.rules = listOf(l1)
-        (rateLimiterService as DownloadBandwidthRateLimiterService).refreshRateLimitRule()
-        resourceLimit = (rateLimiterService as DownloadBandwidthRateLimiterService).getBandwidthRateLimit(request)
-        Assertions.assertNull(resourceLimit)
-
-        l1.resource = "/*/"
-        rateLimiterProperties.rules = listOf(l1)
-        (rateLimiterService as DownloadBandwidthRateLimiterService).refreshRateLimitRule()
     }
 }

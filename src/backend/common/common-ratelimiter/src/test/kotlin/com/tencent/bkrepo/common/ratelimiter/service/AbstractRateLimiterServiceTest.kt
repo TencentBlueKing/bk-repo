@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
+import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
@@ -212,4 +213,57 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         )
     }
 
+    @Test
+    fun getResLimitInfoTest() {
+        val resourceLimit = (rateLimiterService as AbstractRateLimiterService).getResLimitInfo(request)
+        Assertions.assertNotNull(resourceLimit)
+        assertEqualsLimitInfo(resourceLimit!!.resourceLimit, rateLimiterProperties.rules.first())
+    }
+
+    @Test
+    fun circuitBreakerCheckTest() {
+
+        var circuitBreakerPerSecond: Long? = null
+        (rateLimiterService as AbstractRateLimiterService).circuitBreakerCheck(
+            rateLimiterProperties.rules.first(), circuitBreakerPerSecond
+        )
+
+        circuitBreakerPerSecond = Long.MAX_VALUE
+        (rateLimiterService as AbstractRateLimiterService).circuitBreakerCheck(
+            rateLimiterProperties.rules.first(), circuitBreakerPerSecond
+        )
+
+        circuitBreakerPerSecond = Long.MIN_VALUE
+        (rateLimiterService as AbstractRateLimiterService).circuitBreakerCheck(
+            rateLimiterProperties.rules.first(), circuitBreakerPerSecond
+        )
+    }
+
+    @Test
+    fun rateLimitCatchTest() {
+        val resourceLimit = (rateLimiterService as AbstractRateLimiterService).getResLimitInfo(request)
+        Assertions.assertNotNull(resourceLimit)
+        val rateLimiter = (rateLimiterService as AbstractRateLimiterService)
+            .getAlgorithmOfRateLimiter(resourceLimit!!.resource, resourceLimit.resourceLimit)
+        Assertions.assertThrows(OverloadException::class.java) {
+            (rateLimiterService as AbstractRateLimiterService).rateLimitCatch(
+            request = request,
+            resLimitInfo = resourceLimit,
+            applyPermits = Long.MAX_VALUE,
+            circuitBreakerPerSecond = null,
+            ) { rateLimiter, permits ->
+            false
+            }
+        }
+        rateLimiterProperties.dryRun = true
+        (rateLimiterService as AbstractRateLimiterService).rateLimitCatch(
+            request = request,
+            resLimitInfo = resourceLimit,
+            applyPermits = Long.MAX_VALUE,
+            circuitBreakerPerSecond = null,
+        ) { rateLimiter, permits ->
+            false
+        }
+        rateLimiterProperties.dryRun = false
+    }
 }

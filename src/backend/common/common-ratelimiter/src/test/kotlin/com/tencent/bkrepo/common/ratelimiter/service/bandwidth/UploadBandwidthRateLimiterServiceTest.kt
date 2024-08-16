@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
+import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
@@ -114,9 +115,13 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     @Test
     fun getApplyPermitsTest() {
-        Assertions.assertThrows(UnsupportedOperationException::class.java) {
-            (rateLimiterService as UploadBandwidthRateLimiterService).getApplyPermits(request, null)
+        Assertions.assertThrows(AcquireLockFailedException::class.java) {
+            (rateLimiterService as DownloadBandwidthRateLimiterService).getApplyPermits(request, null)
         }
+        Assertions.assertEquals(
+            10,
+            (rateLimiterService as DownloadBandwidthRateLimiterService).getApplyPermits(request, 10)
+        )
     }
 
     @Test
@@ -192,61 +197,62 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     @Test
     fun bandwidthRateLimitTest() {
-
+        (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+            request = request,
+            permits = 1,
+            circuitBreakerPerSecond = DataSize.ofBytes(0)
+        )
+        Assertions.assertThrows(OverloadException::class.java) {
+            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+                request = request,
+                permits = 10000,
+                circuitBreakerPerSecond = DataSize.ofBytes(0)
+            )
+        }
+        Assertions.assertThrows(OverloadException::class.java) {
+            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+                request = request,
+                permits = 1,
+                circuitBreakerPerSecond = DataSize.ofTerabytes(1)
+            )
+        }
     }
 
     @Test
     fun bandwidthRateLimit1Test() {
-
-    }
-
-    @Test
-    fun circuitBreakerCheckTest() {
-        val l1 = ResourceLimit(
-            algo = Algorithms.TOKEN_BUCKET.name, resource = "/project3/",
-            limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name, limit = 1, capacity = 5,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
-        )
-
-        val circuitBreakerPerSecond = DataSize.ofBytes(1)
-
+        val content = "1234567891"
         Assertions.assertThrows(OverloadException::class.java) {
-            (rateLimiterService as UploadBandwidthRateLimiterService).circuitBreakerCheck(l1, circuitBreakerPerSecond)
+            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+                request = request,
+                inputStream = content.byteInputStream(),
+                circuitBreakerPerSecond = DataSize.ofTerabytes(1),
+                rangeLength = null
+            )
         }
-
-        l1.limit = 1024
-        (rateLimiterService as UploadBandwidthRateLimiterService).circuitBreakerCheck(l1, circuitBreakerPerSecond)
+        (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+            request = request,
+            inputStream = content.byteInputStream(),
+            circuitBreakerPerSecond = DataSize.ofBytes(1),
+            rangeLength = null
+        )
     }
 
     @Test
-    fun getBandwidthRateLimitTest() {
-        val l1 = ResourceLimit(
-            algo = Algorithms.FIXED_WINDOW.name, resource = "/*/",
-            limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name, limit = 10,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+    fun bandwidthLimitHandlerTest() {
+        val resourceLimit = (rateLimiterService as UploadBandwidthRateLimiterService).getResLimitInfo(request)
+        Assertions.assertNotNull(resourceLimit)
+        assertEqualsLimitInfo(resourceLimit!!.resourceLimit, rateLimiterProperties.rules.first())
+        val rateLimiter = (rateLimiterService as UploadBandwidthRateLimiterService)
+            .getAlgorithmOfRateLimiter(resourceLimit.resource, resourceLimit.resourceLimit)
+        Assertions.assertEquals(
+            true,
+            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthLimitHandler(rateLimiter, 1)
         )
-
-        var resourceLimit = (rateLimiterService as UploadBandwidthRateLimiterService).getBandwidthRateLimit(request)
-        Assertions.assertNotNull(resourceLimit)
-        Assertions.assertEquals("/blueking/", resourceLimit!!.resource)
-        assertEqualsLimitInfo(l1, resourceLimit.resourceLimit)
-
-        l1.resource = "/blueking/generic-local/"
-        rateLimiterProperties.rules = listOf(l1)
-        (rateLimiterService as UploadBandwidthRateLimiterService).refreshRateLimitRule()
-        resourceLimit = (rateLimiterService as UploadBandwidthRateLimiterService).getBandwidthRateLimit(request)
-        Assertions.assertNotNull(resourceLimit)
-        Assertions.assertEquals("/blueking/generic-local/", resourceLimit!!.resource)
-        assertEqualsLimitInfo(l1, resourceLimit.resourceLimit)
-
-        l1.resource = "/test/"
-        rateLimiterProperties.rules = listOf(l1)
-        (rateLimiterService as UploadBandwidthRateLimiterService).refreshRateLimitRule()
-        resourceLimit = (rateLimiterService as UploadBandwidthRateLimiterService).getBandwidthRateLimit(request)
-        Assertions.assertNull(resourceLimit)
-
-        l1.resource = "/*/"
-        rateLimiterProperties.rules = listOf(l1)
-        (rateLimiterService as UploadBandwidthRateLimiterService).refreshRateLimitRule()
+        Assertions.assertEquals(
+            false,
+            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthLimitHandler(rateLimiter, 100)
+        )
     }
+
+
 }

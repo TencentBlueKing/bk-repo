@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
-import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -96,13 +95,8 @@ abstract class AbstractArtifactResourceHandler(
      * 当仓库配置下载限速小于等于最低限速时则直接将请求断开, 避免占用过多连接
      */
     protected fun downloadRateLimitCheck(resource: ArtifactResource) {
-        try {
-            val applyPermits = resource.getSingleStream().range.length
-            requestLimitCheckService.postLimitCheck(HttpContextHolder.getRequest(), applyPermits)
-        } catch (e: OverloadException) {
-            throw e
-        } catch (ignore: Exception) {
-        }
+        val applyPermits = resource.getSingleStream().range.length
+        requestLimitCheckService.postLimitCheck(HttpContextHolder.getRequest(), applyPermits)
     }
 
     /**

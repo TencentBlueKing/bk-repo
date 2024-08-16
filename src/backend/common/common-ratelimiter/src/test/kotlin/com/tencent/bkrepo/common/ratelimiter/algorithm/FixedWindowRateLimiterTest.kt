@@ -99,9 +99,9 @@ class FixedWindowRateLimiterTest {
                 }
             }
         }
+        countDownLatch.await()
         println("elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
         println("successNum $successNum, failedNum $failedNum. errorNum $errorNum")
-        countDownLatch.await()
         assertEquals(5, successNum)
         assertEquals(readers - 5, failedNum)
         assertEquals(0, errorNum)

@@ -86,9 +86,9 @@ class DistributedSlidingWindowRateLimiterTest : DistributedTest() {
                 }
             }
         }
+        countDownLatch.await()
         println("elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
         println("successNum $successNum, failedNum $failedNum. errorNum $errorNum")
-        countDownLatch.await()
         Assertions.assertEquals(5, successNum)
         Assertions.assertEquals(readers - 5, failedNum)
         Assertions.assertEquals(0, errorNum)
