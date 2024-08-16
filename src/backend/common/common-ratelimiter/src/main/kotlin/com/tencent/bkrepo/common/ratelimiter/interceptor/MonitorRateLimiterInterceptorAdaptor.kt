@@ -49,7 +49,7 @@ class MonitorRateLimiterInterceptorAdaptor(
         result: Boolean, e: Exception?, applyPermits: Long
     ) {
         if (resourceLimit == null) return
-        val startNano = startTime.get()
+        val startNano = startTime.get() ?: System.nanoTime()
         startTime.remove()
         val duration = Duration.ofNanos(System.nanoTime() - startNano)
         rateLimiterMetrics.collectMetrics(

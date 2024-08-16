@@ -54,6 +54,7 @@ import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.util.concurrent.TimeUnit
 
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class AbstractRateLimiterServiceTest : DistributedTest() {
 
@@ -75,8 +76,8 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         rateLimiterMetrics = RateLimiterMetrics(meterRegistry)
     }
 
-    @Test
-    fun createAlgorithmOfRateLimiterTest() {
+
+    open fun createAlgorithmOfRateLimiterTest() {
         val resource = (rateLimiterService as AbstractRateLimiterService).buildResource(request)
         val resInfo = ResInfo(
             resource = resource,
@@ -182,16 +183,16 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
     }
 
 
-    @Test
-    fun refreshRateLimitRuleTest() {
+
+    open fun refreshRateLimitRuleTest() {
         val hashCode = rateLimiterProperties.rules.hashCode()
         (rateLimiterService as AbstractRateLimiterService).refreshRateLimitRule()
         Assertions.assertEquals(hashCode, (rateLimiterService as AbstractRateLimiterService).currentRuleHashCode)
     }
 
 
-    @Test
-    fun getAlgorithmOfRateLimiterTest() {
+
+    open fun getAlgorithmOfRateLimiterTest() {
         val resource = (rateLimiterService as AbstractRateLimiterService).buildResource(request)
         val resInfo = ResInfo(
             resource = resource,
@@ -213,15 +214,15 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         )
     }
 
-    @Test
-    fun getResLimitInfoTest() {
+
+    open fun getResLimitInfoTest() {
         val resourceLimit = (rateLimiterService as AbstractRateLimiterService).getResLimitInfo(request)
         Assertions.assertNotNull(resourceLimit)
         assertEqualsLimitInfo(resourceLimit!!.resourceLimit, rateLimiterProperties.rules.first())
     }
 
-    @Test
-    fun circuitBreakerCheckTest() {
+
+    open fun circuitBreakerCheckTest() {
 
         var circuitBreakerPerSecond: Long? = null
         (rateLimiterService as AbstractRateLimiterService).circuitBreakerCheck(
@@ -229,30 +230,31 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         )
 
         circuitBreakerPerSecond = Long.MAX_VALUE
-        (rateLimiterService as AbstractRateLimiterService).circuitBreakerCheck(
-            rateLimiterProperties.rules.first(), circuitBreakerPerSecond
-        )
-
+        Assertions.assertThrows(OverloadException::class.java) {
+            (rateLimiterService as AbstractRateLimiterService).circuitBreakerCheck(
+                rateLimiterProperties.rules.first(), circuitBreakerPerSecond
+            )
+        }
         circuitBreakerPerSecond = Long.MIN_VALUE
         (rateLimiterService as AbstractRateLimiterService).circuitBreakerCheck(
             rateLimiterProperties.rules.first(), circuitBreakerPerSecond
         )
     }
 
-    @Test
-    fun rateLimitCatchTest() {
+
+    open fun rateLimitCatchTest() {
         val resourceLimit = (rateLimiterService as AbstractRateLimiterService).getResLimitInfo(request)
         Assertions.assertNotNull(resourceLimit)
         val rateLimiter = (rateLimiterService as AbstractRateLimiterService)
             .getAlgorithmOfRateLimiter(resourceLimit!!.resource, resourceLimit.resourceLimit)
         Assertions.assertThrows(OverloadException::class.java) {
             (rateLimiterService as AbstractRateLimiterService).rateLimitCatch(
-            request = request,
-            resLimitInfo = resourceLimit,
-            applyPermits = Long.MAX_VALUE,
-            circuitBreakerPerSecond = null,
+                request = request,
+                resLimitInfo = resourceLimit,
+                applyPermits = Long.MAX_VALUE,
+                circuitBreakerPerSecond = null,
             ) { rateLimiter, permits ->
-            false
+                false
             }
         }
         rateLimiterProperties.dryRun = true

@@ -41,10 +41,12 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     val l1 = ResourceLimit(
@@ -75,6 +77,36 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
             rateLimiterMetrics = rateLimiterMetrics
         )
         (rateLimiterService as UploadBandwidthRateLimiterService).refreshRateLimitRule()
+    }
+
+    @Test
+    override fun createAlgorithmOfRateLimiterTest() {
+        super.createAlgorithmOfRateLimiterTest()
+    }
+
+    @Test
+    override fun refreshRateLimitRuleTest() {
+        super.refreshRateLimitRuleTest()
+    }
+
+    @Test
+    override fun getAlgorithmOfRateLimiterTest() {
+        super.getAlgorithmOfRateLimiterTest()
+    }
+
+    @Test
+    override fun getResLimitInfoTest() {
+        super.getResLimitInfoTest()
+    }
+
+    @Test
+    override fun circuitBreakerCheckTest() {
+        super.circuitBreakerCheckTest()
+    }
+
+    @Test
+    override fun rateLimitCatchTest() {
+        super.rateLimitCatchTest()
     }
 
     @Test
@@ -116,11 +148,11 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
     @Test
     fun getApplyPermitsTest() {
         Assertions.assertThrows(AcquireLockFailedException::class.java) {
-            (rateLimiterService as DownloadBandwidthRateLimiterService).getApplyPermits(request, null)
+            (rateLimiterService as UploadBandwidthRateLimiterService).getApplyPermits(request, null)
         }
         Assertions.assertEquals(
             10,
-            (rateLimiterService as DownloadBandwidthRateLimiterService).getApplyPermits(request, 10)
+            (rateLimiterService as UploadBandwidthRateLimiterService).getApplyPermits(request, 10)
         )
     }
 
@@ -192,7 +224,9 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     @Test
     fun limitTest() {
-        Assertions.assertThrows(UnsupportedOperationException::class.java) { rateLimiterService.limit(request) }
+        Assertions.assertThrows(UnsupportedOperationException::class.java) {
+            (rateLimiterService as UploadBandwidthRateLimiterService).limit(request)
+        }
     }
 
     @Test

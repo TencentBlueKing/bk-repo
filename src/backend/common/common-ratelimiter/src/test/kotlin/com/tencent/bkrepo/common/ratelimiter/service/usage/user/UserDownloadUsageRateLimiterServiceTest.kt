@@ -41,11 +41,13 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class UserDownloadUsageRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     var l1 = ResourceLimit(
@@ -77,6 +79,36 @@ class UserDownloadUsageRateLimiterServiceTest : AbstractRateLimiterServiceTest()
             rateLimiterMetrics = rateLimiterMetrics
         )
         (rateLimiterService as UserDownloadUsageRateLimiterService).refreshRateLimitRule()
+    }
+
+    @Test
+    override fun createAlgorithmOfRateLimiterTest() {
+        super.createAlgorithmOfRateLimiterTest()
+    }
+
+    @Test
+    override fun refreshRateLimitRuleTest() {
+        super.refreshRateLimitRuleTest()
+    }
+
+    @Test
+    override fun getAlgorithmOfRateLimiterTest() {
+        super.getAlgorithmOfRateLimiterTest()
+    }
+
+    @Test
+    override fun getResLimitInfoTest() {
+        super.getResLimitInfoTest()
+    }
+
+    @Test
+    override fun circuitBreakerCheckTest() {
+        super.circuitBreakerCheckTest()
+    }
+
+    @Test
+    override fun rateLimitCatchTest() {
+        super.rateLimitCatchTest()
     }
 
     @Test

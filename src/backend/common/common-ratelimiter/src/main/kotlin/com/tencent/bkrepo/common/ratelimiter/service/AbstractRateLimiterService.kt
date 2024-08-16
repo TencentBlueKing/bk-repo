@@ -305,8 +305,8 @@ abstract class AbstractRateLimiterService(
     ): Pair<RateLimiter, Long> {
         with(resLimitInfo) {
             val realPermits = getApplyPermits(request, applyPermits)
-            circuitBreakerCheck(resourceLimit, circuitBreakerPerSecond)
             interceptorChain.doBeforeLimitCheck(resource, resourceLimit)
+            circuitBreakerCheck(resourceLimit, circuitBreakerPerSecond)
             val rateLimiter = getAlgorithmOfRateLimiter(resource, resourceLimit)
             return Pair(rateLimiter, realPermits)
         }

@@ -30,11 +30,13 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.springframework.test.annotation.DirtiesContext
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.system.measureTimeMillis
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DistributedTokenBucketRateLimiterTest : DistributedTest() {
     @Test
     fun testTryAcquire1() {

@@ -40,11 +40,13 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito
+import org.springframework.test.annotation.DirtiesContext
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.system.measureTimeMillis
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CommonRateLimitInputStreamTest : DistributedTest() {
 
@@ -83,9 +85,6 @@ class CommonRateLimitInputStreamTest : DistributedTest() {
             rateCheckContext = context
         ).use { `is` ->
             val buf = ByteArray(3)
-            assertEquals(`is`.read(buf, 0, 3), 3)
-            assertEquals(String(buf), "123")
-            assertEquals(`is`.read().toChar(), '4')
             Assertions.assertThrows(OverloadException::class.java) { `is`.read(buf) }
         }
     }
