@@ -29,8 +29,8 @@ package com.tencent.bkrepo.job.separation.service.impl
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo

@@ -29,9 +29,10 @@ package com.tencent.bkrepo.common.artifact.manager.resource
 
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.fs.server.api.FsNodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
 /**
@@ -39,20 +40,17 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
  * */
 class FsNodeResource(
     private val node: NodeInfo,
-    private val fsNodeClient: FsNodeClient,
+    private val blockNodeService: BlockNodeService,
     private val range: Range,
     private val storageService: StorageService,
     private val storageCredentials: StorageCredentials?
 ) : AbstractNodeResource() {
     override fun getArtifactInputStream(): ArtifactInputStream? {
         with(node) {
-            val blocks = fsNodeClient.listBlockResources(
-                projectId = projectId,
-                repoName = repoName,
-                path = fullPath,
-                startPos = range.start,
-                endPos = range.end
-            ).data ?: emptyList()
+            val blocks = blockNodeService.info(
+                nodeDetail = NodeDetail(this),
+                range = range
+            )
             return storageService.load(blocks, range, storageCredentials)
         }
     }

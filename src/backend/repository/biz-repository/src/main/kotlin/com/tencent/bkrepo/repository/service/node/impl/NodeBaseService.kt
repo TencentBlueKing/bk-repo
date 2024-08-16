@@ -42,6 +42,9 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.manager.PermissionManager
@@ -51,9 +54,6 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publi
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.fs.server.api.FsNodeClient
-import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -105,7 +105,7 @@ abstract class NodeBaseService(
     open val servicePermissionClient: ServicePermissionClient,
     open val routerControllerClient: RouterControllerClient,
     open val routerControllerProperties: RouterControllerProperties,
-    open val fsNodeClient: FsNodeClient
+    open val blockNodeService: BlockNodeService
 ) : NodeService {
 
     @Autowired
