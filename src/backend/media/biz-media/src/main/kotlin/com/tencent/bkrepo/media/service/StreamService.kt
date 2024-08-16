@@ -45,7 +45,7 @@ class StreamService(
     /**
      * 创建推流地址
      * */
-    fun createStream(projectId: String, repoName: String): String {
+    fun createStream(projectId: String, repoName: String, display: Boolean): String {
         /*
         * 1. 创建媒体库
         * 2. 创建streams目录
@@ -58,6 +58,7 @@ class StreamService(
                 type = RepositoryType.MEDIA,
                 category = RepositoryCategory.LOCAL,
                 public = false,
+                display = display
             )
             repositoryClient.createRepo(createRepoRequest)
             val nodeCreateRequest = NodeCreateRequest(

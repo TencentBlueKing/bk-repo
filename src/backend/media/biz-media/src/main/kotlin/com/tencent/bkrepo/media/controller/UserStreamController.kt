@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -34,12 +35,13 @@ class UserStreamController(
     fun createStream(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
+        @RequestParam(required = false, defaultValue = "true") display: Boolean = true,
     ): Response<String> {
         permissionManager.checkProjectPermission(
             action = PermissionAction.MANAGE,
             projectId = projectId,
         )
-        return ResponseBuilder.success(streamService.createStream(projectId, repoName))
+        return ResponseBuilder.success(streamService.createStream(projectId, repoName, display))
     }
 
     /**
