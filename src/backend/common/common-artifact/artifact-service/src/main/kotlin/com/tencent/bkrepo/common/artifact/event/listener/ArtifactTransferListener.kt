@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ChunkArtifactTransferEvent
+import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
@@ -106,7 +107,8 @@ class ArtifactTransferListener(
                     host = artifactMetricsProperties.host,
                     builderAgentList = artifactMetricsProperties.builderAgentList,
                     clientAgentList = artifactMetricsProperties.clientAgentList
-                ).name
+                ).name,
+                userId = SecurityUtils.getUserId().md5()
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
@@ -151,7 +153,8 @@ class ArtifactTransferListener(
                     host = artifactMetricsProperties.host,
                     builderAgentList = artifactMetricsProperties.builderAgentList,
                     clientAgentList = artifactMetricsProperties.clientAgentList
-                ).name
+                ).name,
+                userId = SecurityUtils.getUserId().md5()
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
@@ -207,7 +210,8 @@ class ArtifactTransferListener(
                     host = artifactMetricsProperties.host,
                     builderAgentList = artifactMetricsProperties.builderAgentList,
                     clientAgentList = artifactMetricsProperties.clientAgentList
-                ).name
+                ).name,
+                userId = SecurityUtils.getUserId().md5()
             )
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(

@@ -39,7 +39,6 @@ import java.util.function.Function
 class ArchiveManager(
     private val archiveProperties: ArchiveProperties,
     private val fileProvider: PriorityFileProvider,
-    private val storageService: StorageService,
 ) : Function<TArchiveFile, Mono<TaskResult>> {
     @Autowired
     @Lazy
@@ -48,6 +47,10 @@ class ArchiveManager(
     @Autowired
     @Lazy
     private lateinit var archiveFileRepository: ArchiveFileRepository
+
+    @Autowired
+    @Lazy
+    private lateinit var storageService: StorageService
 
     private val tika = Tika()
     private val compressPool = ArchiveUtils.newFixedAndCachedThreadPool(

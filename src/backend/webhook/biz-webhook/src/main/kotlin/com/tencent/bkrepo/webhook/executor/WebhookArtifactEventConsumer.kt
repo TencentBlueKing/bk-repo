@@ -49,7 +49,7 @@ import java.util.regex.Pattern
  * 事件消息消费者
  */
 @Component
-class ArtifactEventConsumer(
+class WebhookArtifactEventConsumer(
     private val webHookDao: WebHookDao,
     private val webHookExecutor: WebHookExecutor,
     private val webHookProperties: WebHookProperties
@@ -140,6 +140,6 @@ class ArtifactEventConsumer(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactEventConsumer::class.java)
+        private val logger = LoggerFactory.getLogger(WebhookArtifactEventConsumer::class.java)
     }
 }

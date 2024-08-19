@@ -34,11 +34,11 @@ import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils.ignoreException
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils.nodeLevelNotFoundError
 import com.tencent.bkrepo.common.artifact.util.ClusterUtils.repoLevelNotFoundError
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -89,7 +89,7 @@ class EdgeNodeServiceImpl(
     override val clusterProperties: ClusterProperties,
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
-    override val fsNodeClient: FsNodeClient,
+    override val blockNodeService: BlockNodeService,
     val archiveClient: ArchiveClient,
 ) : EdgeNodeBaseService(
     nodeDao,
@@ -103,7 +103,7 @@ class EdgeNodeServiceImpl(
     routerControllerClient,
     servicePermissionClient,
     routerControllerProperties,
-    fsNodeClient,
+    blockNodeService,
     clusterProperties,
 ) {
     override fun computeSize(
@@ -151,6 +151,14 @@ class EdgeNodeServiceImpl(
 
     override fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long {
         return NodeDeleteSupport(this).countDeleteNodes(nodesDeleteRequest)
+    }
+
+    override fun deleteByFullPathWithoutDecreaseVolume(
+        projectId: String, repoName: String, fullPath: String, operator: String
+    ) {
+        return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
+            projectId, repoName, fullPath, operator
+        )
     }
 
     @Transactional(rollbackFor = [Throwable::class])

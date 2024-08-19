@@ -53,7 +53,7 @@ class HelmIndexController(
     private val remoteEventJobExecutor: RemoteEventJobExecutor,
     private val chartManipulationService: ChartManipulationService,
     private val fixToolService: FixToolService
-    ) : HelmClient {
+) : HelmClient {
 
     /**
      * refresh index.yaml and package info for remote
@@ -70,6 +70,26 @@ class HelmIndexController(
     override fun initIndexAndPackage(projectId: String, repoName: String): Response<Void> {
         val createEvent = ObjectBuilderUtil.buildCreatedEvent(projectId, repoName, SecurityUtils.getUserId())
         remoteEventJobExecutor.execute(createEvent)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * refresh index.yaml for pacakge replication
+     */
+    override fun refreshIndexForReplication(
+        projectId: String, repoName: String,
+        packageKey: String, packageName: String,
+        packageVersion: String,
+    ): Response<Void> {
+        val replicationEvent = ObjectBuilderUtil.buildPackageReplicationRequest(
+            projectId = projectId,
+            repoName = repoName,
+            packageName = packageName,
+            packageKey = packageKey,
+            packageVersion = packageVersion,
+            userId = SecurityUtils.getUserId()
+        )
+        remoteEventJobExecutor.execute(replicationEvent)
         return ResponseBuilder.success()
     }
 

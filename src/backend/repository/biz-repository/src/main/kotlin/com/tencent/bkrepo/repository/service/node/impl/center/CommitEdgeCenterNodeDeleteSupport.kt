@@ -113,8 +113,12 @@ class CommitEdgeCenterNodeDeleteSupport(
         var deletedSize = 0L
         var deletedNum = 0L
         val option = NodeListOption(includeFolder = false, deep = true)
+        val timeCriteria = Criteria().orOperator(
+            Criteria().and(TNode::lastAccessDate).lt(date).and(TNode::lastModifiedDate).lt(date),
+            Criteria().and(TNode::lastAccessDate).`is`(null).and(TNode::lastModifiedDate).lt(date),
+        )
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
-            .and(TNode::createdDate).lt(date)
+            .andOperator(timeCriteria)
             .and(TNode::clusterNames).isEqualTo(clusterName)
         val pageSize = 1
         var queryCount: Int
@@ -163,12 +167,12 @@ class CommitEdgeCenterNodeDeleteSupport(
         }
         subNodes = nodeDao.find(query)
         if (subNodes.isEmpty()) {
-            deletedNumber += super.deleteByPath(
+            super.deleteByFullPathWithoutDecreaseVolume(
                 projectId = folder.projectId,
                 repoName = folder.repoName,
                 fullPath = folder.fullPath,
                 operator = operator
-            ).deletedNumber
+            )
         }
         return NodeDeleteResult(deletedNumber, deletedSize, LocalDateTime.now())
     }
@@ -183,7 +187,8 @@ class CommitEdgeCenterNodeDeleteSupport(
         val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
         node.clusterNames = node.clusterNames.orEmpty().minus(srcCluster)
         if (node.clusterNames.orEmpty().isEmpty()) {
-            super.deleteByPath(node.projectId, node.repoName, node.fullPath, operator)
+            super.deleteByFullPathWithoutDecreaseVolume(node.projectId, node.repoName, node.fullPath, operator)
+            quotaService.decreaseUsedVolume(node.projectId, node.repoName, node.size)
         } else {
             val query = NodeQueryHelper.nodeQuery(node.projectId, node.repoName, node.fullPath)
             val update = Update().pull(TNode::clusterNames.name, srcCluster)
