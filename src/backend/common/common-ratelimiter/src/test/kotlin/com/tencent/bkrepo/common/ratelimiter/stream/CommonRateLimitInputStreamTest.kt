@@ -137,7 +137,10 @@ class CommonRateLimitInputStreamTest : DistributedTest() {
 
     }
 
-    private fun createContext(permitsOnce: Long, limit: Long = 10, distributed: Boolean = false, keyStr: String? = null): Pair<RateCheckContext, String?> {
+    private fun createContext(
+        permitsOnce: Long, limit: Long = 10,
+        distributed: Boolean = false, keyStr: String? = null
+    ): Pair<RateCheckContext, String?> {
         val (rateLimiter, key) = if (distributed) {
             Pair(DistributedFixedWindowRateLimiter(keyStr!!, limit, TimeUnit.SECONDS, redisTemplate), keyStr)
         } else {

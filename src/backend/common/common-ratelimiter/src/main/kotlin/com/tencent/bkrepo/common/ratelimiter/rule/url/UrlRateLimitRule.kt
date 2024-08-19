@@ -45,24 +45,22 @@ class UrlRateLimitRule : RateLimitRule {
     private val urlLimitRules: UrlResourceLimitRule = UrlResourceLimitRule()
 
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
-        with(resInfo) {
-            var realResource = resource
-            if (realResource.isBlank()) {
-                return null
-            }
-            var ruleLimit = urlLimitRules.getPathResourceLimit(realResource)
-            if (ruleLimit == null && extraResource.isNotEmpty()) {
-                for (res in extraResource) {
-                    ruleLimit = urlLimitRules.getPathResourceLimit(res)
-                    if (ruleLimit != null) {
-                        realResource = res
-                        break
-                    }
+        var realResource = resInfo.resource
+        if (realResource.isBlank()) {
+            return null
+        }
+        var ruleLimit = urlLimitRules.getPathResourceLimit(realResource)
+        if (ruleLimit == null && resInfo.extraResource.isNotEmpty()) {
+            for (res in resInfo.extraResource) {
+                ruleLimit = urlLimitRules.getPathResourceLimit(res)
+                if (ruleLimit != null) {
+                    realResource = res
+                    break
                 }
             }
-            if (ruleLimit == null) return null
-            return ResLimitInfo(realResource, ruleLimit)
         }
+        if (ruleLimit == null) return null
+        return ResLimitInfo(realResource, ruleLimit)
     }
 
     override fun addRateLimitRule(resourceLimit: ResourceLimit) {

@@ -68,5 +68,7 @@ class FixedWindowRateLimiter(
         }
     }
 
-    override fun removeCacheLimit(key: String) {}
+    override fun removeCacheLimit(key: String) {
+        // 非redis类实现不需要处理
+    }
 }

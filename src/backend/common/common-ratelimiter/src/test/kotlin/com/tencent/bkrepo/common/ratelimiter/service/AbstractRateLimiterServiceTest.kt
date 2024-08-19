@@ -47,7 +47,6 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import io.micrometer.core.instrument.MeterRegistry
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.mock.web.MockHttpServletRequest
@@ -183,13 +182,11 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
     }
 
 
-
     open fun refreshRateLimitRuleTest() {
         val hashCode = rateLimiterProperties.rules.hashCode()
         (rateLimiterService as AbstractRateLimiterService).refreshRateLimitRule()
         Assertions.assertEquals(hashCode, (rateLimiterService as AbstractRateLimiterService).currentRuleHashCode)
     }
-
 
 
     open fun getAlgorithmOfRateLimiterTest() {

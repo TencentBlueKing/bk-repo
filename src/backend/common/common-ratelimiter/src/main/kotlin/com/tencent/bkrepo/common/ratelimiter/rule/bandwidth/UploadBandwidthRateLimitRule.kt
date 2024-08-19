@@ -44,24 +44,22 @@ open class UploadBandwidthRateLimitRule(
 ) : RateLimitRule {
 
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
-        with(resInfo) {
-            var realResource = resource
-            if (realResource.isBlank()) {
-                return null
-            }
-            var ruleLimit = bandwidthLimitRules.getPathResourceLimit(realResource)
-            if (ruleLimit == null && extraResource.isNotEmpty()) {
-                for (res in extraResource) {
-                    ruleLimit = bandwidthLimitRules.getPathResourceLimit(res)
-                    if (ruleLimit != null) {
-                        realResource = res
-                        break
-                    }
+        var realResource = resInfo.resource
+        if (realResource.isBlank()) {
+            return null
+        }
+        var ruleLimit = bandwidthLimitRules.getPathResourceLimit(realResource)
+        if (ruleLimit == null && resInfo.extraResource.isNotEmpty()) {
+            for (res in resInfo.extraResource) {
+                ruleLimit = bandwidthLimitRules.getPathResourceLimit(res)
+                if (ruleLimit != null) {
+                    realResource = res
+                    break
                 }
             }
-            if (ruleLimit == null) return null
-            return ResLimitInfo(realResource, ruleLimit)
         }
+        if (ruleLimit == null) return null
+        return ResLimitInfo(realResource, ruleLimit)
     }
 
     override fun addRateLimitRule(resourceLimit: ResourceLimit) {

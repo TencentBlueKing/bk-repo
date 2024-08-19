@@ -86,25 +86,26 @@ class CommonRateLimitInputStream(
     private fun acquire(permits: Long) {
         var flag = false
         var failedNum = 0
-        try {
-            while (!flag) {
-                // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果达到等待轮次上限后还是无法获取，则抛异常结束
+        while (!flag) {
+            // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果达到等待轮次上限后还是无法获取，则抛异常结束
+            try {
                 flag = rateCheckContext.rateLimiter.tryAcquire(permits)
-                if (!flag && failedNum < rateCheckContext.waitRound) {
-                    failedNum++
-                    try {
-                        Thread.sleep(rateCheckContext.latency)
-                    } catch (ignore: InterruptedException) {
-                    }
-                }
-                if (!flag && failedNum >= rateCheckContext.waitRound) {
-                    if (rateCheckContext.dryRun) {
-                        return
-                    }
-                    throw OverloadException("request reached bandwidth limit")
+            } catch (ignore: AcquireLockFailedException) {
+                return
+            }
+            if (!flag && failedNum < rateCheckContext.waitRound) {
+                failedNum++
+                try {
+                    Thread.sleep(rateCheckContext.latency)
+                } catch (ignore: InterruptedException) {
                 }
             }
-        } catch (ignore: AcquireLockFailedException) {
+            if (!flag && failedNum >= rateCheckContext.waitRound) {
+                if (rateCheckContext.dryRun) {
+                    return
+                }
+                throw OverloadException("request reached bandwidth limit")
+            }
         }
     }
 }
