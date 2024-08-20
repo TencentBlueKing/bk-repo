@@ -59,7 +59,9 @@ class DistributedSlidingWindowRateLimiter(
                 )
                 acquireResult = results[0] == 1L
             }
-            logger.info("acquire distributed sliding window rateLimiter elapsed time: $elapsedTime")
+            if (logger.isDebugEnabled) {
+                logger.debug("acquire distributed sliding window rateLimiter elapsed time: $elapsedTime")
+            }
             return acquireResult
         } catch (e: Exception) {
             e.printStackTrace()

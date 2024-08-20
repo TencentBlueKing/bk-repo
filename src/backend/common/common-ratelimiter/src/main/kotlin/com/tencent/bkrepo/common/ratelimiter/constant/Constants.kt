@@ -45,6 +45,3 @@ const val RATE_LIMITER_LIMITED_COUNT_DESC = "限流请求数"
 
 const val RATE_LIMITER_EXCEPTION_COUNT = "rate.limiter.exception.count"
 const val RATE_LIMITER_EXCEPTION_COUNT_DESC = "异常请求数"
-
-const val RATE_LIMITER_CHECK_TIME = "rate.limiter.check.time"
-const val RATE_LIMITER_CHECK_TIME_DESC = "限流校验耗时"

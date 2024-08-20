@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.ratelimiter.interceptor
 
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
-import java.time.Duration
 
 /**
  * 限流相关指标采集拦截器
@@ -38,23 +37,13 @@ class MonitorRateLimiterInterceptorAdaptor(
     private val rateLimiterMetrics: RateLimiterMetrics
 ) : RateLimiterInterceptorAdapter() {
 
-    private val startTime: ThreadLocal<Long> = ThreadLocal()
-
-    override fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit) {
-        startTime.set(System.nanoTime())
-    }
+    override fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit) = Unit
 
     override fun afterLimitCheck(
         resource: String, resourceLimit: ResourceLimit?,
-        result: Boolean, e: Exception?, applyPermits: Long
+        result: Boolean, e: Exception?
     ) {
         if (resourceLimit == null) return
-        val startNano = startTime.get() ?: System.nanoTime()
-        startTime.remove()
-        val duration = Duration.ofNanos(System.nanoTime() - startNano)
-        rateLimiterMetrics.collectMetrics(
-            resource = resource, result = result, e = e,
-            duration = duration, applyPermits = applyPermits,
-        )
+        rateLimiterMetrics.collectMetrics(resource = resource, result = result, e = e)
     }
 }

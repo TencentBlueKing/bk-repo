@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
@@ -80,7 +80,7 @@ class ArtifactDataReceiver(
     private val originPath: Path = path,
     private val requestLimitCheckService: RequestLimitCheckService? = null,
     private val contentLength: Long? = null,
-    ) : StorageHealthMonitor.Observer, AutoCloseable {
+) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
      * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
@@ -193,7 +193,7 @@ class ArtifactDataReceiver(
         }
         try {
             requestLimitCheckService?.uploadBandwidthCheck(
-                HttpContextHolder.getRequest(), length.toLong(),
+                length.toLong(),
                 receiveProperties.circuitBreakerThreshold
             )
             writeData(chunk, offset, length)
@@ -215,8 +215,7 @@ class ArtifactDataReceiver(
         }
         try {
             requestLimitCheckService?.uploadBandwidthCheck(
-                HttpContextHolder.getRequest(), 1,
-                receiveProperties.circuitBreakerThreshold
+                1, receiveProperties.circuitBreakerThreshold
             )
             checkFallback()
             outputStream.write(b)
@@ -239,11 +238,13 @@ class ArtifactDataReceiver(
         if (startTime == 0L) {
             startTime = System.nanoTime()
         }
+        var rateLimitFlag = false
+        val exception: Exception? = null
         try {
             val input = requestLimitCheckService?.bandwidthCheck(
-                HttpContextHolder.getRequest(), source, receiveProperties.circuitBreakerThreshold,
-                contentLength
+                source, receiveProperties.circuitBreakerThreshold, contentLength
             ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
+            rateLimitFlag = input is CommonRateLimitInputStream
             val buffer = ByteArray(bufferSize)
             input.use {
                 var bytes = input.read(buffer)
@@ -256,6 +257,10 @@ class ArtifactDataReceiver(
             handleIOException(exception)
         } catch (overloadEx: OverloadException) {
             handleOverloadException(overloadEx)
+        } finally {
+            if (rateLimitFlag) {
+                requestLimitCheckService?.bandwidthFinish(exception)
+            }
         }
     }
 

@@ -37,6 +37,6 @@ abstract class RateLimiterInterceptorAdapter : RateLimiterInterceptor {
 
     override fun afterLimitCheck(
         resource: String, resourceLimit: ResourceLimit?,
-        result: Boolean, e: Exception?, applyPermits: Long
+        result: Boolean, e: Exception?
     ) = Unit
 }

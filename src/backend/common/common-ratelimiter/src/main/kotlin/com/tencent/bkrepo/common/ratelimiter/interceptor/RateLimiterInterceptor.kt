@@ -44,6 +44,6 @@ interface RateLimiterInterceptor {
      */
     fun afterLimitCheck(
         resource: String, resourceLimit: ResourceLimit?,
-        result: Boolean, e: Exception?, applyPermits: Long
+        result: Boolean, e: Exception?
     )
 }

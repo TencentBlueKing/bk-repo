@@ -117,13 +117,25 @@ class ArtifactFileFactory(
         }
 
         /**
-         * 通过输入流构造artifact file
+         * 通过输入流构造artifact file, 主要针对上传请求对其做限流操作
+         * @param inputStream 输入流
+         */
+        fun buildWithRateLimiter(inputStream: InputStream, contentLength: Long? = null): ArtifactFile {
+            return StreamArtifactFile(
+                inputStream, getMonitor(), properties, getStorageCredentials(), contentLength,
+                requestLimitCheckService = requestLimitCheckService
+            ).apply {
+                track(this)
+            }
+        }
+
+        /**
+         * 通过输入流构造artifact file，服务内部输入流转换成文件使用
          * @param inputStream 输入流
          */
         fun build(inputStream: InputStream, contentLength: Long? = null): ArtifactFile {
             return StreamArtifactFile(
-                inputStream, getMonitor(), properties, getStorageCredentials(), contentLength,
-                requestLimitCheckService = requestLimitCheckService
+                inputStream, getMonitor(), properties, getStorageCredentials(), contentLength
             ).apply {
                 track(this)
             }

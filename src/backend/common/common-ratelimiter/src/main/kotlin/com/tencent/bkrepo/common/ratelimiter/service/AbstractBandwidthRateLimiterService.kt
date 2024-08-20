@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.ratelimiter.stream.RateCheckContext
 import org.slf4j.Logger
@@ -40,6 +41,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -59,7 +61,7 @@ abstract class AbstractBandwidthRateLimiterService(
     /**
      * 根据资源返回对应带限流实现的InputStream
      */
-    fun bandwidthRateLimit(
+    fun bandwidthRateStart(
         request: HttpServletRequest,
         inputStream: InputStream,
         circuitBreakerPerSecond: DataSize,
@@ -68,12 +70,14 @@ abstract class AbstractBandwidthRateLimiterService(
         val resLimitInfo = getResLimitInfo(request) ?: return null
         logger.info("will check the bandwidth with length $rangeLength of ${resLimitInfo.resource}")
         return try {
+            interceptorChain.doBeforeLimitCheck(resLimitInfo.resource, resLimitInfo.resourceLimit)
             circuitBreakerCheck(resLimitInfo.resourceLimit, circuitBreakerPerSecond.toBytes())
             val rateLimiter = getAlgorithmOfRateLimiter(resLimitInfo.resource, resLimitInfo.resourceLimit)
             val context = RateCheckContext(
                 rateLimiter = rateLimiter, latency = rateLimiterProperties.latency,
                 waitRound = rateLimiterProperties.waitRound, rangeLength = rangeLength,
-                dryRun = rateLimiterProperties.dryRun, permitsOnce = rateLimiterProperties.permitsOnce
+                dryRun = rateLimiterProperties.dryRun, permitsOnce = rateLimiterProperties.permitsOnce,
+                limitPerSecond = getPermitsPerSecond(resLimitInfo.resourceLimit)
             )
             CommonRateLimitInputStream(
                 delegate = inputStream,
@@ -89,6 +93,14 @@ abstract class AbstractBandwidthRateLimiterService(
             logger.warn("${resLimitInfo.resourceLimit} is invalid for ${resLimitInfo.resource} , e: ${e.message}")
             null
         }
+    }
+
+    fun bandwidthRateLimitFinish(
+        request: HttpServletRequest,
+        exception: Exception? = null,
+    ) {
+        val resLimitInfo = getResLimitInfo(request) ?: return
+        afterRateLimitCheck(resLimitInfo, exception == null, exception)
     }
 
     fun bandwidthRateLimit(
@@ -127,6 +139,15 @@ abstract class AbstractBandwidthRateLimiterService(
             }
         }
         return true
+    }
+
+    fun getPermitsPerSecond(resourceLimit: ResourceLimit): Long {
+        val unit = try {
+            TimeUnit.valueOf(resourceLimit.unit)
+        } catch (e: IllegalArgumentException) {
+            throw InvalidResourceException("config unit is ${resourceLimit.unit}")
+        }
+        return resourceLimit.limit / unit.toSeconds(1)
     }
 
     companion object {

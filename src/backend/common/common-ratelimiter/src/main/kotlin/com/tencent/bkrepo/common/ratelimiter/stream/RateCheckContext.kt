@@ -33,7 +33,8 @@ data class RateCheckContext(
     var rateLimiter: RateLimiter,
     var latency: Long,
     var waitRound: Int,
+    var limitPerSecond: Long,
     var rangeLength: Long? = null,
     var dryRun: Boolean = false,
-    var permitsOnce: Long = 1024 * 1024 * 1024,
+    var permitsOnce: Long = 1024 * 1024,
 )

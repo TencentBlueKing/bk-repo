@@ -87,6 +87,7 @@ open class StreamArtifactFile(
             receivePath,
             randomPath = !useLocalPath,
             requestLimitCheckService = requestLimitCheckService,
+            contentLength = contentLength
         )
         if (!storageProperties.receive.resolveLazily) {
             init()

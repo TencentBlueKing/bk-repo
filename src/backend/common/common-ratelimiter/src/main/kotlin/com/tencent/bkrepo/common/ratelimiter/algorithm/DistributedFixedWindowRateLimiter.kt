@@ -55,7 +55,9 @@ class DistributedFixedWindowRateLimiter(
                 )
                 acquireResult = result == 1L
             }
-            logger.info("acquire distributed fixed window rateLimiter elapsed time: $elapsedTime")
+            if (logger.isDebugEnabled) {
+                logger.debug("acquire distributed fixed window rateLimiter elapsed time: $elapsedTime")
+            }
             return acquireResult
         } catch (e: Exception) {
             throw AcquireLockFailedException("distributed lock acquire failed: $e")

@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.common.ratelimiter.metrics
 
-import com.tencent.bkrepo.common.ratelimiter.constant.RATE_LIMITER_CHECK_TIME
-import com.tencent.bkrepo.common.ratelimiter.constant.RATE_LIMITER_CHECK_TIME_DESC
 import com.tencent.bkrepo.common.ratelimiter.constant.RATE_LIMITER_EXCEPTION_COUNT
 import com.tencent.bkrepo.common.ratelimiter.constant.RATE_LIMITER_EXCEPTION_COUNT_DESC
 import com.tencent.bkrepo.common.ratelimiter.constant.RATE_LIMITER_LIMITED_COUNT
@@ -41,8 +39,6 @@ import com.tencent.bkrepo.common.ratelimiter.constant.TAG_NAME
 import com.tencent.bkrepo.common.ratelimiter.constant.TAG_STATUS
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.Timer
-import java.time.Duration
 
 /**
  * 限流指标写入
@@ -50,20 +46,18 @@ import java.time.Duration
 class RateLimiterMetrics(private val registry: MeterRegistry) {
 
     fun collectMetrics(
-        resource: String, result: Boolean, e: Exception?,
-        applyPermits: Long, duration: Duration
+        resource: String, result: Boolean, e: Exception?
     ) {
         try {
-            getTotalCounter(resource).increment(applyPermits.toDouble())
+            getTotalCounter(resource).increment()
             if (result) {
-                getPassedCounter(resource).increment(applyPermits.toDouble())
+                getPassedCounter(resource).increment()
             } else {
-                getLimitedCounter(resource).increment(applyPermits.toDouble())
+                getLimitedCounter(resource).increment()
             }
             if (e != null) {
-                getExceptionCounter(resource).increment(applyPermits.toDouble())
+                getExceptionCounter(resource).increment()
             }
-            getLimitCheckDuration(resource).record(duration)
         } catch (ignore: Exception) {
         }
 
@@ -91,13 +85,6 @@ class RateLimiterMetrics(private val registry: MeterRegistry) {
         return getMetricsCount(
             RATE_LIMITER_EXCEPTION_COUNT, RATE_LIMITER_EXCEPTION_COUNT_DESC, MetricType.EXCEPTION.name, resource
         )
-    }
-
-    private fun getLimitCheckDuration(resource: String): Timer {
-        return Timer.builder(RATE_LIMITER_CHECK_TIME)
-            .description(RATE_LIMITER_CHECK_TIME_DESC)
-            .tag(TAG_NAME, resource)
-            .register(registry)
     }
 
     private fun getMetricsCount(metricsName: String, metricsDes: String, status: String, resource: String): Counter {

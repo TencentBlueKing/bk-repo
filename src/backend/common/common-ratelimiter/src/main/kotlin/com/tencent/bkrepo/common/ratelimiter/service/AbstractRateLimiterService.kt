@@ -278,14 +278,13 @@ abstract class AbstractRateLimiterService(
         }
     }
 
-    private fun afterRateLimitCheck(
+    fun afterRateLimitCheck(
         resLimitInfo: ResLimitInfo,
         pass: Boolean,
-        realPermits: Long,
         exception: Exception? = null,
     ) {
         with(resLimitInfo) {
-            interceptorChain.doAfterLimitCheck(resource, resourceLimit, pass, exception, realPermits)
+            interceptorChain.doAfterLimitCheck(resource, resourceLimit, pass, exception)
         }
     }
 
@@ -298,7 +297,6 @@ abstract class AbstractRateLimiterService(
     ) {
         var exception: Exception? = null
         var pass = false
-        var realPermits: Long = 0
         try {
             val (rateLimiter, permits) = beforeRateLimitCheck(
                 request = request,
@@ -306,7 +304,7 @@ abstract class AbstractRateLimiterService(
                 resLimitInfo = resLimitInfo,
                 circuitBreakerPerSecond = circuitBreakerPerSecond
             )
-            realPermits = permits
+            val realPermits = permits
             pass = action(rateLimiter, realPermits)
             if (!pass) {
                 val msg = "${resLimitInfo.resource} has exceeded max rate limit: " +
@@ -332,7 +330,7 @@ abstract class AbstractRateLimiterService(
             logger.error("internal error: $e")
             exception = e
         } finally {
-            afterRateLimitCheck(resLimitInfo, pass, realPermits, exception)
+            afterRateLimitCheck(resLimitInfo, pass, exception)
         }
     }
 

@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
@@ -96,7 +96,7 @@ abstract class AbstractArtifactResourceHandler(
      */
     protected fun downloadRateLimitCheck(resource: ArtifactResource) {
         val applyPermits = resource.getSingleStream().range.length
-        requestLimitCheckService.postLimitCheck(HttpContextHolder.getRequest(), applyPermits)
+        requestLimitCheckService.postLimitCheck(applyPermits)
     }
 
     /**
@@ -111,19 +111,23 @@ abstract class AbstractArtifactResourceHandler(
         if (request.method == HttpMethod.HEAD.name) {
             return Throughput.EMPTY
         }
+        val length = inputStream.range.length
+        var rateLimitFlag = false
+        var exp: Exception? = null
         val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
             return measureThroughput {
                 val stream = requestLimitCheckService.bandwidthCheck(
-                    request, inputStream, storageProperties.response.circuitBreakerThreshold,
-                    inputStream.range.length
+                    inputStream, storageProperties.response.circuitBreakerThreshold,
+                    length
                 ) ?: recordAbleInputStream.rateLimit(
                     responseRateLimitWrapper(storageProperties.response.rateLimit)
                 )
+                rateLimitFlag = stream is CommonRateLimitInputStream
                 stream.use {
                     it.copyTo(
                         out = response.outputStream,
-                        bufferSize = getBufferSize(inputStream.range.length)
+                        bufferSize = getBufferSize(length)
                     )
                 }
             }
@@ -139,7 +143,12 @@ abstract class AbstractArtifactResourceHandler(
                 logger.warn("write range stream failed", exception)
                 HttpStatus.INTERNAL_SERVER_ERROR
             }
+            exp = exception
             throw ArtifactResponseException(message, status)
+        } finally {
+            if (rateLimitFlag) {
+                requestLimitCheckService.bandwidthFinish(exp)
+            }
         }
     }
 

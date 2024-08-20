@@ -51,7 +51,7 @@ class RateLimiterInterceptorChainTest {
 
         override fun afterLimitCheck(
             resource: String, resourceLimit: ResourceLimit?,
-            result: Boolean, e: Exception?, applyPermits: Long
+            result: Boolean, e: Exception?
         ) {
             list.add(identity() + ":after")
         }
@@ -117,7 +117,7 @@ class RateLimiterInterceptorChainTest {
         chain.addInterceptor(InterceptorC())
         chain.addInterceptor(InterceptorB())
         chain.addInterceptor(InterceptorA())
-        chain.doAfterLimitCheck("test1", null, true, null, 1)
+        chain.doAfterLimitCheck("test1", null, true, null)
         assertEquals(Companion.list.size, 3)
         assertEquals(Companion.list[0], "InterceptorC:after")
         assertEquals(Companion.list[1], "InterceptorB:after")

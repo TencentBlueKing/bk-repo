@@ -61,7 +61,7 @@ class CommonRateLimitInputStreamTest : DistributedTest() {
 
     @Test
     fun readTestOncePermitsGreaterThanLength() {
-        val (context, _) = createContext(1024 * 1024 * 1024)
+        val (context, _) = createContext(1024 * 1024)
         inputStreamReadTest(context)
     }
 
@@ -85,9 +85,11 @@ class CommonRateLimitInputStreamTest : DistributedTest() {
             rateCheckContext = context
         ).use { `is` ->
             val buf = ByteArray(3)
+            `is`.read(buf)
             Assertions.assertThrows(OverloadException::class.java) { `is`.read(buf) }
         }
     }
+
 
 
     @Test
@@ -138,8 +140,8 @@ class CommonRateLimitInputStreamTest : DistributedTest() {
     }
 
     private fun createContext(
-        permitsOnce: Long, limit: Long = 10,
-        distributed: Boolean = false, keyStr: String? = null
+        permitsOnce: Long, limit: Long = 1024 * 1024 * 100,
+        distributed: Boolean = false, keyStr: String? = null,
     ): Pair<RateCheckContext, String?> {
         val (rateLimiter, key) = if (distributed) {
             Pair(DistributedFixedWindowRateLimiter(keyStr!!, limit, TimeUnit.SECONDS, redisTemplate), keyStr)
@@ -149,8 +151,8 @@ class CommonRateLimitInputStreamTest : DistributedTest() {
         return Pair(
             RateCheckContext(
                 rateLimiter = rateLimiter, latency = 10,
-                waitRound = 10, rangeLength = content.length.toLong(),
-                dryRun = false, permitsOnce = permitsOnce
+                waitRound = 3, rangeLength = content.length.toLong(),
+                dryRun = false, permitsOnce = permitsOnce, limitPerSecond = limit
             ), key
         )
     }

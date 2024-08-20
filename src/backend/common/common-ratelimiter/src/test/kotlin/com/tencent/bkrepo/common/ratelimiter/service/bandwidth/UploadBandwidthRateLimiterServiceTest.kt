@@ -256,14 +256,14 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
     fun bandwidthRateLimit1Test() {
         val content = "1234567891"
         Assertions.assertThrows(OverloadException::class.java) {
-            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateStart(
                 request = request,
                 inputStream = content.byteInputStream(),
                 circuitBreakerPerSecond = DataSize.ofTerabytes(1),
                 rangeLength = null
             )
         }
-        (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+        (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateStart(
             request = request,
             inputStream = content.byteInputStream(),
             circuitBreakerPerSecond = DataSize.ofBytes(1),

@@ -74,10 +74,26 @@ class CommonRateLimitInputStream(
                 acquire(bytes.toLong())
             } else {
                 // 避免频繁申请，增加耗时，降低申请频率， 每次申请一定数量
-                if (bytesRead == 0L || (bytesRead / permitsOnce) > applyNum) {
-                    val permits = (rangeLength!! - bytesRead).coerceAtMost(permitsOnce)
+                // 当申请的bytes比limitPerSecond还大时,直接限流
+                if (limitPerSecond < bytes) {
+                    if (rateCheckContext.dryRun) {
+                        return
+                    }
+                    throw OverloadException("request reached bandwidth limit")
+                }
+
+                // 此处避免限流带宽大小比每次申请的还少的情况下，每次都被限流
+                val realPermitOnce = limitPerSecond.coerceAtMost(permitsOnce)
+                if (bytesRead == 0L || (bytesRead + bytes) > applyNum) {
+                    val leftLength = rangeLength!! - bytesRead
+                    val permits = if (leftLength >= 0){
+                        leftLength.coerceAtMost(realPermitOnce)
+                    } else {
+                        // 当剩余文件大小小于0时，说明文件大小不正确，无法确认剩余多少
+                        realPermitOnce
+                    }
                     acquire(permits)
-                    applyNum = bytesRead / permitsOnce
+                    applyNum += permits
                 }
             }
         }

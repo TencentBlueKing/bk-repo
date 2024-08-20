@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.ratelimiter.service.usage.UploadUsageRateLimite
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUploadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.util.unit.DataSize
@@ -92,17 +93,17 @@ class RequestLimitCheckService(
         uploadUsageRateLimiterService.limit(request)
     }
 
-    fun postLimitCheck(request: HttpServletRequest, applyPermits: Long) {
+    fun postLimitCheck(applyPermits: Long) {
         if (!rateLimiterProperties.enabled) {
             return
         }
+        val request = getRequest() ?: return
         downloadUsageRateLimiterService.limit(request, applyPermits)
         userDownloadUsageRateLimiterService.limit(request, applyPermits)
 
     }
 
     fun bandwidthCheck(
-        request: HttpServletRequest,
         inputStream: InputStream,
         circuitBreakerPerSecond: DataSize,
         rangeLength: Long? = null,
@@ -110,21 +111,55 @@ class RequestLimitCheckService(
         if (!rateLimiterProperties.enabled) {
             return null
         }
-        return downloadBandwidthRateLimiterService.bandwidthRateLimit(
-            request, inputStream, circuitBreakerPerSecond, rangeLength
-        )
+        val request = getRequest() ?: return null
+        if (!downloadBandwidthRateLimiterService.ignoreRequest(request)) {
+            return downloadBandwidthRateLimiterService.bandwidthRateStart(
+                request, inputStream, circuitBreakerPerSecond, rangeLength
+            )
+        }
+        if (!uploadBandwidthRateLimiterService.ignoreRequest(request)) {
+            return uploadBandwidthRateLimiterService.bandwidthRateStart(
+                request, inputStream, circuitBreakerPerSecond, rangeLength
+            )
+        }
+        return null
+    }
+
+    fun bandwidthFinish(exception: Exception? = null) {
+        if (!rateLimiterProperties.enabled) {
+            return
+        }
+        val request = getRequest() ?: return
+        if (!downloadBandwidthRateLimiterService.ignoreRequest(request)) {
+            return downloadBandwidthRateLimiterService.bandwidthRateLimitFinish(
+                request, exception
+            )
+        }
+        if (!uploadBandwidthRateLimiterService.ignoreRequest(request)) {
+            return uploadBandwidthRateLimiterService.bandwidthRateLimitFinish(
+                request, exception
+            )
+        }
     }
 
     fun uploadBandwidthCheck(
-        request: HttpServletRequest,
         applyPermits: Long,
         circuitBreakerPerSecond: DataSize,
     ) {
         if (!rateLimiterProperties.enabled) {
             return
         }
+        val request = getRequest() ?: return
         uploadBandwidthRateLimiterService.bandwidthRateLimit(
             request, applyPermits, circuitBreakerPerSecond
         )
+    }
+
+    private fun getRequest(): HttpServletRequest? {
+        return try {
+            HttpContextHolder.getRequest()
+        } catch (e: IllegalArgumentException) {
+            return null
+        }
     }
 }
