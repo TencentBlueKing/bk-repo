@@ -32,14 +32,17 @@
                 </div>
             </bk-form-item>
             <bk-form-item :label="$t('associatedUseGroup')" property="roles" error-display-type="normal">
-                <bk-tag-input
-                    class="w480"
-                    v-model="permissionForm.roles"
-                    :placeholder="$t('enterPlaceHolder')"
-                    trigger="focus"
-                    :list="roleList"
-                    :has-delete-icon="true">
-                </bk-tag-input>
+                <div style="display: flex;">
+                    <bk-tag-input
+                        class="w480"
+                        v-model="permissionForm.roles"
+                        :placeholder="$t('enterPlaceHolder')"
+                        trigger="focus"
+                        :list="roleList"
+                        :has-delete-icon="true">
+                    </bk-tag-input>
+                    <bk-link theme="primary" @click="manageUserGroup" style="margin-right: auto;margin-left: 10px">{{ $t('manage') + $t('space') + $t('userGroup') }}</bk-link>
+                </div>
             </bk-form-item>
         </bk-form>
         <add-user-dialog ref="addUserDialog" :visible.sync="showAddUserDialog" @complete="handleAddUsers"></add-user-dialog>
@@ -178,15 +181,10 @@
                 this.$refs.permissionForm.clearError()
                 this.$emit('refresh')
             },
-            parseFn (data) {
-                if (data !== '') {
-                    const users = data.toString().split(',')
-                    for (let i = 0; i < users.length; i++) {
-                        users[i] = users[i].toString().trim()
-                        this.permissionForm.users.push(users[i])
-                    }
-                    this.permissionForm.user = Array.from(new Set(this.permissionForm.users))
-                }
+            manageUserGroup () {
+                this.$router.replace({
+                    name: 'userGroup'
+                })
             },
             deleteUser (index) {
                 const temp = []
