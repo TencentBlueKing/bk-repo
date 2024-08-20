@@ -166,6 +166,7 @@
                 get () {
                     if (this.baseData.name === 'pipeline') return 'pipeline'
                     if (this.baseData.public) {
+                        this.$emit('showPermissionConfigTab', false)
                         return 'public'
                     }
                     if (this.rootDirectoryPermission === 'DIR_CTRL') {
@@ -176,6 +177,7 @@
                         this.$emit('showPermissionConfigTab', true)
                         return 'strict'
                     }
+                    this.$emit('showPermissionConfigTab', false)
                     return 'default'
                 },
                 set (val) {
