@@ -32,6 +32,7 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.cloud.sleuth.autoconfig.otel.OtelProcessorProperties
 import org.springframework.cloud.sleuth.autoconfig.otel.SpanProcessorProvider
@@ -41,6 +42,7 @@ import org.springframework.core.Ordered
 import java.util.concurrent.TimeUnit
 
 @Configuration
+@ConditionalOnProperty(value = ["spring.sleuth.enabled"], matchIfMissing = true)
 class OtelWebConfiguration {
 
     @Bean
