@@ -139,7 +139,7 @@ object NpmUtils {
         if (npmPrefixHeader != null) {
             newTarball.append(npmPrefixHeader)
             if (returnRepoId) {
-                newTarball.append(SLASH).append(artifactInfo.getRepoIdentify())
+                newTarball.append(artifactInfo.getRepoIdentify())
             }
         } else if (tarballPrefix.isEmpty()) {
             // 远程仓库返回的是代理地址
