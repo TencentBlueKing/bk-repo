@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -145,6 +146,9 @@ abstract class AbstractArtifactResourceHandler(
             }
             exp = exception
             throw ArtifactResponseException(message, status)
+        } catch (overloadEx: OverloadException) {
+            exp = overloadEx
+            throw overloadEx
         } finally {
             if (rateLimitFlag) {
                 requestLimitCheckService.bandwidthFinish(exp)

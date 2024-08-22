@@ -61,7 +61,6 @@ class DistributedLeakyRateLimiter(
             }
             return acquireResult
         } catch (e: Exception) {
-            e.printStackTrace()
             throw AcquireLockFailedException("distributed lock acquire failed: $e")
         }
     }

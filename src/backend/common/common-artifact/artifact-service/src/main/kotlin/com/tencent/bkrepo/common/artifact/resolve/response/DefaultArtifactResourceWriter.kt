@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
@@ -44,6 +45,7 @@ import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMed
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils.isClientBroken
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
+import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -72,7 +74,7 @@ open class DefaultArtifactResourceWriter(
     storageProperties, requestLimitCheckService
 ) {
 
-    @Throws(ArtifactResponseException::class)
+    @Throws(ArtifactResponseException::class, OverloadException::class)
     override fun write(resource: ArtifactResource): Throughput {
         responseRateLimitCheck()
         TraceHeaderUtils.setResponseHeader()
@@ -181,6 +183,8 @@ open class DefaultArtifactResourceWriter(
         if (request.method == HttpMethod.HEAD.name) {
             return Throughput.EMPTY
         }
+        var rateLimitFlag = false
+        var exp: Exception? = null
         try {
             return measureThroughput {
                 val zipOutput = ZipOutputStream(response.outputStream.buffered())
@@ -189,9 +193,14 @@ open class DefaultArtifactResourceWriter(
                     resource.artifactMap.forEach { (name, inputStream) ->
                         val recordAbleInputStream = RecordAbleInputStream(inputStream)
                         zipOutput.putNextEntry(generateZipEntry(name, inputStream))
-                        recordAbleInputStream.rateLimit(
+                        val stream = requestLimitCheckService.bandwidthCheck(
+                            inputStream, storageProperties.response.circuitBreakerThreshold,
+                            inputStream.range.length
+                        ) ?: recordAbleInputStream.rateLimit(
                             responseRateLimitWrapper(storageProperties.response.rateLimit)
-                        ).use {
+                        )
+                        rateLimitFlag = stream is CommonRateLimitInputStream
+                        stream.use {
                             it.copyTo(
                                 out = zipOutput,
                                 bufferSize = getBufferSize(inputStream.range.length)
@@ -210,8 +219,15 @@ open class DefaultArtifactResourceWriter(
                 logger.warn("write zip stream failed", exception)
                 HttpStatus.INTERNAL_SERVER_ERROR
             }
+            exp = exception
             throw ArtifactResponseException(message, status)
+        } catch (overloadEx: OverloadException) {
+            exp = overloadEx
+            throw overloadEx
         } finally {
+            if (rateLimitFlag) {
+                requestLimitCheckService.bandwidthFinish(exp)
+            }
             resource.artifactMap.values.forEach { it.closeQuietly() }
         }
     }

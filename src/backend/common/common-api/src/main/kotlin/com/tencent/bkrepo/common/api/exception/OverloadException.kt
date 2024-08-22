@@ -25,15 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.exception
+package com.tencent.bkrepo.common.api.exception
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 
 /**
  * 超过限流配置异常
  */
-data class OverloadException(
+class OverloadException(
     val resource: String
 ) : ErrorCodeException(CommonMessageCode.RATE_LIMITER_OVERLOAD, resource, status = HttpStatus.TOO_MANY_REQUESTS)

@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.ratelimiter.stream
 
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
-import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import java.io.InputStream
 
 class CommonRateLimitInputStream(
@@ -81,7 +81,6 @@ class CommonRateLimitInputStream(
                     }
                     throw OverloadException("request reached bandwidth limit")
                 }
-
                 // 此处避免限流带宽大小比每次申请的还少的情况下，每次都被限流
                 val realPermitOnce = limitPerSecond.coerceAtMost(permitsOnce)
                 if (bytesRead == 0L || (bytesRead + bytes) > applyNum) {
@@ -112,7 +111,7 @@ class CommonRateLimitInputStream(
             if (!flag && failedNum < rateCheckContext.waitRound) {
                 failedNum++
                 try {
-                    Thread.sleep(rateCheckContext.latency)
+                    Thread.sleep(rateCheckContext.latency * failedNum)
                 } catch (ignore: InterruptedException) {
                 }
             }

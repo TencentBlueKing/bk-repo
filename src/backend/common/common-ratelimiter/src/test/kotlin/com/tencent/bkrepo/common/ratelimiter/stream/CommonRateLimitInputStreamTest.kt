@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedFixedWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedTest
 import com.tencent.bkrepo.common.ratelimiter.algorithm.FixedWindowRateLimiter
-import com.tencent.bkrepo.common.ratelimiter.exception.OverloadException
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll

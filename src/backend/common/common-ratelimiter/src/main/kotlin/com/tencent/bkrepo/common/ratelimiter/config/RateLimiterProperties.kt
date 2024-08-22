@@ -41,9 +41,9 @@ data class RateLimiterProperties(
     // 限流配置
     var rules: List<ResourceLimit> = mutableListOf(),
     // 等待时间，单位毫秒
-    var latency: Long = 10,
+    var latency: Long = 70,
     // 重试次数
-    var waitRound: Int = 10,
+    var waitRound: Int = 5,
     // 针对读流的请求，避免频繁去请求，每次申请固定大小
     var permitsOnce: Long = 1024 * 1024
 )
