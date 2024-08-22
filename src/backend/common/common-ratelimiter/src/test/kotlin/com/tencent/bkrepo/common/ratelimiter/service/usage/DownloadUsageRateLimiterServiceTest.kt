@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.common.ratelimiter.service.usage
 
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRule
@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.web.servlet.HandlerMapping
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DownloadUsageRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
@@ -51,7 +51,7 @@ class DownloadUsageRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
     val l1 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/*/",
         limitDimension = LimitDimension.DOWNLOAD_USAGE.name, limit = 10,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
 
     @BeforeAll

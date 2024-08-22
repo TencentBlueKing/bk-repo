@@ -141,13 +141,8 @@ abstract class AbstractBandwidthRateLimiterService(
         return true
     }
 
-    fun getPermitsPerSecond(resourceLimit: ResourceLimit): Long {
-        val unit = try {
-            TimeUnit.valueOf(resourceLimit.unit)
-        } catch (e: IllegalArgumentException) {
-            throw InvalidResourceException("config unit is ${resourceLimit.unit}")
-        }
-        return resourceLimit.limit / unit.toSeconds(1)
+    private fun getPermitsPerSecond(resourceLimit: ResourceLimit): Long {
+        return resourceLimit.limit / resourceLimit.duration.seconds
     }
 
     companion object {

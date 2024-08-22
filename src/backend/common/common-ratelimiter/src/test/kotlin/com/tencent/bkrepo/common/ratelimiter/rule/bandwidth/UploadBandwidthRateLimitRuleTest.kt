@@ -38,44 +38,44 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 class UploadBandwidthRateLimitRuleTest : BaseRuleTest() {
 
     private val l1 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/project3/",
         limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l2 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/project1/repo1/",
         limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l3 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/*/repo1/",
         limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l4 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/project1/*/",
         limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l5 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/*/*/",
         limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l6 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/*/",
         limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l7 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/project3/repo3/",
         limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
 
     @Test
@@ -212,7 +212,7 @@ class UploadBandwidthRateLimitRuleTest : BaseRuleTest() {
         val rl = ResourceLimit(
             algo = Algorithms.FIXED_WINDOW.name, resource = "/2/",
             limitDimension = LimitDimension.URL.name, limit = 52428800,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+            duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         assertThrows<InvalidResourceException> { rule.addRateLimitRule(rl) }
     }

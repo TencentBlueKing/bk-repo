@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.common.ratelimiter.service.usage.user
 
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRateLimitRule
@@ -45,7 +45,7 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import org.springframework.web.servlet.HandlerMapping
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class UserDownloadUsageRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
@@ -53,7 +53,7 @@ class UserDownloadUsageRateLimiterServiceTest : AbstractRateLimiterServiceTest()
     var l1 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "*:/*/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 10,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
 
     @BeforeAll

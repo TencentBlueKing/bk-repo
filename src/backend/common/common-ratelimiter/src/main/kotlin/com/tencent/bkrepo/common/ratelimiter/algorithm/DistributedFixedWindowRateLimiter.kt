@@ -33,7 +33,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 import kotlin.system.measureTimeMillis
 
 /**
@@ -42,7 +42,7 @@ import kotlin.system.measureTimeMillis
 class DistributedFixedWindowRateLimiter(
     private val key: String,
     private val limit: Long,
-    private val limitUnit: TimeUnit,
+    private val duration: Duration,
     private val redisTemplate: RedisTemplate<String, String>,
 ) : RateLimiter {
     override fun tryAcquire(permits: Long): Boolean {
@@ -51,7 +51,7 @@ class DistributedFixedWindowRateLimiter(
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.fixWindowRateLimiterScript, Long::class.java)
                 val result = redisTemplate.execute(
-                    redisScript, listOf(key), limit.toString(), permits.toString(), limitUnit.toSeconds(1).toString()
+                    redisScript, listOf(key), limit.toString(), permits.toString(), duration.seconds.toString()
                 )
                 acquireResult = result == 1L
             }

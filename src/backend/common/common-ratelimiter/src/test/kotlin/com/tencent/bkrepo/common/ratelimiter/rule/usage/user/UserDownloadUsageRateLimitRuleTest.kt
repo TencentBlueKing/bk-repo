@@ -37,81 +37,81 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 class UserDownloadUsageRateLimitRuleTest : BaseRuleTest() {
 
     private val l1 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "*:/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l2 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/project1/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l3 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/project1/repo1/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l4 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/project2/*/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l5 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/*/*/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l6 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/*/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l7 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/project3/repo3/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l8 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/project3/{(^[a-zA-Z]*\$)}/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l9 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/project3/{(^[0-9]*\$)}/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l10 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/project3/{repo}}/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l11 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/project3/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
     private val l12 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:/project1/repo1/",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
 
     private val l13 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "*:",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
 
     private val l14 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "user1:",
         limitDimension = LimitDimension.USER_DOWNLOAD_USAGE.name, limit = 52428800,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
 
     @Test
@@ -315,7 +315,7 @@ class UserDownloadUsageRateLimitRuleTest : BaseRuleTest() {
         val rl = ResourceLimit(
             algo = Algorithms.FIXED_WINDOW.name, resource = "/2/",
             limitDimension = LimitDimension.URL.name, limit = 52428800,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+            duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         assertThrows<InvalidResourceException> { rule.addRateLimitRule(rl) }
     }

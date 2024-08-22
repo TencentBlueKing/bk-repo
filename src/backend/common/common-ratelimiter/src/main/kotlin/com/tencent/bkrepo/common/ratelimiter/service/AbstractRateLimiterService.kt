@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.ratelimiter.service
 
 
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedFixedWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedLeakyRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedSlidingWindowRateLimiter
@@ -42,7 +43,6 @@ import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.MonitorRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
@@ -67,7 +67,6 @@ import org.springframework.http.HttpMethod
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -189,23 +188,18 @@ abstract class AbstractRateLimiterService(
         if (resourceLimit.limit < 0) {
             throw InvalidResourceException("config limit is ${resourceLimit.limit}")
         }
-        val unit = try {
-            TimeUnit.valueOf(resourceLimit.unit)
-        } catch (e: IllegalArgumentException) {
-            throw InvalidResourceException("config unit is ${resourceLimit.unit}")
-        }
         return when (resourceLimit.algo) {
             Algorithms.FIXED_WINDOW.name -> {
-                buildFixedWindowRateLimiter(resource, resourceLimit, unit)
+                buildFixedWindowRateLimiter(resource, resourceLimit)
             }
             Algorithms.TOKEN_BUCKET.name -> {
-                buildTokenBucketRateLimiter(resource, resourceLimit, unit)
+                buildTokenBucketRateLimiter(resource, resourceLimit)
             }
             Algorithms.SLIDING_WINDOW.name -> {
-                buildSlidingWindowRateLimiter(resource, resourceLimit, unit)
+                buildSlidingWindowRateLimiter(resource, resourceLimit)
             }
             Algorithms.LEAKY_BUCKET.name -> {
-                buildLeakyRateLimiter(resource, resourceLimit, unit)
+                buildLeakyRateLimiter(resource, resourceLimit)
             }
             else -> {
                 throw InvalidResourceException("config algo is ${resourceLimit.algo}")
@@ -308,7 +302,7 @@ abstract class AbstractRateLimiterService(
             pass = action(rateLimiter, realPermits)
             if (!pass) {
                 val msg = "${resLimitInfo.resource} has exceeded max rate limit: " +
-                    "${resLimitInfo.resourceLimit.limit} /${resLimitInfo.resourceLimit.unit}"
+                    "${resLimitInfo.resourceLimit.limit} /${resLimitInfo.resourceLimit.duration}"
                 if (rateLimiterProperties.dryRun) {
                     logger.warn(msg)
                 } else {
@@ -360,8 +354,7 @@ abstract class AbstractRateLimiterService(
         circuitBreakerPerSecond: Long? = null,
     ) {
         if (circuitBreakerPerSecond == null) return
-        val permitsPerSecond = resourceLimit.limit /
-            TimeUnit.valueOf(resourceLimit.unit).toSeconds(1)
+        val permitsPerSecond = resourceLimit.limit / resourceLimit.duration.seconds
         if (circuitBreakerPerSecond >= permitsPerSecond) {
             throw OverloadException(
                 "The circuit breaker is activated when too many download requests are made to the service!"
@@ -372,13 +365,12 @@ abstract class AbstractRateLimiterService(
     private fun buildFixedWindowRateLimiter(
         resource: String,
         resourceLimit: ResourceLimit,
-        unit: TimeUnit
     ): RateLimiter {
         return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            FixedWindowRateLimiter(resourceLimit.limit, unit)
+            FixedWindowRateLimiter(resourceLimit.limit, resourceLimit.duration)
         } else {
             DistributedFixedWindowRateLimiter(
-                resource, resourceLimit.limit, unit, redisTemplate!!
+                resource, resourceLimit.limit, resourceLimit.duration, redisTemplate!!
             )
         }
     }
@@ -386,16 +378,15 @@ abstract class AbstractRateLimiterService(
     private fun buildTokenBucketRateLimiter(
         resource: String,
         resourceLimit: ResourceLimit,
-        unit: TimeUnit
     ): RateLimiter {
         return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            val permitsPerSecond = resourceLimit.limit / unit.toSeconds(1)
+            val permitsPerSecond = resourceLimit.limit / resourceLimit.duration.seconds
             TokenBucketRateLimiter(permitsPerSecond)
         } else {
             if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
                 throw InvalidResourceException("Resource limit config $resourceLimit is illegal")
             }
-            val permitsPerSecond = resourceLimit.limit / unit.toSeconds(1).toDouble()
+            val permitsPerSecond = (resourceLimit.limit / resourceLimit.duration.seconds).toDouble()
             DistributedTokenBucketRateLimiter(
                 resource, permitsPerSecond, resourceLimit.capacity!!, redisTemplate!!
             )
@@ -405,14 +396,12 @@ abstract class AbstractRateLimiterService(
     private fun buildSlidingWindowRateLimiter(
         resource: String,
         resourceLimit: ResourceLimit,
-        unit: TimeUnit
     ): RateLimiter {
-        val interval = resourceLimit.interval ?: 1
         return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            SlidingWindowRateLimiter(resourceLimit.limit, interval, unit)
+            SlidingWindowRateLimiter(resourceLimit.limit, resourceLimit.duration)
         } else {
             DistributedSlidingWindowRateLimiter(
-                resource, resourceLimit.limit, interval, unit, redisTemplate!!
+                resource, resourceLimit.limit, resourceLimit.duration, redisTemplate!!
             )
         }
     }
@@ -420,12 +409,11 @@ abstract class AbstractRateLimiterService(
     private fun buildLeakyRateLimiter(
         resource: String,
         resourceLimit: ResourceLimit,
-        unit: TimeUnit
     ): RateLimiter {
         if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
             throw InvalidResourceException("Resource limit config $resourceLimit is illegal")
         }
-        val rate = resourceLimit.limit / unit.toSeconds(1).toDouble()
+        val rate = resourceLimit.limit / resourceLimit.duration.seconds.toDouble()
         return if (resourceLimit.scope == WorkScope.LOCAL.name) {
             LeakyRateLimiter(rate, resourceLimit.capacity!!)
         } else {

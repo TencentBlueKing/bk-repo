@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 
 import com.tencent.bkrepo.common.ratelimiter.constant.TRY_LOCK_TIMEOUT
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
@@ -42,8 +43,7 @@ import java.util.concurrent.locks.ReentrantLock
  */
 class SlidingWindowRateLimiter(
     private val limit: Long,
-    private val interval: Long,
-    private val limitUnit: TimeUnit,
+    private val duration: Duration,
 ) : RateLimiter {
 
     private val lock: Lock = ReentrantLock()
@@ -57,7 +57,7 @@ class SlidingWindowRateLimiter(
      * 窗口列表
      */
     private val windowArray = Array(subWindowNum) { WindowInfo() }
-    private val windowSize = interval * limitUnit.toMillis(1)
+    private val windowSize = duration.toMillis() * subWindowNum
 
     override fun tryAcquire(permits: Long): Boolean {
         try {

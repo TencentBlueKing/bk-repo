@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 import com.google.common.base.Stopwatch
 import com.tencent.bkrepo.common.ratelimiter.constant.TRY_LOCK_TIMEOUT
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
@@ -39,7 +40,7 @@ import java.util.concurrent.locks.ReentrantLock
  */
 class FixedWindowRateLimiter(
     private val limit: Long,
-    private val unit: TimeUnit,
+    private val duration: Duration,
     private val stopWatch: Stopwatch = Stopwatch.createStarted()
 ) : RateLimiter {
 
@@ -53,7 +54,7 @@ class FixedWindowRateLimiter(
                 throw AcquireLockFailedException("fix window tryLock wait too long: $TRY_LOCK_TIMEOUT ms")
             }
             try {
-                if (stopWatch.elapsed(TimeUnit.MILLISECONDS) > unit.toMillis(1)) {
+                if (stopWatch.elapsed(TimeUnit.MILLISECONDS) > duration.toMillis()) {
                     currentValue = 0
                     stopWatch.reset()
                 }

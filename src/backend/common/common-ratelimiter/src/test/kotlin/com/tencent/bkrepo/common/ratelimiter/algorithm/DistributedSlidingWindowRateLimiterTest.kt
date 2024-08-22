@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.test.annotation.DirtiesContext
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -41,7 +42,7 @@ class DistributedSlidingWindowRateLimiterTest : DistributedTest() {
     @Test
     fun testTryAcquire() {
         val key = KEY + "testTryAcquire"
-        val ratelimiter = DistributedSlidingWindowRateLimiter(key, 5, 1, TimeUnit.SECONDS, redisTemplate)
+        val ratelimiter = DistributedSlidingWindowRateLimiter(key, 5, Duration.ofSeconds(1), redisTemplate)
         val passed1 = ratelimiter.tryAcquire(1)
         Assertions.assertTrue(passed1)
         val passed2 = ratelimiter.tryAcquire(1)
@@ -65,7 +66,7 @@ class DistributedSlidingWindowRateLimiterTest : DistributedTest() {
     @Test
     fun testTryAcquireOnMultiThreads() {
         val key = KEY + "testTryAcquireOnMultiThreads"
-        val ratelimiter = DistributedSlidingWindowRateLimiter(key, 5, 1, TimeUnit.SECONDS, redisTemplate)
+        val ratelimiter = DistributedSlidingWindowRateLimiter(key, 5, Duration.ofSeconds(1), redisTemplate)
         var successNum = 0
         var failedNum = 0
         var errorNum = 0

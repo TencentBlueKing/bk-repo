@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.ratelimiter.service
 
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedFixedWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedLeakyRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedSlidingWindowRateLimiter
@@ -41,7 +42,6 @@ import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
@@ -51,7 +51,7 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -95,7 +95,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         val l1 = ResourceLimit(
             algo = Algorithms.FIXED_WINDOW.name, resource = "/",
             limitDimension = LimitDimension.URL.name, limit = 1,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.GLOBAL.name
+            duration = Duration.ofSeconds(1), scope = WorkScope.GLOBAL.name
         )
         rateLimiter = (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l1)
         Assertions.assertInstanceOf(
@@ -106,7 +106,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         val l2 = ResourceLimit(
             algo = Algorithms.SLIDING_WINDOW.name, resource = "/project3/{(^[a-zA-Z]*\$)}/",
             limitDimension = LimitDimension.URL.name, limit = -1,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+            duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         Assertions.assertThrows(InvalidResourceException::class.java) {
             (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l2)
@@ -129,7 +129,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         val l3 = ResourceLimit(
             algo = "", resource = "/project3/{(^[0-9]*\$)}/",
             limitDimension = LimitDimension.URL.name, limit = 52428800,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+            duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         Assertions.assertThrows(InvalidResourceException::class.java) {
             (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l3)
@@ -138,7 +138,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         val l4 = ResourceLimit(
             algo = Algorithms.LEAKY_BUCKET.name, resource = "/project3/{repo}}/",
             limitDimension = LimitDimension.URL.name, limit = 1,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+            duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         Assertions.assertThrows(InvalidResourceException::class.java) {
             (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l4)
@@ -165,7 +165,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         val l5 = ResourceLimit(
             algo = Algorithms.TOKEN_BUCKET.name, resource = "/project3/",
             limitDimension = LimitDimension.URL.name, limit = 1, capacity = 5,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+            duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         rateLimiter = (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l5)
         Assertions.assertInstanceOf(

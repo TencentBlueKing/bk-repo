@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.common.ratelimiter.service.url
 
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
@@ -41,7 +41,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.test.annotation.DirtiesContext
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class UrlRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
@@ -49,7 +49,7 @@ class UrlRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
     val l1 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/",
         limitDimension = LimitDimension.URL.name, limit = 1,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
 
     @BeforeAll

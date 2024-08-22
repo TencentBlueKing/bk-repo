@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito
 import org.springframework.test.annotation.DirtiesContext
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -144,9 +145,9 @@ class CommonRateLimitInputStreamTest : DistributedTest() {
         distributed: Boolean = false, keyStr: String? = null,
     ): Pair<RateCheckContext, String?> {
         val (rateLimiter, key) = if (distributed) {
-            Pair(DistributedFixedWindowRateLimiter(keyStr!!, limit, TimeUnit.SECONDS, redisTemplate), keyStr)
+            Pair(DistributedFixedWindowRateLimiter(keyStr!!, limit, Duration.ofSeconds(1), redisTemplate), keyStr)
         } else {
-            Pair(FixedWindowRateLimiter(limit, TimeUnit.SECONDS, Stopwatch.createStarted(ticker)), keyStr)
+            Pair(FixedWindowRateLimiter(limit, Duration.ofSeconds(1), Stopwatch.createStarted(ticker)), keyStr)
         }
         return Pair(
             RateCheckContext(

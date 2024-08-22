@@ -37,9 +37,8 @@ open class BaseRuleTest {
         Assertions.assertEquals(actualInfo?.algo, expectedInfo?.algo)
         Assertions.assertEquals(actualInfo?.limitDimension, expectedInfo?.limitDimension)
         Assertions.assertEquals(actualInfo?.capacity, expectedInfo?.capacity)
-        Assertions.assertEquals(actualInfo?.interval, expectedInfo?.interval)
         Assertions.assertEquals(actualInfo?.resource, expectedInfo?.resource)
         Assertions.assertEquals(actualInfo?.scope, expectedInfo?.scope)
-        Assertions.assertEquals(actualInfo?.unit, expectedInfo?.unit)
+        Assertions.assertEquals(actualInfo?.duration, expectedInfo?.duration)
     }
 }

@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.web.servlet.HandlerMapping
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DownloadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
@@ -50,7 +50,7 @@ class DownloadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest()
     val l1 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/*/",
         limitDimension = LimitDimension.DOWNLOAD_BANDWIDTH.name, limit = 10,
-        unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
 
     @BeforeAll

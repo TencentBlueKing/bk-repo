@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 
@@ -87,7 +88,7 @@ class RateLimiterInterceptorChainTest {
         val resourceLimit = ResourceLimit(
             algo = Algorithms.FIXED_WINDOW.name, resource = "/project1/",
             limitDimension = LimitDimension.URL.name, limit = 52428800,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name
+            duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         chain.doBeforeLimitCheck("test1", resourceLimit)
         assertEquals(Companion.list.size, 3)
@@ -103,7 +104,7 @@ class RateLimiterInterceptorChainTest {
         val resourceLimit = ResourceLimit(
             algo = Algorithms.FIXED_WINDOW.name, resource = "/project1/",
             limitDimension = LimitDimension.URL.name, limit = 52428800,
-            unit = TimeUnit.SECONDS.name, scope = WorkScope.LOCAL.name,
+            duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name,
             targets = listOf("127.0.0.2")
         )
         assertThrows<InvalidResourceException> {

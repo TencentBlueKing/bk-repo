@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -39,7 +40,7 @@ class SlidingWindowRateLimiterTest {
 
     @Test
     fun testTryAcquire() {
-        val ratelimiter = SlidingWindowRateLimiter(5, 1, TimeUnit.SECONDS)
+        val ratelimiter = SlidingWindowRateLimiter(5, Duration.ofSeconds(1))
         val passed1 = ratelimiter.tryAcquire(1)
         Assertions.assertTrue(passed1)
         val passed2 = ratelimiter.tryAcquire(1)
@@ -61,7 +62,7 @@ class SlidingWindowRateLimiterTest {
 
     @Test
     fun testTryAcquireOnMultiThreads() {
-        val ratelimiter = SlidingWindowRateLimiter(5, 1, TimeUnit.SECONDS)
+        val ratelimiter = SlidingWindowRateLimiter(5, Duration.ofSeconds(1))
         var successNum = 0
         var failedNum = 0
         var errorNum = 0

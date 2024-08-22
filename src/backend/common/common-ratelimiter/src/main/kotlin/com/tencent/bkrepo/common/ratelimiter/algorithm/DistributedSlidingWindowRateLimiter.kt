@@ -33,7 +33,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 import kotlin.system.measureTimeMillis
 
 /**
@@ -42,8 +42,7 @@ import kotlin.system.measureTimeMillis
 class DistributedSlidingWindowRateLimiter(
     private val key: String,
     private val limit: Long,
-    private val interval: Long,
-    private val limitUnit: TimeUnit,
+    private val duration: Duration,
     private val redisTemplate: RedisTemplate<String, String>,
 ) : RateLimiter {
     override fun tryAcquire(permits: Long): Boolean {
@@ -55,7 +54,7 @@ class DistributedSlidingWindowRateLimiter(
                 val nanoTime = System.nanoTime().toString()
                 val results = redisTemplate.execute(
                     redisScript, getKeys(key), limit.toString(),
-                    (interval * limitUnit.toSeconds(1)).toString(), permits.toString(), nowStr, nanoTime
+                    (duration.seconds).toString(), permits.toString(), nowStr, nanoTime
                 )
                 acquireResult = results[0] == 1L
             }

@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -46,7 +47,7 @@ class FixedWindowRateLimiterTest {
     fun testTryAcquire() {
         val ticker = Mockito.mock(Ticker::class.java)
         Mockito.`when`(ticker.read()).thenReturn(0 * 1000 * 1000L)
-        val ratelimiter: RateLimiter = FixedWindowRateLimiter(5, TimeUnit.SECONDS, Stopwatch.createStarted(ticker))
+        val ratelimiter: RateLimiter = FixedWindowRateLimiter(5, Duration.ofSeconds(1), Stopwatch.createStarted(ticker))
         Mockito.`when`(ticker.read()).thenReturn(100 * 1000 * 1000L)
         val passed1 = ratelimiter.tryAcquire(1)
         assertTrue(passed1)
@@ -74,7 +75,7 @@ class FixedWindowRateLimiterTest {
     fun testTryAcquireOnMultiThreads() {
         val ticker = Mockito.mock(Ticker::class.java)
         Mockito.`when`(ticker.read()).thenReturn(0 * 1000 * 1000L)
-        val ratelimiter: RateLimiter = FixedWindowRateLimiter(5, TimeUnit.SECONDS, Stopwatch.createStarted(ticker))
+        val ratelimiter: RateLimiter = FixedWindowRateLimiter(5, Duration.ofSeconds(1), Stopwatch.createStarted(ticker))
         var successNum = 0
         var failedNum = 0
         var errorNum = 0
