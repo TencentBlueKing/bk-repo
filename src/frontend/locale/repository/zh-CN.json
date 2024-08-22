@@ -889,5 +889,9 @@
     "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权",
     "errMsg": "错误信息",
     "blackUserList": "办公网访问黑名单",
-    "controlConfigPlaceholder": "可选择多个用户组"
+    "controlConfigPlaceholder": "可选择多个用户组",
+    "hasSelectTip": "已选择{0}条,",
+    "changeSelectAllTip": "选择全量数据",
+    "selectAllTip": "已选择全量数据{0}条，",
+    "clearSelectTip":"清除选择"
 }
