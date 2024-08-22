@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.common.ratelimiter.stream
 
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import java.io.InputStream
 
 class CommonRateLimitInputStream(
@@ -85,7 +85,7 @@ class CommonRateLimitInputStream(
                 val realPermitOnce = limitPerSecond.coerceAtMost(permitsOnce)
                 if (bytesRead == 0L || (bytesRead + bytes) > applyNum) {
                     val leftLength = rangeLength!! - bytesRead
-                    val permits = if (leftLength >= 0){
+                    val permits = if (leftLength >= 0) {
                         leftLength.coerceAtMost(realPermitOnce)
                     } else {
                         // 当剩余文件大小小于0时，说明文件大小不正确，无法确认剩余多少
