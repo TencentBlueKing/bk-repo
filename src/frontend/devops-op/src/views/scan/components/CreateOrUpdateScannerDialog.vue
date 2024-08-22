@@ -347,7 +347,11 @@ export default {
         this.scanner = this.newScanner(type)
       } else {
         this.scanner = _.cloneDeep(this.updatingScanner)
-        this.unsupportedArtifactNameRegex = this.scanner.unsupportedArtifactNameRegex.join('\n')
+        if (!(this.scanner.unsupportedArtifactNameRegex instanceof (Array)) || this.scanner.unsupportedArtifactNameRegex.length === 0) {
+          this.unsupportedArtifactNameRegex = ''
+        } else {
+          this.unsupportedArtifactNameRegex = this.scanner.unsupportedArtifactNameRegex.join('\n')
+        }
       }
       this.$nextTick(() => {
         this.$refs['form'].clearValidate()
