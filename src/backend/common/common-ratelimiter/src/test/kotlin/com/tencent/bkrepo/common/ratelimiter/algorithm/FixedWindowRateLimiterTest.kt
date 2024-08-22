@@ -30,7 +30,6 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 import com.google.common.base.Stopwatch
 import com.google.common.base.Ticker
 import com.tencent.bkrepo.common.api.util.HumanReadable
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
