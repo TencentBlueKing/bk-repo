@@ -40,7 +40,7 @@ class SlidingWindowRateLimiterTest {
 
     @Test
     fun testTryAcquire() {
-        val ratelimiter = SlidingWindowRateLimiter(5, Duration.ofSeconds(1))
+        val ratelimiter = SlidingWindowRateLimiter(5, Duration.ofMillis(100))
         val passed1 = ratelimiter.tryAcquire(1)
         Assertions.assertTrue(passed1)
         val passed2 = ratelimiter.tryAcquire(1)
@@ -62,7 +62,7 @@ class SlidingWindowRateLimiterTest {
 
     @Test
     fun testTryAcquireOnMultiThreads() {
-        val ratelimiter = SlidingWindowRateLimiter(5, Duration.ofSeconds(1))
+        val ratelimiter = SlidingWindowRateLimiter(5, Duration.ofMillis(100))
         var successNum = 0
         var failedNum = 0
         var errorNum = 0

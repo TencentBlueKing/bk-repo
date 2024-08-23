@@ -50,6 +50,7 @@ class DistributedFixedWindowRateLimiter(
             var acquireResult = false
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.fixWindowRateLimiterScript, Long::class.java)
+                // 注意， 由于redis expire只支持秒为单位，所以周期最小单位为秒
                 val result = redisTemplate.execute(
                     redisScript, listOf(key), limit.toString(), permits.toString(), duration.seconds.toString()
                 )
