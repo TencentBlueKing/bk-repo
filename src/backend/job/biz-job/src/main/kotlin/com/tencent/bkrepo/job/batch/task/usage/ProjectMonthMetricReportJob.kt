@@ -145,7 +145,7 @@ class ProjectMonthMetricReportJob(
                 .post(requestBody).build()
             doRequest(okHttpClient, request)
         } catch (exception: Exception) {
-            logger.error("report usage data error:", exception)
+            logger.warn("report usage data error:", exception)
         }
     }
 
@@ -164,7 +164,7 @@ class ProjectMonthMetricReportJob(
                 }
                 val logMsg = "report usage request url ${request.url} failed, " +
                     "code: ${bkResponse.code}, error is: ${bkResponse.message}"
-                logger.error(logMsg)
+                logger.warn(logMsg)
                 throw RuntimeException(logMsg)
             }
         } catch (e: Exception) {
