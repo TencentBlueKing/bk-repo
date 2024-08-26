@@ -25,18 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.file.impl.center
+package com.tencent.bkrepo.repository.controller.cluster
 
-import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
-import com.tencent.bkrepo.repository.service.file.impl.TemporaryTokenServiceImpl
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.cluster.ClusterNodeShareClient
+import com.tencent.bkrepo.repository.pojo.share.ClusterShareRecordCreateRequest
+import com.tencent.bkrepo.repository.pojo.share.ClusterShareTokenCheckRequest
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
+import com.tencent.bkrepo.repository.service.file.ShareService
+import org.springframework.web.bind.annotation.RestController
 
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterTemporaryTokenServiceImpl(
-    temporaryTokenDao: TemporaryTokenDao
-) : TemporaryTokenServiceImpl(
-    temporaryTokenDao
-)
+@RestController
+class ClusterNodeShareController(
+    private val shareService: ShareService
+): ClusterNodeShareClient {
+    override fun create(
+        request: ClusterShareRecordCreateRequest
+    ): Response<ShareRecordInfo> {
+        with(request) {
+            val artifactInfo = ArtifactInfo(projectId, repoName, fullPath)
+            return ResponseBuilder.success(shareService.create(userId, artifactInfo, createRequest))
+        }
+    }
+
+    override fun checkToken(request: ClusterShareTokenCheckRequest): Response<ShareRecordInfo> {
+        with(request) {
+            val artifactInfo = ArtifactInfo(projectId, repoName, fullPath)
+            return ResponseBuilder.success(shareService.checkToken(userId, token, artifactInfo))
+        }
+    }
+}
