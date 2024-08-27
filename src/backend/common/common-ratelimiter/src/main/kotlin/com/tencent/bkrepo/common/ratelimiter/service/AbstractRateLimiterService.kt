@@ -424,7 +424,7 @@ abstract class AbstractRateLimiterService(
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(AbstractRateLimiterService::class.java)
+        val logger: Logger = LoggerFactory.getLogger(AbstractRateLimiterService::class.java)
         val UPLOAD_REQUEST_METHOD = listOf(HttpMethod.POST.name, HttpMethod.PUT.name, HttpMethod.PATCH.name)
         val DOWNLOAD_REQUEST_METHOD = listOf(HttpMethod.GET.name)
     }

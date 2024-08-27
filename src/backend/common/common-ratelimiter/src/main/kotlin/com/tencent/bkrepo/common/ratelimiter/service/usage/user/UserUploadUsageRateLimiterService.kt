@@ -69,7 +69,14 @@ open class UserUploadUsageRateLimiterService(
 
     override fun getApplyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
         return when (request.method) {
-            in UPLOAD_REQUEST_METHOD -> request.contentLengthLong
+            in UPLOAD_REQUEST_METHOD -> {
+                var length = request.contentLengthLong
+                if (length == -1L) {
+                    logger.warn("content length of ${request.requestURI} is -1")
+                    length = 0
+                }
+                length
+            }
             else -> 0
         }
     }
