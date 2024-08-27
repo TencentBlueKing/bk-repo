@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toFullPath
@@ -297,7 +298,7 @@ object NodeQueryHelper {
     }
 
     private fun buildNoPermissionPathCriteria(paths: List<String>) = paths.flatMap {
-        listOf(TNode::fullPath.isEqualTo(it), TNode::fullPath.regex("^${escapeRegex(it)}"))
+        listOf(TNode::fullPath.isEqualTo(it), TNode::fullPath.regex("^${escapeRegex(it).ensureSuffix("/")}"))
     }
 
     private fun buildHasPermissionPathCriteria(paths: List<String>) = paths.flatMap { path ->
@@ -306,7 +307,7 @@ object NodeQueryHelper {
         // 拥有文件权限时将自动拥有父目录查看权限，在前端或者bk-driver中才能查看子目录及文件
         parentFolders.forEach { criteriaList.add(TNode::fullPath.isEqualTo(it)) }
         criteriaList.add(TNode::fullPath.isEqualTo(path))
-        criteriaList.add(TNode::fullPath.regex("^${escapeRegex(path)}"))
+        criteriaList.add(TNode::fullPath.regex("^${escapeRegex(path).ensureSuffix("/")}"))
         criteriaList
     }
 
