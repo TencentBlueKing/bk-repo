@@ -50,6 +50,13 @@ bkLogConfig:
   gatewayError:
     dataId: 1
 
+## bkNotice 配置
+bkNotice:
+  enabled: false
+  apiBaseUrl:
+  appCode:
+  appSecret:
+
 ## ingress配置
 ingress:
   enabled: true
@@ -344,10 +351,6 @@ repository:
   config:
     # 节点被删除后多久清理数据
     deletedNodeReserveDays: 15
-    notice:
-      appCode: ""
-      appSecret: ""
-      apiBaseUrl: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com

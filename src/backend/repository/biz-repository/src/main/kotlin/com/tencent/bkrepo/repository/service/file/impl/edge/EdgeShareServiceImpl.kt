@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.file.impl.edge
 
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
@@ -49,11 +50,13 @@ class EdgeShareServiceImpl(
     repositoryService: RepositoryService,
     nodeService: NodeService,
     mongoTemplate: MongoTemplate,
-    clusterProperties: ClusterProperties
+    clusterProperties: ClusterProperties,
+    temporaryTokenClient: ServiceTemporaryTokenClient,
 ) : ShareServiceImpl(
     repositoryService,
     nodeService,
-    mongoTemplate
+    mongoTemplate,
+    temporaryTokenClient
 ) {
 
     private val centerShareClient: ClusterNodeShareClient by lazy {
@@ -65,22 +68,26 @@ class EdgeShareServiceImpl(
         artifactInfo: ArtifactInfo,
         request: ShareRecordCreateRequest
     ): ShareRecordInfo {
-        return centerShareClient.create(ClusterShareRecordCreateRequest(
-            userId = userId,
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
-            fullPath = artifactInfo.getArtifactFullPath(),
-            createRequest = request
-        )).data!!
+        return centerShareClient.create(
+            ClusterShareRecordCreateRequest(
+                userId = userId,
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fullPath = artifactInfo.getArtifactFullPath(),
+                createRequest = request
+            )
+        ).data!!
     }
 
     override fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): ShareRecordInfo {
-        return centerShareClient.checkToken(ClusterShareTokenCheckRequest(
-            userId = userId,
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
-            fullPath = artifactInfo.getArtifactFullPath(),
-            token = token
-        )).data!!
+        return centerShareClient.checkToken(
+            ClusterShareTokenCheckRequest(
+                userId = userId,
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fullPath = artifactInfo.getArtifactFullPath(),
+                token = token
+            )
+        ).data!!
     }
 }
