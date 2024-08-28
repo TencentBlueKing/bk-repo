@@ -55,7 +55,6 @@
 package com.tencent.bkrepo.job.separation.dao.repo
 
 import com.mongodb.client.result.DeleteResult
-import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.sharding.MonthRangeShardingMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.job.separation.model.repo.TSeparationMavenMetadataRecord
@@ -63,7 +62,6 @@ import com.tencent.bkrepo.job.separation.pojo.query.MavenMetadata
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
@@ -73,7 +71,8 @@ class SeparationMavenMetadataDao : MonthRangeShardingMongoDao<TSeparationMavenMe
 
     fun upsertMetaData(
         mavenMetadata: MavenMetadata, separationDate: LocalDateTime
-    ): UpdateResult {
+    ): TSeparationMavenMetadataRecord {
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = Criteria.where(TSeparationMavenMetadataRecord::projectId.name).isEqualTo(mavenMetadata.projectId)
             .and(TSeparationMavenMetadataRecord::repoName.name).isEqualTo(mavenMetadata.repoName)
             .and(TSeparationMavenMetadataRecord::groupId.name).isEqualTo(mavenMetadata.groupId)
@@ -81,12 +80,27 @@ class SeparationMavenMetadataDao : MonthRangeShardingMongoDao<TSeparationMavenMe
             .and(TSeparationMavenMetadataRecord::version.name).isEqualTo(mavenMetadata.version)
             .and(TSeparationMavenMetadataRecord::classifier.name).isEqualTo(mavenMetadata.classifier)
             .and(TSeparationMavenMetadataRecord::extension.name).isEqualTo(mavenMetadata.extension)
-            .and(TSeparationMavenMetadataRecord::separationDate.name).isEqualTo(separationDate)
-
-        val metadataQuery = Query(criteria)
-        val update = Update().set(TSeparationMavenMetadataRecord::buildNo.name, mavenMetadata.buildNo)
-            .set(TSeparationMavenMetadataRecord::timestamp.name, mavenMetadata.timestamp)
-        return this.upsert(metadataQuery, update)
+            .and(TSeparationMavenMetadataRecord::separationDate.name).gte(startOfDay).lt(endOfDay)
+        var existedRecord = this.findOne(Query(criteria))
+        if (existedRecord == null) {
+            existedRecord = TSeparationMavenMetadataRecord(
+                id = null,
+                projectId = mavenMetadata.projectId,
+                repoName = mavenMetadata.repoName,
+                groupId = mavenMetadata.groupId,
+                artifactId = mavenMetadata.artifactId,
+                version = mavenMetadata.version,
+                classifier = mavenMetadata.classifier,
+                extension = mavenMetadata.extension,
+                separationDate = separationDate,
+                buildNo = mavenMetadata.buildNo,
+                timestamp = mavenMetadata.timestamp
+            )
+        } else {
+            existedRecord.buildNo = mavenMetadata.buildNo
+            existedRecord.timestamp = mavenMetadata.timestamp
+        }
+        return this.save(existedRecord)
     }
 
     fun search(
