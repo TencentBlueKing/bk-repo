@@ -61,8 +61,10 @@ import java.time.Duration
 data class DataSeparationConfig(
     // 当前时间到（当前时间-keepDays）为热数据，不允许拆分，避免误操作将所有数据进行降冷
     var keepDays: Duration = Duration.ofDays(365),
-    // 特殊项目仓库配置
-    var specialRepos: MutableList<String> = mutableListOf(),
+    // 降冷特殊项目仓库配置
+    var specialSeparateRepos: MutableList<String> = mutableListOf(),
+    // 恢复特殊项目仓库配置
+    var specialRestoreRepos: MutableList<String> = mutableListOf(),
     // 允许同时执行将冷任务数
     var separateTaskConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
     // 允许同时执行的恢复任务数
