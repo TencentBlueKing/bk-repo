@@ -80,18 +80,7 @@ class SeparationTaskServiceImpl(
                     createTask(task)
                 }
                 RESTORE -> {
-                    var flag = false
-                    val projectRepoKey = "${projectId}/${repoName}"
-                    dataSeparationConfig.specialRestoreRepos.forEach {
-                        val regex = Regex(it.replace("*", ".*"))
-                        if (regex.matches(projectRepoKey)) {
-                            flag = true
-                        }
-                    }
-                    if (!flag) throw BadRequestException(
-                        CommonMessageCode.PARAMETER_INVALID,
-                        projectRepoKey
-                    )
+                    restoreTaskCheck(request.projectId, request.repoName)
                     createRestoreTask(request)
                 }
                 else -> {
@@ -134,6 +123,24 @@ class SeparationTaskServiceImpl(
         val exist = separationTaskDao.exist(projectId, repoName, SeparationTaskState.FINISHED.name)
         val failedExist = separationFailedRecordDao.exist(projectId, repoName)
         return exist || failedExist
+    }
+
+    private fun restoreTaskCheck(
+        projectId: String,
+        repoName: String,
+    ) {
+        var flag = false
+        val projectRepoKey = "${projectId}/${repoName}"
+        dataSeparationConfig.specialRestoreRepos.forEach {
+            val regex = Regex(it.replace("*", ".*"))
+            if (regex.matches(projectRepoKey)) {
+                flag = true
+            }
+        }
+        if (!flag) throw BadRequestException(
+            CommonMessageCode.PARAMETER_INVALID,
+            projectRepoKey
+        )
     }
 
     private fun createRestoreTask(request: SeparationTaskRequest) {
