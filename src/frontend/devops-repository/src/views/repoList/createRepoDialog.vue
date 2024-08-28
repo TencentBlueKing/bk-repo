@@ -140,7 +140,7 @@
                 showData: {},
                 title: this.$t('createRepository'),
                 rbacStatus: false,
-                accessControl: ''
+                accessControl: 'DEFAULT'
             }
         },
         computed: {
