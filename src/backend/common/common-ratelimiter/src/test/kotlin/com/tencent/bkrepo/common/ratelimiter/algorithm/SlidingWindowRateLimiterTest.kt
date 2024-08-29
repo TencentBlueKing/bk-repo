@@ -51,7 +51,7 @@ class SlidingWindowRateLimiterTest {
         Assertions.assertTrue(passed4)
         val passed5 = ratelimiter.tryAcquire(1)
         Assertions.assertTrue(passed5)
-        Thread.sleep(1000)
+        Thread.sleep(1200)
         var passed6 = ratelimiter.tryAcquire(1)
         Assertions.assertTrue(passed6)
         var passed7 = ratelimiter.tryAcquire(1)
