@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.metadata.dao.RBlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.blocknode.RBlockNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials

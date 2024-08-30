@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.metadata.service.blocknode.impl
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.constant.ID
-import com.tencent.bkrepo.common.metadata.dao.BlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.blocknode.BlockNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.util.BlockNodeQueryHelper

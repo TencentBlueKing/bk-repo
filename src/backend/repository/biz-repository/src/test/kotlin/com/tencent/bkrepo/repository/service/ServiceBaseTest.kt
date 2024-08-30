@@ -43,7 +43,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
-import com.tencent.bkrepo.common.metadata.dao.BlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.blocknode.BlockNodeDao
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager

@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
-import com.tencent.bkrepo.common.metadata.dao.RBlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.blocknode.RBlockNodeDao
 import com.tencent.bkrepo.common.metadata.service.blocknode.impl.RAbstractBlockNodeService
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail

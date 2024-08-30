@@ -2,7 +2,7 @@ package com.tencent.bkrepo.common.metadata.service.blocknode.impl
 
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.metadata.dao.BlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.blocknode.BlockNodeDao
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
