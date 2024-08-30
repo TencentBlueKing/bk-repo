@@ -128,10 +128,11 @@ abstract class NodeBaseService(
             val (hasPermissionPaths, noPermissionPaths) = getPermissionPaths(userId, projectId, repoName)
             option.hasPermissionPath = hasPermissionPaths
             option.noPermissionPath = noPermissionPaths
-            val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
+            var query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
             val totalNum = getTotalNodeNum(artifact, query)
             if (totalNum > repositoryProperties.listCountLimit) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
+                val pageRequest = Pages.ofRequest(1, repositoryProperties.listCountLimit.toInt())
+                query = query.with(pageRequest)
             }
             return nodeDao.find(query).map { convert(it)!! }
         }
@@ -278,7 +279,8 @@ abstract class NodeBaseService(
         return if (subNodeNum <= limit) {
             nodeDao.count(query)
         } else {
-            subNodeNum
+            // *2主要是因为subnodeNum不包含目录
+            subNodeNum * 2
         }
     }
 
