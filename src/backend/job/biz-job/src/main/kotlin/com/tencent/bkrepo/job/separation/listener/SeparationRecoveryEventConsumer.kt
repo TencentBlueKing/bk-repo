@@ -75,11 +75,25 @@ class SeparationRecoveryEventConsumer(
             return
         }
         logger.info("current separation recovery message header is ${message.headers}")
-        doSeparationRecovery(message.payload)
+        try {
+            doSeparationRecovery(message.payload)
+        } catch (e: Exception) {
+            logger.warn("handle msg error: ${message.payload}")
+        }
+
     }
 
     private fun doSeparationRecovery(event: ArtifactEvent) {
         val recoveryNodeInfo = buildRecoveryNodeInfo(event)
+        var flag = false
+        val projectRepoKey = "${recoveryNodeInfo.projectId}/${recoveryNodeInfo.repoName}"
+        dataSeparationConfig.specialRestoreRepos.forEach {
+            val regex = Regex(it.replace("*", ".*"))
+            if (regex.matches(projectRepoKey)) {
+                flag = true
+            }
+        }
+        if (!flag) return
         val task = when (recoveryNodeInfo.repoType) {
             RepositoryType.MAVEN.name -> {
                 val recoveryVersionInfo = RepoSpecialSeparationMappings.getRecoveryPackageVersionData(recoveryNodeInfo)
