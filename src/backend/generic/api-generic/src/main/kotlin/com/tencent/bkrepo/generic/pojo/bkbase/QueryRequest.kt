@@ -33,10 +33,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
  * 数据平台查询请求
  */
 data class QueryRequest(
-    @JsonProperty("bk_app_code")
-    val appCode: String,
-    @JsonProperty("bk_app_secret")
-    val appSecret: String,
     @JsonProperty("bkdata_data_token")
     val token: String,
     val sql: String,
