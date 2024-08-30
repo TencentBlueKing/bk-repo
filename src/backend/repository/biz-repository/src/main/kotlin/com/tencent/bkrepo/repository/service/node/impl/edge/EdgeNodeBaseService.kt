@@ -46,6 +46,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateReque
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
+import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.router.api.RouterControllerClient
@@ -63,7 +64,8 @@ abstract class EdgeNodeBaseService(
     override val servicePermissionClient: ServicePermissionClient,
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
-    open val clusterProperties: ClusterProperties
+    override val projectService: ProjectService,
+    open val clusterProperties: ClusterProperties,
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -76,7 +78,8 @@ abstract class EdgeNodeBaseService(
     servicePermissionClient,
     routerControllerClient,
     routerControllerProperties,
-    blockNodeService
+    blockNodeService,
+    projectService
 ) {
 
     val centerNodeClient: ClusterNodeClient by lazy {

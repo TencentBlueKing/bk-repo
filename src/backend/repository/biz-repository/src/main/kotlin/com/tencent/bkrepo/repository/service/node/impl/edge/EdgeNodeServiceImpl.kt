@@ -65,6 +65,7 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeRenameSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
+import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.router.api.RouterControllerClient
@@ -90,6 +91,7 @@ class EdgeNodeServiceImpl(
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
+    override val projectService: ProjectService,
     val archiveClient: ArchiveClient,
 ) : EdgeNodeBaseService(
     nodeDao,
@@ -104,7 +106,8 @@ class EdgeNodeServiceImpl(
     servicePermissionClient,
     routerControllerProperties,
     blockNodeService,
-    clusterProperties,
+    projectService,
+    clusterProperties
 ) {
     override fun computeSize(
         artifact: ArtifactInfo,
