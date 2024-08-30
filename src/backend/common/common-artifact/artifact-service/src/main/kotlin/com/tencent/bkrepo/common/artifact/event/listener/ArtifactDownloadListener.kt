@@ -163,7 +163,7 @@ class ArtifactDownloadListener(
         try {
             artifactClient.updateAccessDate(updateRequest)
         } catch (ignore: Exception) {
-            logger.warn("update node access time [$updateRequest] error, ${ignore.message}")
+            logger.warn("update node access time [$updateRequest] error: ${ignore.message}, cause: ${ignore.cause}")
         }
     }
 
