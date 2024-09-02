@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -31,7 +32,6 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
@@ -54,7 +54,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.apache.pulsar.shade.org.eclipse.util.UrlEncoded
 import org.slf4j.LoggerFactory
@@ -83,7 +83,6 @@ class DeltaSyncService(
     val nodeClient: NodeClient,
     val signFileDao: SignFileDao,
     val repositoryClient: RepositoryClient,
-    storageProperties: StorageProperties,
     private val redisOperation: RedisOperation,
 ) : ArtifactService() {
 
@@ -250,14 +249,16 @@ class DeltaSyncService(
             "AND buildId != '${metrics.buildId}' " +
             "ORDER BY dtEventTimeStamp DESC LIMIT 100"
         val url = UrlFormatter.format(bkBaseProperties.domain, "/prod/v3/dataquery/query/")
-        val query = QueryRequest(
-            appCode = bkBaseProperties.appCode,
-            appSecret = bkBaseProperties.appSecret,
-            token = bkBaseProperties.token,
-            sql = sql,
-        )
-        val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), query.toJsonString())
-        val request = Request.Builder().url(url).post(requestBody).build()
+        val query = QueryRequest(token = bkBaseProperties.token, sql = sql)
+        val authHeader = toJson(mapOf(
+            "bk_app_code" to bkBaseProperties.appCode,
+            "bk_app_secret" to bkBaseProperties.appSecret
+        ))
+        val requestBody = query.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
+        val request = Request.Builder()
+            .url(url)
+            .header("X-Bkapi-Authorization", authHeader)
+            .post(requestBody).build()
         return queryHistorySpeed(request, sql, metrics)
     }
 
