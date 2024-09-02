@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.dao.blocknode.RBlockNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
+import com.tencent.bkrepo.common.metadata.service.file.RFileReferenceService
 import com.tencent.bkrepo.common.metadata.util.BlockNodeQueryHelper
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
@@ -45,13 +46,14 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import java.time.LocalDateTime
 
 abstract class RAbstractBlockNodeService(
-    private val rBlockNodeDao: RBlockNodeDao
+    private val rBlockNodeDao: RBlockNodeDao,
+    private val rFileReferenceService: RFileReferenceService
 ) : RBlockNodeService {
 
     override suspend fun createBlock(blockNode: TBlockNode, storageCredentials: StorageCredentials?): TBlockNode {
         with(blockNode) {
             val bn = rBlockNodeDao.save(blockNode)
-            incFileRef(bn.sha256, storageCredentials?.key)
+            rFileReferenceService.increment(bn.sha256, storageCredentials?.key)
             logger.info("Create block node[$projectId/$repoName$nodeFullPath-$startPos] ,sha256[$sha256] success.")
             return bn
         }
@@ -130,8 +132,6 @@ abstract class RAbstractBlockNodeService(
             return blockResources
         }
     }
-
-    abstract suspend fun incFileRef(sha256: String, credentialsKey: String?)
 
     abstract suspend fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail
 

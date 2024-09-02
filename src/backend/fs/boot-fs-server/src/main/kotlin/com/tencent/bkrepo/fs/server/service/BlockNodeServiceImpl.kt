@@ -30,6 +30,7 @@ package com.tencent.bkrepo.fs.server.service
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.metadata.dao.blocknode.RBlockNodeDao
 import com.tencent.bkrepo.common.metadata.service.blocknode.impl.RAbstractBlockNodeService
+import com.tencent.bkrepo.common.metadata.service.file.RFileReferenceService
 import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import kotlinx.coroutines.reactor.awaitSingle
@@ -39,12 +40,9 @@ import kotlinx.coroutines.reactor.awaitSingle
  * */
 class BlockNodeServiceImpl(
     rBlockNodeDao: RBlockNodeDao,
-    private val rRepositoryClient: RRepositoryClient
-) : RAbstractBlockNodeService(rBlockNodeDao) {
-
-    override suspend fun incFileRef(sha256: String, credentialsKey: String?) {
-        rRepositoryClient.increment(sha256, credentialsKey).awaitSingle()
-    }
+    fileReferenceService: RFileReferenceService,
+    private val rRepositoryClient: RRepositoryClient,
+) : RAbstractBlockNodeService(rBlockNodeDao, fileReferenceService) {
 
     override suspend fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail {
         return rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data

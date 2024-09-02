@@ -100,7 +100,7 @@ import org.springframework.test.context.TestPropertySource
     RouterControllerProperties::class,
     BlockNodeDao::class
 )
-@ComponentScan("com.tencent.bkrepo.repository.service")
+@ComponentScan(value = ["com.tencent.bkrepo.repository.service", "com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
 open class ServiceBaseTest {
 

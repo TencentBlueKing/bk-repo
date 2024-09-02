@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,6 +29,17 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-}
+package com.tencent.bkrepo.common.metadata.dao.file
+
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
+import com.tencent.bkrepo.common.metadata.model.TFileReference
+import org.springframework.context.annotation.Conditional
+import org.springframework.stereotype.Repository
+
+/**
+ * 文件摘要引用 Dao
+ */
+@Repository
+@Conditional(SyncCondition::class)
+class FileReferenceDao : HashShardingMongoDao<TFileReference>()

@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.dao.blocknode.BlockNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.util.BlockNodeQueryHelper
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
@@ -46,13 +47,14 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import java.time.LocalDateTime
 
 abstract class AbstractBlockNodeService(
-    private val blockNodeDao: BlockNodeDao
+    private val blockNodeDao: BlockNodeDao,
+    private val fileReferenceService: FileReferenceService
 ) : BlockNodeService {
 
     override fun createBlock(blockNode: TBlockNode, storageCredentials: StorageCredentials?): TBlockNode {
         with(blockNode) {
             val bn = blockNodeDao.save(blockNode)
-            incFileRef(bn.sha256, storageCredentials?.key)
+            fileReferenceService.increment(bn.sha256, storageCredentials?.key)
             logger.info("Create block node[$projectId/$repoName$nodeFullPath-$startPos] ,sha256[$sha256] success.")
             return bn
         }
@@ -130,8 +132,6 @@ abstract class AbstractBlockNodeService(
             return blockResources
         }
     }
-
-    abstract fun incFileRef(sha256: String, credentialsKey: String?)
 
     abstract fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail
 

@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.file
+package com.tencent.bkrepo.common.metadata.pojo.file
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty

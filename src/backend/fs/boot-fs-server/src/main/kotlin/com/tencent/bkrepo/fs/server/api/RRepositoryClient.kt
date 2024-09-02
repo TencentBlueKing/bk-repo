@@ -102,12 +102,6 @@ interface RRepositoryClient {
         @RequestParam type: String? = null
     ): Mono<Response<RepositoryDetail?>>
 
-    @PutMapping("/fileReference/decrement")
-    fun decrement(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
-
-    @PutMapping("/fileReference/increment")
-    fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
-
     @PostMapping("/metadata/save")
     fun saveMetadata(@RequestBody request: MetadataSaveRequest): Mono<Response<Void>>
 

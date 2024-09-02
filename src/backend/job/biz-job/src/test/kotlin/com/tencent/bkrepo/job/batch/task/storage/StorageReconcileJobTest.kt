@@ -2,6 +2,7 @@ package com.tencent.bkrepo.job.batch.task.storage
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -10,7 +11,6 @@ import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.AfterEach
@@ -42,7 +42,7 @@ class StorageReconcileJobTest @Autowired constructor(
     lateinit var storageCredentialsClient: StorageCredentialsClient
 
     @MockBean
-    lateinit var fileReferenceClient: FileReferenceClient
+    lateinit var fileReferenceService: FileReferenceService
 
     @MockBean
     lateinit var repositoryClient: RepositoryClient
@@ -68,12 +68,12 @@ class StorageReconcileJobTest @Autowired constructor(
     @Test
     fun reconcileTest() {
         var checked = 0
-        `when`(fileReferenceClient.increment(anyString(), isNull(), anyLong())).then {
+        `when`(fileReferenceService.increment(anyString(), isNull(), anyLong())).then {
             checked++
-            ResponseBuilder.success(true)
+            true
         }
-        `when`(fileReferenceClient.exists(anyString(), isNull())).then {
-            ResponseBuilder.success(false)
+        `when`(fileReferenceService.exists(anyString(), isNull())).then {
+            false
         }
         repeat(10) {
             val file = createTempArtifactFile()
