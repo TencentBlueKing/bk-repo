@@ -121,7 +121,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
                     repoName,
                     PackageKeys.ofComposer(oldName),
                     oldVersion,
-                    HttpContextHolder.getClientAddress()
+                    realIpAddress = HttpContextHolder.getClientAddress()
                 )
             }
             JsonUtil.deleteComposerVersion(jsonStr, oldName, oldVersion)
@@ -376,7 +376,13 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
      * 删除版本后，检查该包下是否还有包。
      */
     fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
-        packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
+        packageClient.deleteVersion(
+            projectId,
+            repoName,
+            packageKey,
+            version,
+            realIpAddress = HttpContextHolder.getClientAddress()
+        )
         val page = packageClient.listVersionPage(projectId, repoName, packageKey).data ?: return
         if (page.records.isEmpty()) packageClient.deletePackage(
             projectId,

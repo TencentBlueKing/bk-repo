@@ -50,8 +50,8 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         return this.findOne(PackageQueryHelper.versionQuery(packageId, tag = tag))
     }
 
-    fun findByName(packageId: String, name: String): TPackageVersion? {
-        return this.findOne(PackageQueryHelper.versionQuery(packageId, name = name))
+    fun findByNameAndPath(packageId: String, name: String, path: String? = null): TPackageVersion? {
+        return this.findOne(PackageQueryHelper.versionQuery(packageId, name = name, path = path))
     }
 
     fun deleteByPackageId(packageId: String) {
@@ -65,8 +65,8 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         this.remove(PackageQueryHelper.clusterNameQuery(packageId, clusterName))
     }
 
-    fun deleteByName(packageId: String, name: String) {
-        this.remove(PackageQueryHelper.versionQuery(packageId, name = name))
+    fun deleteByNameAndPath(packageId: String, name: String, artifactPath: String?) {
+        this.remove(PackageQueryHelper.versionQuery(packageId, name = name, path = artifactPath))
     }
 
     fun findLatest(packageId: String): TPackageVersion? {

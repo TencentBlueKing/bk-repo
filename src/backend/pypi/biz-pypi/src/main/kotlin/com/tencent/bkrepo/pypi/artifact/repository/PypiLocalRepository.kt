@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.pypi.artifact.PypiProperties
@@ -87,12 +88,14 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 @Component
 class PypiLocalRepository(
     private val stageClient: StageClient,
-    private val pypiProperties: PypiProperties
+    private val pypiProperties: PypiProperties,
+    @Qualifier("permissionManager") private val permissionManager: PermissionManager
 ) : LocalRepository() {
 
     /**
@@ -229,6 +232,7 @@ class PypiLocalRepository(
         val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
         val name = PackageKeys.resolvePypi(packageKey)
         val version = HttpContextHolder.getRequest().getParameter("version")
+        val artifactPath = HttpContextHolder.getRequest().getParameter("artifactPath")
         if (version.isNullOrBlank()) {
             // 删除包
             nodeClient.deleteNode(
@@ -251,7 +255,7 @@ class PypiLocalRepository(
                 NodeDeleteRequest(
                     context.projectId,
                     context.repoName,
-                    "/$name/$version",
+                    artifactPath ?: "/$name/$version",
                     context.userId
                 )
             )
@@ -260,6 +264,7 @@ class PypiLocalRepository(
                 context.repoName,
                 packageKey,
                 version,
+                artifactPath,
                 HttpContextHolder.getClientAddress()
             )
         }

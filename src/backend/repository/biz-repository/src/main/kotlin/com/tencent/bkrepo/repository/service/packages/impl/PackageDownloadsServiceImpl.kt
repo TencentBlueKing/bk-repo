@@ -279,7 +279,7 @@ class PackageDownloadsServiceImpl(
      * 查找版本，不存在则抛异常
      */
     private fun checkPackageVersion(packageId: String, versionName: String): TPackageVersion {
-        return packageVersionDao.findByName(packageId, versionName)
+        return packageVersionDao.findByNameAndPath(packageId, versionName)
             ?: throw ErrorCodeException(ArtifactMessageCode.VERSION_NOT_FOUND, versionName)
     }
 

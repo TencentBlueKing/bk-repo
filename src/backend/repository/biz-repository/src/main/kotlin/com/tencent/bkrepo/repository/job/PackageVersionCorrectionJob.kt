@@ -101,7 +101,7 @@ class PackageVersionCorrectionJob(
                 val displayVersion = "${pkg.projectId}/${pkg.repoName}/${pkg.name}-${version.name}"
                 logger.info("Package version [$displayVersion] has been deleted.")
                 if (!dryRun) {
-                    packageService.deleteVersion(repo.projectId, repo.name, pkg.key, version.name)
+                    packageService.deleteVersion(repo.projectId, repo.name, pkg.key, version.name, version.artifactPath)
                 }
                 result.add(mapOf(
                     "projectId" to repo.projectId,

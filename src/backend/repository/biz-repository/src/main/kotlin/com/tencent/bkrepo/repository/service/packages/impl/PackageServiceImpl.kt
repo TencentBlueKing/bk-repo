@@ -96,7 +96,7 @@ class PackageServiceImpl(
         versionName: String
     ): PackageVersion? {
         val packageId = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey)?.id ?: return null
-        return convert(packageVersionDao.findByName(packageId, versionName))
+        return convert(packageVersionDao.findByNameAndPath(packageId, versionName))
     }
 
     override fun findVersionNameByTag(
@@ -199,7 +199,7 @@ class PackageServiceImpl(
             // 先查询包是否存在，不存在先创建包
             val tPackage = findOrCreatePackage(buildPackage(request))
             // 检查版本是否存在
-            var oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
+            var oldVersion = packageVersionDao.findByNameAndPath(tPackage.id!!, versionName)
             val query = Query(
                 where(TPackage::projectId).isEqualTo(projectId).apply {
                     and(TPackage::repoName).isEqualTo(repoName)
@@ -214,9 +214,9 @@ class PackageServiceImpl(
                 .set(TPackage::versionTag.name, mergeVersionTag(tPackage.versionTag, versionTag))
                 .set(TPackage::historyVersion.name, tPackage.historyVersion.toMutableSet().apply { add(versionName) })
             // 检查本次上传是创建还是覆盖。
-            if (oldVersion != null) {
+            if (existSameVersion(request, oldVersion)) {
                 updateExistVersion(
-                    oldVersion = oldVersion,
+                    oldVersion = oldVersion!!,
                     request = request,
                     realIpAddress = realIpAddress,
                     packageQuery = query,
@@ -234,7 +234,7 @@ class PackageServiceImpl(
                     publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
                 } catch (exception: DuplicateKeyException) {
                     logger.warn("Create version[$newVersion] error: [${exception.message}]")
-                    oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
+                    oldVersion = packageVersionDao.findByNameAndPath(tPackage.id!!, versionName)
                     updateExistVersion(
                         oldVersion = oldVersion!!,
                         request = request,
@@ -272,13 +272,14 @@ class PackageServiceImpl(
         repoName: String,
         packageKey: String,
         versionName: String,
+        artifactPath: String?,
         realIpAddress: String?
     ) {
         var tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         val packageId = tPackage.id!!
-        val tPackageVersion = packageVersionDao.findByName(packageId, versionName) ?: return
+        val tPackageVersion = packageVersionDao.findByNameAndPath(packageId, versionName, artifactPath) ?: return
         checkCluster(tPackageVersion)
-        packageVersionDao.deleteByName(packageId, tPackageVersion.name)
+        packageVersionDao.deleteByNameAndPath(packageId, tPackageVersion.name, tPackageVersion.artifactPath)
         tPackage = packageDao.decreaseVersions(packageId) ?: return
         if (tPackage.versions <= 0L) {
             packageDao.removeById(packageId)
@@ -343,7 +344,7 @@ class PackageServiceImpl(
         }
         val tPackage = findPackageExcludeHistoryVersion(projectId, repoName, packageKey)
         val packageId = tPackage.id.orEmpty()
-        val tPackageVersion = checkPackageVersion(packageId, versionName).apply {
+        val tPackageVersion = checkPackageVersion(packageId, versionName, request.artifactPath).apply {
             checkCluster(this)
             size = request.size ?: size
             manifestPath = request.manifestPath ?: manifestPath
@@ -375,7 +376,7 @@ class PackageServiceImpl(
         realIpAddress: String?
     ) {
         val tPackage = findPackageExcludeHistoryVersion(projectId, repoName, packageKey)
-        val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
+        val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName, null)
         if (tPackageVersion.artifactPath.isNullOrBlank()) {
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "artifactPath is null")
         }
@@ -403,7 +404,7 @@ class PackageServiceImpl(
 
     override fun addDownloadRecord(projectId: String, repoName: String, packageKey: String, versionName: String) {
         val tPackage = checkPackage(projectId, repoName, packageKey)
-        val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
+        val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName, null)
         tPackageVersion.downloads += 1
         packageVersionDao.save(tPackageVersion)
         tPackage.downloads += 1
@@ -439,7 +440,7 @@ class PackageServiceImpl(
             var latestVersion = packageVersionDao.findLatest(packageId)
             // 检查版本是否存在
             versionList.forEach {
-                if (packageVersionDao.findByName(packageId, it.name) != null) {
+                if (packageVersionDao.findByNameAndPath(packageId, it.name) != null) {
                     logger.info("Package version[${tPackage.name}-${it.name}] existed, skip populating.")
                     return@forEach
                 }
@@ -519,9 +520,22 @@ class PackageServiceImpl(
     /**
      * 查找版本，不存在则抛异常
      */
-    private fun checkPackageVersion(packageId: String, versionName: String): TPackageVersion {
-        return packageVersionDao.findByName(packageId, versionName)
+    private fun checkPackageVersion(packageId: String, versionName: String, artifactPath: String?): TPackageVersion {
+        return packageVersionDao.findByNameAndPath(packageId, versionName, artifactPath)
             ?: throw ErrorCodeException(ArtifactMessageCode.VERSION_NOT_FOUND, versionName)
+    }
+
+    /**
+     * 判断是否存在相同版本
+     */
+    private fun existSameVersion(request: PackageVersionCreateRequest, oldVersion: TPackageVersion?): Boolean {
+        if (oldVersion == null) {
+            return false
+        }
+        if (!request.multiArchOrFormat) {
+            return true
+        }
+        return request.artifactPath == oldVersion.artifactPath
     }
 
     companion object {

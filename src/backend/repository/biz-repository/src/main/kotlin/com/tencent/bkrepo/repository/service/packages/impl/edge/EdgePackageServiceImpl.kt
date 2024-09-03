@@ -84,10 +84,11 @@ class EdgePackageServiceImpl(
         repoName: String,
         packageKey: String,
         versionName: String,
+        artifactPath: String?,
         realIpAddress: String?
     ) {
-        centerPackageClient.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress)
-        super.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress)
+        centerPackageClient.deleteVersion(projectId, repoName, packageKey, versionName, artifactPath, realIpAddress)
+        super.deleteVersion(projectId, repoName, packageKey, versionName, artifactPath, realIpAddress)
     }
 
     override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {

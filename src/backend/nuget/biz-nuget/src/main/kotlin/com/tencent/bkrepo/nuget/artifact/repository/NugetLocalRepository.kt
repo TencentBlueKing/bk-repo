@@ -251,7 +251,7 @@ class NugetLocalRepository(
                 repoName,
                 packageName,
                 version.name,
-                HttpContextHolder.getClientAddress()
+                realIpAddress = HttpContextHolder.getClientAddress()
             )
             val nugetPath = version.contentPath.orEmpty()
             if (nugetPath.isNotBlank()) {

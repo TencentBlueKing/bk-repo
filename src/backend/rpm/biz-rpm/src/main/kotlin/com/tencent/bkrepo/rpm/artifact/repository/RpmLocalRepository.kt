@@ -658,7 +658,13 @@ class RpmLocalRepository(
     }
 
     fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
-        packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
+        packageClient.deleteVersion(
+            projectId,
+            repoName,
+            packageKey,
+            version,
+            realIpAddress = HttpContextHolder.getClientAddress()
+        )
     }
 
     /**

@@ -181,12 +181,14 @@ interface PackageService {
      * @param repoName 项目id
      * @param packageKey 包唯一标识
      * @param versionName 版本名称
+     * @param artifactPath 包制品路径
      */
     fun deleteVersion(
         projectId: String,
         repoName: String,
         packageKey: String,
         versionName: String,
+        artifactPath: String?,
         realIpAddress: String? = null
     )
 

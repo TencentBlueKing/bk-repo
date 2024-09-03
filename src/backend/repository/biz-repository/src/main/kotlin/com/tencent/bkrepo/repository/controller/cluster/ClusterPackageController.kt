@@ -70,10 +70,11 @@ class ClusterPackageController(
         repoName: String,
         packageKey: String,
         version: String,
+        artifactPath: String?,
         realIpAddress: String?
     ): Response<Void> {
         permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName)
-        packageService.deleteVersion(projectId, repoName, packageKey, version, realIpAddress)
+        packageService.deleteVersion(projectId, repoName, packageKey, version, artifactPath, realIpAddress)
         return ResponseBuilder.success()
     }
 

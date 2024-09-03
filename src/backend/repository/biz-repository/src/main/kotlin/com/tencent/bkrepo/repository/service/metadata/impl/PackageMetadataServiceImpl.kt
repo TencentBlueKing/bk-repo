@@ -94,7 +94,7 @@ class PackageMetadataServiceImpl(
      * 查找版本，不存在则抛异常
      */
     private fun getPackageVersion(packageId: String, versionName: String): TPackageVersion {
-        return packageVersionDao.findByName(packageId, versionName)
+        return packageVersionDao.findByNameAndPath(packageId, versionName)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, versionName)
     }
 

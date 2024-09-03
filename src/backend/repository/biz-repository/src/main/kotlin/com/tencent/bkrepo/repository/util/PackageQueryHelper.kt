@@ -61,11 +61,12 @@ object PackageQueryHelper {
     }
 
     // version
-    fun versionQuery(packageId: String, name: String? = null, tag: String? = null): Query {
+    fun versionQuery(packageId: String, name: String? = null, tag: String? = null, path: String? = null): Query {
         val criteria = where(TPackageVersion::packageId).isEqualTo(packageId)
             .apply {
                 name?.let { and(TPackageVersion::name).isEqualTo(name) }
                 tag?.let { and(TPackageVersion::tags).inValues(tag) }
+                path?.let { and(TPackageVersion::artifactPath).isEqualTo(path) }
             }
         return Query(criteria)
     }

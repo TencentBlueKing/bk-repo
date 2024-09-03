@@ -214,7 +214,13 @@ class NugetPackageHandler {
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NugetArtifactInfo) {
         val packageKey = PackageKeys.ofNuget(name)
         with(artifactInfo) {
-            packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
+            packageClient.deleteVersion(
+                projectId,
+                repoName,
+                packageKey,
+                version,
+                realIpAddress = HttpContextHolder.getClientAddress()
+            )
                 .apply {
                     logger.info(
                         "user: [$userId] delete package [$name] with version [$version] " +
