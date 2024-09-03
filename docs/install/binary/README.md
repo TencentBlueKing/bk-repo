@@ -162,7 +162,7 @@ sudo vim /etc/hosts
 例如：
 
 ```bash
-<工作机IP> appdev.open.woa.com
+<工作机IP> bkrepo.example.com  (访问域名自己定义)
 ```
 
 #### 3.1.3 启动命令
