@@ -61,7 +61,9 @@ data class TPackageVersion(
     var ordinal: Long,
     var downloads: Long,
     var manifestPath: String? = null,
+    @Deprecated("replace by artifactPaths")
     var artifactPath: String? = null,
+    var artifactPaths: MutableSet<String>? = null,
     var stageTag: List<String>,
     var metadata: List<TMetadata>,
     var tags: List<String>? = null,

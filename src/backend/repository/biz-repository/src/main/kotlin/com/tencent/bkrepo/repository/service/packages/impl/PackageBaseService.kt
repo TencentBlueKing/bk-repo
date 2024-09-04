@@ -143,6 +143,7 @@ abstract class PackageBaseService(
             downloads = 0,
             manifestPath = manifestPath,
             artifactPath = artifactPath,
+            artifactPaths = artifactPath?.let { mutableSetOf(it) },
             stageTag = stageTag.orEmpty(),
             metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
             tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),

@@ -272,19 +272,22 @@ class PackageServiceImpl(
         repoName: String,
         packageKey: String,
         versionName: String,
+        contentPath: String?,
         realIpAddress: String?
     ) {
         var tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         val packageId = tPackage.id!!
         val tPackageVersion = packageVersionDao.findByName(packageId, versionName) ?: return
         checkCluster(tPackageVersion)
-        packageVersionDao.deleteByName(packageId, tPackageVersion.name)
-        tPackage = packageDao.decreaseVersions(packageId) ?: return
+        val deleted = packageVersionDao.deleteByNameAndPath(packageId, tPackageVersion.name, contentPath)
+        if (deleted) {
+            tPackage = packageDao.decreaseVersions(packageId) ?: return
+        }
         if (tPackage.versions <= 0L) {
             packageDao.removeById(packageId)
             logger.info("Delete package [$projectId/$repoName/$packageKey-$versionName] because no version exist")
         } else {
-            if (tPackage.latest == tPackageVersion.name) {
+            if (deleted && tPackage.latest == tPackageVersion.name) {
                 val latestVersion = packageVersionDao.findLatest(packageId)
                 packageDao.updateLatestVersion(packageId, latestVersion?.name.orEmpty())
             }
@@ -357,7 +360,7 @@ class PackageServiceImpl(
         }
         packageVersionDao.save(tPackageVersion)
         publishEvent(
-            PackageEventFactory.buildUpdatedEvent(
+            buildUpdatedEvent(
                 request = request,
                 packageType = tPackage.type.name,
                 packageName = tPackage.name,
@@ -487,6 +490,7 @@ class PackageServiceImpl(
                 size = request.size
                 manifestPath = request.manifestPath
                 artifactPath = request.artifactPath
+                artifactPaths = buildArtifactPaths(request)
                 stageTag = request.stageTag.orEmpty()
                 metadata = MetadataUtils.compatibleConvertAndCheck(request.metadata, packageMetadata)
                 tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
@@ -497,6 +501,18 @@ class PackageServiceImpl(
             logger.info("Update package version[$oldVersion] success")
             publishEvent(buildUpdatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
         }
+    }
+
+    private fun TPackageVersion.buildArtifactPaths(request: PackageVersionCreateRequest): MutableSet<String>? {
+        request.artifactPath?.let {
+             return if (!request.multiArtifact) {
+                mutableSetOf(it)
+            } else {
+                artifactPaths?.add(it)
+                artifactPaths ?: mutableSetOf(it)
+            }
+        }
+        return null
     }
 
     /**
@@ -567,6 +583,7 @@ class PackageServiceImpl(
                     tags = it.tags.orEmpty(),
                     extension = it.extension.orEmpty(),
                     contentPath = it.artifactPath,
+                    contentPaths = it.artifactPaths ?: it.artifactPath?.let { path -> setOf(path) },
                     manifestPath = it.manifestPath,
                     clusterNames = it.clusterNames
                 )
