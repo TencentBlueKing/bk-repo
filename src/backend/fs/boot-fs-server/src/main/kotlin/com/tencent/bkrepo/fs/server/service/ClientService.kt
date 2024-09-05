@@ -119,6 +119,7 @@ class ClientService(
         request.online?.let { criteria.and(TClient::online.name).isEqualTo(it) }
         request.ip?.let { criteria.and(TClient::ip.name).regex(convertToRegex(it)) }
         request.version?.let { criteria.and(TClient::version.name).regex(convertToRegex(it)) }
+        request.userId?.let { criteria.and(TClient::userId.name).isEqualTo(it) }
         val query = Query(criteria)
         val count = clientRepository.count(query)
         val data = clientRepository.find(query.with(pageRequest))
