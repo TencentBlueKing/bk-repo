@@ -292,18 +292,20 @@ class PackageServiceImpl(
                 packageDao.updateLatestVersion(packageId, latestVersion?.name.orEmpty())
             }
         }
-        publishEvent(
-            PackageEventFactory.buildDeletedEvent(
-                projectId = projectId,
-                repoName = repoName,
-                packageType = tPackage.type,
-                packageKey = packageKey,
-                packageName = tPackage.name,
-                versionName = versionName,
-                createdBy = SecurityUtils.getUserId(),
-                realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
+        if (deleted) {
+            publishEvent(
+                PackageEventFactory.buildDeletedEvent(
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageType = tPackage.type,
+                    packageKey = packageKey,
+                    packageName = tPackage.name,
+                    versionName = versionName,
+                    createdBy = SecurityUtils.getUserId(),
+                    realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
+                )
             )
-        )
+        }
         logger.info("Delete package version[$projectId/$repoName/$packageKey-$versionName] success")
     }
 
