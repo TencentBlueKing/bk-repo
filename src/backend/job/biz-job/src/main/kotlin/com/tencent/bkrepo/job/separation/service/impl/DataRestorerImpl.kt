@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.job.separation.service.impl
 
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig

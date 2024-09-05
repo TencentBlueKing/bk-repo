@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.KEY
 import com.tencent.bkrepo.job.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.job.NAME

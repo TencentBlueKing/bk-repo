@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.repo.SeparationMavenMetadataDao
@@ -70,7 +69,7 @@ class MavenRepoSpecialDataSeparatorHandler(
     private val separationNodeDao: SeparationNodeDao,
     private val mongoTemplate: MongoTemplate,
     private val dataSeparationConfig: DataSeparationConfig,
-    ) : RepoSpecialDataSeparator {
+) : RepoSpecialDataSeparator {
 
     override fun type(): RepositoryType {
         return RepositoryType.MAVEN
