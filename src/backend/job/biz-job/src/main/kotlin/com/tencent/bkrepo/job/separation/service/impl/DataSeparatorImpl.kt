@@ -41,6 +41,7 @@ import com.tencent.bkrepo.job.PACKAGE_DOWNLOADS_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_DOWNLOAD_DATE
 import com.tencent.bkrepo.job.PACKAGE_VERSION
 import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
+import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
@@ -87,6 +88,7 @@ class DataSeparatorImpl(
     private val separationPackageDao: SeparationPackageDao,
     separationFailedRecordDao: SeparationFailedRecordDao,
     private val separationNodeDao: SeparationNodeDao,
+    private val dataSeparationConfig: DataSeparationConfig,
     separationTaskDao: SeparationTaskDao,
 ) : AbstractHandler(mongoTemplate, separationFailedRecordDao, separationTaskDao), DataSeparator {
     override fun repoSeparator(context: SeparationContext) {
@@ -127,13 +129,13 @@ class DataSeparatorImpl(
         with(context) {
             validatePackageParams(pkg)
             val criteria = buildPackageCriteria(projectId, repoName, pkg)
-            val pageSize = BATCH_SIZE
+            val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
             do {
                 val query = Query(criteria)
                     .addCriteria(Criteria.where(ID).gt(lastId))
-                    .limit(BATCH_SIZE)
+                    .limit(dataSeparationConfig.batchSize)
                     .with(Sort.by(ID).ascending())
                 val data = mongoTemplate.find(query, PackageInfo::class.java, PACKAGE_COLLECTION_NAME)
                 if (data.isEmpty()) {
@@ -173,13 +175,13 @@ class DataSeparatorImpl(
     ) {
         with(context) {
             val criteria = buildVersionCriteria(pkg, packageInfo, separationDate)
-            val pageSize = BATCH_SIZE
+            val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
             do {
                 val query = Query(criteria)
                     .addCriteria(Criteria.where(ID).gt(lastId))
-                    .limit(BATCH_SIZE)
+                    .limit(dataSeparationConfig.batchSize)
                     .with(Sort.by(ID).ascending())
                 val data = mongoTemplate.find(query, PackageVersionInfo::class.java, PACKAGE_VERSION_COLLECTION_NAME)
                 if (data.isEmpty()) {
@@ -232,7 +234,6 @@ class DataSeparatorImpl(
                 .and(PACKAGE_DOWNLOAD_DATE).gt(date)
             val query = Query(criteria)
                 .limit(1)
-                .with(Sort.by(PACKAGE_DOWNLOAD_DATE).descending())
             val result = mongoTemplate.find<Map<String, Any?>>(query, PACKAGE_DOWNLOADS_COLLECTION_NAME)
             if (result.isNotEmpty()) {
                 return
@@ -518,13 +519,13 @@ class DataSeparatorImpl(
             validateNodeParams(node)
             val criteria = buildNodeCriteria(context, node)
             val collectionName = getNodeCollectionName(projectId)
-            val pageSize = BATCH_SIZE
+            val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
             do {
                 val query = Query(criteria)
                     .addCriteria(Criteria.where(ID).gt(lastId))
-                    .limit(BATCH_SIZE)
+                    .limit(dataSeparationConfig.batchSize)
                     .with(Sort.by(ID).ascending())
                 val data = mongoTemplate.find(query, NodeBaseInfo::class.java, collectionName)
                 if (data.isEmpty()) {
