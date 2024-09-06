@@ -90,14 +90,14 @@
                 type: Array,
                 default: () => [
                     {
-                        icon: 'english',
-                        name: 'English',
-                        id: 'en'
-                    },
-                    {
                         icon: 'chinese',
                         name: '中文',
                         id: 'zh-cn'
+                    },
+                    {
+                        icon: 'english',
+                        name: 'English',
+                        id: 'en'
                     }
                 ]
             }
@@ -144,11 +144,11 @@
                 const BK_CI_DOMAIN = location.host.split('.').slice(1).join('.')
                 if (id !== 'zh-cn') {
                     cookies.remove('blueking_language', { domain: BK_CI_DOMAIN, path: '/' })
-                    cookies.set('blueking_language', 'en', { domain: BK_CI_DOMAIN, path: '/' })
+                    cookies.set('blueking_language', 'en', { domain: BK_CI_DOMAIN, path: '/', expires: 366 })
                     location.reload()
                 } else {
                     cookies.remove('blueking_language', { domain: BK_CI_DOMAIN, path: '/' })
-                    cookies.set('blueking_language', 'zh-cn', { domain: BK_CI_DOMAIN, path: '/' })
+                    cookies.set('blueking_language', 'zh-cn', { domain: BK_CI_DOMAIN, path: '/', expires: 366 })
                     location.reload()
                 }
             },
@@ -230,14 +230,19 @@
     }
 }
 .flag-box{
-    margin-top: 7px;
-    border-radius:15px;
-    width: 30px;
-    height: 30px;
-    display: flex;
     align-items: center;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 16px;
+    height: 32px;
     justify-content: center;
+    position: relative;
+    width: 32px;
+    margin-right: 8px;
+    color: #7b7d8a;
     &:hover {
+        color: #f1ffff;
         background-color: #253146;
     }
 }
