@@ -148,51 +148,7 @@
             projectId () {
                 return this.$route.params.projectId
             },
-            isCommunity () {
-                // 是否为社区版
-                return RELEASE_MODE === 'community'
-            },
-            genericInterceptorsList () {
-                return this.isCommunity ? ['mobile', 'web'] : ['mobile', 'web', 'ip_segment']
-            },
             rules () {
-                const filenameRule = [
-                    {
-                        required: true,
-                        message: this.$t('pleaseFileName'),
-                        trigger: 'blur'
-                    }
-                ]
-                const metadataRule = [
-                    {
-                        required: true,
-                        message: this.$t('pleaseMetadata'),
-                        trigger: 'blur'
-                    },
-                    {
-                        regex: /^[^\s]+:[^\s]+/,
-                        message: this.$t('metadataRule'),
-                        trigger: 'blur'
-                    }
-                ]
-                const ipSegmentRule = [
-                    {
-                        required: true,
-                        message: this.$t('pleaseIpSegment'),
-                        trigger: 'blur'
-                    },
-                    {
-                        validator: function (val) {
-                            const ipList = val.split(',')
-                            return ipList.every(ip => {
-                                if (!ip) return true
-                                return ipList.every(ip => /(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\b\/([0-9]|[1-2][0-9]|3[0-2])\b)/.test(ip))
-                            })
-                        },
-                        message: this.$t('ipSegmentRule'),
-                        trigger: 'blur'
-                    }
-                ]
                 return {
                     type: [
                         {
@@ -235,12 +191,7 @@
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
                             trigger: 'change'
                         }
-                    ],
-                    'mobile.filename': filenameRule,
-                    'mobile.metadata': metadataRule,
-                    'web.filename': filenameRule,
-                    'web.metadata': metadataRule,
-                    'ip_segment.ipSegment': this.repoBaseInfo.ip_segment.officeNetwork ? {} : ipSegmentRule
+                    ]
                 }
             },
             available: {
@@ -275,6 +226,7 @@
                         { label: this.$t('permissionTitle.public'), value: 'public', tip: this.$t('permissionTip.public') }
                     ]
                 } else {
+                    this.accessControl = 'DEFAULT'
                     return [
                         { label: this.$t('permissionTitle.default'), value: 'default', tip: this.$t('permissionTip.default') },
                         { label: this.$t('permissionTitle.public'), value: 'public', tip: this.$t('permissionTip.public') }
@@ -293,6 +245,7 @@
                 })
             },
             cancel () {
+                this.accessControl = 'DEFAULT'
                 this.show = false
             },
             asynCheckRepoName () {
@@ -307,27 +260,6 @@
             },
             async confirm () {
                 await this.$refs.repoBaseInfo.validate()
-                const interceptors = []
-                if (this.repoBaseInfo.type === 'generic' || this.repoBaseInfo.type === 'ddc') {
-                    ['mobile', 'web', 'ip_segment'].forEach(type => {
-                        const { enable, filename, metadata, ipSegment, whitelistUser, officeNetwork } = this.repoBaseInfo[type]
-                        if (['mobile', 'web'].includes(type)) {
-                            enable && interceptors.push({
-                                type: type.toUpperCase(),
-                                rules: { filename, metadata }
-                            })
-                        } else {
-                            enable && interceptors.push({
-                                type: type.toUpperCase(),
-                                rules: {
-                                    ipSegment: ipSegment.split(','),
-                                    whitelistUser: whitelistUser.split(','),
-                                    officeNetwork
-                                }
-                            })
-                        }
-                    })
-                }
                 const body = {
                     projectId: this.projectId,
                     type: this.repoBaseInfo.type.toUpperCase(),
@@ -340,7 +272,7 @@
                         type: this.repoBaseInfo.type === 'generic' ? 'local' : 'composite',
                         settings: {
                             system: this.repoBaseInfo.system,
-                            interceptors: interceptors.length ? interceptors : undefined,
+                            interceptors: undefined,
                             ...(
                                 this.repoBaseInfo.type === 'rpm'
                                     ? {
