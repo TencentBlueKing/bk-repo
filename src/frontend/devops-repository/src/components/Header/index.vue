@@ -230,19 +230,14 @@
     }
 }
 .flag-box{
+    margin-top: 7px;
+    border-radius:15px;
+    width: 30px;
+    height: 30px;
+    display: flex;
     align-items: center;
-    border-radius: 50%;
-    cursor: pointer;
-    display: inline-flex;
-    font-size: 16px;
-    height: 32px;
     justify-content: center;
-    position: relative;
-    width: 32px;
-    margin-right: 8px;
-    color: #7b7d8a;
     &:hover {
-        color: #f1ffff;
         background-color: #253146;
     }
 }
