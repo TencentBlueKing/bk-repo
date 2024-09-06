@@ -72,7 +72,9 @@ data class DataSeparationConfig(
     // 允许同时执行的fix任务数
     var fixTaskConcurrency: Int = Runtime.getRuntime().availableProcessors() * 2,
     // 是否允许自动恢复
-    var enableAutoRecovery: Boolean = false
+    var enableAutoRecovery: Boolean = false,
+    // 批量查询大小
+    var batchSize: Int = 1000
 )
 
 
