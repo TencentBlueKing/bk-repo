@@ -49,10 +49,9 @@ class DistributedTokenBucketRateLimiter(
             var acquireResult: Boolean
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
-                val nowStr = (System.currentTimeMillis() / 1000).toString()
                 val results = redisTemplate.execute(
                     redisScript, getKeys(key), permitsPerSecond.toString(),
-                    capacity.toString(), permits.toString(), nowStr
+                    capacity.toString(), permits.toString()
                 )
                 acquireResult = results[0] == 1L
             }
@@ -61,6 +60,7 @@ class DistributedTokenBucketRateLimiter(
             }
             return acquireResult
         } catch (e: Exception) {
+            logger.warn("${this.javaClass.simpleName} acquire error: ${e.message}")
             throw AcquireLockFailedException("distributed lock acquire failed: $e")
         }
     }

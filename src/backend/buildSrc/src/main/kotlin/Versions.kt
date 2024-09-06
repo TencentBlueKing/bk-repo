@@ -71,4 +71,6 @@ object Versions {
     const val Notice = "1.0.0"
     const val SpringCloudFunction = "3.2.11"
     const val Milvus = "2.4.1"
+    // it.ozimov:embedded-redis redis版本最高才2.8，不支持redis.replicate_commands()
+    const val NewEmbeddedRedis = "0.7.3"
 }

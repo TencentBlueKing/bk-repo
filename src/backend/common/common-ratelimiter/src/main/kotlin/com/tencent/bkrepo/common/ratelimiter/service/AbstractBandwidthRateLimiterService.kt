@@ -84,7 +84,7 @@ abstract class AbstractBandwidthRateLimiterService(
             )
         } catch (e: AcquireLockFailedException) {
             logger.warn(
-                "acquire lock failed for for ${resLimitInfo.resource} " +
+                "acquire lock failed for ${resLimitInfo.resource} " +
                     "with ${resLimitInfo.resourceLimit}, e: ${e.message}"
             )
             null

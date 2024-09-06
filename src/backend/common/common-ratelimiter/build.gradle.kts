@@ -40,7 +40,7 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")
     testImplementation(project(":common:common-redis"))
-    testImplementation("it.ozimov:embedded-redis:${Versions.EmbeddedRedis}") {
+    testImplementation("com.github.codemonstur:embedded-redis:${Versions.NewEmbeddedRedis}") {
         exclude("org.slf4j", "slf4j-simple")
     }
 }

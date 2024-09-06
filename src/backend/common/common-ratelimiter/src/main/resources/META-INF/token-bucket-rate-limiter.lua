@@ -1,3 +1,4 @@
+redis.replicate_commands()
 local tokens_key = KEYS[1]
 local timestamp_key = KEYS[2]
 -- 每秒填充速率
@@ -7,8 +8,8 @@ local capacity = tonumber(ARGV[2])
 -- 消耗令牌数量
 local requested = tonumber(ARGV[3])
 -- now 当前时间秒
-local now = tonumber(ARGV[4])
-
+local currentTime = redis.call('TIME')
+local now = tonumber(currentTime[1])
 -- 计算令牌桶填充满需要多久
 local fill_time = capacity/rate
 -- *2保证时间充足

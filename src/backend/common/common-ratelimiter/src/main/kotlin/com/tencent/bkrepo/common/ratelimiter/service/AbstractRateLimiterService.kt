@@ -313,7 +313,7 @@ abstract class AbstractRateLimiterService(
             throw e
         } catch (e: AcquireLockFailedException) {
             logger.warn(
-                "acquire lock failed for for ${resLimitInfo.resource}" +
+                "acquire lock failed for ${resLimitInfo.resource}" +
                     " with ${resLimitInfo.resourceLimit}, e: ${e.message}"
             )
             exception = e

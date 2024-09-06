@@ -61,6 +61,7 @@ class DistributedFixedWindowRateLimiter(
             }
             return acquireResult
         } catch (e: Exception) {
+            logger.warn("${this.javaClass.simpleName} acquire error: ${e.message}")
             throw AcquireLockFailedException("distributed lock acquire failed: $e")
         }
     }

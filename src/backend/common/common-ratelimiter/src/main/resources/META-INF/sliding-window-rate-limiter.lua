@@ -2,15 +2,15 @@
 -- limit: 限流器的容量
 -- interval: 时间窗口的长度（单位为秒）
 -- count: 一次获取的令牌数量
--- now_mill 当前时间毫秒
--- random 随机数
+redis.replicate_commands()
 local key = KEYS[1]
 local limit = tonumber(ARGV[1])
 local interval = tonumber(ARGV[2])
 local count = tonumber(ARGV[3])
 local now_mill = tonumber(ARGV[4])
-local random = ARGV[5]
-local now_sec = now_mill/1000
+local currentTime = redis.call('TIME')
+local now_sec = tonumber(currentTime[1])
+local random = tonumber(currentTime[2])
 
 -- 删除时间窗口之外的令牌
 redis.call('zremrangebyscore', key, 0, now_sec - interval)

@@ -50,12 +50,10 @@ class DistributedSlidingWindowRateLimiter(
             var acquireResult = false
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.slidingWindowRateLimiterScript, List::class.java)
-                val nowStr = System.currentTimeMillis().toString()
-                val nanoTime = System.nanoTime().toString()
                 // 注意， 由于redis expire只支持秒为单位，所以周期最小单位为秒
                 val results = redisTemplate.execute(
                     redisScript, getKeys(key), limit.toString(),
-                    (duration.seconds).toString(), permits.toString(), nowStr, nanoTime
+                    (duration.seconds).toString(), permits.toString()
                 )
                 acquireResult = results[0] == 1L
             }
@@ -64,6 +62,7 @@ class DistributedSlidingWindowRateLimiter(
             }
             return acquireResult
         } catch (e: Exception) {
+            logger.warn("${this.javaClass.simpleName} acquire error: ${e.message}")
             throw AcquireLockFailedException("distributed lock acquire failed: $e")
         }
     }
