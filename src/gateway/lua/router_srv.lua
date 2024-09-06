@@ -37,7 +37,7 @@ end
 
 -- 访问限制api
 local security_paths = config.security_paths
-if #security_paths ~= 0  then
+if security_paths ~= nil and #security_paths ~= 0  then
     local is_secure = false
     local method = ngx.req.get_method()
     local path = ngx.var.uri
