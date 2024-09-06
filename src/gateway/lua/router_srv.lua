@@ -35,6 +35,24 @@ if service_name == "" then
     return
 end
 
+-- 访问限制api
+local security_paths = config.security_paths
+if #security_paths ~= 0  then
+    local is_secure = false
+    local method = ngx.req.get_method()
+    local path = ngx.var.uri
+    for _, item in ipairs(security_paths) do
+        local pathPattern = "/web/" .. service_name .. item.path
+        if string.find(path, "^" .. pathPattern) ~= nil and service_name == item.service and method == item.method then
+            is_secure = true
+        end
+    end
+    if is_secure == false then
+        ngx.exit(422)
+        return
+    end
+end
+
 -- 访问限制的工具
 local access_util = nil
 
