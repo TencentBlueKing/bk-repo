@@ -65,7 +65,8 @@ class ConanLocalRepository : LocalRepository() {
                 size = getArtifactFile().getSize(),
                 sha256 = getArtifactSha256(),
                 md5 = getArtifactMd5(),
-                operator = userId
+                operator = userId,
+                overwrite = true
             )
         }
     }
@@ -107,18 +108,16 @@ class ConanLocalRepository : LocalRepository() {
         size: Long,
         sourceType: ArtifactChannel? = null
     ) {
-        with(artifactInfo) {
-            val packageVersionCreateRequest = buildPackageVersionCreateRequest(
-                userId = userId,
-                artifactInfo = artifactInfo,
-                size = size,
-                sourceType = sourceType
-            )
-            // TODO 元数据中要加入对应username与channel，可能存在同一制品版本存在不同username与channel
-            val packageUpdateRequest = buildPackageUpdateRequest(artifactInfo)
-            packageClient.createVersion(packageVersionCreateRequest).apply {
-                logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
-            }
+        val packageVersionCreateRequest = buildPackageVersionCreateRequest(
+            userId = userId,
+            artifactInfo = artifactInfo,
+            size = size,
+            sourceType = sourceType
+        )
+        // TODO 元数据中要加入对应username与channel，可能存在同一制品版本存在不同username与channel
+        val packageUpdateRequest = buildPackageUpdateRequest(artifactInfo)
+        packageClient.createVersion(packageVersionCreateRequest).apply {
+            logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
         }
     }
 

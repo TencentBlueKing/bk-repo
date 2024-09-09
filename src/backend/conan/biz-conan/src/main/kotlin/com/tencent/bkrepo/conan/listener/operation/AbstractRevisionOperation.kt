@@ -78,7 +78,6 @@ abstract class AbstractRevisionOperation(
                 )
                 handleEvent(indexInfo)
                 logger.info("index.json in repo [$projectId/$repoName] is ready to upload...")
-
                 commonService.uploadIndexJson(
                     projectId = projectId,
                     repoName = repoName,

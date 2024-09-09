@@ -34,7 +34,7 @@ import org.springframework.boot.runApplication
  * conan registry
  */
 @MicroService
-class ConanRegistryApplication
+class ConanApplication
 fun main(args: Array<String>) {
-    runApplication<ConanRegistryApplication>(*args)
+    runApplication<ConanApplication>(*args)
 }

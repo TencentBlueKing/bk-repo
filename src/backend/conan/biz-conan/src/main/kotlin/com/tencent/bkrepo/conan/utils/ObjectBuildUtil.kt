@@ -183,7 +183,8 @@ object ObjectBuildUtil {
                 revision = revision ?: DEFAULT_REVISION_V1,
                 dateStr = convertToUtcTime(LocalDateTime.now()),
                 pRefStr = pRefStr,
-                pRevPath = pRevPath
+                pRevPath = pRevPath,
+                pRevision = pRevision
             )
         }
     }

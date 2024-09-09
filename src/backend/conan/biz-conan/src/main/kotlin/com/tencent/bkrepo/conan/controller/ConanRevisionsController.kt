@@ -87,7 +87,7 @@ class ConanRevisionsController(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
     ): ResponseEntity<Any> {
         return ConanCommonController.buildResponse(
-            conanService.getRecipeLatestRevision(conanArtifactInfo)
+            conanService.getPackageRevisions(conanArtifactInfo)
         )
     }
 
@@ -101,7 +101,7 @@ class ConanRevisionsController(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
     ): ResponseEntity<Any> {
         return ConanCommonController.buildResponse(
-            conanService.getRecipeLatestRevision(conanArtifactInfo)
+            conanService.getPackageLatestRevision(conanArtifactInfo)
         )
     }
 }

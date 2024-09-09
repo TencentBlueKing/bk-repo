@@ -25,16 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.pojo
+package com.tencent.bkrepo.conan.config
 
-data class ConanPackageDeleteRequest(
-    override val projectId: String,
-    override val repoName: String,
-    override val revPath: String,
-    override val refStr: String,
-    override val pRefStr: String? = null,
-    override val pRevPath: String? = null,
-    override val pRevision: String? = null,
-    override val operator: String,
-    val revision: String,
-    ): RevisionOperationRequest
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties(prefix = "conan")
+data class ConanProperties(
+    var domain: String = "localhost"
+)

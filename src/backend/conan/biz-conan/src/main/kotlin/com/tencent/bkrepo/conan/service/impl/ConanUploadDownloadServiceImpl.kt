@@ -31,6 +31,10 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.conan.constant.ConanMessageCode
+import com.tencent.bkrepo.conan.constant.X_CHECKSUM_DEPLOY
+import com.tencent.bkrepo.conan.exception.ConanRecipeNotFoundException
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanUploadDownloadService
 import com.tencent.bkrepo.conan.utils.PathUtils.generateFullPath
@@ -47,13 +51,17 @@ class ConanUploadDownloadServiceImpl : ConanUploadDownloadService {
     lateinit var commonService: CommonService
 
     override fun uploadFile(conanArtifactInfo: ConanArtifactInfo, artifactFile: ArtifactFile) {
-        if (artifactFile.getSize() != 0L) {
+        val checksumDeploy = HttpContextHolder.getRequest().getHeader(X_CHECKSUM_DEPLOY)?.toBoolean() ?: false
+        if (!checksumDeploy) {
             val context = ArtifactUploadContext(artifactFile)
             ArtifactContextHolder.getRepository().upload(context)
         } else {
-            // conan客户端上传文件前会使用同样请求去确认文件是否存在
+            // conan客户端上传文件前会使用同样请求去确认文件是否存在, 此时会上传sha1进行对比，但是没有sha1, 默认全部重新上传，
             val fullPath = generateFullPath(conanArtifactInfo)
-            commonService.checkNodeExist(conanArtifactInfo.projectId, conanArtifactInfo.repoName, fullPath)
+            throw ConanRecipeNotFoundException(
+                ConanMessageCode.CONAN_RECIPE_NOT_FOUND,
+                fullPath, "${conanArtifactInfo.projectId}|${conanArtifactInfo.repoName}"
+            )
         }
     }
 
