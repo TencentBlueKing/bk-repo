@@ -111,6 +111,13 @@ class RouteConfiguration(
             addMetrics(serverMetrics.uploadingCount)
         }
 
+        "/stream".nest{
+            filter(artifactFileCleanupFilterFunction::filter)
+            PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::stream)
+            addMetrics(serverMetrics.uploadingCount)
+        }
+
+
         "/client".nest {
             POST("/create/{projectId}/{repoName}", clientHandler::createClient)
             DELETE("/delete/{projectId}/{repoName}/{clientId}", clientHandler::removeClient)

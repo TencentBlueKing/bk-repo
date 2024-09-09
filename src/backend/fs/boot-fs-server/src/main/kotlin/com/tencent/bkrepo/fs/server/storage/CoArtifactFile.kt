@@ -80,7 +80,6 @@ class CoArtifactFile(
     }
 
     override fun getSize(): Long {
-        require(initialized)
         return receiver.getSize()
     }
 
