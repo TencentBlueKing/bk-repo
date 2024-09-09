@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.multipart
 
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.springframework.web.multipart.MultipartFile

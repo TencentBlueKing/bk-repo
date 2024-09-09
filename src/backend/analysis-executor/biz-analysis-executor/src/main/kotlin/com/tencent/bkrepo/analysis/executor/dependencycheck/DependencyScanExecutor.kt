@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.result.De
 import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.normalizedLevel
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.analysis.executor.ScanExecutor
 import com.tencent.bkrepo.analysis.executor.pojo.ScanExecutorTask
 import org.slf4j.LoggerFactory

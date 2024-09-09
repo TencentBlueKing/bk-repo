@@ -25,26 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo
+package com.tencent.bkrepo.common.metadata.service.repo.impl
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialsUpdater
+import org.springframework.stereotype.Component
 
-interface StorageCredentialsUpdater {
-    /**
-     * 更新存储凭证
-     *
-     * @param old 旧的存储凭证
-     * @param req 更新请求
-     */
-    fun update(old: StorageCredentials, req: StorageCredentialsUpdateRequest)
-
-    companion object {
-        /**
-         * 获取存储凭证更新器名
-         *
-         * @param credentialClazz 存储凭证类型
-         */
-        fun name(credentialClazz: Class<*>): String = "${credentialClazz.simpleName}Updater"
+@Component("InnerCosCredentialsUpdater")
+class InnerCosStorageCredentialsUpdater : StorageCredentialsUpdater {
+    override fun update(old: StorageCredentials, req: StorageCredentialsUpdateRequest) {
+        val new = req.credentials
+        if (old !is InnerCosCredentials || new !is InnerCosCredentials) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+        }
+        old.slowLogSpeed = new.slowLogSpeed
+        old.slowLogTimeInMillis = new.slowLogTimeInMillis
+        old.download = new.download
+        old.modId = new.modId
+        old.cmdId = new.cmdId
     }
 }

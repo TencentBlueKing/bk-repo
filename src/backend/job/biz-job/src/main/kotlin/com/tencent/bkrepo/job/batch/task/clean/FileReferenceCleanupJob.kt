@@ -34,6 +34,7 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -49,7 +50,6 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.job.exception.RepoMigratingException
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -72,7 +72,7 @@ import kotlin.reflect.KClass
 @Suppress("UnstableApiUsage")
 class FileReferenceCleanupJob(
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val properties: FileReferenceCleanupJobProperties,
     private val archiveClient: ArchiveClient,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
@@ -219,7 +219,7 @@ class FileReferenceCleanupJob(
 
     private fun getCredentials(key: String): StorageCredentials? {
         return cacheMap.getOrPut(key) {
-            storageCredentialsClient.findByKey(key).data ?: return null
+            storageCredentialService.findByKey(key) ?: return null
         }
     }
 

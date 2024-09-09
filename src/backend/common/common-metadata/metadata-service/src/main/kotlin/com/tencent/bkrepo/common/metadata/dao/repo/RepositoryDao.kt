@@ -29,11 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.common.metadata.dao.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TRepository
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -45,6 +47,7 @@ import org.springframework.stereotype.Repository
  * 仓库数据访问层
  */
 @Repository
+@Conditional(SyncCondition::class)
 class RepositoryDao : SimpleMongoDao<TRepository>() {
 
     /**

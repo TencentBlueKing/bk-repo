@@ -41,9 +41,9 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.apache.commons.codec.binary.Hex
@@ -66,7 +66,7 @@ class FileLoader(
     private val executorProperties: ScannerExecutorProperties,
     private val nodeClient: NodeClient,
     private val storageManager: StorageManager,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
 ) {
     /**
      * 加载[subtask]要扫描的制品
@@ -82,7 +82,7 @@ class FileLoader(
             }
 
             // 获取存储凭据
-            val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
+            val storageCredentials = credentialsKey?.let { storageCredentialService.findByKey(it)!! }
             val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
             // 获取文件
             val file = File(tempDir, fileName(taskId, fileName(), repoType))

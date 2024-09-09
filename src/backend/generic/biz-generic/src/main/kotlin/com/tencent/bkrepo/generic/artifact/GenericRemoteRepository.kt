@@ -67,7 +67,7 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper

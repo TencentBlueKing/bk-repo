@@ -35,6 +35,7 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.listener.FileStoreRetryListener
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput

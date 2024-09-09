@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import org.apache.commons.io.FileUtils

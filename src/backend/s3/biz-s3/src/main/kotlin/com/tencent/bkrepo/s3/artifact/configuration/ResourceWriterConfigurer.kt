@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.s3.artifact.configuration
 
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.s3.artifact.response.S3ArtifactResourceWriter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

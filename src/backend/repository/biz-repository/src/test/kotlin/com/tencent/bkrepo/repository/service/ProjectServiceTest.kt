@@ -46,7 +46,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach

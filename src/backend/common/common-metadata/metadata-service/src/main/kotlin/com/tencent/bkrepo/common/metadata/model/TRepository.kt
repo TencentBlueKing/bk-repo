@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,48 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.config
+package com.tencent.bkrepo.common.metadata.model
 
-import org.springframework.util.unit.DataSize
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
- * 文件接收配置
+ * 仓库模型
  */
-data class ReceiveProperties(
-    /**
-     * 最大接收文件大小，小于0则无限制
-     */
-    var maxFileSize: DataSize = DataSize.ofBytes(-1),
+@Document("repository")
+@CompoundIndexes(
+    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
+)
+data class TRepository(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
 
-    /**
-     * 最大接收请求大小，小于0则无限制
-     */
-    var maxRequestSize: DataSize = DataSize.ofBytes(-1),
+    var name: String,
+    var type: RepositoryType,
+    var category: RepositoryCategory,
+    var public: Boolean,
+    var description: String? = null,
+    var configuration: String,
+    var credentialsKey: String? = null,
+    var oldCredentialsKey: String? = null,
+    var display: Boolean = true,
 
-    /**
-     * 文件内存阈值，超过此阈值则将数据从内存写入磁盘
-     * 小于0则不使用内存缓存，直接写入磁盘
-     */
-    var fileSizeThreshold: DataSize = DataSize.ofBytes(-1),
+    var projectId: String,
 
-    /**
-     * 使用本地路径阈值，超过这阈值则使用其他路径
-     * 必须要超过文件内存阈值否则设置无效
-     * */
-    var localThreshold: DataSize = DataSize.ofBytes(-1),
-
-    /**
-     * 是否延迟解析文件
-     */
-    var resolveLazily: Boolean = true,
-
-    /**
-     * io拷贝buffer大小
-     */
-    var bufferSize: DataSize = DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()),
-
-    /**
-     * 每秒接收数据量
-     */
-    var rateLimit: DataSize = DataSize.ofBytes(-1)
+    var quota: Long? = null,
+    var used: Long? = null,
+    var clusterNames: Set<String>? = null,
+    var deleted: LocalDateTime? = null
 )

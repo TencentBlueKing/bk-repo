@@ -9,7 +9,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties

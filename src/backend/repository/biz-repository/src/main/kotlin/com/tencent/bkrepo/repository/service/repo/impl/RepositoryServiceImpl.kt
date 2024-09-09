@@ -60,9 +60,9 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publi
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
@@ -79,7 +79,7 @@ import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.packages.PackageService
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent

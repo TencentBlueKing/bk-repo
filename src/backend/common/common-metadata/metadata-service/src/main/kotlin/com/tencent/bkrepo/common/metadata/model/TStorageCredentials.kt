@@ -29,14 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao.repository
+package com.tencent.bkrepo.common.metadata.model
 
-import com.tencent.bkrepo.repository.model.TRepository
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-/**
- * 仓库mongo repository
- */
-@Repository
-interface RepoRepository : MongoRepository<TRepository, String>
+@Document("storage_credentials")
+data class TStorageCredentials(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+
+    var credentials: String,
+    var region: String? = null
+)
