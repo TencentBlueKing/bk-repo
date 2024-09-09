@@ -25,7 +25,7 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.config.propteries
+package com.tencent.bkrepo.fs.server.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

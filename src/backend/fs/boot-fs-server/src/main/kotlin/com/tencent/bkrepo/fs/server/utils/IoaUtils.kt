@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.fs.server.config.propteries.IoaProperties
+import com.tencent.bkrepo.fs.server.config.properties.IoaProperties
 import com.tencent.bkrepo.fs.server.request.IoaLoginRequest
 import com.tencent.bkrepo.fs.server.request.IoaTicketRequest
 import com.tencent.bkrepo.fs.server.response.IoaTicketResponse
@@ -44,7 +44,6 @@ import io.netty.resolver.dns.DnsAddressResolverGroup
 import io.netty.resolver.dns.DnsNameResolverBuilder
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -54,8 +53,6 @@ import java.net.InetAddress
 import java.time.Duration
 import kotlin.random.Random
 
-
-@EnableConfigurationProperties(IoaProperties::class)
 class IoaUtils(
     ioaProperties: IoaProperties
 ) {

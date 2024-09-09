@@ -78,8 +78,11 @@ interface RRepositoryClient {
     @PostMapping("/node/rename")
     fun renameNode(@RequestBody nodeRenameRequest: NodeRenameRequest): Mono<Response<Void>>
 
-    @PostMapping("/node/fs/create")
+    @PostMapping("/node/create")
     fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
+
+    @PostMapping("/node/fs/create")
+    fun createFsNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
 
     @PutMapping("/node/fs/length")
     fun setLength(@RequestBody nodeSetLengthRequest: NodeSetLengthRequest): Mono<Response<Void>>

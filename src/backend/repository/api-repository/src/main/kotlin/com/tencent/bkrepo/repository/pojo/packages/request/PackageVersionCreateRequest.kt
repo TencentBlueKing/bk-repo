@@ -74,5 +74,7 @@ data class PackageVersionCreateRequest(
     @ApiModelProperty("是否允许覆盖")
     val overwrite: Boolean = false,
     @ApiModelProperty("创建人")
-    val createdBy: String
+    val createdBy: String,
+    @ApiModelProperty("同版本是否包含多个制品")
+    val multiArtifact: Boolean = false
 )
