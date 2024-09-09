@@ -64,7 +64,7 @@ class PypiWebService(
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
-    fun delete(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?) {
+    fun delete(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?, contentPath: String?) {
         val context = ArtifactRemoveContext()
         repository.remove(context)
     }
