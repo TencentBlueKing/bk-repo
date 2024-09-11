@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.mongo.reactive.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
-import java.lang.reflect.ParameterizedType
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.LoggerFactory
@@ -39,6 +38,7 @@ import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import java.lang.reflect.ParameterizedType
 
 abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
 
@@ -97,6 +97,12 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
     override suspend fun save(entity: E): E {
         return determineReactiveMongoOperations()
             .save(entity, determineCollectionName(entity))
+            .awaitSingle()
+    }
+
+    override suspend fun insert(entity: E): E {
+        return determineReactiveMongoOperations()
+            .insert(entity, determineCollectionName(entity))
             .awaitSingle()
     }
 
