@@ -17,13 +17,23 @@ module.exports = {
     'vue/max-attributes-per-line': [2, {
       'singleline': 10,
       'multiline': {
-        'max': 1,
-        'allowFirstLine': false
+        'max': 1
       }
+    }],
+    'vue/no-lone-template': ['error', {
+      'ignoreAccessible': true
+    }],
+    'vue/component-definition-name-casing': ['error', 'PascalCase'],
+    'vue/multi-word-component-names': 'off',
+    'vue/no-mutating-props': ['error', {
+      'shallowOnly': true
+    }],
+    'vue/first-attribute-linebreak': ['error', {
+      'singleline': 'ignore',
+      'multiline': 'below'
     }],
     'vue/singleline-html-element-content-newline': 'off',
     'vue/multiline-html-element-content-newline': 'off',
-    'vue/name-property-casing': ['error', 'PascalCase'],
     'vue/no-v-html': 'off',
     'accessor-pairs': 2,
     'arrow-spacing': [2, {
@@ -194,5 +204,13 @@ module.exports = {
       objectsInObjects: false
     }],
     'array-bracket-spacing': [2, 'never']
-  }
+  },
+  overrides: [
+    {
+      files: ['src/views/**/*.vue', 'src/components/**/*.vue'],
+      rules: {
+        'vue/multi-word-component-names': 0
+      }
+    }
+  ]
 }

@@ -64,6 +64,10 @@ import moment from 'moment'
 export default {
   name: 'WebHook',
   components: { WebhookCreateDialog, WebhookDetailDialog, WebhookDeleteDialog },
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     var validateId = (rule, value, callback) => {
       if (this.webhookQuery.associationType === 'PROJECT' && value.length === 0) {
@@ -97,10 +101,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     triggersFormatter(row, column) {
