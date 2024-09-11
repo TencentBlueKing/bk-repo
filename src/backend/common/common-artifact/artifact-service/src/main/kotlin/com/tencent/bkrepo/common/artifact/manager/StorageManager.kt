@@ -35,12 +35,12 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory
 class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
-    private val fileReferenceClient: FileReferenceClient,
+    private val fileReferenceService: FileReferenceService,
     private val nodeResourceFactory: NodeResourceFactory,
     private val pluginManager: PluginManager,
 ) {
@@ -88,7 +88,7 @@ class StorageManager(
                 try {
                     // 当createNode调用超时，实际node和引用创建成功时不会做任何改变
                     // 当文件创建成功，但是node创建失败时，则创建一个计数为0的fileReference用于清理任务清理垃圾文件
-                    fileReferenceClient.increment(request.sha256!!, storageCredentials?.key, 0L)
+                    fileReferenceService.increment(request.sha256!!, storageCredentials?.key, 0L)
                 } catch (exception: Exception) {
                     // 创建引用失败后会通过定时任务StorageReconcileJob清理垃圾文件
                     logger.error("Failed to create ref for new created file[${request.sha256}]", exception)

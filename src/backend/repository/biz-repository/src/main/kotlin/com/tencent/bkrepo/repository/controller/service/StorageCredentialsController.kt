@@ -37,12 +37,14 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 存储凭证服务接口实现类
  */
 @RestController
+@Primary
 class StorageCredentialsController(
     private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties

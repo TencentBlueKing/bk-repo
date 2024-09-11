@@ -38,7 +38,7 @@ import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.job.base.CenterNodeJob
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
@@ -121,12 +121,12 @@ class DeletedNodeCleanupJob(
             if (!node.folder &&
                 (node.clusterNames == null || node.clusterNames!!.contains(clusterProperties.self.name))
             ) {
-                fileReferenceChanged = fileReferenceService.decrement(node, repo)
+                fileReferenceChanged = fileReferenceService.decrement(node.sha256!!, repo.credentialsKey)
             }
         } catch (ignored: Exception) {
             logger.error("Clean up deleted node[$node] failed.", ignored)
             if (fileReferenceChanged) {
-                fileReferenceService.increment(node, repo)
+                fileReferenceService.increment(node.sha256!!, repo.credentialsKey)
             }
         }
     }

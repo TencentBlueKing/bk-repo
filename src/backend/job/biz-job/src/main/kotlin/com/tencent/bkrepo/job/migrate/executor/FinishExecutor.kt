@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
@@ -35,7 +36,6 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.FINISHING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component
 @Component
 class FinishExecutor(
     properties: MigrateRepoStorageProperties,
-    fileReferenceClient: FileReferenceClient,
+    fileReferenceService: FileReferenceService,
     migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
@@ -53,7 +53,7 @@ class FinishExecutor(
     properties,
     migrateRepoStorageTaskDao,
     migrateFailedNodeDao,
-    fileReferenceClient,
+    fileReferenceService,
     storageService,
     executingTaskRecorder,
 ) {

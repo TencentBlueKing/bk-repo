@@ -53,6 +53,11 @@ interface MongoReactiveDao<E> {
     suspend fun save(entity: E): E
 
     /**
+     * 更新单条文档
+     */
+    suspend fun updateFirst(query: Query, update: Update): UpdateResult
+
+    /**
      * 更新文档
      */
     suspend fun updateMulti(query: Query, update: Update): UpdateResult
@@ -71,4 +76,9 @@ interface MongoReactiveDao<E> {
      * count
      */
     suspend fun count(query: Query): Long
+
+    /**
+     * 判断文档是否存在
+     */
+    suspend fun exists(query: Query): Boolean
 }

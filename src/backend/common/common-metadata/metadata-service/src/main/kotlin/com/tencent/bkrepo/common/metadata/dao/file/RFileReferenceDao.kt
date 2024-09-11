@@ -29,14 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.common.metadata.dao.file
 
-import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
-import com.tencent.bkrepo.repository.model.TFileReference
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.common.metadata.model.TFileReference
+import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingMongoReactiveDao
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Repository
 
 /**
  * 文件摘要引用 Dao
  */
 @Repository
-class FileReferenceDao : HashShardingMongoDao<TFileReference>()
+@Conditional(ReactiveCondition::class)
+class RFileReferenceDao : ShardingMongoReactiveDao<TFileReference>()
