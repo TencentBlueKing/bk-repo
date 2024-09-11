@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.conan.pojo
 
+import java.util.SortedSet
+
 class IndexInfo(
     var reference: String,
-    var revisions: MutableList<RevisionInfo> = mutableListOf()
+    var revisions: SortedSet<RevisionInfo> = sortedSetOf()
 ) {
     fun addRevision(revisionInfo: RevisionInfo) {
         val exist = revisions.firstOrNull { revisionInfo.revision == it.revision }

@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.conan.constant.CONANFILE
 import com.tencent.bkrepo.conan.constant.EXPORT_SOURCES_TGZ_NAME
 import com.tencent.bkrepo.conan.constant.NAME
 import com.tencent.bkrepo.conan.constant.PACKAGE_TGZ_NAME
@@ -77,7 +78,7 @@ class ConanLocalRepository : LocalRepository() {
     override fun onUploadSuccess(context: ArtifactUploadContext) {
         super.onUploadSuccess(context)
         val fullPath = generateFullPath(context.artifactInfo as ConanArtifactInfo)
-        if (fullPath.endsWith(EXPORT_SOURCES_TGZ_NAME)) {
+        if (fullPath.endsWith(CONANFILE)) {
             // TODO package version size 如何计算
             createVersion(
                 artifactInfo = context.artifactInfo as ConanArtifactInfo,
