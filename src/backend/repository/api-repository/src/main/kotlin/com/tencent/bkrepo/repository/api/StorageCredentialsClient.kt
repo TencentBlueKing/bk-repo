@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.RequestParam
 /**
  * 存储凭证服务接口
  */
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "StorageCredentialsClient")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "StorageCredentialsClient", primary = false)
 @RequestMapping("/service/storage/credentials")
 interface StorageCredentialsClient {
 

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.api
 
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
@@ -73,4 +74,11 @@ interface RAuthClient {
     fun createUserToProject(
         @RequestBody request: CreateUserToProjectRequest
     ): Mono<Response<Boolean>>
+
+    @PostMapping("/account/credential")
+    fun checkAccountCredential(
+        @RequestParam accesskey: String,
+        @RequestParam secretkey: String,
+        @RequestParam authorizationGrantType: AuthorizationGrantType? = null
+    ): Mono<Response<String?>>
 }

@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
@@ -46,7 +47,6 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import java.util.concurrent.RejectedExecutionException
@@ -57,7 +57,7 @@ abstract class BaseTaskExecutor(
     protected val properties: MigrateRepoStorageProperties,
     protected val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     protected val migrateFailedNodeDao: MigrateFailedNodeDao,
-    private val fileReferenceClient: FileReferenceClient,
+    private val fileReferenceService: FileReferenceService,
     private val storageService: StorageService,
     private val executingTaskRecorder: ExecutingTaskRecorder,
 ) : TaskExecutor {
@@ -167,7 +167,7 @@ abstract class BaseTaskExecutor(
             return
         }
 
-        if (fileReferenceClient.count(sha256, context.task.dstStorageKey).data!! > 0) {
+        if (fileReferenceService.count(sha256, context.task.dstStorageKey) > 0) {
             /*
               可能由于在上传制品时使用的旧存储，而创建Node时由于会重新查一遍仓库的存储凭据而使用新存储
               这种情况会导致目标存储引用大于0但是文件不再目标存储，此时仅迁移存储不修改引用数
@@ -192,11 +192,11 @@ abstract class BaseTaskExecutor(
 
         // FileReferenceCleanupJob 会定期清理引用为0的文件数据，所以不需要删除文件数据
         // old引用计数 -1
-        if (fileReferenceClient.decrement(sha256, srcStorageKey).data != true) {
+        if (!fileReferenceService.decrement(sha256, srcStorageKey)) {
             logger.error("Failed to decrement file reference[$sha256] on storage[$srcStorageKey].")
         }
         // new引用计数 +1
-        if (fileReferenceClient.increment(sha256, dstStorageKey).data != true) {
+        if (!fileReferenceService.increment(sha256, dstStorageKey)) {
             logger.error("Failed to increment file reference[$sha256] on storage[$dstStorageKey].")
         }
     }

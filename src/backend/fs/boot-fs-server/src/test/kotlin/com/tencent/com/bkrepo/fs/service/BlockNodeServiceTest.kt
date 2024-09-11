@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.metadata.dao.RBlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.blocknode.RBlockNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
@@ -21,13 +21,12 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -36,9 +35,9 @@ import reactor.core.publisher.Mono
 import java.time.LocalDateTime
 
 @DataMongoTest
-@Import(RBlockNodeDao::class)
 @SpringBootConfiguration
 @EnableAutoConfiguration
+@ComponentScan("com.tencent.bkrepo.common.metadata")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class BlockNodeServiceTest {
 
@@ -62,15 +61,9 @@ class BlockNodeServiceTest {
     @Test
     fun testCreateBlockNode() {
         runBlocking {
-            var ref = 0
-            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull())).then {
-                ref++
-                Mono.just(successResponse(true))
-            }
             val bn = createBlockNode()
             Assertions.assertNotNull(bn)
             Assertions.assertNotNull(bn.id)
-            Assertions.assertEquals(1, ref)
         }
     }
 
@@ -79,8 +72,6 @@ class BlockNodeServiceTest {
     fun testListRangeBlockNodes() {
         runBlocking {
             val createdDate = LocalDateTime.now().minusSeconds(1).toString()
-            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
-                .thenReturn(Mono.just(successResponse(true)))
             createBlockNode(10)
             createBlockNode(20)
             createBlockNode(30)
@@ -103,8 +94,6 @@ class BlockNodeServiceTest {
     fun testDeleteBlocks() {
         runBlocking {
             val createdDate = LocalDateTime.now().minusSeconds(1).toString()
-            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
-                .thenReturn(Mono.just(successResponse(true)))
             createBlockNode(startPos = 10)
             createBlockNode(startPos = 20)
             val blocks0 = blockNodeService.listBlocks(
@@ -138,8 +127,6 @@ class BlockNodeServiceTest {
     fun testMoveNode() {
         runBlocking {
             val createdDate = LocalDateTime.now().minusSeconds(1).toString()
-            Mockito.`when`(rRepositoryClient.increment(any(), anyOrNull()))
-                .thenReturn(Mono.just(successResponse(true)))
             val nodeInfo = NodeInfo(
                 createdBy = UT_USER,
                 createdDate = createdDate,

@@ -6,6 +6,7 @@ dependencies {
     api(project(":common:common-service"))
     api(project(":common:common-mongo"))
     api(project(":common:common-mongo-reactive"))
+    api(project(":common:common-metadata:metadata-service"))
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.apache.tika:tika-core")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

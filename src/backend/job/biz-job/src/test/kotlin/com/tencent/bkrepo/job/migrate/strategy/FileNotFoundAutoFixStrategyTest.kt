@@ -4,6 +4,7 @@ import com.sun.xml.internal.messaging.saaj.util.ByteInputStream
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
@@ -15,7 +16,6 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.insertFailedNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -35,6 +35,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
@@ -50,18 +51,20 @@ import org.springframework.test.context.TestPropertySource
     MigrateFailedNodeDao::class,
     ArchiveMigrateFailedNodeDao::class,
 )
+@ComponentScan(basePackages = ["com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class FileNotFoundAutoFixStrategyTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
     private val strategy: FileNotFoundAutoFixStrategy,
     private val migrateFailedNodeDao: MigrateFailedNodeDao,
     private val archiveMigrateFailedNodeDao: ArchiveMigrateFailedNodeDao,
+    repositoryCommonUtils: RepositoryCommonUtils
 ) {
     @MockBean
     private lateinit var storageCredentialsClient: StorageCredentialsClient
 
     @MockBean
-    private lateinit var fileReferenceClient: FileReferenceClient
+    private lateinit var fileReferenceService: FileReferenceService
 
     @MockBean
     private lateinit var repositoryClient: RepositoryClient
@@ -75,8 +78,8 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
             .thenReturn(Response(0, data = listOf(FileSystemCredentials())))
         whenever(storageCredentialsClient.findByKey(anyString()))
             .thenReturn(Response(0, data = FileSystemCredentials()))
-        whenever(fileReferenceClient.increment(anyString(), anyOrNull(), any()))
-            .thenReturn(Response(0, data = true))
+        whenever(fileReferenceService.increment(anyString(), anyOrNull(), any()))
+            .thenReturn(true)
         whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyOrNull()))
             .thenReturn(Response(0, "", MigrateTestUtils.buildRepo()))
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
@@ -124,7 +127,7 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
         val node = mongoTemplate.createNode()
         val failedNode = migrateFailedNodeDao.insertFailedNode(node.fullPath)
         assertTrue(strategy.fix(failedNode))
-        verify(fileReferenceClient, times(1)).increment(any(), anyOrNull(), any())
+        verify(fileReferenceService, times(1)).increment(any(), anyOrNull(), any())
     }
 
     @Test

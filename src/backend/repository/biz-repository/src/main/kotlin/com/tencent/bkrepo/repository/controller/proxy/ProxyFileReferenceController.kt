@@ -30,7 +30,7 @@ package com.tencent.bkrepo.repository.controller.proxy
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.proxy.ProxyFileReferenceClient
-import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController

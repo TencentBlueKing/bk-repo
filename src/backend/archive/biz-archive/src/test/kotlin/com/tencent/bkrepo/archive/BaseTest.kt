@@ -14,7 +14,7 @@ import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.test.context.TestPropertySource
 
-@ComponentScan("com.tencent.bkrepo.archive")
+@ComponentScan(value = ["com.tencent.bkrepo.archive", "com.tencent.bkrepo.common.metadata"])
 @SpringBootConfiguration
 @EnableAutoConfiguration
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])

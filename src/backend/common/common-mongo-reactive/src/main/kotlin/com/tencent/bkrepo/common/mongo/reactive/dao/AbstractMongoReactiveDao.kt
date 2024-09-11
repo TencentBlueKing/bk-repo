@@ -67,6 +67,15 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
             .collectList().awaitSingle()
     }
 
+    override suspend fun updateFirst(query: Query, update: Update): UpdateResult {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao updateFirst: [$query], [$update]")
+        }
+        return determineReactiveMongoOperations()
+            .updateFirst(query, update, determineCollectionName(query))
+            .awaitSingle()
+    }
+
     override suspend fun updateMulti(query: Query, update: Update): UpdateResult {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao updateMulti: [$query], [$update]")
@@ -122,6 +131,13 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         val mongoOperations = determineReactiveMongoOperations()
         val collectName = determineCollectionName(query)
         return mongoOperations.count(query, collectName).awaitSingle()
+    }
+
+    override suspend fun exists(query: Query): Boolean {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao exists: [$query]")
+        }
+        return determineReactiveMongoOperations().exists(query, determineCollectionName(query)).awaitSingle()
     }
 
     protected open fun determineCollectionName(): String {

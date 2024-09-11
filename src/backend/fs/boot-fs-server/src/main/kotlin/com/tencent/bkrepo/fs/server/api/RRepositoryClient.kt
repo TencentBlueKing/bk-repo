@@ -78,8 +78,11 @@ interface RRepositoryClient {
     @PostMapping("/node/rename")
     fun renameNode(@RequestBody nodeRenameRequest: NodeRenameRequest): Mono<Response<Void>>
 
-    @PostMapping("/node/fs/create")
+    @PostMapping("/node/create")
     fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
+
+    @PostMapping("/node/fs/create")
+    fun createFsNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
 
     @PutMapping("/node/fs/length")
     fun setLength(@RequestBody nodeSetLengthRequest: NodeSetLengthRequest): Mono<Response<Void>>
@@ -101,12 +104,6 @@ interface RRepositoryClient {
         @PathVariable repoName: String,
         @RequestParam type: String? = null
     ): Mono<Response<RepositoryDetail?>>
-
-    @PutMapping("/fileReference/decrement")
-    fun decrement(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
-
-    @PutMapping("/fileReference/increment")
-    fun increment(@RequestParam sha256: String, @RequestParam credentialsKey: String?): Mono<Response<Boolean>>
 
     @PostMapping("/metadata/save")
     fun saveMetadata(@RequestBody request: MetadataSaveRequest): Mono<Response<Void>>

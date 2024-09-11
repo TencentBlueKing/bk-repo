@@ -29,21 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.file.impl
+package com.tencent.bkrepo.common.metadata.service.file.impl
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.repository.dao.FileReferenceDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.model.TFileReference
-import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.pojo.file.FileReference
-import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.dao.file.FileReferenceDao
+import com.tencent.bkrepo.common.metadata.model.TFileReference
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.util.FileReferenceQueryHelper.buildQuery
+import com.tencent.bkrepo.common.metadata.pojo.file.FileReference
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 
@@ -51,32 +49,10 @@ import org.springframework.stereotype.Service
  * 文件引用服务实现类
  */
 @Service
+@Conditional(SyncCondition::class)
 class FileReferenceServiceImpl(
     private val fileReferenceDao: FileReferenceDao,
-    private val repositoryDao: RepositoryDao
 ) : FileReferenceService {
-
-    override fun increment(node: TNode, repository: TRepository?): Boolean {
-        if (!validateParameter(node)) return false
-        return try {
-            val credentialsKey = findCredentialsKey(node, repository)
-            increment(node.sha256!!, credentialsKey)
-        } catch (exception: IllegalArgumentException) {
-            logger.error("Failed to increment reference of node [$node], repository not found.")
-            false
-        }
-    }
-
-    override fun decrement(node: TNode, repository: TRepository?): Boolean {
-        if (!validateParameter(node)) return false
-        return try {
-            val credentialsKey = findCredentialsKey(node, repository)
-            decrement(node.sha256!!, credentialsKey)
-        } catch (exception: IllegalArgumentException) {
-            logger.error("Failed to decrement reference of node [$node], repository not found.")
-            false
-        }
-    }
 
     override fun increment(sha256: String, credentialsKey: String?, inc: Long): Boolean {
         val query = buildQuery(sha256, credentialsKey)
@@ -92,10 +68,7 @@ class FileReferenceServiceImpl(
     }
 
     override fun decrement(sha256: String, credentialsKey: String?): Boolean {
-        val criteria = Criteria.where(TFileReference::sha256.name).`is`(sha256)
-        criteria.and(TFileReference::credentialsKey.name).`is`(credentialsKey)
-        criteria.and(TFileReference::count.name).gt(0)
-        val query = Query(criteria)
+        val query = buildQuery(sha256, credentialsKey, 0)
         val update = Update().apply { inc(TFileReference::count.name, -1) }
         val result = fileReferenceDao.updateFirst(query, update)
 
@@ -134,30 +107,6 @@ class FileReferenceServiceImpl(
 
     private fun convert(tFileReference: TFileReference): FileReference {
         return tFileReference.run { FileReference(sha256, credentialsKey, count) }
-    }
-
-    private fun findCredentialsKey(node: TNode, repository: TRepository?): String? {
-        if (repository != null) {
-            return repository.credentialsKey
-        }
-        val tRepository = repositoryDao.findByNameAndType(node.projectId, node.repoName)
-        require(tRepository != null)
-        return tRepository.credentialsKey
-    }
-
-    private fun buildQuery(sha256: String, credentialsKey: String?): Query {
-        val criteria = Criteria.where(TFileReference::sha256.name).`is`(sha256)
-        criteria.and(TFileReference::credentialsKey.name).`is`(credentialsKey)
-        return Query.query(criteria)
-    }
-
-    private fun validateParameter(node: TNode): Boolean {
-        if (node.folder) return false
-        if (node.sha256.isNullOrBlank()) {
-            logger.warn("Failed to change file reference, node[$node] sha256 is null or blank.")
-            return false
-        }
-        return true
     }
 
     companion object {

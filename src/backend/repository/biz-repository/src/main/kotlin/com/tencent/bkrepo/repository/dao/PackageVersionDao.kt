@@ -34,6 +34,8 @@ package com.tencent.bkrepo.repository.dao
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
+import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
 
 /**
@@ -65,8 +67,26 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         this.remove(PackageQueryHelper.clusterNameQuery(packageId, clusterName))
     }
 
-    fun deleteByName(packageId: String, name: String) {
-        this.remove(PackageQueryHelper.versionQuery(packageId, name = name))
+    /**
+     * 版本下的多个制品都删除时，再删除版本
+     */
+    fun deleteByNameAndPath(packageId: String, name: String, path: String?): Boolean {
+        if (path == null) {
+            this.remove(PackageQueryHelper.versionQuery(packageId, name = name))
+            return true
+        } else {
+            val query = PackageQueryHelper.versionQuery(packageId, name = name)
+            val update = Update().pull(TPackageVersion::artifactPaths.name, path)
+            val option = FindAndModifyOptions()
+            option.returnNew(true)
+            val tPackageVersion = this.findAndModify(query, update, option, TPackageVersion::class.java) ?: return true
+            if (tPackageVersion.artifactPaths.isNullOrEmpty()) {
+                this.remove(query)
+                return true
+            }
+            return false
+        }
+
     }
 
     fun findLatest(packageId: String): TPackageVersion? {
