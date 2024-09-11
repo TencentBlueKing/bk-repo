@@ -204,13 +204,5 @@ module.exports = {
       objectsInObjects: false
     }],
     'array-bracket-spacing': [2, 'never']
-  },
-  overrides: [
-    {
-      files: ['src/views/**/*.vue', 'src/components/**/*.vue'],
-      rules: {
-        'vue/multi-word-component-names': 0
-      }
-    }
-  ]
+  }
 }
