@@ -55,6 +55,7 @@ dependencies {
         exclude(group = "org.apache.hadoop")
         exclude(group = "org.apache.parquet")
         exclude(group = "com.squareup.okhttp3")
+        exclude(group = "io.grpc")
     }
     implementation("com.tencent.devops:devops-schedule-common")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
