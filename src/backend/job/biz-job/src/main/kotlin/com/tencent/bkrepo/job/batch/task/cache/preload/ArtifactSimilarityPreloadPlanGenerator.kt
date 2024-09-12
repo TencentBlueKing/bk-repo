@@ -38,6 +38,7 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStore
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
+import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
 import io.milvus.client.MilvusClient
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
@@ -49,9 +50,14 @@ class ArtifactSimilarityPreloadPlanGenerator(
     private val milvusClient: MilvusClient,
     private val aiProperties: AiProperties,
     private val preloadProperties: ArtifactPreloadProperties,
+    private val embeddingJobProperties: ArtifactAccessLogEmbeddingJobProperties,
 ) : ArtifactPreloadPlanGenerator {
     override fun generate(param: ArtifactPreloadPlanGenerateParam): ArtifactPreloadPlan? {
         with(param) {
+            if (!embeddingJobProperties.enabled) {
+                return null
+            }
+
             val executeTime = calculateExecuteTime(param) ?: return null
             val now = LocalDateTime.now()
             return ArtifactPreloadPlan(
