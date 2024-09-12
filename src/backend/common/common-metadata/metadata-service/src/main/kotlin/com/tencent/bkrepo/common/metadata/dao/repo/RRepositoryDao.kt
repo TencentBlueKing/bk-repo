@@ -31,10 +31,10 @@
 
 package com.tencent.bkrepo.common.metadata.dao.repo
 
-import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.util.RepoQueryHelper.buildSingleQuery
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.mongo.reactive.dao.SimpleMongoReactiveDao
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -45,13 +45,13 @@ import org.springframework.stereotype.Repository
  * 仓库数据访问层
  */
 @Repository
-@Conditional(SyncCondition::class)
-class RepositoryDao : SimpleMongoDao<TRepository>() {
+@Conditional(ReactiveCondition::class)
+class RRepositoryDao : SimpleMongoReactiveDao<TRepository>() {
 
     /**
      * 根据项目[projectId]、名称[name]和类型[type]查询仓库
      */
-    fun findByNameAndType(projectId: String, name: String, type: String? = null): TRepository? {
+    suspend fun findByNameAndType(projectId: String, name: String, type: String? = null): TRepository? {
         val query = buildSingleQuery(projectId, name, type)
         return this.findOne(query, TRepository::class.java)
     }
@@ -59,7 +59,7 @@ class RepositoryDao : SimpleMongoDao<TRepository>() {
     /**
      * 根据[id]删除仓库
      */
-    fun deleteById(id: String?) {
+    suspend fun deleteById(id: String?) {
         if (id.isNullOrBlank()) {
             return
         }
@@ -70,14 +70,15 @@ class RepositoryDao : SimpleMongoDao<TRepository>() {
     /**
      * 查询是否有使用指定存储凭证的仓库
      */
-    fun existsByCredentialsKey(credentialsKey: String): Boolean {
+    suspend fun existsByCredentialsKey(credentialsKey: String): Boolean {
         val query = Query(TRepository::credentialsKey.isEqualTo(credentialsKey))
             .addCriteria(TRepository::deleted.isEqualTo(null))
         return this.exists(query)
     }
 
 
-    fun unsetOldCredentialsKey(projectId: String, repoName: String, repoType: String? = null) {
+
+    suspend fun unsetOldCredentialsKey(projectId: String, repoName: String, repoType: String? = null) {
         val query = buildSingleQuery(projectId, repoName, repoType)
         val update = Update().unset(TRepository::oldCredentialsKey.name)
         updateFirst(query, update)

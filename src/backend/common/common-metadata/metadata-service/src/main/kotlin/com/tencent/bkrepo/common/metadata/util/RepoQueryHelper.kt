@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,40 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.reactive.dao
+package com.tencent.bkrepo.common.metadata.util
 
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.ReactiveMongoOperations
-import org.springframework.data.mongodb.core.query.Criteria
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
+import java.util.Locale
 
-open class SimpleMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
-
-    // 抽象类使用构造器注入不方便
-    @Suppress("LateinitUsage")
-    @Autowired
-    lateinit var reactiveMongoOperations: ReactiveMongoOperations
-
-    override fun determineReactiveMongoOperations(): ReactiveMongoOperations {
-        return reactiveMongoOperations
-    }
-
-    override fun determineCollectionName(query: Query): String {
-        return collectionName
-    }
-
-    override fun determineCollectionName(entity: E): String {
-        return collectionName
-    }
+object RepoQueryHelper {
 
     /**
-     * 根据主键"_id"查找记录
+     * 构造单个仓库查询条件
      */
-    suspend fun findById(id: String): E? {
-        if (id.isBlank()) {
-            return null
+    fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
+        val criteria = where(TRepository::projectId).isEqualTo(projectId)
+            .and(TRepository::name).isEqualTo(repoName)
+            .and(TRepository::deleted).isEqualTo(null)
+        if (repoType != null && repoType.uppercase(Locale.getDefault()) != RepositoryType.NONE.name) {
+            criteria.and(TRepository::type).isEqualTo(repoType.uppercase(Locale.getDefault()))
         }
-        return this.findOne(Query.query(Criteria.where(ID).isEqualTo(id)))
+        return Query(criteria)
     }
 }

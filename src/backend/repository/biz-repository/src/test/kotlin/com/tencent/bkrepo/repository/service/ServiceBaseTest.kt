@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
@@ -135,6 +136,9 @@ open class ServiceBaseTest {
 
     @MockBean
     lateinit var archiveClient: ArchiveClient
+
+    @Autowired
+    lateinit var storageCredentialHelper: StorageCredentialHelper
 
 
     fun initMock() {

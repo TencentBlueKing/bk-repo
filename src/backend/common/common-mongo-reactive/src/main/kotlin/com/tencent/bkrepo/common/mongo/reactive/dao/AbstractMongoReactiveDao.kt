@@ -58,12 +58,25 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         return find(query, classType)
     }
 
+    suspend fun findAll(): List<E> {
+        return findAll(classType)
+    }
+
     override suspend fun <T> find(query: Query, clazz: Class<T>): List<T> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao find: [$query] [$clazz]")
         }
         return determineReactiveMongoOperations()
             .find(query, clazz, determineCollectionName(query))
+            .collectList().awaitSingle()
+    }
+
+    override suspend fun <T> findAll(clazz: Class<T>): List<T> {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao findAll: [$clazz]")
+        }
+        return determineReactiveMongoOperations()
+            .findAll(clazz, determineCollectionName())
             .collectList().awaitSingle()
     }
 
@@ -166,5 +179,10 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractMongoReactiveDao::class.java)
+
+        /**
+         * mongodb 默认id字段
+         */
+        const val ID = "_id"
     }
 }

@@ -35,10 +35,10 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
-import com.tencent.bkrepo.common.metadata.dao.repo.StorageCredentialsDao
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.common.metadata.dao.repo.RRepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RStorageCredentialsDao
+import com.tencent.bkrepo.common.metadata.service.repo.RStorageCredentialService
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion.buildStorageCredential
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion.checkCreateRequest
@@ -56,15 +56,15 @@ import org.springframework.transaction.annotation.Transactional
  * 存储凭证服务实现类
  */
 @Service
-@Conditional(SyncCondition::class)
-class StorageCredentialServiceImpl(
-    private val repositoryDao: RepositoryDao,
-    private val storageCredentialsDao: StorageCredentialsDao,
+@Conditional(ReactiveCondition::class)
+class RStorageCredentialServiceImpl(
+    private val repositoryDao: RRepositoryDao,
+    private val storageCredentialsDao: RStorageCredentialsDao,
     private val storageProperties: StorageProperties,
-) : StorageCredentialService {
+) : RStorageCredentialService {
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun create(userId: String, request: StorageCredentialsCreateRequest): StorageCredentials {
+    override suspend fun create(userId: String, request: StorageCredentialsCreateRequest): StorageCredentials {
         checkCreateRequest(request)
         storageCredentialsDao.findById(request.key)?.run {
             throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, request.key)
@@ -75,7 +75,7 @@ class StorageCredentialServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials {
+    override suspend fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials {
         requireNotNull(request.key)
         val tStorageCredentials = storageCredentialsDao.findById(request.key!!)
             ?: throw NotFoundException(RepositoryMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
@@ -84,7 +84,7 @@ class StorageCredentialServiceImpl(
         return convert(updatedCredentials)
     }
 
-    override fun findByKey(key: String?): StorageCredentials? {
+    override suspend fun findByKey(key: String?): StorageCredentials? {
         return if (key.isNullOrBlank()) {
             storageProperties.defaultStorageCredentials()
         } else {
@@ -92,18 +92,18 @@ class StorageCredentialServiceImpl(
         }
     }
 
-    override fun list(region: String?): List<StorageCredentials> {
+    override suspend fun list(region: String?): List<StorageCredentials> {
         return storageCredentialsDao.findAll()
             .filter { region.isNullOrBlank() || it.region == region }
             .map { convert(it) }
     }
 
-    override fun default(): StorageCredentials {
+    override suspend fun default(): StorageCredentials {
         return storageProperties.defaultStorageCredentials()
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun delete(key: String) {
+    override suspend fun delete(key: String) {
         if (!storageCredentialsDao.existsById(key)) {
             throw NotFoundException(RepositoryMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
         }
@@ -116,7 +116,7 @@ class StorageCredentialServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun forceDelete(key: String) {
+    override suspend fun forceDelete(key: String) {
         return storageCredentialsDao.deleteById(key)
     }
 }

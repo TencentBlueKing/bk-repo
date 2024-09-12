@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.util.RepoQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
@@ -72,7 +73,7 @@ class CommitEdgeCenterRepositoryServiceImpl(
     projectService: ProjectService,
     storageCredentialService: StorageCredentialService,
     proxyChannelService: ProxyChannelService,
-    private val repositoryProperties: RepositoryProperties,
+    repositoryProperties: RepositoryProperties,
     messageSupplier: MessageSupplier,
     servicePermissionClient: ServicePermissionClient,
     private val clusterProperties: ClusterProperties,
@@ -121,7 +122,7 @@ class CommitEdgeCenterRepositoryServiceImpl(
                 return super.createRepo(repoCreateRequest)
             }
 
-            val query = repositoryDao.buildSingleQuery(projectId, name, type.name)
+            val query = RepoQueryHelper.buildSingleQuery(projectId, name, type.name)
             val clusterNames = exitRepo.clusterNames.orEmpty().toMutableSet()
             if (clusterNames.isEmpty()) {
                 clusterNames.add(clusterProperties.self.name.toString())

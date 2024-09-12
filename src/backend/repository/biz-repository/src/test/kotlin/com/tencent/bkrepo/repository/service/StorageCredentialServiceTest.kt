@@ -42,7 +42,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.UT_REGION
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.common.metadata.dao.file.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
@@ -60,14 +59,15 @@ import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.query.Query
 import java.time.Duration
 
-@Import(NodeDao::class, FileReferenceDao::class)
+@Import(NodeDao::class)
 @DisplayName("存储身份凭证服务测试")
 @DataMongoTest
 internal class StorageCredentialServiceTest @Autowired constructor(
     private val storageCredentialService: StorageCredentialService,
     private val storageCredentialsDao: StorageCredentialsDao,
     private val projectService: ProjectService,
-    private val repositoryService: RepositoryService
+    private val repositoryService: RepositoryService,
+//    private val storageCredentialHelper: StorageCredentialHelper
 ) : ServiceBaseTest() {
 
     @BeforeEach

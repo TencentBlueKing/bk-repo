@@ -53,7 +53,7 @@ interface RStorageCredentialService {
     /**
      * 根据[key]查询存储凭证[StorageCredentials]，不存在则返回`null`
      */
-    suspend fun findByKey(key: String): StorageCredentials?
+    suspend fun findByKey(key: String?): StorageCredentials?
 
     /**
      * 查询存储凭证列表
