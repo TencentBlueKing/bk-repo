@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.CreateCollectionReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.DropCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.HasCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.response.HasCollectionRes
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.response.MilvusResponse
@@ -38,9 +39,8 @@ class MilvusClient(
     }.build()
 
     fun createCollection(req: CreateCollectionReq) {
-        val reqBody = req.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val request = Request.Builder()
-            .post(reqBody)
+            .post(req.toJsonString().toRequestBody(APPLICATION_JSON))
             .url("${clientProperties.uri}/v2/vectordb/collections/create")
             .build()
         client.newCall(request).execute().throwIfFailed {
@@ -49,11 +49,9 @@ class MilvusClient(
     }
 
     fun collectionExists(dbName: String, collectionName: String): Boolean {
-        val mediaType = MediaTypes.APPLICATION_JSON.toMediaType()
-        val body = HasCollectionReq(dbName, collectionName).toJsonString().toRequestBody(mediaType)
         val request = Request.Builder()
             .url("${clientProperties.uri}/v2/vectordb/collections/has")
-            .post(body)
+            .post(HasCollectionReq(dbName, collectionName).toJsonString().toRequestBody(APPLICATION_JSON))
             .build()
         return client.newCall(request).execute().throwIfFailed { response ->
             val data = response.body!!.byteStream().readJsonString<MilvusResponse<HasCollectionRes>>().data
@@ -61,8 +59,14 @@ class MilvusClient(
         }
     }
 
-    fun dropCollection(collectionName: String) {
-        TODO()
+    fun dropCollection(dbName: String, collectionName: String) {
+        val request = Request.Builder()
+            .url("${clientProperties.uri}/v2/vectordb/collections/drop")
+            .post(DropCollectionReq(dbName, collectionName).toJsonString().toRequestBody(APPLICATION_JSON))
+            .build()
+        return client.newCall(request).execute().throwIfFailed {
+            logger.info("drop collection[${collectionName}] success")
+        }
     }
 
     fun search() {}
@@ -89,5 +93,6 @@ class MilvusClient(
     companion object {
         private val logger = LoggerFactory.getLogger(MilvusClient::class.java)
         private const val DEFAULT_MESSAGE_LIMIT = 4096
+        private val APPLICATION_JSON = MediaTypes.APPLICATION_JSON.toMediaType()
     }
 }
