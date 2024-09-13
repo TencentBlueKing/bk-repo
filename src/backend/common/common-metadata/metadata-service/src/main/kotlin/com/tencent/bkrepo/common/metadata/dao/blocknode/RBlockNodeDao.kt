@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,14 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.config.propteries
+package com.tencent.bkrepo.common.metadata.dao.blocknode
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingMongoReactiveDao
+import org.springframework.context.annotation.Conditional
+import org.springframework.stereotype.Repository
 
-@ConfigurationProperties("ioa")
-data class IoaProperties(
-    // 票据校验url
-    var ticketUrl: String = "",
-    // 票据校验域名自定义dns结果
-    var ticketIp: String = "",
-    // 签名需要的host
-    var host: String = "",
-    // 应用id
-    var appId: String = "",
-    // 应用密钥
-    var appKey: String = "",
-    // 客户端请求的url
-    var requestUrl: String = "",
-    // 应用网关token
-    var token: String = "",
-)
+@Repository
+@Conditional(ReactiveCondition::class)
+class RBlockNodeDao : ShardingMongoReactiveDao<TBlockNode>()

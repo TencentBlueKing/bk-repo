@@ -74,7 +74,6 @@ class SeparationRecoveryEventConsumer(
         if (!acceptTypes.contains(message.payload.type)) {
             return
         }
-        logger.info("current separation recovery message header is ${message.headers}")
         try {
             doSeparationRecovery(message.payload)
         } catch (e: Exception) {

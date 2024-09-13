@@ -68,7 +68,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
@@ -344,7 +344,7 @@ abstract class NodeBaseService(
             if (!node.folder) {
                 // 软链接node或fs-server创建的node的sha256为FAKE_SHA256不会关联实际文件，无需增加引用数
                 if (node.sha256 != FAKE_SHA256) {
-                    fileReferenceService.increment(node, repository)
+                    incrementFileReference(node, repository)
                 }
                 quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
             }
@@ -421,6 +421,35 @@ abstract class NodeBaseService(
             option.direction.none { it != Sort.Direction.DESC.name && it != Sort.Direction.ASC.name },
             "direction",
         )
+    }
+
+    private fun incrementFileReference(node: TNode, repository: TRepository?): Boolean {
+        if (!validateParameter(node)) return false
+        return try {
+            val credentialsKey = findCredentialsKey(node, repository)
+            fileReferenceService.increment(node.sha256!!, credentialsKey)
+        } catch (exception: IllegalArgumentException) {
+            logger.error("Failed to increment reference of node [$node], repository not found.")
+            false
+        }
+    }
+
+    private fun findCredentialsKey(node: TNode, repository: TRepository?): String? {
+        if (repository != null) {
+            return repository.credentialsKey
+        }
+        val tRepository = repositoryDao.findByNameAndType(node.projectId, node.repoName)
+        require(tRepository != null)
+        return tRepository.credentialsKey
+    }
+
+    private fun validateParameter(node: TNode): Boolean {
+        if (node.folder) return false
+        if (node.sha256.isNullOrBlank()) {
+            logger.warn("Failed to change file reference, node[$node] sha256 is null or blank.")
+            return false
+        }
+        return true
     }
 
     /**

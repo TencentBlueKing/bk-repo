@@ -74,7 +74,7 @@ class ArtifactCleanupJob(
     private val nodeClient: NodeClient,
     private val discoveryClient: DiscoveryClient,
     private val serviceAuthManager: ServiceAuthManager
-    ) : DefaultContextMongoDbJob<ArtifactCleanupJob.RepoData>(properties) {
+) : DefaultContextMongoDbJob<ArtifactCleanupJob.RepoData>(properties) {
 
     private val restTemplate = RestTemplate()
 
@@ -103,8 +103,10 @@ class ArtifactCleanupJob(
             val cleanupStrategyMap = config.getSetting<Map<String, Any>>(CLEAN_UP_STRATEGY) ?: return
             val cleanupStrategy = toCleanupStrategy(cleanupStrategyMap) ?: return
             if (filterConfig(row.projectId, row.name, cleanupStrategy)) return
-            logger.info("Will clean the artifacts in repo ${row.projectId}|${row.name} " +
-                            "with cleanup strategy $cleanupStrategy")
+            logger.info(
+                "Will clean the artifacts in repo ${row.projectId}|${row.name} " +
+                        "with cleanup strategy $cleanupStrategy"
+            )
             when (row.type) {
                 RepositoryType.GENERIC.name -> {
                     // 清理generic制品
@@ -113,7 +115,7 @@ class ArtifactCleanupJob(
                 RepositoryType.DOCKER.name,
                 RepositoryType.OCI.name,
                 RepositoryType.HELM.name
-                -> {
+                    -> {
                     // 清理镜像制品
                     deletePackages(
                         projectId = row.projectId,
@@ -126,8 +128,8 @@ class ArtifactCleanupJob(
             }
         } catch (e: Exception) {
             throw JobExecuteException(
-                "Failed to send  cleanup docker repository for " +
-                    "repo ${row.projectId}|${row.name}, error: ${e.message}", e
+                "Failed to send cleanup repository for " +
+                        "repo ${row.projectId}|${row.name}, error: ${e.message}", e
             )
         }
     }
@@ -145,7 +147,7 @@ class ArtifactCleanupJob(
             cleanupType = map[CleanupStrategy::cleanupType.name] as? String,
             cleanupValue = map[CleanupStrategy::cleanupValue.name] as? String,
             cleanTargets = map[CleanupStrategy::cleanTargets.name] as? List<String>,
-            )
+        )
         if (cleanupStrategy.cleanupType.isNullOrEmpty() || cleanupStrategy.cleanupValue.isNullOrEmpty())
             return null
         return cleanupStrategy
@@ -184,15 +186,20 @@ class ArtifactCleanupJob(
         }
         folders.forEach {
             try {
-                nodeClient.cleanNodes((NodeCleanRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    path = PathUtils.toPath(it),
-                    date = cleanupDate,
-                    operator = SYSTEM_USER)))
-            } catch (e: NullPointerException) {
-                logger.warn("Request of clean nodes $it in repo $projectId|$repoName is timeout!," +
-                                " will sleep ${properties.sleepSeconds} seconds")
+                nodeClient.cleanNodes(
+                    (NodeCleanRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        path = PathUtils.toPath(it),
+                        date = cleanupDate,
+                        operator = SYSTEM_USER
+                    ))
+                )
+            } catch (e: Exception) {
+                logger.warn(
+                    "Request of clean nodes $it in repo $projectId|$repoName failed, error is ${e.message}," +
+                            " cause is ${e.cause?.message}!, will sleep ${properties.sleepSeconds} seconds"
+                )
                 Thread.sleep(properties.sleepSeconds * 1000)
             }
         }
@@ -261,8 +268,8 @@ class ArtifactCleanupJob(
                 if (versionList.size > cleanupStrategy.cleanupValue!!.toInt()) {
                     versionList.sortedByDescending { it.lastModifiedDate }
                         .subList(cleanupStrategy.cleanupValue.toInt(), versionList.size).forEach {
-                        deleteVersion(projectId, repoName, packageName, it.name, repoType)
-                    }
+                            deleteVersion(projectId, repoName, packageName, it.name, repoType)
+                        }
                 }
             }
             else -> return
@@ -276,7 +283,7 @@ class ArtifactCleanupJob(
         packageName: String,
         version: String,
         repoType: String,
-        ) {
+    ) {
         val (urlPath, serviceInstance) = when (repoType) {
             RepositoryType.DOCKER.name, RepositoryType.OCI.name -> {
                 val dockerServiceId = buildServiceName(RepositoryType.DOCKER.name.toLowerCase())
