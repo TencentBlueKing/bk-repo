@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.utils
 
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.UT_PROJECT_ID
@@ -60,6 +61,8 @@ class NodeCommonUtilsTest @Autowired constructor(
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
     @MockBean
     lateinit var separationTaskService: SeparationTaskService
+    @MockBean
+    lateinit var operateLogService: OperateLogService
     @BeforeAll
     fun beforeAll() {
         NodeCommonUtils.mongoTemplate = mongoTemplate

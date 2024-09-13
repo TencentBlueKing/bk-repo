@@ -42,7 +42,6 @@ dependencies {
     implementation(project(":maven:api-maven"))
     implementation(project(":replication:api-replication"))
     implementation(project(":archive:api-archive"))
-    implementation(project(":common:common-operate:operate-service"))
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("com.tencent.devops:devops-schedule-common")

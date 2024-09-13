@@ -38,7 +38,6 @@ dependencies {
     api(project(":common:common-redis"))
     api(project(":common:common-lock"))
     implementation("com.google.guava:guava")
-    implementation(project(":common:common-operate:operate-service"))
     implementation("com.tencent.bk.sdk:iam-java-sdk:${Versions.IamJavaSdk}")
     implementation("org.apache.httpcomponents:httpclient")
     implementation("com.tencent.bk.sdk:crypto-java-sdk")

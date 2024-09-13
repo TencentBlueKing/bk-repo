@@ -120,6 +120,12 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
             .awaitSingle()
     }
 
+    override suspend fun insert(entityCollection: Collection<E>): Collection<E> {
+        return determineReactiveMongoOperations()
+            .insert(entityCollection, determineCollectionName(entityCollection.first()))
+            .collectList().awaitSingle()
+    }
+
     override suspend fun remove(query: Query): DeleteResult {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao remove: [$query]")

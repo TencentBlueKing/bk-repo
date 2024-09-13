@@ -3,6 +3,7 @@ package com.tencent.bkrepo.job.batch.task.storage
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -45,6 +46,9 @@ class StorageReconcileJobTest @Autowired constructor(
 
     @MockBean
     lateinit var repositoryClient: RepositoryClient
+
+    @MockBean
+    lateinit var operateLogService: OperateLogService
 
     @Autowired
     lateinit var nodeCommonUtils: NodeCommonUtils

@@ -64,6 +64,11 @@ interface MongoReactiveDao<E> {
     suspend fun insert(entity: E): E
 
     /**
+     * 新增文档到数据库的集合中
+     */
+    suspend fun insert(entityCollection: Collection<E>): Collection<E>
+
+    /**
      * 更新单条文档
      */
     suspend fun updateFirst(query: Query, update: Update): UpdateResult
