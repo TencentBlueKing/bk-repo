@@ -2,12 +2,19 @@ package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.CreateCollectionReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.HasCollectionReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.response.HasCollectionRes
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.response.MilvusResponse
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
+import okhttp3.internal.headersContentLength
+import org.slf4j.LoggerFactory
 
 class MilvusClient(
     private val clientProperties: MilvusClientProperties
@@ -36,15 +43,22 @@ class MilvusClient(
             .post(reqBody)
             .url("${clientProperties.uri}/v2/vectordb/collections/create")
             .build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw RuntimeException("create collection[${req.collectionName}] failed")
-            }
+        client.newCall(request).execute().throwIfFailed {
+            logger.info("create collection[${req.collectionName}] success")
         }
     }
 
-    fun collectionExists(collectionName: String): Boolean {
-        TODO()
+    fun collectionExists(dbName: String, collectionName: String): Boolean {
+        val mediaType = MediaTypes.APPLICATION_JSON.toMediaType()
+        val body = HasCollectionReq(dbName, collectionName).toJsonString().toRequestBody(mediaType)
+        val request = Request.Builder()
+            .url("${clientProperties.uri}/v2/vectordb/collections/has")
+            .post(body)
+            .build()
+        return client.newCall(request).execute().throwIfFailed { response ->
+            val data = response.body!!.byteStream().readJsonString<MilvusResponse<HasCollectionRes>>().data
+            data.has
+        }
     }
 
     fun dropCollection(collectionName: String) {
@@ -56,4 +70,24 @@ class MilvusClient(
     fun describeIndex(collectionName: String) {}
 
     fun createIndex(collectionName: String) {}
+
+    private fun <T> Response.throwIfFailed(handler: (response: Response) -> T): T {
+        use {
+            if (isSuccessful) {
+                return handler(this)
+            } else {
+                val message = if (headersContentLength() < DEFAULT_MESSAGE_LIMIT) {
+                    body?.string()
+                } else {
+                    ""
+                }
+                throw RuntimeException("request milvus failed, code: $code, message: $message")
+            }
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(MilvusClient::class.java)
+        private const val DEFAULT_MESSAGE_LIMIT = 4096
+    }
 }
