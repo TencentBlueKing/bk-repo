@@ -29,8 +29,8 @@ dependencies {
     api(project(":common:common-api"))
     api(project(":common:common-artifact:artifact-api"))
     api(project(":common:common-checker:api-checker"))
-    api(project(":common:common-operate:operate-annotation"))
     api("com.github.docker-java:docker-java:${Versions.DockerJava}")
     api("com.github.docker-java:docker-java-transport-okhttp:${Versions.DockerJava}")
     implementation("org.apache.commons:commons-lang3")
+    api(project(":common:common-metadata:metadata-api"))
 }

@@ -26,8 +26,8 @@
  */
 
 dependencies {
-    api(project(":common:common-operate:operate-api"))
     api(project(":common:common-mongo"))
     api(project(":common:common-security"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+    api(project(":common:common-metadata:metadata-service"))
+
 }

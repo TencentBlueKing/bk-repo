@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.webhook.pojo
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
-import com.tencent.bkrepo.common.operate.api.handler.MaskPartMapValue
+import com.tencent.bkrepo.common.metadata.annotation.Sensitive
+import com.tencent.bkrepo.common.metadata.handler.MaskPartMapValue
 import com.tencent.bkrepo.webhook.constant.AssociationType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty

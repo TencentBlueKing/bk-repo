@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.operate.service.model.TOperateLog
+import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate

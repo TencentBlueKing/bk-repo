@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.common.notify.api.weworkbot
 
 import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
-import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
+import com.tencent.bkrepo.common.metadata.annotation.Sensitive
+import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
