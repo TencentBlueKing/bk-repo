@@ -25,10 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache.preload.ai
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
 import com.alibaba.fastjson.JSONObject
-import io.milvus.client.MilvusClient
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.Document
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
 import io.milvus.common.clientenum.ConsistencyLevelEnum
 import io.milvus.grpc.DataType
 import io.milvus.param.MetricType

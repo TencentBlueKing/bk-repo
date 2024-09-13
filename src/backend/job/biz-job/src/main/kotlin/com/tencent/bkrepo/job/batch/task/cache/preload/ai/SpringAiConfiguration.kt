@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClientProperties
 import io.milvus.client.MilvusClient
 import io.milvus.client.MilvusServiceClient
 import io.milvus.param.ConnectParam
