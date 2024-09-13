@@ -893,5 +893,6 @@
     "hasSelectTip": "已选择{0}条,",
     "changeSelectAllTip": "选择全量数据",
     "selectAllTip": "已选择全量数据{0}条，",
-    "clearSelectTip":"清除选择"
+    "clearSelectTip":"清除选择",
+    "previewErrorTip": "文件预览失败"
 }

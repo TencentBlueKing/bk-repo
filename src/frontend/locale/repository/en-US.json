@@ -892,5 +892,6 @@
     "hasSelectTip": "{0} items selected,",
     "changeSelectAllTip": "Select full data",
     "selectAllTip": "{0} pieces of total data have been selected，",
-    "clearSelectTip":"Clear selection"
+    "clearSelectTip":"Clear selection",
+    "previewErrorTip": "File Preview Fail"
 }

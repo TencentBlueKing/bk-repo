@@ -108,20 +108,22 @@
                     <bk-table-column :selectable="selectable" type="selection" width="60"></bk-table-column>
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
                         <template #default="{ row }">
-                            <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
-                            <span
-                                class="hover-btn disabled"
-                                v-if="!row.folder && row.metadata.forbidStatus"
-                                v-bk-tooltips="{ content: tooltipContent(row.metadata), placements: ['top'] }"
-                            >{{row.name}}</span>
-                            <!-- 文件夹支持: 鼠标悬浮时显示小手样式 -->
-                            <span v-else :class="{ 'hover-btn': row.folder }">{{ row.name }}</span>
-                            <scan-tag class="mr5 table-svg"
-                                v-if="showRepoScan(row)"
-                                :status="row.metadata.scanStatus"
-                                repo-type="generic"
-                                :full-path="row.fullPath">
-                            </scan-tag>
+                            <div @click="previewFile(row)">
+                                <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
+                                <span
+                                    class="hover-btn disabled"
+                                    v-if="!row.folder && row.metadata.forbidStatus"
+                                    v-bk-tooltips="{ content: tooltipContent(row.metadata), placements: ['top'] }"
+                                >{{row.name}}</span>
+                                <!-- 文件夹支持: 鼠标悬浮时显示小手样式 -->
+                                <span v-else :class="{ 'hover-btn': row.folder }">{{ row.name }}</span>
+                                <scan-tag class="mr5 table-svg"
+                                    v-if="showRepoScan(row)"
+                                    :status="row.metadata.scanStatus"
+                                    repo-type="generic"
+                                    :full-path="row.fullPath">
+                                </scan-tag>
+                            </div>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('size')" prop="size" width="90" :sortable="sortableRepo" show-overflow-tooltip>
@@ -223,6 +225,7 @@
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
+        <preview-office-file-dialog ref="previewOfficeFileDialog"></preview-office-file-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
         <loading ref="loading" @closeLoading="closeLoading"></loading>
         <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
@@ -236,7 +239,7 @@
     import OperationList from '@repository/components/OperationList'
     import RepoTree from '@repository/components/RepoTree'
     import { getIconName } from '@repository/store/publicEnum'
-    import { convertFileSize, debounce, formatDate } from '@repository/utils'
+    import { convertFileSize, debounce, formatDate, routeBase } from '@repository/utils'
     import { beforeMonths, beforeYears } from '@repository/utils/date'
     import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import metadataTag from '@repository/views/repoCommon/metadataTag'
@@ -249,6 +252,7 @@
     import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
+    import previewOfficeFileDialog from './previewOfficeFileDialog'
 
     export default {
         name: 'repoGeneric',
@@ -267,7 +271,8 @@
             previewBasicFileDialog,
             compressedFileTable,
             iamDenyDialog,
-            genericCleanDialog
+            genericCleanDialog,
+            previewOfficeFileDialog
         },
         data () {
             return {
@@ -799,6 +804,27 @@
                     this.$set(item, 'loading', false)
                 })
             },
+            // 单击table打开文件夹
+            previewFile (row) {
+                if (row.fullPath.endsWith('txt')
+                    || row.fullPath.endsWith('sh')
+                    || row.fullPath.endsWith('bat')
+                    || row.fullPath.endsWith('json')
+                    || row.fullPath.endsWith('yaml')
+                    || row.fullPath.endsWith('xml')
+                    || row.fullPath.endsWith('log')
+                    || row.fullPath.endsWith('ini')
+                    || row.fullPath.endsWith('log')
+                    || row.fullPath.endsWith('properties')
+                    || row.fullPath.endsWith('toml')
+                    || row.fullPath.endsWith('docx')
+                    || row.fullPath.endsWith('xlsx')
+                    || row.fullPath.endsWith('xls')
+                    || row.fullPath.endsWith('pdf')) {
+                    const url = routeBase + '/' + this.projectId + '/filePreview/' + this.repoName + row.fullPath
+                    window.open(url, '_blank')
+                }
+            },
             // 双击table打开文件夹
             openFolder (row) {
                 if (!row.folder) return
@@ -1240,6 +1266,22 @@
                 })
             },
             async handlerPreviewBasicsFile (row) {
+                if (row.fullPath.endsWith('docx')
+                    || row.fullPath.endsWith('xlsx')
+                    || row.fullPath.endsWith('xls')
+                    || row.fullPath.endsWith('pdf')
+                ) {
+                    this.$refs.previewOfficeFileDialog.repoName = row.repoName
+                    this.$refs.previewOfficeFileDialog.projectId = row.projectId
+                    this.$refs.previewOfficeFileDialog.filePath = row.fullPath
+                    this.$refs.previewOfficeFileDialog.setDialogData({
+                        show: true,
+                        title: row.name,
+                        isLoading: true
+                    })
+                    this.$refs.previewOfficeFileDialog.setData()
+                    return
+                }
                 this.$refs.previewBasicFileDialog.setDialogData({
                     show: true,
                     title: row.name,
@@ -1382,6 +1424,10 @@
                     || name.endsWith('log')
                     || name.endsWith('properties')
                     || name.endsWith('toml')
+                    || name.endsWith('docx')
+                    || name.endsWith('xlsx')
+                    || name.endsWith('xls')
+                    || name.endsWith('pdf')
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {
