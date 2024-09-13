@@ -63,8 +63,8 @@ class RedisOperation(private val redisTemplate: RedisTemplate<String, String>) {
         }
     }
 
-    fun delete(key: String) {
-        redisTemplate.delete(key)
+    fun delete(key: String): Boolean {
+        return redisTemplate.delete(key)
     }
 
     fun delete(keys: Collection<String>) {
