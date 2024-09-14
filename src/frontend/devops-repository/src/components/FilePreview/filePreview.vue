@@ -14,6 +14,7 @@
         <vue-office-pdf
             v-if="previewPdf"
             :src="dataSource"
+            style="max-height: 100vh; overflow-y: auto"
         />
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
