@@ -9,6 +9,7 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.CreateC
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.DropCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.HasCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.InsertVectorReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.LoadCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.SearchVectorReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.response.HasCollectionRes
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.response.MilvusResponse
@@ -65,6 +66,16 @@ class MilvusClient(
             .build()
         client.newCall(request).execute().throwIfFailed<Any, Any> {
             logger.info("drop collection[${collectionName}] success")
+        }
+    }
+
+    fun loadCollection(dbName: String, collectionName: String) {
+        val request = Request.Builder()
+            .url("${clientProperties.uri}/v2/vectordb/collections/load")
+            .post(LoadCollectionReq(dbName, collectionName).toJsonString().toRequestBody(APPLICATION_JSON))
+            .build()
+        client.newCall(request).execute().throwIfFailed<Any, Any> {
+            logger.info("load collection[${collectionName}] success")
         }
     }
 

@@ -25,27 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache.preload
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request
 
-import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-
-@Configuration
-@ConditionalOnProperty("job.artifact-access-log-embedding.enabled")
-class PreloadConfig {
-    @Bean("INTELLIGENT")
-    fun artifactSimilarityPreloadPlanGenerator(
-        milvusClient: MilvusClient,
-        embeddingModel: EmbeddingModel,
-        aiProperties: AiProperties,
-        preloadProperties: ArtifactPreloadProperties,
-    ): ArtifactPreloadPlanGenerator {
-        return ArtifactSimilarityPreloadPlanGenerator(embeddingModel, milvusClient, aiProperties, preloadProperties)
-    }
-}
+data class LoadCollectionReq(
+    val dbName: String,
+    val collectionName: String,
+)

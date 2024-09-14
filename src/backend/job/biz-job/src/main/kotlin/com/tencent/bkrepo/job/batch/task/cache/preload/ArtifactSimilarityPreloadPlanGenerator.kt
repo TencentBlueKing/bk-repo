@@ -38,7 +38,7 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorSto
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
-import io.milvus.client.MilvusClient
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.ZoneId

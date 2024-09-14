@@ -41,8 +41,8 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
-import io.milvus.client.MilvusClient
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty

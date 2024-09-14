@@ -34,4 +34,5 @@ data class MilvusVectorStoreProperties(
     var indexType: String = "IVF_FLAT",
     var metricType: String = "COSINE",
     var indexParameters: String = "{\"nlist\":1024}",
+    var nList: Int = 1024,
 )

@@ -28,25 +28,28 @@
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
 import com.alibaba.fastjson.JSONObject
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.Document
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.CollectionSchema
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.ConsistencyLevel
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.CreateCollectionReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.DataType
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.ElementTypeParams
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.FieldSchema
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.IndexParam
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.InsertVectorReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.MetricType
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.Params
 import io.milvus.common.clientenum.ConsistencyLevelEnum
-import io.milvus.grpc.DataType
-import io.milvus.param.MetricType
 import io.milvus.param.R
-import io.milvus.param.collection.CreateCollectionParam
 import io.milvus.param.collection.DropCollectionParam
-import io.milvus.param.collection.FieldType
 import io.milvus.param.collection.FlushParam
-import io.milvus.param.collection.HasCollectionParam
-import io.milvus.param.collection.LoadCollectionParam
 import io.milvus.param.dml.DeleteParam
 import io.milvus.param.dml.InsertParam
 import io.milvus.param.dml.SearchParam
-import io.milvus.param.index.CreateIndexParam
-import io.milvus.param.index.DescribeIndexParam
 import io.milvus.response.QueryResultsWrapper
 import io.milvus.response.SearchResultsWrapper
 import org.slf4j.LoggerFactory
@@ -64,7 +67,7 @@ class MilvusVectorStore(
     override fun insert(documents: List<Document>) {
         val docIdArray = ArrayList<String>()
         val contentArray = ArrayList<String>()
-        val metadataArray = ArrayList<JSONObject>()
+        val metadataArray = ArrayList<String>()
         val embeddingArray = embeddingModel.embed(documents.map { it.content })
 
         for (document in documents) {
@@ -72,8 +75,9 @@ class MilvusVectorStore(
             // Use a (future) DocumentTextLayoutFormatter instance to extract
             // the content used to compute the embeddings
             contentArray.add(document.content)
-            metadataArray.add(JSONObject(document.metadata))
+            metadataArray.add(document.metadata.toJsonString())
         }
+        val insertRequest = InsertVectorReq(config.databaseName, config.collectionName)
 
         val fields: MutableList<InsertParam.Field> = ArrayList()
         fields.add(InsertParam.Field(DOC_ID_FIELD_NAME, docIdArray))
@@ -157,7 +161,7 @@ class MilvusVectorStore(
 
     private fun getResultSimilarity(rowRecord: QueryResultsWrapper.RowRecord): Float {
         val distance = rowRecord[DISTANCE_FIELD_NAME] as Float
-        return if ((config.metricType == MetricType.IP || config.metricType == MetricType.COSINE)) {
+        return if ((config.metricType == MetricType.IP.name || config.metricType == MetricType.COSINE.name)) {
             distance
         } else {
             (1 - distance)
@@ -169,12 +173,7 @@ class MilvusVectorStore(
     }
 
     override fun collectionExists(): Boolean {
-        return milvusClient.hasCollection(
-            HasCollectionParam.newBuilder()
-                .withDatabaseName(config.databaseName)
-                .withCollectionName(config.collectionName)
-                .build()
-        ).data
+        return milvusClient.collectionExists(config.databaseName, config.collectionName)
     }
 
     override fun collectionName(): String {
@@ -185,96 +184,77 @@ class MilvusVectorStore(
     override fun createCollection(): Boolean {
         var created = false
         if (!collectionExists()) {
-            val docIdFieldType = FieldType.newBuilder()
-                .withName(DOC_ID_FIELD_NAME)
-                .withDataType(DataType.VarChar)
-                .withMaxLength(36)
-                .withPrimaryKey(true)
-                .withAutoID(false)
-                .build()
-            val contentFieldType = FieldType.newBuilder()
-                .withName(CONTENT_FIELD_NAME)
-                .withDataType(DataType.VarChar)
-                .withMaxLength(65535)
-                .build()
-            val metadataFieldType = FieldType.newBuilder()
-                .withName(METADATA_FIELD_NAME)
-                .withDataType(DataType.JSON)
-                .build()
-            val embeddingFieldType = FieldType.newBuilder()
-                .withName(EMBEDDING_FIELD_NAME)
-                .withDataType(DataType.FloatVector)
-                .withDimension(this.embeddingDimensions())
-                .build()
+            val fieldSchemas = ArrayList<FieldSchema>()
+            fieldSchemas.add(
+                FieldSchema(
+                    fieldName = DOC_ID_FIELD_NAME,
+                    dataType = DataType.VarChar.name,
+                    isPrimary = true,
+                    elementTypeParams = ElementTypeParams(maxLength = 36),
+                )
+            )
+            fieldSchemas.add(
+                FieldSchema(
+                    fieldName = CONTENT_FIELD_NAME,
+                    dataType = DataType.VarChar.name,
+                    elementTypeParams = ElementTypeParams(maxLength = 65535),
+                )
+            )
+            fieldSchemas.add(
+                FieldSchema(
+                    fieldName = METADATA_FIELD_NAME,
+                    dataType = DataType.JSON.name,
+                )
+            )
+            fieldSchemas.add(
+                FieldSchema(
+                    fieldName = EMBEDDING_FIELD_NAME,
+                    dataType = DataType.FloatVector.name,
+                    elementTypeParams = ElementTypeParams(dim = embeddingDimensions())
+                )
+            )
 
-            val createCollectionReq = CreateCollectionParam.newBuilder()
-                .withDatabaseName(this.config.databaseName)
-                .withCollectionName(this.config.collectionName)
-                .withDescription("Spring AI Vector Store")
-                .withConsistencyLevel(ConsistencyLevelEnum.STRONG)
-                .withShardsNum(2)
-                .addFieldType(docIdFieldType)
-                .addFieldType(contentFieldType)
-                .addFieldType(metadataFieldType)
-                .addFieldType(embeddingFieldType)
-                .build()
+            val indexParams = ArrayList<IndexParam>()
+            indexParams.add(
+                IndexParam(
+                    indexName = null,
+                    metricType = config.metricType,
+                    fieldName = EMBEDDING_FIELD_NAME,
+                    params = Params(
+                        indexType = config.indexType,
+                        nlist = config.nList,
+                    )
+                )
+            )
 
-            val collectionStatus = milvusClient.createCollection(createCollectionReq)
-            if (collectionStatus.exception != null) {
-                throw RuntimeException("Failed to create collection", collectionStatus.exception)
-            }
+            val collectionSchema = CollectionSchema(enableDynamicField = false, fields = fieldSchemas)
+            val createCollectionReq = CreateCollectionReq(
+                dbName = config.databaseName,
+                collectionName = config.collectionName,
+                dimension = embeddingDimensions(),
+                metricType = config.metricType,
+                idType = DataType.VarChar,
+                autoId = false,
+                primaryFieldName = DOC_ID_FIELD_NAME,
+                vectorFieldName = EMBEDDING_FIELD_NAME,
+                schema = collectionSchema,
+                indexParams = indexParams,
+                params = CreateCollectionReq.Params(
+                    consistencyLevel = ConsistencyLevel.Strong.name,
+                    shardsNum = 2
+                )
+            )
+
+            milvusClient.createCollection(createCollectionReq)
             created = true
         }
 
-        val indexDescriptionResponse = milvusClient
-            .describeIndex(
-                DescribeIndexParam.newBuilder()
-                    .withDatabaseName(this.config.databaseName)
-                    .withCollectionName(this.config.collectionName)
-                    .build()
-            )
-
-        if (indexDescriptionResponse.data == null) {
-            val indexStatus = milvusClient.createIndex(
-                CreateIndexParam.newBuilder()
-                    .withDatabaseName(this.config.databaseName)
-                    .withCollectionName(this.config.collectionName)
-                    .withFieldName(EMBEDDING_FIELD_NAME)
-                    .withIndexType(this.config.indexType)
-                    .withMetricType(this.config.metricType)
-                    .withExtraParam(this.config.indexParameters)
-                    .withSyncMode(false)
-                    .build()
-            )
-
-            if (indexStatus.exception != null) {
-                throw RuntimeException("Failed to create Index", indexStatus.exception)
-            }
-        }
-
-        val loadCollectionStatus = milvusClient.loadCollection(
-            LoadCollectionParam.newBuilder()
-                .withDatabaseName(this.config.databaseName)
-                .withCollectionName(this.config.collectionName)
-                .build()
-        )
-
-        if (loadCollectionStatus.exception != null) {
-            throw RuntimeException("Collection loading failed!", loadCollectionStatus.exception)
-        }
+        milvusClient.loadCollection(config.databaseName, config.collectionName)
         return created
     }
 
     override fun dropCollection() {
-        val exception = milvusClient.dropCollection(
-            DropCollectionParam.newBuilder()
-                .withDatabaseName(config.databaseName)
-                .withCollectionName(config.collectionName)
-                .build()
-        ).exception
-        if (exception != null) {
-            throw RuntimeException("Failed to drop collection[${config.collectionName}]", exception)
-        }
+        milvusClient.dropCollection(config.databaseName, config.collectionName)
     }
 
     private fun embeddingDimensions(): Int {

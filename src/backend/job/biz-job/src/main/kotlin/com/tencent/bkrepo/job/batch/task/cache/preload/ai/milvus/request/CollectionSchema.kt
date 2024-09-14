@@ -3,7 +3,7 @@ package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class CollectionSchema(
-    private val enableDynamicField: Boolean = java.lang.Boolean.TRUE,
+    private val enableDynamicField: Boolean = true,
     private val fields: MutableList<FieldSchema> = ArrayList(),
     @JsonProperty("autoID")
     private val autoId: Boolean = false,
