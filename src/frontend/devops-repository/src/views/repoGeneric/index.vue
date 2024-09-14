@@ -252,7 +252,7 @@
     import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
-    import previewOfficeFileDialog from './previewOfficeFileDialog'
+    import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
 
     export default {
         name: 'repoGeneric',

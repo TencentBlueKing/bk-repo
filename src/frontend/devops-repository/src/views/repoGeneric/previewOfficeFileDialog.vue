@@ -31,7 +31,7 @@
     import VueOfficeDocx from '@vue-office/docx'
     import VueOfficeExcel from '@vue-office/excel'
     import VueOfficePdf from '@vue-office/pdf'
-    import { customizePreviewOfficeFile } from '@/utils/previewOfficeFile'
+    import { customizePreviewOfficeFile } from '@repository/utils/previewOfficeFile'
 
     export default {
         name: 'PreviewOfficeFileDialog',
@@ -69,7 +69,6 @@
         methods: {
             setData () {
                 customizePreviewOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
-                    console.log(res.data)
                     if (this.filePath.endsWith('docx')) {
                         this.previewDocx = true
                     } else if (this.filePath.endsWith('xlsx')) {
