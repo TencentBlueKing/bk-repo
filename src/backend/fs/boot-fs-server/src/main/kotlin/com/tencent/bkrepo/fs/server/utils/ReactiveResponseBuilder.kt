@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.bodyValueAndAwait
 import org.springframework.web.reactive.function.server.buildAndAwait

@@ -27,7 +27,7 @@
 
 dependencies {
     api(project(":svn:api-svn"))
-    api(project(":common:common-service"))
+    api(project(":common:common-service:service-servlet"))
     implementation(project(":common:common-api"))
     implementation(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-security"))

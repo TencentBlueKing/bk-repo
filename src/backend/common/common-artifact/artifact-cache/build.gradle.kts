@@ -31,7 +31,7 @@
 
 dependencies {
     implementation(project(":repository:api-repository"))
-    implementation(project(":common:common-service"))
+    implementation(project(":common:common-service:service-servlet"))
     implementation(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-storage:storage-service"))
     implementation(project(":common:common-mongo"))

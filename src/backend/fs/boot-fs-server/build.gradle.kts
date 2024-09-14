@@ -1,9 +1,9 @@
 dependencies {
     implementation(project(":common:common-security")) {
-        exclude(module = "common-service")
+        exclude(module = "service-servlet")
     }
     implementation(project(":common:common-metrics-push")) {
-        exclude(module = "common-service")
+        exclude(module = "service-servlet")
     }
 
     implementation(project(":common:common-storage:storage-service"))
@@ -11,7 +11,6 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api")
     runtimeOnly("io.jsonwebtoken:jjwt-impl")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson")
-    implementation("com.tencent.devops:devops-boot-starter-service-reactive")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter")
@@ -25,6 +24,7 @@ dependencies {
     api(project(":fs:api-fs-server"))
     implementation("com.github.ben-manes.caffeine:caffeine:2.9.3")
     implementation(project(":common:common-metadata:metadata-service"))
+    implementation(project(":common:common-service:service-reactive"))
 
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
