@@ -8,6 +8,8 @@ import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.CreateCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.DropCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.HasCollectionReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.InsertVectorReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.SearchVectorReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.response.HasCollectionRes
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.response.MilvusResponse
 import okhttp3.MediaType.Companion.toMediaType
@@ -32,7 +34,7 @@ class MilvusClient(
             } else {
                 null
             }
-            token?.let { newReq.header(HttpHeaders.AUTHORIZATION, it) }
+            token?.let { t -> newReq.header(HttpHeaders.AUTHORIZATION, t) }
         }
 
         it.proceed(newReq.build())
@@ -43,7 +45,7 @@ class MilvusClient(
             .post(req.toJsonString().toRequestBody(APPLICATION_JSON))
             .url("${clientProperties.uri}/v2/vectordb/collections/create")
             .build()
-        client.newCall(request).execute().throwIfFailed {
+        client.newCall(request).execute().throwIfFailed<Any, Any> {
             logger.info("create collection[${req.collectionName}] success")
         }
     }
@@ -53,10 +55,7 @@ class MilvusClient(
             .url("${clientProperties.uri}/v2/vectordb/collections/has")
             .post(HasCollectionReq(dbName, collectionName).toJsonString().toRequestBody(APPLICATION_JSON))
             .build()
-        return client.newCall(request).execute().throwIfFailed { response ->
-            val data = response.body!!.byteStream().readJsonString<MilvusResponse<HasCollectionRes>>().data
-            data.has
-        }
+        return client.newCall(request).execute().throwIfFailed<HasCollectionRes, Boolean> { it!!.has }
     }
 
     fun dropCollection(dbName: String, collectionName: String) {
@@ -64,21 +63,37 @@ class MilvusClient(
             .url("${clientProperties.uri}/v2/vectordb/collections/drop")
             .post(DropCollectionReq(dbName, collectionName).toJsonString().toRequestBody(APPLICATION_JSON))
             .build()
-        return client.newCall(request).execute().throwIfFailed {
+        client.newCall(request).execute().throwIfFailed<Any, Any> {
             logger.info("drop collection[${collectionName}] success")
         }
     }
 
-    fun search() {}
+    fun insert(req: InsertVectorReq) {
+        val request = Request.Builder()
+            .url("${clientProperties.uri}/v2/vectordb/entities/insert")
+            .post(req.toJsonString().toRequestBody(APPLICATION_JSON))
+            .build()
+        client.newCall(request).execute().throwIfFailed<Any, Any> {
+            logger.info("insert ${req.data.size} data into [${req.collectionName}] success")
+        }
+    }
 
-    fun describeIndex(collectionName: String) {}
+    fun search(req: SearchVectorReq): Map<String, Any> {
+        val request = Request.Builder()
+            .url("${clientProperties.uri}/v2/vectordb/entities/search")
+            .post(req.toJsonString().toRequestBody(APPLICATION_JSON))
+            .build()
+        return client.newCall(request).execute().throwIfFailed<Map<String, Any>, Map<String, Any>> { it!! }
+    }
 
-    fun createIndex(collectionName: String) {}
-
-    private fun <T> Response.throwIfFailed(handler: (response: Response) -> T): T {
+    private inline fun <reified T, R> Response.throwIfFailed(handler: (res: T?) -> R): R {
         use {
             if (isSuccessful) {
-                return handler(this)
+                val res = body!!.byteStream().readJsonString<MilvusResponse<T>>()
+                if (res.code != 0) {
+                    throw RuntimeException("request milvus failed, code: $code, message: ${res.message}")
+                }
+                return handler(res.data)
             } else {
                 val message = if (headersContentLength() < DEFAULT_MESSAGE_LIMIT) {
                     body?.string()
