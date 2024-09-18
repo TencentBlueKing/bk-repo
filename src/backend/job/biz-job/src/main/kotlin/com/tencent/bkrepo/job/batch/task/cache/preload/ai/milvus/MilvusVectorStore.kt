@@ -61,18 +61,7 @@ class MilvusVectorStore(
 ) : VectorStore, InitializingBean {
 
     override fun insert(documents: List<Document>) {
-        val docIdArray = ArrayList<String>()
-        val contentArray = ArrayList<String>()
-        val metadataArray = ArrayList<String>()
         val embeddingArray = embeddingModel.embed(documents.map { it.content })
-
-        for (document in documents) {
-            docIdArray.add(document.id)
-            // Use a (future) DocumentTextLayoutFormatter instance to extract
-            // the content used to compute the embeddings
-            contentArray.add(document.content)
-            metadataArray.add(document.metadata.toJsonString())
-        }
         val insertRequest = InsertVectorReq(
             dbName = config.databaseName,
             collectionName = config.collectionName,
