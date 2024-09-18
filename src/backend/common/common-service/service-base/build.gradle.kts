@@ -27,6 +27,14 @@
 
 dependencies {
     api(project(":common:common-api"))
+
+    api("io.github.openfeign:feign-core")
+    api("io.micrometer:micrometer-core")
+    api("io.jsonwebtoken:jjwt-api")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson")
+
+    api("org.springframework.boot:spring-boot-starter-actuator")
     api("org.springframework.cloud:spring-cloud-starter-sleuth") {
         exclude("org.springframework.cloud", "spring-cloud-sleuth-brave")
     }

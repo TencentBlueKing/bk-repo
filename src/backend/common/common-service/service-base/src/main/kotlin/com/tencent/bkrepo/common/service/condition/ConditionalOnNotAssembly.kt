@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,14 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.exception
+package com.tencent.bkrepo.common.service.condition
+
+import org.springframework.context.annotation.Conditional
+import java.lang.annotation.Inherited
 
 /**
- * 外部ErrorCodeException。
- * 调用外部服务时，出现业务异常会返回errorCode和message，message已经过国际化与模版化，所以直接返回。
+ * 在微服务架构下匹配生效
  */
-class RemoteErrorCodeException(
-    val methodKey: String,
-    val errorCode: Int,
-    val errorMessage: String?
-) : RuntimeException(errorMessage)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@Inherited
+@MustBeDocumented
+@Conditional(OnNotAssemblyCondition::class)
+annotation class ConditionalOnNotAssembly

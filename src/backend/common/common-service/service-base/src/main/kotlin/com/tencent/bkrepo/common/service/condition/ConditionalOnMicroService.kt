@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,35 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.api
+package com.tencent.bkrepo.common.service.condition
 
-import com.tencent.bkrepo.common.api.constant.GENERIC_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import reactivefeign.spring.config.ReactiveFeignClient
-import reactor.core.publisher.Mono
+import org.springframework.context.annotation.Conditional
+import java.lang.annotation.Inherited
 
-@ReactiveFeignClient(GENERIC_SERVICE_NAME)
-@RequestMapping("/service")
-interface RGenericClient {
-    @GetMapping("/detail/{projectId}/{repoName}")
-    fun getNodeDetail(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-        @RequestParam fullPath: String
-    ): Mono<Response<NodeDetail?>>
-
-    @PostMapping("/{projectId}/{repoName}/search")
-    fun search(
-        @PathVariable("projectId") projectId: String,
-        @PathVariable("repoName") repoName: String,
-        @RequestBody queryModel: QueryModel
-    ): Mono<Response<List<Any>>>
-}
+/**
+ * 在微服务架构下匹配生效
+ */
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@Inherited
+@MustBeDocumented
+@Conditional(OnMicroServiceCondition::class)
+annotation class ConditionalOnMicroService

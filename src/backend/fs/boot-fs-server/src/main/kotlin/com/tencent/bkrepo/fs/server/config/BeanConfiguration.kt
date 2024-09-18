@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.service.ServiceBeansInitializer
 import com.tencent.bkrepo.fs.server.RepositoryCache
-import com.tencent.bkrepo.fs.server.config.feign.ErrorCodeDecoder
 import com.tencent.bkrepo.fs.server.filter.ActuatorAuthFilter
 import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
@@ -71,7 +70,6 @@ val beans = beans {
     bean<RepositoryCache>()
     bean<ServerMetrics>()
     bean<ActuatorAuthFilter>()
-    bean<GlobalExceptionHandler>()
     bean<BlockNodeServiceImpl>()
     bean<ReactiveRequestContextFilter>()
     bean<CoArtifactFileFactory>()
@@ -82,11 +80,9 @@ val beans = beans {
     bean<ClientService>()
     bean<SecurityManager>()
     bean<JwtAuthProperties>()
-    bean<NettyWebServerAccessLogCustomizer>()
     bean<DevXAccessFilter>()
     bean<DevXProperties>()
     bean<PermissionFilterFunction>()
-    bean<ErrorCodeDecoder>()
     bean<DevxWorkspaceUtils>()
     bean<IoaUtils>()
     bean {

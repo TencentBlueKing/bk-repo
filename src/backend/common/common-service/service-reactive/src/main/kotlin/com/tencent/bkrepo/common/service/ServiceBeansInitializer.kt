@@ -27,6 +27,10 @@
 
 package com.tencent.bkrepo.common.service
 
+import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
+import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
+import com.tencent.bkrepo.common.service.feign.ErrorCodeDecoder
+import com.tencent.bkrepo.common.service.log.NettyWebServerAccessLogCustomizer
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.devops.service.config.ServiceProperties
@@ -38,6 +42,10 @@ val beans = beans {
     bean<ServiceProperties>()
     bean<MessageSourceConfiguration>()
     bean<SpringContextUtils>()
+    bean<GlobalExceptionHandler>()
+    bean<ActuatorConfiguration>()
+    bean<ErrorCodeDecoder>()
+    bean<NettyWebServerAccessLogCustomizer>()
 }
 
 open class ServiceBeansInitializer : ApplicationContextInitializer<GenericApplicationContext> {

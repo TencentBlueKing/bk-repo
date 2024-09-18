@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,17 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.config
+package com.tencent.bkrepo.common.service.log
 
-import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder.TRACE_ID
-import java.net.InetSocketAddress
-import java.net.SocketAddress
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
+import com.tencent.bkrepo.common.api.constant.BKREPO_TRACE
 import org.springframework.boot.web.embedded.netty.NettyServerCustomizer
 import reactor.netty.http.server.HttpServer
 import reactor.netty.http.server.logging.AccessLog
 import reactor.util.annotation.Nullable
+import java.net.InetSocketAddress
+import java.net.SocketAddress
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 class NettyWebServerAccessLogCustomizer : NettyServerCustomizer {
 
@@ -44,7 +44,7 @@ class NettyWebServerAccessLogCustomizer : NettyServerCustomizer {
                 args ->
             AccessLog.create(
                 ACCESS_LOG_FORMAT,
-                applyHeaderValue(args.responseHeader(TRACE_ID)),
+                applyHeaderValue(args.responseHeader(BKREPO_TRACE)),
                 applyAddress(args.remoteAddress()),
                 applyDateTime(args.accessDateTime()),
                 args.method(),

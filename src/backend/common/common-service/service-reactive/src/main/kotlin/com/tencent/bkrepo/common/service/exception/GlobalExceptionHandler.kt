@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,10 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.config
+package com.tencent.bkrepo.common.service.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
+import com.tencent.bkrepo.common.api.constant.BKREPO_TRACE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -38,8 +39,6 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.fs.server.exception.RemoteErrorCodeException
-import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler
 import org.springframework.http.HttpHeaders
@@ -56,7 +55,7 @@ class GlobalExceptionHandler : ErrorWebExceptionHandler {
         }
         val bodyBytes = JsonUtils.objectMapper.writeValueAsBytes(body)
         val res = exchange.response.bufferFactory().wrap(bodyBytes)
-        exchange.response.headers[ReactiveResponseBuilder.TRACE_ID] = SpringContextUtils.getTraceId()
+        exchange.response.headers[BKREPO_TRACE] = SpringContextUtils.getTraceId()
         return exchange.response.writeWith(Mono.just(res))
     }
 
@@ -100,7 +99,7 @@ class GlobalExceptionHandler : ErrorWebExceptionHandler {
     }
 
     private fun getLocale(exchange: ServerWebExchange): Locale {
-        val language = exchange.request.headers.getFirst("Accept-Language")
+        val language = exchange.request.headers.getFirst(HttpHeaders.ACCEPT_LANGUAGE)
         return try {
             Locale.forLanguageTag(language)
         } catch (e : NullPointerException) {

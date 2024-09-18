@@ -35,10 +35,6 @@ dependencies {
 
     api("io.micrometer:micrometer-registry-influx")
 
-    api("io.jsonwebtoken:jjwt-api")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson")
-
     api("com.google.guava:guava")
 
     api("org.springframework.cloud:spring-cloud-sleuth-otel-autoconfigure")
