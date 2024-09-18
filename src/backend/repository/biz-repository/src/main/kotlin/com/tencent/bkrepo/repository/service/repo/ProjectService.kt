@@ -100,4 +100,9 @@ interface ProjectService {
      * @param name 项目列表选项
      */
     fun getProjectMetricsInfo(name: String): ProjectMetricsInfo?
+
+    /**
+     * 项目是否启用
+     */
+    fun isProjectEnabled(name: String): Boolean
 }

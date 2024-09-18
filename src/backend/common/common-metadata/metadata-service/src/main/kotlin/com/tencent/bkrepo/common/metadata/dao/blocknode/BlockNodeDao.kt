@@ -25,7 +25,7 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.metadata.dao
+package com.tencent.bkrepo.common.metadata.dao.blocknode
 
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.model.TBlockNode

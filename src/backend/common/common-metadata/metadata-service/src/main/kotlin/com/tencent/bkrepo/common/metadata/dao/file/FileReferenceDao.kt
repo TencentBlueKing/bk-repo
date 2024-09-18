@@ -29,26 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.dao.file
 
-import com.tencent.bkrepo.common.api.mongo.ShardingDocument
-import com.tencent.bkrepo.common.api.mongo.ShardingKey
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
+import com.tencent.bkrepo.common.metadata.model.TFileReference
+import org.springframework.context.annotation.Conditional
+import org.springframework.stereotype.Repository
 
 /**
- * 文件摘要引用
+ * 文件摘要引用 Dao
  */
-@ShardingDocument("file_reference")
-@CompoundIndexes(
-    CompoundIndex(name = "sha256_idx", def = "{'sha256': 1}", background = true),
-    CompoundIndex(name = "count_idx", def = "{'count': 1}", background = true)
-)
-data class TFileReference(
-    var id: String? = null,
-    @ShardingKey(count = SHARDING_COUNT)
-    var sha256: String,
-    var credentialsKey: String? = null,
-    var count: Long
-)
+@Repository
+@Conditional(SyncCondition::class)
+class FileReferenceDao : HashShardingMongoDao<TFileReference>()

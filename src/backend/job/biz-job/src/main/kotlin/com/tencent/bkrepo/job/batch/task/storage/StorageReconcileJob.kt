@@ -3,6 +3,7 @@ package com.tencent.bkrepo.job.batch.task.storage
 import com.google.common.hash.BloomFilter
 import com.google.common.hash.Funnels
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -14,7 +15,6 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.config.properties.StorageReconcileJobProperties
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -40,7 +40,7 @@ class StorageReconcileJob(
     private val clusterProperties: ClusterProperties,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val storageProperties: StorageProperties,
-    private val fileReferenceClient: FileReferenceClient,
+    private val fileReferenceService: FileReferenceService,
 ) : DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
         // 校验默认存储
@@ -76,10 +76,10 @@ class StorageReconcileJob(
         }
         // 二次确认,因为待确认的文件数量远低于总体数量，所以这里采用直接查表，效率更高些。
         pendingDeleteList.forEach {
-            val exists = fileReferenceClient.exists(it, credentialsKey).data ?: true
+            val exists = fileReferenceService.exists(it, credentialsKey)
             if (!exists) {
                 logger.info("Delete file [$it]")
-                fileReferenceClient.increment(it, credentialsKey, 0)
+                fileReferenceService.increment(it, credentialsKey, 0)
                 deleted++
             }
         }

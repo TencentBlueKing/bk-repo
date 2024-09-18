@@ -17,8 +17,17 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-
+-- 访问限制微服务 --
+local allow_services = { "auth", "repository", "generic", "docker", "oci", "maven", "job",
+                       "helm", "pypi", "opdata", "rpm", "s3", "git", "npm", "fs-server",
+                       "replication", "git", "nuget", "composer", "media", "ddc", "conan" }
 local service_name = ngx.var.service
+
+if not arrayUtil:isInArray(service_name, allow_services) then
+    ngx.exit(404)
+    return
+end
+
 if service_name == "docker" and ngx.var.assembly ~= nil and ngx.var.assembly ~= "" then
     service_name = "oci"
 end
@@ -35,9 +44,9 @@ if service_name == "" then
     return
 end
 
--- 访问限制api
+-- 访问限制api --
 local security_paths = config.security_paths
-if security_paths ~= nil and #security_paths ~= 0  then
+if security_paths ~= nil and #security_paths ~= 0 then
     local is_secure = false
     local method = ngx.req.get_method()
     local path = ngx.var.uri
@@ -69,7 +78,7 @@ end
 ngx.var.target = hostUtil:get_addr(service_name)
 
 if ngx.var.assembly ~= nil and ngx.var.assembly ~= "" then
-   ngx.var.target = ngx.var.target .. "/" .. service_name
+    ngx.var.target = ngx.var.target .. "/" .. service_name
 end
 
 

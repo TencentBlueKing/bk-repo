@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.clean
 
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
@@ -34,7 +35,6 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedBlockNodeCleanupJobProperties
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -53,7 +53,7 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(DeletedBlockNodeCleanupJobProperties::class)
 class DeletedBlockNodeCleanupJob(
     private val properties: DeletedBlockNodeCleanupJobProperties,
-    private val fileReferenceClient: FileReferenceClient
+    private val fileReferenceService: FileReferenceService
 ) : DefaultContextMongoDbJob<DeletedBlockNodeCleanupJob.BlockNode>(properties) {
 
     data class BlockNode(
@@ -106,7 +106,7 @@ class DeletedBlockNodeCleanupJob(
         with(blockNode) {
             val credentialsKey = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
                 .storageCredentials?.key
-            fileReferenceClient.decrement(sha256, credentialsKey).data
+            fileReferenceService.decrement(sha256, credentialsKey)
         }
     }
     companion object {

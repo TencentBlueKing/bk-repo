@@ -29,63 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.model
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.api.mongo.ShardingDocument
+import com.tencent.bkrepo.common.api.mongo.ShardingKey
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
 
 /**
- * 代理源模型
+ * 文件摘要引用
  */
-@Document("proxy_channel")
+@ShardingDocument("file_reference")
 @CompoundIndexes(
-    CompoundIndex(
-        name = "proxy_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'repoType': 1, 'name': 1}",
-        unique = true
-    )
+    CompoundIndex(name = "sha256_idx", def = "{'sha256': 1}", background = true),
+    CompoundIndex(name = "count_idx", def = "{'count': 1}", background = true)
 )
-data class TProxyChannel(
-    /**
-     * id
-     */
+data class TFileReference(
     var id: String? = null,
-    /**
-     * 是否为公有源
-     */
-    var public: Boolean,
-    /**
-     * 代理源名称
-     */
-    var name: String,
-    /**
-     * 代理源url
-     */
-    var url: String,
-    /**
-     * 代理源仓库类型
-     */
-    var repoType: RepositoryType,
-    /**
-     * 代理源认证凭证key
-     */
-    var credentialKey: String? = null,
-    /**
-     * 代理源认证用户名
-     */
-    var username: String? = null,
-    /**
-     * 代理源认证密码
-     */
-    var password: String? = null,
-    var projectId: String,
-    var repoName: String,
-
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime
+    @ShardingKey(count = SHARDING_COUNT)
+    var sha256: String,
+    var credentialsKey: String? = null,
+    var count: Long
 )

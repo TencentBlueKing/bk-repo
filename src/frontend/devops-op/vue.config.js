@@ -8,8 +8,6 @@ function resolve(dir) {
 
 const envDist = process.env && process.env.dist ? process.env.dist : 'frontend'
 const dist = resolve(`../${envDist}/${process.env.VUE_APP_BASE_DIR}`)
-const targetDist = path.join(__dirname, `../${envDist}/ui`)
-const fileName = process.env.NODE_ENV !== 'development' ? `${targetDist}/frontend#admin#index.html` : `index.html`
 
 module.exports = {
   publicPath: `/${process.env.VUE_APP_BASE_DIR}`,
@@ -61,7 +59,7 @@ module.exports = {
     config
       .plugin('html')
       .use(new HtmlWebpackPlugin({
-        filename: fileName,
+        filename: process.env.NODE_ENV !== 'development' ? '../ui/frontend#admin#index.html' : 'index.html',
         templateParameters: {
           BASE_URL: `/`
         },

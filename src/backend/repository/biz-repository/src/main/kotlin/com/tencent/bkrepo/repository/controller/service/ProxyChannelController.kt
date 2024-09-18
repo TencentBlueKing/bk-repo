@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
+import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController

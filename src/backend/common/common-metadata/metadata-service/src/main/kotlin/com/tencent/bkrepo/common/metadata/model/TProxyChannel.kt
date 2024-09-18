@@ -29,49 +29,63 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo
+package com.tencent.bkrepo.common.metadata.model
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
+import java.time.LocalDateTime
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
 
 /**
- * 代理源服务接口
+ * 代理源模型
  */
-interface ProxyChannelService {
+@Document("proxy_channel")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "proxy_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'repoType': 1, 'name': 1}",
+        unique = true
+    )
+)
+data class TProxyChannel(
     /**
-     * 根据[request]创建代理源
+     * id
      */
-    fun createProxy(userId: String, request: ProxyChannelCreateRequest)
+    var id: String? = null,
+    /**
+     * 是否为公有源
+     */
+    var public: Boolean,
+    /**
+     * 代理源名称
+     */
+    var name: String,
+    /**
+     * 代理源url
+     */
+    var url: String,
+    /**
+     * 代理源仓库类型
+     */
+    var repoType: RepositoryType,
+    /**
+     * 代理源认证凭证key
+     */
+    var credentialKey: String? = null,
+    /**
+     * 代理源认证用户名
+     */
+    var username: String? = null,
+    /**
+     * 代理源认证密码
+     */
+    var password: String? = null,
+    var projectId: String,
+    var repoName: String,
 
-    /**
-     * 根据[request]更新代理源
-     */
-    fun updateProxy(userId: String, request: ProxyChannelUpdateRequest)
-
-    /**
-     * 查询代理源
-     */
-    fun queryProxyChannel(
-        projectId: String,
-        repoName: String,
-        repoType: RepositoryType,
-        name: String
-    ): ProxyChannelInfo?
-
-    /**
-     * 删除代理源
-     */
-    fun deleteProxy(request: ProxyChannelDeleteRequest)
-    /**
-     * 列表查询公有源
-     */
-    fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo>
-
-    /**
-     * 根据项目仓库信息获取列表
-     */
-    fun listProxyChannel(projectId: String, repoName: String, repoType: RepositoryType,): List<ProxyChannelInfo>
-}
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime
+)

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,17 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.file
+package com.tencent.bkrepo.common.metadata.service.repo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
 
-@ApiModel("文件引用信息")
-data class FileReference(
-    @ApiModelProperty("所引用文件的sha256")
-    val sha256: String,
-    @ApiModelProperty("文件实际存储所在存储")
-    val credentialsKey: String? = null,
-    @ApiModelProperty("当前记录文件被引用次数")
-    val count: Long
-)
+/**
+ * 代理源服务接口
+ */
+interface ProxyChannelService {
+    /**
+     * 根据[request]创建代理源
+     */
+    fun createProxy(userId: String, request: ProxyChannelCreateRequest)
+
+    /**
+     * 根据[request]更新代理源
+     */
+    fun updateProxy(userId: String, request: ProxyChannelUpdateRequest)
+
+    /**
+     * 查询代理源
+     */
+    fun queryProxyChannel(
+        projectId: String,
+        repoName: String,
+        repoType: RepositoryType,
+        name: String
+    ): ProxyChannelInfo?
+
+    /**
+     * 删除代理源
+     */
+    fun deleteProxy(request: ProxyChannelDeleteRequest)
+    /**
+     * 列表查询公有源
+     */
+    fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo>
+
+    /**
+     * 根据项目仓库信息获取列表
+     */
+    fun listProxyChannel(projectId: String, repoName: String, repoType: RepositoryType,): List<ProxyChannelInfo>
+}

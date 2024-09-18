@@ -33,8 +33,8 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.pojo.file.FileReference
-import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.pojo.file.FileReference
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
