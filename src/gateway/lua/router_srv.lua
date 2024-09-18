@@ -19,7 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 -- 访问限制微服务 --
 local allow_services = { "auth", "repository", "generic", "docker", "oci", "maven", "job",
-                       "helm", "pypi", "opdata", "rpm", "s3", "git", "npm", "fs-server",
+                       "helm", "pypi", "opdata", "rpm", "s3", "git", "npm", "fs-server","analyst",
                        "replication", "git", "nuget", "composer", "media", "ddc", "conan" }
 local service_name = ngx.var.service
 
