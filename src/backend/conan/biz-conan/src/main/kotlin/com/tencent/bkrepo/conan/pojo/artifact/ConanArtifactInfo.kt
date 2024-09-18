@@ -136,6 +136,14 @@ class ConanArtifactInfo(
         const val RECIPE_LATEST_V2 = "/{projectId}/{repoName}/v2/conans/" +
             "{name}/{version}/{username}/{channel}/latest"
 
+        // get recipe index.json
+        const val RECIPE_INDEX = "/{projectId}/{repoName}/" +
+            "{username}/{name}/{version}/{channel}/index.json"
+
+        // get package index.json
+        const val PACKAGE_INDEX = "/{projectId}/{repoName}/" +
+            "{username}/{name}/{version}/{channel}/{revision}/package/{packageId}/index.json"
+
         // get package revisions
         const val PACKAGE_REVISIONS_V2 = "/{projectId}/{repoName}/v2/conans/" +
             "{name}/{version}/{username}/{channel}/revisions/{revision}" +

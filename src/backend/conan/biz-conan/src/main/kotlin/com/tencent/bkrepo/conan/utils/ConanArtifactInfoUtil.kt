@@ -23,13 +23,6 @@ object ConanArtifactInfoUtil {
 
     fun convertToPackageReference(conanArtifactInfo: ConanArtifactInfo): PackageReference {
         with(conanArtifactInfo) {
-            // TODO 为什么会有这种情况？
-//            var revision: String? = null
-//            if (packageId!!.contains(StringPool.HASH_TAG)) {
-//                val list = packageId!!.split(StringPool.HASH_TAG)
-//                packageId = list.first()
-//                revision = list.lastOrNull()
-//            }
             val conanFileReference = ConanFileReference(
                 name = name,
                 version = version,

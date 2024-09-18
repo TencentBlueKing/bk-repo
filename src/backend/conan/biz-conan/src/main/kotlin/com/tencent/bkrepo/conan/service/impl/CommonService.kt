@@ -257,7 +257,7 @@ class CommonService(
         return result
     }
 
-    fun checkNodeExist(
+    fun getNodeDetail(
         projectId: String,
         repoName: String,
         path: String,

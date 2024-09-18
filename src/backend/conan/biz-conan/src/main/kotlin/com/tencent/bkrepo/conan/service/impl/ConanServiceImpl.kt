@@ -142,7 +142,7 @@ class ConanServiceImpl : ConanService {
     override fun getRecipeRevisions(conanArtifactInfo: ConanArtifactInfo): IndexInfo {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            commonService.checkNodeExist(projectId, repoName, buildPackagePath(conanFileReference))
+            commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
             return commonService.getRecipeRevisions(projectId, repoName, conanFileReference)
         }
     }
@@ -150,7 +150,7 @@ class ConanServiceImpl : ConanService {
     override fun getRecipeLatestRevision(conanArtifactInfo: ConanArtifactInfo): RevisionInfo {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            commonService.checkNodeExist(projectId, repoName, buildPackagePath(conanFileReference))
+            commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
             return commonService.getLastRevision(projectId, repoName, conanFileReference)
                 ?: throw ConanFileNotFoundException(
                     ConanMessageCode.CONAN_FILE_NOT_FOUND, buildReference(conanFileReference), getRepoIdentify()

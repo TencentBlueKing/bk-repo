@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publi
 import com.tencent.bkrepo.conan.constant.ConanMessageCode
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.exception.ConanFileNotFoundException
+import com.tencent.bkrepo.conan.listener.event.ConanPackageDeleteEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeDeleteEvent
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanDeleteService
@@ -58,8 +59,10 @@ class ConanDeleteServiceImpl : ConanDeleteService {
 
     @Autowired
     lateinit var nodeClient: NodeClient
+
     @Autowired
     lateinit var packageClient: PackageClient
+
     @Autowired
     lateinit var commonService: CommonService
 
@@ -105,6 +108,13 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                 val path = buildPackageIdFolderPath(conanFileReference, packageId)
                 val request = NodeDeleteRequest(projectId, repoName, path, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
+                publishEvent(
+                    ConanPackageDeleteEvent(
+                        ObjectBuildUtil.buildConanPackageDeleteRequest(
+                            conanArtifactInfo, SecurityUtils.getUserId(), packageId
+                        )
+                    )
+                )
             }
         }
     }
@@ -122,8 +132,8 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
                 publishEvent(
-                    ConanRecipeDeleteEvent(
-                        ObjectBuildUtil.buildConanRecipeDeleteRequest(this, SecurityUtils.getUserId())
+                    ConanPackageDeleteEvent(
+                        ObjectBuildUtil.buildConanPackageDeleteRequest(this, SecurityUtils.getUserId())
                     )
                 )
             }
@@ -143,6 +153,11 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                     )
                 val request = NodeDeleteRequest(projectId, repoName, path, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
+                publishEvent(
+                    ConanRecipeDeleteEvent(
+                        ObjectBuildUtil.buildConanRecipeDeleteRequest(this, SecurityUtils.getUserId())
+                    )
+                )
             }
         }
     }

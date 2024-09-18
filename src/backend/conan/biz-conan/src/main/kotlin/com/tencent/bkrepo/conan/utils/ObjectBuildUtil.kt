@@ -41,6 +41,7 @@ import com.tencent.bkrepo.conan.pojo.ConanPackageDeleteRequest
 import com.tencent.bkrepo.conan.pojo.ConanPackageUploadRequest
 import com.tencent.bkrepo.conan.pojo.ConanRecipeDeleteRequest
 import com.tencent.bkrepo.conan.pojo.ConanRecipeUploadRequest
+import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
@@ -194,9 +195,9 @@ object ObjectBuildUtil {
         userId: String
     ): ConanRecipeDeleteRequest {
         with(artifactInfo) {
-            val packageReference = convertToPackageReference(this)
-            val revPath = getRecipeRevisionsFile(packageReference.conRef)
-            val refStr = buildReference(packageReference.conRef)
+            val packageReference = convertToConanFileReference(this)
+            val revPath = getRecipeRevisionsFile(packageReference)
+            val refStr = buildReference(packageReference)
             return ConanRecipeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -204,6 +205,31 @@ object ObjectBuildUtil {
                 refStr = refStr,
                 operator = userId,
                 revision = revision ?: DEFAULT_REVISION_V1,
+            )
+        }
+    }
+
+    fun buildConanPackageDeleteRequest(
+        artifactInfo: ConanArtifactInfo,
+        userId: String,
+        packageId: String,
+        pRevision: String? = null,
+    ): ConanPackageDeleteRequest {
+        with(artifactInfo) {
+            val packageReference = PackageReference(convertToConanFileReference(artifactInfo), packageId, pRevision)
+            val revPath = getRecipeRevisionsFile(packageReference.conRef)
+            val refStr = buildReference(packageReference.conRef)
+            val pRevPath = getPackageRevisionsFile(packageReference)
+            val pRefStr = buildPackageReference(packageReference)
+            return ConanPackageDeleteRequest(
+                projectId = projectId,
+                repoName = repoName,
+                revPath = revPath,
+                refStr = refStr,
+                operator = userId,
+                revision = revision ?: DEFAULT_REVISION_V1,
+                pRefStr = pRefStr,
+                pRevPath = pRevPath
             )
         }
     }
@@ -226,7 +252,8 @@ object ObjectBuildUtil {
                 operator = userId,
                 revision = revision ?: DEFAULT_REVISION_V1,
                 pRefStr = pRefStr,
-                pRevPath = pRevPath
+                pRevPath = pRevPath,
+                pRevision = pRevision
             )
         }
     }
