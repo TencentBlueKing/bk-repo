@@ -52,12 +52,12 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode.SYSTEM_ERROR
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
@@ -75,7 +75,7 @@ class TemporaryScanTokenServiceImpl(
     private val redisTemplate: RedisTemplate<String, String>,
     private val scannerProperties: ScannerProperties,
     private val storageManager: StorageManager,
-    private val storageCredentialService: StorageCredentialService,
+    private val storageCredentialsClient: StorageCredentialsClient,
     private val nodeClient: NodeClient
 ) : TemporaryScanTokenService {
     private val baseUrl
@@ -220,7 +220,7 @@ class TemporaryScanTokenServiceImpl(
     }
 
     private fun readManifest(projectId: String, repoName: String, sha256: String, credentialsKey: String?): String {
-        val storageCredentials = credentialsKey?.let { storageCredentialService.findByKey(it)!! }
+        val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
         val nodes = nodeClient.queryWithoutCount(
             NodeQueryBuilder()
                 .projectId(projectId)
