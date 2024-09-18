@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.CreateCollectionReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.DeleteVectorReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.DropCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.HasCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.InsertVectorReq
@@ -86,6 +87,16 @@ class MilvusClient(
             .build()
         client.newCall(request).execute().throwIfFailed<Any, Any> {
             logger.info("insert ${req.data.size} data into [${req.collectionName}] success")
+        }
+    }
+
+    fun delete(req: DeleteVectorReq) {
+        val request = Request.Builder()
+            .url("${clientProperties.uri}/v2/vectordb/entities/delete")
+            .post(req.toJsonString().toRequestBody(APPLICATION_JSON))
+            .build()
+        client.newCall(request).execute().throwIfFailed<Any, Any> {
+            logger.info("delete vector of [${req.dbName}/${req.collectionName}] success")
         }
     }
 

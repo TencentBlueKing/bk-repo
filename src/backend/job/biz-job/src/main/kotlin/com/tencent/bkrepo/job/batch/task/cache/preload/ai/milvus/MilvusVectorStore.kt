@@ -37,6 +37,7 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.Collect
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.ConsistencyLevel
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.CreateCollectionReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.DataType
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.DeleteVectorReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.ElementTypeParams
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.FieldSchema
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.IndexParam
@@ -105,19 +106,13 @@ class MilvusVectorStore(
 
     override fun delete(ids: Set<String>): Boolean {
         val deleteExpression = "$DOC_ID_FIELD_NAME in [${ids.joinToString(",") { "'$it'" }}]"
-        val status = milvusClient.delete(
-            DeleteParam.newBuilder()
-                .withCollectionName(config.collectionName)
-                .withExpr(deleteExpression)
-                .build()
+        val req = DeleteVectorReq(
+            dbName = config.databaseName,
+            collectionName = config.collectionName,
+            filter = deleteExpression
         )
-
-        val deleteCount = status.data.deleteCnt
-        if (deleteCount != ids.size.toLong()) {
-            logger.warn(String.format("Deleted only %s entries from requested %s ", deleteCount, ids.size))
-        }
-
-        return status.status == R.Status.Success.code
+        milvusClient.delete(req)
+        return true
     }
 
     override fun similaritySearch(request: SearchRequest): List<Document> {
