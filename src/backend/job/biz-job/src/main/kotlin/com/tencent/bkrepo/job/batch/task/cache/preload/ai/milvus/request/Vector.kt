@@ -27,31 +27,18 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
-data class SearchVectorReq(
-    val dbName: String,
-    val collectionName: String,
-    val data: List<List<Float>>,
-    val annsField: String,
-
-    val limit: Int? = null,
-    val offset: Int? = null,
-    val groupingField: String? = null,
-    val outputFields: List<String>? = null,
-
-    val filter: String? = null,
-    val searchParams: SearchParams? = null,
-    val partitionNames: List<String>? = null,
-)
-
-data class SearchParams(
-    val metricType: String? = null,
-    val params: VectorSearchParams? = null,
-)
-
-data class VectorSearchParams(
-    val radius: Int? = null,
-    @JsonProperty("range_filter")
-    val rangeFilter: Int? = null,
+data class Vector(
+    val id: String,
+    /**
+     * 用于向量化的文档内容
+     */
+    val content: String,
+    /**
+     * content向量化后的内容
+     */
+    val embedding: List<Float>,
+    /**
+     * 携带的元数据经过json序列化后的字符串
+     */
+    val metadata: String,
 )

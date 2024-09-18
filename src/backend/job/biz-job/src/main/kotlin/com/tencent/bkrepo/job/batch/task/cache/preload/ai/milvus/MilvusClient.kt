@@ -100,12 +100,12 @@ class MilvusClient(
         }
     }
 
-    fun search(req: SearchVectorReq): Map<String, Any> {
+    fun search(req: SearchVectorReq): List<Map<String, Any>> {
         val request = Request.Builder()
             .url("${clientProperties.uri}/v2/vectordb/entities/search")
             .post(req.toJsonString().toRequestBody(APPLICATION_JSON))
             .build()
-        return client.newCall(request).execute().throwIfFailed<Map<String, Any>, Map<String, Any>> { it!! }
+        return client.newCall(request).execute().throwIfFailed<List<Map<String, Any>>, List<Map<String, Any>>> { it!! }
     }
 
     private inline fun <reified T, R> Response.throwIfFailed(handler: (res: T?) -> R): R {

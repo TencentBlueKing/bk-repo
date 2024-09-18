@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
-import com.alibaba.fastjson.JSONObject
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.Document
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
@@ -44,15 +44,9 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.IndexPa
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.InsertVectorReq
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.MetricType
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.Params
-import io.milvus.common.clientenum.ConsistencyLevelEnum
-import io.milvus.param.R
-import io.milvus.param.collection.DropCollectionParam
-import io.milvus.param.collection.FlushParam
-import io.milvus.param.dml.DeleteParam
-import io.milvus.param.dml.InsertParam
-import io.milvus.param.dml.SearchParam
-import io.milvus.response.QueryResultsWrapper
-import io.milvus.response.SearchResultsWrapper
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.SearchParams
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.SearchVectorReq
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.Vector
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.InitializingBean
 
@@ -78,30 +72,19 @@ class MilvusVectorStore(
             contentArray.add(document.content)
             metadataArray.add(document.metadata.toJsonString())
         }
-        val insertRequest = InsertVectorReq(config.databaseName, config.collectionName)
-
-        val fields: MutableList<InsertParam.Field> = ArrayList()
-        fields.add(InsertParam.Field(DOC_ID_FIELD_NAME, docIdArray))
-        fields.add(InsertParam.Field(CONTENT_FIELD_NAME, contentArray))
-        fields.add(InsertParam.Field(METADATA_FIELD_NAME, metadataArray))
-        fields.add(InsertParam.Field(EMBEDDING_FIELD_NAME, embeddingArray))
-
-        val insertParam = InsertParam.newBuilder()
-            .withDatabaseName(config.databaseName)
-            .withCollectionName(config.collectionName)
-            .withFields(fields)
-            .build()
-
-        val status = milvusClient.insert(insertParam)
-        if (status.exception != null) {
-            throw RuntimeException("Failed to insert:", status.exception)
-        }
-        milvusClient.flush(
-            FlushParam.newBuilder()
-                .withDatabaseName(config.databaseName)
-                .addCollectionName(config.collectionName)
-                .build()
+        val insertRequest = InsertVectorReq(
+            dbName = config.databaseName,
+            collectionName = config.collectionName,
+            data = documents.mapIndexed { i, d ->
+                Vector(
+                    d.id,
+                    d.content,
+                    embeddingArray[i],
+                    d.metadata.toJsonString()
+                )
+            }
         )
+        milvusClient.insert(insertRequest)
     }
 
     override fun delete(ids: Set<String>): Boolean {
@@ -119,43 +102,31 @@ class MilvusVectorStore(
         val nativeFilterExpressions = request.filterExpression ?: ""
         val embedding: List<Float> = embeddingModel.embed(request.query)
 
-        val searchParamBuilder = SearchParam.newBuilder()
-            .withDatabaseName(config.databaseName)
-            .withCollectionName(config.collectionName)
-            .withConsistencyLevel(ConsistencyLevelEnum.STRONG)
-            .withMetricType(config.metricType)
-            .withOutFields(SEARCH_OUTPUT_FIELDS)
-            .withTopK(request.topK)
-            .withFloatVectors(listOf(embedding))
-            .withVectorFieldName(EMBEDDING_FIELD_NAME)
+        val req = SearchVectorReq(
+            dbName = config.databaseName,
+            collectionName = config.collectionName,
+            data = listOf(embedding),
+            limit = request.topK,
+            outputFields = SEARCH_OUTPUT_FIELDS,
+            annsField = EMBEDDING_FIELD_NAME,
+            filter = nativeFilterExpressions,
+            searchParams = SearchParams(
+                metricType = config.metricType,
+            )
+        )
 
-        if (nativeFilterExpressions.isNotBlank()) {
-            searchParamBuilder.withExpr(nativeFilterExpressions)
+        val respSearch = milvusClient.search(req)
+        return respSearch.map {
+            val docId = it[DOC_ID_FIELD_NAME] as String
+            val content = it[CONTENT_FIELD_NAME] as String
+            val metadata = (it[METADATA_FIELD_NAME] as String).readJsonString<MutableMap<String, Any>>()
+            // inject the distance into the metadata.
+            metadata[DISTANCE_FIELD_NAME] = 1 - getResultSimilarity(it[DISTANCE_FIELD_NAME] as Float)
+            Document(content, metadata, docId)
         }
-
-        val respSearch = milvusClient.search(searchParamBuilder.build())
-
-        if (respSearch.exception != null) {
-            throw RuntimeException("Search failed!", respSearch.exception)
-        }
-
-        val wrapperSearch = SearchResultsWrapper(respSearch.data.results)
-
-        return wrapperSearch.getRowRecords(0)
-            .filter { getResultSimilarity(it) >= request.similarityThreshold }
-            .map { rowRecord ->
-                val docId = rowRecord[DOC_ID_FIELD_NAME] as String
-                val content = rowRecord[CONTENT_FIELD_NAME] as String
-                val metadata = rowRecord[METADATA_FIELD_NAME] as JSONObject
-                // inject the distance into the metadata.
-                metadata[DISTANCE_FIELD_NAME] = 1 - getResultSimilarity(rowRecord)
-                Document(content, metadata.innerMap, docId)
-            }
-            .toList()
     }
 
-    private fun getResultSimilarity(rowRecord: QueryResultsWrapper.RowRecord): Float {
-        val distance = rowRecord[DISTANCE_FIELD_NAME] as Float
+    private fun getResultSimilarity(distance: Float): Float {
         return if ((config.metricType == MetricType.IP.name || config.metricType == MetricType.COSINE.name)) {
             distance
         } else {
