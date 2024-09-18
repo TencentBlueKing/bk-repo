@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,65 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.reactive.dao
+package com.tencent.bkrepo.common.metadata.service.repo
 
-import com.mongodb.client.result.DeleteResult
-import com.mongodb.client.result.UpdateResult
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
 
 /**
- * mongo db reactive 数据访问层接口
+ * 代理源服务接口
  */
-interface MongoReactiveDao<E> {
+interface RProxyChannelService {
+    /**
+     * 根据[request]创建代理源
+     */
+    suspend fun createProxy(userId: String, request: ProxyChannelCreateRequest)
 
     /**
-     * 通过查询对象查询单条文档，返回元素类型由clazz指定
+     * 根据[request]更新代理源
      */
-    suspend fun <T> findOne(query: Query, clazz: Class<T>): T?
+    suspend fun updateProxy(userId: String, request: ProxyChannelUpdateRequest)
 
     /**
-     * 通过查询对象查询文档集合，返回元素类型由clazz指定
+     * 查询代理源
      */
-    suspend fun <T> find(query: Query, clazz: Class<T>): List<T>
+    suspend fun queryProxyChannel(
+        projectId: String,
+        repoName: String,
+        repoType: RepositoryType,
+        name: String
+    ): ProxyChannelInfo?
 
     /**
-     * 新增文档到数据库的集合中
+     * 删除代理源
      */
-    suspend fun save(entity: E): E
+    suspend fun deleteProxy(request: ProxyChannelDeleteRequest)
+    /**
+     * 列表查询公有源
+     */
+    suspend fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo>
 
     /**
-     * 插入文档到数据库的集合中
+     * 根据项目仓库信息获取列表
      */
-    suspend fun insert(entity: E): E
-
-    /**
-     * 更新单条文档
-     */
-    suspend fun updateFirst(query: Query, update: Update): UpdateResult
-
-    /**
-     * 更新文档
-     */
-    suspend fun updateMulti(query: Query, update: Update): UpdateResult
-
-    /**
-     * 删除文档
-     */
-    suspend fun remove(query: Query): DeleteResult
-
-    /**
-     * update or insert
-     */
-    suspend fun upsert(query: Query, update: Update): UpdateResult
-
-    /**
-     * count
-     */
-    suspend fun count(query: Query): Long
-
-    /**
-     * 判断文档是否存在
-     */
-    suspend fun exists(query: Query): Boolean
+    suspend fun listProxyChannel(projectId: String, repoName: String, repoType: RepositoryType,): List<ProxyChannelInfo>
 }

@@ -29,21 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.common.metadata.dao.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.model.TProxyChannel
+import com.tencent.bkrepo.common.metadata.util.ProxyChannelQueryHelper.buildSingleQuery
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TProxyChannel
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
 
 /**
  * 项目数据访问层
  */
 @Repository
+@Conditional(SyncCondition::class)
 class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
     /**
      * 查找代理
@@ -103,25 +105,5 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
             name = name
         )
         this.remove(query)
-    }
-
-    /**
-     * 构造查询条件
-     */
-    private fun buildSingleQuery(
-        projectId: String,
-        repoName: String,
-        repoType: String,
-        name: String? = null
-    ): Query {
-        val criteria = where(TProxyChannel::projectId).isEqualTo(projectId)
-            .and(TProxyChannel::repoName).isEqualTo(repoName)
-            .and(TProxyChannel::repoType).isEqualTo(repoType)
-            .apply {
-                name?.let {
-                    this.and(TProxyChannel::name).isEqualTo(name)
-                }
-            }
-        return Query(criteria)
     }
 }

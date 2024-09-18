@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.model
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import java.time.LocalDateTime
