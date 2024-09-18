@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
+import cn.hutool.core.codec.Base64Decoder
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.Document
@@ -119,9 +120,11 @@ class MilvusVectorStore(
         return respSearch.map {
             val docId = it[DOC_ID_FIELD_NAME] as String
             val content = it[CONTENT_FIELD_NAME] as String
-            val metadata = (it[METADATA_FIELD_NAME] as String).readJsonString<MutableMap<String, Any>>()
+            val metadata = Base64Decoder
+                .decodeStr(it[METADATA_FIELD_NAME] as String)
+                .readJsonString<MutableMap<String, Any>>()
             // inject the distance into the metadata.
-            metadata[DISTANCE_FIELD_NAME] = 1 - getResultSimilarity(it[DISTANCE_FIELD_NAME] as Float)
+            metadata[DISTANCE_FIELD_NAME] = 1 - getResultSimilarity((it[DISTANCE_FIELD_NAME] as Double).toFloat())
             Document(content, metadata, docId)
         }
     }
