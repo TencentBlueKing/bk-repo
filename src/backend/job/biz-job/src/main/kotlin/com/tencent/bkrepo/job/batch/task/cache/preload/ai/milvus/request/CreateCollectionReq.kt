@@ -1,8 +1,10 @@
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
 
-
+@JsonInclude(Include.NON_NULL)
 data class CreateCollectionReq(
     val dbName: String,
     val collectionName: String,
@@ -17,6 +19,7 @@ data class CreateCollectionReq(
     val indexParams: List<IndexParam> = ArrayList(),
     val params: Params? = null,
 ) {
+    @JsonInclude(Include.NON_NULL)
     data class Params(
         @JsonProperty("max_length")
         val maxLength: Int? = null,

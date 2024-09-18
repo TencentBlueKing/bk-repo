@@ -150,8 +150,8 @@ class MilvusVectorStore(
     override fun createCollection(): Boolean {
         var created = false
         if (!collectionExists()) {
-            val fieldSchemas = ArrayList<FieldSchema>()
-            fieldSchemas.add(
+            val collectionSchema = CollectionSchema(enableDynamicField = false)
+            collectionSchema.addField(
                 FieldSchema(
                     fieldName = DOC_ID_FIELD_NAME,
                     dataType = DataType.VarChar.name,
@@ -159,20 +159,20 @@ class MilvusVectorStore(
                     elementTypeParams = ElementTypeParams(maxLength = 36),
                 )
             )
-            fieldSchemas.add(
+            collectionSchema.addField(
                 FieldSchema(
                     fieldName = CONTENT_FIELD_NAME,
                     dataType = DataType.VarChar.name,
                     elementTypeParams = ElementTypeParams(maxLength = 65535),
                 )
             )
-            fieldSchemas.add(
+            collectionSchema.addField(
                 FieldSchema(
                     fieldName = METADATA_FIELD_NAME,
                     dataType = DataType.JSON.name,
                 )
             )
-            fieldSchemas.add(
+            collectionSchema.addField(
                 FieldSchema(
                     fieldName = EMBEDDING_FIELD_NAME,
                     dataType = DataType.FloatVector.name,
@@ -193,7 +193,6 @@ class MilvusVectorStore(
                 )
             )
 
-            val collectionSchema = CollectionSchema(enableDynamicField = false, fields = fieldSchemas)
             val createCollectionReq = CreateCollectionReq(
                 dbName = config.databaseName,
                 collectionName = config.collectionName,

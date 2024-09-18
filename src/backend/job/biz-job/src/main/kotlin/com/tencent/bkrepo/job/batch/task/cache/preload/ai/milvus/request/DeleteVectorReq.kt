@@ -27,6 +27,10 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+
+@JsonInclude(Include.NON_NULL)
 data class DeleteVectorReq(
     val dbName: String,
     val collectionName: String,

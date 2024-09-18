@@ -1,7 +1,10 @@
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonProperty
 
+@JsonInclude(Include.NON_NULL)
 data class FieldSchema (
     val fieldName: String,
     val dataType: String,
@@ -14,6 +17,7 @@ data class FieldSchema (
     val elementTypeParams: ElementTypeParams? = null
 )
 
+@JsonInclude(Include.NON_NULL)
 data class ElementTypeParams(
     /**
      * An optional parameter for VarChar values that determines the maximum length of the value in the current field.

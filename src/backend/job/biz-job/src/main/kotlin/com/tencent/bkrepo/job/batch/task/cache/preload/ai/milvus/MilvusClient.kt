@@ -1,8 +1,9 @@
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.CreateCollectionReq
@@ -108,10 +109,13 @@ class MilvusClient(
         return client.newCall(request).execute().throwIfFailed<List<Map<String, Any>>, List<Map<String, Any>>> { it!! }
     }
 
-    private inline fun <reified T, R> Response.throwIfFailed(handler: (res: T?) -> R): R {
+    private inline fun <reified T, R> Response.throwIfFailed(handler: (data: T?) -> R): R {
         use {
             if (isSuccessful) {
-                val res = body!!.byteStream().readJsonString<MilvusResponse<T>>()
+                val res = JsonUtils.objectMapper.readValue(
+                    body!!.byteStream(),
+                    object : TypeReference<MilvusResponse<T>>() {}
+                )
                 if (res.code != 0) {
                     throw RuntimeException("request milvus failed, code: $code, message: ${res.message}")
                 }
