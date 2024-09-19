@@ -82,10 +82,13 @@ class CommonService(
 ) {
     @Autowired
     lateinit var nodeClient: NodeClient
+
     @Autowired
     lateinit var storageManager: StorageManager
+
     @Autowired
     lateinit var repositoryClient: RepositoryClient
+
     @Autowired
     lateinit var lockOperation: LockOperation
 
@@ -338,12 +341,14 @@ class CommonService(
     ): RevisionInfo? {
         val revPath = getRecipeRevisionsFile(conanFileReference)
         val refStr = buildReference(conanFileReference)
-        return getLatestRevision(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
+        return lockAction(projectId, repoName, revPath) {
+            getLatestRevision(
+                projectId = projectId,
+                repoName = repoName,
+                revPath = revPath,
+                refStr = refStr
+            )
+        }
     }
 
     fun getLastPackageRevision(
@@ -353,12 +358,14 @@ class CommonService(
     ): RevisionInfo? {
         val revPath = getPackageRevisionsFile(packageReference)
         val refStr = buildPackageReference(packageReference)
-        return getLatestRevision(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
+        return lockAction(projectId, repoName, revPath) {
+            getLatestRevision(
+                projectId = projectId,
+                repoName = repoName,
+                revPath = revPath,
+                refStr = refStr
+            )
+        }
     }
 
     fun getLatestRevision(
@@ -374,7 +381,6 @@ class CommonService(
             refStr = refStr
         )
         if (indexJson.revisions.isEmpty()) {
-            // TODO revisions 列表中数据要以time进行比较排序，最新数据放在前面
             val revisionV1Path = joinString(revPath, DEFAULT_REVISION_V1)
             nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return null
             return RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now()))
@@ -443,7 +449,7 @@ class CommonService(
         fullPath: String,
         indexInfo: IndexInfo
     ) {
-        val(artifactFile, nodeCreateRequest) = buildFileAndNodeCreateRequest(
+        val (artifactFile, nodeCreateRequest) = buildFileAndNodeCreateRequest(
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
@@ -497,12 +503,14 @@ class CommonService(
     ): IndexInfo {
         val revPath = getRecipeRevisionsFile(conanFileReference)
         val refStr = buildReference(conanFileReference)
-        return getRevisionsList(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
+        return lockAction(projectId, repoName, revPath) {
+            getRevisionsList(
+                projectId = projectId,
+                repoName = repoName,
+                revPath = revPath,
+                refStr = refStr
+            )
+        }
     }
 
     /**
@@ -515,12 +523,14 @@ class CommonService(
     ): IndexInfo {
         val revPath = getPackageRevisionsFile(packageReference)
         val refStr = buildPackageReference(packageReference)
-        return getRevisionsList(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
+        return lockAction(projectId, repoName, revPath) {
+            getRevisionsList(
+                projectId = projectId,
+                repoName = repoName,
+                revPath = revPath,
+                refStr = refStr
+            )
+        }
     }
 
     /**

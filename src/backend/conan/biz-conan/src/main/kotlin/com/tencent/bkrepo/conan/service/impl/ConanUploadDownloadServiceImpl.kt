@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -66,6 +67,8 @@ class ConanUploadDownloadServiceImpl : ConanUploadDownloadService {
             if (!sha1.isNullOrEmpty()) {
                 val metadata = nodeDetail.nodeMetadata.firstOrNull { it.key == X_CHECKSUM_SHA1 }
                 if (metadata?.value == sha1) {
+                    // returns 201 if the file is there
+                    HttpContextHolder.getResponse().status = HttpStatus.CREATED.value
                     return
                 }
             }

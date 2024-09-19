@@ -87,23 +87,24 @@ class ConanLocalRepository : LocalRepository() {
     override fun onUploadSuccess(context: ArtifactUploadContext) {
         super.onUploadSuccess(context)
         val fullPath = generateFullPath(context.artifactInfo as ConanArtifactInfo)
-        if (fullPath.endsWith(CONAN_MANIFEST)) {
+        val artifactInfo = context.artifactInfo as ConanArtifactInfo
+        if (fullPath.endsWith(CONAN_MANIFEST) && artifactInfo.packageId.isNullOrEmpty()) {
             // TODO package version size 如何计算
             createVersion(
-                artifactInfo = context.artifactInfo as ConanArtifactInfo,
+                artifactInfo = artifactInfo,
                 userId = context.userId,
                 size = 0
             )
             publishEvent(
                 ConanRecipeUploadEvent(
-                    ObjectBuildUtil.buildConanRecipeUpload(context.artifactInfo as ConanArtifactInfo, context.userId)
+                    ObjectBuildUtil.buildConanRecipeUpload(artifactInfo, context.userId)
                 )
             )
         }
         if (fullPath.endsWith(PACKAGE_TGZ_NAME)) {
             publishEvent(
                 ConanPackageUploadEvent(
-                    ObjectBuildUtil.buildConanPackageUpload(context.artifactInfo as ConanArtifactInfo, context.userId)
+                    ObjectBuildUtil.buildConanPackageUpload(artifactInfo, context.userId)
                 )
             )
         }
