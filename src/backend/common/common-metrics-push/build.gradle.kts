@@ -30,7 +30,7 @@
  */
 
 dependencies {
-    api(project(":common:common-service"))
+    api(project(":common:common-service:service-servlet"))
     api("io.micrometer:micrometer-registry-prometheus")
     api("io.prometheus:simpleclient_pushgateway")
 }

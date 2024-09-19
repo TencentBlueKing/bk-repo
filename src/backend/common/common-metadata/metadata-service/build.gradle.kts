@@ -35,7 +35,7 @@ dependencies {
     api(project(":common:common-storage:storage-api"))
     api(project(":repository:api-repository"))
     api(project(":common:common-security")) {
-        exclude(module = "common-service")
+        exclude(module = "service-servlet")
     }
 
     compileOnly(project(":common:common-mongo-reactive"))

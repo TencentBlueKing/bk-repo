@@ -29,6 +29,6 @@ dependencies {
     api(project(":router-controller:api-router-controller"))
     api(project(":common:common-mongo"))
     api(project(":common:common-query:query-mongo"))
-    api(project(":common:common-service"))
+    api(project(":common:common-service:service-servlet"))
     api(project(":common:common-security"))
 }

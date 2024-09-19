@@ -27,14 +27,12 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
-import io.milvus.client.MilvusClient
-import io.milvus.client.MilvusServiceClient
-import io.milvus.param.ConnectParam
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClientProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.util.concurrent.TimeUnit
 
 @Configuration
 @EnableConfigurationProperties(
@@ -51,26 +49,6 @@ class SpringAiConfiguration {
 
     @Bean
     fun milvusClient(properties: MilvusClientProperties): MilvusClient {
-        with(properties) {
-            val builder = ConnectParam.newBuilder()
-                .withHost(host)
-                .withPort(port)
-                .withUri(uri)
-                .withConnectTimeout(connectTimeoutMs, TimeUnit.MILLISECONDS)
-                .withKeepAliveTime(keepAliveTimeMs, TimeUnit.MILLISECONDS)
-                .withKeepAliveTimeout(keepAliveTimeoutMs, TimeUnit.MILLISECONDS)
-                .withRpcDeadline(rpcDeadlineMs, TimeUnit.MILLISECONDS)
-                .withIdleTimeout(idleTimeoutMs, TimeUnit.MILLISECONDS)
-
-            if (username.isNotEmpty() && password.isNotEmpty()) {
-                builder.withAuthorization(username, password)
-            }
-
-            if (!token.isNullOrEmpty()) {
-                builder.withToken(token)
-            }
-
-            return MilvusServiceClient(builder.build())
-        }
+        return MilvusClient(properties)
     }
 }

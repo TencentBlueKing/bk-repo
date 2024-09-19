@@ -27,5 +27,5 @@
 
 dependencies {
     implementation(project(":analysis-executor:biz-analysis-executor"))
-    implementation(project(":common:common-service"))
+    implementation(project(":common:common-service:service-servlet"))
 }

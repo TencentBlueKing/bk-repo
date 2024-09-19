@@ -28,7 +28,7 @@
 dependencies {
     implementation(project(":analyst:api-analyst"))
     implementation(project(":analysis-executor:api-analysis-executor"))
-    implementation(project(":common:common-service"))
+    implementation(project(":common:common-service:service-servlet"))
     implementation(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-security"))
     implementation(project(":common:common-checker:biz-checker"))
