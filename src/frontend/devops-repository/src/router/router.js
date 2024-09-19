@@ -34,6 +34,8 @@ const WebError440 = () => import('@repository/components/Exception/440')
 const oauth = () => import('@repository/views/oauth')
 const userGroup = () => import('@repository/views/userGroup')
 
+const filePreview = () => import('@repository/components/FilePreview/filePreview')
+
 const routes = [
     {
         path: '/:projectId/preview',
@@ -63,6 +65,15 @@ const routes = [
                         { to: 'repositories', name: 'browser', label: '仓库列表' }
                     ]
                 }
+            },
+            {
+                path: 'filePreview/:repoName/*',
+                name: 'filePreview',
+                component: filePreview,
+                props: route => ({
+                    repoName: route.params.repoName,
+                    filePath: route.params.pathMatch // 这里将捕获所有后续的路径
+                })
             },
             {
                 path: '440/:msg',
