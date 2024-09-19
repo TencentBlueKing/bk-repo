@@ -27,12 +27,15 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.IndexType
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request.MetricType
+
 data class MilvusVectorStoreProperties(
     var databaseName: String = "default",
     var collectionName: String = "vector_store",
     var embeddingDimension: Int = 1536,
-    var indexType: String = "IVF_FLAT",
-    var metricType: String = "COSINE",
+    var indexType: String = IndexType.IVF_FLAT.name,
+    var metricType: String = MetricType.COSINE.name,
     var indexParameters: String = "{\"nlist\":1024}",
     var nList: Int = 1024,
 )
