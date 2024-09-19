@@ -355,7 +355,7 @@ export default {
     },
     downloadUrl(node) {
       const fullPath = node.fullPath.substring(1)
-      return `/web/repository/api/list/${node.projectId}/${node.repoName}/${encodeURIComponent(fullPath)}`
+      return `/web/generic/${node.projectId}/${node.repoName}/${encodeURIComponent(fullPath)}`
     },
     showNodeDetail(node) {
       this.nodeOfDetailDialog = node
