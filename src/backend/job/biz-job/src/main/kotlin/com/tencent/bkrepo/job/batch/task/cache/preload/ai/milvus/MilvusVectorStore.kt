@@ -105,17 +105,23 @@ class MilvusVectorStore(
             )
         )
 
+        val results = ArrayList<Document>()
         val respSearch = milvusClient.search(req)
-        return respSearch.map {
-            val docId = it[DOC_ID_FIELD_NAME] as String
-            val content = it[CONTENT_FIELD_NAME] as String
+        for (vector in respSearch) {
+            val similarity = getResultSimilarity((vector[DISTANCE_FIELD_NAME] as Double).toFloat())
+            if (similarity < request.similarityThreshold) {
+                continue
+            }
+            val docId = vector[DOC_ID_FIELD_NAME] as String
+            val content = vector[CONTENT_FIELD_NAME] as String
             val metadata = Base64Decoder
-                .decodeStr(it[METADATA_FIELD_NAME] as String)
+                .decodeStr(vector[METADATA_FIELD_NAME] as String)
                 .readJsonString<MutableMap<String, Any>>()
             // inject the distance into the metadata.
-            metadata[DISTANCE_FIELD_NAME] = 1 - getResultSimilarity((it[DISTANCE_FIELD_NAME] as Double).toFloat())
-            Document(content, metadata, docId)
+            metadata[DISTANCE_FIELD_NAME] = 1 - similarity
+            results.add(Document(content, metadata, docId))
         }
+        return results
     }
 
     private fun getResultSimilarity(distance: Float): Float {
@@ -131,6 +137,7 @@ class MilvusVectorStore(
     }
 
     override fun collectionExists(): Boolean {
+        logger.info(similaritySearch(SearchRequest("haahaha")).toString())
         return milvusClient.collectionExists(config.databaseName, config.collectionName)
     }
 
