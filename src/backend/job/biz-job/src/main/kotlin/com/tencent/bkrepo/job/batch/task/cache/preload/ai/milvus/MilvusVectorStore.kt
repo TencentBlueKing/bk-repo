@@ -137,7 +137,6 @@ class MilvusVectorStore(
     }
 
     override fun collectionExists(): Boolean {
-        logger.info(similaritySearch(SearchRequest("haahaha")).toString())
         return milvusClient.collectionExists(config.databaseName, config.collectionName)
     }
 
