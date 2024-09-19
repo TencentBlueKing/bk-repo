@@ -29,8 +29,8 @@ package com.tencent.bkrepo.fs.server.config
 
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
+import com.tencent.bkrepo.common.service.ServiceBeansInitializer
 import com.tencent.bkrepo.fs.server.RepositoryCache
-import com.tencent.bkrepo.fs.server.config.feign.ErrorCodeDecoder
 import com.tencent.bkrepo.fs.server.filter.ActuatorAuthFilter
 import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
 import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
@@ -53,17 +53,13 @@ import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
 import com.tencent.bkrepo.fs.server.utils.IoaUtils
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
-import com.tencent.bkrepo.fs.server.utils.SpringContextUtils
-import com.tencent.devops.service.config.ServiceProperties
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.support.GenericApplicationContext
 import org.springframework.context.support.beans
 
 val beans = beans {
-    bean<ServiceProperties>()
     bean<NodeOperationsHandler>()
     bean<FileOperationsHandler>()
     bean<FsNodeHandler>()
@@ -74,7 +70,6 @@ val beans = beans {
     bean<RepositoryCache>()
     bean<ServerMetrics>()
     bean<ActuatorAuthFilter>()
-    bean<GlobalExceptionHandler>()
     bean<BlockNodeServiceImpl>()
     bean<ReactiveRequestContextFilter>()
     bean<CoArtifactFileFactory>()
@@ -85,12 +80,9 @@ val beans = beans {
     bean<ClientService>()
     bean<SecurityManager>()
     bean<JwtAuthProperties>()
-    bean<SpringContextUtils>()
-    bean<NettyWebServerAccessLogCustomizer>()
     bean<DevXAccessFilter>()
     bean<DevXProperties>()
     bean<PermissionFilterFunction>()
-    bean<ErrorCodeDecoder>()
     bean<DevxWorkspaceUtils>()
     bean<IoaUtils>()
     bean {
@@ -101,8 +93,9 @@ val beans = beans {
     }
 }
 
-class BeansInitializer : ApplicationContextInitializer<GenericApplicationContext> {
+class BeansInitializer : ServiceBeansInitializer() {
     override fun initialize(applicationContext: GenericApplicationContext) {
+        super.initialize(applicationContext)
         beans.initialize(applicationContext)
     }
 }

@@ -26,7 +26,7 @@
  */
 dependencies {
     implementation(project(":job:api-job"))
-    implementation(project(":common:common-service"))
+    implementation(project(":common:common-service:service-servlet"))
     implementation(project(":common:common-job"))
     implementation(project(":common:common-security"))
     implementation(project(":common:common-storage:storage-service"))

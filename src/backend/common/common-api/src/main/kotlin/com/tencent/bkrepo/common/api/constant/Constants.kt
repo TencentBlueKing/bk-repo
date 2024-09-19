@@ -157,6 +157,10 @@ const val DEVX_ACCESS_FROM_OTHERS = "others"
  */
 const val B3_TRACE = "b3"
 
+/**
+ * bkrepo trace header
+ */
+const val BKREPO_TRACE = "X-BKREPO-RID"
 
 /**
  * codecc 业务前缀
