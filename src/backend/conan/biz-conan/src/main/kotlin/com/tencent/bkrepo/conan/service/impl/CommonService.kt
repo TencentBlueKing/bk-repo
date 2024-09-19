@@ -395,7 +395,6 @@ class CommonService(
         revPath: String,
         refStr: String
     ): IndexInfo {
-        // TODO 所有加/ 的都需要优化
         val fullPath = "/$revPath"
         val indexNode = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return IndexInfo(refStr)
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data

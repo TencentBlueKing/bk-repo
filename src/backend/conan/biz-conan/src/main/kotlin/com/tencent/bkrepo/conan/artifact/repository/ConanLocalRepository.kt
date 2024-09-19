@@ -101,7 +101,7 @@ class ConanLocalRepository : LocalRepository() {
                 )
             )
         }
-        if (fullPath.endsWith(PACKAGE_TGZ_NAME)) {
+        if (fullPath.endsWith(CONAN_MANIFEST)  && !artifactInfo.packageId.isNullOrEmpty()) {
             publishEvent(
                 ConanPackageUploadEvent(
                     ObjectBuildUtil.buildConanPackageUpload(artifactInfo, context.userId)
@@ -140,6 +140,7 @@ class ConanLocalRepository : LocalRepository() {
             node?.let {
                 node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
                 node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
+                context.artifactInfo.setArtifactMappingUri(node.fullPath)
             }
             val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
             buildDownloadResponse()
