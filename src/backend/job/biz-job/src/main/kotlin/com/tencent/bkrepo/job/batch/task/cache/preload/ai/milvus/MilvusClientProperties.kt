@@ -25,16 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache.preload.ai
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
-import io.milvus.param.IndexType
-import io.milvus.param.MetricType
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-data class MilvusVectorStoreProperties(
-    var databaseName: String = "default",
-    var collectionName: String = "vector_store",
-    var embeddingDimension: Int = 1536,
-    var indexType: IndexType = IndexType.IVF_FLAT,
-    var metricType: MetricType = MetricType.COSINE,
-    var indexParameters: String = "{\"nlist\":1024}",
+@ConfigurationProperties("spring.ai.vectorstore.milvus.client")
+data class MilvusClientProperties(
+    var host: String = "localhost",
+    var port: Int = 19530,
+    var uri: String? = null,
+    var token: String? = null,
+    var username: String = "root",
+    var password: String = "milvus"
 )

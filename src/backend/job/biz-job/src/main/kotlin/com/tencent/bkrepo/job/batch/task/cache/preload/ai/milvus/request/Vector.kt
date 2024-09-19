@@ -25,27 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache.preload
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request
 
-import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.fasterxml.jackson.annotation.JsonProperty
 
-@Configuration
-@ConditionalOnProperty("job.artifact-access-log-embedding.enabled")
-class PreloadConfig {
-    @Bean("INTELLIGENT")
-    fun artifactSimilarityPreloadPlanGenerator(
-        milvusClient: MilvusClient,
-        embeddingModel: EmbeddingModel,
-        aiProperties: AiProperties,
-        preloadProperties: ArtifactPreloadProperties,
-    ): ArtifactPreloadPlanGenerator {
-        return ArtifactSimilarityPreloadPlanGenerator(embeddingModel, milvusClient, aiProperties, preloadProperties)
-    }
-}
+data class Vector(
+    @JsonProperty("doc_id")
+    val docId: String,
+    /**
+     * 用于向量化的文档内容
+     */
+    val content: String,
+    /**
+     * content向量化后的内容
+     */
+    val embedding: List<Float>,
+    /**
+     * 携带的元数据经过json序列化后的字符串
+     */
+    val metadata: String,
+)

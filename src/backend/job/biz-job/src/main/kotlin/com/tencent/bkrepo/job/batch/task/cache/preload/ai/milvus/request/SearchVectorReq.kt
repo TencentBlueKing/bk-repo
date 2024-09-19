@@ -25,27 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache.preload
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request
 
-import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
-import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import com.fasterxml.jackson.annotation.JsonProperty
 
-@Configuration
-@ConditionalOnProperty("job.artifact-access-log-embedding.enabled")
-class PreloadConfig {
-    @Bean("INTELLIGENT")
-    fun artifactSimilarityPreloadPlanGenerator(
-        milvusClient: MilvusClient,
-        embeddingModel: EmbeddingModel,
-        aiProperties: AiProperties,
-        preloadProperties: ArtifactPreloadProperties,
-    ): ArtifactPreloadPlanGenerator {
-        return ArtifactSimilarityPreloadPlanGenerator(embeddingModel, milvusClient, aiProperties, preloadProperties)
-    }
-}
+@JsonInclude(Include.NON_NULL)
+data class SearchVectorReq(
+    val dbName: String,
+    val collectionName: String,
+    val data: List<List<Float>>,
+    val annsField: String,
+
+    val limit: Int? = null,
+    val offset: Int? = null,
+    val groupingField: String? = null,
+    val outputFields: List<String>? = null,
+
+    val filter: String? = null,
+    val searchParams: SearchParams? = null,
+    val partitionNames: List<String>? = null,
+)
+
+data class SearchParams(
+    val metricType: String? = null,
+    val params: VectorSearchParams? = null,
+)
+
+data class VectorSearchParams(
+    val radius: Int? = null,
+    @JsonProperty("range_filter")
+    val rangeFilter: Int? = null,
+)

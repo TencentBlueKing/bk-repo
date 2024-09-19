@@ -25,22 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch.task.cache.preload.ai
+package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.request
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import java.util.concurrent.TimeUnit
-
-@ConfigurationProperties("spring.ai.vectorstore.milvus.client")
-data class MilvusClientProperties(
-    var host: String = "localhost",
-    var port: Int = 19530,
-    var uri: String? = null,
-    var token: String? = null,
-    var connectTimeoutMs: Long = 10000L,
-    var keepAliveTimeMs: Long = 55000L,
-    var keepAliveTimeoutMs: Long = 20000L,
-    var rpcDeadlineMs: Long = 0L,
-    var idleTimeoutMs: Long = TimeUnit.MILLISECONDS.convert(24L, TimeUnit.HOURS),
-    var username: String = "root",
-    var password: String = "milvus"
+data class HasCollectionReq(
+    val dbName: String,
+    val collectionName: String
 )
