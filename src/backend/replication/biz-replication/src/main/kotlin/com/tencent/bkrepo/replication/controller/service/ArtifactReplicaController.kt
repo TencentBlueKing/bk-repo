@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.controller.service
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -43,7 +44,6 @@ import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckReque
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -70,7 +70,7 @@ import org.springframework.web.bind.annotation.RestController
 @Principal(type = PrincipalType.ADMIN)
 @RestController
 class ArtifactReplicaController(
-    private val projectClient: ProjectClient,
+    private val projectService: ProjectService,
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient,
@@ -164,8 +164,8 @@ class ArtifactReplicaController(
     }
 
     override fun replicaProjectCreateRequest(request: ProjectCreateRequest): Response<ProjectInfo> {
-        return projectClient.getProjectInfo(request.name).data?.let { ResponseBuilder.success(it) }
-            ?: projectClient.createProject(request)
+        return projectService.getProjectInfo(request.name)?.let { ResponseBuilder.success(it) }
+            ?: ResponseBuilder.success(projectService.createProject(request))
     }
 
     override fun replicaMetadataSaveRequest(request: MetadataSaveRequest): Response<Void> {

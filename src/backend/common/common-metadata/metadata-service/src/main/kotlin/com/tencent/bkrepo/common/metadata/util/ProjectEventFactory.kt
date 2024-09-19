@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.util
+package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest

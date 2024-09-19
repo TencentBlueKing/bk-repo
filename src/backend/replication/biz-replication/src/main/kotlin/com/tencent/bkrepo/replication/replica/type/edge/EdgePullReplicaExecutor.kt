@@ -38,8 +38,9 @@ import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -53,10 +54,9 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
-import com.tencent.bkrepo.replication.util.OkHttpClientPool
 import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.replication.util.OkHttpClientPool
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.cluster.ClusterNodeClient
 import com.tencent.bkrepo.repository.api.cluster.ClusterRepositoryClient
@@ -77,7 +77,7 @@ import java.time.LocalDateTime
 @Conditional(CommitEdgeEdgeCondition::class)
 class EdgePullReplicaExecutor(
     private val clusterProperties: ClusterProperties,
-    private val projectClient: ProjectClient,
+    private val projectService: ProjectService,
     private val repositoryClient: RepositoryClient,
     private val storageManager: StorageManager,
     private val replicaRecordService: ReplicaRecordService
@@ -191,7 +191,7 @@ class EdgePullReplicaExecutor(
             operator = centerRepo.createdBy
         )
         try {
-            projectClient.createProject(projectCreateRequest)
+            projectService.createProject(projectCreateRequest)
         } catch (e: RemoteErrorCodeException) {
             if (e.errorCode != ArtifactMessageCode.PROJECT_EXISTED.getCode()) {
                 throw e

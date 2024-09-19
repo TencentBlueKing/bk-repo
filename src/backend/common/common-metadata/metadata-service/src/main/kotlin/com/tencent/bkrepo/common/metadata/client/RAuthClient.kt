@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.api
+package com.tencent.bkrepo.common.metadata.client
 
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -34,6 +34,8 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.ApiParam
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -43,6 +45,11 @@ import org.springframework.web.bind.annotation.RequestParam
 import reactivefeign.spring.config.ReactiveFeignClient
 import reactor.core.publisher.Mono
 
+/**
+ * ReactiveFeignClient qualifier不生效，每个服务的feign client需要都写在一个接口类内
+ * https://github.com/PlaytikaOSS/feign-reactive/issues/611
+ * 升级到4.0.3后可以拆分
+ */
 @ReactiveFeignClient(AUTH_SERVICE_NAME)
 @RequestMapping("/service")
 interface RAuthClient {
@@ -75,10 +82,72 @@ interface RAuthClient {
         @RequestBody request: CreateUserToProjectRequest
     ): Mono<Response<Boolean>>
 
+    @PostMapping("/user/role/{uid}/{rid}")
+    fun addUserRole(
+        @ApiParam(value = "用户id")
+        @PathVariable uid: String,
+        @ApiParam(value = "用户角色id")
+        @PathVariable rid: String
+    ): Mono<Response<User?>>
+
     @PostMapping("/account/credential")
     fun checkAccountCredential(
         @RequestParam accesskey: String,
         @RequestParam secretkey: String,
         @RequestParam authorizationGrantType: AuthorizationGrantType? = null
+    ): Mono<Response<String?>>
+
+    @GetMapping("/permission/project/list")
+    fun listPermissionProject(
+        @ApiParam(value = "用户ID")
+        @RequestParam userId: String
+    ): Mono<Response<List<String>>>
+
+    @PostMapping("/bkiamv3/rbac/group/check")
+    fun getExistRbacDefaultGroupProjectIds(
+        @ApiParam(value = "项目ID列表")
+        @RequestBody projectIdList: List<String> = emptyList()
+    ): Mono<Response<Map<String, Boolean>>>
+
+    @PostMapping("/bkiamv3/create/project/manage/{projectId}")
+    fun createProjectManage(
+        @ApiParam(value = "用户id")
+        @RequestParam userId: String,
+        @ApiParam(value = "项目名称")
+        @PathVariable projectId: String
+    ): Mono<Response<String?>>
+
+    @PostMapping("/bkiamv3/create/repo/manage/{projectId}/{repoName}")
+    fun createRepoManage(
+        @ApiParam(value = "用户id")
+        @RequestParam userId: String,
+        @ApiParam(value = "项目名称")
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称")
+        @PathVariable repoName: String
+    ): Mono<Response<String?>>
+
+    @DeleteMapping("/bkiamv3/delete/repo/manage/{projectId}/{repoName}")
+    fun deleteRepoManageGroup(
+        @ApiParam(value = "用户id")
+        @RequestParam userId: String,
+        @ApiParam(value = "项目名称")
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称")
+        @PathVariable repoName: String
+    ): Mono<Response<Boolean>>
+
+    @PostMapping("/role/create/project/manage/{projectId}")
+    fun createProjectManage(
+        @ApiParam(value = "仓库名称")
+        @PathVariable projectId: String
+    ): Mono<Response<String?>>
+
+    @PostMapping("/role/create/repo/manage/{projectId}/{repoName}")
+    fun createRepoManage(
+        @ApiParam(value = "仓库ID")
+        @PathVariable projectId: String,
+        @ApiParam(value = "项目ID")
+        @PathVariable repoName: String
     ): Mono<Response<String?>>
 }

@@ -32,4 +32,5 @@ dependencies {
     api(project(":common:common-security")) {
         exclude(module = "service-servlet")
     }
+    api("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter")
 }

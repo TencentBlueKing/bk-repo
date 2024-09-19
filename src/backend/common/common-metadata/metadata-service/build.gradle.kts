@@ -37,7 +37,10 @@ dependencies {
     api(project(":common:common-security")) {
         exclude(module = "service-servlet")
     }
+    api(project(":common:common-service:service-base"))
 
     compileOnly(project(":common:common-mongo-reactive"))
     compileOnly(project(":common:common-mongo"))
+    compileOnly(project(":common:common-service:service-servlet"))
+    compileOnly(project(":common:common-service:service-reactive"))
 }

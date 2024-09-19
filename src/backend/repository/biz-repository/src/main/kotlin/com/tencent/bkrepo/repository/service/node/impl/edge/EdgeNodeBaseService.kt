@@ -29,7 +29,7 @@ package com.tencent.bkrepo.repository.service.node.impl.edge
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.reportMetadataToCenter
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.reportMetadataToCenter
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory

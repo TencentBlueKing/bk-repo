@@ -39,7 +39,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
-import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import org.springframework.web.bind.annotation.RestController
 
 /**

@@ -31,9 +31,9 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.ignoreException
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.nodeLevelNotFoundError
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.repoLevelNotFoundError
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.ignoreException
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.nodeLevelNotFoundError
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.repoLevelNotFoundError
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties

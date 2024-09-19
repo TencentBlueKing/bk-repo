@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.iterator
+package com.tencent.bkrepo.common.metadata.dao.project
 
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.model.TProject
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.context.annotation.Conditional
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
-class ProjectIdIterator(
-    private val projectService: ProjectService,
-    position: PageIteratePosition = PageIteratePosition()
-) : PageableIterator<String>(position) {
-    private val logger = LoggerFactory.getLogger(javaClass)
+/**
+ * 项目数据访问层
+ */
+@Repository
+@Conditional(SyncCondition::class)
+class ProjectDao : SimpleMongoDao<TProject>() {
 
-    override fun nextPageData(page: Int, pageSize: Int): List<String> {
-        return if (page == FIRST_PAGE) {
-            return projectService.listProject().map { it.name }
-        } else {
-            emptyList()
-        }
+    /**
+     * 根据名称[name]查找项目
+     */
+    fun findByName(name: String): TProject? {
+        return this.findOne(Query(TProject::name.isEqualTo(name)))
     }
 
-    companion object {
-        private const val FIRST_PAGE = 1
+    /**
+     * 根据名称[displayName]查找项目
+     */
+    fun findByDisplayName(displayName: String): TProject? {
+        return this.findOne(Query(TProject::displayName.isEqualTo(displayName)))
     }
 }

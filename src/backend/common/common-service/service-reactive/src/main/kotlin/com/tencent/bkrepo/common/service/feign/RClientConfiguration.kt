@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.statemachine.iterator
+package com.tencent.bkrepo.common.service.feign
 
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
+import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
+import org.springframework.context.annotation.Configuration
+import reactivefeign.spring.config.EnableReactiveFeignClients
 
-class ProjectIdIterator(
-    private val projectService: ProjectService,
-    position: PageIteratePosition = PageIteratePosition()
-) : PageableIterator<String>(position) {
-    private val logger = LoggerFactory.getLogger(javaClass)
-
-    override fun nextPageData(page: Int, pageSize: Int): List<String> {
-        return if (page == FIRST_PAGE) {
-            return projectService.listProject().map { it.name }
-        } else {
-            emptyList()
-        }
-    }
-
-    companion object {
-        private const val FIRST_PAGE = 1
-    }
-}
+@Configuration
+@ConditionalOnMicroService
+@ConditionalOnNotAssembly
+@EnableReactiveFeignClients(basePackages = ["com.tencent.bkrepo"])
+class RClientConfiguration

@@ -29,18 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.model
 
-import com.tencent.bkrepo.repository.pojo.repo.RepoMetricsInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("project_metrics")
-data class TProjectMetrics(
+/**
+ * 项目模型
+ */
+@Document("project")
+@CompoundIndexes(
+    CompoundIndex(name = "name_idx", def = "{'name': 1}", unique = true)
+)
+data class TProject(
     var id: String? = null,
-    var projectId: String,
-    var nodeNum: Long,
-    var capSize: Long,
-    val repoMetrics: List<RepoMetricsInfo>,
-    val createdDate: LocalDateTime? = LocalDateTime.now()
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+
+    var name: String,
+    var displayName: String,
+    var description: String,
+    var metadata: List<ProjectMetadata> = emptyList(),
+    /**
+     * 项目新建仓库默认使用的存储凭据，为null时表示未配置，将会使用全局默认存储凭据
+     */
+    var credentialsKey: String? = null,
 )

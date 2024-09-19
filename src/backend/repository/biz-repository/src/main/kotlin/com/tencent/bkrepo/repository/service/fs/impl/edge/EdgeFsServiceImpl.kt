@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.fs.impl.edge
 
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.reportMetadataToCenter
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.reportMetadataToCenter
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
