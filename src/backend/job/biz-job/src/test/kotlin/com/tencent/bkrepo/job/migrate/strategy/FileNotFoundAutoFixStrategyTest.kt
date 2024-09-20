@@ -5,7 +5,8 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.job.batch.task.archive.NodeCompressedJob
@@ -17,7 +18,6 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.insertFailedNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -61,7 +61,7 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
     repositoryCommonUtils: RepositoryCommonUtils
 ) {
     @MockBean
-    private lateinit var storageCredentialsClient: StorageCredentialsClient
+    private lateinit var storageCredentialService: StorageCredentialService
 
     @MockBean
     private lateinit var fileReferenceService: FileReferenceService
@@ -74,10 +74,10 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
 
     @BeforeEach
     fun beforeEach() {
-        whenever(storageCredentialsClient.list(anyOrNull()))
-            .thenReturn(Response(0, data = listOf(FileSystemCredentials())))
-        whenever(storageCredentialsClient.findByKey(anyString()))
-            .thenReturn(Response(0, data = FileSystemCredentials()))
+        whenever(storageCredentialService.list(anyOrNull()))
+            .thenReturn(listOf(FileSystemCredentials()))
+        whenever(storageCredentialService.findByKey(anyString()))
+            .thenReturn(FileSystemCredentials())
         whenever(fileReferenceService.increment(anyString(), anyOrNull(), any()))
             .thenReturn(true)
         whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyOrNull()))

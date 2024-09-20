@@ -43,13 +43,15 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
@@ -60,7 +62,6 @@ import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.listener.ResourcePermissionListener
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
@@ -135,6 +136,9 @@ open class ServiceBaseTest {
 
     @MockBean
     lateinit var archiveClient: ArchiveClient
+
+    @Autowired
+    lateinit var storageCredentialHelper: StorageCredentialHelper
 
 
     fun initMock() {

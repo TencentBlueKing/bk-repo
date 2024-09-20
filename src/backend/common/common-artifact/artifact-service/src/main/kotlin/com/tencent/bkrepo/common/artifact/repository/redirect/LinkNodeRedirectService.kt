@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service

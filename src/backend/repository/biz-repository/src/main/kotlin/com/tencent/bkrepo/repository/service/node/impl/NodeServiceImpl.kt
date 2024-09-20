@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -54,7 +54,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria

@@ -44,6 +44,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "StorageCredentialsClient", primary = false)
 @RequestMapping("/service/storage/credentials")
+@Deprecated("replace by StorageCredentialsService")
 interface StorageCredentialsClient {
 
     /**

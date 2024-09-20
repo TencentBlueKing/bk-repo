@@ -29,12 +29,12 @@ package com.tencent.bkrepo.replication.controller.cluster
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.replication.constant.BLOB_PULL_URI
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -47,13 +47,13 @@ import org.springframework.web.bind.annotation.RestController
 @Principal(type = PrincipalType.ADMIN)
 class ClusterBlobReplicaController(
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient
+    private val storageCredentialService: StorageCredentialService
 )  {
 
     @PostMapping(BLOB_PULL_URI)
     fun pull(@RequestBody request: BlobPullRequest): ResponseEntity<InputStreamResource> {
         with(request) {
-            val credentials = storageCredentialsClient.findByKey(storageKey).data
+            val credentials = storageCredentialService.findByKey(storageKey)
             val inputStream = storageService.load(sha256, range, credentials)
                 ?: throw NotFoundException(ArtifactMessageCode.ARTIFACT_DATA_NOT_FOUND)
             return ResponseEntity.ok(InputStreamResource(inputStream))

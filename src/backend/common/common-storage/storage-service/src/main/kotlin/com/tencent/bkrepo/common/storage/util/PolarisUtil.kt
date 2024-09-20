@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.storage.util
 
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.polaris.api.core.ConsumerAPI
 import com.tencent.polaris.api.rpc.GetOneInstanceRequest
 import com.tencent.polaris.factory.api.DiscoveryAPIFactory

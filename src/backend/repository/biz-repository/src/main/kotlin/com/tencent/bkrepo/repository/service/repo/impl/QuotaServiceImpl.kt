@@ -35,8 +35,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.event.repo.RepoVolumeSyncEvent
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import org.springframework.context.ApplicationEventPublisher

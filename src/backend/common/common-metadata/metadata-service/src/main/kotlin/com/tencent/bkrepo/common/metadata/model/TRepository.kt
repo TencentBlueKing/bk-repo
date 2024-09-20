@@ -29,21 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.s3.artifact.configuration
+package com.tencent.bkrepo.common.metadata.model
 
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
-import com.tencent.bkrepo.common.storage.config.StorageProperties
-import com.tencent.bkrepo.s3.artifact.response.S3ArtifactResourceWriter
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Primary
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@Configuration
-class ResourceWriterConfigurer{
+/**
+ * 仓库模型
+ */
+@Document("repository")
+@CompoundIndexes(
+    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
+)
+data class TRepository(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
 
-    @Primary
-    @Bean
-    fun artifactResourceWriter(storageProperties: StorageProperties): ArtifactResourceWriter {
-        return S3ArtifactResourceWriter(storageProperties)
-    }
-}
+    var name: String,
+    var type: RepositoryType,
+    var category: RepositoryCategory,
+    var public: Boolean,
+    var description: String? = null,
+    var configuration: String,
+    var credentialsKey: String? = null,
+    var oldCredentialsKey: String? = null,
+    var display: Boolean = true,
+
+    var projectId: String,
+
+    var quota: Long? = null,
+    var used: Long? = null,
+    var clusterNames: Set<String>? = null,
+    var deleted: LocalDateTime? = null
+)

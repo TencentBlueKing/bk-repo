@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.center
+package com.tencent.bkrepo.common.metadata.util
 
-import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.model.TRepository
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
+import java.util.Locale
 
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterProjectServiceImpl(
-    projectDao: ProjectDao,
-    servicePermissionClient: ServicePermissionClient,
-    projectMetricsRepository: ProjectMetricsRepository,
-    serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient,
-    storageCredentialService: StorageCredentialService,
-) : ProjectServiceImpl(
-    projectDao,
-    servicePermissionClient,
-    projectMetricsRepository,
-    serviceBkiamV3ResourceClient,
-    storageCredentialService
-)
+object RepoQueryHelper {
+
+    /**
+     * 构造单个仓库查询条件
+     */
+    fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
+        val criteria = where(TRepository::projectId).isEqualTo(projectId)
+            .and(TRepository::name).isEqualTo(repoName)
+            .and(TRepository::deleted).isEqualTo(null)
+        if (repoType != null && repoType.uppercase(Locale.getDefault()) != RepositoryType.NONE.name) {
+            criteria.and(TRepository::type).isEqualTo(repoType.uppercase(Locale.getDefault()))
+        }
+        return Query(criteria)
+    }
+}

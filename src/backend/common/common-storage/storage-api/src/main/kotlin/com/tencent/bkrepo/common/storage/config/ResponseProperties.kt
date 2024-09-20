@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,51 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo
+package com.tencent.bkrepo.common.storage.config
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
+import org.springframework.util.unit.DataSize
 
 /**
- * 存储凭证服务接口
+ * 文件响应配置
  */
-interface StorageCredentialService {
+data class ResponseProperties(
+    /**
+     * io拷贝buffer大小
+     */
+    var bufferSize: DataSize = DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()),
 
     /**
-     * 根据[request]创建存储凭证
+     * 每秒传输数据量
      */
-    fun create(userId: String, request: StorageCredentialsCreateRequest): StorageCredentials
+    var rateLimit: DataSize = DataSize.ofBytes(-1),
 
     /**
-     * 根据[request]更新存储凭证
-     */
-    fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials
-
+     * mime mappings，content-type的MediaType映射
+     * */
+    var mimeMappings: Map<String, String> = emptyMap(),
     /**
-     * 根据[key]查询存储凭证[StorageCredentials]，不存在则返回`null`
-     */
-    fun findByKey(key: String): StorageCredentials?
-
+     * 二进制媒体类型，不指定编码。
+     * */
+    var binaryMediaTypes: Set<String> = emptySet(),
     /**
-     * 查询存储凭证列表
-     * @param region 部署区域
+     * 限速熔断阈值，当仓库配置的rateLimit小于等于限速熔断阈值时则直接将请求断开
      */
-    fun list(region: String? = null): List<StorageCredentials>
-
-    /**
-     * 获取默认存储凭证
-     */
-    fun default(): StorageCredentials
-
-    /**
-     * 根据[key]删除存储凭证
-     */
-    fun delete(key: String)
-
-    /**
-     * 强制删除存储凭证
-     * @param key 要删除的存储凭证key
-     */
-    fun forceDelete(key: String)
-}
+    var circuitBreakerThreshold: DataSize = DataSize.ofKilobytes(1),
+)
