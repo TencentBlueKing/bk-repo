@@ -34,7 +34,6 @@ import com.tencent.bkrepo.conan.constant.CHANNEL
 import com.tencent.bkrepo.conan.constant.NAME
 import com.tencent.bkrepo.conan.constant.PACKAGE_ID
 import com.tencent.bkrepo.conan.constant.PACKAGE_REVISION
-import com.tencent.bkrepo.conan.constant.PATH
 import com.tencent.bkrepo.conan.constant.REVISION
 import com.tencent.bkrepo.conan.constant.USERNAME
 import com.tencent.bkrepo.conan.constant.VERSION

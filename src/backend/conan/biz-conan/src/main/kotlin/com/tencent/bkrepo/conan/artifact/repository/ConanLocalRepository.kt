@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.conan.constant.CONAN_MANIFEST
 import com.tencent.bkrepo.conan.constant.NAME
-import com.tencent.bkrepo.conan.constant.PACKAGE_TGZ_NAME
 import com.tencent.bkrepo.conan.constant.VERSION
 import com.tencent.bkrepo.conan.constant.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.conan.listener.event.ConanPackageUploadEvent
@@ -101,7 +100,7 @@ class ConanLocalRepository : LocalRepository() {
                 )
             )
         }
-        if (fullPath.endsWith(CONAN_MANIFEST)  && !artifactInfo.packageId.isNullOrEmpty()) {
+        if (fullPath.endsWith(CONAN_MANIFEST) && !artifactInfo.packageId.isNullOrEmpty()) {
             publishEvent(
                 ConanPackageUploadEvent(
                     ObjectBuildUtil.buildConanPackageUpload(artifactInfo, context.userId)
