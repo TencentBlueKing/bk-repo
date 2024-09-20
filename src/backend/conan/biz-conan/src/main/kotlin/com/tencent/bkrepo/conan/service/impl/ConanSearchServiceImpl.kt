@@ -62,12 +62,13 @@ class ConanSearchServiceImpl : ConanSearchService {
         val list = if (pattern.isNullOrEmpty()) {
             recipes
         } else {
+            val realPattern = pattern.replace("*", ".*")
             val regex = if (ignoreCase) {
-                Regex(pattern, RegexOption.IGNORE_CASE)
+                Regex(realPattern, RegexOption.IGNORE_CASE)
             } else {
-                Regex(pattern)
+                Regex(realPattern)
             }
-            recipes.filter { regex.containsMatchIn(it) }
+            recipes.filter { regex.matches(it) }
         }
         return ConanSearchResult(list)
     }
