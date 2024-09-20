@@ -60,7 +60,6 @@ class ConanArtifactInfoResolver : ArtifactInfoResolver {
         val packageId = attributes[PACKAGE_ID]?.toString()
         val revision = attributes[REVISION]?.toString()
         val pRevision = attributes[PACKAGE_REVISION]?.toString()
-        val fileName = attributes[PATH]?.toString()
 
         return ConanArtifactInfo(
             projectId = projectId,
@@ -73,7 +72,6 @@ class ConanArtifactInfoResolver : ArtifactInfoResolver {
             packageId = packageId,
             revision = revision,
             pRevision = pRevision,
-            fileName = fileName
         )
     }
 }

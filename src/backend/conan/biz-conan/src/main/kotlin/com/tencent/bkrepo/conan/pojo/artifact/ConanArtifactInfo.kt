@@ -118,7 +118,7 @@ class ConanArtifactInfo(
         // package file
         const val PACKAGE_REVISION_FILE_V2 = "/{projectId}/{repoName}/v2/conans/" +
             "{name}/{version}/{username}/{channel}/revisions/{revision}" +
-            "/packages/{packageId}/revisions/{pRevision}/files/{path}"
+            "/packages/{packageId}/revisions/{pRevision}/files/**"
 
         // get recipe file list
         const val GET_RECIPE_REVISION_FILES_V2 = "/{projectId}/{repoName}/v2/conans/" +
@@ -126,7 +126,7 @@ class ConanArtifactInfo(
 
         // recipe file
         const val RECIPE_REVISION_FILE_V2 = "/{projectId}/{repoName}/v2/conans/" +
-            "{name}/{version}/{username}/{channel}/revisions/{revision}/files/{path}"
+            "{name}/{version}/{username}/{channel}/revisions/{revision}/files/**"
 
         // get recipe revisions
         const val RECIPE_REVISIONS_V2 = "/{projectId}/{repoName}/v2/conans/" +

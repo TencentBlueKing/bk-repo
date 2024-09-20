@@ -167,10 +167,10 @@ object PathUtils {
         with(artifactInfo) {
             return if (packageId.isNullOrEmpty()) {
                 val conanFileReference = ConanArtifactInfoUtil.convertToConanFileReference(this, revision)
-                "/${joinString(buildExportFolderPath(conanFileReference), fileName!!)}"
+                "/${joinString(buildExportFolderPath(conanFileReference), artifactInfo.getArtifactFullPath())}"
             } else {
                 val packageReference = ConanArtifactInfoUtil.convertToPackageReference(this)
-                "/${joinString(buildPackageRevisionFolderPath(packageReference), fileName!!)}"
+                "/${joinString(buildPackageRevisionFolderPath(packageReference), artifactInfo.getArtifactFullPath())}"
             }
         }
     }

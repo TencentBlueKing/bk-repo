@@ -487,7 +487,7 @@ class CommonService(
         conanFileReference: ConanFileReference
     ): Map<String, Map<String, String>> {
         val path = buildRevisionPath(conanFileReference)
-        val files = getDownloadPath(projectId, repoName, path).mapValues { EMPTY }
+        val files = getDownloadPath(projectId, repoName, path)
         return mapOf("files" to files)
     }
 
