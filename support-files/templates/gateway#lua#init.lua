@@ -55,6 +55,8 @@ config = {
   bkci = {
     host = "__BK_CI_HOST__",
     port = "__BK_CI_PORT__"
+  },
+  security_paths = {
   }
 }
   

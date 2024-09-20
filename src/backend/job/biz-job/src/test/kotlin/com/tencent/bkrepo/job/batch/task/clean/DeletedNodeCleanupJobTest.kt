@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.job.batch.task.clean
 
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.hash.sha256
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
@@ -13,7 +13,6 @@ import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -46,7 +45,7 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
     private lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
     @MockBean
-    private lateinit var storageCredentialsClient: StorageCredentialsClient
+    private lateinit var storageCredentialService: StorageCredentialService
 
     @MockBean
     lateinit var separationTaskService: SeparationTaskService
@@ -58,11 +57,11 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
 
     @BeforeEach
     fun beforeEach() {
-        whenever(storageCredentialsClient.list(anyOrNull())).thenReturn(
-            Response(code = 0, data = emptyList())
+        whenever(storageCredentialService.list(anyOrNull())).thenReturn(
+            emptyList()
         )
-        whenever(storageCredentialsClient.findByKey(anyOrNull())).thenReturn(
-            Response(code = 0, data = InnerCosCredentials())
+        whenever(storageCredentialService.findByKey(anyOrNull())).thenReturn(
+            InnerCosCredentials()
         )
         whenever(separationTaskService.repoSeparationCheck(anyString(), anyString()))
             .thenReturn(false)

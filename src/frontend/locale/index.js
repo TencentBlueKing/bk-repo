@@ -40,7 +40,7 @@ function getLsLocale () {
 function setLsLocale (locale) {
     if (typeof cookies.set === 'function') {
         cookies.remove(LS_KEY, { domain: BK_CI_DOMAIN, path: '/' })
-        cookies.set(LS_KEY, localeAliasMap[locale], { domain: BK_CI_DOMAIN, path: '/' })
+        cookies.set(LS_KEY, localeAliasMap[locale], { domain: BK_CI_DOMAIN, path: '/', expires: 366 })
     }
 }
 

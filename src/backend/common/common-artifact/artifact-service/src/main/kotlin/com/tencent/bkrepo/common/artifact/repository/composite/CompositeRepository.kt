@@ -47,8 +47,8 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
-import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
@@ -62,7 +62,7 @@ import java.time.format.DateTimeFormatter
 class CompositeRepository(
     private val localRepository: LocalRepository,
     private val remoteRepository: RemoteRepository,
-    private val proxyChannelClient: ProxyChannelClient
+    private val proxyChannelService: ProxyChannelService
 ) : AbstractArtifactRepository() {
 
     /**
@@ -210,12 +210,12 @@ class CompositeRepository(
         setting: ProxyChannelSetting
     ): ArtifactContext {
         // 查询公共源详情
-        val proxyChannel = proxyChannelClient.getByUniqueId(
+        val proxyChannel = proxyChannelService.queryProxyChannel(
             projectId = context.projectId,
             repoName = context.repoName,
-            repoType = context.repositoryDetail.type.name,
+            repoType = context.repositoryDetail.type,
             name = setting.name
-        ).data!!
+        )!!
         // 构造proxyConfiguration
         val remoteConfiguration = convertConfig(proxyChannel)
         val remoteRepoDetail = convert(remoteConfiguration, context.repositoryDetail)

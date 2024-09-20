@@ -28,7 +28,7 @@
 package com.tencent.com.bkrepo.fs.storage
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
+import com.tencent.bkrepo.common.storage.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.fs.server.storage.CoArtifactDataReceiver
 import java.io.ByteArrayOutputStream

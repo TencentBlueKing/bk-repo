@@ -27,18 +27,19 @@
 
 package com.tencent.bkrepo.fs.server.utils
 
+import com.tencent.bkrepo.common.api.constant.BKREPO_TRACE
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.bodyValueAndAwait
 import org.springframework.web.reactive.function.server.buildAndAwait
 
 object ReactiveResponseBuilder {
 
-    const val TRACE_ID = "X-BKREPO-RID"
     suspend fun <T> success(data: T): ServerResponse = ok().bodyValueAndAwait(ResponseBuilder.success(data))
     suspend fun success(): ServerResponse = ok().buildAndAwait()
 
     private fun ok(): ServerResponse.BodyBuilder {
         return ServerResponse.ok()
-            .header(TRACE_ID, SpringContextUtils.getTraceId())
+            .header(BKREPO_TRACE, SpringContextUtils.getTraceId())
     }
 }

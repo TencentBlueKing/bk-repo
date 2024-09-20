@@ -32,6 +32,7 @@ import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
@@ -43,7 +44,6 @@ import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobPropertie
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
@@ -74,7 +74,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     lateinit var storageService: StorageService
 
     @MockBean
-    lateinit var storageCredentialsClient: StorageCredentialsClient
+    lateinit var storageCredentialService: StorageCredentialService
 
     @MockBean
     lateinit var archiveClient: ArchiveClient
@@ -110,8 +110,8 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     fun beforeEach() {
         Mockito.`when`(storageService.exist(anyString(), any())).thenReturn(true)
         val credentials = InnerCosCredentials()
-        Mockito.`when`(storageCredentialsClient.findByKey(anyString())).thenReturn(
-            ResponseBuilder.success(credentials),
+        Mockito.`when`(storageCredentialService.findByKey(anyString())).thenReturn(
+            credentials
         )
         Mockito.`when`(repositoryClient.getRepoDetail(anyString(), anyString(), anyString())).thenReturn(
             ResponseBuilder.success(

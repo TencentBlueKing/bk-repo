@@ -28,8 +28,10 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.job.UT_PROJECT_ID
@@ -46,9 +48,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.TestInstance
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
@@ -73,7 +73,6 @@ import java.time.LocalDateTime
 @Import(
     TaskExecutionAutoConfiguration::class,
     MigrateRepoStorageProperties::class,
-    FileReferenceClient::class,
     RepositoryClient::class,
     RepositoryCommonUtils::class,
     StorageProperties::class,
@@ -100,29 +99,29 @@ open class ExecutorBaseTest {
     protected lateinit var executingTaskRecorder: ExecutingTaskRecorder
 
     @MockBean
-    protected lateinit var fileReferenceClient: FileReferenceClient
+    protected lateinit var fileReferenceService: FileReferenceService
 
     @MockBean
     protected lateinit var repositoryClient: RepositoryClient
 
     @MockBean
-    protected lateinit var storageCredentialsClient: StorageCredentialsClient
+    protected lateinit var storageCredentialService: StorageCredentialService
 
     @MockBean
     protected lateinit var storageService: StorageService
 
     fun initMock() {
-        whenever(fileReferenceClient.increment(any(), anyOrNull(), any())).thenReturn(Response(0, data = true))
-        whenever(fileReferenceClient.decrement(any(), anyOrNull())).thenReturn(Response(0, data = true))
-        whenever(fileReferenceClient.count(anyString(), anyOrNull())).thenReturn(Response(0, data = 0L))
+        whenever(fileReferenceService.increment(any(), anyOrNull(), any())).thenReturn(true)
+        whenever(fileReferenceService.decrement(any(), anyOrNull())).thenReturn(true)
+        whenever(fileReferenceService.count(anyString(), anyOrNull())).thenReturn(0)
 
         whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyOrNull()))
             .thenReturn(Response(0, "", MigrateTestUtils.buildRepo()))
         whenever(repositoryClient.updateStorageCredentialsKey(anyString(), anyString(), anyString()))
             .thenReturn(Response(0))
         whenever(repositoryClient.unsetOldStorageCredentialsKey(anyString(), anyString())).thenReturn(Response(0))
-        whenever(storageCredentialsClient.findByKey(anyString()))
-            .thenReturn(Response(0, data = FileSystemCredentials()))
+        whenever(storageCredentialService.findByKey(anyString()))
+            .thenReturn(FileSystemCredentials())
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then {
             Thread.sleep(1000L)
         }

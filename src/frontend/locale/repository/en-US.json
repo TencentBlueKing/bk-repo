@@ -258,8 +258,8 @@
     "downloadSorting": "Order by download count",
     "projectNameSorting": "Order by project name",
     "repo": "Repository",
-    "fileSize": "file size",
-    "lastModified": "last modified",
+    "fileSize": "File Size",
+    "lastModified": "Last Modified",
     "created": "Created",
     "versions": "Version count",
     "downloadStats": "Download stats",
@@ -892,5 +892,6 @@
     "hasSelectTip": "{0} items selected,",
     "changeSelectAllTip": "Select full data",
     "selectAllTip": "{0} pieces of total data have been selected，",
-    "clearSelectTip":"Clear selection"
+    "clearSelectTip":"Clear selection",
+    "previewErrorTip": "File Preview Fail"
 }

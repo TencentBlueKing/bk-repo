@@ -62,9 +62,10 @@ class PypiWebResourceController(
     fun deleteVersion(
         pypiArtifactInfo: PypiArtifactInfo,
         packageKey: String,
-        version: String?
+        version: String?,
+        contentPath: String?
     ): Response<Void> {
-        pypiWebService.delete(pypiArtifactInfo, packageKey, version)
+        pypiWebService.delete(pypiArtifactInfo, packageKey, version, contentPath)
         return ResponseBuilder.success()
     }
 

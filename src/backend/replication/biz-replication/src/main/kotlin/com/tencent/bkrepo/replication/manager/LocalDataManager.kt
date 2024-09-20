@@ -37,9 +37,10 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
@@ -50,7 +51,6 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -82,7 +82,7 @@ class LocalDataManager(
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties,
     private val mongoTemplate: MongoTemplate,
 ) {
@@ -113,7 +113,7 @@ class LocalDataManager(
         sha256: String, range: Range,
         currentStorageCredentials: StorageCredentials?
     ): InputStream? {
-        val allCredentials = storageCredentialsClient.list().data!! + storageProperties.defaultStorageCredentials()
+        val allCredentials = storageCredentialService.list() + storageProperties.defaultStorageCredentials()
         var result: InputStream? = null
         for (credential in allCredentials) {
             val key = credential.key

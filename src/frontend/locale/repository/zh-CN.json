@@ -613,7 +613,7 @@
     "visits":"访问次数",
     "sharePlaceHolder2":"请输入访问次数，为空则不限制",
     "sharePlaceHolder3":"请选择过期时间",
-    "RepoManage": "制品管理",
+    "RepoManage": "制品库",
     "inputProject":"请选择项目",
     "log":"日志",
     "planPlaceHolder":"请输入计划名称, 按Enter键搜索",
@@ -730,7 +730,7 @@
     "searchRelatedResults":"搜索到相关结果",
     "allRepoTotal":"全部制品共",
     "clusterNames": "地点",
-    "webTitle": "制品库 | 腾讯蓝鲸智云",
+    "webTitle": "制品库 | 蓝鲸智云",
     "ignoreRuleMinSeverity": "级别",
     "ignoredVul": "已忽略的漏洞",
     "activeVul": "未忽略的漏洞",
@@ -893,5 +893,6 @@
     "hasSelectTip": "已选择{0}条,",
     "changeSelectAllTip": "选择全量数据",
     "selectAllTip": "已选择全量数据{0}条，",
-    "clearSelectTip":"清除选择"
+    "clearSelectTip":"清除选择",
+    "previewErrorTip": "文件预览失败"
 }

@@ -197,7 +197,7 @@ class DownloadInterceptorTest {
             emptyList(),
             emptyMap(),
             "/test",
-            "/test"
+            setOf("/test")
         )
     }
 

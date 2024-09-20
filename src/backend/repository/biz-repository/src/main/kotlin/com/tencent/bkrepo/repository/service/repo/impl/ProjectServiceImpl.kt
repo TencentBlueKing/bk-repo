@@ -56,7 +56,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -154,6 +154,19 @@ class ProjectServiceImpl(
             val exist = existProjectMap?.get(it.name) ?: false
             convert(it, exist)!!
         }
+    }
+
+    override fun isProjectEnabled(name: String): Boolean {
+        val projectInfo = projectDao.findByName(name)
+            ?: throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
+        return isProjectEnabled(projectInfo)
+    }
+
+    private fun isProjectEnabled(project: TProject): Boolean {
+        val enabled = project.metadata.firstOrNull {
+            it.key == ProjectMetadata.KEY_ENABLED
+        }?.value as? Boolean ?: true
+        return enabled
     }
 
     private fun checkPropertyAndDirection(option: ProjectListOption) {
@@ -318,6 +331,7 @@ class ProjectServiceImpl(
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     metadata = it.metadata,
                     credentialsKey = it.credentialsKey,
+                    rbacFlag = rbacFlag
                 )
             }
         }
