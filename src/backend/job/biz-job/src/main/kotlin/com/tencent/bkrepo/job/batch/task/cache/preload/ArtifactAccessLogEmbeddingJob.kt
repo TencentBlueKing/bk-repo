@@ -29,8 +29,6 @@ package com.tencent.bkrepo.job.batch.task.cache.preload
 
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
@@ -38,12 +36,11 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.Document
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
-import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
