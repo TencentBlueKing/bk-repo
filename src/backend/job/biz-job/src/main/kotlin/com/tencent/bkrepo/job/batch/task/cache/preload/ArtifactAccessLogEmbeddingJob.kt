@@ -160,20 +160,23 @@ class ArtifactAccessLogEmbeddingJob(
             return
         }
         val pageSize = properties.batchSize
-        var lastId = ObjectId(MIN_OBJECT_ID)
+        var offset = 0L
         var querySize: Int
         val criteria = buildCriteria(projectId, after, before)
         do {
             val query = Query(criteria)
-                .addCriteria(Criteria.where(ID).gt(lastId))
                 .limit(pageSize)
-                .with(Sort.by(ID).ascending())
+                .skip(offset)
+                .with(Sort.by(TOperateLog::projectId.name).ascending())
             query.fields().include(
                 TOperateLog::repoName.name,
                 TOperateLog::resourceKey.name,
                 TOperateLog::createdDate.name
             )
+
+            val start = System.currentTimeMillis()
             val data = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
+            logger.info("find [$projectId] access log from db elapsed[${System.currentTimeMillis() - start}]ms")
             if (data.isEmpty()) {
                 break
             }
@@ -195,7 +198,7 @@ class ArtifactAccessLogEmbeddingJob(
 
             handler(accessPaths)
             querySize = data.size
-            lastId = data.last()[ID] as ObjectId
+            offset += data.size
         } while (querySize == pageSize && shouldRun())
     }
 
