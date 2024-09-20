@@ -53,5 +53,10 @@ data class RepositoryProperties(
     /**
      * 用于验证bkci webhook签名
      */
-    var bkciWebhookSecret: String = ""
+    var bkciWebhookSecret: String = "",
+    /**
+     * 当目录节点上的num字段小于该值时，去db中实时count目录大小
+     * 注意： 此配置的值要比listCountLimit大
+     */
+    var subNodeLimit: Long = 100000000L
 )

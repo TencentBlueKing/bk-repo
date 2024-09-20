@@ -70,6 +70,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateReque
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
@@ -105,7 +106,8 @@ abstract class NodeBaseService(
     open val servicePermissionClient: ServicePermissionClient,
     open val routerControllerClient: RouterControllerClient,
     open val routerControllerProperties: RouterControllerProperties,
-    open val blockNodeService: BlockNodeService
+    open val blockNodeService: BlockNodeService,
+    open val projectService: ProjectService,
 ) : NodeService {
 
     @Autowired
@@ -126,9 +128,11 @@ abstract class NodeBaseService(
             val (hasPermissionPaths, noPermissionPaths) = getPermissionPaths(userId, projectId, repoName)
             option.hasPermissionPath = hasPermissionPaths
             option.noPermissionPath = noPermissionPaths
-            val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
-            if (nodeDao.count(query) > repositoryProperties.listCountLimit) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
+            var query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
+            val totalNum = getTotalNodeNum(artifact, query)
+            if (totalNum > repositoryProperties.listCountLimit) {
+                val pageRequest = Pages.ofRequest(1, repositoryProperties.listCountLimit.toInt())
+                query = query.with(pageRequest)
             }
             return nodeDao.find(query).map { convert(it)!! }
         }
@@ -146,10 +150,9 @@ abstract class NodeBaseService(
             Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
             Preconditions.checkArgument(pageSize >= 0 && pageSize <= repositoryProperties.listCountLimit, "pageSize")
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
-            val totalRecords = nodeDao.count(query)
+            val totalRecords = getTotalNodeNum(artifact, query)
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val records = nodeDao.find(query.with(pageRequest)).map { convert(it)!! }
-
             return Pages.ofResponse(pageRequest, totalRecords, records)
         }
     }
@@ -261,6 +264,46 @@ abstract class NodeBaseService(
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
                 lastAccessDate = LocalDateTime.now(),
             )
+        }
+    }
+
+    private fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {
+        // 避免当目录下节点过多去进行count产生慢查询，使用目录对应的子节点个数进行判断
+        // 只有节点个数小于配置的大小时，才去实时获取对应总节点个数
+        val subNodeNum = getSubNodeNum(artifact)
+        val limit = if (repositoryProperties.listCountLimit > repositoryProperties.subNodeLimit) {
+            repositoryProperties.listCountLimit
+        } else {
+            repositoryProperties.subNodeLimit
+        }
+        return if (subNodeNum <= limit) {
+            nodeDao.count(query)
+        } else {
+            // *2主要是因为subnodeNum不包含目录
+            subNodeNum * 2
+        }
+    }
+
+    /**
+     * 获取该节点下的子节点（不包含目录）个数
+     */
+    private fun getSubNodeNum(artifact: ArtifactInfo): Long {
+        with(artifact) {
+            val fullPath = artifact.getArtifactFullPath()
+            if (PathUtils.isRoot(fullPath)) {
+                return try {
+                    projectService.getProjectMetricsInfo(artifact.projectId)?.repoMetrics?.firstOrNull {
+                        it.repoName == artifact.repoName
+                    }?.num ?: -1
+                } catch (e: Exception) {
+                    -1
+                }
+            } else {
+                val node = nodeDao.findNode(projectId, repoName, fullPath) ?: return 0
+                if (!node.folder) return 0
+                if (node.nodeNum == null) return -1
+                return node.nodeNum!!
+            }
         }
     }
 

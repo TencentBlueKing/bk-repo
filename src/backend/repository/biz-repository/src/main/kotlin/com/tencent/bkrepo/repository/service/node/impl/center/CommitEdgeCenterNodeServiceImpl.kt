@@ -59,6 +59,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeServiceImpl
+import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
@@ -85,6 +86,7 @@ class CommitEdgeCenterNodeServiceImpl(
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
+    override val projectService: ProjectService,
     val clusterProperties: ClusterProperties,
     val archiveClient: ArchiveClient,
 ) : NodeServiceImpl(
@@ -100,7 +102,8 @@ class CommitEdgeCenterNodeServiceImpl(
     routerControllerClient,
     routerControllerProperties,
     blockNodeService,
-    archiveClient
+    projectService,
+    archiveClient,
 ) {
 
     override fun checkRepo(projectId: String, repoName: String): TRepository {
