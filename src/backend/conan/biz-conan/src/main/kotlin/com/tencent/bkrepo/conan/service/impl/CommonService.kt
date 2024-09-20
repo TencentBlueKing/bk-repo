@@ -410,8 +410,7 @@ class CommonService(
         repoName: String,
         revPath: String,
     ): List<String> {
-        nodeClient.getNodeDetail(projectId, repoName, revPath).data
-            ?: throw NodeNotFoundException(revPath)
+        nodeClient.getNodeDetail(projectId, repoName, revPath).data ?: return emptyList()
         return nodeClient.listNode(projectId, repoName, revPath, includeFolder = true, deep = false).data!!.map {
             it.name
         }
@@ -541,37 +540,16 @@ class CommonService(
         conanFileReference: ConanFileReference
     ): Map<String, ConanInfo> {
         val result = mutableMapOf<String, ConanInfo>()
-        val revPath = getRecipeRevisionsFile(conanFileReference)
-        val refStr = buildReference(conanFileReference)
-        val indexJson = getRevisionsList(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
-        val revisions = indexJson.revisions.ifEmpty {
-//            val revisionV1Path = joinString("/$revPath", DEFAULT_REVISION_V1)
-//            nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return emptyMap()
-//            listOf(RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now())))
-            emptyList()
-        }
-
-        revisions.forEach {
-            val conf = conanFileReference.copy(revision = it.revision)
-            val tempRevPath = getPackageRevisionsFile(conf)
-            val packageIds = getPackageIdList(projectId, repoName, tempRevPath)
-            packageIds.forEach { packageId ->
-                val packageReference = PackageReference(conf, packageId)
-                val prevPath = getPackageRevisionsFile(packageReference)
-                val prefStr = buildPackageReference(packageReference)
-                val packageIndexJson = getRevisionsList(
-                    projectId = projectId,
-                    repoName = repoName,
-                    revPath = prevPath,
-                    refStr = prefStr
-                )
-                val lastRevision = packageIndexJson.revisions.first()
-                val path = getPackageConanInfoFile(packageReference.copy(revision = lastRevision.revision))
+        val tempRevPath = getPackageRevisionsFile(conanFileReference)
+        val packageIds = getPackageIdList(projectId, repoName, tempRevPath)
+        packageIds.forEach { packageId ->
+            val packageReference = PackageReference(conanFileReference, packageId)
+            getLastPackageRevision(
+                projectId = projectId,
+                repoName = repoName,
+                packageReference = packageReference,
+            )?.let {
+                val path = getPackageConanInfoFile(packageReference.copy(revision = it.revision))
                 result[packageId] = getContentOfConanInfoFile(projectId, repoName, path)
             }
         }

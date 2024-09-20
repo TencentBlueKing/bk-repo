@@ -29,10 +29,7 @@ package com.tencent.bkrepo.conan.service.impl
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.conan.constant.CONAN_INFOS
-import com.tencent.bkrepo.conan.constant.ConanMessageCode
-import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.ConanInfo
 import com.tencent.bkrepo.conan.pojo.ConanSearchResult
@@ -40,7 +37,7 @@ import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanSearchService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.PathUtils.buildConanFileName
-import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
+import com.tencent.bkrepo.conan.utils.PathUtils.buildPackagePath
 import com.tencent.bkrepo.repository.api.PackageClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -50,6 +47,7 @@ class ConanSearchServiceImpl : ConanSearchService {
 
     @Autowired
     lateinit var packageClient: PackageClient
+
     @Autowired
     lateinit var commonService: CommonService
 
@@ -76,18 +74,15 @@ class ConanSearchServiceImpl : ConanSearchService {
 
     override fun searchPackages(pattern: String?, conanArtifactInfo: ConanArtifactInfo): Map<String, ConanInfo> {
         with(conanArtifactInfo) {
-            val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            val result = try {
-                commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
-            } catch (ignore: NodeNotFoundException) {
-                emptyMap()
+            val realRevision = if (revision.isNullOrEmpty()) {
+                val conanFileReference = convertToConanFileReference(conanArtifactInfo)
+                commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
+                commonService.getLastRevision(projectId, repoName, conanFileReference)?.revision ?: return emptyMap()
+            } else {
+                revision
             }
-            if (result.isEmpty()) {
-                throw ConanSearchNotFoundException(
-                    ConanMessageCode.CONAN_SEARCH_NOT_FOUND, buildReference(conanFileReference), getRepoIdentify()
-                )
-            }
-            return result
+            val conanFileReference = convertToConanFileReference(conanArtifactInfo, realRevision)
+            return commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
         }
     }
 

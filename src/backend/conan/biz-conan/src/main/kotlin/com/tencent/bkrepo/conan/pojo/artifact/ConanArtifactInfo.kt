@@ -157,6 +157,8 @@ class ConanArtifactInfo(
         // search
         const val SEARCH_V2 = "/{projectId}/{repoName}/v2/conans/search"
 
+        const val REVISION_SEARCH_V2 = "/{projectId}/{repoName}/v2/conans/" +
+            "{name}/{version}/{username}/{channel}/revisions/{revision}/search"
         // package search
         const val PACKAGE_SEARCH_V2 = "/{projectId}/{repoName}/v2/conans/" +
             "{name}/{version}/{username}/{channel}/search"
