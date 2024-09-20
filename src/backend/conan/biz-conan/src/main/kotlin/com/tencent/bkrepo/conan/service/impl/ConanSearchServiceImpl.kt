@@ -27,9 +27,12 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.conan.constant.CONAN_INFOS
+import com.tencent.bkrepo.conan.constant.ConanMessageCode
+import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
 import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.ConanInfo
 import com.tencent.bkrepo.conan.pojo.ConanSearchResult
@@ -68,7 +71,13 @@ class ConanSearchServiceImpl : ConanSearchService {
             } else {
                 Regex(realPattern)
             }
-            recipes.filter { regex.matches(it) }
+            recipes.filter { regex.containsMatchIn(it) }
+        }
+        if (list.isEmpty()) {
+            throw ConanSearchNotFoundException(
+                ConanMessageCode.CONAN_SEARCH_NOT_FOUND,
+                pattern ?: StringPool.EMPTY, "$projectId/$repoName"
+            )
         }
         return ConanSearchResult(list)
     }

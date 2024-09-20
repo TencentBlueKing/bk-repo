@@ -473,7 +473,7 @@ class CommonService(
         packageReference: PackageReference
     ): Map<String, Map<String, String>> {
         val path = buildPackageRevisionFolderPath(packageReference)
-        val files = getDownloadPath(projectId, repoName, path).mapValues { EMPTY }
+        val files = getDownloadPath(projectId, repoName, path)
         return mapOf("files" to files)
     }
 
