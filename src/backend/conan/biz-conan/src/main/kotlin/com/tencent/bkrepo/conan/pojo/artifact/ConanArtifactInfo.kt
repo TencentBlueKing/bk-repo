@@ -93,9 +93,9 @@ class ConanArtifactInfo(
 
         // upload file
         const val UPLOAD_FILE_V1 = "/{projectId}/{repoName}/v1/files/" +
-            "{username}/{name}/{version}/{channel}/{revision}/export/{path}"
+            "{username}/{name}/{version}/{channel}/{revision}/export/**"
         const val UPLOAD_PACKAGE_FILE_V1 = "/{projectId}/{repoName}/v1/files/" +
-            "{username}/{name}/{version}/{channel}/{revision}/package/{packageId}/{pRevision}/{path}"
+            "{username}/{name}/{version}/{channel}/{revision}/package/{packageId}/{pRevision}/**"
 
         // remove recipe
         const val REMOVE_RECIPE_V1 = "/{projectId}/{repoName}/v1/conans/{name}/{version}/{username}/{channel}"
