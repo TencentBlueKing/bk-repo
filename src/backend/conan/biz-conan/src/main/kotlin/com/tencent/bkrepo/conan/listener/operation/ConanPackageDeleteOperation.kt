@@ -38,7 +38,6 @@ class ConanPackageDeleteOperation(
 ) : AbstractRevisionOperation(request, commonService) {
 
     override fun handleEvent(indexInfo: IndexInfo) {
-        // TODO 删除事件可以合为一个
         with(request as ConanPackageDeleteRequest) {
             logger.info("${indexInfo.reference} Package's revision $pRevision info will be deleted")
             indexInfo.removeRevision(pRevision!!)

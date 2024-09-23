@@ -44,7 +44,6 @@ class ConanArtifactInfo(
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
 
-        // TODO 路径优化
         // ping
         const val PING_V1 = "/{projectId}/{repoName}/v1/ping"
 

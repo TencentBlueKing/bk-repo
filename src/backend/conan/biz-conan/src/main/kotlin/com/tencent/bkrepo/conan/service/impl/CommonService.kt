@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.conan.service.impl
 
 import com.tencent.bkrepo.common.api.constant.CharPool
-import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
