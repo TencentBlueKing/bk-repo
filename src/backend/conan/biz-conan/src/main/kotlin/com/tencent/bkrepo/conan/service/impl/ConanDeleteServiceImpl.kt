@@ -40,6 +40,7 @@ import com.tencent.bkrepo.conan.service.ConanDeleteService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
+import com.tencent.bkrepo.conan.utils.PathUtils
 import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageIdFolderPath
@@ -69,9 +70,10 @@ class ConanDeleteServiceImpl : ConanDeleteService {
     override fun removeConanFile(conanArtifactInfo: ConanArtifactInfo) {
         with(conanArtifactInfo) {
             if (revision.isNullOrEmpty()) {
-                val packageKey = PackageKeys.ofConan(name, userName)
-                packageClient.deleteVersion(projectId, repoName, packageKey, version)
                 val conanFileReference = convertToConanFileReference(conanArtifactInfo)
+                val refStr = PathUtils.buildReferenceWithoutVersion(conanFileReference)
+                val packageKey = PackageKeys.ofConan(refStr)
+                packageClient.deleteVersion(projectId, repoName, packageKey, version)
                 // TODO 路径需要优化
                 val rootPath = "/${buildPackagePath(conanFileReference)}"
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())

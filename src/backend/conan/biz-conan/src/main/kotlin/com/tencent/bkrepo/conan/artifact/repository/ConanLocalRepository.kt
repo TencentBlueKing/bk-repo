@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.conan.constant.CONAN_MANIFEST
@@ -41,10 +42,11 @@ import com.tencent.bkrepo.conan.constant.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.conan.listener.event.ConanPackageUploadEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeUploadEvent
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
+import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildDownloadResponse
-import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageUpdateRequest
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageVersionCreateRequest
+import com.tencent.bkrepo.conan.utils.PathUtils
 import com.tencent.bkrepo.conan.utils.PathUtils.generateFullPath
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -88,11 +90,11 @@ class ConanLocalRepository : LocalRepository() {
         val fullPath = generateFullPath(context.artifactInfo as ConanArtifactInfo)
         val artifactInfo = context.artifactInfo as ConanArtifactInfo
         if (fullPath.endsWith(CONAN_MANIFEST) && artifactInfo.packageId.isNullOrEmpty()) {
-            // TODO package version size 如何计算
+            //  package version size 为manifest文件大小
             createVersion(
                 artifactInfo = artifactInfo,
                 userId = context.userId,
-                size = 0
+                size = context.getArtifactFile().getSize()
             )
             publishEvent(
                 ConanRecipeUploadEvent(
@@ -124,8 +126,6 @@ class ConanLocalRepository : LocalRepository() {
             size = size,
             sourceType = sourceType
         )
-        // TODO 元数据中要加入对应username与channel，可能存在同一制品版本存在不同username与channel
-        val packageUpdateRequest = buildPackageUpdateRequest(artifactInfo)
         packageClient.createVersion(packageVersionCreateRequest).apply {
             logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
         }
@@ -160,8 +160,13 @@ class ConanLocalRepository : LocalRepository() {
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
     ): PackageDownloadRecord? {
-        // TODO 需要判断只有下载包时才统计次数
-        return null
+        val conanFileReference = ConanArtifactInfoUtil.convertToConanFileReference(
+            context.artifactInfo as ConanArtifactInfo
+        )
+        val refStr = PathUtils.buildReferenceWithoutVersion(conanFileReference)
+        return PackageDownloadRecord(
+            context.projectId, context.repoName, PackageKeys.ofConan(refStr), conanFileReference.version
+        )
     }
 
     companion object {

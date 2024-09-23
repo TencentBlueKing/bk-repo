@@ -47,6 +47,7 @@ import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileRe
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageReference
 import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
+import com.tencent.bkrepo.conan.utils.PathUtils.buildReferenceWithoutVersion
 import com.tencent.bkrepo.conan.utils.PathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.PathUtils.getRecipeRevisionsFile
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
@@ -66,11 +67,14 @@ object ObjectBuildUtil {
         userId: String,
     ): PackageVersionCreateRequest {
         with(artifactInfo) {
+            // conan key中的name由 实际name+username+channel组成
+            val conanFileReference = convertToConanFileReference(artifactInfo)
+            val refStr = buildReferenceWithoutVersion(conanFileReference)
             return PackageVersionCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
                 packageName = name,
-                packageKey = PackageKeys.ofConan(name, userName),
+                packageKey = PackageKeys.ofConan(refStr),
                 packageType = PackageType.CONAN,
                 versionName = version,
                 size = size,
@@ -91,10 +95,12 @@ object ObjectBuildUtil {
         packageMetadata: List<MetadataModel>? = null
     ): PackageVersionUpdateRequest {
         with(artifactInfo) {
+            val conanFileReference = convertToConanFileReference(artifactInfo)
+            val refStr = buildReferenceWithoutVersion(conanFileReference)
             return PackageVersionUpdateRequest(
                 projectId = projectId,
                 repoName = repoName,
-                packageKey = PackageKeys.ofConan(name, userName),
+                packageKey = PackageKeys.ofConan(refStr),
                 versionName = version,
                 size = size,
                 manifestPath = null,
@@ -126,11 +132,13 @@ object ObjectBuildUtil {
         artifactInfo: ConanArtifactInfo
     ): PackageUpdateRequest {
         with(artifactInfo) {
+            val conanFileReference = convertToConanFileReference(artifactInfo)
+            val refStr = buildReferenceWithoutVersion(conanFileReference)
             return PackageUpdateRequest(
                 projectId = projectId,
                 repoName = repoName,
                 name = name,
-                packageKey = PackageKeys.ofConan(name, userName),
+                packageKey = PackageKeys.ofConan(refStr),
                 versionTag = null,
                 extension = mapOf("appVersion" to version)
             )
