@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.type.edge
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.retry
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
@@ -41,7 +42,6 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
-import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.UrlUtils
@@ -192,8 +192,8 @@ class EdgePullReplicaExecutor(
         )
         try {
             projectService.createProject(projectCreateRequest)
-        } catch (e: RemoteErrorCodeException) {
-            if (e.errorCode != ArtifactMessageCode.PROJECT_EXISTED.getCode()) {
+        } catch (e: ErrorCodeException) {
+            if (e.messageCode != ArtifactMessageCode.PROJECT_EXISTED) {
                 throw e
             }
         }

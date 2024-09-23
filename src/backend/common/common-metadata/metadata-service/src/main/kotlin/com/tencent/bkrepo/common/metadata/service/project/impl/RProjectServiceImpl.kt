@@ -81,7 +81,7 @@ class RProjectServiceImpl(
     private val projectDao: RProjectDao,
     private val projectMetricsDao: RProjectMetricsDao,
     private val storageCredentialService: RStorageCredentialService,
-    private val rAuthClient: RAuthClient
+    private val rAuthClient: RAuthClient,
 ) : RProjectService {
 
     @Autowired

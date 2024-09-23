@@ -33,7 +33,6 @@ dependencies {
     api(project(":common:common-artifact:artifact-api"))
     api(project(":common:common-metadata:metadata-api"))
     api(project(":common:common-storage:storage-api"))
-    api(project(":repository:api-repository"))
     api(project(":common:common-security")) {
         exclude(module = "service-servlet")
     }
