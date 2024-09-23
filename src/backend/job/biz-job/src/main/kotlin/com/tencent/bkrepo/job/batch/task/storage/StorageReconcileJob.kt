@@ -4,9 +4,10 @@ import com.google.common.hash.BloomFilter
 import com.google.common.hash.Funnels
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.FileStorage
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.SHA256
@@ -15,7 +16,6 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.config.properties.StorageReconcileJobProperties
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -38,7 +38,7 @@ class StorageReconcileJob(
     private val bloomFilterProp: FileReferenceCleanupJobProperties,
     private val fileStorage: FileStorage,
     private val clusterProperties: ClusterProperties,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties,
     private val fileReferenceService: FileReferenceService,
 ) : DefaultContextJob(properties) {
@@ -47,7 +47,7 @@ class StorageReconcileJob(
         reconcile(storageProperties.defaultStorageCredentials())
 
         // 校验其他存储
-        storageCredentialsClient.list(clusterProperties.region).data?.forEach {
+        storageCredentialService.list(clusterProperties.region).forEach {
             reconcile(it)
         }
     }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,34 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core.config
+package com.tencent.bkrepo.common.metadata.model
 
-import org.springframework.util.unit.DataSize
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-/**
- * 文件响应配置
- */
-data class ResponseProperties(
-    /**
-     * io拷贝buffer大小
-     */
-    var bufferSize: DataSize = DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()),
+@Document("storage_credentials")
+data class TStorageCredentials(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
 
-    /**
-     * 每秒传输数据量
-     */
-    var rateLimit: DataSize = DataSize.ofBytes(-1),
-
-    /**
-     * mime mappings，content-type的MediaType映射
-     * */
-    var mimeMappings: Map<String, String> = emptyMap(),
-    /**
-     * 二进制媒体类型，不指定编码。
-     * */
-    var binaryMediaTypes: Set<String> = emptySet(),
-    /**
-     * 限速熔断阈值，当仓库配置的rateLimit小于等于限速熔断阈值时则直接将请求断开
-     */
-    var circuitBreakerThreshold: DataSize = DataSize.ofKilobytes(1),
+    var credentials: String,
+    var region: String? = null
 )

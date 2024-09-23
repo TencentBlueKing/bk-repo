@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,11 +29,48 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao.repository
+package com.tencent.bkrepo.common.storage.config
 
-import com.tencent.bkrepo.repository.model.TStorageCredentials
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
+import org.springframework.util.unit.DataSize
 
-@Repository
-interface StorageCredentialsRepository : MongoRepository<TStorageCredentials, String>
+/**
+ * 文件接收配置
+ */
+data class ReceiveProperties(
+    /**
+     * 最大接收文件大小，小于0则无限制
+     */
+    var maxFileSize: DataSize = DataSize.ofBytes(-1),
+
+    /**
+     * 最大接收请求大小，小于0则无限制
+     */
+    var maxRequestSize: DataSize = DataSize.ofBytes(-1),
+
+    /**
+     * 文件内存阈值，超过此阈值则将数据从内存写入磁盘
+     * 小于0则不使用内存缓存，直接写入磁盘
+     */
+    var fileSizeThreshold: DataSize = DataSize.ofBytes(-1),
+
+    /**
+     * 使用本地路径阈值，超过这阈值则使用其他路径
+     * 必须要超过文件内存阈值否则设置无效
+     * */
+    var localThreshold: DataSize = DataSize.ofBytes(-1),
+
+    /**
+     * 是否延迟解析文件
+     */
+    var resolveLazily: Boolean = true,
+
+    /**
+     * io拷贝buffer大小
+     */
+    var bufferSize: DataSize = DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()),
+
+    /**
+     * 每秒接收数据量
+     */
+    var rateLimit: DataSize = DataSize.ofBytes(-1)
+)

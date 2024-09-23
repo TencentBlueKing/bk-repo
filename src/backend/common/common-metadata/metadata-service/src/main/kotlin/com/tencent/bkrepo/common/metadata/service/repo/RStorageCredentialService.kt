@@ -29,19 +29,51 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.service.repo
 
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
 
-@Document("storage_credentials")
-data class TStorageCredentials(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
+/**
+ * 存储凭证服务接口
+ */
+interface RStorageCredentialService {
 
-    var credentials: String,
-    var region: String? = null
-)
+    /**
+     * 根据[request]创建存储凭证
+     */
+    suspend fun create(userId: String, request: StorageCredentialsCreateRequest): StorageCredentials
+
+    /**
+     * 根据[request]更新存储凭证
+     */
+    suspend fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials
+
+    /**
+     * 根据[key]查询存储凭证[StorageCredentials]，不存在则返回`null`
+     */
+    suspend fun findByKey(key: String?): StorageCredentials?
+
+    /**
+     * 查询存储凭证列表
+     * @param region 部署区域
+     */
+    suspend fun list(region: String? = null): List<StorageCredentials>
+
+    /**
+     * 获取默认存储凭证
+     */
+    suspend fun default(): StorageCredentials
+
+    /**
+     * 根据[key]删除存储凭证
+     */
+    suspend fun delete(key: String)
+
+    /**
+     * 强制删除存储凭证
+     * @param key 要删除的存储凭证key
+     */
+    suspend fun forceDelete(key: String)
+}

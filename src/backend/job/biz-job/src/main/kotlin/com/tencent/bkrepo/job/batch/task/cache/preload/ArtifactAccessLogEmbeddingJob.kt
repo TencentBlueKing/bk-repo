@@ -29,8 +29,6 @@ package com.tencent.bkrepo.job.batch.task.cache.preload
 
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
@@ -38,12 +36,11 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.Document
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
-import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -160,20 +157,23 @@ class ArtifactAccessLogEmbeddingJob(
             return
         }
         val pageSize = properties.batchSize
-        var lastId = ObjectId(MIN_OBJECT_ID)
+        var offset = 0L
         var querySize: Int
         val criteria = buildCriteria(projectId, after, before)
         do {
             val query = Query(criteria)
-                .addCriteria(Criteria.where(ID).gt(lastId))
                 .limit(pageSize)
-                .with(Sort.by(ID).ascending())
+                .skip(offset)
+                .with(Sort.by(TOperateLog::projectId.name).ascending())
             query.fields().include(
                 TOperateLog::repoName.name,
                 TOperateLog::resourceKey.name,
                 TOperateLog::createdDate.name
             )
+
+            val start = System.currentTimeMillis()
             val data = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
+            logger.info("find [$projectId] access log from db elapsed[${System.currentTimeMillis() - start}]ms")
             if (data.isEmpty()) {
                 break
             }
@@ -195,7 +195,7 @@ class ArtifactAccessLogEmbeddingJob(
 
             handler(accessPaths)
             querySize = data.size
-            lastId = data.last()[ID] as ObjectId
+            offset += data.size
         } while (querySize == pageSize && shouldRun())
     }
 

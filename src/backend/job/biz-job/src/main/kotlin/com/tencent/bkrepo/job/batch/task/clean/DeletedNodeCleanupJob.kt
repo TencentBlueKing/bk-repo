@@ -35,6 +35,7 @@ import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.job.DELETED_DATE
@@ -50,7 +51,6 @@ import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.findOne
@@ -74,7 +74,7 @@ class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val clusterProperties: ClusterProperties,
     private val migrateRepoStorageService: MigrateRepoStorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val separationTaskService: SeparationTaskService,
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
 
@@ -259,8 +259,8 @@ class DeletedNodeCleanupJob(
     }
 
     private fun handleNodeWithUnknownRepo(sha256: String) {
-        val credentials = storageCredentialsClient.list().data
-        val defaultCredentials = storageCredentialsClient.findByKey().data
+        val credentials = storageCredentialService.list()
+        val defaultCredentials = storageCredentialService.findByKey(null)
         if (credentials.isNullOrEmpty() && defaultCredentials == null) return
         val keySet = mutableSetOf<String?>()
         if (!credentials.isNullOrEmpty()) {

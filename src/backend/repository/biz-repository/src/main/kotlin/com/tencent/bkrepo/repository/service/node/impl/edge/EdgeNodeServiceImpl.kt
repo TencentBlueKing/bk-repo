@@ -41,7 +41,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -65,8 +65,9 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeRenameSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
+import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
@@ -90,6 +91,7 @@ class EdgeNodeServiceImpl(
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
+    override val projectService: ProjectService,
     val archiveClient: ArchiveClient,
 ) : EdgeNodeBaseService(
     nodeDao,
@@ -104,7 +106,8 @@ class EdgeNodeServiceImpl(
     servicePermissionClient,
     routerControllerProperties,
     blockNodeService,
-    clusterProperties,
+    projectService,
+    clusterProperties
 ) {
     override fun computeSize(
         artifact: ArtifactInfo,

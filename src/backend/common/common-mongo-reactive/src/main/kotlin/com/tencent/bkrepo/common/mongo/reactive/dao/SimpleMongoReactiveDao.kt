@@ -29,7 +29,9 @@ package com.tencent.bkrepo.common.mongo.reactive.dao
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 
 open class SimpleMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
 
@@ -48,5 +50,15 @@ open class SimpleMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
 
     override fun determineCollectionName(entity: E): String {
         return collectionName
+    }
+
+    /**
+     * 根据主键"_id"查找记录
+     */
+    suspend fun findById(id: String): E? {
+        if (id.isBlank()) {
+            return null
+        }
+        return this.findOne(Query.query(Criteria.where(ID).isEqualTo(id)))
     }
 }

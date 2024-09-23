@@ -29,8 +29,9 @@ package com.tencent.bkrepo.job.migrate.strategy
 
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -42,7 +43,6 @@ import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.model.TArchiveMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.Node
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -53,7 +53,7 @@ import org.springframework.stereotype.Component
 @Component
 class FileNotFoundAutoFixStrategy(
     private val mongoTemplate: MongoTemplate,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val fileReferenceService: FileReferenceService,
     private val storageService: StorageService,
     private val storageProperties: StorageProperties,
@@ -126,7 +126,7 @@ class FileNotFoundAutoFixStrategy(
         val repoName = migrateFailedNode.repoName
         val fullPath = migrateFailedNode.fullPath
 
-        val allCredentials = storageCredentialsClient.list().data!! + storageProperties.defaultStorageCredentials()
+        val allCredentials = storageCredentialService.list() + storageProperties.defaultStorageCredentials()
         allCredentials.forEach { credentials ->
             val key = credentials.key
             try {

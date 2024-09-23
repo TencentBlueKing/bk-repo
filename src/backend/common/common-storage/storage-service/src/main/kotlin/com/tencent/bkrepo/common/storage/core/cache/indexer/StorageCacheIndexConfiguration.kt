@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.storage.core.cache.indexer
 
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_LRU
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties.Companion.CACHE_TYPE_REDIS_SLRU

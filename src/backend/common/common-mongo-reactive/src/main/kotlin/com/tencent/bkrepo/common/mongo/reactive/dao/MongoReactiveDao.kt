@@ -48,6 +48,11 @@ interface MongoReactiveDao<E> {
     suspend fun <T> find(query: Query, clazz: Class<T>): List<T>
 
     /**
+     * 通过查询对象查询文档集合，返回元素类型由clazz指定
+     */
+    suspend fun <T> findAll(clazz: Class<T>): List<T>
+
+    /**
      * 新增文档到数据库的集合中
      */
     suspend fun save(entity: E): E

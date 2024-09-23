@@ -29,99 +29,71 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl
+package com.tencent.bkrepo.common.metadata.service.repo.impl
 
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.StorageCredentialsDao
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper
+import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion.buildStorageCredential
+import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion.checkCreateRequest
+import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion.convert
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.dao.repository.StorageCredentialsRepository
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
-import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialsUpdater
-import org.springframework.data.repository.findByIdOrNull
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
 /**
  * 存储凭证服务实现类
  */
 @Service
+@Conditional(SyncCondition::class)
 class StorageCredentialServiceImpl(
     private val repositoryDao: RepositoryDao,
-    private val storageCredentialsRepository: StorageCredentialsRepository,
+    private val storageCredentialsDao: StorageCredentialsDao,
     private val storageProperties: StorageProperties,
-    private val credentialUpdaters: Map<String, StorageCredentialsUpdater>
 ) : StorageCredentialService {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun create(userId: String, request: StorageCredentialsCreateRequest): StorageCredentials {
-        takeIf { request.key.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "key")
-        // 目前的实现方式有个限制：新增的存储方式和默认的存储方式必须相同
-        if (storageProperties.defaultStorageCredentials()::class != request.credentials::class) {
-            throw throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "type")
-        }
-        storageCredentialsRepository.findByIdOrNull(request.key)?.run {
+        checkCreateRequest(request)
+        storageCredentialsDao.findById(request.key)?.run {
             throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, request.key)
         }
-        val storageCredential = TStorageCredentials(
-            id = request.key,
-            createdBy = userId,
-            createdDate = LocalDateTime.now(),
-            lastModifiedBy = userId,
-            lastModifiedDate = LocalDateTime.now(),
-            credentials = request.credentials.toJsonString(),
-            region = request.region
-        )
-        val savedCredentials = storageCredentialsRepository.save(storageCredential)
+        val storageCredential = buildStorageCredential(request, userId)
+        val savedCredentials = storageCredentialsDao.save(storageCredential)
         return convert(savedCredentials)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials {
         requireNotNull(request.key)
-        val tStorageCredentials = storageCredentialsRepository.findByIdOrNull(request.key!!)
+        val tStorageCredentials = storageCredentialsDao.findById(request.key!!)
             ?: throw NotFoundException(RepositoryMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
-        val storageCredentials = tStorageCredentials.credentials.readJsonString<StorageCredentials>()
-
-        storageCredentials.apply {
-            cache = cache.copy(
-                loadCacheFirst = request.credentials.cache.loadCacheFirst,
-                expireDays = request.credentials.cache.expireDays,
-                expireDuration = request.credentials.cache.expireDuration,
-                maxSize = request.credentials.cache.maxSize,
-            )
-            upload = upload.copy(
-                localPath = request.credentials.upload.localPath,
-                workers = request.credentials.upload.workers
-            )
-            compress = compress.copy(
-                path = request.credentials.compress.path,
-                ratio = request.credentials.compress.ratio
-            )
-            credentialUpdaters[StorageCredentialsUpdater.name(this::class.java)]?.update(this, request)
-        }
-
-        tStorageCredentials.credentials = storageCredentials.toJsonString()
-        val updatedCredentials = storageCredentialsRepository.save(tStorageCredentials)
+        StorageCredentialHelper.updateCredentials(tStorageCredentials, request)
+        val updatedCredentials = storageCredentialsDao.save(tStorageCredentials)
         return convert(updatedCredentials)
     }
 
-    override fun findByKey(key: String): StorageCredentials? {
-        return storageCredentialsRepository.findByIdOrNull(key)?.let { convert(it) }
+    override fun findByKey(key: String?): StorageCredentials? {
+        return if (key.isNullOrBlank()) {
+            storageProperties.defaultStorageCredentials()
+        } else {
+            storageCredentialsDao.findById(key)?.let { convert(it) }
+        }
     }
 
     override fun list(region: String?): List<StorageCredentials> {
-        return storageCredentialsRepository.findAll()
+        return storageCredentialsDao.findAll()
             .filter { region.isNullOrBlank() || it.region == region }
             .map { convert(it) }
     }
@@ -132,23 +104,19 @@ class StorageCredentialServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun delete(key: String) {
-        if (!storageCredentialsRepository.existsById(key)) {
+        if (!storageCredentialsDao.existsById(key)) {
             throw NotFoundException(RepositoryMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
         }
-        val credentialsCount = storageCredentialsRepository.count()
+        val credentialsCount = storageCredentialsDao.count()
         if (repositoryDao.existsByCredentialsKey(key) || credentialsCount <= 1) {
             throw BadRequestException(RepositoryMessageCode.STORAGE_CREDENTIALS_IN_USE)
         }
         // 可能判断完凭证未被使用后，删除凭证前，又有新增的仓库使用凭证，出现这种情况后需要修改新增仓库的凭证
-        return storageCredentialsRepository.deleteById(key)
+        return storageCredentialsDao.deleteById(key)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun forceDelete(key: String) {
-        return storageCredentialsRepository.deleteById(key)
-    }
-
-    private fun convert(credentials: TStorageCredentials): StorageCredentials {
-        return credentials.credentials.readJsonString<StorageCredentials>().apply { this.key = credentials.id }
+        return storageCredentialsDao.deleteById(key)
     }
 }

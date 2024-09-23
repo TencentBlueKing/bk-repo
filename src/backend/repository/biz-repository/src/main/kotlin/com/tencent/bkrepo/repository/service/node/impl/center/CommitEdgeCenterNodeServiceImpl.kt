@@ -43,10 +43,10 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.model.TMetadata
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -59,8 +59,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeServiceImpl
+import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
@@ -85,6 +86,7 @@ class CommitEdgeCenterNodeServiceImpl(
     override val routerControllerClient: RouterControllerClient,
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
+    override val projectService: ProjectService,
     val clusterProperties: ClusterProperties,
     val archiveClient: ArchiveClient,
 ) : NodeServiceImpl(
@@ -100,7 +102,8 @@ class CommitEdgeCenterNodeServiceImpl(
     routerControllerClient,
     routerControllerProperties,
     blockNodeService,
-    archiveClient
+    projectService,
+    archiveClient,
 ) {
 
     override fun checkRepo(projectId: String, repoName: String): TRepository {

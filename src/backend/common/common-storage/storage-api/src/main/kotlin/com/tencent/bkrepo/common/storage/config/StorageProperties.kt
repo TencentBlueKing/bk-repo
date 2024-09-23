@@ -29,18 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core
+package com.tencent.bkrepo.common.storage.config
 
-import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
-import com.tencent.bkrepo.common.storage.core.config.RedirectProperties
-import com.tencent.bkrepo.common.storage.core.config.ResponseProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageType
-import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 

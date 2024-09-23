@@ -29,43 +29,51 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.service.repo
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
 
 /**
- * 仓库模型
+ * 存储凭证服务接口
  */
-@Document("repository")
-@CompoundIndexes(
-    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
-)
-data class TRepository(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
+interface StorageCredentialService {
 
-    var name: String,
-    var type: RepositoryType,
-    var category: RepositoryCategory,
-    var public: Boolean,
-    var description: String? = null,
-    var configuration: String,
-    var credentialsKey: String? = null,
-    var oldCredentialsKey: String? = null,
-    var display: Boolean = true,
+    /**
+     * 根据[request]创建存储凭证
+     */
+    fun create(userId: String, request: StorageCredentialsCreateRequest): StorageCredentials
 
-    var projectId: String,
+    /**
+     * 根据[request]更新存储凭证
+     */
+    fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials
 
-    var quota: Long? = null,
-    var used: Long? = null,
-    var clusterNames: Set<String>? = null,
-    var deleted: LocalDateTime? = null
-)
+    /**
+     * 根据[key]查询存储凭证[StorageCredentials]，不存在则返回`null`
+     */
+    fun findByKey(key: String?): StorageCredentials?
+
+    /**
+     * 查询存储凭证列表
+     * @param region 部署区域
+     */
+    fun list(region: String? = null): List<StorageCredentials>
+
+    /**
+     * 获取默认存储凭证
+     */
+    fun default(): StorageCredentials
+
+    /**
+     * 根据[key]删除存储凭证
+     */
+    fun delete(key: String)
+
+    /**
+     * 强制删除存储凭证
+     * @param key 要删除的存储凭证key
+     */
+    fun forceDelete(key: String)
+}

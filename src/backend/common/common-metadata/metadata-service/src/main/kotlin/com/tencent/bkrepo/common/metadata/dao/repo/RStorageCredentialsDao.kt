@@ -29,18 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.monitor
+package com.tencent.bkrepo.common.metadata.dao.repo
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.common.metadata.model.TStorageCredentials
+import com.tencent.bkrepo.common.mongo.reactive.dao.SimpleMongoReactiveDao
+import org.springframework.context.annotation.Conditional
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
-data class MonitorProperties(
-    var enabled: Boolean = false,
-    var fallbackLocation: String? = null,
-    var enableTransfer: Boolean = false,
-    var interval: Duration = Duration.ofSeconds(10),
-    var dataSize: DataSize = DataSize.ofMegabytes(1),
-    var timeout: Duration = Duration.ofSeconds(5),
-    var timesToRestore: Int = 5,
-    var timesToFallback: Int = 3
-)
+@Repository
+@Conditional(ReactiveCondition::class)
+class RStorageCredentialsDao : SimpleMongoReactiveDao<TStorageCredentials>() {
+
+    suspend fun count(): Long {
+        return this.count(Query())
+    }
+
+    suspend fun deleteById(id: String) {
+        val query = Query(Criteria.where(ID).isEqualTo(id))
+        this.remove(query)
+    }
+
+    suspend fun existsById(id: String): Boolean {
+        val query = Query(Criteria.where(ID).isEqualTo(id))
+        return this.exists(query)
+    }
+}

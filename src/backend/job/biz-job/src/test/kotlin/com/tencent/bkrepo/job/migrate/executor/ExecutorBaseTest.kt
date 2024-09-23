@@ -29,8 +29,9 @@ package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.job.UT_PROJECT_ID
@@ -48,7 +49,6 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.TestInstance
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
@@ -105,7 +105,7 @@ open class ExecutorBaseTest {
     protected lateinit var repositoryClient: RepositoryClient
 
     @MockBean
-    protected lateinit var storageCredentialsClient: StorageCredentialsClient
+    protected lateinit var storageCredentialService: StorageCredentialService
 
     @MockBean
     protected lateinit var storageService: StorageService
@@ -120,8 +120,8 @@ open class ExecutorBaseTest {
         whenever(repositoryClient.updateStorageCredentialsKey(anyString(), anyString(), anyString()))
             .thenReturn(Response(0))
         whenever(repositoryClient.unsetOldStorageCredentialsKey(anyString(), anyString())).thenReturn(Response(0))
-        whenever(storageCredentialsClient.findByKey(anyString()))
-            .thenReturn(Response(0, data = FileSystemCredentials()))
+        whenever(storageCredentialService.findByKey(anyString()))
+            .thenReturn(FileSystemCredentials())
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then {
             Thread.sleep(1000L)
         }

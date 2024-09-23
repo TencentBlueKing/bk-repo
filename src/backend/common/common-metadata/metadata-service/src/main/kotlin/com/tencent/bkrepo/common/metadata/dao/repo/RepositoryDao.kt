@@ -29,22 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.common.metadata.dao.repo
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.model.TRepository
+import com.tencent.bkrepo.common.metadata.util.RepoQueryHelper.buildSingleQuery
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TRepository
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
 
 /**
  * 仓库数据访问层
  */
 @Repository
+@Conditional(SyncCondition::class)
 class RepositoryDao : SimpleMongoDao<TRepository>() {
 
     /**
@@ -75,18 +76,6 @@ class RepositoryDao : SimpleMongoDao<TRepository>() {
         return this.exists(query)
     }
 
-    /**
-     * 构造单个仓库查询条件
-     */
-    fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
-        val criteria = where(TRepository::projectId).isEqualTo(projectId)
-            .and(TRepository::name).isEqualTo(repoName)
-            .and(TRepository::deleted).isEqualTo(null)
-        if (repoType != null && repoType.toUpperCase() != RepositoryType.NONE.name) {
-            criteria.and(TRepository::type).isEqualTo(repoType.toUpperCase())
-        }
-        return Query(criteria)
-    }
 
     fun unsetOldCredentialsKey(projectId: String, repoName: String, repoType: String? = null) {
         val query = buildSingleQuery(projectId, repoName, repoType)

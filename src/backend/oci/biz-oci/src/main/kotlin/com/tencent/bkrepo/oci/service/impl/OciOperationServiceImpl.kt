@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -98,7 +99,6 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -136,7 +136,7 @@ class OciOperationServiceImpl(
     private val repositoryClient: RepositoryClient,
     private val ociProperties: OciProperties,
     private val ociReplicationRecordDao: OciReplicationRecordDao,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val pluginManager: PluginManager
 ) : OciOperationService {
 
@@ -1027,7 +1027,7 @@ class OciOperationServiceImpl(
             logger.info("$manifestPath has been refreshed, ignore it")
             return true
         }
-        val storageCredentials = repoInfo.storageCredentialsKey?.let { storageCredentialsClient.findByKey(it).data }
+        val storageCredentials = repoInfo.storageCredentialsKey?.let { storageCredentialService.findByKey(it) }
         val manifest = loadManifest(manifestNode, storageCredentials) ?: run {
             logger.warn("The content of manifest.json ${manifestNode.fullPath} is null, check the mediaType.")
             return false

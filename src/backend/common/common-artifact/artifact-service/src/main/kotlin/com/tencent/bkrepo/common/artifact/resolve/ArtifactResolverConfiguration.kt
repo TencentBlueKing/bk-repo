@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.artifact.resolve.path.DefaultArtifactInfoResolv
 import com.tencent.bkrepo.common.artifact.resolve.path.ResolverMap
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

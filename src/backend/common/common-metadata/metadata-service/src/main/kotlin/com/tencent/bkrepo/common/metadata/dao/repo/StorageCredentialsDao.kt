@@ -29,14 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao.repository
+package com.tencent.bkrepo.common.metadata.dao.repo
 
-import com.tencent.bkrepo.repository.model.TRepository
-import org.springframework.data.mongodb.repository.MongoRepository
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.model.TStorageCredentials
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.context.annotation.Conditional
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
-/**
- * 仓库mongo repository
- */
 @Repository
-interface RepoRepository : MongoRepository<TRepository, String>
+@Conditional(SyncCondition::class)
+class StorageCredentialsDao : SimpleMongoDao<TStorageCredentials>() {
+
+    fun count(): Long {
+        return this.count(Query())
+    }
+
+    fun deleteById(id: String) {
+        val query = Query(Criteria.where(ID).isEqualTo(id))
+        this.remove(query)
+    }
+
+    fun existsById(id: String): Boolean {
+        val query = Query(Criteria.where(ID).isEqualTo(id))
+        return this.exists(query)
+    }
+}
