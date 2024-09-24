@@ -29,6 +29,8 @@ package com.tencent.bkrepo.job.batch.task.cache.preload
 
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
@@ -41,19 +43,24 @@ import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
+import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.gte
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter.ISO_DATE_TIME
 import kotlin.system.measureTimeMillis
 
 @Component
@@ -120,12 +127,15 @@ class ArtifactAccessLogEmbeddingJob(
         after: LocalDateTime? = null,
         before: LocalDateTime? = null
     ) {
-        properties.projects.forEach { projectId ->
-            processDataBatch(projectId, minusMonth, after, before) { paths ->
-                val documents = paths.map { Document(content = it, metadata = emptyMap()) }
-                val elapsed = measureTimeMillis { insert(documents) }
-                logger.info("[$projectId] insert ${documents.size} data into [${collectionName()}] in $elapsed ms")
+        find(minusMonth, after, before) { projectId, paths ->
+            val documents = paths.map {
+                Document(
+                    content = it.key,
+                    metadata = mapOf(METADATA_KEY_ACCESS_TIMESTAMP to it.value.joinToString(","))
+                )
             }
+            val elapsed = measureTimeMillis { insert(documents) }
+            logger.info("[$projectId] insert ${documents.size} data into [${collectionName()}] in $elapsed ms")
         }
     }
 
@@ -141,15 +151,12 @@ class ArtifactAccessLogEmbeddingJob(
         return MilvusVectorStore(config, milvusClient, embeddingModel)
     }
 
-    /**
-     * 获取有访问记录的路径
-     */
-    private fun processDataBatch(
-        projectId: String,
+
+    private fun find(
         minusMonth: Long,
-        after: LocalDateTime?,
-        before: LocalDateTime?,
-        handler: (paths: Set<String>) -> Unit,
+        after: LocalDateTime? = null,
+        before: LocalDateTime? = null,
+        handler: (String, Map<String, Set<Long>>) -> Unit
     ) {
         val collectionName = collectionName(minusMonth)
         if (!mongoTemplate.collectionExists(collectionName)) {
@@ -157,46 +164,88 @@ class ArtifactAccessLogEmbeddingJob(
             return
         }
         val pageSize = properties.batchSize
-        var offset = 0L
+        var lastId = ObjectId(findFirstObjectId(collectionName, after))
         var querySize: Int
-        val criteria = buildCriteria(projectId, after, before)
+        // buffer存储的内容结构为(projectId, (path, accessTimestamp))
+        val projectBuffer = HashMap<String, MutableMap<String, MutableSet<Long>>>()
+        val count = mongoTemplate.count(Query(), collectionName)
+        var progress = 0
         do {
-            val query = Query(criteria)
+            val query = Query()
+                .addCriteria(Criteria.where(ID).gt(lastId))
                 .limit(pageSize)
-                .skip(offset)
-                .with(Sort.by(TOperateLog::projectId.name).ascending())
+                .with(Sort.by(ID).ascending())
             query.fields().include(
+                TOperateLog::projectId.name,
                 TOperateLog::repoName.name,
+                TOperateLog::type.name,
                 TOperateLog::resourceKey.name,
                 TOperateLog::createdDate.name
             )
 
             val start = System.currentTimeMillis()
-            val data = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
-            logger.info("find [$projectId] access log from db elapsed[${System.currentTimeMillis() - start}]ms")
-            if (data.isEmpty()) {
-                break
-            }
-            // 记录制品访问时间
-            val accessPaths = data.mapTo(HashSet(pageSize)) {
-                val repoName = it[TOperateLog::repoName.name] as String
-                val fullPath = it[TOperateLog::resourceKey.name] as String
-                val projectRepoFullPath = if (repoName == PIPELINE) {
-                    // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
-                    val secondSlashIndex = fullPath.indexOf("/", 1)
-                    val pipelinePath = fullPath.substring(0, secondSlashIndex)
-                    val artifactPath = fullPath.substring(fullPath.indexOf("/", secondSlashIndex + 1))
-                    pipelinePath + artifactPath
-                } else {
-                    fullPath
+            val records = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
+            progress += records.size
+            logger.info("find access log from db elapsed[${System.currentTimeMillis() - start}]ms, $progress/$count")
+
+            for (record in records) {
+                val projectId = record[TOperateLog::projectId.name] as String
+                val type = record[TOperateLog::type.name]
+                if (type != EventType.NODE_DOWNLOADED.name || projectId !in properties.projects) {
+                    continue
                 }
-                "/$projectId/$repoName$projectRepoFullPath"
+                val createDate = LocalDateTime.parse(record[TOperateLog::createdDate.name] as String, ISO_DATE_TIME)
+                if (after != null && createDate.isBefore(after) || before != null && createDate.isAfter(before)) {
+                    continue
+                }
+
+                if (type == EventType.NODE_DOWNLOADED.name && projectId in properties.projects) {
+                    projectBuffer.addToBuffer(record)
+                    if (projectBuffer[projectId]!!.size >= properties.batchToInsert) {
+                        // flush
+                        handler(projectId, projectBuffer[projectId]!!)
+                        projectBuffer.remove(projectId)
+                    }
+                }
             }
 
-            handler(accessPaths)
-            querySize = data.size
-            offset += data.size
+            querySize = records.size
+            lastId = records.last()[ID] as ObjectId
         } while (querySize == pageSize && shouldRun())
+        projectBuffer.forEach { (projectId, paths) -> handler(projectId, paths) }
+    }
+
+    private fun HashMap<String, MutableMap<String, MutableSet<Long>>>.addToBuffer(record: Map<String, Any?>) {
+        val projectId = record[TOperateLog::projectId.name] as String
+        val repoName = record[TOperateLog::repoName.name] as String
+        val fullPath = record[TOperateLog::resourceKey.name] as String
+        val createDate = LocalDateTime.parse(record[TOperateLog::createdDate.name] as String, ISO_DATE_TIME)
+
+        val projectRepoFullPath = if (repoName == PIPELINE) {
+            // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
+            val secondSlashIndex = fullPath.indexOf("/", 1)
+            val pipelinePath = fullPath.substring(0, secondSlashIndex)
+            val artifactPath = fullPath.substring(fullPath.indexOf("/", secondSlashIndex + 1))
+            "/$projectId/$repoName$pipelinePath$artifactPath"
+        } else {
+            "/$projectId/$repoName$fullPath"
+        }
+        val buffer = getOrPut(projectId) { HashMap() }
+        val accessTimestampSet = buffer.getOrPut(projectRepoFullPath) { HashSet() }
+        accessTimestampSet.add(createDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+    }
+
+    private fun findFirstObjectId(collectionName: String, after: LocalDateTime?): String {
+        if (after == null) {
+            return MIN_OBJECT_ID
+        }
+        val startDateTime = after.minusHours(1L)
+        val endDateTime = after
+        val criteria = TOperateLog::createdDate.gte(startDateTime).lt(endDateTime)
+        val query = Query(criteria)
+        query.fields().include(ID)
+        val id = mongoTemplate.findOne<Map<String, Any?>>(query, collectionName)?.let { it[ID] as String }
+        return id ?: MIN_OBJECT_ID
     }
 
     private fun collectionName(minusMonth: Long): String {
@@ -220,5 +269,6 @@ class ArtifactAccessLogEmbeddingJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactAccessLogEmbeddingJob::class.java)
+        private const val METADATA_KEY_ACCESS_TIMESTAMP = "access_timestamp"
     }
 }

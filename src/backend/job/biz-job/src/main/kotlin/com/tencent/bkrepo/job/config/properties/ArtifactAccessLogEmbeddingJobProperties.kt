@@ -36,5 +36,9 @@ class ArtifactAccessLogEmbeddingJobProperties(
     /**
      * 需要将访问记录保存到向量数据库的项目
      */
-    var projects: Set<String> = emptySet()
+    var projects: Set<String> = emptySet(),
+    /**
+     * 批量向量化并写入向量数据库的数量
+     */
+    var batchToInsert: Int = 500,
 ) : MongodbJobProperties(enabled)
