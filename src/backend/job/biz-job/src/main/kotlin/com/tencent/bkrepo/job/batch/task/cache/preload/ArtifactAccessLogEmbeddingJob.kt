@@ -54,13 +54,11 @@ import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.gte
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter.ISO_DATE_TIME
 import kotlin.system.measureTimeMillis
 
 @Component
@@ -129,10 +127,12 @@ class ArtifactAccessLogEmbeddingJob(
     ) {
         find(minusMonth, after, before) { projectId, paths ->
             val documents = paths.map {
-                Document(
-                    content = it.key,
-                    metadata = mapOf(METADATA_KEY_ACCESS_TIMESTAMP to it.value.joinToString(","))
+                val metadata = mapOf(
+                    METADATA_KEY_DOWNLOAD_TIMESTAMP to it.value.downloadTimestamp.joinToString(","),
+                    METADATA_KEY_UPLOAD_TIMESTAMP to it.value.uploadTimestamp.joinToString(","),
+                    METADATA_KEY_ACCESS_COUNT to it.value.count.toString()
                 )
+                Document(content = it.key, metadata = metadata)
             }
             val elapsed = measureTimeMillis { insert(documents) }
             logger.info("[$projectId] insert ${documents.size} data into [${collectionName()}] in $elapsed ms")
@@ -156,7 +156,7 @@ class ArtifactAccessLogEmbeddingJob(
         minusMonth: Long,
         after: LocalDateTime? = null,
         before: LocalDateTime? = null,
-        handler: (String, Map<String, Set<Long>>) -> Unit
+        handler: (String, Map<String, AccessLog>) -> Unit
     ) {
         val collectionName = collectionName(minusMonth)
         if (!mongoTemplate.collectionExists(collectionName)) {
@@ -164,10 +164,10 @@ class ArtifactAccessLogEmbeddingJob(
             return
         }
         val pageSize = properties.batchSize
-        var lastId = ObjectId(findFirstObjectId(collectionName, after))
+        var lastId = findFirstObjectId(collectionName, after)
         var querySize: Int
         // buffer存储的内容结构为(projectId, (path, accessTimestamp))
-        val projectBuffer = HashMap<String, MutableMap<String, MutableSet<Long>>>()
+        val projectBuffer = HashMap<String, MutableMap<String, AccessLog>>()
         val count = mongoTemplate.count(Query(), collectionName)
         var progress = 0
         do {
@@ -176,6 +176,7 @@ class ArtifactAccessLogEmbeddingJob(
                 .limit(pageSize)
                 .with(Sort.by(ID).ascending())
             query.fields().include(
+                ID,
                 TOperateLog::projectId.name,
                 TOperateLog::repoName.name,
                 TOperateLog::type.name,
@@ -184,68 +185,75 @@ class ArtifactAccessLogEmbeddingJob(
             )
 
             val start = System.currentTimeMillis()
-            val records = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
-            progress += records.size
-            logger.info("find access log from db elapsed[${System.currentTimeMillis() - start}]ms, $progress/$count")
+            val operateLogs = mongoTemplate.find<OperateLog>(query, collectionName)
+            progress += operateLogs.size
+            if (progress % 1000000 == 0) {
+                logger.info("find access log from db elapsed[${System.currentTimeMillis() - start}]ms, $progress/$count")
+            }
 
-            for (record in records) {
-                val projectId = record[TOperateLog::projectId.name] as String
-                val type = record[TOperateLog::type.name]
-                if (type != EventType.NODE_DOWNLOADED.name || projectId !in properties.projects) {
+            for (operateLog in operateLogs) {
+                if (operateLog.type != EventType.NODE_DOWNLOADED.name || operateLog.projectId !in properties.projects) {
                     continue
                 }
-                val createDate = LocalDateTime.parse(record[TOperateLog::createdDate.name] as String, ISO_DATE_TIME)
+                val createDate = operateLog.createdDate
                 if (after != null && createDate.isBefore(after) || before != null && createDate.isAfter(before)) {
                     continue
                 }
 
-                if (type == EventType.NODE_DOWNLOADED.name && projectId in properties.projects) {
-                    projectBuffer.addToBuffer(record)
-                    if (projectBuffer[projectId]!!.size >= properties.batchToInsert) {
-                        // flush
-                        handler(projectId, projectBuffer[projectId]!!)
-                        projectBuffer.remove(projectId)
-                    }
+                projectBuffer.addToBuffer(operateLog)
+                val projectId = operateLog.projectId
+                if (projectBuffer[projectId]!!.size >= properties.batchToInsert) {
+                    // flush
+                    handler(projectId, projectBuffer[projectId]!!)
+                    projectBuffer.remove(projectId)
                 }
             }
 
-            querySize = records.size
-            lastId = records.last()[ID] as ObjectId
+            querySize = operateLogs.size
+            lastId = operateLogs.lastOrNull()?.id ?: break
         } while (querySize == pageSize && shouldRun())
         projectBuffer.forEach { (projectId, paths) -> handler(projectId, paths) }
     }
 
-    private fun HashMap<String, MutableMap<String, MutableSet<Long>>>.addToBuffer(record: Map<String, Any?>) {
-        val projectId = record[TOperateLog::projectId.name] as String
-        val repoName = record[TOperateLog::repoName.name] as String
-        val fullPath = record[TOperateLog::resourceKey.name] as String
-        val createDate = LocalDateTime.parse(record[TOperateLog::createdDate.name] as String, ISO_DATE_TIME)
-
-        val projectRepoFullPath = if (repoName == PIPELINE) {
-            // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
-            val secondSlashIndex = fullPath.indexOf("/", 1)
-            val pipelinePath = fullPath.substring(0, secondSlashIndex)
-            val artifactPath = fullPath.substring(fullPath.indexOf("/", secondSlashIndex + 1))
-            "/$projectId/$repoName$pipelinePath$artifactPath"
-        } else {
-            "/$projectId/$repoName$fullPath"
+    private fun HashMap<String, MutableMap<String, AccessLog>>.addToBuffer(operateLog: OperateLog) {
+        with(operateLog) {
+            val projectRepoFullPath = if (repoName == PIPELINE) {
+                // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
+                val secondSlashIndex = resourceKey.indexOf("/", 1)
+                val pipelinePath = resourceKey.substring(0, secondSlashIndex)
+                val artifactPath = resourceKey.substring(resourceKey.indexOf("/", secondSlashIndex + 1))
+                "/$projectId/$repoName$pipelinePath$artifactPath"
+            } else {
+                "/$projectId/$repoName$resourceKey"
+            }
+            val buffer = getOrPut(projectId) { HashMap() }
+            val accessLog = buffer.getOrPut(projectRepoFullPath) {
+                AccessLog(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = resourceKey,
+                    projectRepoFullPath = projectRepoFullPath
+                )
+            }
+            accessLog.count += 1
+            if (type == EventType.NODE_DOWNLOADED.name) {
+                accessLog.downloadTimestamp.add(createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+            } else {
+                accessLog.uploadTimestamp.add(createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+            }
         }
-        val buffer = getOrPut(projectId) { HashMap() }
-        val accessTimestampSet = buffer.getOrPut(projectRepoFullPath) { HashSet() }
-        accessTimestampSet.add(createDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
     }
 
-    private fun findFirstObjectId(collectionName: String, after: LocalDateTime?): String {
+    private fun findFirstObjectId(collectionName: String, after: LocalDateTime?): ObjectId {
         if (after == null) {
-            return MIN_OBJECT_ID
+            return ObjectId(MIN_OBJECT_ID)
         }
+        // 找到after之前1小时的记录作为起始遍历点，1小时之前没有访问记录表示访问量较小可以直接从最小ID开始遍历
         val startDateTime = after.minusHours(1L)
-        val endDateTime = after
-        val criteria = TOperateLog::createdDate.gte(startDateTime).lt(endDateTime)
-        val query = Query(criteria)
+        val query = Query(TOperateLog::createdDate.gte(startDateTime).lt(after))
         query.fields().include(ID)
-        val id = mongoTemplate.findOne<Map<String, Any?>>(query, collectionName)?.let { it[ID] as String }
-        return id ?: MIN_OBJECT_ID
+        val id = mongoTemplate.findOne<Map<String, Any?>>(query, collectionName)?.let { it[ID] as ObjectId }
+        return id ?: ObjectId(MIN_OBJECT_ID)
     }
 
     private fun collectionName(minusMonth: Long): String {
@@ -254,21 +262,29 @@ class ArtifactAccessLogEmbeddingJob(
         return "artifact_oplog_$seq"
     }
 
-    private fun buildCriteria(projectId: String, after: LocalDateTime?, before: LocalDateTime?): Criteria {
-        val criteria = Criteria
-            .where(TOperateLog::projectId.name).isEqualTo(projectId)
-            .and(TOperateLog::type.name).isEqualTo(EventType.NODE_DOWNLOADED.name)
-        if (after != null && before != null) {
-            criteria.and(TOperateLog::createdDate.name).gte(after).lt(before)
-        } else {
-            after?.let { criteria.and(TOperateLog::createdDate.name).gte(it) }
-            before?.let { criteria.and(TOperateLog::createdDate.name).lt(it) }
-        }
-        return criteria
-    }
+    private data class OperateLog(
+        var id: ObjectId,
+        val projectId: String,
+        val repoName: String,
+        val resourceKey: String,
+        val createdDate: LocalDateTime,
+        val type: String,
+    )
+
+    private data class AccessLog(
+        val projectId: String,
+        val repoName: String,
+        val fullPath: String,
+        val projectRepoFullPath: String,
+        var count: Long = 0,
+        val downloadTimestamp: MutableSet<Long> = HashSet(),
+        val uploadTimestamp: MutableSet<Long> = HashSet(),
+    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactAccessLogEmbeddingJob::class.java)
-        private const val METADATA_KEY_ACCESS_TIMESTAMP = "access_timestamp"
+        private const val METADATA_KEY_DOWNLOAD_TIMESTAMP = "download_timestamp"
+        private const val METADATA_KEY_ACCESS_COUNT = "access_count"
+        private const val METADATA_KEY_UPLOAD_TIMESTAMP = "upload_timestamp"
     }
 }
