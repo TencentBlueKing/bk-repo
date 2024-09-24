@@ -125,7 +125,7 @@ class ArtifactAccessLogEmbeddingJob(
         after: LocalDateTime? = null,
         before: LocalDateTime? = null
     ) {
-        find(minusMonth, after, before) { projectId, paths ->
+        findAndHandle(minusMonth, after, before) { projectId, paths ->
             val documents = paths.map {
                 val metadata = mapOf(
                     METADATA_KEY_DOWNLOAD_TIMESTAMP to it.value.downloadTimestamp.joinToString(","),
@@ -152,7 +152,7 @@ class ArtifactAccessLogEmbeddingJob(
     }
 
 
-    private fun find(
+    private fun findAndHandle(
         minusMonth: Long,
         after: LocalDateTime? = null,
         before: LocalDateTime? = null,
@@ -166,7 +166,7 @@ class ArtifactAccessLogEmbeddingJob(
         val pageSize = properties.batchSize
         var lastId = findFirstObjectId(collectionName, after)
         var querySize: Int
-        // buffer存储的内容结构为(projectId, (path, accessTimestamp))
+        // buffer存储的内容结构为(projectId, (path, accessLog))
         val projectBuffer = HashMap<String, MutableMap<String, AccessLog>>()
         val count = mongoTemplate.count(Query(), collectionName)
         var progress = 0
