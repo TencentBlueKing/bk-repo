@@ -184,7 +184,7 @@ export default {
                     title: this.$t('npmCreditGuideSubTitle1'),
                     optionType: 'setCredentials',
                     main: [
-                       
+
                         {
                             subTitle: this.$t('npmCreditGuideSubTitle3'),
                             codeList: [
@@ -761,7 +761,7 @@ export default {
                         {
                             subTitle: this.$t('helmInstallGuideSubTitle2'),
                             codeList: [
-                                'helm repo update'
+                                'helm repo update  '
                             ]
                         },
                         {
@@ -873,7 +873,6 @@ export default {
         },
         pypiGuide () {
             return [
-               
                 {
                     title: this.$t('pypiCreditGuideSubTitle1'),
                     optionType: 'setCredentials',
@@ -1159,6 +1158,126 @@ export default {
                         }
                     ]
                 }]
+        },
+        conanGuide () {
+            return [
+                {
+                    title: this.$t('setCredentials'),
+                    optionType: 'setCredentials',
+                    main: [
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle1'),
+                            codeList: [
+                                `conan remote add ${this.repoName} ${this.domain.conan}/${this.projectId}/${this.repoName}`
+
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle2'),
+                            codeList: [
+                                `conan user add -p ${this.accessToken} -r ${this.repoName} ${this.userName}`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle3'),
+                            codeList: [
+                                `conan remote login -p ${this.accessToken} ${this.repoName} ${this.userName}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('push'),
+                    optionType: 'push',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1', // vux中存储的变量名
+                            label: this.$t('artifactName'), // 输入框左侧label文案
+                            placeholder: this.$t('artifactNamePlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
+                        },
+                        {
+                            key: 'dependInputValue2', // vux中存储的变量名
+                            label: this.$t('artifactVersion'), // 输入框左侧label文案
+                            placeholder: this.$t('packageVersionPlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2' // vuex中mutations中的方法名
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('pushGuideSubTitle'),
+                            codeList: [
+                                `conan upload ${this.dependInputValue1 || this.packageName}/${this.dependInputValue2 || this.versionLabel} -r=${this.repoName}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('pull'),
+                    optionType: 'pull',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1', // vux中存储的变量名
+                            label: this.$t('artifactName'), // 输入框左侧label文案
+                            placeholder: this.$t('artifactNamePlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
+                        },
+                        {
+                            key: 'dependInputValue2', // vux中存储的变量名
+                            label: this.$t('artifactVersion'), // 输入框左侧label文案
+                            placeholder: this.$t('packageVersionPlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2' // vuex中mutations中的方法名
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('helmPullGuideSubTitle'),
+                            codeList: [
+                                `conan install ${this.dependInputValue1 || this.packageName}/${this.dependInputValue2 || this.versionLabel}@ -r ${this.repoName}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        conanInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle1'),
+                            codeList: [
+                                `conan remote add ${this.repoName} ${this.domain.conan}/${this.projectId}/${this.repoName}`
+
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle2'),
+                            codeList: [
+                                `conan user add -p <PERSONAL_ACCESS_TOKEN> -r ${this.repoName} ${this.userName}`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle3'),
+                            codeList: [
+                                `conan remote login -p <PERSONAL_ACCESS_TOKEN> ${this.repoName} ${this.userName}`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('helmPullGuideSubTitle'),
+                            codeList: [
+                                `conan install ${this.packageName}/${this.versionLabel}@ -r ${this.repoName}`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('pushGuideSubTitle'),
+                            codeList: [
+                                `conan upload ${this.packageName}/${this.versionLabel} -r=${this.repoName}`
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         articleGuide () {
             return this[`${guideMap[this.repoType] || this.repoType}Guide`]

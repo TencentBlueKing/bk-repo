@@ -778,8 +778,6 @@
     "relatedUsers":"Related Users",
     "assetUserTip": "Please start with g_",
     "createGroupToken": "Create Token",
-    "inFolderSearchPlaceholder":"Please enter a file/folder name to search",
-    "folderDirectory":"Folder directory",
     "batchDownload":"Batch download",
     "noFilenameErrorInfo":"Sorry, the server got the file name abnormally, please try again later",
     "batchDownloadBackTypeErrorInfo":"Batch download of files failed, please try again later",
@@ -893,5 +891,8 @@
     "changeSelectAllTip": "Select full data",
     "selectAllTip": "{0} pieces of total data have been selected，",
     "clearSelectTip":"Clear selection",
-    "previewErrorTip": "File Preview Fail"
+    "previewErrorTip": "File Preview Fail",
+    "conanCreditGuideSubTitle1":"1. Execute the following command on the command line to configure remote artifact repository",
+    "conanCreditGuideSubTitle2":"2、Execute the following command on the command line to configure artifact repository credentials(conan1.x)",
+    "conanCreditGuideSubTitle3":"2、Execute the following command on the command line to configure artifact repository credentials(conan2.x)"
 }
