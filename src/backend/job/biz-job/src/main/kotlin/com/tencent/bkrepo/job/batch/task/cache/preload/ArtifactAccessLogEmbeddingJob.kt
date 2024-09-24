@@ -128,7 +128,6 @@ class ArtifactAccessLogEmbeddingJob(
             val documents = paths.map {
                 val metadata = mapOf(
                     METADATA_KEY_DOWNLOAD_TIMESTAMP to it.value.downloadTimestamp.joinToString(","),
-                    METADATA_KEY_UPLOAD_TIMESTAMP to it.value.uploadTimestamp.joinToString(","),
                     METADATA_KEY_ACCESS_COUNT to it.value.count.toString()
                 )
                 Document(content = it.key, metadata = metadata)
@@ -164,8 +163,7 @@ class ArtifactAccessLogEmbeddingJob(
             val createDate = operateLog.createdDate
             val outOfDateRange =
                 after != null && createDate.isBefore(after) || before != null && createDate.isAfter(before)
-            val acceptableType =
-                operateLog.type == EventType.NODE_DOWNLOADED.name || operateLog.type == EventType.NODE_CREATED.name
+            val acceptableType = operateLog.type == EventType.NODE_DOWNLOADED.name
             val acceptableProject = operateLog.projectId in properties.projects
 
             if (!outOfDateRange && acceptableProject && acceptableType) {
@@ -200,14 +198,9 @@ class ArtifactAccessLogEmbeddingJob(
                 )
             }
             accessLog.count += 1
-            if (type == EventType.NODE_DOWNLOADED.name) {
-                accessLog.downloadTimestamp.add(createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-            } else {
-                accessLog.uploadTimestamp.add(createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-            }
+            accessLog.downloadTimestamp.add(createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
             return buffer.size >= properties.batchToInsert ||
-                    accessLog.downloadTimestamp.size >= properties.batchToInsert ||
-                    accessLog.uploadTimestamp.size >= properties.batchToInsert
+                    accessLog.downloadTimestamp.size >= properties.batchToInsert
         }
     }
 
@@ -283,13 +276,11 @@ class ArtifactAccessLogEmbeddingJob(
         val projectRepoFullPath: String,
         var count: Long = 0,
         val downloadTimestamp: MutableSet<Long> = HashSet(),
-        val uploadTimestamp: MutableSet<Long> = HashSet(),
     )
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactAccessLogEmbeddingJob::class.java)
         private const val METADATA_KEY_DOWNLOAD_TIMESTAMP = "download_timestamp"
         private const val METADATA_KEY_ACCESS_COUNT = "access_count"
-        private const val METADATA_KEY_UPLOAD_TIMESTAMP = "upload_timestamp"
     }
 }
