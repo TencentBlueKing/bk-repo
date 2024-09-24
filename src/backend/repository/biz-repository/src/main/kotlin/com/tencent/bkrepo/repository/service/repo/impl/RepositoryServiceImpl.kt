@@ -35,11 +35,9 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptorFactory
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
-import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
@@ -49,11 +47,12 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConf
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
-import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
+import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
@@ -64,7 +63,6 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publi
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
@@ -77,6 +75,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.packages.PackageService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
@@ -84,9 +83,8 @@ import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Conditional
-import org.springframework.context.annotation.Lazy
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -99,7 +97,6 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -107,22 +104,18 @@ import java.time.format.DateTimeFormatter
  * 仓库服务实现类
  */
 @Service
-@Conditional(DefaultCondition::class)
+@Conditional(SyncCondition::class, DefaultCondition::class)
 @Suppress("TooManyFunctions")
 class RepositoryServiceImpl(
     val repositoryDao: RepositoryDao,
-    val nodeService: NodeService,
     private val projectService: ProjectService,
     private val storageCredentialService: StorageCredentialService,
     private val proxyChannelService: ProxyChannelService,
     private val repositoryProperties: RepositoryProperties,
     private val messageSupplier: MessageSupplier,
     private val servicePermissionClient: ServicePermissionClient,
+    private val resourceClearService: ObjectProvider<ResourceClearService>
 ) : RepositoryService {
-
-    @Autowired
-    @Lazy
-    lateinit var packageService: PackageService
 
     init {
         Companion.repositoryProperties = repositoryProperties
@@ -356,7 +349,7 @@ class RepositoryServiceImpl(
     override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {
         repoDeleteRequest.apply {
             val repository = checkRepository(projectId, name)
-            clearRepo(projectId, name, repository.type.supportPackage, forced, operator)
+            resourceClearService.ifAvailable?.clearRepo(repository, forced, operator)
             // 为避免仓库被删除后节点无法被自动清理的问题，对仓库实行假删除
             repositoryDao.updateFirst(
                 Query(Criteria.where(ID).isEqualTo(repository.id!!)),
@@ -391,34 +384,6 @@ class RepositoryServiceImpl(
             subNodeWithoutFolderCount = repoMetrics?.num ?: 0,
             size = repoMetrics?.size ?: 0,
         )
-    }
-
-    /**
-     * 删除仓库内容
-     */
-    protected fun clearRepo(
-        projectId: String,
-        repoName: String,
-        supportPackage: Boolean,
-        forced: Boolean,
-        operator: String
-    ) {
-        if (forced) {
-            logger.info("Force clear repository [$projectId/$repoName] by [$operator]")
-            if (supportPackage) {
-                packageService.deleteAllPackage(projectId, repoName)
-            }
-        } else {
-            // 当仓库类型支持包管理，仓库下没有包时视为空仓库，删除仓库下所有节点
-            val isEmpty = if (supportPackage) {
-                packageService.getPackageCount(projectId, repoName) == 0L
-            } else {
-                val artifactInfo = DefaultArtifactInfo(projectId, repoName, ROOT)
-                nodeService.countFileNode(artifactInfo) == 0L
-            }
-            if (!isEmpty) throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_ARTIFACT)
-        }
-        nodeService.deleteByPath(projectId, repoName, ROOT, operator)
     }
 
     /**
@@ -640,23 +605,6 @@ class RepositoryServiceImpl(
                 defaultStorageCredentialsKey
             }
         }
-    }
-
-    override fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long?): Long {
-        val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(days.toLong()))
-        val criteria = where(TNode::folder).isEqualTo(false)
-            .and(TNode::deleted).isEqualTo(null)
-            .and(TNode::sha256).ne(FAKE_SHA256)
-            .and(TNode::archived).ne(true)
-            .and(TNode::projectId).isEqualTo(projectId)
-            .orOperator(
-                where(TNode::lastAccessDate).isEqualTo(null),
-                where(TNode::lastAccessDate).lt(cutoffTime),
-            ).apply {
-                repoName?.let { and(TNode::repoName).isEqualTo(it) }
-                size?.let { and(TNode::size).gt(it) }
-            }
-        return nodeService.aggregateComputeSize(criteria)
     }
 
     /**

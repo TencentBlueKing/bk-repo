@@ -36,10 +36,13 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
+import com.tencent.bkrepo.common.artifact.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
+import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.RepoQueryHelper
@@ -53,10 +56,12 @@ import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
 import com.tencent.bkrepo.repository.util.RepoEventFactory
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -66,26 +71,26 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterRepositoryServiceImpl(
+@Conditional(SyncCondition::class, CommitEdgeCenterCondition::class)
+class CenterRepositoryServiceImpl(
     repositoryDao: RepositoryDao,
-    nodeService: NodeService,
     projectService: ProjectService,
     storageCredentialService: StorageCredentialService,
     proxyChannelService: ProxyChannelService,
     repositoryProperties: RepositoryProperties,
     messageSupplier: MessageSupplier,
     servicePermissionClient: ServicePermissionClient,
+    private val resourceClearService: ObjectProvider<ResourceClearService>,
     private val clusterProperties: ClusterProperties,
 ) : RepositoryServiceImpl(
     repositoryDao,
-    nodeService,
     projectService,
     storageCredentialService,
     proxyChannelService,
     repositoryProperties,
     messageSupplier,
-    servicePermissionClient
+    servicePermissionClient,
+    resourceClearService
 ) {
     override fun buildTRepository(
         request: RepoCreateRequest,
@@ -138,7 +143,7 @@ class CommitEdgeCenterRepositoryServiceImpl(
     override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {
         repoDeleteRequest.apply {
             val repository = checkRepository(projectId, name)
-            clearRepo(projectId, name, repository.type.supportPackage, forced, operator)
+            resourceClearService.ifAvailable?.clearRepo(repository, forced, operator)
             val clusterNames = repository.clusterNames.orEmpty().toMutableSet()
             clusterNames.remove(SecurityUtils.getClusterName() ?: clusterProperties.self.name)
             if (clusterNames.isEmpty()) {
@@ -178,6 +183,6 @@ class CommitEdgeCenterRepositoryServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(CommitEdgeCenterRepositoryServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(CenterRepositoryServiceImpl::class.java)
     }
 }

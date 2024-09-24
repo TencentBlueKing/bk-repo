@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -44,7 +45,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoUpdateRequest
-import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
+import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -66,6 +67,7 @@ class UserRepositoryController(
     private val permissionManager: PermissionManager,
     private val repositoryService: RepositoryService,
     private val quotaService: QuotaService,
+    private val nodeService: NodeService
 ) {
 
     @ApiOperation("根据名称类型查询仓库")
@@ -263,7 +265,7 @@ class UserRepositoryController(
     ): Response<ArchiveInfo> {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId, userId)
         val archiveInfo = ArchiveInfo(
-            available = repositoryService.getArchivableSize(projectId, repoName, days, size),
+            available = nodeService.getArchivableSize(projectId, repoName, days, size),
         )
         return ResponseBuilder.success(archiveInfo)
     }

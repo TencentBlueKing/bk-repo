@@ -218,6 +218,10 @@ class NodeServiceImpl(
         return NodeArchiveSupport(this, archiveClient).restoreNode(nodeRestoreRequest)
     }
 
+    override fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long?): Long {
+        return NodeArchiveSupport(this, archiveClient).getArchivableSize(projectId, repoName, days, size)
+    }
+
     override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {
         return NodeCompressSupport(this).compressedNode(nodeCompressedRequest)
     }

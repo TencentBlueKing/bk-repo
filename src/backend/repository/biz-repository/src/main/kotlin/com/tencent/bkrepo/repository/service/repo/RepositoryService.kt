@@ -170,6 +170,4 @@ interface RepositoryService {
     fun allRepos(projectId: String?, repoName: String?, repoType: RepositoryType?): List<RepositoryInfo?>
 
     fun statRepo(projectId: String, repoName: String): NodeSizeInfo
-
-    fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long? = null): Long
 }
