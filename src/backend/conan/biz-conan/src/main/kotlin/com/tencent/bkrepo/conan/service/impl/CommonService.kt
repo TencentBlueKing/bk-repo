@@ -573,6 +573,10 @@ class CommonService(
         }
     }
 
+    fun getDomain(): String {
+        return properties.domain
+    }
+
     private fun buildRedisKey(projectId: String, repoName: String, revPath: String): String {
         return "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName/$revPath"
     }

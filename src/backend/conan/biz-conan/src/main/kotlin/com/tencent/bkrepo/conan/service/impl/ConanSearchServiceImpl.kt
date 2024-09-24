@@ -28,17 +28,14 @@
 package com.tencent.bkrepo.conan.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.conan.constant.CONAN_INFOS
 import com.tencent.bkrepo.conan.constant.ConanMessageCode
 import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
-import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.ConanInfo
 import com.tencent.bkrepo.conan.pojo.ConanSearchResult
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanSearchService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
+import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
 import com.tencent.bkrepo.conan.utils.PathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackagePath
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -100,10 +97,9 @@ class ConanSearchServiceImpl : ConanSearchService {
         val result = mutableListOf<String>()
         packageClient.listAllPackageNames(projectId, repoName).data.orEmpty().forEach {
             packageClient.listAllVersion(projectId, repoName, it).data.orEmpty().forEach { pv ->
-                val conanInfo = pv.packageMetadata.first { m ->
-                    m.key == CONAN_INFOS
-                }.value.toJsonString().readJsonString<List<ConanFileReference>>()
-                result.add(buildConanFileName(conanInfo.first()))
+                pv.packageMetadata.toConanFileReference()?.apply {
+                    result.add(buildConanFileName(this))
+                }
             }
         }
         return result.sorted()

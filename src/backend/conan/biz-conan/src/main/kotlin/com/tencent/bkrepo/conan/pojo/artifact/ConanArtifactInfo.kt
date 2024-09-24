@@ -182,5 +182,12 @@ class ConanArtifactInfo(
         // remove all packages in revision
         const val REMOVE_ALL_PACKAGE_UNDER_REVISION_V2 = "/{projectId}/{repoName}/v2/conans/" +
             "{name}/{version}/{username}/{channel}/revisions/{revision}/packages"
+
+        // conan version detail
+        const val CONAN_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
+
+        // conan delete
+        const val CONAN_PACKAGE_DELETE_URL = "/package/delete/{projectId}/{repoName}"
+        const val CONAN_VERSION_DELETE_URL = "/version/delete/{projectId}/{repoName}"
     }
 }

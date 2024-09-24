@@ -25,43 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.service
+package com.tencent.bkrepo.conan.pojo
 
-import com.tencent.bkrepo.conan.pojo.ConanDomainInfo
-import com.tencent.bkrepo.conan.pojo.PackageVersionInfo
-import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
-
-/**
- * conan 删除功能接口
- */
-interface ConanDeleteService {
-
-    /**
-     * Remove any existing recipes or its packages create.
-     * Will remove all revisions, packages and package revisions(parent folder)
-     */
-    fun removeConanFile(conanArtifactInfo: ConanArtifactInfo)
-
-    /**
-     * Remove packages.
-     */
-    fun removePackages(conanArtifactInfo: ConanArtifactInfo, revisionId: String, packageIds: List<String> = emptyList())
-
-    /**
-     * Remove package.
-     */
-    fun removePackage(conanArtifactInfo: ConanArtifactInfo)
-
-    /**
-     * Remove files.
-     */
-    fun removeRecipeFiles(conanArtifactInfo: ConanArtifactInfo, files: List<String> = emptyList())
-
-    fun removePackageByKey(conanArtifactInfo: ConanArtifactInfo, packageKey: String)
-
-    fun removePackageVersion(conanArtifactInfo: ConanArtifactInfo, packageKey: String, version: String)
-
-    fun getDomain(): ConanDomainInfo
-
-    fun detailVersion(conanArtifactInfo: ConanArtifactInfo, packageKey: String, version: String): PackageVersionInfo
-}
+data class ConanDomainInfo(
+    val domain: String
+)

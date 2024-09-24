@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
@@ -35,11 +38,15 @@ import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.exception.ConanFileNotFoundException
 import com.tencent.bkrepo.conan.listener.event.ConanPackageDeleteEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeDeleteEvent
+import com.tencent.bkrepo.conan.pojo.ConanDomainInfo
+import com.tencent.bkrepo.conan.pojo.PackageVersionInfo
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanDeleteService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
+import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildBasicInfo
+import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
 import com.tencent.bkrepo.conan.utils.PathUtils
 import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
 import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageFolderPath
@@ -161,6 +168,49 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                     )
                 )
             }
+        }
+    }
+
+    override fun removePackageByKey(conanArtifactInfo: ConanArtifactInfo, packageKey: String) {
+        with(conanArtifactInfo) {
+            packageClient.deletePackage(projectId, repoName, packageKey)
+            val fullPath = PackageKeys.resolveConan(packageKey).replace(StringPool.AT, StringPool.SLASH)
+                .substringBeforeLast(StringPool.SLASH)
+            val rootPath = "/$fullPath"
+            val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
+            nodeClient.deleteNode(request)
+        }
+    }
+
+    override fun removePackageVersion(conanArtifactInfo: ConanArtifactInfo, packageKey: String, version: String) {
+        with(conanArtifactInfo) {
+            val versionDetail = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: return
+            packageClient.deleteVersion(projectId, repoName, packageKey, version)
+            val conanFileReference = versionDetail.packageMetadata.toConanFileReference() ?: return
+            val rootPath = "/${buildPackagePath(conanFileReference)}"
+            val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
+            nodeClient.deleteNode(request)
+        }
+    }
+
+    override fun getDomain(): ConanDomainInfo {
+        return ConanDomainInfo(
+            domain = commonService.getDomain()
+        )
+    }
+
+    override fun detailVersion(
+        conanArtifactInfo: ConanArtifactInfo, packageKey: String, version: String
+    ): PackageVersionInfo {
+        with(conanArtifactInfo) {
+            val versionDetail = packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+                ?: throw VersionNotFoundException(version)
+            if (versionDetail.contentPath.isNullOrEmpty()) throw VersionNotFoundException(version)
+            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, versionDetail.contentPath!!).data ?: run {
+                throw NodeNotFoundException(versionDetail.contentPath!!)
+            }
+            val basicInfo = buildBasicInfo(nodeDetail, versionDetail)
+            return PackageVersionInfo(basicInfo, versionDetail.packageMetadata)
         }
     }
 }
