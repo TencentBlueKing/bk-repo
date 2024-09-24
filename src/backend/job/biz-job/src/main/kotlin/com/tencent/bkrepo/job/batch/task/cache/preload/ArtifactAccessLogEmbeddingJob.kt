@@ -49,7 +49,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -159,63 +158,28 @@ class ArtifactAccessLogEmbeddingJob(
         handler: (String, Map<String, AccessLog>) -> Unit
     ) {
         val collectionName = collectionName(minusMonth)
-        if (!mongoTemplate.collectionExists(collectionName)) {
-            logger.warn("mongo collection[$collectionName] not exists")
-            return
-        }
-        val pageSize = properties.batchSize
-        var lastId = findFirstObjectId(collectionName, after)
-        var querySize: Int
         // buffer存储的内容结构为(projectId, (path, accessLog))
         val projectBuffer = HashMap<String, MutableMap<String, AccessLog>>()
-        val count = mongoTemplate.count(Query(), collectionName)
-        var progress = 0
-        do {
-            val query = Query()
-                .addCriteria(Criteria.where(ID).gt(lastId))
-                .limit(pageSize)
-                .with(Sort.by(ID).ascending())
-            query.fields().include(
-                ID,
-                TOperateLog::projectId.name,
-                TOperateLog::repoName.name,
-                TOperateLog::type.name,
-                TOperateLog::resourceKey.name,
-                TOperateLog::createdDate.name
-            )
+        iterateCollection(collectionName, findFirstObjectId(collectionName, after)) { operateLog ->
+            val createDate = operateLog.createdDate
+            val outOfDateRange =
+                after != null && createDate.isBefore(after) || before != null && createDate.isAfter(before)
+            val acceptableType =
+                operateLog.type == EventType.NODE_DOWNLOADED.name || operateLog.type == EventType.NODE_CREATED.name
+            val acceptableProject = operateLog.projectId in properties.projects
 
-            val start = System.currentTimeMillis()
-            val operateLogs = mongoTemplate.find<OperateLog>(query, collectionName)
-            progress += operateLogs.size
-            if (progress % 1000000 == 0) {
-                logger.info("find access log from db elapsed[${System.currentTimeMillis() - start}]ms, $progress/$count")
-            }
-
-            for (operateLog in operateLogs) {
-                if (operateLog.type != EventType.NODE_DOWNLOADED.name || operateLog.projectId !in properties.projects) {
-                    continue
-                }
-                val createDate = operateLog.createdDate
-                if (after != null && createDate.isBefore(after) || before != null && createDate.isAfter(before)) {
-                    continue
-                }
-
-                projectBuffer.addToBuffer(operateLog)
-                val projectId = operateLog.projectId
-                if (projectBuffer[projectId]!!.size >= properties.batchToInsert) {
-                    // flush
-                    handler(projectId, projectBuffer[projectId]!!)
-                    projectBuffer.remove(projectId)
+            if (!outOfDateRange && acceptableProject && acceptableType) {
+                val shouldFlush = projectBuffer.addToBuffer(operateLog)
+                if (shouldFlush) {
+                    handler(operateLog.projectId, projectBuffer[operateLog.projectId]!!)
+                    projectBuffer.remove(operateLog.projectId)
                 }
             }
-
-            querySize = operateLogs.size
-            lastId = operateLogs.lastOrNull()?.id ?: break
-        } while (querySize == pageSize && shouldRun())
+        }
         projectBuffer.forEach { (projectId, paths) -> handler(projectId, paths) }
     }
 
-    private fun HashMap<String, MutableMap<String, AccessLog>>.addToBuffer(operateLog: OperateLog) {
+    private fun HashMap<String, MutableMap<String, AccessLog>>.addToBuffer(operateLog: OperateLog): Boolean {
         with(operateLog) {
             val projectRepoFullPath = if (repoName == PIPELINE) {
                 // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
@@ -241,7 +205,48 @@ class ArtifactAccessLogEmbeddingJob(
             } else {
                 accessLog.uploadTimestamp.add(createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
             }
+            return buffer.size >= properties.batchToInsert ||
+                    accessLog.downloadTimestamp.size >= properties.batchToInsert ||
+                    accessLog.uploadTimestamp.size >= properties.batchToInsert
         }
+    }
+
+    private fun iterateCollection(collectionName: String, startId: ObjectId, handler: (OperateLog) -> Unit) {
+        if (!mongoTemplate.collectionExists(collectionName)) {
+            logger.warn("mongo collection[$collectionName] not exists")
+            return
+        }
+        val count = mongoTemplate.count(Query(), collectionName)
+        var progress = 0
+        var records: List<OperateLog>
+        var lastId = startId
+        do {
+            val query = buildQuery(lastId)
+            val start = System.currentTimeMillis()
+            records = mongoTemplate.find(query, OperateLog::class.java, collectionName)
+
+            progress += records.size
+            if (progress % 1000000 == 0) {
+                val end = System.currentTimeMillis()
+                logger.info("find access log from db elapsed[${end - start}]ms, $progress/$count")
+            }
+
+            records.forEach { handler(it) }
+            lastId = records.lastOrNull()?.id ?: break
+        } while (records.size == query.limit && shouldRun())
+    }
+
+    private fun buildQuery(lastId: ObjectId): Query {
+        val query = Query(Criteria.where(ID).gt(lastId)).limit(properties.batchSize).with(Sort.by(ID).ascending())
+        query.fields().include(
+            ID,
+            TOperateLog::projectId.name,
+            TOperateLog::repoName.name,
+            TOperateLog::type.name,
+            TOperateLog::resourceKey.name,
+            TOperateLog::createdDate.name
+        )
+        return query
     }
 
     private fun findFirstObjectId(collectionName: String, after: LocalDateTime?): ObjectId {
