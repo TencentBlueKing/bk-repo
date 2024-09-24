@@ -54,7 +54,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.repository.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional

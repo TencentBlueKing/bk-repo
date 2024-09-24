@@ -67,7 +67,7 @@ import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeRenameSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeStatsSupport
-import com.tencent.bkrepo.repository.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria

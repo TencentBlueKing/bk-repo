@@ -48,7 +48,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
-import com.tencent.bkrepo.repository.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.router.api.RouterControllerClient
 
 abstract class EdgeNodeBaseService(

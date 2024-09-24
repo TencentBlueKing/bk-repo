@@ -29,31 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl
+package com.tencent.bkrepo.common.metadata.service.repo.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.util.HumanReadable
-import com.tencent.bkrepo.common.artifact.event.repo.RepoVolumeSyncEvent
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TRepository
+import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.util.QuotaHelper
+import com.tencent.bkrepo.common.metadata.util.RepoQueryHelper
 import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
-import com.tencent.bkrepo.repository.service.repo.QuotaService
-import org.springframework.context.ApplicationEventPublisher
-import org.springframework.data.mongodb.core.query.Query
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 
 /**
  * 仓库配额服务实现类
  */
 @Service
+@Conditional(SyncCondition::class)
 class QuotaServiceImpl(
     private val repositoryDao: RepositoryDao,
-    private val applicationEventPublisher: ApplicationEventPublisher
 ) : QuotaService {
 
     override fun getRepoQuotaInfo(projectId: String, repoName: String): RepoQuotaInfo {
@@ -65,20 +62,7 @@ class QuotaServiceImpl(
 
     override fun checkRepoQuota(projectId: String, repoName: String, change: Long) {
         val tRepository = checkRepository(projectId, repoName)
-        with(tRepository) {
-            quota?.let {
-                if (used!! + change < 0) {
-                    applicationEventPublisher.publishEvent(RepoVolumeSyncEvent(projectId, repoName))
-                }
-                if (used!! + change > it) {
-                    throw ErrorCodeException(
-                        ArtifactMessageCode.REPOSITORY_OVER_QUOTA,
-                        name,
-                        HumanReadable.size(quota!!)
-                    )
-                }
-            }
-        }
+        QuotaHelper.checkQuota(tRepository, change)
     }
 
     override fun increaseUsedVolume(projectId: String, repoName: String, inc: Long) {
@@ -91,7 +75,7 @@ class QuotaServiceImpl(
     }
 
     private fun incUpdateRepoUsedVolume(projectId: String, repoName: String, num: Long) {
-        val query = buildQuery(projectId, repoName)
+        val query = RepoQueryHelper.buildSingleQuery(projectId, repoName)
         val tRepository = checkRepository(projectId, repoName)
         tRepository.quota?.let {
             val update = Update().inc(TRepository::used.name, num)
@@ -100,20 +84,10 @@ class QuotaServiceImpl(
     }
 
     /**
-     * 构造单一仓库查询条件
-     */
-    private fun buildQuery(projectId: String, repoName: String): Query {
-        val criteria = where(TRepository::projectId).isEqualTo(projectId)
-            .and(TRepository::name).isEqualTo(repoName)
-            .and(TRepository::deleted).isEqualTo(null)
-        return Query(criteria)
-    }
-
-    /**
      * 检查仓库是否存在，不存在则抛异常
      */
     private fun checkRepository(projectId: String, repoName: String): TRepository {
-        val query = buildQuery(projectId, repoName)
+        val query = RepoQueryHelper.buildSingleQuery(projectId, repoName)
         return repositoryDao.findOne(query)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
     }

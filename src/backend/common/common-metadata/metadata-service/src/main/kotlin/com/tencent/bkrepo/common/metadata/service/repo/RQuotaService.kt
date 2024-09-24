@@ -29,14 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo
+package com.tencent.bkrepo.common.metadata.service.repo
 
 import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 
 /**
  * 仓库配额服务接口
  */
-interface QuotaService {
+interface RQuotaService {
 
     /**
      * 查询仓库配额信息
@@ -44,7 +44,7 @@ interface QuotaService {
      * @param projectId 项目id
      * @param repoName 仓库名称
      */
-    fun getRepoQuotaInfo(projectId: String, repoName: String): RepoQuotaInfo
+    suspend fun getRepoQuotaInfo(projectId: String, repoName: String): RepoQuotaInfo
 
     /**
      * 检查之后的文件操作是否会超过仓库配额
@@ -53,7 +53,7 @@ interface QuotaService {
      * @param repoName 仓库名称
      * @param change 将要改变的使用容量
      */
-    fun checkRepoQuota(projectId: String, repoName: String, change: Long)
+    suspend fun checkRepoQuota(projectId: String, repoName: String, change: Long)
 
     /**
      * 增加仓库已使用的容量
@@ -62,7 +62,7 @@ interface QuotaService {
      * @param repoName 仓库名称
      * @param inc 新增使用容量
      */
-    fun increaseUsedVolume(projectId: String, repoName: String, inc: Long)
+    suspend fun increaseUsedVolume(projectId: String, repoName: String, inc: Long)
 
     /**
      * 释放仓库已使用的容量
@@ -71,5 +71,5 @@ interface QuotaService {
      * @param repoName 仓库名称
      * @param dec 释放使用容量
      */
-    fun decreaseUsedVolume(projectId: String, repoName: String, dec: Long)
+    suspend fun decreaseUsedVolume(projectId: String, repoName: String, dec: Long)
 }
