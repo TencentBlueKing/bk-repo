@@ -40,7 +40,6 @@ class ConanArtifactInfo(
     var packageId: String?,
     var revision: String? = null,
     var pRevision: String? = null,
-    var fileName: String? = null
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
 
@@ -158,6 +157,7 @@ class ConanArtifactInfo(
 
         const val REVISION_SEARCH_V2 = "/{projectId}/{repoName}/v2/conans/" +
             "{name}/{version}/{username}/{channel}/revisions/{revision}/search"
+
         // package search
         const val PACKAGE_SEARCH_V2 = "/{projectId}/{repoName}/v2/conans/" +
             "{name}/{version}/{username}/{channel}/search"
