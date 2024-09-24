@@ -58,6 +58,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import kotlin.math.abs
 import kotlin.system.measureTimeMillis
 
 @Component
@@ -198,7 +199,12 @@ class ArtifactAccessLogEmbeddingJob(
                 )
             }
             accessLog.count += 1
-            accessLog.downloadTimestamp.add(createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+            // 只添加间隔超过10分钟的下载时间戳，可能会导致时间戳数量小于count
+            val createdTimestamp = createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val lastTimestamp = accessLog.downloadTimestamp.lastOrNull() ?: 0L
+            if (abs(createdTimestamp - lastTimestamp) > 600_000) {
+                accessLog.downloadTimestamp.add(createdTimestamp)
+            }
             return buffer.size >= properties.batchToInsert ||
                     accessLog.downloadTimestamp.size >= properties.batchToInsert
         }
@@ -275,7 +281,7 @@ class ArtifactAccessLogEmbeddingJob(
         val fullPath: String,
         val projectRepoFullPath: String,
         var count: Long = 0,
-        val downloadTimestamp: MutableSet<Long> = HashSet(),
+        val downloadTimestamp: LinkedHashSet<Long> = LinkedHashSet(),
     )
 
     companion object {
