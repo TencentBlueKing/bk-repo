@@ -79,11 +79,16 @@ class CleanupFileVisitor(
             val file = filePath.toFile()
             val expired = fileExpireResolver.isExpired(file)
             val retain = fileRetainResolver?.retain(file) ?: false
-            val existInStorage = existInStorage(filePath)
-            if (!existInStorage) {
-                logger.info("cache file[${filePath}] not exists in storage[${credentials.key}]")
+
+            var shouldDelete = expired && !isNFSTempFile(filePath)
+            if (shouldDelete && !isTempFile) {
+                val existInStorage = existInStorage(filePath)
+                if (!existInStorage) {
+                    logger.info("cache file[${filePath}] not exists in storage[${credentials.key}]")
+                }
+                shouldDelete = existInStorage
             }
-            val shouldDelete = expired && !isNFSTempFile(filePath) && (isTempFile || existInStorage)
+
             if (shouldDelete && !retain) {
                 rateLimiter.acquire()
                 Files.delete(filePath)
