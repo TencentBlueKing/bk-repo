@@ -78,7 +78,8 @@ class StorageCacheIndexerCustomizer(
                 // publish retained event
                 val path = fileLocator.locate(key)
                 if (storageService.cacheExists(path, key, storageCredentials)) {
-                    val data = CacheFileEventData(storageCredentials, key, path, value)
+                    val fullPath = "${storageCredentials.cache.path}$path$key"
+                    val data = CacheFileEventData(storageCredentials, key, fullPath, value)
                     publisher.publishEvent(CacheFileRetainedEvent(data))
                 }
 
