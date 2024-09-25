@@ -128,6 +128,7 @@ export default {
                 location.href = window.getLoginUrl() + '&is_from_logout=1'
             }
         } else {
+            cookie.remove('hasShowLog')
             cookie.remove('bkrepo_ticket')
             commit('SHOW_LOGIN_DIALOG', true)
         }

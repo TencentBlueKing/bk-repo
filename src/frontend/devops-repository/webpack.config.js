@@ -27,7 +27,10 @@ module.exports = (env, argv) => {
             title: '制品库 | 腾讯蓝鲸智云'
         }),
         new CopyWebpackPlugin({
-            patterns: [{ from: path.join(__dirname, './static'), to: dist }]
+            patterns: [
+                { from: path.join(__dirname, './static'), to: dist },
+                { from: path.join(__dirname, '../../../versionLogs'), to: `${dist}/versionLogs` }
+            ]
         })
     ]
 
