@@ -25,19 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.interceptor
+package com.tencent.bkrepo.common.metadata.interceptor.config
 
-import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
 
-@Configuration
-@EnableConfigurationProperties(DownloadInterceptorProperties::class)
-class ArtifactDownloadInterceptorConfiguration {
-
-    @Bean
-    fun downloadInterceptorFactory(properties: DownloadInterceptorProperties): DownloadInterceptorFactory {
-        return DownloadInterceptorFactory(properties)
-    }
-}
+/**
+ * 下载拦截器配置项
+ */
+@ConfigurationProperties("download.interceptor")
+data class DownloadInterceptorProperties(
+    /**
+     * 办公网下载拦截配置
+     */
+    @NestedConfigurationProperty
+    var officeNetwork: OfficeNetworkProperties = OfficeNetworkProperties()
+)

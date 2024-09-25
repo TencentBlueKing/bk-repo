@@ -25,25 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller.proxy
+package com.tencent.bkrepo.common.metadata.interceptor
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import org.springframework.web.bind.annotation.RestController
+/**
+ * 组合下载拦截器
+ */
+abstract class CompositeDownloadInterceptor<T>(rules: Map<String, Any>) : DownloadInterceptor<Any, T>(rules) {
 
-@RestController
-class ProxyRepositoryController(
-    private val repositoryService: RepositoryService
-) : ProxyRepositoryClient {
-    override fun getRepoDetail(projectId: String, repoName: String, type: String?): Response<RepositoryDetail?> {
-        return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, type))
+    override fun parseRule() {
+        throw UnsupportedOperationException()
     }
 
-    override fun getRepoInfo(projectId: String, repoName: String): Response<RepositoryInfo?> {
-        return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, null))
+    override fun matcher(artifact: T, rule: Any): Boolean {
+        throw UnsupportedOperationException()
     }
 }

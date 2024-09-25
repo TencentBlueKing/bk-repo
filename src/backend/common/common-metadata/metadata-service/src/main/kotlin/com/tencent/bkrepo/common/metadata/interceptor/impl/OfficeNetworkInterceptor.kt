@@ -25,18 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.interceptor.impl
+package com.tencent.bkrepo.common.metadata.interceptor.impl
 
-import com.tencent.bkrepo.common.artifact.interceptor.CompositeDownloadInterceptor
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.api.util.IpUtils
+import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.config.DownloadInterceptorProperties
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 
 /**
- * 移动端下载拦截器
+ * 办公网下载拦截器，只允许白名单IP下载
  */
-class MobileInterceptor(rules: Map<String, Any>) : CompositeDownloadInterceptor<NodeDetail>(rules) {
+@Deprecated("已合并到IP段下载拦截器")
+class OfficeNetworkInterceptor<A>(
+    rules: Map<String, Any>,
+    private val properties: DownloadInterceptorProperties
+) : DownloadInterceptor<Map<String, Boolean>, A>(rules) {
 
-    override fun intercept(projectId: String, artifact: NodeDetail) {
-        FilenameInterceptor(rules).intercept(projectId, artifact)
-        NodeMetadataInterceptor(rules).intercept(projectId, artifact)
+    /**
+     * 示例；
+     * "rules": {
+     *   "enabled": true
+     * }
+     */
+    override fun parseRule(): Map<String, Boolean> {
+        return rules.mapValues { it.value.toString().toBoolean() }
+    }
+
+
+    override fun matcher(artifact: A, rule: Map<String, Boolean>): Boolean {
+        if (rule[ENABLED] == false) {
+            return true
+        }
+
+        val cidrList = properties.officeNetwork.whiteList
+        val clientIp = HttpContextHolder.getClientAddress()
+        cidrList.forEach {
+            if (IpUtils.isInRange(clientIp, it)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    companion object {
+        private const val ENABLED = "enabled"
     }
 }

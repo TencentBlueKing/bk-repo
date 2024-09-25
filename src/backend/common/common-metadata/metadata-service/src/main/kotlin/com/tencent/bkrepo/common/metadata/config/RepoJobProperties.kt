@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.job.base
+package com.tencent.bkrepo.common.metadata.config
 
 /**
  * 仓库后台任务配置

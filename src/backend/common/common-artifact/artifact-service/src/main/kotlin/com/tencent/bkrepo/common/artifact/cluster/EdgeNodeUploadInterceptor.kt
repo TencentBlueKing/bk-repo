@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.interceptor
+package com.tencent.bkrepo.common.artifact.cluster
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,23 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.common.metadata.config
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
+import org.springframework.context.annotation.Configuration
 
-/**
- * 仓库-存储映射
- * 用于新建仓库时指定storage credentials key
- * 优先级：仓库名称 > 仓库类型
- */
-data class RepoStorageMapping(
+@Configuration
+@ConfigurationProperties("repository")
+data class RepositoryProperties(
+    var deletedNodeReserveDays: Long = 14,
+    var defaultStorageCredentialsKey: String? = null,
+    var listCountLimit: Long = 100000L,
+    var slowLogTimeThreshold: Long = 1_000,
+    @NestedConfigurationProperty
+    var job: RepoJobProperties = RepoJobProperties(),
+    @NestedConfigurationProperty
+    var repoStorageMapping: RepoStorageMapping = RepoStorageMapping(),
+    var allowUserAddSystemMetadata: List<String> = emptyList(),
+    var gitUrl: String = "",
+    var svnUrl: String = "",
     /**
-     * 仓库名称-存储映射
+     * 用于验证bkci webhook签名
      */
-    var names: MutableMap<String, String> = mutableMapOf(),
-
+    var bkciWebhookSecret: String = "",
     /**
-     * 仓库类型-存储映射
+     * 当目录节点上的num字段小于该值时，去db中实时count目录大小
+     * 注意： 此配置的值要比listCountLimit大
      */
-    var types: MutableMap<RepositoryType, String> = mutableMapOf()
+    var subNodeLimit: Long = 100000000L
 )

@@ -25,21 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.interceptor
+package com.tencent.bkrepo.common.metadata.interceptor
 
 import com.tencent.bkrepo.common.api.constant.DOWNLOAD_SOURCE
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
-import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
-import com.tencent.bkrepo.common.artifact.interceptor.impl.FilenameInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.impl.IpSegmentInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.impl.MetadataInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.impl.MobileInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.impl.NodeMetadataInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.impl.OfficeNetworkInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.impl.PackageMetadataInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.impl.WebInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.config.DownloadInterceptorProperties
+import com.tencent.bkrepo.common.metadata.interceptor.impl.FilenameInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.impl.IpSegmentInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.impl.MetadataInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.impl.MobileInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.impl.NodeMetadataInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.impl.OfficeNetworkInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.impl.PackageMetadataInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.impl.WebInterceptor
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail

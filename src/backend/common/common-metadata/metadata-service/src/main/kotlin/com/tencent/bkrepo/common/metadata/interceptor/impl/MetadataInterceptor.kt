@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,10 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.interceptor.impl
+package com.tencent.bkrepo.common.metadata.interceptor.impl
 
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
 
-class PackageMetadataInterceptor(rules: Map<String, Any>) : MetadataInterceptor<PackageVersion>(rules) {
-    override fun artifactMetadata(artifact: PackageVersion) = artifact.metadata
+/**
+ * 元数据下载拦截器
+ */
+abstract class MetadataInterceptor<A>(rules: Map<String, Any>) : DownloadInterceptor<Map<String, String>, A>(rules) {
+
+    /**
+     * 示例；
+     * "rules": {
+     *   "metadata": "key: value"
+     * }
+     */
+    override fun parseRule(): Map<String, String> {
+        val kvString = rules[METADATA]!!.toString()
+        val (key, value) = kvString.split(StringPool.COLON).map { it.trim() }
+        return mapOf(key to value)
+    }
+
+    override fun matcher(artifact: A, rule: Map<String, String>): Boolean {
+        val metadata = artifactMetadata(artifact)
+        for ((k, v) in rule) {
+            if (metadata[k].toString() != v) {
+                return false
+            }
+        }
+        return true
+    }
+
+    abstract fun artifactMetadata(artifact: A): Map<String, Any>
+
+    companion object {
+        const val METADATA = "metadata"
+    }
 }

@@ -25,33 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.interceptor.impl
+package com.tencent.bkrepo.common.metadata.interceptor.impl
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
-import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
-/**
- * 制品禁用拦截器
- */
-abstract class ForbidStatusInterceptor<A> : DownloadInterceptor<Any, A>(emptyMap()) {
-
-    override fun parseRule() {
-        throw UnsupportedOperationException()
-    }
-
-    override fun matcher(artifact: A, rule: Any): Boolean {
-        throw UnsupportedOperationException()
-    }
-
-    override fun intercept(projectId: String, artifact: A) {
-        if (artifactMetadata(artifact)[FORBID_STATUS] == true) {
-            throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_FORBIDDEN, artifactFullPath(artifact))
-        }
-    }
-
-    abstract fun artifactMetadata(artifact: A): Map<String, Any>
-
-    abstract fun artifactFullPath(artifact: A): String
+class PackageMetadataInterceptor(rules: Map<String, Any>) : MetadataInterceptor<PackageVersion>(rules) {
+    override fun artifactMetadata(artifact: PackageVersion) = artifact.metadata
 }

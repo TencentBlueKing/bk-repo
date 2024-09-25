@@ -25,9 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.interceptor.impl
+package com.tencent.bkrepo.common.metadata.interceptor.impl
 
-import com.tencent.bkrepo.common.artifact.interceptor.CompositeDownloadInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.CompositeDownloadInterceptor
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 /**

@@ -25,18 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.interceptor
+package com.tencent.bkrepo.common.metadata.interceptor.impl
+
+import com.tencent.bkrepo.common.metadata.interceptor.CompositeDownloadInterceptor
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 /**
- * 组合下载拦截器
+ * 移动端下载拦截器
  */
-abstract class CompositeDownloadInterceptor<T>(rules: Map<String, Any>) : DownloadInterceptor<Any, T>(rules) {
+class MobileInterceptor(rules: Map<String, Any>) : CompositeDownloadInterceptor<NodeDetail>(rules) {
 
-    override fun parseRule() {
-        throw UnsupportedOperationException()
-    }
-
-    override fun matcher(artifact: T, rule: Any): Boolean {
-        throw UnsupportedOperationException()
+    override fun intercept(projectId: String, artifact: NodeDetail) {
+        FilenameInterceptor(rules).intercept(projectId, artifact)
+        NodeMetadataInterceptor(rules).intercept(projectId, artifact)
     }
 }

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.util
+package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoDeletedEvent

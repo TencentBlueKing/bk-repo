@@ -25,48 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.interceptor
-
-import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
-import org.slf4j.LoggerFactory
+package com.tencent.bkrepo.common.metadata.interceptor.config
 
 /**
- * 下载拦截器
+ * 办公网下载拦截配置项
  */
-abstract class DownloadInterceptor<R, A>(
-    protected val rules: Map<String, Any>
-) {
-    abstract fun parseRule(): R
-
-    abstract fun matcher(artifact: A, rule: R): Boolean
-
-    open fun intercept(projectId: String, artifact: A) {
-        val rule = try {
-            parseRule()
-        } catch (e: Exception) {
-            logger.warn("fail to parse rule[$rules] of artifact[$artifact]", e)
-            return
-        }
-        val match = matcher(artifact, rule)
-        val forbidden = (allowed() && !match) || (!allowed() && match)
-        if (forbidden) {
-            throw ArtifactDownloadForbiddenException(projectId)
-        }
-    }
-
+data class OfficeNetworkProperties(
     /**
-     * allowed表示拦截器规则是允许或禁止
-     * allowed=true 允许
-     * allowed=false 禁止
-     *
-     * @return 默认true
+     * IP白名单
      */
-    private fun allowed(): Boolean {
-        return rules[ALLOWED] as? Boolean ?: true
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(DownloadInterceptor::class.java)
-        const val ALLOWED = "allowed"
-    }
-}
+    var whiteList: List<String> = listOf("0.0.0.0/0")
+)

@@ -25,49 +25,60 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.interceptor.impl
+package com.tencent.bkrepo.common.metadata.interceptor.impl
 
 import com.tencent.bkrepo.common.api.util.IpUtils
-import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.config.DownloadInterceptorProperties
+import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.config.DownloadInterceptorProperties
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 /**
- * 办公网下载拦截器，只允许白名单IP下载
+ * IP段下载拦截器
+ * 1.办公网IP段限制
+ * 2.自定义IP段限制
+ * 3.白名单用户不受1、2的限制
  */
-@Deprecated("已合并到IP段下载拦截器")
-class OfficeNetworkInterceptor<A>(
+class IpSegmentInterceptor(
     rules: Map<String, Any>,
     private val properties: DownloadInterceptorProperties
-) : DownloadInterceptor<Map<String, Boolean>, A>(rules) {
-
-    /**
-     * 示例；
-     * "rules": {
-     *   "enabled": true
-     * }
-     */
-    override fun parseRule(): Map<String, Boolean> {
-        return rules.mapValues { it.value.toString().toBoolean() }
+): DownloadInterceptor<Map<String, Any>, NodeDetail>(
+    rules
+) {
+    override fun parseRule(): Map<String, Any> {
+        val customIpSegment = rules[IP_SEGMENT] as? List<String> ?: emptyList()
+        customIpSegment.forEach {
+            IpUtils.parseCidr(it)
+        }
+        return rules
     }
 
+    override fun matcher(artifact: NodeDetail, rule: Map<String, Any>): Boolean {
+        val officeNetworkEnabled = rules[OFFICE_NETWORK] as? Boolean ?: true
+        val customIpSegment = rules[IP_SEGMENT] as? List<String> ?: emptyList()
+        val whitelistUser = rules[WHITELIST_USER] as? List<String> ?: emptyList()
 
-    override fun matcher(artifact: A, rule: Map<String, Boolean>): Boolean {
-        if (rule[ENABLED] == false) {
+        val userId = SecurityUtils.getUserId()
+        if (whitelistUser.contains(userId)) {
             return true
         }
 
-        val cidrList = properties.officeNetwork.whiteList
-        val clientIp = HttpContextHolder.getClientAddress()
-        cidrList.forEach {
+        val clientIp = HttpContextHolder.getClientAddressFromAttribute()
+        val officeNetworkIpSegment = if (officeNetworkEnabled) properties.officeNetwork.whiteList else emptyList()
+        val ipSegment = officeNetworkIpSegment.plus(customIpSegment)
+        ipSegment.forEach {
             if (IpUtils.isInRange(clientIp, it)) {
                 return true
             }
         }
+
         return false
     }
 
     companion object {
-        private const val ENABLED = "enabled"
+        private const val OFFICE_NETWORK = "officeNetwork"
+        private const val IP_SEGMENT = "ipSegment"
+        private const val WHITELIST_USER = "whitelistUser"
     }
 }
