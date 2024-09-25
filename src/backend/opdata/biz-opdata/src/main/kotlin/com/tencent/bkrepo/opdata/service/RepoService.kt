@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.opdata.pojo.CleanupRules
-import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
@@ -40,7 +40,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class RepoService(
-    private val projectClient: ProjectClient,
+    private val projectService: ProjectService,
     private val repoClient: RepositoryClient,
 ) {
 
@@ -61,10 +61,10 @@ class RepoService(
         var offset = 0L
         var projects: List<ProjectInfo?>?
         do {
-            projects = projectClient.rangeQuery(
+            projects = projectService.rangeQuery(
                 ProjectRangeQueryRequest(projectIds = emptyList(), offset = offset, limit = 1000)
-            ).data?.records
-            projects?.forEach {
+            ).records
+            projects.forEach {
                 runReposInProject(it!!, rule)
             }
             offset += 1000

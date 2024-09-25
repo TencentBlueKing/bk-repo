@@ -29,14 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao.repository
+package com.tencent.bkrepo.common.metadata.model
 
-import com.tencent.bkrepo.repository.model.TNode
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.repository.pojo.repo.RepoMetricsInfo
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-/**
- * 节点mongo repository
- */
-@Repository
-interface NodeRepository : MongoRepository<TNode, String>
+@Document("project_metrics")
+data class TProjectMetrics(
+    var id: String? = null,
+    var projectId: String,
+    var nodeNum: Long,
+    var capSize: Long,
+    val repoMetrics: List<RepoMetricsInfo>,
+    val createdDate: LocalDateTime? = LocalDateTime.now()
+)

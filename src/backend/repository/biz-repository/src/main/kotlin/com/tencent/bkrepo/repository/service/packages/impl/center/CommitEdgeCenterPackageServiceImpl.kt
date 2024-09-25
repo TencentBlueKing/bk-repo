@@ -29,7 +29,7 @@ package com.tencent.bkrepo.repository.service.packages.impl.center
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterPackageCondition

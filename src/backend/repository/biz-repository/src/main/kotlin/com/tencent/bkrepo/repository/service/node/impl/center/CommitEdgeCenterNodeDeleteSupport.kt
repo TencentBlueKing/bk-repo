@@ -30,7 +30,7 @@ package com.tencent.bkrepo.repository.service.node.impl.center
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.security.util.SecurityUtils

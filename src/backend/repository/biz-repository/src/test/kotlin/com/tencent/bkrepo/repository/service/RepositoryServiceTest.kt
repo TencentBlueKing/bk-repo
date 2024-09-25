@@ -56,7 +56,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService

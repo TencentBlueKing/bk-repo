@@ -8,7 +8,7 @@ import com.tencent.bkrepo.common.metadata.dao.blocknode.RBlockNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.com.bkrepo.fs.UT_PROJECT_ID

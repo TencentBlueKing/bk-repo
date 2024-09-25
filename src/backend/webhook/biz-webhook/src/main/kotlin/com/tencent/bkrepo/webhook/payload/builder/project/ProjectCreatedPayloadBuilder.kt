@@ -30,7 +30,7 @@ package com.tencent.bkrepo.webhook.payload.builder.project
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.payload.builder.EventPayloadBuilder
@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class ProjectCreatedPayloadBuilder(
-    private val projectClient: ProjectClient
+    private val projectService: ProjectService
 ) : EventPayloadBuilder(
     eventType = EventType.PROJECT_CREATED
 ) {
@@ -52,7 +52,7 @@ class ProjectCreatedPayloadBuilder(
     }
 
     private fun getProject(projectId: String): ProjectInfo {
-        return projectClient.getProjectInfo(projectId).data
+        return projectService.getProjectInfo(projectId)
             ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_PROJECT_NOT_FOUND)
     }
 }

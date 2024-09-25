@@ -50,7 +50,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.webhook.BkCiDevXEnabledPayload
-import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl

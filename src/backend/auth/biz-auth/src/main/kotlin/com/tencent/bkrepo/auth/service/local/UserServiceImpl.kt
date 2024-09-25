@@ -34,6 +34,8 @@ package com.tencent.bkrepo.auth.service.local
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
+import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
@@ -43,8 +45,6 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
-import com.tencent.bkrepo.auth.dao.repository.RoleRepository
-import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.request.UserRequestUtil
@@ -52,9 +52,9 @@ import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.operate.service.util.DesensitizedUtils
-import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -72,7 +72,7 @@ class UserServiceImpl constructor(
     lateinit var repoClient: RepositoryClient
 
     @Autowired
-    lateinit var projectClient: ProjectClient
+    lateinit var projectService: ProjectService
 
     @Autowired
     lateinit var bkAuthConfig: DevopsAuthConfig
@@ -148,7 +148,7 @@ class UserServiceImpl constructor(
 
     override fun createUserToProject(request: CreateUserToProjectRequest): Boolean {
         logger.info("create user to project request : [${DesensitizedUtils.toString(request)}]")
-        projectClient.getProjectInfo(request.projectId).data ?: run {
+        projectService.getProjectInfo(request.projectId) ?: run {
             logger.warn("project [${request.projectId}]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PROJECT_NOT_EXIST)
         }

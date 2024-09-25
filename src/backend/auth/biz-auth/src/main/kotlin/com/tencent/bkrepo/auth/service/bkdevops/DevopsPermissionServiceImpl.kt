@@ -32,32 +32,32 @@
 package com.tencent.bkrepo.auth.service.bkdevops
 
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
-import com.tencent.bkrepo.auth.dao.PermissionDao
-import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.dao.AccountDao
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.dao.AccountDao
+import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
+import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DOWNLOAD
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPO
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionContext
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 
@@ -75,7 +75,7 @@ class DevopsPermissionServiceImpl constructor(
     private val devopsPipelineService: DevopsPipelineService,
     private val devopsProjectService: DevopsProjectService,
     repoClient: RepositoryClient,
-    projectClient: ProjectClient,
+    projectService: ProjectService,
     bkIamV3Service: BkIamV3Service
 ) : BkIamV3PermissionServiceImpl(
     bkIamV3Service,
@@ -86,7 +86,7 @@ class DevopsPermissionServiceImpl constructor(
     personalPathDao,
     repoAuthConfigDao,
     repoClient,
-    projectClient,
+    projectService,
 ) {
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {

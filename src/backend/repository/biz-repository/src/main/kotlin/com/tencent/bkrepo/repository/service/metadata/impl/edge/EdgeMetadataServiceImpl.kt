@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.repository.service.metadata.impl.edge
 
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.ignoreException
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.nodeLevelNotFoundError
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.ignoreException
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.nodeLevelNotFoundError
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties

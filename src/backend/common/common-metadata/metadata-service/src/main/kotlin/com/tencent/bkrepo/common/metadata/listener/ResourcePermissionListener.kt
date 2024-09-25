@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,26 +10,22 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.listener
+package com.tencent.bkrepo.common.metadata.listener
 
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
@@ -45,12 +41,15 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
 import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import org.springframework.context.annotation.Conditional
 
 /**
  * 用于创建资源权限的时间监听器
  * 创建项目/仓库时，为当前用户创建对应项目/仓库的管理员权限
  */
 @Component
+@Conditional(SyncCondition::class)
 class ResourcePermissionListener(
     private val roleResource: ServiceRoleClient,
     private val userResource: ServiceUserClient,
@@ -118,10 +117,7 @@ class ResourcePermissionListener(
     }
 
     private fun isNeedLocalPermission(projectId: String): Boolean {
-        if (projectId.startsWith(CODE_PROJECT_PREFIX) || projectId.startsWith(CLOSED_SOURCE_PREFIX)) {
-            return false
-        }
-        return true
+        return !(projectId.startsWith(CODE_PROJECT_PREFIX) || projectId.startsWith(CLOSED_SOURCE_PREFIX))
     }
 
 }
