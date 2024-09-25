@@ -39,7 +39,7 @@ import com.tencent.bkrepo.conan.constant.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.conan.exception.ConanRecipeNotFoundException
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanUploadDownloadService
-import com.tencent.bkrepo.conan.utils.PathUtils.generateFullPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.generateFullPath
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 

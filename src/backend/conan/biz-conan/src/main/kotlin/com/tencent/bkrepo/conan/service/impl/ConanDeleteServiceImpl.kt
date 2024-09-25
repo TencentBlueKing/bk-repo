@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
@@ -44,21 +44,24 @@ import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanDeleteService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildExportFolderPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageFolderPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageIdFolderPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackagePath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageRevisionFolderPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildRevisionPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.joinString
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildBasicInfo
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
-import com.tencent.bkrepo.conan.utils.PathUtils
-import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageIdFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackagePath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildRevisionPath
-import com.tencent.bkrepo.conan.utils.PathUtils.getPackageRevisionsFile
-import com.tencent.bkrepo.conan.utils.PathUtils.joinString
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -78,16 +81,17 @@ class ConanDeleteServiceImpl : ConanDeleteService {
         with(conanArtifactInfo) {
             if (revision.isNullOrEmpty()) {
                 val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-                val refStr = PathUtils.buildReferenceWithoutVersion(conanFileReference)
-                val packageKey = PackageKeys.ofConan(refStr)
-                packageClient.deleteVersion(projectId, repoName, packageKey, version)
-                // TODO 路径需要优化
-                val rootPath = "/${buildPackagePath(conanFileReference)}"
+                val rootPath = PathUtils.normalizeFullPath(buildPackagePath(conanFileReference))
+                logger.info("Will delete folder $rootPath in repo $projectId|$repoName")
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
+                val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
+                val packageKey = PackageKeys.ofConan(refStr)
+                packageClient.deleteVersion(projectId, repoName, packageKey, version)
             } else {
                 val conanFileReference = convertToConanFileReference(conanArtifactInfo, revision)
-                val rootPath = "/${buildRevisionPath(conanFileReference)}"
+                val rootPath = PathUtils.normalizeFullPath(buildRevisionPath(conanFileReference))
+                logger.info("Will delete folder $rootPath in repo $projectId|$repoName")
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
                 publishEvent(
@@ -103,27 +107,22 @@ class ConanDeleteServiceImpl : ConanDeleteService {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo, revisionId)
             if (packageIds.isEmpty()) {
-                val path = buildPackageFolderPath(conanFileReference)
+                val path = PathUtils.normalizeFullPath(buildPackageFolderPath(conanFileReference))
+                logger.info("Will delete folder $path in repo $projectId|$repoName")
                 val request = NodeDeleteRequest(projectId, repoName, path, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
                 return
             }
-            val revPath = getPackageRevisionsFile(conanFileReference)
+            val revPath = PathUtils.normalizeFullPath(getPackageRevisionsFile(conanFileReference))
             val storedPackageIds = commonService.getPackageIdList(projectId, repoName, revPath)
             for (packageId in packageIds) {
                 if (!storedPackageIds.contains(packageId)) {
                     continue
                 }
-                val path = buildPackageIdFolderPath(conanFileReference, packageId)
+                val path = PathUtils.normalizeFullPath(buildPackageIdFolderPath(conanFileReference, packageId))
+                logger.info("Will delete folder $path in repo $projectId|$repoName")
                 val request = NodeDeleteRequest(projectId, repoName, path, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
-                publishEvent(
-                    ConanPackageDeleteEvent(
-                        ObjectBuildUtil.buildConanPackageDeleteRequest(
-                            conanArtifactInfo, SecurityUtils.getUserId(), packageId
-                        )
-                    )
-                )
             }
         }
     }
@@ -132,12 +131,14 @@ class ConanDeleteServiceImpl : ConanDeleteService {
         with(conanArtifactInfo) {
             if (pRevision.isNullOrEmpty()) {
                 val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-                val rootPath = buildPackageIdFolderPath(conanFileReference, packageId!!)
+                val rootPath = PathUtils.normalizeFullPath(buildPackageIdFolderPath(conanFileReference, packageId!!))
+                logger.info("Will delete folder $rootPath in repo $projectId|$repoName")
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
             } else {
                 val packageReference = convertToPackageReference(conanArtifactInfo)
-                val rootPath = buildPackageRevisionFolderPath(packageReference)
+                val rootPath = PathUtils.normalizeFullPath(buildPackageRevisionFolderPath(packageReference))
+                logger.info("Will delete folder $rootPath in repo $projectId|$repoName")
                 val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
                 publishEvent(
@@ -152,7 +153,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
     override fun removeRecipeFiles(conanArtifactInfo: ConanArtifactInfo, files: List<String>) {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo, DEFAULT_REVISION_V1)
-            val rootPath = buildExportFolderPath(conanFileReference)
+            val rootPath = PathUtils.normalizeFullPath(buildExportFolderPath(conanFileReference))
             var path: String?
             for (file in files) {
                 path = joinString(rootPath, file)
@@ -160,6 +161,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                     ?: throw ConanFileNotFoundException(
                         ConanMessageCode.CONAN_FILE_NOT_FOUND, path, "$projectId|$repoName"
                     )
+                logger.info("Will delete folder $path in repo $projectId|$repoName")
                 val request = NodeDeleteRequest(projectId, repoName, path, SecurityUtils.getUserId())
                 nodeClient.deleteNode(request)
                 publishEvent(
@@ -173,23 +175,17 @@ class ConanDeleteServiceImpl : ConanDeleteService {
 
     override fun removePackageByKey(conanArtifactInfo: ConanArtifactInfo, packageKey: String) {
         with(conanArtifactInfo) {
+            packageClient.listAllVersion(projectId, repoName, packageKey).data.orEmpty().forEach {
+                deleteVersion(projectId, repoName, packageKey, it, false)
+            }
             packageClient.deletePackage(projectId, repoName, packageKey)
-            val fullPath = PackageKeys.resolveConan(packageKey).replace(StringPool.AT, StringPool.SLASH)
-                .substringBeforeLast(StringPool.SLASH)
-            val rootPath = "/$fullPath"
-            val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
-            nodeClient.deleteNode(request)
         }
     }
 
     override fun removePackageVersion(conanArtifactInfo: ConanArtifactInfo, packageKey: String, version: String) {
         with(conanArtifactInfo) {
             val versionDetail = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: return
-            packageClient.deleteVersion(projectId, repoName, packageKey, version)
-            val conanFileReference = versionDetail.packageMetadata.toConanFileReference() ?: return
-            val rootPath = "/${buildPackagePath(conanFileReference)}"
-            val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
-            nodeClient.deleteNode(request)
+            deleteVersion(projectId, repoName, packageKey, versionDetail)
         }
     }
 
@@ -212,5 +208,26 @@ class ConanDeleteServiceImpl : ConanDeleteService {
             val basicInfo = buildBasicInfo(nodeDetail, versionDetail)
             return PackageVersionInfo(basicInfo, versionDetail.packageMetadata)
         }
+    }
+
+    private fun deleteVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        versionDetail: PackageVersion,
+        deleteVersion: Boolean = true
+    ) {
+        val conanFileReference = versionDetail.packageMetadata.toConanFileReference() ?: return
+        val rootPath = PathUtils.normalizeFullPath(buildPackagePath(conanFileReference))
+        logger.info("Will delete folder $rootPath in repo $projectId|$repoName")
+        val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
+        nodeClient.deleteNode(request)
+        if (deleteVersion) {
+            packageClient.deleteVersion(projectId, repoName, packageKey, versionDetail.name)
+        }
+    }
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(ConanDeleteServiceImpl::class.java)
     }
 }

@@ -36,8 +36,8 @@ import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanSearchService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildConanFileName
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackagePath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackagePath
 import com.tencent.bkrepo.repository.api.PackageClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service

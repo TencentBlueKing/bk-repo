@@ -36,8 +36,6 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.conan.constant.CONAN_MANIFEST
-import com.tencent.bkrepo.conan.constant.NAME
-import com.tencent.bkrepo.conan.constant.VERSION
 import com.tencent.bkrepo.conan.constant.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.conan.listener.event.ConanPackageUploadEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeUploadEvent
@@ -49,8 +47,8 @@ import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildDownloadResponse
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageVersionCreateRequest
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toMetadataList
-import com.tencent.bkrepo.conan.utils.PathUtils
-import com.tencent.bkrepo.conan.utils.PathUtils.generateFullPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.generateFullPath
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -170,7 +168,7 @@ class ConanLocalRepository : LocalRepository() {
         val conanFileReference = ConanArtifactInfoUtil.convertToConanFileReference(
             context.artifactInfo as ConanArtifactInfo
         )
-        val refStr = PathUtils.buildReferenceWithoutVersion(conanFileReference)
+        val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
         return PackageDownloadRecord(
             context.projectId, context.repoName, PackageKeys.ofConan(refStr), conanFileReference.version
         )
@@ -179,7 +177,7 @@ class ConanLocalRepository : LocalRepository() {
     private fun packageVersion(context: ArtifactDownloadContext, node: NodeDetail): PackageVersion? {
         with(context) {
             val conanFileReference = node.nodeMetadata.toConanFileReference() ?: return null
-            val refStr = PathUtils.buildReferenceWithoutVersion(conanFileReference)
+            val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
             val packageKey = PackageKeys.ofConan(refStr)
             return packageClient.findVersionByName(projectId, repoName, packageKey, conanFileReference.version).data
         }

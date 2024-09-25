@@ -51,11 +51,11 @@ import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildReferenceWithoutVersion
-import com.tencent.bkrepo.conan.utils.PathUtils.getPackageRevisionsFile
-import com.tencent.bkrepo.conan.utils.PathUtils.getRecipeRevisionsFile
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReferenceWithoutVersion
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.getRecipeRevisionsFile
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -85,7 +85,7 @@ object ObjectBuildUtil {
                 versionName = version,
                 size = size,
                 manifestPath = null,
-                artifactPath = PathUtils.generateFullPath(artifactInfo),
+                artifactPath = ConanPathUtils.generateFullPath(artifactInfo),
                 stageTag = null,
                 packageMetadata = addPackageMetadata(artifactInfo, sourceType),
                 createdBy = userId,

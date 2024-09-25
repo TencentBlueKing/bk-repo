@@ -54,16 +54,16 @@ import com.tencent.bkrepo.conan.pojo.IndexInfo
 import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.RevisionInfo
 import com.tencent.bkrepo.conan.utils.ConanInfoLoadUtil
-import com.tencent.bkrepo.conan.utils.PathUtils
-import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildRevisionPath
-import com.tencent.bkrepo.conan.utils.PathUtils.getPackageConanInfoFile
-import com.tencent.bkrepo.conan.utils.PathUtils.getPackageRevisionsFile
-import com.tencent.bkrepo.conan.utils.PathUtils.getRecipeRevisionsFile
-import com.tencent.bkrepo.conan.utils.PathUtils.joinString
+import com.tencent.bkrepo.conan.utils.ConanPathUtils
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildExportFolderPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageRevisionFolderPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildRevisionPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageConanInfoFile
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.getRecipeRevisionsFile
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.joinString
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -587,7 +587,7 @@ class CommonService(
     private fun getRequestUrlPrefix(conanFileReference: ConanFileReference): String {
         val requestUri = HttpContextHolder.getRequest().requestURI
         val prefixPath = requestUri.substring(
-            0, requestUri.indexOf(PathUtils.buildOriginalConanFileName(conanFileReference))
+            0, requestUri.indexOf(ConanPathUtils.buildOriginalConanFileName(conanFileReference))
         ).trimEnd(CharPool.SLASH).removeSuffix(CONANS_URL_TAG).trimEnd(CharPool.SLASH)
         return joinString(
             properties.domain,

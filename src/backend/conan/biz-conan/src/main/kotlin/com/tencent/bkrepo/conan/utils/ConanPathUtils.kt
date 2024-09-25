@@ -36,7 +36,7 @@ import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 
-object PathUtils {
+object ConanPathUtils {
 
     fun String.extractConanFileReference(): ConanFileReference {
         val pathList = this.trim('/').split("/")
