@@ -243,6 +243,17 @@ class CacheStorageService(
     }
 
     /**
+     * 判断缓存文件是否存在
+     */
+    fun cacheExists(
+        path: String,
+        filename: String,
+        credentials: StorageCredentials,
+    ): Boolean {
+        return getCacheClient(credentials).exist(path, filename)
+    }
+
+    /**
      * 获取存储的缓存目录健康状态
      */
     fun cacheHealthy(credentials: StorageCredentials?): Boolean {

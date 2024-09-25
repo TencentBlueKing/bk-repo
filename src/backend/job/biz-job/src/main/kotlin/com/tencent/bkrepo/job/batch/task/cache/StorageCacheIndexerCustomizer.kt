@@ -77,8 +77,10 @@ class StorageCacheIndexerCustomizer(
             } else {
                 // publish retained event
                 val path = fileLocator.locate(key)
-                val data = CacheFileEventData(storageCredentials, key, path, value)
-                publisher.publishEvent(CacheFileRetainedEvent(data))
+                if (storageService.cacheExists(path, key, storageCredentials)) {
+                    val data = CacheFileEventData(storageCredentials, key, path, value)
+                    publisher.publishEvent(CacheFileRetainedEvent(data))
+                }
 
                 // metrics
                 val storageKey = storageCredentials.key ?: DEFAULT_STORAGE_KEY
