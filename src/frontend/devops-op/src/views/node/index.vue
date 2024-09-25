@@ -171,6 +171,10 @@ import FileOperationDialog from '@/views/node/components/FileOperationDialog'
 export default {
   name: 'Node',
   components: { FileScanDialog, FileDeleteDialog, FileRestoreDialog, FileDetailDialog, FileReferenceDialog, ShareDialog, FileOperationDialog },
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     return {
       rules: {
@@ -211,10 +215,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     validateSha256(rule, value, callback) {

@@ -62,6 +62,10 @@ import PluginStatusDialog from '@/views/plugin/components/PluginStatusDialog'
 export default {
   name: 'Plugin',
   components: { PluginCreateDialog, PluginDetailDialog, PluginDeleteDialog, PluginStatusDialog },
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     return {
       loading: false,
@@ -85,10 +89,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     queryModeChanged() {
