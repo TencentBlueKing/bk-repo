@@ -40,7 +40,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 /**
  * 仓库服务接口
  */
-interface RepositoryService {
+interface RRepositoryService {
 
     /**
      * 查询仓库基本信息，不存在返回null
@@ -49,7 +49,7 @@ interface RepositoryService {
      * @param name 仓库名称
      * @param type 仓库类型
      */
-    fun getRepoInfo(projectId: String, name: String, type: String? = null): RepositoryInfo?
+    suspend fun getRepoInfo(projectId: String, name: String, type: String? = null): RepositoryInfo?
 
     /**
      * 查询仓库详情，不存在返回null
@@ -58,12 +58,12 @@ interface RepositoryService {
      * @param name 仓库名称
      * @param type 仓库类型
      */
-    fun getRepoDetail(projectId: String, name: String, type: String? = null): RepositoryDetail?
+    suspend fun getRepoDetail(projectId: String, name: String, type: String? = null): RepositoryDetail?
 
     /**
      * 查询项目[projectId]下的所有仓库
      */
-    fun listRepo(
+    suspend fun listRepo(
         projectId: String,
         name: String? = null,
         type: String? = null,
@@ -79,7 +79,7 @@ interface RepositoryService {
      * @param name 仓库名称
      * @param type 仓库类型
      */
-    fun listRepoPage(
+    suspend fun listRepoPage(
         projectId: String,
         pageNumber: Int,
         pageSize: Int,
@@ -94,7 +94,7 @@ interface RepositoryService {
      * @param projectId 项目id
      * @param option 仓库查询选项
      */
-    fun listPermissionRepo(
+    suspend fun listPermissionRepo(
         userId: String,
         projectId: String,
         option: RepoListOption,
@@ -106,7 +106,7 @@ interface RepositoryService {
      * @param userId 用户id
      * @param option 仓库查询选项
      */
-    fun listPermissionRepoPage(
+    suspend fun listPermissionRepoPage(
         userId: String,
         projectId: String,
         pageNumber: Int,
@@ -121,14 +121,14 @@ interface RepositoryService {
      * @param pageNumber 当前页
      * @param pageSize 分页数量
      */
-    fun listRepoPageByType(type: String, pageNumber: Int, pageSize: Int): Page<RepositoryDetail>
+    suspend fun listRepoPageByType(type: String, pageNumber: Int, pageSize: Int): Page<RepositoryDetail>
 
     /**
      * 分页查询仓库列表
      *
      * 根据请求[request]查询仓库
      */
-    fun rangeQuery(request: RepoRangeQueryRequest): Page<RepositoryInfo?>
+    suspend fun rangeQuery(request: RepoRangeQueryRequest): Page<RepositoryInfo?>
 
     /**
      * 判断仓库是否存在
@@ -137,34 +137,34 @@ interface RepositoryService {
      * @param name 仓库名称
      * @param type 仓库类型
      */
-    fun checkExist(projectId: String, name: String, type: String? = null): Boolean
+    suspend fun checkExist(projectId: String, name: String, type: String? = null): Boolean
 
     /**
      * 根据请求[repoCreateRequest]创建仓库
      */
-    fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail
+    suspend fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail
 
     /**
      * 根据请求[repoUpdateRequest]更新仓库
      */
-    fun updateRepo(repoUpdateRequest: RepoUpdateRequest)
+    suspend fun updateRepo(repoUpdateRequest: RepoUpdateRequest)
 
     /**
      * 更新storageCredentialsKey
      */
-    fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String?)
+    suspend fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String?)
 
     /**
      * 重置仓库旧存储字段
      */
-    fun unsetOldStorageCredentialsKey(projectId: String, repoName: String)
+    suspend fun unsetOldStorageCredentialsKey(projectId: String, repoName: String)
 
     /**
      * 根据请求[repoDeleteRequest]删除仓库
      *
      * 删除仓库前，需要保证仓库下的文件已经被删除
      */
-    fun deleteRepo(repoDeleteRequest: RepoDeleteRequest)
+    suspend fun deleteRepo(repoDeleteRequest: RepoDeleteRequest)
 
-    fun statRepo(projectId: String, repoName: String): NodeSizeInfo
+    suspend fun statRepo(projectId: String, repoName: String): NodeSizeInfo
 }

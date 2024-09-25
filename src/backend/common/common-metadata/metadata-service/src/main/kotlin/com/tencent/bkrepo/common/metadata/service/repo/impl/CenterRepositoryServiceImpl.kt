@@ -44,18 +44,18 @@ import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
-import com.tencent.bkrepo.common.metadata.util.RepoQueryHelper
+import com.tencent.bkrepo.common.metadata.util.RepoEventFactory
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.convertToDetail
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.common.metadata.util.RepoEventFactory
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Conditional
@@ -73,7 +73,6 @@ class CenterRepositoryServiceImpl(
     projectService: ProjectService,
     storageCredentialService: StorageCredentialService,
     proxyChannelService: ProxyChannelService,
-    repositoryProperties: RepositoryProperties,
     messageSupplier: MessageSupplier,
     servicePermissionClient: ServicePermissionClient,
     private val resourceClearService: ObjectProvider<ResourceClearService>,
@@ -83,7 +82,6 @@ class CenterRepositoryServiceImpl(
     projectService,
     storageCredentialService,
     proxyChannelService,
-    repositoryProperties,
     messageSupplier,
     servicePermissionClient,
     resourceClearService
@@ -123,7 +121,7 @@ class CenterRepositoryServiceImpl(
                 return super.createRepo(repoCreateRequest)
             }
 
-            val query = RepoQueryHelper.buildSingleQuery(projectId, name, type.name)
+            val query = RepositoryServiceHelper.buildSingleQuery(projectId, name, type.name)
             val clusterNames = exitRepo.clusterNames.orEmpty().toMutableSet()
             if (clusterNames.isEmpty()) {
                 clusterNames.add(clusterProperties.self.name.toString())

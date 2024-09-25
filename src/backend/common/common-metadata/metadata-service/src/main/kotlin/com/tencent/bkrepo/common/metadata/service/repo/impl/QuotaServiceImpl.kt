@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.util.QuotaHelper
-import com.tencent.bkrepo.common.metadata.util.RepoQueryHelper
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
 import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Update
@@ -75,7 +75,7 @@ class QuotaServiceImpl(
     }
 
     private fun incUpdateRepoUsedVolume(projectId: String, repoName: String, num: Long) {
-        val query = RepoQueryHelper.buildSingleQuery(projectId, repoName)
+        val query = RepositoryServiceHelper.buildSingleQuery(projectId, repoName)
         val tRepository = checkRepository(projectId, repoName)
         tRepository.quota?.let {
             val update = Update().inc(TRepository::used.name, num)
@@ -87,7 +87,7 @@ class QuotaServiceImpl(
      * 检查仓库是否存在，不存在则抛异常
      */
     private fun checkRepository(projectId: String, repoName: String): TRepository {
-        val query = RepoQueryHelper.buildSingleQuery(projectId, repoName)
+        val query = RepositoryServiceHelper.buildSingleQuery(projectId, repoName)
         return repositoryDao.findOne(query)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
     }

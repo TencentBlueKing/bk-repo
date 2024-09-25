@@ -70,6 +70,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import io.mockk.every
 import io.mockk.mockk
@@ -97,6 +98,7 @@ import org.springframework.test.context.TestPropertySource
     SpringContextUtils::class,
     NodeDao::class,
     RouterControllerProperties::class,
+    RepositoryProperties::class
 )
 @ComponentScan(value = ["com.tencent.bkrepo.repository.service", "com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
@@ -144,6 +146,8 @@ open class ServiceBaseTest {
     @MockBean
     lateinit var resourceClearService: ResourceClearService
 
+    @Autowired
+    lateinit var repositoryServiceHelper: RepositoryServiceHelper
 
     fun initMock() {
         val tracer = mockk<OtelTracer>()

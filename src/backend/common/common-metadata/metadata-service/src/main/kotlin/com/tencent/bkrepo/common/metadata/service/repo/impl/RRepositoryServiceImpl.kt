@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.metadata.service.repo.impl
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -42,18 +41,19 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConfiguration
-import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.client.RAuthClient
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.common.metadata.dao.repo.RRepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.RResourcePermissionListener
 import com.tencent.bkrepo.common.metadata.model.TRepository
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.project.RProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RProxyChannelService
+import com.tencent.bkrepo.common.metadata.service.repo.RRepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.RStorageCredentialService
 import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.common.metadata.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.RepoEventFactory.buildUpdatedEvent
-import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.REPO_DESC_MAX_LENGTH
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.REPO_NAME_PATTERN
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildChangeList
@@ -65,6 +65,7 @@ import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildRangeQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildRepoConfiguration
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildSingleQuery
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildTRepository
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildTypeQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkCategory
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkConfigType
@@ -77,8 +78,6 @@ import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao.Companion.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
-import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
@@ -88,6 +87,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Conditional
@@ -108,30 +108,35 @@ import java.time.LocalDateTime
  * 仓库服务实现类
  */
 @Service
-@Conditional(SyncCondition::class, DefaultCondition::class)
+@Conditional(ReactiveCondition::class)
 @Suppress("TooManyFunctions")
-class RepositoryServiceImpl(
-    val repositoryDao: RepositoryDao,
-    private val projectService: ProjectService,
-    private val storageCredentialService: StorageCredentialService,
-    private val proxyChannelService: ProxyChannelService,
+class RRepositoryServiceImpl(
+    val repositoryDao: RRepositoryDao,
+    private val projectService: RProjectService,
+    private val storageCredentialService: RStorageCredentialService,
+    private val proxyChannelService: RProxyChannelService,
     private val messageSupplier: MessageSupplier,
-    private val servicePermissionClient: ServicePermissionClient,
-    private val resourceClearService: ObjectProvider<ResourceClearService>
-) : RepositoryService {
+    private val rAuthClient: RAuthClient,
+    private val resourceClearService: ObjectProvider<ResourceClearService>,
+    private val resourcePermissionListener: RResourcePermissionListener
+) : RRepositoryService {
 
-    override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
+    override suspend fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
         val tRepository = repositoryDao.findByNameAndType(projectId, name, type)
         return convertToInfo(tRepository)
     }
 
-    override fun getRepoDetail(projectId: String, name: String, type: String?): RepositoryDetail? {
+    override suspend fun getRepoDetail(projectId: String, name: String, type: String?): RepositoryDetail? {
         val tRepository = repositoryDao.findByNameAndType(projectId, name, type)
         val storageCredentials = tRepository?.credentialsKey?.let { storageCredentialService.findByKey(it) }
         return convertToDetail(tRepository, storageCredentials)
     }
 
-    override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String?) {
+    override suspend fun updateStorageCredentialsKey(
+        projectId: String,
+        repoName: String,
+        storageCredentialsKey: String?
+    ) {
         val repo = checkRepository(projectId, repoName)
         if (repo.credentialsKey != storageCredentialsKey) {
             repo.oldCredentialsKey = repo.credentialsKey
@@ -140,16 +145,21 @@ class RepositoryServiceImpl(
         }
     }
 
-    override fun unsetOldStorageCredentialsKey(projectId: String, repoName: String) {
+    override suspend fun unsetOldStorageCredentialsKey(projectId: String, repoName: String) {
         repositoryDao.unsetOldCredentialsKey(projectId, repoName)
     }
 
-    override fun listRepo(projectId: String, name: String?, type: String?, display: Boolean?): List<RepositoryInfo> {
+    override suspend fun listRepo(
+        projectId: String,
+        name: String?,
+        type: String?,
+        display: Boolean?
+    ): List<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type, display)
         return repositoryDao.find(query).map { convertToInfo(it)!! }
     }
 
-    override fun listRepoPage(
+    override suspend fun listRepoPage(
         projectId: String,
         pageNumber: Int,
         pageSize: Int,
@@ -163,16 +173,16 @@ class RepositoryServiceImpl(
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
-    override fun listPermissionRepo(
+    override suspend fun listPermissionRepo(
         userId: String,
         projectId: String,
         option: RepoListOption,
     ): List<RepositoryInfo> {
-        var names = servicePermissionClient.listPermissionRepo(
+        var names = rAuthClient.listPermissionRepo(
             projectId = projectId,
             userId = userId,
             appId = SecurityUtils.getPlatformId(),
-        ).data.orEmpty()
+        ).awaitSingle().data.orEmpty()
         if (!option.name.isNullOrBlank()) {
             names = names.filter { it.startsWith(option.name.orEmpty(), true) }
         }
@@ -189,7 +199,7 @@ class RepositoryServiceImpl(
         return originResults + includeResults
     }
 
-    override fun listPermissionRepoPage(
+    override suspend fun listPermissionRepoPage(
         userId: String,
         projectId: String,
         pageNumber: Int,
@@ -200,7 +210,7 @@ class RepositoryServiceImpl(
         return Pages.buildPage(allRepos, pageNumber, pageSize)
     }
 
-    override fun rangeQuery(request: RepoRangeQueryRequest): Page<RepositoryInfo?> {
+    override suspend fun rangeQuery(request: RepoRangeQueryRequest): Page<RepositoryInfo?> {
         val limit = request.limit
         val skip = request.offset
         val query = buildRangeQuery(request)
@@ -210,12 +220,12 @@ class RepositoryServiceImpl(
         return Page(0, limit, totalCount, records)
     }
 
-    override fun checkExist(projectId: String, name: String, type: String?): Boolean {
+    override suspend fun checkExist(projectId: String, name: String, type: String?): Boolean {
         return repositoryDao.findByNameAndType(projectId, name, type) != null
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
+    override suspend fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
@@ -250,7 +260,7 @@ class RepositoryServiceImpl(
                 checkAndRemoveDeletedRepo(projectId, name, credentialsKey)
                 repositoryDao.insert(repository)
                 val event = buildCreatedEvent(repoCreateRequest)
-                publishEvent(event)
+                resourcePermissionListener.handle(event)
                 messageSupplier.delegateToSupplier(
                     data = event,
                     topic = event.topic,
@@ -265,16 +275,8 @@ class RepositoryServiceImpl(
         }
     }
 
-    fun buildTRepository(
-        request: RepoCreateRequest,
-        repoConfiguration: RepositoryConfiguration,
-        credentialsKey: String?,
-    ): TRepository {
-        return RepositoryServiceHelper.buildTRepository(request, repoConfiguration, credentialsKey)
-    }
-
     @Transactional(rollbackFor = [Throwable::class])
-    override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
+    override suspend fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
         repoUpdateRequest.apply {
             Preconditions.checkArgument((description?.length ?: 0) < REPO_DESC_MAX_LENGTH, this::description.name)
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
@@ -296,7 +298,7 @@ class RepositoryServiceImpl(
             repositoryDao.save(repository)
         }
         val event = buildUpdatedEvent(repoUpdateRequest)
-        publishEvent(event)
+        resourcePermissionListener.handle(event)
         messageSupplier.delegateToSupplier(
             data = event,
             topic = event.topic,
@@ -306,7 +308,7 @@ class RepositoryServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {
+    override suspend fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {
         repoDeleteRequest.apply {
             val repository = checkRepository(projectId, name)
             resourceClearService.ifAvailable?.clearRepo(repository, forced, operator)
@@ -323,11 +325,11 @@ class RepositoryServiceImpl(
                 }
             }
         }
-        publishEvent(buildDeletedEvent(repoDeleteRequest))
+        resourcePermissionListener.handle(buildDeletedEvent(repoDeleteRequest))
         logger.info("Delete repository [$repoDeleteRequest] success.")
     }
 
-    override fun statRepo(projectId: String, repoName: String): NodeSizeInfo {
+    override suspend fun statRepo(projectId: String, repoName: String): NodeSizeInfo {
         val projectMetrics = projectService.getProjectMetricsInfo(projectId)
         val repoMetrics = projectMetrics?.repoMetrics?.firstOrNull { it.repoName == repoName }
         return NodeSizeInfo(
@@ -340,7 +342,7 @@ class RepositoryServiceImpl(
     /**
      * 获取仓库下的代理地址信息
      */
-    private fun queryCompositeConfiguration(
+    private suspend fun queryCompositeConfiguration(
         projectId: String,
         repoName: String,
         repoType: RepositoryType,
@@ -354,7 +356,7 @@ class RepositoryServiceImpl(
     /**
      * 检查仓库是否存在，不存在则抛异常
      */
-    fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
+    suspend fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
         return repositoryDao.findByNameAndType(projectId, repoName, repoType)
             ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
     }
@@ -362,7 +364,7 @@ class RepositoryServiceImpl(
     /**
      * 更新仓库配置
      */
-    private fun updateRepoConfiguration(
+    private suspend fun updateRepoConfiguration(
         new: RepositoryConfiguration,
         old: RepositoryConfiguration,
         repository: TRepository,
@@ -377,7 +379,7 @@ class RepositoryServiceImpl(
     /**
      * 更新Composite类型仓库配置
      */
-    private fun updateCompositeConfiguration(
+    private suspend fun updateCompositeConfiguration(
         new: CompositeConfiguration,
         old: CompositeConfiguration? = null,
         repository: TRepository,
@@ -405,7 +407,7 @@ class RepositoryServiceImpl(
     /**
      * 删除关联的代理仓库
      */
-    fun deleteProxyRepo(repository: TRepository, proxy: ProxyChannelSetting) {
+    suspend fun deleteProxyRepo(repository: TRepository, proxy: ProxyChannelSetting) {
         val proxyRepository = buildProxyChannelDeleteRequest(repository, proxy)
         proxyChannelService.deleteProxy(proxyRepository)
         logger.info(
@@ -414,21 +416,21 @@ class RepositoryServiceImpl(
         )
     }
 
-    private fun createProxyRepo(repository: TRepository, proxy: ProxyChannelSetting, operator: String) {
+    private suspend fun createProxyRepo(repository: TRepository, proxy: ProxyChannelSetting, operator: String) {
         // 创建代理仓库
         val proxyRepository = buildProxyChannelCreateRequest(repository, proxy)
         proxyChannelService.createProxy(operator, proxyRepository)
         logger.info("Success to create private proxy repository[$proxyRepository]")
     }
 
-    private fun updateProxyRepo(repository: TRepository, proxy: ProxyChannelSetting, operator: String) {
+    private suspend fun updateProxyRepo(repository: TRepository, proxy: ProxyChannelSetting, operator: String) {
         // 更新代理仓库
         val proxyRepository = buildProxyChannelUpdateRequest(repository, proxy)
         proxyChannelService.updateProxy(operator, proxyRepository)
         logger.info("Success to update private proxy repository[$proxyRepository]")
     }
 
-    override fun listRepoPageByType(type: String, pageNumber: Int, pageSize: Int): Page<RepositoryDetail> {
+    override suspend fun listRepoPageByType(type: String, pageNumber: Int, pageSize: Int): Page<RepositoryDetail> {
         val query = buildTypeQuery(type)
         val count = repositoryDao.count(query)
         val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
@@ -443,7 +445,7 @@ class RepositoryServiceImpl(
     /**
      * 查找是否存在已被逻辑删除的仓库，如果存在且存储凭证相同，则删除旧仓库再插入新数据；如果存在且存储凭证不同，则禁止创建仓库
      */
-    private fun checkAndRemoveDeletedRepo(projectId: String, repoName: String, credentialsKey: String?) {
+    private suspend fun checkAndRemoveDeletedRepo(projectId: String, repoName: String, credentialsKey: String?) {
         val query = buildSingleQuery(projectId, repoName)
         repositoryDao.findOne(query)?.let {
             if (credentialsKey == it.credentialsKey) {
@@ -456,7 +458,6 @@ class RepositoryServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
-
+        private val logger = LoggerFactory.getLogger(RRepositoryServiceImpl::class.java)
     }
 }

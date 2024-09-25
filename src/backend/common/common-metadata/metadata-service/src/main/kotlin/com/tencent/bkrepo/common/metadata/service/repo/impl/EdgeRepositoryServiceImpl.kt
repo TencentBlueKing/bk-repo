@@ -42,7 +42,6 @@ import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.api.cluster.ClusterRepositoryClient
-import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -58,7 +57,6 @@ class EdgeRepositoryServiceImpl(
     projectService: ProjectService,
     storageCredentialService: StorageCredentialService,
     proxyChannelService: ProxyChannelService,
-    repositoryProperties: RepositoryProperties,
     messageSupplier: MessageSupplier,
     servicePermissionClient: ServicePermissionClient,
     resourceClearService: ObjectProvider<ResourceClearService>,
@@ -68,7 +66,6 @@ class EdgeRepositoryServiceImpl(
     projectService,
     storageCredentialService,
     proxyChannelService,
-    repositoryProperties,
     messageSupplier,
     servicePermissionClient,
     resourceClearService
