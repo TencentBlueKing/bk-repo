@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,30 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.config
 
 /**
- * 元数据模型
+ * 仓库后台任务配置
  */
-data class TMetadata(
+data class RepoJobProperties(
     /**
-     * 元数据键
+     * 是否执行仓库后台任务
      */
-    val key: String,
-    /**
-     * 元数据值
-     */
-    var value: Any,
-    /**
-     * 是否为属于系统创建的元数据
-     */
-    val system: Boolean = false,
-    /**
-     * 元数据描述信息
-     */
-    val description: String? = null,
-    /**
-     * 元数据链接地址
-     */
-    val link: String? = null
+    var enabled: Boolean = true
 )

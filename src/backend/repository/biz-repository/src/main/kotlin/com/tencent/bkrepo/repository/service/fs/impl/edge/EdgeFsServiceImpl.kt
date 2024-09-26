@@ -32,8 +32,8 @@ import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeConditi
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterFsNodeClient
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest

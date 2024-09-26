@@ -33,10 +33,10 @@ package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.job.base.CenterNodeJob
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import org.springframework.data.domain.PageRequest

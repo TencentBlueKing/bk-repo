@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,23 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.query.util
+package com.tencent.bkrepo.common.metadata.config
 
-import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 
-object MongoEscapeUtils {
+/**
+ * 仓库-存储映射
+ * 用于新建仓库时指定storage credentials key
+ * 优先级：仓库名称 > 仓库类型
+ */
+data class RepoStorageMapping(
+    /**
+     * 仓库名称-存储映射
+     */
+    var names: MutableMap<String, String> = mutableMapOf(),
 
     /**
-     * 正则特殊符号转义
+     * 仓库类型-存储映射
      */
-    fun escapeRegex(input: String): String {
-        return EscapeUtils.escapeRegex(input)
-    }
-
-    /**
-     * 正则特殊符号转义, 但不转义通配符
-     */
-    fun escapeRegexExceptWildcard(input: String): String {
-        return EscapeUtils.escapeRegexExceptWildcard(input)
-    }
-}
+    var types: MutableMap<RepositoryType, String> = mutableMapOf()
+)

@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.repository.service.node.impl
 
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.service.node.NodeCompressOperation
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime

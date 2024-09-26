@@ -29,34 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.common.metadata.service.metadata
 
-import com.tencent.bkrepo.repository.job.base.RepoJobProperties
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 
-@Configuration
-@ConfigurationProperties("repository")
-data class RepositoryProperties(
-    var deletedNodeReserveDays: Long = 14,
-    var defaultStorageCredentialsKey: String? = null,
-    var listCountLimit: Long = 100000L,
-    var slowLogTimeThreshold: Long = 1_000,
-    @NestedConfigurationProperty
-    var job: RepoJobProperties = RepoJobProperties(),
-    @NestedConfigurationProperty
-    var repoStorageMapping: RepoStorageMapping = RepoStorageMapping(),
-    var allowUserAddSystemMetadata: List<String> = emptyList(),
-    var gitUrl: String = "",
-    var svnUrl: String = "",
+/**
+ * 元数据服务接口
+ */
+interface MetadataService {
+
     /**
-     * 用于验证bkci webhook签名
+     * 查询节点的元数据
+     *
+     * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
+     * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
      */
-    var bkciWebhookSecret: String = "",
+    fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
+
     /**
-     * 当目录节点上的num字段小于该值时，去db中实时count目录大小
-     * 注意： 此配置的值要比listCountLimit大
+     * 根据请求[request]保存或者更新元数据
+     *
+     * 如果元数据`key`已经存在则更新，否则创建新的
      */
-    var subNodeLimit: Long = 100000000L
-)
+    fun saveMetadata(request: MetadataSaveRequest)
+
+    /**
+     * 根据请求[request]保存或者更新禁用元数据，只更新禁用相关元数据
+     *
+     * 如果元数据`key`已经存在则更新，否则创建新的
+     */
+    fun addForbidMetadata(request: MetadataSaveRequest)
+
+    /**
+     * 根据请求[request]删除元数据
+     *
+     * @param request 删除元数据请求
+     * @param allowDeleteSystemMetadata 是否允许删除系统元数据
+     */
+    fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean = true)
+}

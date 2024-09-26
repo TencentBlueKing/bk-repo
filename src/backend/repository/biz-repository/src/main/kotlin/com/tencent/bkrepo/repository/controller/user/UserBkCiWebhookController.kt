@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.repository.pojo.webhook.BkCiDevXEnabledPayload
 import com.tencent.bkrepo.repository.service.webhook.BkciWebhookListener
 import io.swagger.annotations.Api

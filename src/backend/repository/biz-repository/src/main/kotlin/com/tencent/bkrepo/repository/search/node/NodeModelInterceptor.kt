@@ -39,7 +39,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.search.common.ModelValidateInterceptor
 import org.slf4j.LoggerFactory
 
