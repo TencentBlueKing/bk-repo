@@ -61,8 +61,8 @@ import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -73,10 +73,10 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateReque
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
-import com.tencent.bkrepo.repository.util.MetadataUtils
-import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
-import com.tencent.bkrepo.repository.util.NodeQueryHelper.listPermissionPaths
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildCreatedEvent
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper.listPermissionPaths
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

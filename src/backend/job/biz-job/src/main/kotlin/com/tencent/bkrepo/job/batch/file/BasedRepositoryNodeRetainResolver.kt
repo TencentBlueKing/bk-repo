@@ -1,8 +1,9 @@
 package com.tencent.bkrepo.job.batch.file
 
+import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
@@ -112,7 +113,7 @@ class BasedRepositoryNodeRetainResolver(
     ): Set<Map<String, Any?>> {
         val temp = mutableSetOf<Map<String, Any?>>()
         val prefixCri = pathPrefixs.map {
-            val escapedValue = MongoEscapeUtils.escapeRegex(it)
+            val escapedValue = EscapeUtils.escapeRegex(it)
             Criteria.where(FULL_PATH).regex("^$escapedValue")
         }
         val query = Query.query(

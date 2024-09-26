@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata.impl
+package com.tencent.bkrepo.common.metadata.service.metadata.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -39,23 +39,24 @@ import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
-import com.tencent.bkrepo.repository.model.TMetadata
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.model.TMetadata
+import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.service.metadata.MetadataService
-import com.tencent.bkrepo.repository.util.MetadataUtils
-import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataDeletedEvent
-import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataSavedEvent
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildMetadataDeletedEvent
+import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildMetadataSavedEvent
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
@@ -69,7 +70,7 @@ import org.springframework.transaction.annotation.Transactional
  * 元数据服务实现类
  */
 @Service
-@Conditional(DefaultCondition::class)
+@Conditional(SyncCondition::class, DefaultCondition::class)
 class MetadataServiceImpl(
     private val nodeDao: NodeDao,
     private val repositoryProperties: RepositoryProperties,

@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.repository.service.packages.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.artifact.constant.PUBLIC_PROXY_PROJECT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -49,7 +49,7 @@ class SoftwarePackageServiceImpl(
             transCri(criteria, allSoftRepo)
         }
         packageName?.let {
-            val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(packageName)
+            val escapedValue = EscapeUtils.escapeRegexExceptWildcard(packageName)
             val regexPattern = escapedValue.replace("*", ".*")
             criteria.and(TPackage::name.name).regex("^$regexPattern$")
         }
