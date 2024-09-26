@@ -103,7 +103,6 @@ class UserMetadataLabelController(
 
     @ApiOperation("查询标签详情")
     @GetMapping("/{projectId}/{labelKey}")
-    @Permission(type = ResourceType.PROJECT, action = PermissionAction.READ)
     fun detail(
         @PathVariable projectId: String,
         @PathVariable labelKey: String,
