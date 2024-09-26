@@ -28,10 +28,8 @@
 package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelRequest
