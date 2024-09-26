@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.util
+package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.artifact.event.metadata.MetadataDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.metadata.MetadataSavedEvent
@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest

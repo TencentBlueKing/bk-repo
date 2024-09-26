@@ -36,9 +36,10 @@ import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
-import com.tencent.bkrepo.repository.model.TMetadata
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.model.TMetadata
+import com.tencent.bkrepo.common.metadata.model.TNode
 import org.springframework.data.mongodb.core.query.Criteria
+import java.util.Locale
 
 /**
  * 元数据规则拦截器
@@ -60,7 +61,8 @@ class MetadataRuleInterceptor : QueryRuleInterceptor {
 
         // 历史数据以X-BKREPO-META-{key}设置元数据时未忽略大小写，查询时需要同时查询大小写key
         val criteria = if (key.contains(Regex(ALPHA_PATTERN))) {
-            val lowerKeyRule = Rule.QueryRule(TMetadata::key.name, key.toLowerCase(), OperationType.EQ).toFixed()
+            val lowerKeyRule =
+                Rule.QueryRule(TMetadata::key.name, key.lowercase(Locale.getDefault()), OperationType.EQ).toFixed()
             val lowerKeyNestedAndRule = Rule.NestedRule(mutableListOf(lowerKeyRule, valueRule))
             val nestedOrRule =
                 Rule.NestedRule(mutableListOf(nestedAndRule, lowerKeyNestedAndRule), Rule.NestedRule.RelationType.OR)

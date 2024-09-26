@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.model
 
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_METADATA_IDX
 import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_METADATA_IDX_DEF
 import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_NAME_IDX

@@ -29,15 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.common.metadata.dao.node
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Page
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Query
@@ -53,6 +55,7 @@ import java.time.LocalDateTime
  * 节点 Dao
  */
 @Repository
+@Conditional(SyncCondition::class)
 class NodeDao : HashShardingMongoDao<TNode>() {
     /**
      * 查询节点

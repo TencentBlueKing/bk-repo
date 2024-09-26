@@ -29,23 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.config
-
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+package com.tencent.bkrepo.common.metadata.config
 
 /**
- * 仓库-存储映射
- * 用于新建仓库时指定storage credentials key
- * 优先级：仓库名称 > 仓库类型
+ * 仓库后台任务配置
  */
-data class RepoStorageMapping(
+data class RepoJobProperties(
     /**
-     * 仓库名称-存储映射
+     * 是否执行仓库后台任务
      */
-    var names: MutableMap<String, String> = mutableMapOf(),
-
-    /**
-     * 仓库类型-存储映射
-     */
-    var types: MutableMap<RepositoryType, String> = mutableMapOf()
+    var enabled: Boolean = true
 )

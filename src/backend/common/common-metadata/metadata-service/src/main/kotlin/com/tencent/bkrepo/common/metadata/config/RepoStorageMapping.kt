@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,43 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata
+package com.tencent.bkrepo.common.metadata.config
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 
 /**
- * 元数据服务接口
+ * 仓库-存储映射
+ * 用于新建仓库时指定storage credentials key
+ * 优先级：仓库名称 > 仓库类型
  */
-interface MetadataService {
+data class RepoStorageMapping(
+    /**
+     * 仓库名称-存储映射
+     */
+    var names: MutableMap<String, String> = mutableMapOf(),
 
     /**
-     * 查询节点的元数据
-     *
-     * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
-     * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
+     * 仓库类型-存储映射
      */
-    fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
-
-    /**
-     * 根据请求[request]保存或者更新元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
-     */
-    fun saveMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]保存或者更新禁用元数据，只更新禁用相关元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
-     */
-    fun addForbidMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]删除元数据
-     *
-     * @param request 删除元数据请求
-     * @param allowDeleteSystemMetadata 是否允许删除系统元数据
-     */
-    fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean = true)
-}
+    var types: MutableMap<RepositoryType, String> = mutableMapOf()
+)

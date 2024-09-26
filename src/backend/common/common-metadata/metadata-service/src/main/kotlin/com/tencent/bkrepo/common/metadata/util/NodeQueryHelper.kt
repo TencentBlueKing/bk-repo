@@ -25,18 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.util
+package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
+import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
-import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import org.slf4j.LoggerFactory
@@ -93,7 +93,7 @@ object NodeQueryHelper {
                 Criteria.where(TNode::archived.name).isEqualTo(true),
                 Criteria.where(TNode::compressed.name).isEqualTo(true),
             )
-        path?.let { criteria.and(TNode::fullPath).regex("^${MongoEscapeUtils.escapeRegex(it)}") }
+        path?.let { criteria.and(TNode::fullPath).regex("^${EscapeUtils.escapeRegex(it)}") }
         val metadataCriteria = metadata.map {
             val elemCriteria = Criteria().andOperator(
                 MetadataModel::key.isEqualTo(it.key),
