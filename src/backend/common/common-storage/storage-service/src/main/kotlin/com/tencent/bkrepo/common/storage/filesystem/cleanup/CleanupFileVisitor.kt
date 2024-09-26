@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
 import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventData
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileRetainedEvent
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
@@ -78,20 +79,29 @@ class CleanupFileVisitor(
             val file = filePath.toFile()
             val expired = fileExpireResolver.isExpired(file)
             val retain = fileRetainResolver?.retain(file) ?: false
-            if (expired && !retain && !isNFSTempFile(filePath)) {
-                if (isTempFile || existInStorage(filePath)) {
-                    rateLimiter.acquire()
-                    Files.delete(filePath)
-                    result.cleanupFile += 1
-                    result.cleanupSize += size
-                    deleted = true
-                    onFileCleaned(filePath, size)
-                    logger.info("Clean up file[$filePath], size[$size], summary: $result")
+
+            var shouldDelete = expired && !isNFSTempFile(filePath)
+            if (shouldDelete && !isTempFile) {
+                val existInStorage = existInStorage(filePath)
+                if (!existInStorage) {
+                    logger.info("cache file[${filePath}] not exists in storage[${credentials.key}]")
                 }
+                shouldDelete = existInStorage
             }
-            if (expired && retain) {
+
+            if (shouldDelete && !retain) {
+                rateLimiter.acquire()
+                Files.delete(filePath)
+                result.cleanupFile += 1
+                result.cleanupSize += size
+                deleted = true
+                onFileCleaned(filePath, size)
+                logger.info("Clean up file[$filePath], size[$size], summary: $result")
+            }
+            if (shouldDelete && retain) {
                 result.retainFile += 1
                 result.retainSize += size
+                onFileRetained(filePath, size)
             }
         } catch (ignored: Exception) {
             logger.error("Clean file[${filePath.fileName}] error.", ignored)
@@ -192,18 +202,24 @@ class CleanupFileVisitor(
     }
 
     private fun onFileCleaned(filePath: Path, size: Long) {
-        val fileName = filePath.fileName.toString()
         val event = FileDeletedEvent(
             credentials = credentials,
             rootPath = rootPath.toString(),
             fullPath = filePath.toString(),
         )
-        if (rootPath == credentials.cache.path.toPath() && filePath.fileName.toString().length == SHA256_STR_LENGTH) {
-            val data = CacheFileEventData(credentials, fileName, filePath.toString(), size)
+        if (isCacheFile(filePath)) {
+            val data = buildCacheFileEventData(filePath, size)
             publisher.publishEvent(CacheFileDeletedEvent(data))
         }
 
         publisher.publishEvent(event)
+    }
+
+    private fun onFileRetained(filePath: Path, size: Long) {
+        if (isCacheFile(filePath)) {
+            val data = buildCacheFileEventData(filePath, size)
+            publisher.publishEvent(CacheFileRetainedEvent(data))
+        }
     }
 
     private fun onFileSurvived(filePath: Path) {
@@ -213,6 +229,15 @@ class CleanupFileVisitor(
             fullPath = filePath.toString(),
         )
         publisher.publishEvent(event)
+    }
+
+    private fun buildCacheFileEventData(filePath: Path, size: Long): CacheFileEventData {
+        val fileName = filePath.fileName.toString()
+        return CacheFileEventData(credentials, fileName, filePath.toString(), size)
+    }
+
+    private fun isCacheFile(filePath: Path): Boolean {
+        return rootPath == credentials.cache.path.toPath() && filePath.fileName.toString().length == SHA256_STR_LENGTH
     }
 
     companion object {
