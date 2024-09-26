@@ -16,6 +16,8 @@ import com.tencent.bkrepo.media.config.MediaProperties
 import com.tencent.bkrepo.media.stream.TranscodeParam
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.media.stream.TranscodeHelper
+import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -23,7 +25,11 @@ import org.springframework.stereotype.Service
  * 视频转码服务
  * */
 @Service
-class TranscodeService(private val tokenService: TokenService, private val mediaProperties: MediaProperties) :
+class TranscodeService(
+    private val tokenService: TokenService,
+    private val mediaProperties: MediaProperties,
+    private val metadataClient: MetadataClient,
+) :
     ArtifactService() {
 
     /**
@@ -63,6 +69,13 @@ class TranscodeService(private val tokenService: TokenService, private val media
             val context = ArtifactUploadContext(repo, newArtifactFile, newArtifactInfo)
             repository.upload(context)
             logger.info("Upload new file[$newArtifactInfo]")
+            // 复制原有视频的metadata
+            val originMetadata =
+                metadataClient.listMetadata(projectId, repoName, originArtifactInfo.getArtifactFullPath()).data
+            originMetadata?.let {
+                val copyRequest = MetadataSaveRequest(projectId, repoName, newArtifactInfo.getArtifactFullPath(), it)
+                metadataClient.saveMetadata(copyRequest)
+            }
             val removeContext = ArtifactRemoveContext(repo, originArtifactInfo)
             repository.remove(removeContext)
             logger.info("Delete origin file[$originArtifactInfo]")
