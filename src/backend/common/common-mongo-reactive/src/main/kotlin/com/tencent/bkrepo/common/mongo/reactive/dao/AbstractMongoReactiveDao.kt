@@ -34,6 +34,7 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.MongoCollectionUtils
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.query.Query
@@ -157,6 +158,19 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
             logger.debug("Mongo Dao exists: [$query]")
         }
         return determineReactiveMongoOperations().exists(query, determineCollectionName(query)).awaitSingle()
+    }
+
+    override suspend fun <T> findAndModify(
+        query: Query,
+        update: Update,
+        options: FindAndModifyOptions,
+        clazz: Class<T>
+    ): T? {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao findAndModify: [$query], [$update]")
+        }
+        return determineReactiveMongoOperations()
+            .findAndModify(query, update, options, clazz, determineCollectionName(query)).awaitSingle()
     }
 
     protected open fun determineCollectionName(): String {
