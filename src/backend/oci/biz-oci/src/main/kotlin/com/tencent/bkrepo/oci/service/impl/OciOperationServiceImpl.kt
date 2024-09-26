@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -94,7 +95,6 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils.buildBlobsFolderPath
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
@@ -129,7 +129,7 @@ import javax.servlet.http.HttpServletRequest
 @Service
 class OciOperationServiceImpl(
     private val nodeClient: NodeClient,
-    private val metadataClient: MetadataClient,
+    private val metadataService: MetadataService,
     private val packageMetadataClient: PackageMetadataClient,
     private val packageClient: PackageClient,
     private val storageManager: StorageManager,
@@ -531,7 +531,7 @@ class OciOperationServiceImpl(
             userId = SecurityUtils.getUserId()
         )
         try{
-            metadataClient.saveMetadata(metadataSaveRequest)
+            metadataService.saveMetadata(metadataSaveRequest)
         } catch (ignore: Exception) {
             // 并发情况下会出现节点找不到问题
         }
@@ -677,8 +677,8 @@ class OciOperationServiceImpl(
                 )
                 nodeClient.createNode(nodeCreateRequest)
             }
-            val metadataMap = metadataClient.listMetadata(projectId, repoName, fullPath).data
-            if (metadataMap?.get(BLOB_PATH_VERSION_KEY) != null) {
+            val metadataMap = metadataService.listMetadata(projectId, repoName, fullPath)
+            if (metadataMap[BLOB_PATH_VERSION_KEY] != null) {
                 // 只有当新建的blob路径节点才去删除，历史的由定时任务去刷新然后删除
                 // 删除临时存储路径节点 /packageName/blobs/xxx
                 deleteNode(projectId, repoName, fullPath, userId)

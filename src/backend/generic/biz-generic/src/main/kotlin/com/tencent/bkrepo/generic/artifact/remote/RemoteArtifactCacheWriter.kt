@@ -32,12 +32,12 @@ import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.StreamReadListener
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.generic.artifact.findRemoteMetadata
 import com.tencent.bkrepo.generic.artifact.updateParentMetadata
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 
@@ -49,7 +49,7 @@ class RemoteArtifactCacheWriter(
     private val storageManager: StorageManager,
     private val cacheLocks: RemoteArtifactCacheLocks,
     private val remoteNodes: List<Any>,
-    private val metadataClient: MetadataClient,
+    private val metadataService: MetadataService,
     monitor: StorageHealthMonitor,
     contentLength: Long,
     storageProperties: StorageProperties,
@@ -123,7 +123,7 @@ class RemoteArtifactCacheWriter(
                 artifactFile,
                 context.repositoryDetail.storageCredentials
             )
-            metadataClient.updateParentMetadata(remoteNodes, projectId, repoName, fullPath)
+            metadataService.updateParentMetadata(remoteNodes, projectId, repoName, fullPath)
             logger.info(
                 "receive[${receiver.filePath}] finished, store remote artifact[${context.artifactInfo}] cache success"
             )

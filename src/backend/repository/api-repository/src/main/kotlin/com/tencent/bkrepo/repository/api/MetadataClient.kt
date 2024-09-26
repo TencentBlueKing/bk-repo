@@ -54,6 +54,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Api("节点元数据服务接口")
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "MetadataClient")
+@Deprecated("replace with MetadataService")
 @RequestMapping("/service/metadata")
 interface MetadataClient {
     @ApiOperation("查询节点所有元数据")

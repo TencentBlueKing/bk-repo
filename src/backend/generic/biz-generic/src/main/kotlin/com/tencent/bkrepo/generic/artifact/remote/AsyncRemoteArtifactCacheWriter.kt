@@ -32,10 +32,10 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.findRemoteMetadata
 import com.tencent.bkrepo.generic.artifact.updateParentMetadata
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -54,7 +54,7 @@ class AsyncRemoteArtifactCacheWriter(
     private val httpClientBuilderFactory: AsyncCacheHttpClientBuilderFactory,
     private val executor: ThreadPoolTaskExecutor,
     private val cacheLocks: RemoteArtifactCacheLocks,
-    private val metadataClient: MetadataClient,
+    private val metadataService: MetadataService,
 ) {
     fun cache(cacheTask: CacheTask) {
         with(cacheTask) {
@@ -134,7 +134,7 @@ class AsyncRemoteArtifactCacheWriter(
         with(cacheTask) {
             val nodeCreateRequest = buildCacheNodeCreateRequest(cacheTask, artifactFile)
             val nodeDetail = storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
-            metadataClient.updateParentMetadata(remoteNodes, projectId, repoName, fullPath)
+            metadataService.updateParentMetadata(remoteNodes, projectId, repoName, fullPath)
             return nodeDetail
         }
     }
