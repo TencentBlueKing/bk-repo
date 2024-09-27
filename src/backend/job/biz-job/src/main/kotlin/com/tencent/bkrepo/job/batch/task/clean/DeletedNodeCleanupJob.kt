@@ -140,11 +140,6 @@ class DeletedNodeCleanupJob(
             logger.info("repo[${row.projectId}/${row.repoName}] storage was migrating, skip clean node[${row.sha256}]")
             return
         }
-        if (separationTaskService.repoSeparationCheck(row.projectId, row.repoName)) {
-            logger.info("repo[${row.projectId}/${row.repoName}] was doing separation, skip clean node[${row.sha256}]")
-            return
-        }
-
         if (row.folder) {
             cleanupFolderNode(context, row.id, collectionName)
         } else {
