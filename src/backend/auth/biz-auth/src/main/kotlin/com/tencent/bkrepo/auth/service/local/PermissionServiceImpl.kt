@@ -36,36 +36,36 @@ import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
-import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.message.AuthMessageCode
-import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
-import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.PermissionHelper
 import com.tencent.bkrepo.auth.helper.UserHelper
+import com.tencent.bkrepo.auth.message.AuthMessageCode
+import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.model.TPersonalPath
 import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.DEFAULT
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.STRICT
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.UPDATE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
-import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionContext
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionContext
 import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.PermissionService
@@ -74,7 +74,7 @@ import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 
@@ -86,7 +86,7 @@ open class PermissionServiceImpl constructor(
     private val personalPathDao: PersonalPathDao,
     private val repoAuthConfigDao: RepoAuthConfigDao,
     val repoClient: RepositoryClient,
-    val projectClient: ProjectClient
+    val projectService: ProjectService
 ) : PermissionService {
 
     private val permHelper by lazy { PermissionHelper(userDao, roleRepository, permissionDao, personalPathDao) }
@@ -245,7 +245,7 @@ open class PermissionServiceImpl constructor(
         }
         // 用户为系统管理员
         if (user.admin) {
-            return projectClient.listProject().data?.map { it.name } ?: emptyList()
+            return projectService.listProject().map { it.name }
         }
 
         val projectList = mutableListOf<String>()

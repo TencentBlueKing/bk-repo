@@ -34,7 +34,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
@@ -57,9 +57,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.repository.service.node.impl.NodeRestoreSupport
 import com.tencent.bkrepo.repository.service.node.impl.NodeServiceImpl
-import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper

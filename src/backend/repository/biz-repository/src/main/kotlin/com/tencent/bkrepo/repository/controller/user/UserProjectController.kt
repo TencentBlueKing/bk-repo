@@ -41,7 +41,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.UserProjectCreateRequest
-import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam

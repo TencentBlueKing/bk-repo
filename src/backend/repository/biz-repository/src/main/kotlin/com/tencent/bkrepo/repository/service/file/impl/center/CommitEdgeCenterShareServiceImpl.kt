@@ -29,7 +29,7 @@ package com.tencent.bkrepo.repository.service.file.impl.center
 
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.isEdgeRequest
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.isEdgeRequest
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
 import com.tencent.bkrepo.repository.service.node.NodeService

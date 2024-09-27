@@ -1,8 +1,8 @@
 <template>
   <el-dialog title="查询记录" :visible.sync="showDialog" :before-close="close" width="1000px">
-    <template v-loading="loading">
+    <div v-loading="loading">
       <el-form ref="form" :inline="true" :model="clientQuery">
-        <el-form-item style="margin-left: 15px" label="状态" prop="actions">
+        <el-form-item style="margin-left: 10px" label="状态" prop="actions">
           <el-select v-model="clientQuery.actions" placeholder="请选择">
             <el-option
               v-for="item in options"
@@ -12,10 +12,10 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item style="margin-left: 15px" label="起始日期" prop="startTime">
+        <el-form-item style="margin-left: 10px" label="起始日期" prop="startTime">
           <el-date-picker v-model="clientQuery.startTime" value-format="yyyy-MM-dd" type="date" placeholder="选择日期" />
         </el-form-item>
-        <el-form-item style="margin-left: 15px" label="结束日期" prop="endTime">
+        <el-form-item style="margin-left: 10px" label="结束日期" prop="endTime">
           <el-date-picker v-model="clientQuery.endTime" value-format="yyyy-MM-dd" type="date" placeholder="选择日期" />
         </el-form-item>
         <el-form-item>
@@ -49,7 +49,7 @@
           @current-change="handleCurrentChange"
         />
       </div>
-    </template>
+    </div>
   </el-dialog>
 </template>
 <script>

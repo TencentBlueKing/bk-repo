@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.fs.server.handler.service
 
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.fs.server.request.service.ListBlocksRequest
 import com.tencent.bkrepo.fs.server.service.FileNodeService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder

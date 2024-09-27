@@ -31,16 +31,16 @@
 
 package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.auth.dao.PermissionDao
-import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.dao.AccountDao
-import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
-import com.tencent.bkrepo.auth.dao.repository.RoleRepository
-import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.condition.BkV3RbacAuthCondition
+import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.condition.LocalAuthCondition
+import com.tencent.bkrepo.auth.dao.AccountDao
+import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
+import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
@@ -54,7 +54,7 @@ import com.tencent.bkrepo.auth.service.local.AccountServiceImpl
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
@@ -75,7 +75,7 @@ class AuthServiceConfig {
 
     @Autowired
     @Lazy
-    private lateinit var projectClient: ProjectClient
+    private lateinit var projectService: ProjectService
 
     @Bean
     @ConditionalOnMissingBean(AccountService::class)
@@ -103,7 +103,7 @@ class AuthServiceConfig {
             personalPathDao,
             repoAuthConfigDao,
             repositoryClient,
-            projectClient
+            projectService
         )
     }
 
@@ -127,7 +127,7 @@ class AuthServiceConfig {
             personalPathDao,
             repoAuthConfigDao,
             repoClient,
-            projectClient
+            projectService
         )
     }
 
@@ -156,7 +156,7 @@ class AuthServiceConfig {
             bkAuthPipelineService,
             bkAuthProjectService,
             repositoryClient,
-            projectClient,
+            projectService,
             bkiamV3Service
         )
     }

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.packages.impl.center
 
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterPackageCondition
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageDependentsDao

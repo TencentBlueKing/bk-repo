@@ -25,7 +25,7 @@
     "normalize.css": "7.0.0",
     "nprogress": "0.2.0",
     "path-browserify": "^1.0.1",
-    "path-to-regexp": "2.4.0",
+    "path-to-regexp": "8.0.0",
     "vue": "2.6.14",
     "vue-router": "3.0.6",
     "vuex": "3.1.0"
@@ -38,10 +38,11 @@
     "babel-plugin-dynamic-import-node": "2.3.3",
     "chalk": "2.4.2",
     "connect": "3.6.6",
+    "eslint-plugin-vue": "^9.28.0",
     "html-webpack-plugin": "^5.6.0",
-    "tasksfile": "^5.1.1",
     "serve-static": "1.13.2",
-    "svgo": "3.3.2"
+    "svgo": "3.3.2",
+    "tasksfile": "^5.1.1"
   },
   "browserslist": [
     "> 1%",

@@ -30,6 +30,8 @@ package com.tencent.bkrepo.common.artifact.cache.service.impl
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
 import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventData
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileRetainedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
@@ -49,10 +51,26 @@ open class CacheFileEventListener(
     @EventListener(CacheFileDeletedEvent::class)
     open fun onCacheFileDeleted(event: CacheFileDeletedEvent) {
         if (properties.enabled && event.data.size >= properties.minSize.toBytes()) {
-            with(event.data) {
-                logger.info("try generate preload plan for sha256[${sha256}], fullPath[$fullPath], size[$size")
-                preloadPlanService.generatePlan(credentials.key, sha256)
-            }
+            generatePreloadPlan(event.data)
+        }
+    }
+
+    /**
+     * 缓存被保留时判断是否需要创建预加载执行计划
+     */
+    @Async
+    @EventListener(CacheFileRetainedEvent::class)
+    open fun onCacheFileDeleted(event: CacheFileRetainedEvent) {
+        if (properties.enabled && event.data.size >= properties.minSize.toBytes() && properties.generateOnRetained) {
+            generatePreloadPlan(event.data)
+        }
+    }
+
+
+    private fun generatePreloadPlan(data: CacheFileEventData) {
+        with(data) {
+            logger.info("try generate preload plan for sha256[${sha256}], fullPath[$fullPath], size[$size")
+            preloadPlanService.generatePlan(credentials.key, sha256)
         }
     }
 

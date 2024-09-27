@@ -36,11 +36,12 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TRepository
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.RepoQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -53,7 +54,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.impl.RepositoryServiceImpl
 import com.tencent.bkrepo.repository.util.RepoEventFactory
 import org.slf4j.LoggerFactory

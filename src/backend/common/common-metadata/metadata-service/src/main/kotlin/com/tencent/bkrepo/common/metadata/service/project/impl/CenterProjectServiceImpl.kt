@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.center
+package com.tencent.bkrepo.common.metadata.service.project.impl
 
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
+import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
+import com.tencent.bkrepo.common.metadata.dao.project.ProjectMetricsDao
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterProjectServiceImpl(
+@Conditional(SyncCondition::class, CommitEdgeCenterCondition::class)
+class CenterProjectServiceImpl(
     projectDao: ProjectDao,
     servicePermissionClient: ServicePermissionClient,
-    projectMetricsRepository: ProjectMetricsRepository,
+    projectMetricsDao: ProjectMetricsDao,
     serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient,
     storageCredentialService: StorageCredentialService,
 ) : ProjectServiceImpl(
     projectDao,
     servicePermissionClient,
-    projectMetricsRepository,
+    projectMetricsDao,
     serviceBkiamV3ResourceClient,
     storageCredentialService
 )

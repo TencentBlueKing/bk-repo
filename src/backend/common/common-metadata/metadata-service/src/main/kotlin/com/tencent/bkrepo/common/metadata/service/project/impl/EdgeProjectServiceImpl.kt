@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,39 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo.impl.edge
+package com.tencent.bkrepo.common.metadata.service.project.impl
 
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.reportMetadataToCenter
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.reportMetadataToCenter
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterProjectClient
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.dao.repository.ProjectMetricsRepository
+import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
+import com.tencent.bkrepo.common.metadata.dao.project.ProjectMetricsDao
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.repository.service.repo.impl.ProjectServiceImpl
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
-@Conditional(CommitEdgeEdgeCondition::class)
+@Conditional(SyncCondition::class, CommitEdgeEdgeCondition::class)
 class EdgeProjectServiceImpl(
     projectDao: ProjectDao,
     servicePermissionClient: ServicePermissionClient,
     serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient,
     clusterProperties: ClusterProperties,
-    projectMetricsRepository: ProjectMetricsRepository,
+    projectMetricsDao: ProjectMetricsDao,
     storageCredentialService: StorageCredentialService,
 ) : ProjectServiceImpl(
     projectDao,
     servicePermissionClient,
-    projectMetricsRepository,
+    projectMetricsDao,
     serviceBkiamV3ResourceClient,
     storageCredentialService
 ) {

@@ -92,7 +92,6 @@ export default {
         this.permissionDetail.enabled
       )
       promise.then(() => {
-        this.permission = this.permissionDetail
         this.updateResult = true
         this.resultTitle = '更新成功'
         this.resultIcon = 'success'
