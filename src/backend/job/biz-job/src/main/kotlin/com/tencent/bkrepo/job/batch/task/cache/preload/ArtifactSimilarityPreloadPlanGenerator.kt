@@ -34,11 +34,12 @@ import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGener
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusRestApiException
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -84,8 +85,14 @@ class ArtifactSimilarityPreloadPlanGenerator(
                 topK = 10,
                 similarityThreshold = aiProperties.defaultSimilarityThreshold
             )
-            val docs = createVectorStore(0L).similaritySearch(searchReq).ifEmpty {
-                createVectorStore(1L).similaritySearch(searchReq)
+
+            val docs = try {
+                createVectorStore(0L).similaritySearch(searchReq).ifEmpty {
+                    createVectorStore(1L).similaritySearch(searchReq)
+                }
+            } catch (e: MilvusRestApiException) {
+                logger.error("search similar path failed: ${e.message}")
+                emptyList()
             }
             if (docs.isEmpty()) {
                 logger.info("no similarity path found for [$projectPath]")
