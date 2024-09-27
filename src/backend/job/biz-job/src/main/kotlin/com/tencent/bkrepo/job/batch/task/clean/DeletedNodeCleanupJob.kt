@@ -50,7 +50,6 @@ import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.findOne
@@ -75,7 +74,6 @@ class DeletedNodeCleanupJob(
     private val clusterProperties: ClusterProperties,
     private val migrateRepoStorageService: MigrateRepoStorageService,
     private val storageCredentialService: StorageCredentialService,
-    private val separationTaskService: SeparationTaskService,
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
 
     data class Node(
@@ -140,11 +138,6 @@ class DeletedNodeCleanupJob(
             logger.info("repo[${row.projectId}/${row.repoName}] storage was migrating, skip clean node[${row.sha256}]")
             return
         }
-        if (separationTaskService.repoSeparationCheck(row.projectId, row.repoName)) {
-            logger.info("repo[${row.projectId}/${row.repoName}] was doing separation, skip clean node[${row.sha256}]")
-            return
-        }
-
         if (row.folder) {
             cleanupFolderNode(context, row.id, collectionName)
         } else {
