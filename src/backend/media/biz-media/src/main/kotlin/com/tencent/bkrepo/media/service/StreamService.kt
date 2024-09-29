@@ -4,6 +4,7 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -13,9 +14,9 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties
-import com.tencent.bkrepo.media.stream.MediaArtifactFileConsumer
 import com.tencent.bkrepo.media.stream.ArtifactFileRecordingListener
 import com.tencent.bkrepo.media.stream.ClientStream
+import com.tencent.bkrepo.media.stream.MediaArtifactFileConsumer
 import com.tencent.bkrepo.media.stream.MediaType
 import com.tencent.bkrepo.media.stream.RemuxRecordingListener
 import com.tencent.bkrepo.media.stream.StreamManger
@@ -100,7 +101,7 @@ class StreamService(
         remux: Boolean = false,
         saveType: MediaType = MediaType.RAW,
     ): ClientStream {
-        val repoId = ArtifactContextHolder.RepositoryId(projectId, repoName)
+        val repoId = RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
         val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
         val fileConsumer = MediaArtifactFileConsumer(

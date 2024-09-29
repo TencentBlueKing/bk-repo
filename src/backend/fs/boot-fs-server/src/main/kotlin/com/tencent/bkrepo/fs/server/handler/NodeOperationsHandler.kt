@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
 import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.service.fs.FsService
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.NodeAttribute
@@ -76,7 +77,8 @@ import java.time.Duration
  * */
 class NodeOperationsHandler(
     private val rRepositoryClient: RRepositoryClient,
-    private val fileNodeService: FileNodeService
+    private val fileNodeService: FileNodeService,
+    private val fsService: FsService
 ) {
 
     suspend fun getNode(request: ServerRequest): ServerResponse {
@@ -296,7 +298,7 @@ class NodeOperationsHandler(
                 nodeMetadata = listOf(fsAttr),
                 operator = user
             )
-            return rRepositoryClient.createFsNode(nodeCreateRequest).awaitSingle().data!!
+            return fsService.createNode(nodeCreateRequest)
         }
     }
 
@@ -310,7 +312,7 @@ class NodeOperationsHandler(
                 newLength = length,
                 operator = user
             )
-            rRepositoryClient.setLength(nodeSetLengthRequest).awaitSingle()
+            fsService.setLength(nodeSetLengthRequest)
             return ReactiveResponseBuilder.success()
         }
     }

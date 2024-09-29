@@ -40,7 +40,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.service.packages.PackageService
-import com.tencent.bkrepo.repository.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
