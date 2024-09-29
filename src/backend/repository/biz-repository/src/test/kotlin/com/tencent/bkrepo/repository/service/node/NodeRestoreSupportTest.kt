@@ -40,8 +40,9 @@ import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.metadata.dao.file.FileReferenceDao
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
-import com.tencent.bkrepo.repository.pojo.node.ConflictStrategy
-import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
+import com.tencent.bkrepo.common.metadata.pojo.node.ConflictStrategy
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.service.ServiceBaseTest
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService

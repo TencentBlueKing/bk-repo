@@ -30,6 +30,7 @@ package com.tencent.bkrepo.composer.artifact.repository
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -439,7 +440,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
     }
 
     private fun nodeToJson(node: NodeDetail): String {
-        val repoId = ArtifactContextHolder.RepositoryId(node.projectId, node.repoName)
+        val repoId = RepositoryId(node.projectId, node.repoName)
         val storageCredentials = ArtifactContextHolder.getRepoDetail(repoId).storageCredentials
         val inputStream = storageManager.loadFullArtifactInputStream(node, storageCredentials)
             ?: throw RuntimeException("load ${node.projectId} | ${node.repoName} | ${node.fullPath} error")

@@ -27,17 +27,17 @@
 
 package com.tencent.bkrepo.svn.utils
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import javax.servlet.http.HttpServletRequest
 
 object SvnProxyHelper {
-    fun getRepoId(request: HttpServletRequest): ArtifactContextHolder.RepositoryId? {
+    fun getRepoId(request: HttpServletRequest): RepositoryId? {
         val paths = request.servletPath.split("/")
         if (paths.size <= 2) {
             return null
         }
         val projectId = paths[1]
         val repoName = paths[2]
-        return ArtifactContextHolder.RepositoryId(projectId, repoName)
+        return RepositoryId(projectId, repoName)
     }
 }
