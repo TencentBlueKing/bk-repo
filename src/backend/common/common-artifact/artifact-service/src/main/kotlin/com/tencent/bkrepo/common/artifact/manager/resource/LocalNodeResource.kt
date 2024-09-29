@@ -32,6 +32,7 @@ import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -137,7 +138,7 @@ class LocalNodeResource(
                 }
             }
             // 如果是异步或者请求上下文找不到，则通过查询，并进行缓存
-            val repositoryId = ArtifactContextHolder.RepositoryId(
+            val repositoryId = RepositoryId(
                 projectId = projectId,
                 repoName = repoName,
             )

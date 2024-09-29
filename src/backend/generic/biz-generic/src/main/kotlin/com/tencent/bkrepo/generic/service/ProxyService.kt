@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -77,7 +78,7 @@ class ProxyService(
     fun download(projectId: String, name: String) {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
         val repo = ArtifactContextHolder.getRepoDetail(
-            ArtifactContextHolder.RepositoryId(
+            RepositoryId(
                 genericProperties.proxy.projectId,
                 genericProperties.proxy.repoName
             )

@@ -63,8 +63,7 @@ class NodeCompressedJob(
     val nodeClient: NodeClient,
     val archiveClient: ArchiveClient,
     val storageService: StorageService,
-) :
-    MongoDbBatchJob<NodeCompressedJob.CompressFile, NodeContext>(properties) {
+) : MongoDbBatchJob<NodeCompressedJob.CompressFile, NodeContext>(properties) {
     override fun createJobContext(): NodeContext {
         return NodeContext()
     }

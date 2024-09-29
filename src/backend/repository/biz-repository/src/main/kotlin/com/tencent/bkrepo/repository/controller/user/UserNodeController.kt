@@ -53,7 +53,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -69,8 +69,8 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
-import com.tencent.bkrepo.repository.service.node.NodeSearchService
-import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam

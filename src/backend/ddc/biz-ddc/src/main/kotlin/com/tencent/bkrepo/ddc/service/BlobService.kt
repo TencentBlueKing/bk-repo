@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.ddc.service
 
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -86,7 +87,7 @@ class BlobService(
 
     fun loadBlob(blob: Blob): ArtifactInputStream {
         val repo =
-            ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(blob.projectId, blob.repoName))
+            ArtifactContextHolder.getRepoDetail(RepositoryId(blob.projectId, blob.repoName))
         val node = nodeClient.getNodeDetail(blob.projectId, blob.repoName, blob.fullPath).data
             ?: throw BlobNotFoundException(blob.projectId, blob.repoName, blob.blobId.toString())
         return storageManager.loadArtifactInputStream(node, repo.storageCredentials)
