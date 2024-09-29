@@ -67,6 +67,16 @@ interface RAuthClient {
         @RequestBody request: CheckPermissionRequest
     ): Mono<Response<Boolean>>
 
+    @GetMapping("/permission/repo/list")
+    fun listPermissionRepo(
+        @ApiParam(value = "项目ID")
+        @RequestParam projectId: String,
+        @ApiParam(value = "用户ID")
+        @RequestParam userId: String,
+        @ApiParam(value = "应用ID")
+        @RequestParam appId: String?
+    ): Mono<Response<List<String>>>
+
     @GetMapping("/user/detail/{uid}")
     fun detail(
         @PathVariable uid: String
