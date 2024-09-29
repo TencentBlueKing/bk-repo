@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.metadata.service.blocknode.impl.AbstractBlockNo
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
+import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
 

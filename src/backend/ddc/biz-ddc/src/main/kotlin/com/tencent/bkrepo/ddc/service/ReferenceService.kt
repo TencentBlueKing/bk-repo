@@ -30,6 +30,7 @@ package com.tencent.bkrepo.ddc.service
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.config.DdcProperties
@@ -135,7 +136,7 @@ class ReferenceService(
 
         val ref = Reference.from(tRef)
         if (ref.inlineBlob == null) {
-            val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
+            val repo = ArtifactContextHolder.getRepoDetail(RepositoryId(projectId, repoName))
             ref.inlineBlob = nodeClient.getNodeDetail(projectId, repoName, ref.fullPath()).data?.let { node ->
                 storageManager.loadArtifactInputStream(node, repo.storageCredentials)?.use { it.readBytes() }
             }

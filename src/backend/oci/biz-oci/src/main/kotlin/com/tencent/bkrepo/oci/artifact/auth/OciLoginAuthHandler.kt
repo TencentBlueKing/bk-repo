@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.oci.artifact.auth
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
@@ -94,7 +95,7 @@ class OciLoginAuthHandler(
             val scope = params?.get("scope")?.first ?: throw authenticationException
             val scopeValues = scope.split(":")
             val values = scopeValues[1].split("/")
-            val repositoryId = ArtifactContextHolder.RepositoryId(values[0], values[1])
+            val repositoryId = RepositoryId(values[0], values[1])
             val repo = ArtifactContextHolder.getRepoDetail(repositoryId)
             // 针对仓库类型的为public的，允许下载。
             if (repo.public) {

@@ -39,13 +39,11 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -79,12 +77,6 @@ interface RRepositoryClient {
 
     @PostMapping("/node/create")
     fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
-
-    @PostMapping("/node/fs/create")
-    fun createFsNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
-
-    @PutMapping("/node/fs/length")
-    fun setLength(@RequestBody nodeSetLengthRequest: NodeSetLengthRequest): Mono<Response<Void>>
 
     @GetMapping("/node/size/{projectId}/{repoName}")
     fun computeSize(
