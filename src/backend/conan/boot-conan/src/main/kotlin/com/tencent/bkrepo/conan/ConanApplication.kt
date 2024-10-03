@@ -25,22 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.listener.operation
+package com.tencent.bkrepo.conan
 
-import com.tencent.bkrepo.conan.pojo.ConanPackageDeleteRequest
-import com.tencent.bkrepo.conan.pojo.IndexInfo
-import com.tencent.bkrepo.conan.pojo.RevisionOperationRequest
-import com.tencent.bkrepo.conan.service.impl.CommonService
+import com.tencent.bkrepo.common.service.condition.MicroService
+import org.springframework.boot.runApplication
 
-class ConanPackageDeleteOperation(
-    private val request: RevisionOperationRequest,
-    commonService: CommonService
-) : AbstractRevisionOperation(request, commonService) {
-
-    override fun handleEvent(indexInfo: IndexInfo) {
-        with(request as ConanPackageDeleteRequest) {
-            logger.info("${indexInfo.reference} Package's revision $pRevision info will be deleted")
-            indexInfo.removeRevision(pRevision!!)
-        }
-    }
+/**
+ * conan registry
+ */
+@MicroService
+class ConanApplication
+fun main(args: Array<String>) {
+    runApplication<ConanApplication>(*args)
 }

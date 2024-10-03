@@ -36,7 +36,7 @@ import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 
-object PathUtils {
+object ConanPathUtils {
 
     fun String.extractConanFileReference(): ConanFileReference {
         val pathList = this.trim('/').split("/")
@@ -109,6 +109,17 @@ object PathUtils {
         }
     }
 
+    fun buildReferenceWithoutVersion(fileReference: ConanFileReference): String {
+        with(fileReference) {
+            return StringBuilder(userName)
+                .append(CharPool.AT)
+                .append(name)
+                .append(CharPool.SLASH)
+                .append(channel)
+                .toString()
+        }
+    }
+
     fun buildPackageReference(packageReference: PackageReference): String {
         with(packageReference) {
             return StringBuilder(buildReference(conRef))
@@ -167,10 +178,10 @@ object PathUtils {
         with(artifactInfo) {
             return if (packageId.isNullOrEmpty()) {
                 val conanFileReference = ConanArtifactInfoUtil.convertToConanFileReference(this, revision)
-                "/${joinString(buildExportFolderPath(conanFileReference), fileName!!)}"
+                "/${joinString(buildExportFolderPath(conanFileReference), artifactInfo.getArtifactFullPath())}"
             } else {
                 val packageReference = ConanArtifactInfoUtil.convertToPackageReference(this)
-                "/${joinString(buildPackageRevisionFolderPath(packageReference), fileName!!)}"
+                "/${joinString(buildPackageRevisionFolderPath(packageReference), artifactInfo.getArtifactFullPath())}"
             }
         }
     }

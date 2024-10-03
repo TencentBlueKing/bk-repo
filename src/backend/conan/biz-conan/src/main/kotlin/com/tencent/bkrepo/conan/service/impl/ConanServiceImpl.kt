@@ -39,8 +39,9 @@ import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackagePath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReference
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -141,7 +142,7 @@ class ConanServiceImpl : ConanService {
     override fun getRecipeRevisions(conanArtifactInfo: ConanArtifactInfo): IndexInfo {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            commonService.checkNodeExist(projectId, repoName, buildReference(conanFileReference))
+            commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
             return commonService.getRecipeRevisions(projectId, repoName, conanFileReference)
         }
     }
@@ -149,7 +150,7 @@ class ConanServiceImpl : ConanService {
     override fun getRecipeLatestRevision(conanArtifactInfo: ConanArtifactInfo): RevisionInfo {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            commonService.checkNodeExist(projectId, repoName, buildReference(conanFileReference))
+            commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
             return commonService.getLastRevision(projectId, repoName, conanFileReference)
                 ?: throw ConanFileNotFoundException(
                     ConanMessageCode.CONAN_FILE_NOT_FOUND, buildReference(conanFileReference), getRepoIdentify()
@@ -171,8 +172,8 @@ class ConanServiceImpl : ConanService {
             val packageReference = PackageReference(conanFileReference, packageId!!, pRevision)
             return commonService.getLastPackageRevision(projectId, repoName, packageReference)
                 ?: throw ConanFileNotFoundException(
-                ConanMessageCode.CONAN_FILE_NOT_FOUND, buildPackageReference(packageReference), getRepoIdentify()
-            )
+                    ConanMessageCode.CONAN_FILE_NOT_FOUND, buildPackageReference(packageReference), getRepoIdentify()
+                )
         }
     }
 }

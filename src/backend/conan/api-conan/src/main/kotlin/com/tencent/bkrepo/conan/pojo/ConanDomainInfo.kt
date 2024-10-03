@@ -25,16 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan
+package com.tencent.bkrepo.conan.pojo
 
-import com.tencent.bkrepo.common.service.condition.MicroService
-import org.springframework.boot.runApplication
-
-/**
- * conan registry
- */
-@MicroService
-class ConanRegistryApplication
-fun main(args: Array<String>) {
-    runApplication<ConanRegistryApplication>(*args)
-}
+data class ConanDomainInfo(
+    val domain: String
+)

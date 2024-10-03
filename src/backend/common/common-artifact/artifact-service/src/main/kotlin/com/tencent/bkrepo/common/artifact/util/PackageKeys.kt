@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.artifact.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import java.util.Locale
 
 /**
  * 包唯一id工具类
@@ -64,13 +65,10 @@ object PackageKeys {
     /**
      * 生成conan格式key
      *
-     * 例子: conan://username:name
+     * 例子: conan://name
      */
-    fun ofConan(name: String, userName: String): String {
-        return StringBuilder(CONAN).append(SEPARATOR).append(userName)
-            .append(StringPool.COLON)
-            .append(name)
-            .toString()
+    fun ofConan(name: String): String {
+        return ofName(CONAN, name)
     }
 
     /**
@@ -142,6 +140,7 @@ object PackageKeys {
     fun ofComposer(name: String): String {
         return ofName(COMPOSER, name)
     }
+
     /**
      * 生成nuget格式key
      * 例子: nuget://test
@@ -248,9 +247,9 @@ object PackageKeys {
      * @return package key
      */
     fun ofName(repositoryType: RepositoryType, name: String): String {
-        val schema = when(repositoryType) {
+        val schema = when (repositoryType) {
             RepositoryType.MAVEN -> MAVEN
-            else -> repositoryType.name.toLowerCase()
+            else -> repositoryType.name.lowercase(Locale.getDefault())
         }
         return ofName(schema, name)
     }

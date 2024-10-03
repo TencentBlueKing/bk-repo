@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.conan.service
 
+import com.tencent.bkrepo.conan.pojo.ConanDomainInfo
+import com.tencent.bkrepo.conan.pojo.PackageVersionInfo
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 
 /**
@@ -54,4 +56,12 @@ interface ConanDeleteService {
      * Remove files.
      */
     fun removeRecipeFiles(conanArtifactInfo: ConanArtifactInfo, files: List<String> = emptyList())
+
+    fun removePackageByKey(conanArtifactInfo: ConanArtifactInfo, packageKey: String)
+
+    fun removePackageVersion(conanArtifactInfo: ConanArtifactInfo, packageKey: String, version: String)
+
+    fun getDomain(): ConanDomainInfo
+
+    fun detailVersion(conanArtifactInfo: ConanArtifactInfo, packageKey: String, version: String): PackageVersionInfo
 }
