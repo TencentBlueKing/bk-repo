@@ -27,19 +27,18 @@
 
 package com.tencent.bkrepo.analyst.controller.user
 
+import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.pojo.request.filter.ListFilterRuleRequest
 import com.tencent.bkrepo.analyst.pojo.request.filter.UpdateFilterRuleRequest
 import com.tencent.bkrepo.analyst.pojo.response.filter.FilterRule
 import com.tencent.bkrepo.analyst.service.FilterRuleService
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -56,10 +55,12 @@ import org.springframework.web.bind.annotation.RestController
 @Api("分析结果忽略规则")
 @RestController
 @RequestMapping("/api/project/{projectId}/filter/rules")
-class UserFilterRuleController(private val filterRuleService: FilterRuleService) {
+class UserFilterRuleController(
+    private val filterRuleService: FilterRuleService,
+    private val permissionCheckHandler: ScannerPermissionCheckHandler
+) {
     @ApiOperation("增加规则")
     @PostMapping
-    @Permission(ResourceType.PROJECT, PermissionAction.WRITE)
     fun addRule(
         @PathVariable("projectId") projectId: String,
         @RequestBody request: UpdateFilterRuleRequest
@@ -67,12 +68,12 @@ class UserFilterRuleController(private val filterRuleService: FilterRuleService)
         if (request.projectId != projectId) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectId)
         }
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.WRITE)
         return ResponseBuilder.success(filterRuleService.create(request))
     }
 
     @ApiOperation("更新规则")
     @PutMapping("/{ruleId}")
-    @Permission(ResourceType.PROJECT, PermissionAction.WRITE)
     fun updateRule(
         @PathVariable("projectId") projectId: String,
         @PathVariable("ruleId") ruleId: String,
@@ -81,29 +82,30 @@ class UserFilterRuleController(private val filterRuleService: FilterRuleService)
         if (request.projectId != projectId) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectId)
         }
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.WRITE)
         return ResponseBuilder.success(filterRuleService.update(request.copy(id = ruleId)))
     }
 
     @ApiOperation("删除规则")
     @DeleteMapping("/{ruleId}")
-    @Permission(ResourceType.PROJECT, PermissionAction.WRITE)
     fun deleteRule(
         @PathVariable("projectId") projectId: String,
         @PathVariable("ruleId") ruleId: String
     ): Response<Void> {
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.WRITE)
         filterRuleService.delete(projectId, ruleId)
         return ResponseBuilder.success()
     }
 
     @ApiOperation("分页获取规则")
     @GetMapping
-    @Permission(ResourceType.PROJECT, PermissionAction.READ)
     fun listRules(
         @PathVariable("projectId") projectId: String,
         @RequestParam(required = false) planId: String? = null,
         @RequestParam(required = false) pageNumber: Int = DEFAULT_PAGE_NUMBER,
         @RequestParam(required = false) pageSize: Int = DEFAULT_PAGE_SIZE
     ): Response<Page<FilterRule>> {
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.READ)
         val request = ListFilterRuleRequest(
             projectId = projectId,
             planId = planId,
