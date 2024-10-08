@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.search.common.LocalDatetimeRuleInterceptor
+import com.tencent.bkrepo.repository.search.common.MetadataRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
@@ -64,6 +65,9 @@ class NodeQueryInterpreterTest : ServiceBaseTest() {
     @MockBean
     private lateinit var localDateTimeRuleInterceptor: LocalDatetimeRuleInterceptor
 
+    @MockBean
+    private lateinit var metadataRuleInterceptor: MetadataRuleInterceptor
+
     @BeforeAll
     fun beforeAll() {
         initMock()
@@ -83,7 +87,8 @@ class NodeQueryInterpreterTest : ServiceBaseTest() {
             permissionManager,
             repoNameRuleInterceptor,
             repoTypeRuleInterceptor,
-            localDateTimeRuleInterceptor
+            localDateTimeRuleInterceptor,
+            metadataRuleInterceptor
         )
         val query = interpreter.interpret(queryModel)
         println(query.queryModel)
@@ -104,7 +109,8 @@ class NodeQueryInterpreterTest : ServiceBaseTest() {
             permissionManager,
             repoNameRuleInterceptor,
             repoTypeRuleInterceptor,
-            localDateTimeRuleInterceptor
+            localDateTimeRuleInterceptor,
+            metadataRuleInterceptor
         )
         val query = interpreter.interpret(queryModel)
         println(query.queryModel)
