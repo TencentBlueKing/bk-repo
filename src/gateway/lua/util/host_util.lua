@@ -23,13 +23,6 @@ local _M = {}
 function _M:get_addr(service_name)
     
     local service_prefix = config.service_prefix
-    -- 哪些服务需要转到容器中 --
-    local service_in_container = {} -- service in container
-    if config.service_in_container ~= nil and config.service_in_container ~= ""  then
-        for c_service in string.gmatch(config.service_in_container, "([^,]+)") do
-            table.insert(service_in_container, c_service)
-        end
-    end
 
     if service_prefix == nil then
         service_prefix = ""
@@ -132,10 +125,6 @@ function _M:get_addr(service_name)
         end
     end
 
-
-    if  arrayUtil:isInArray(service_name, service_in_container) then
-        return config.container_url
-    end
     -- return ip,port address
     return ips[math.random(table.getn(ips))] .. ":" .. port
 
