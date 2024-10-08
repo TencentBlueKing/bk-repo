@@ -221,7 +221,7 @@
 
         <generic-clean-dialog ref="genericCleanDialog" @refresh="refreshNodeChange"></generic-clean-dialog>
         <generic-detail ref="genericDetail"></generic-detail>
-        <generic-form-dialog ref="genericFormDialog" @refresh="refreshNodeChange"></generic-form-dialog>
+        <generic-form-dialog ref="genericFormDialog" @refresh="refreshNodeChange" @cancelSelect="cancelSelect"></generic-form-dialog>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
@@ -925,6 +925,7 @@
                             fullPath
                         }).then(res => {
                             this.refreshNodeChange()
+                            this.cancelSelect()
                             if (folder) {
                                 if (totalRecords === res.deletedNumber) {
                                     this.$bkMessage({
