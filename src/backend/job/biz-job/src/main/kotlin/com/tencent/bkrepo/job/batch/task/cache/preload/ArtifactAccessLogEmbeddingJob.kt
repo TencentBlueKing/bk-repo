@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload
 
-import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.constant.ID
