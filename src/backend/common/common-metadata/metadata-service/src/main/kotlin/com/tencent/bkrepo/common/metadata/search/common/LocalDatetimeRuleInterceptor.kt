@@ -25,14 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.search.common
+package com.tencent.bkrepo.common.metadata.search.common
 
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.metadata.model.TNode
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -43,6 +45,7 @@ import java.time.format.DateTimeParseException
  * 拦截TNode LocalDatetime类型的字段查询，将字符串转换为LocalDatetime
  */
 @Component
+@Conditional(SyncCondition::class)
 class LocalDatetimeRuleInterceptor : QueryRuleInterceptor {
     override fun match(rule: Rule): Boolean {
         return rule is Rule.QueryRule && isSupportRule(rule)

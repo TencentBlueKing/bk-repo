@@ -30,8 +30,11 @@ package com.tencent.bkrepo.replication.controller.service
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -43,8 +46,8 @@ import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
@@ -71,8 +74,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ArtifactReplicaController(
     private val projectService: ProjectService,
-    private val repositoryClient: RepositoryClient,
-    private val nodeClient: NodeClient,
+    private val repositoryService: RepositoryService,
+    private val nodeService: NodeService,
     private val packageClient: PackageClient,
     private val metadataService: MetadataService,
     private val userResource: ServiceUserClient,
@@ -92,56 +95,60 @@ class ArtifactReplicaController(
         repoName: String,
         fullPath: String
     ): Response<Boolean> {
-        return nodeClient.checkExist(projectId, repoName, fullPath)
+        return ResponseBuilder.success(nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath)))
     }
 
     override fun checkNodeExistList(
         request: NodeExistCheckRequest
     ): Response<List<String>> {
-        return nodeClient.listExistFullPath(
+        return ResponseBuilder.success(nodeService.listExistFullPath(
             request.projectId,
             request.repoName,
             request.fullPathList
-        )
+        ))
     }
 
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
-        return nodeClient.createNode(request)
+        return ResponseBuilder.success(nodeService.createNode(request))
     }
 
     override fun replicaNodeRenameRequest(request: NodeRenameRequest): Response<Void> {
-        return nodeClient.renameNode(request)
+        nodeService.renameNode(request)
+        return ResponseBuilder.success()
     }
 
     override fun replicaNodeUpdateRequest(request: NodeUpdateRequest): Response<Void> {
-        return nodeClient.updateNode(request)
+        nodeService.updateNode(request)
+        return ResponseBuilder.success()
     }
 
     override fun replicaNodeCopyRequest(request: NodeMoveCopyRequest): Response<Void> {
-        nodeClient.copyNode(request)
+        nodeService.copyNode(request)
         return ResponseBuilder.success()
     }
 
     override fun replicaNodeMoveRequest(request: NodeMoveCopyRequest): Response<Void> {
-        nodeClient.moveNode(request)
+        nodeService.moveNode(request)
         return ResponseBuilder.success()
     }
 
     override fun replicaNodeDeleteRequest(request: NodeDeleteRequest): Response<NodeDeleteResult> {
-        return nodeClient.deleteNode(request)
+        return ResponseBuilder.success(nodeService.deleteNode(request))
     }
 
     override fun replicaRepoCreateRequest(request: RepoCreateRequest): Response<RepositoryDetail> {
-        return repositoryClient.getRepoDetail(request.projectId, request.name).data?.let { ResponseBuilder.success(it) }
-            ?: repositoryClient.createRepo(request)
+        return repositoryService.getRepoDetail(request.projectId, request.name)?.let { ResponseBuilder.success(it) }
+            ?: ResponseBuilder.success(repositoryService.createRepo(request))
     }
 
     override fun replicaRepoUpdateRequest(request: RepoUpdateRequest): Response<Void> {
-        return repositoryClient.updateRepo(request)
+        repositoryService.updateRepo(request)
+        return ResponseBuilder.success()
     }
 
     override fun replicaRepoDeleteRequest(request: RepoDeleteRequest): Response<Void> {
-        return repositoryClient.deleteRepo(request)
+        repositoryService.deleteRepo(request)
+        return ResponseBuilder.success()
     }
 
     override fun checkRepoPermission(request: CheckPermissionRequest): Response<Boolean> {

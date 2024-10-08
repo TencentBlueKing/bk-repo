@@ -29,14 +29,17 @@ package com.tencent.bkrepo.generic.artifact.remote
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.findRemoteMetadata
 import com.tencent.bkrepo.generic.artifact.updateParentMetadata
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.Request
@@ -50,7 +53,7 @@ import org.springframework.stereotype.Component
 @Component
 class AsyncRemoteArtifactCacheWriter(
     private val storageManager: StorageManager,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val httpClientBuilderFactory: AsyncCacheHttpClientBuilderFactory,
     private val executor: ThreadPoolTaskExecutor,
     private val cacheLocks: RemoteArtifactCacheLocks,
@@ -79,7 +82,7 @@ class AsyncRemoteArtifactCacheWriter(
         val repoName = cacheTask.repoName
         val fullPath = cacheTask.fullPath
         try {
-            if (nodeClient.getNodeDetail(projectId, repoName, fullPath).data != null) {
+            if (nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) != null) {
                 logger.info("artifact[$projectId/$repoName$fullPath] was cached, skip cache")
             } else if (cacheLocks.tryLock(projectId, repoName, fullPath)) {
                 try {

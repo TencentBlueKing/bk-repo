@@ -53,9 +53,9 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.metadata.util.DesensitizedUtils
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -69,7 +69,7 @@ class UserServiceImpl constructor(
 ) : UserService {
 
     @Autowired
-    lateinit var repoClient: RepositoryClient
+    lateinit var repositoryService: RepositoryService
 
     @Autowired
     lateinit var projectService: ProjectService
@@ -122,7 +122,7 @@ class UserServiceImpl constructor(
 
     override fun createUserToRepo(request: CreateUserToRepoRequest): Boolean {
         logger.info("create user to repo request : [${DesensitizedUtils.toString(request)}]")
-        repoClient.getRepoInfo(request.projectId, request.repoName).data ?: run {
+        repositoryService.getRepoInfo(request.projectId, request.repoName) ?: run {
             logger.warn("repo [${request.projectId}/${request.repoName}]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_REPO_NOT_EXIST)
         }
