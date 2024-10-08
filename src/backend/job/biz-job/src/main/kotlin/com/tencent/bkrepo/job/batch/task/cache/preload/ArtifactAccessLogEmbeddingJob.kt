@@ -181,15 +181,7 @@ class ArtifactAccessLogEmbeddingJob(
 
     private fun HashMap<String, MutableMap<String, AccessLog>>.addToBuffer(operateLog: OperateLog): Boolean {
         with(operateLog) {
-            val projectRepoFullPath = if (repoName == PIPELINE) {
-                // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
-                val secondSlashIndex = resourceKey.indexOf("/", 1)
-                val pipelinePath = resourceKey.substring(0, secondSlashIndex)
-                val artifactPath = resourceKey.substring(resourceKey.indexOf("/", secondSlashIndex + 1))
-                "/$projectId/$repoName$pipelinePath$artifactPath"
-            } else {
-                "/$projectId/$repoName$resourceKey"
-            }
+            val projectRepoFullPath = projectRepoFullPath(projectId, repoName, resourceKey)
             val buffer = getOrPut(projectId) { HashMap() }
             val accessLog = buffer.getOrPut(projectRepoFullPath) {
                 AccessLog(

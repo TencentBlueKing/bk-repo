@@ -79,7 +79,7 @@ class ArtifactSimilarityPreloadPlanGenerator(
             val preloadHourOfDay = preloadProperties.preloadHourOfDay.sorted().ifEmpty { return null }
 
             // 查询相似路径，没有相似路径时不执行预加载
-            val projectPath = "/$projectId/$repoName$fullPath"
+            val projectPath = projectRepoFullPath(projectId, repoName, fullPath)
             val searchReq = SearchRequest(
                 query = projectPath,
                 topK = 10,
@@ -102,17 +102,16 @@ class ArtifactSimilarityPreloadPlanGenerator(
             val now = LocalDateTime.now()
             val preloadHour = preloadHourOfDay.firstOrNull { it > now.hour }
                 ?: (preloadHourOfDay.first { (it + 24) > now.hour } + 24)
-            val preloadTimestamp = now
+            val preloadDateTime = now
                 // 设置预加载时间
                 .plusHours((preloadHour - now.hour).toLong())
                 .withMinute(0)
                 // 减去随机时间，避免同时多文件触发加载
                 .minusSeconds(Random.nextLong(0, preloadProperties.maxRandomSeconds))
-                // 转化为毫秒时间戳
-                .atZone(ZoneId.systemDefault())
-                .toEpochSecond() * 1000
+            // 转化为毫秒时间戳
+            val preloadTimestamp = preloadDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
             logger.info(
-                "similarity path[${docs.first().content}] found for [$projectPath], will preload on $preloadTimestamp"
+                "similarity path[${docs.first().content}] found for [$projectPath], will preload on $preloadDateTime"
             )
             return preloadTimestamp
         }
