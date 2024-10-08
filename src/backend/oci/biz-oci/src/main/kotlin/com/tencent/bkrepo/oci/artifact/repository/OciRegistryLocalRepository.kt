@@ -33,6 +33,7 @@ package com.tencent.bkrepo.oci.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -80,6 +81,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.util.Locale
 
 @Component
 class OciRegistryLocalRepository(
@@ -102,7 +104,7 @@ class OciRegistryLocalRepository(
             val projectId = repositoryDetail.projectId
             val repoName = repositoryDetail.name
             val fullPath = context.artifactInfo.getArtifactFullPath()
-            val isExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
+            val isExist = nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))
             logger.info(
                 "The file $fullPath that will be uploaded to server is exist: $isExist " +
                     "in repo ${artifactInfo.getRepoIdentify()}, and the flag of force overwrite is $isForce"
@@ -252,9 +254,7 @@ class OciRegistryLocalRepository(
         } catch (e: StorageErrorException) {
             // 计算sha256和转存文件导致时间较长，会出现请求超时，然后发起重试，导致并发操作该临时文件，文件可能已经被删除
             if (storageService.exist(sha256, context.repositoryDetail.storageCredentials)) {
-                val nodeDetail = nodeClient.getNodeDetail(
-                    artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
-                ).data
+                val nodeDetail = nodeService.getNodeDetail(artifactInfo)
                 if (nodeDetail == null || nodeDetail.sha256 != sha256) {
                     throw e
                 } else {
@@ -413,13 +413,13 @@ class OciRegistryLocalRepository(
                 ?: throw OciFileNotFoundException(
                     OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
-            nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
                 ?: throw OciFileNotFoundException(
                     OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
             logger.info("Ready to delete $fullPath in repo ${getRepoIdentify()}")
             val request = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)
-            nodeClient.deleteNode(request)
+            nodeService.deleteNode(request)
             OciResponseUtils.buildDeleteResponse(context.response)
         }
     }
@@ -495,7 +495,8 @@ class OciRegistryLocalRepository(
         with(context.artifactInfo as OciTagArtifactInfo) {
             val n = context.getAttribute<Int>(N)
             val last = context.getAttribute<String>(LAST_TAG)
-            val packageKey = PackageKeys.ofName(context.repositoryDetail.type.name.toLowerCase(), packageName)
+            val packageKey =
+                PackageKeys.ofName(context.repositoryDetail.type.name.lowercase(Locale.getDefault()), packageName)
             val versionList = packageClient.listAllVersion(
                 projectId,
                 repoName,

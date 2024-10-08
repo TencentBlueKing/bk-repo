@@ -3,19 +3,19 @@ package com.tencent.bkrepo.maven.service
 import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
-import com.tencent.bkrepo.repository.api.NodeClient
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
 class MavenExtService(
-    private val nodeClient: NodeClient
+    private val nodeSearchService: NodeSearchService
 ) {
 
     @Value("\${maven.domain:http://127.0.0.1:25803}")
@@ -92,6 +92,6 @@ class MavenExtService(
             select = listOf("projectId", "repoName", "fullPath"),
             rule = rule
         )
-        return nodeClient.search(queryModel)
+        return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 }

@@ -50,10 +50,10 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import com.tencent.bkrepo.repository.search.common.LocalDatetimeRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
-import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
+import com.tencent.bkrepo.common.metadata.search.common.LocalDatetimeRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.common.RepoNameRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.common.RepoTypeRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.node.NodeQueryInterpreter
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService

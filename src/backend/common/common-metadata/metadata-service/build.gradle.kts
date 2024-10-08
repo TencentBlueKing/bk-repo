@@ -38,6 +38,7 @@ dependencies {
     }
     api(project(":common:common-service:service-base"))
     api(project(":common:common-stream"))
+    api(project(":common:common-query:query-mongo"))
     api(project(":archive:api-archive"))
     api(project(":router-controller:api-router-controller"))
     api(project(":fs:api-fs-server"))

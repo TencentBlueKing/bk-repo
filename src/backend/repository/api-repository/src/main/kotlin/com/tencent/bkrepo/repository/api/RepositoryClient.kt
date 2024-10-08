@@ -60,6 +60,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Api("仓库服务接口")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "RepositoryClient", primary = false)
 @RequestMapping("/service/repo")
+@Deprecated("replace with RepositoryService")
 interface RepositoryClient {
 
     @ApiOperation("查询仓库信息")

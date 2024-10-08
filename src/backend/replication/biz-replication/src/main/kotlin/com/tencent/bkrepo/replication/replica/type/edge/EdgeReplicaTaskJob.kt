@@ -30,12 +30,14 @@ package com.tencent.bkrepo.replication.replica.type.edge
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.UrlUtils
@@ -47,7 +49,6 @@ import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.util.OkHttpClientPool
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -63,7 +64,7 @@ import javax.annotation.PostConstruct
 class EdgeReplicaTaskJob(
     private val clusterProperties: ClusterProperties,
     private val replicationProperties: ReplicationProperties,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val packageClient: PackageClient
 ) {
 
@@ -150,7 +151,7 @@ class EdgeReplicaTaskJob(
                 replicationProperties = replicationProperties
             )
             try {
-                val nodeInfo = nodeClient.getNodeDetail(projectId, repoName, fullPath!!).data?.nodeInfo
+                val nodeInfo = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath!!))?.nodeInfo
                     ?: throw NodeNotFoundException(fullPath!!)
                 if (nodeInfo.sha256 == FAKE_SHA256) {
                     logger.warn("Node $fullPath in repo ${nodeInfo.projectId}|${nodeInfo.repoName} is link node.")

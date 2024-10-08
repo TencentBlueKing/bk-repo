@@ -29,13 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.search.common
+package com.tencent.bkrepo.common.metadata.search.common
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
@@ -48,6 +49,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper.listPermissionPaths
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
@@ -57,6 +59,7 @@ import org.springframework.stereotype.Component
  * 条件构造器中传入条件是`repoName`，过滤无权限的仓库
  */
 @Component
+@Conditional(SyncCondition::class)
 class RepoNameRuleInterceptor(
     private val permissionManager: PermissionManager,
     private val repositoryService: RepositoryService,

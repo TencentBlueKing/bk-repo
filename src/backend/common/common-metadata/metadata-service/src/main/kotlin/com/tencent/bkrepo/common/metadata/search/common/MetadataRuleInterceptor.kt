@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.search.common
+package com.tencent.bkrepo.common.metadata.search.common
 
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext

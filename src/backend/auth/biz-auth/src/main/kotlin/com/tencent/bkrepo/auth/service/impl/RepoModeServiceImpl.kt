@@ -37,14 +37,14 @@ import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
 import com.tencent.bkrepo.auth.service.RepoModeService
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.springframework.stereotype.Service
 
 @Service
 class RepoModeServiceImpl(
     private val repoAuthDao: RepoAuthConfigDao,
     private val permissionDao: PermissionDao,
-    private val repoClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
 ) : RepoModeService {
 
     override fun createOrUpdateConfig(
@@ -54,7 +54,7 @@ class RepoModeServiceImpl(
         officeDenyGroupSet: Set<String>,
         bkiamv3Check: Boolean
     ): RepoModeStatus? {
-        val repoDetail = repoClient.getRepoDetail(projectId, repoName).data ?: return null
+        val repoDetail = repositoryService.getRepoDetail(projectId, repoName) ?: return null
         if (repoDetail.public) return null
         var controlMode = accessControlMode
         if (accessControlMode == null) {

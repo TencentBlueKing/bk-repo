@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.artifact.cache.service.impl
 
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.UT_SHA256
@@ -58,6 +57,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -137,12 +137,8 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
             node.copy(fullPath = "test.txt"),
             node.copy(fullPath = "test2.txt"),
         )
-        whenever(nodeClient.listPageNodeBySha256(anyString(), any())).thenReturn(
-            Response(
-                0,
-                "",
-                Pages.ofResponse(Pages.ofRequest(0, 2000), nodes.size.toLong(), nodes)
-            )
+        whenever(nodeService.listNodePageBySha256(anyString(), any())).thenReturn(
+            Pages.ofResponse(Pages.ofRequest(0, 2000), nodes.size.toLong(), nodes)
         )
 
         preloadPlanService.generatePlan(null, UT_SHA256)
@@ -183,12 +179,8 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         for (i in 0..1000) {
             nodes.add(buildNodeInfo())
         }
-        whenever(nodeClient.listPageNodeBySha256(anyString(), any())).thenReturn(
-            Response(
-                0,
-                "",
-                Pages.ofResponse(Pages.ofRequest(0, 2000), nodes.size.toLong(), nodes)
-            )
+        whenever(nodeService.listNodePageBySha256(anyString(), any())).thenReturn(
+            Pages.ofResponse(Pages.ofRequest(0, 2000), nodes.size.toLong(), nodes)
         )
         preloadPlanService.generatePlan(null, UT_SHA256)
         val plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
@@ -224,12 +216,12 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     }
 
     private fun resetMock(projectId: String = UT_PROJECT_ID, repoName: String = UT_REPO_NAME) {
-        whenever(repositoryClient.getRepoInfo(anyString(), anyString())).thenReturn(
-            Response(0, "", buildRepo(projectId = projectId, repoName = repoName))
+        whenever(repositoryService.getRepoInfo(anyString(), anyString(), anyOrNull())).thenReturn(
+            buildRepo(projectId = projectId, repoName = repoName)
         )
         val nodes = listOf(buildNodeInfo(projectId, repoName))
-        whenever(nodeClient.listPageNodeBySha256(anyString(), any())).thenReturn(
-            Response(0, "", Pages.ofResponse(Pages.ofRequest(0, 20), 1L, nodes))
+        whenever(nodeService.listNodePageBySha256(anyString(), any())).thenReturn(
+            Pages.ofResponse(Pages.ofRequest(0, 20), 1L, nodes)
         )
     }
 
