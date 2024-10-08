@@ -75,6 +75,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeClient", primary = false)
 @RequestMapping("/service/node")
+@Deprecated("replace with NodeService")
 interface NodeClient {
 
     @ApiOperation("根据路径查看节点详情")

@@ -25,12 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node.impl
+package com.tencent.bkrepo.common.metadata.service.node.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
@@ -38,12 +39,13 @@ import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
-import com.tencent.bkrepo.repository.search.node.NodeQueryContext
-import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
+import com.tencent.bkrepo.common.metadata.search.node.NodeQueryContext
+import com.tencent.bkrepo.common.metadata.search.node.NodeQueryInterpreter
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -57,6 +59,7 @@ import kotlin.system.measureTimeMillis
  */
 @Suppress("UNCHECKED_CAST")
 @Service
+@Conditional(SyncCondition::class)
 class NodeSearchServiceImpl(
     private val nodeDao: NodeDao,
     private val nodeQueryInterpreter: NodeQueryInterpreter,

@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.job.batch.task.storage
 
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
@@ -8,10 +10,10 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.util.toPath
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -35,7 +37,16 @@ class StorageReconcileJobTest @Autowired constructor(
 ) : JobBaseTest() {
 
     @MockBean
+    lateinit var servicePermissionClient: ServicePermissionClient
+
+    @MockBean
+    lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
+
+    @MockBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
+
+    @MockBean
+    lateinit var messageSupplier: MessageSupplier
 
     @MockBean
     lateinit var storageCredentialService: StorageCredentialService
@@ -43,11 +54,9 @@ class StorageReconcileJobTest @Autowired constructor(
     @MockBean
     lateinit var fileReferenceService: FileReferenceService
 
-    @MockBean
-    lateinit var repositoryClient: RepositoryClient
-
     @Autowired
     lateinit var nodeCommonUtils: NodeCommonUtils
+
     private val cred = storageProperties.defaultStorageCredentials() as FileSystemCredentials
 
     init {

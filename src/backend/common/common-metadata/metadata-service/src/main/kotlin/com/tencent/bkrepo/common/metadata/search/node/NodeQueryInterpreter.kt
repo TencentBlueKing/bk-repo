@@ -29,37 +29,45 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.search.software.packages
+package com.tencent.bkrepo.common.metadata.search.node
 
-import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.search.common.CommonQueryInterpreter
+import com.tencent.bkrepo.common.metadata.search.common.LocalDatetimeRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.MetadataRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.common.RepoNameRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.SelectFieldInterceptor
-import com.tencent.bkrepo.repository.search.packages.PackageQueryContext
-import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareModelValidateInterceptor
-import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareRepoNameRuleInterceptor
-import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareRepoTypeRuleInterceptor
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Conditional
+import org.springframework.context.annotation.Lazy
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 
 @Component
-class SoftwarePackageSearchInterpreter(
-    private val softwareRepoNameRuleInterceptor: SoftwareRepoNameRuleInterceptor,
-    private val softwareRepoTypeRuleInterceptor: SoftwareRepoTypeRuleInterceptor
-) : MongoQueryInterpreter() {
+@Conditional(SyncCondition::class)
+class NodeQueryInterpreter @Autowired @Lazy constructor(
+    private val permissionManager: PermissionManager,
+    private val repoNameRuleInterceptor: RepoNameRuleInterceptor,
+    private val repoTypeRuleInterceptor: RepoTypeRuleInterceptor,
+    private val localDatetimeRuleInterceptor: LocalDatetimeRuleInterceptor
+) : CommonQueryInterpreter(permissionManager) {
 
     @PostConstruct
     fun init() {
-        addModelInterceptor(SoftwareModelValidateInterceptor())
+        addModelInterceptor(NodeModelInterceptor(permissionManager))
         addModelInterceptor(SelectFieldInterceptor())
-        addRuleInterceptor(softwareRepoTypeRuleInterceptor)
-        addRuleInterceptor(softwareRepoNameRuleInterceptor)
+        addRuleInterceptor(repoTypeRuleInterceptor)
+        addRuleInterceptor(repoNameRuleInterceptor)
         addRuleInterceptor(MetadataRuleInterceptor())
+        addRuleInterceptor(localDatetimeRuleInterceptor)
     }
 
     override fun initContext(queryModel: QueryModel, mongoQuery: Query): QueryContext {
-        return PackageQueryContext(queryModel, false, mongoQuery, this)
+        return NodeQueryContext(queryModel, false, mongoQuery, this)
     }
 }

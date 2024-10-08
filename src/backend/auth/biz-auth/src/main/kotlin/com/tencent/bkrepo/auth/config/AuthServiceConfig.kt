@@ -55,7 +55,7 @@ import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -71,7 +71,7 @@ class AuthServiceConfig {
 
     @Autowired
     @Lazy
-    private lateinit var repositoryClient: RepositoryClient
+    private lateinit var repositoryService: RepositoryService
 
     @Autowired
     @Lazy
@@ -102,7 +102,7 @@ class AuthServiceConfig {
             userDao,
             personalPathDao,
             repoAuthConfigDao,
-            repositoryClient,
+            repositoryService,
             projectService
         )
     }
@@ -116,7 +116,6 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         accountDao: AccountDao,
         permissionDao: PermissionDao,
-        repoClient: RepositoryClient
     ): PermissionService {
         return BkIamV3PermissionServiceImpl(
             bkiamV3Service,
@@ -126,7 +125,7 @@ class AuthServiceConfig {
             permissionDao,
             personalPathDao,
             repoAuthConfigDao,
-            repoClient,
+            repositoryService,
             projectService
         )
     }
@@ -155,7 +154,7 @@ class AuthServiceConfig {
             bkAuthConfig,
             bkAuthPipelineService,
             bkAuthProjectService,
-            repositoryClient,
+            repositoryService,
             projectService,
             bkiamV3Service
         )

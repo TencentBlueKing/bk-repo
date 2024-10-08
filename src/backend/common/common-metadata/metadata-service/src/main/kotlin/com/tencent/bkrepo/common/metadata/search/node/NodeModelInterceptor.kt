@@ -29,42 +29,48 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.search.node
+package com.tencent.bkrepo.common.metadata.search.node
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.repository.search.common.CommonQueryInterpreter
-import com.tencent.bkrepo.repository.search.common.LocalDatetimeRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.MetadataRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.SelectFieldInterceptor
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.Lazy
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.stereotype.Component
-import javax.annotation.PostConstruct
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.search.common.ModelValidateInterceptor
+import org.slf4j.LoggerFactory
 
-@Component
-class NodeQueryInterpreter @Autowired @Lazy constructor(
-    private val permissionManager: PermissionManager,
-    private val repoNameRuleInterceptor: RepoNameRuleInterceptor,
-    private val repoTypeRuleInterceptor: RepoTypeRuleInterceptor,
-    private val localDatetimeRuleInterceptor: LocalDatetimeRuleInterceptor
-) : CommonQueryInterpreter(permissionManager) {
+/**
+ * 节点自定义查询规则拦截器
+ */
+class NodeModelInterceptor(private val permissionManager: PermissionManager) : ModelValidateInterceptor() {
 
-    @PostConstruct
-    fun init() {
-        addModelInterceptor(NodeModelInterceptor(permissionManager))
-        addModelInterceptor(SelectFieldInterceptor())
-        addRuleInterceptor(repoTypeRuleInterceptor)
-        addRuleInterceptor(repoNameRuleInterceptor)
-        addRuleInterceptor(MetadataRuleInterceptor())
-        addRuleInterceptor(localDatetimeRuleInterceptor)
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    override fun intercept(queryModel: QueryModel, context: QueryContext): QueryModel {
+        super.intercept(queryModel, context)
+        val includeDeleted = queryModel.select?.firstOrNull { it == TNode::deleted.name } != null
+        if (includeDeleted) {
+            val userId = SecurityUtils.getUserId()
+            try {
+                permissionManager.checkPrincipal(userId, PrincipalType.ADMIN)
+                return queryModel
+            } catch (ignore: Exception) {
+                logger.info("Query deleted node failed, User[$userId]")
+            }
+        }
+        // 添加deleted属性为null的查询条件
+        setDeletedNull(queryModel)
+        return queryModel
     }
 
-    override fun initContext(queryModel: QueryModel, mongoQuery: Query): QueryContext {
-        return NodeQueryContext(queryModel, false, mongoQuery, this)
+    /**
+     * 添加deleted属性为null的查询条件到[queryModel]中
+     */
+    private fun setDeletedNull(queryModel: QueryModel) {
+        queryModel.addQueryRule(Rule.QueryRule(TNode::deleted.name, StringPool.EMPTY, OperationType.NULL))
     }
 }

@@ -2,6 +2,7 @@ package com.tencent.bkrepo.media.stream
 
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedArtifactFile
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import java.util.Locale
 
 /**
  * 保存流为制品构件
@@ -16,7 +17,7 @@ class ArtifactFileRecordingListener(
     private lateinit var name: String
 
     override fun init(name: String) {
-        this.name = "$name.${type.name.toLowerCase()}"
+        this.name = "$name.${type.name.lowercase(Locale.getDefault())}"
     }
 
     override fun handler(packet: StreamPacket) {

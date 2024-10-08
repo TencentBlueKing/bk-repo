@@ -27,10 +27,13 @@
 
 package com.tencent.bkrepo.common.metadata.service.blocknode.impl
 
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.dao.blocknode.BlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
@@ -39,16 +42,21 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
-abstract class AbstractBlockNodeService(
+@Service
+@Conditional(SyncCondition::class)
+class BlockNodeServiceImpl(
     private val blockNodeDao: BlockNodeDao,
-    private val fileReferenceService: FileReferenceService
+    private val fileReferenceService: FileReferenceService,
+    private val nodeDao: NodeDao
 ) : BlockNodeService {
 
     override fun createBlock(blockNode: TBlockNode, storageCredentials: StorageCredentials?): TBlockNode {
@@ -83,8 +91,9 @@ abstract class AbstractBlockNodeService(
     }
 
     override fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {
-        val nodeDetail = getNodeDetail(projectId, repoName, dstFullPath)
-        if (nodeDetail.folder) {
+        val node = nodeDao.findNode(projectId, repoName, dstFullPath)
+            ?: throw NodeNotFoundException(dstFullPath)
+        if (node.folder) {
             val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, true)
             val blocks = blockNodeDao.find(Query(criteria))
             blocks.forEach {
@@ -133,9 +142,7 @@ abstract class AbstractBlockNodeService(
         }
     }
 
-    abstract fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail
-
     companion object {
-        private val logger = LoggerFactory.getLogger(AbstractBlockNodeService::class.java)
+        private val logger = LoggerFactory.getLogger(BlockNodeServiceImpl::class.java)
     }
 }

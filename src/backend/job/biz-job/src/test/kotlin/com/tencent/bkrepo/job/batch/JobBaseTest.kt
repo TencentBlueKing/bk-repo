@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.batch.file.ExpireFileResolverConfig
 import com.tencent.bkrepo.job.config.JobConfig
 import io.mockk.every
@@ -85,5 +87,8 @@ class JobBaseTest {
         every { SpringContextUtils.getBean<Tracer>() } returns tracer
         every { tracer.currentSpan() } returns null
         every { SpringContextUtils.publishEvent(any()) } returns Unit
+
+        val messageSupplier = mockk<MessageSupplier>()
+        every { messageSupplier.delegateToSupplier<ArtifactEvent>(any(), any(), any(), any(), any())}.returns(Unit)
     }
 }

@@ -76,12 +76,12 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.format.DateTimeFormatter
@@ -96,8 +96,8 @@ class ScanTaskServiceImpl(
     private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
-    private val nodeClient: NodeClient,
-    private val repositoryClient: RepositoryClient,
+    private val nodeService: NodeService,
+    private val repositoryService: RepositoryService,
     private val resultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerConverters: Map<String, ScannerConverter>,
     private val filterRuleService: FilterRuleService
@@ -221,14 +221,14 @@ class ScanTaskServiceImpl(
     override fun resultDetail(request: FileScanResultDetailRequest): FileScanResultDetail {
         with(request) {
             val node = artifactInfo!!.run {
-                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+                nodeService.getNodeDetail(this)
                     ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, getArtifactFullPath())
             }
             if (node.folder) {
                 throw ParameterInvalidException(node.fullPath)
             }
 
-            val repo = repositoryClient.getRepoInfo(node.projectId, node.repoName).data!!
+            val repo = repositoryService.getRepoInfo(node.projectId, node.repoName)!!
 
             val scanner = scannerService.get(scanner)
             val matchFilterRuleRequest = MatchFilterRuleRequest(

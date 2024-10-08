@@ -29,14 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.search.common
+package com.tencent.bkrepo.common.metadata.search.common
 
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
@@ -46,6 +48,7 @@ import org.springframework.stereotype.Component
  * 条件构造器中传入条件是`repoType`，需要转换成对应的仓库列表
  */
 @Component
+@Conditional(SyncCondition::class)
 class RepoTypeRuleInterceptor(
     private val repositoryService: RepositoryService
 ) : QueryRuleInterceptor {
