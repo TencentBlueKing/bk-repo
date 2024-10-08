@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.batch.task.clean
 
 import com.tencent.bkrepo.common.artifact.hash.sha256
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
@@ -49,6 +50,9 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
 
     @MockBean
     lateinit var separationTaskService: SeparationTaskService
+
+    @MockBean
+    lateinit var operateLogService: OperateLogService
 
     @BeforeAll
     fun beforeAll() {

@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.opdata.handler
 
-import com.tencent.bkrepo.common.operate.api.handler.AbsSensitiveHandler
-import com.tencent.bkrepo.common.operate.api.handler.MaskString
+import com.tencent.bkrepo.common.metadata.handler.AbsSensitiveHandler
+import com.tencent.bkrepo.common.metadata.handler.MaskString
 import com.tencent.bkrepo.opdata.pojo.config.ConfigItem
 
 class MaskConfigItem : AbsSensitiveHandler() {

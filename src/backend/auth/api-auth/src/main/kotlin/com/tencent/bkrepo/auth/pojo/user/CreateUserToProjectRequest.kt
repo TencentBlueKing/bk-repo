@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.auth.pojo.user
 
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
-import com.tencent.bkrepo.common.operate.api.handler.MaskString
+import com.tencent.bkrepo.common.metadata.annotation.Sensitive
+import com.tencent.bkrepo.common.metadata.handler.MaskString
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

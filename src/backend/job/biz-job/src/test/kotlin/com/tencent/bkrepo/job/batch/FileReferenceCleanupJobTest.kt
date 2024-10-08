@@ -32,6 +32,7 @@ import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -42,7 +43,6 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.bson.Document
@@ -104,7 +104,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     lateinit var fileReferenceCleanupJobProperties: FileReferenceCleanupJobProperties
 
     @MockBean
-    lateinit var fileReferenceClient: FileReferenceClient
+    lateinit var operateLogService: OperateLogService
 
     @BeforeEach
     fun beforeEach() {

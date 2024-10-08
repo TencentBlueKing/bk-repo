@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.repository.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.ProjectUsageStatisticsClient
 import org.springframework.web.bind.annotation.RestController

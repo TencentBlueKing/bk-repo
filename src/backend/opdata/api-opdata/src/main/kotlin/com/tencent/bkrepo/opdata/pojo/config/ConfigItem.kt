@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.opdata.pojo.config
 
 import com.tencent.bkrepo.common.api.exception.BadRequestException
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
+import com.tencent.bkrepo.common.metadata.annotation.Sensitive
 import com.tencent.bkrepo.opdata.handler.MaskConfigItem
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 

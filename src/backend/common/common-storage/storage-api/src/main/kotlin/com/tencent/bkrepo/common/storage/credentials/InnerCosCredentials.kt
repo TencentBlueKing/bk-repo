@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.common.storage.credentials
 
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
-import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
+import com.tencent.bkrepo.common.metadata.annotation.Sensitive
+import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.config.CompressProperties
 import com.tencent.bkrepo.common.storage.config.EncryptProperties
