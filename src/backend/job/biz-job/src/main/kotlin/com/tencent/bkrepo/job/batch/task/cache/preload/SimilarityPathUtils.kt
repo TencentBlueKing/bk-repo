@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,43 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup
+package com.tencent.bkrepo.job.batch.task.cache.preload
 
-import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.auth.constant.PIPELINE
 
-data class CleanupResult(
-    var totalFile: Long = 0,
-    var totalFolder: Long = 0,
-    var totalSize: Long = 0,
-    var cleanupFile: Long = 0,
-    var cleanupFolder: Long = 0,
-    var cleanupSize: Long = 0,
-    var errorCount: Long = 0,
-    /**
-     * 根目录下除了tempPath与stagingPath子目录外被访问的文件数量
-     */
-    var rootDirNotDeletedFile: Long = 0,
-    /**
-     * 根目录下除了tempPath与stagingPath子目录外被访问的文件大小
-     */
-    var rootDirNotDeletedSize: Long = 0,
-    /**
-     * 根据保留策略保留的文件数量
-     */
-    var retainFile: Long = 0,
-    /**
-     * 根据保留策略保留的文件大小
-     */
-    var retainSize: Long = 0,
-    /**
-     * 保留的文件sha256
-     */
-    var retainSha256: MutableSet<String> = HashSet(),
-) {
-
-    override fun toString(): String {
-        return "$cleanupFile/$totalFile[${HumanReadable.size(cleanupSize)}/${HumanReadable.size(totalSize)}] " +
-            "files deleted, errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted, " +
-                "retainCount[$retainFile], retainSize[${HumanReadable.size(retainSize)}]"
+/**
+ * 拼接projectId、repoName、fullPath用于向量化
+ * 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id为随机生成，不参与相似度计算
+ */
+fun projectRepoFullPath(projectId: String, repoName: String, fullPath: String): String {
+    return if (repoName == PIPELINE) {
+        // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
+        val secondSlashIndex = fullPath.indexOf("/", 1)
+        val pipelinePath = fullPath.substring(0, secondSlashIndex)
+        val artifactPath = fullPath.substring(fullPath.indexOf("/", secondSlashIndex + 1))
+        "/$projectId/$repoName$pipelinePath$artifactPath"
+    } else {
+        "/$projectId/$repoName$fullPath"
     }
 }

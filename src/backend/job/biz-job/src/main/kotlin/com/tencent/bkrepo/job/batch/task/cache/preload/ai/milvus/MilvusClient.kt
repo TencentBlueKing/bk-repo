@@ -117,7 +117,9 @@ class MilvusClient(
                     object : TypeReference<MilvusResponse<T>>() {}
                 )
                 if (res.code != 0) {
-                    throw RuntimeException("request milvus failed, code: $code, message: ${res.message}")
+                    throw MilvusRestApiException(
+                        res.code, "request milvus failed, code: $code, message: ${res.message}"
+                    )
                 }
                 return handler(res.data)
             } else {
@@ -126,7 +128,7 @@ class MilvusClient(
                 } else {
                     ""
                 }
-                throw RuntimeException("request milvus failed, code: $code, message: $message")
+                throw MilvusRestApiException(code, "request milvus failed, code: $code, message: $message")
             }
         }
     }

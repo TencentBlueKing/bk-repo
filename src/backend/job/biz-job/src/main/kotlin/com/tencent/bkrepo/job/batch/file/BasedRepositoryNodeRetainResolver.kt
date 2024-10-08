@@ -3,7 +3,6 @@ package com.tencent.bkrepo.job.batch.file
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
@@ -26,78 +25,55 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
-import java.io.File
 import java.time.LocalDateTime
 
 /**
  * 基于仓库配置判断文件是否过期
  * */
-class BasedRepositoryFileExpireResolver(
+class BasedRepositoryNodeRetainResolver(
     private val expireConfig: RepositoryExpireConfig,
     taskScheduler: ThreadPoolTaskScheduler,
     private val fileCacheService: FileCacheService,
     private val mongoTemplate: MongoTemplate,
-) : FileRetainResolver {
+) : NodeRetainResolver {
 
-    private var retainNodes = mutableSetOf<String>()
+    private var retainNodes = HashMap<String, RetainNode>()
 
     init {
         taskScheduler.scheduleWithFixedDelay(this::refreshRetainNode, expireConfig.cacheTime)
-    }
-
-    override fun retain(file: File): Boolean {
-        return retainNodes.contains(file.name)
     }
 
     override fun retain(sha256: String): Boolean {
         return retainNodes.contains(sha256)
     }
 
+    override fun getRetainNode(sha256: String): RetainNode? {
+        return retainNodes[sha256]
+    }
+
     private fun refreshRetainNode() {
         logger.info("Refresh retain nodes start. size of nodes ${retainNodes.size}")
         try {
-            val temp = mutableSetOf<String>()
-            temp.addAll(getNodeFromConfig())
-            temp.addAll(getNodeFromDataBase())
+            val temp = HashMap<String, RetainNode>()
+            val configs = expireConfig.repos.map { convertRepoConfigToFileCache(it) } + fileCacheService.list()
+            configs.forEach { config ->
+                getNodes(config).forEach { node ->
+                    val retainNode = RetainNode(
+                        projectId = config.projectId,
+                        repoName = config.repoName,
+                        fullPath = node[FULL_PATH].toString(),
+                        sha256 = node[SHA256].toString(),
+                        size = node[SIZE].toString().toLong()
+                    )
+                    temp[retainNode.sha256] = retainNode
+                    logger.info("Retain node[$retainNode]")
+                }
+            }
             retainNodes = temp
         } catch (e: Exception) {
             logger.warn("An error occurred while refreshing retain node $e")
         }
         logger.info("Refresh retain nodes finished. size of nodes ${retainNodes.size}")
-    }
-    
-    private fun getNodeFromConfig(): Set<String> {
-        val temp = mutableSetOf<String>()
-        expireConfig.repos.map{ convertRepoConfigToFileCache(it) }.forEach {
-            val projectId = it.projectId
-            val repoName = it.repoName
-            val records = getNodes(it)
-            records.forEach { ret ->
-                // 获取每个的sha256
-                val sha256 = ret[SHA256].toString()
-                val fullPath = ret[FULL_PATH].toString()
-                temp.add(sha256)
-                logger.info("Retain node $projectId/$repoName$fullPath, $sha256.")
-            }
-        }
-        return temp
-    }
-
-    private fun getNodeFromDataBase(): Set<String> {
-        val temp = mutableSetOf<String>()
-        fileCacheService.list().forEach {
-            val projectId = it.projectId
-            val repoName = it.repoName
-            val records = getNodes(it)
-            records.forEach { ret ->
-                // 获取每个的sha256
-                val sha256 = ret[SHA256].toString()
-                val fullPath = ret[FULL_PATH].toString()
-                temp.add(sha256)
-                logger.info("Retain node $projectId/$repoName$fullPath, $sha256.")
-            }
-        }
-        return temp
     }
 
     private fun convertRepoConfigToFileCache(repoConfig: RepoConfig):TFileCache {
@@ -147,7 +123,7 @@ class BasedRepositoryFileExpireResolver(
         )
 
         val fields = query.fields()
-        fields.include(SHA256, FULL_PATH)
+        fields.include(SHA256, FULL_PATH, SIZE)
         var querySize: Int
         var lastId = ObjectId(MIN_OBJECT_ID)
         do {
@@ -171,7 +147,7 @@ class BasedRepositoryFileExpireResolver(
 
 
     companion object {
-        private val logger = LoggerFactory.getLogger(BasedRepositoryFileExpireResolver::class.java)
+        private val logger = LoggerFactory.getLogger(BasedRepositoryNodeRetainResolver::class.java)
         private const val COLLECTION_NODE_PREFIX = "node_"
 
     }
