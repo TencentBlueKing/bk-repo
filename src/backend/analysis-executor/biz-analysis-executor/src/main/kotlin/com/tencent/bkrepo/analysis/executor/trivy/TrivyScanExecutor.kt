@@ -50,12 +50,13 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_NOT_FOUND
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.SYSTEM_ERROR
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -71,9 +72,9 @@ import java.io.FileOutputStream
 class TrivyScanExecutor @Autowired constructor(
     dockerClient: DockerClient,
     private val scannerExecutorProperties: ScannerExecutorProperties,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     private val storageManager: StorageManager,
-    private val nodeClient: NodeClient
+    private val nodeService: NodeService
 ) : CommonScanExecutor() {
 
     private val dockerScanHelper = DockerScanHelper(scannerExecutorProperties, dockerClient)
@@ -169,19 +170,11 @@ class TrivyScanExecutor @Autowired constructor(
         val scanner = task.scanner
         require(scanner is TrivyScanner)
         // 获取trivy默认仓库信息
-        val repoRes = repositoryClient.getRepoDetail(scanner.vulDbConfig.projectId, scanner.vulDbConfig.repo)
-        if (repoRes.isNotOk()) {
-            logger.error(
-                "Get repo info failed: code[${repoRes.code}], message[${repoRes.message}]," +
-                        " projectId[${scanner.vulDbConfig.projectId}], repoName[${scanner.vulDbConfig.repo}]"
-            )
-            throw SystemErrorException(SYSTEM_ERROR, repoRes.message ?: "")
-        }
-        val repositoryDetail = repoRes.data
+        val repositoryDetail = repositoryService.getRepoDetail(scanner.vulDbConfig.projectId, scanner.vulDbConfig.repo)
             ?: throw NotFoundException(RESOURCE_NOT_FOUND, scanner.vulDbConfig.repo)
 
         return storageManager.loadFullArtifactInputStream(NodeDetail(dbNode), repositoryDetail.storageCredentials)
-            ?: throw SystemErrorException(SYSTEM_ERROR, "load trivy.db file failed: res: ${repoRes.message}")
+            ?: throw SystemErrorException(SYSTEM_ERROR, "load trivy.db file failed")
     }
 
     private fun getNewestNode(projectId: String, repo: String): NodeInfo {
@@ -193,16 +186,9 @@ class TrivyScanExecutor @Autowired constructor(
             sortProperty = listOf("lastModifiedDate", "createdDate"),
             direction = listOf(Sort.Direction.DESC.name, Sort.Direction.DESC.name)
         )
-        val nodeRes = nodeClient.listNodePage(projectId, repo, "/trivy", option)
-        if (nodeRes.isNotOk()) {
-            logger.error(
-                "Get node info failed: code[${nodeRes.code}], message[${nodeRes.message}]," +
-                        " projectId[$projectId], repoName[$repo]"
-            )
-            throw SystemErrorException(SYSTEM_ERROR, nodeRes.message ?: "")
-        }
+        val nodeRes = nodeService.listNodePage(ArtifactInfo(projectId, repo, "/trivy"), option)
         // 获取最新的trivy.db
-        val newestDB = nodeRes.data!!.records.firstOrNull()
+        val newestDB = nodeRes.records.firstOrNull()
         if (newestDB == null) {
             logger.error("Get trivy.db file failed")
             throw SystemErrorException(SYSTEM_ERROR, "Get trivy.db file failed")

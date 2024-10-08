@@ -38,12 +38,13 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -58,9 +59,9 @@ import java.time.format.DateTimeFormatter
 @Service
 class SpdxLicenseServiceImpl(
     private val licenseDao: SpdxLicenseDao,
-    private val nodeClient: NodeClient,
-    private val repositoryClient: RepositoryClient,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val nodeService: NodeService,
+    private val repositoryService: RepositoryService,
+    private val storageCredentialService: StorageCredentialService,
     private val storageManager: StorageManager,
 ) : SpdxLicenseService {
     override fun importLicense(path: String): Boolean {
@@ -78,10 +79,10 @@ class SpdxLicenseServiceImpl(
     }
 
     override fun importLicense(projectId: String, repoName: String, fullPath: String): Boolean {
-        val repo = repositoryClient.getRepoInfo(projectId, repoName).data
+        val repo = repositoryService.getRepoInfo(projectId, repoName)
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, repoName)
-        val storageCredentials = repo.storageCredentialsKey?.let { storageCredentialsClient.findByKey(it).data }
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val storageCredentials = repo.storageCredentialsKey?.let { storageCredentialService.findByKey(it) }
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, repoName, fullPath)
         storageManager.loadFullArtifactInputStream(node, storageCredentials)?.use {
             importLicense(it.readJsonString<SpdxLicenseJsonInfo>())

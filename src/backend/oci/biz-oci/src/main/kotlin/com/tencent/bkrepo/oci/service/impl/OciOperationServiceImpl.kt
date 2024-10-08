@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
@@ -45,6 +46,9 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -96,12 +100,13 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils.buildBlobsFolderPath
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
@@ -124,16 +129,18 @@ import java.nio.charset.Charset
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Locale
 import javax.servlet.http.HttpServletRequest
 
 @Service
 class OciOperationServiceImpl(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
     private val metadataService: MetadataService,
     private val packageMetadataClient: PackageMetadataClient,
     private val packageClient: PackageClient,
     private val storageManager: StorageManager,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     private val ociProperties: OciProperties,
     private val ociReplicationRecordDao: OciReplicationRecordDao,
     private val storageCredentialService: StorageCredentialService,
@@ -168,7 +175,7 @@ class OciOperationServiceImpl(
         with(artifactInfo) {
             // 可能存在支持多种type
             val repoDetail = getRepositoryInfo(artifactInfo)
-            val packageKey = PackageKeys.ofName(repoDetail.type.name.toLowerCase(), packageName)
+            val packageKey = PackageKeys.ofName(repoDetail.type.name.lowercase(Locale.getDefault()), packageName)
             if (version.isNotBlank()) {
                 packageClient.findVersionByName(
                     projectId = projectId,
@@ -255,7 +262,7 @@ class OciOperationServiceImpl(
             fullPath = fullPath,
             operator = userId
         )
-        nodeClient.deleteNode(request)
+        nodeService.deleteNode(request)
     }
 
     /**
@@ -263,7 +270,7 @@ class OciOperationServiceImpl(
      */
     private fun getRepositoryInfo(artifactInfo: OciArtifactInfo): RepositoryDetail {
         with(artifactInfo) {
-            val result = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
+            val result = repositoryService.getRepoDetail(projectId, repoName, REPO_TYPE) ?: run {
                 ArtifactContextHolder.queryRepoDetailFormExtraRepoType(projectId, repoName)
             }
             return result
@@ -279,7 +286,7 @@ class OciOperationServiceImpl(
         with(artifactInfo) {
             logger.info("Try to get detail of the [$packageKey/$version] in repo ${artifactInfo.getRepoIdentify()}")
             val repoDetail = getRepositoryInfo(artifactInfo)
-            val name = PackageKeys.resolveName(repoDetail.type.name.toLowerCase(), packageKey)
+            val name = PackageKeys.resolveName(repoDetail.type.name.lowercase(Locale.getDefault()), packageKey)
             checkVersionExist(
                 projectId = projectId,
                 repoName = repoName,
@@ -332,9 +339,9 @@ class OciOperationServiceImpl(
             )
         }
         val fullPath = ociArtifactInfo.getArtifactFullPath()
-        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
+        val nodeDetail = nodeService.getNodeDetail(ociArtifactInfo) ?: run {
             val oldDockerFullPath = getDockerNode(ociArtifactInfo) ?: return@run null
-            nodeClient.getNodeDetail(projectId, repoName, oldDockerFullPath).data ?: run {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, oldDockerFullPath)) ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 null
             }
@@ -402,7 +409,7 @@ class OciOperationServiceImpl(
                 md5 = fileInfo.md5,
                 sha256 = fileInfo.sha256
             )
-            nodeClient.createNode(newNodeRequest).data
+            nodeService.createNode(newNodeRequest)
         } else {
             storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
         }
@@ -475,8 +482,8 @@ class OciOperationServiceImpl(
         manifestPath: String,
     ): Boolean {
         with(ociArtifactInfo) {
-            val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data ?: return false
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, manifestPath).data ?: return false
+            val repositoryDetail = repositoryService.getRepoDetail(projectId, repoName) ?: return false
+            val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, manifestPath)) ?: return false
             val manifest = loadManifest(nodeDetail, repositoryDetail.storageCredentials) ?: return false
             return syncBlobInfo(
                 ociArtifactInfo = ociArtifactInfo,
@@ -658,8 +665,7 @@ class OciOperationServiceImpl(
             // 并发情况下，版本目录下可能存在着非该版本的blob
             // 覆盖上传时会先删除原有目录，并发情况下可能导致blobs节点不存在
             val nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest) ?: run {
-                nodeClient.getDeletedNodeDetailBySha256(
-                    projectId, repoName, descriptor.sha256).data?.let {
+                nodeService.getDeletedNodeDetailBySha256(projectId, repoName, descriptor.sha256)?.let {
                     NodeProperty(StringPool.EMPTY, it.md5, it.size)
                 } ?: return false
             }
@@ -675,7 +681,7 @@ class OciOperationServiceImpl(
                     md5 = nodeProperty.md5 ?: StringPool.UNKNOWN,
                     userId = userId
                 )
-                nodeClient.createNode(nodeCreateRequest)
+                nodeService.createNode(nodeCreateRequest)
             }
             val metadataMap = metadataService.listMetadata(projectId, repoName, fullPath)
             if (metadataMap[BLOB_PATH_VERSION_KEY] != null) {
@@ -701,8 +707,8 @@ class OciOperationServiceImpl(
         with(ociArtifactInfo) {
             logger.info("Will create package info for [$packageName/$version in repo ${getRepoIdentify()} ")
             // 针对支持多仓库类型，如docker和oci
-            val repoType = repositoryClient.getRepoDetail(projectId, repoName).data!!.type.name
-            val packageKey = PackageKeys.ofName(repoType.toLowerCase(), packageName)
+            val repoType = repositoryService.getRepoDetail(projectId, repoName)!!.type.name
+            val packageKey = PackageKeys.ofName(repoType.lowercase(Locale.getDefault()), packageName)
             val metadata = mutableMapOf<String, Any>(MANIFEST_DIGEST to manifestDigest.toString())
                 .apply {
                     sourceType?.let { this[SOURCE_TYPE] = sourceType }
@@ -792,8 +798,8 @@ class OciOperationServiceImpl(
                     this.path(path, OperationType.PREFIX)
                 }
             }
-        val result = nodeClient.queryWithoutCount(queryModel.build()).data
-        if (result == null || result.records.isEmpty()) {
+        val result = nodeSearchService.searchWithoutCount(queryModel.build())
+        if (result.records.isEmpty()) {
             logger.warn(
                 "Could not find $digestStr " +
                     "in repo $projectId|$repoName"
@@ -937,7 +943,7 @@ class OciOperationServiceImpl(
     ): OciTagResult {
         val artifactInfo = OciArtifactInfo(projectId, repoName, StringPool.EMPTY, StringPool.EMPTY)
         val repoDetail = getRepositoryInfo(artifactInfo)
-        val packageKey = PackageKeys.ofName(repoDetail.type.name.toLowerCase(), packageName)
+        val packageKey = PackageKeys.ofName(repoDetail.type.name.lowercase(Locale.getDefault()), packageName)
         val result = packageClient.listVersionPage(
             projectId,
             repoName,
@@ -961,7 +967,7 @@ class OciOperationServiceImpl(
     }
 
     override fun getPackagesFromThirdPartyRepo(projectId: String, repoName: String) {
-        val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data
+        val repositoryDetail = repositoryService.getRepoDetail(projectId, repoName)
             ?: throw RepoNotFoundException("$projectId|$repoName")
         buildImagePackagePullContext(projectId, repoName, repositoryDetail.configuration).forEach {
             pluginManager.applyExtension<ImagePackageInfoPullExtension> {
@@ -973,13 +979,13 @@ class OciOperationServiceImpl(
     override fun deleteBlobsFolderAfterRefreshed(
         projectId: String, repoName: String, pName: String, userId: String
     ) {
-        repositoryClient.getRepoInfo(projectId, repoName).data
+        repositoryService.getRepoInfo(projectId, repoName)
             ?: throw RepoNotFoundException("$projectId|$repoName")
         val blobsFolderPath = buildBlobsFolderPath(pName)
-        val fullPaths = nodeClient.listNode(
-            projectId, repoName, blobsFolderPath, includeFolder = false, deep = false
-        ).data?.map { it.fullPath }
-        if (fullPaths.isNullOrEmpty()) return
+        val fullPaths = nodeService.listNode(
+            ArtifactInfo(projectId, repoName, blobsFolderPath), NodeListOption(includeFolder = false, deep = false)
+        ).map { it.fullPath }
+        if (fullPaths.isEmpty()) return
         logger.info("Blobs of package $pName in folder $blobsFolderPath will be deleted in $projectId|$repoName")
         val request = NodesDeleteRequest(
             projectId = projectId,
@@ -987,7 +993,7 @@ class OciOperationServiceImpl(
             fullPaths = fullPaths,
             operator = userId
         )
-        nodeClient.deleteNodes(request)
+        nodeService.deleteNodes(request)
     }
 
     /**
@@ -1001,9 +1007,9 @@ class OciOperationServiceImpl(
         pVersion: String,
         userId: String
     ): Boolean {
-        val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data
+        val repoInfo = repositoryService.getRepoInfo(projectId, repoName)
             ?: throw RepoNotFoundException("$projectId|$repoName")
-        val packageName = PackageKeys.resolveName(repoInfo.type.name.toLowerCase(), pName)
+        val packageName = PackageKeys.resolveName(repoInfo.type.name.lowercase(Locale.getDefault()), pName)
         val manifestPath = OciLocationUtils.buildManifestPath(packageName, pVersion)
         logger.info("Manifest $manifestPath will be refreshed")
         val ociArtifactInfo = OciManifestArtifactInfo(
@@ -1014,13 +1020,13 @@ class OciOperationServiceImpl(
             reference = pVersion,
             isValidDigest = false
         )
-        val manifestNode = nodeClient.getNodeDetail(
-            repoInfo.projectId, repoInfo.name, manifestPath
-        ).data ?: run {
+        val manifestNode = nodeService.getNodeDetail(
+            ArtifactInfo(repoInfo.projectId, repoInfo.name, manifestPath)
+        ) ?: run {
             val oldDockerFullPath = getDockerNode(ociArtifactInfo) ?: return false
-            nodeClient.getNodeDetail(
-                repoInfo.projectId, repoInfo.name, oldDockerFullPath
-            ).data ?: return false
+            nodeService.getNodeDetail(
+                ArtifactInfo(repoInfo.projectId, repoInfo.name, oldDockerFullPath)
+            ) ?: return false
         }
         val refreshedMetadat = manifestNode.nodeMetadata.firstOrNull { it.key == BLOB_PATH_REFRESHED_KEY}
         if (refreshedMetadat != null) {

@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadPlan
@@ -49,9 +50,9 @@ import com.tencent.bkrepo.common.artifact.cache.service.PreloadPlanExecutor
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -64,8 +65,8 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 class ArtifactPreloadPlanServiceImpl(
-    private val nodeClient: NodeClient,
-    private val repositoryClient: RepositoryClient,
+    private val nodeService: NodeService,
+    private val repositoryService: RepositoryService,
     private val strategyService: ArtifactPreloadStrategyService,
     private val preloadPlanDao: ArtifactPreloadPlanDao,
     private val preloadStrategies: Map<String, ArtifactPreloadPlanGenerator>,
@@ -112,8 +113,8 @@ class ArtifactPreloadPlanServiceImpl(
             return
         }
         val option = NodeListOption(pageSize = properties.maxNodes, includeFolder = false)
-        val res = nodeClient.listPageNodeBySha256(sha256, option)
-        val nodes = res.data?.records ?: return
+        val res = nodeService.listNodePageBySha256(sha256, option)
+        val nodes = res.records
         if (nodes.size >= properties.maxNodes) {
             // 限制查询出来的最大node数量，避免预加载计划创建时间过久
             logger.warn("nodes of sha256[$sha256] exceed max page size[${properties.maxNodes}]")
@@ -207,14 +208,14 @@ class ArtifactPreloadPlanServiceImpl(
     private fun getRepo(key: String): RepositoryInfo {
         val repoId = key.split(REPO_ID_DELIMITERS)
         require(repoId.size == 2)
-        return repositoryClient.getRepoInfo(repoId[0], repoId[1]).data
+        return repositoryService.getRepoInfo(repoId[0], repoId[1])
             ?: throw RuntimeException("repo[$key] was not exists")
     }
 
     private fun buildRepoId(projectId: String, repoName: String) = "${projectId}$REPO_ID_DELIMITERS$repoName"
 
     private fun getNode(projectId: String, repoName: String, fullPath: String): NodeDetail {
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             ?: throw ArtifactNotFoundException("$projectId/$repoName$fullPath not found")
         if (node.folder) {
             throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "folder is unsupported")

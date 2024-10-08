@@ -29,48 +29,38 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.search.node
+package com.tencent.bkrepo.common.metadata.search.common
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
+import com.tencent.bkrepo.common.query.interceptor.QueryModelInterceptor
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.metadata.model.TNode
-import com.tencent.bkrepo.repository.search.common.ModelValidateInterceptor
-import org.slf4j.LoggerFactory
 
 /**
- * 节点自定义查询规则拦截器
+ * 规则验证
  */
-class NodeModelInterceptor(private val permissionManager: PermissionManager) : ModelValidateInterceptor() {
-
-    private val logger = LoggerFactory.getLogger(javaClass)
+open class ModelValidateInterceptor : QueryModelInterceptor {
 
     override fun intercept(queryModel: QueryModel, context: QueryContext): QueryModel {
-        super.intercept(queryModel, context)
-        val includeDeleted = queryModel.select?.firstOrNull { it == TNode::deleted.name } != null
-        if (includeDeleted) {
-            val userId = SecurityUtils.getUserId()
-            try {
-                permissionManager.checkPrincipal(userId, PrincipalType.ADMIN)
-                return queryModel
-            } catch (ignore: Exception) {
-                logger.info("Query deleted node failed, User[$userId]")
-            }
-        }
-        // 添加deleted属性为null的查询条件
-        setDeletedNull(queryModel)
+        // 校验query model的格式
+        validateModel(queryModel)
+
         return queryModel
     }
 
     /**
-     * 添加deleted属性为null的查询条件到[queryModel]中
+     * 校验[queryModel]格式，查询条件必须满足以下格式：
+     *   1. rule必须为AND类型的嵌套查询
+     *   2. rule嵌套查询规则列表中，必须指定projectId条件，且为EQ操作
+     *   对于rule嵌套查询规则列表中的其它规则，不做限定
      */
-    private fun setDeletedNull(queryModel: QueryModel) {
-        queryModel.addQueryRule(Rule.QueryRule(TNode::deleted.name, StringPool.EMPTY, OperationType.NULL))
+    private fun validateModel(queryModel: QueryModel) {
+        val rule = queryModel.rule
+        // rule必须为AND类型的嵌套查询
+        if (rule !is Rule.NestedRule || rule.relation != Rule.NestedRule.RelationType.AND) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "relation")
+        }
     }
 }

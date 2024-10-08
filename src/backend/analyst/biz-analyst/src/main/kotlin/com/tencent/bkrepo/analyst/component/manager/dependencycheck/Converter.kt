@@ -38,6 +38,7 @@ import com.tencent.bkrepo.analyst.component.manager.dependencycheck.model.TDepen
 import com.tencent.bkrepo.analyst.component.manager.dependencycheck.model.TDependencyItemData
 import com.tencent.bkrepo.analyst.component.manager.knowledgebase.TCve
 import java.time.LocalDateTime
+import java.util.Locale
 
 object Converter {
     /**
@@ -171,5 +172,5 @@ object Converter {
         }
     }
 
-    fun pocIdOf(cveId: String) = "${DependencyScanner.TYPE.toLowerCase()}-$cveId"
+    fun pocIdOf(cveId: String) = "${DependencyScanner.TYPE.lowercase(Locale.getDefault())}-$cveId"
 }
