@@ -25,10 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.metadata.service.node.impl
+package com.tencent.bkrepo.fs.server.service.node
 
-import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.common.api.constant.PROXY_HEADER_NAME
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -40,36 +38,32 @@ import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
-import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
-import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RRepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
-import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
-import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
-import com.tencent.bkrepo.common.metadata.service.node.NodeService
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
+import com.tencent.bkrepo.common.metadata.service.file.RFileReferenceService
+import com.tencent.bkrepo.common.metadata.service.project.RProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RQuotaService
+import com.tencent.bkrepo.common.metadata.service.repo.RStorageCredentialService
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper
-import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.TOPIC
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.checkNodeListOption
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convert
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
-import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.parseExpireDate
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.validateParameter
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper.listPermissionPaths
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.mongo.util.Pages
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
-import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -78,8 +72,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.router.api.RouterControllerClient
+import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
@@ -93,49 +86,30 @@ import java.time.LocalDateTime
 /**
  * 节点基础服务，实现了CRUD基本操作
  */
-abstract class NodeBaseService(
-    open val nodeDao: NodeDao,
-    open val repositoryDao: RepositoryDao,
-    open val fileReferenceService: FileReferenceService,
-    open val storageCredentialService: StorageCredentialService,
-    open val quotaService: QuotaService,
+abstract class RNodeBaseService(
+    open val nodeDao: RNodeDao,
+    open val repositoryDao: RRepositoryDao,
+    open val fileReferenceService: RFileReferenceService,
+    open val storageCredentialService: RStorageCredentialService,
+    open val quotaService: RQuotaService,
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
-    open val servicePermissionClient: ServicePermissionClient,
-    open val routerControllerClient: RouterControllerClient,
-    open val routerControllerProperties: RouterControllerProperties,
-    open val blockNodeService: BlockNodeService,
-    open val projectService: ProjectService,
-) : NodeService {
+    open val authClient: RAuthClient,
+    open val blockNodeService: RBlockNodeService,
+    open val projectService: RProjectService,
+) : RNodeService {
 
-    override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
+    override suspend fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
             val node = nodeDao.findNode(projectId, repoName, getArtifactFullPath())
             return convertToDetail(node)
         }
     }
 
-    override fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo> {
+    override suspend fun listNodePage(artifact: ArtifactInfo, option: NodeListOption): Page<NodeInfo> {
         checkNodeListOption(option)
         with(artifact) {
-            val userId = SecurityUtils.getUserId()
-            val (hasPermissionPaths, noPermissionPaths) = getPermissionPaths(userId, projectId, repoName)
-            option.hasPermissionPath = hasPermissionPaths
-            option.noPermissionPath = noPermissionPaths
-            var query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
-            val totalNum = getTotalNodeNum(artifact, query)
-            if (totalNum > repositoryProperties.listCountLimit) {
-                val pageRequest = Pages.ofRequest(1, repositoryProperties.listCountLimit.toInt())
-                query = query.with(pageRequest)
-            }
-            return nodeDao.find(query).map { convert(it)!! }
-        }
-    }
-
-    override fun listNodePage(artifact: ArtifactInfo, option: NodeListOption): Page<NodeInfo> {
-        checkNodeListOption(option)
-        with(artifact) {
-            val userId = SecurityUtils.getUserId()
+            val userId = ReactiveSecurityUtils.getUser()
             val (hasPermissionPaths, noPermissionPaths) = getPermissionPaths(userId, projectId, repoName)
             option.hasPermissionPath = hasPermissionPaths
             option.noPermissionPath = noPermissionPaths
@@ -151,27 +125,12 @@ abstract class NodeBaseService(
         }
     }
 
-    override fun listNodePageBySha256(sha256: String, option: NodeListOption): Page<NodeInfo> {
-        val nodes = nodeDao.pageBySha256(sha256, option, true)
-        return Pages.ofResponse(
-            Pages.ofRequest(option.pageNumber, option.pageSize),
-            nodes.totalElements,
-            nodes.content.map { convert(it)!! },
-        )
-    }
-
-    override fun checkExist(artifact: ArtifactInfo): Boolean {
+    override suspend fun checkExist(artifact: ArtifactInfo): Boolean {
         return nodeDao.exists(artifact.projectId, artifact.repoName, artifact.getArtifactFullPath())
     }
 
-    override fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
-        val queryList = fullPathList.map { PathUtils.normalizeFullPath(it) }.filter { !PathUtils.isRoot(it) }
-        val nodeQuery = NodeQueryHelper.nodeQuery(projectId, repoName, queryList)
-        return nodeDao.find(nodeQuery).map { it.fullPath }
-    }
-
     @Transactional(rollbackFor = [Throwable::class])
-    override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
+    override suspend fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
@@ -193,7 +152,7 @@ abstract class NodeBaseService(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun link(request: NodeLinkRequest): NodeDetail {
+    override suspend fun link(request: NodeLinkRequest): NodeDetail {
         with(request) {
             val targetArtifact = "/$targetProjectId/$targetRepoName/$targetFullPath"
             if (checkTargetExist) {
@@ -231,7 +190,7 @@ abstract class NodeBaseService(
         return NodeBaseServiceHelper.buildTNode(request, repositoryProperties.allowUserAddSystemMetadata)
     }
 
-    private fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {
+    private suspend fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {
         // 避免当目录下节点过多去进行count产生慢查询，使用目录对应的子节点个数进行判断
         // 只有节点个数小于配置的大小时，才去实时获取对应总节点个数
         val subNodeNum = getSubNodeNum(artifact)
@@ -251,7 +210,7 @@ abstract class NodeBaseService(
     /**
      * 获取该节点下的子节点（不包含目录）个数
      */
-    private fun getSubNodeNum(artifact: ArtifactInfo): Long {
+    private suspend fun getSubNodeNum(artifact: ArtifactInfo): Long {
         with(artifact) {
             val fullPath = artifact.getArtifactFullPath()
             if (PathUtils.isRoot(fullPath)) {
@@ -272,30 +231,8 @@ abstract class NodeBaseService(
     }
 
     private fun afterCreate(repo: TRepository, node: TNode) {
-        with(node) {
-            if (isGenericRepo(repo)) {
-                publishEvent(buildCreatedEvent(node))
-                createRouter(this)
-            }
-            reportNode2Bkbase(node)
-        }
-    }
-
-    /**
-     * 创建下载转发路由
-     */
-    private fun createRouter(node: TNode) {
-        HeaderUtils.getHeader(PROXY_HEADER_NAME)?.let {
-            routerControllerClient.addNode(node.projectId, node.repoName, node.fullPath, it)
-        }
-    }
-
-    /**
-     * 上报节点数据到数据平台
-     */
-    private fun reportNode2Bkbase(node: TNode) {
-        if (!node.folder) {
-            messageSupplier.delegateToSupplier(node, topic = TOPIC, binderType = BinderType.KAFKA)
+        if (isGenericRepo(repo)) {
+            publishEvent(buildCreatedEvent(node))
         }
     }
 
@@ -309,25 +246,12 @@ abstract class NodeBaseService(
     /**
      * 校验仓库是否存在
      */
-    open fun checkRepo(projectId: String, repoName: String): TRepository {
+    open suspend fun checkRepo(projectId: String, repoName: String): TRepository {
         return repositoryDao.findByNameAndType(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
-    override fun updateNode(updateRequest: NodeUpdateRequest) {
-        with(updateRequest) {
-            val fullPath = PathUtils.normalizeFullPath(fullPath)
-            val node = nodeDao.findNode(projectId, repoName, fullPath)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            val selfQuery = NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)
-            val selfUpdate = NodeQueryHelper.nodeExpireDateUpdate(parseExpireDate(expires), operator)
-            nodeDao.updateFirst(selfQuery, selfUpdate)
-            logger.info("Update node [$this] success.")
-        }
-    }
-
-    override fun updateNodeAccessDate(updateAccessDateRequest: NodeUpdateAccessDateRequest) {
+    override suspend fun updateNodeAccessDate(updateAccessDateRequest: NodeUpdateAccessDateRequest) {
         with(updateAccessDateRequest) {
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
@@ -345,7 +269,7 @@ abstract class NodeBaseService(
         }
     }
 
-    open fun doCreate(node: TNode, repository: TRepository? = null): TNode {
+    open suspend fun doCreate(node: TNode, repository: TRepository? = null): TNode {
         try {
             nodeDao.insert(node)
             if (!node.folder) {
@@ -365,7 +289,7 @@ abstract class NodeBaseService(
     /**
      * 递归创建目录
      */
-    fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String): List<TNode> {
+    suspend fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String): List<TNode> {
         val nodes = mutableListOf<TNode>()
         // 格式化
         val fullPath = PathUtils.toFullPath(path)
@@ -399,7 +323,7 @@ abstract class NodeBaseService(
         return nodes
     }
 
-    open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
+    open suspend fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
             if (existNode != null) {
@@ -419,7 +343,7 @@ abstract class NodeBaseService(
         }
     }
 
-    private fun incrementFileReference(node: TNode, repository: TRepository?): Boolean {
+    private suspend fun incrementFileReference(node: TNode, repository: TRepository?): Boolean {
         if (!validateParameter(node)) return false
         return try {
             val credentialsKey = findCredentialsKey(node, repository)
@@ -430,7 +354,7 @@ abstract class NodeBaseService(
         }
     }
 
-    private fun findCredentialsKey(node: TNode, repository: TRepository?): String? {
+    private suspend fun findCredentialsKey(node: TNode, repository: TRepository?): String? {
         if (repository != null) {
             return repository.credentialsKey
         }
@@ -442,7 +366,7 @@ abstract class NodeBaseService(
     /**
      * 获取用户无权限路径列表
      */
-    private fun getPermissionPaths(
+    private suspend fun getPermissionPaths(
         userId: String,
         projectId: String,
         repoName: String
@@ -450,10 +374,40 @@ abstract class NodeBaseService(
         if (userId == SYSTEM_USER) {
             return Pair(null, emptyList())
         }
-        return servicePermissionClient.listPermissionPaths(userId, projectId, repoName)
+        return authClient.listPermissionPaths(userId, projectId, repoName)
+    }
+
+    /**
+     * 查询有权限与无权限的路径
+     *
+     * @param userId 用户
+     * @param projectId 项目
+     * @param repoName 仓库
+     *
+     * @return first为有权限的路径，为空时表示所有路径均无权限，为null时表示未配置，second为无权限路径
+     */
+    private suspend fun RAuthClient.listPermissionPaths(
+        userId: String,
+        projectId: String,
+        repoName: String,
+    ): Pair<List<String>?, List<String>> {
+        val result = listPermissionPath(userId, projectId, repoName).awaitSingle().data!!
+        if (result.status) {
+            require(result.path.isNotEmpty())
+            require(result.path.all { it.key == OperationType.IN } || result.path.all { it.key == OperationType.NIN })
+            val opType = result.path.entries.first().key
+            return listPermissionPaths(
+                userId,
+                projectId,
+                repoName,
+                opType,
+                result.path.values.flatten()
+            )
+        }
+        return Pair(null, emptyList())
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(NodeBaseService::class.java)
+        private val logger = LoggerFactory.getLogger(RNodeBaseService::class.java)
     }
 }

@@ -1,16 +1,13 @@
 package com.tencent.com.bkrepo.fs.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.dao.blocknode.RBlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
-import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.com.bkrepo.fs.UT_PROJECT_ID
 import com.tencent.com.bkrepo.fs.UT_REPO_NAME
 import com.tencent.com.bkrepo.fs.UT_USER
@@ -31,7 +28,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.test.context.TestPropertySource
-import reactor.core.publisher.Mono
 import java.time.LocalDateTime
 
 @DataMongoTest
@@ -42,7 +38,7 @@ import java.time.LocalDateTime
 class BlockNodeServiceTest {
 
     @MockBean
-    lateinit var rRepositoryClient: RRepositoryClient
+    lateinit var nodeDao: RNodeDao
 
     @Autowired
     lateinit var blockNodeService: RBlockNodeService
@@ -126,8 +122,8 @@ class BlockNodeServiceTest {
     @Test
     fun testMoveNode() {
         runBlocking {
-            val createdDate = LocalDateTime.now().minusSeconds(1).toString()
-            val nodeInfo = NodeInfo(
+            val createdDate = LocalDateTime.now().minusSeconds(1)
+            val node = TNode(
                 createdBy = UT_USER,
                 createdDate = createdDate,
                 lastModifiedBy = UT_USER,
@@ -140,8 +136,8 @@ class BlockNodeServiceTest {
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME
             )
-            Mockito.`when`(rRepositoryClient.getNodeDetail(any(), any(), any()))
-                .thenReturn(Mono.just(successResponse(NodeDetail(nodeInfo))))
+            Mockito.`when`(nodeDao.findNode(any(), any(), any()))
+                .thenReturn(node)
             createBlockNode(startPos = 10)
             createBlockNode(startPos = 20)
             val fullPath = "/file"
@@ -152,7 +148,7 @@ class BlockNodeServiceTest {
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
                 newFullPath,
-                createdDate
+                createdDate.toString()
             )
             Assertions.assertEquals(2, blocks.size)
             val blocks1 = blockNodeService.listBlocks(
@@ -160,7 +156,7 @@ class BlockNodeServiceTest {
                 UT_PROJECT_ID,
                 UT_REPO_NAME,
                 fullPath,
-                createdDate
+                createdDate.toString()
             )
             Assertions.assertEquals(0, blocks1.size)
         }
@@ -183,6 +179,4 @@ class BlockNodeServiceTest {
         )
         return blockNodeService.createBlock(blockNode, storageCredentials)
     }
-
-    private fun <T> successResponse(data: T) = Response(CommonMessageCode.SUCCESS.getCode(), null, data, null)
 }

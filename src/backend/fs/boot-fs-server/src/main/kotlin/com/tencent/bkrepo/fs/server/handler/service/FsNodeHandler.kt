@@ -27,28 +27,26 @@
 
 package com.tencent.bkrepo.fs.server.handler.service
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.fs.server.request.service.ListBlocksRequest
 import com.tencent.bkrepo.fs.server.service.FileNodeService
+import com.tencent.bkrepo.fs.server.service.node.RNodeService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
-import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
 
 class FsNodeHandler(
-    private val rRepositoryClient: RRepositoryClient,
-    private val fileNodeService: FileNodeService
+    private val fileNodeService: FileNodeService,
+    private val nodeService: RNodeService
 ) {
 
     suspend fun listBlocks(request: ServerRequest): ServerResponse {
         with(ListBlocksRequest(request)) {
-            val nodeDetail = rRepositoryClient.getNodeDetail(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = path
-            ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
+            val nodeDetail = nodeService.getNodeDetail(
+                ArtifactInfo(projectId, repoName, fullPath)
+            ) ?: return ServerResponse.notFound().buildAndAwait()
             val range = Range(startPos, endPos, nodeDetail.size)
             return ReactiveResponseBuilder.success(fileNodeService.info(nodeDetail, range))
         }
