@@ -58,7 +58,7 @@ import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.slf4j.LoggerFactory
 
 /**
@@ -74,7 +74,7 @@ class DevopsPermissionServiceImpl constructor(
     private val devopsAuthConfig: DevopsAuthConfig,
     private val devopsPipelineService: DevopsPipelineService,
     private val devopsProjectService: DevopsProjectService,
-    repoClient: RepositoryClient,
+    repositoryService: RepositoryService,
     projectService: ProjectService,
     bkIamV3Service: BkIamV3Service
 ) : BkIamV3PermissionServiceImpl(
@@ -85,7 +85,7 @@ class DevopsPermissionServiceImpl constructor(
     permissionDao,
     personalPathDao,
     repoAuthConfigDao,
-    repoClient,
+    repositoryService,
     projectService,
 ) {
 

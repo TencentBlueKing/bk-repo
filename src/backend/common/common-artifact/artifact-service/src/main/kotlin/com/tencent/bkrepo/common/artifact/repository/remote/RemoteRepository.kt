@@ -143,7 +143,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     open fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
         with(context) {
-            return nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            return nodeService.getNodeDetail(artifactInfo)
         }
     }
 

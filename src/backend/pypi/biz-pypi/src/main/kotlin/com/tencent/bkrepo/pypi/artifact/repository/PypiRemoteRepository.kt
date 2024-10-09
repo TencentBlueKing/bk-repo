@@ -34,6 +34,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -53,7 +54,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -110,10 +111,10 @@ class PypiRemoteRepository : RemoteRepository() {
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = REMOTE_HTML_CACHE_FULL_PATH
-        var node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        var node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         loop@for (i in 1..3) {
             cacheRemoteRepoList(context)
-            node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             if (node != null) break@loop
         }
         if (node == null) return "Can not cache remote html"
@@ -169,7 +170,7 @@ class PypiRemoteRepository : RemoteRepository() {
         val xmlString = context.request.reader.readXml()
         val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
-        val body = RequestBody.create("text/xml".toMediaTypeOrNull(), xmlString)
+        val body = xmlString.toRequestBody("text/xml".toMediaTypeOrNull())
         val build: Request = Request.Builder().url("${remoteConfiguration.url}$XML_RPC_URI")
             .addHeader("Connection", "keep-alive")
             .post(body)

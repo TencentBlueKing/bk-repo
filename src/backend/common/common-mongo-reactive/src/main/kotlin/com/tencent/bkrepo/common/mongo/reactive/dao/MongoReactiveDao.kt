@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.mongo.reactive.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 
@@ -91,4 +92,9 @@ interface MongoReactiveDao<E> {
      * 判断文档是否存在
      */
     suspend fun exists(query: Query): Boolean
+
+    /**
+     * 查询并更新操作
+     */
+    suspend fun <T> findAndModify(query: Query, update: Update, options: FindAndModifyOptions, clazz: Class<T>): T?
 }

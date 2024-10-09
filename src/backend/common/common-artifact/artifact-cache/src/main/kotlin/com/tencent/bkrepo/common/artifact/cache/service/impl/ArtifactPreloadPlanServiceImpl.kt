@@ -42,9 +42,9 @@ import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGener
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadStrategyService
 import com.tencent.bkrepo.common.artifact.cache.service.PreloadPlanExecutor
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -56,8 +56,8 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 class ArtifactPreloadPlanServiceImpl(
-    private val nodeClient: NodeClient,
-    private val repositoryClient: RepositoryClient,
+    private val nodeService: NodeService,
+    private val repositoryService: RepositoryService,
     private val strategyService: ArtifactPreloadStrategyService,
     private val preloadPlanDao: ArtifactPreloadPlanDao,
     private val preloadStrategies: Map<String, ArtifactPreloadPlanGenerator>,
@@ -75,8 +75,8 @@ class ArtifactPreloadPlanServiceImpl(
             return
         }
         val option = NodeListOption(pageSize = properties.maxNodes, includeFolder = false)
-        val res = nodeClient.listPageNodeBySha256(sha256, option)
-        val nodes = res.data?.records ?: return
+        val res = nodeService.listNodePageBySha256(sha256, option)
+        val nodes = res.records
         if (nodes.size >= properties.maxNodes) {
             // 限制查询出来的最大node数量，避免预加载计划创建时间过久
             logger.warn("nodes of sha256[$sha256] exceed max page size[${properties.maxNodes}]")
@@ -170,7 +170,7 @@ class ArtifactPreloadPlanServiceImpl(
     private fun getRepo(key: String): RepositoryInfo {
         val repoId = key.split(REPO_ID_DELIMITERS)
         require(repoId.size == 2)
-        return repositoryClient.getRepoInfo(repoId[0], repoId[1]).data
+        return repositoryService.getRepoInfo(repoId[0], repoId[1])
             ?: throw RuntimeException("repo[$key] was not exists")
     }
 

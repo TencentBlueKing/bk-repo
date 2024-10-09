@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.service.fs.FsService
 import com.tencent.bkrepo.fs.server.config.properties.StreamProperties
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
@@ -61,7 +62,8 @@ class FileOperationService(
     private val rRepositoryClient: RRepositoryClient,
     private val storageManager: CoStorageManager,
     private val fileNodeService: FileNodeService,
-    private val streamProperties: StreamProperties
+    private val streamProperties: StreamProperties,
+    private val fsService: FsService
 ) {
 
     suspend fun read(nodeDetail: NodeDetail, range: Range): ArtifactInputStream? {
@@ -172,7 +174,7 @@ class FileOperationService(
                 newLength = length,
                 operator = user
             )
-            rRepositoryClient.setLength(nodeSetLengthRequest).awaitSingle()
+            fsService.setLength(nodeSetLengthRequest)
         }
     }
 

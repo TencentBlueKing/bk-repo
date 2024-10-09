@@ -34,11 +34,14 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -56,14 +59,12 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import com.tencent.bkrepo.replication.util.OkHttpClientPool
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext.Companion.READ_TIMEOUT
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext.Companion.WRITE_TIMEOUT
 import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaExtService
-import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.replication.util.OkHttpClientPool
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
@@ -80,9 +81,9 @@ import java.time.Duration
 
 @Service
 class ReplicaExtServiceImpl(
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     private val packageClient: PackageClient,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val remoteNodeService: RemoteNodeService,
     private val replicationProperties: ReplicationProperties,
     ) : ReplicaExtService {
@@ -275,7 +276,7 @@ class ReplicaExtServiceImpl(
         repoName: String,
     ): RepositoryDetail {
         return if (host.isNullOrEmpty()) {
-            repositoryClient.getRepoDetail(projectId, repoName, null).data
+            repositoryService.getRepoDetail(projectId, repoName, null)
         } else {
             queryRepoDetailFromHost(
                 host = host,
@@ -302,12 +303,10 @@ class ReplicaExtServiceImpl(
                 pageNumber = pageNumber,
                 pageSize = pageSize
             )
-            nodeClient.listNodePage(
-                projectId = projectId,
-                repoName = repoName,
-                path = PathUtils.UNIX_SEPARATOR.toString(),
+            nodeService.listNodePage(
+                ArtifactInfo(projectId, repoName, PathUtils.UNIX_SEPARATOR.toString()),
                 option = option
-            ).data?.records?.map { it.fullPath }
+            ).records.map { it.fullPath }
         } else {
             listNodesFromRemote(
                 host = host,
