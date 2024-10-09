@@ -8,8 +8,8 @@ import com.tencent.bkrepo.common.artifact.util.Constant.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.util.Constant.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.util.Constant.UT_SHA256
 import com.tencent.bkrepo.common.artifact.util.Constant.UT_USER
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -50,7 +50,7 @@ class StorageManagerTest @Autowired constructor(
     private val storageManager: StorageManager,
 ) {
     @MockBean
-    private lateinit var fileReferenceClient: FileReferenceClient
+    private lateinit var fileReferenceService: FileReferenceService
 
     @MockBean
     private lateinit var nodeClient: NodeClient
@@ -70,15 +70,15 @@ class StorageManagerTest @Autowired constructor(
             .thenReturn(1)
         whenever(nodeClient.createNode(any()))
             .thenReturn(Response(code = 0, data = buildNodeDetail(UT_SHA256)))
-        whenever(fileReferenceClient.increment(anyString(), anyOrNull(), any()))
-            .thenReturn(Response(code = 0, data = true))
+        whenever(fileReferenceService.increment(anyString(), anyOrNull(), any()))
+            .thenReturn(true)
     }
 
     @Test
     fun testStoreSuccess() {
         store()
         verify(nodeClient, times(1)).createNode(any())
-        verify(fileReferenceClient, times(0)).increment(anyString(), anyOrNull(), any())
+        verify(fileReferenceService, times(0)).increment(anyString(), anyOrNull(), any())
     }
 
     @Test
@@ -94,7 +94,7 @@ class StorageManagerTest @Autowired constructor(
         // store failed
         assertThrows<RuntimeException> { store() }
         verify(nodeClient, times(0)).createNode(any())
-        verify(fileReferenceClient, times(0)).increment(anyString(), anyOrNull(), any())
+        verify(fileReferenceService, times(0)).increment(anyString(), anyOrNull(), any())
 
         // reset mock
         field.set(storageManager, oldStorageService)
@@ -108,7 +108,7 @@ class StorageManagerTest @Autowired constructor(
         // store failed
         assertThrows<RuntimeException> { store() }
         verify(nodeClient, times(1)).createNode(any())
-        verify(fileReferenceClient, times(1)).increment(anyString(), anyOrNull(), any())
+        verify(fileReferenceService, times(1)).increment(anyString(), anyOrNull(), any())
     }
 
     private fun store(): String {

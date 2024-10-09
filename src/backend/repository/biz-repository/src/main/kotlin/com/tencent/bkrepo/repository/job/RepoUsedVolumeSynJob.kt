@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.artifact.event.repo.RepoVolumeSyncEvent
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import org.springframework.context.event.EventListener
 import org.springframework.data.mongodb.core.query.Query

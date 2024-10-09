@@ -31,7 +31,6 @@ class UserStreamController(
      * 生成推流地址
      * */
     @PostMapping("/create/{projectId}/{repoName}")
-    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
     fun createStream(
         @PathVariable projectId: String,
         @PathVariable repoName: String,

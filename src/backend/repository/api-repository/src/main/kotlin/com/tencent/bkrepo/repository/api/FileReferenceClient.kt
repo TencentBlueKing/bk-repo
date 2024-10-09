@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam
 
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "FileReferenceClient")
 @RequestMapping("/service/fileReference")
+@Deprecated(message = "replace for FileReferenceService or RFileReferenceService")
 interface FileReferenceClient {
 
     @PutMapping("/decrement")

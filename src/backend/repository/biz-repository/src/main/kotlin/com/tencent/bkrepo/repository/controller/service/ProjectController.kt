@@ -39,7 +39,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
-import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -68,5 +68,9 @@ class ProjectController(
 
     override fun getProjectMetrics(name: String): Response<ProjectMetricsInfo?> {
         return ResponseBuilder.success(projectService.getProjectMetricsInfo(name))
+    }
+
+    override fun isProjectEnabled(name: String): Response<Boolean> {
+        return ResponseBuilder.success(projectService.isProjectEnabled(name))
     }
 }

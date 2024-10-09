@@ -33,6 +33,9 @@ import org.springframework.core.type.AnnotatedTypeMetadata
 
 class ReactiveCondition : Condition {
     override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {
+        if (SyncCondition().matches(context, metadata)) {
+            return false
+        }
         try {
             context.classLoader?.loadClass("com.mongodb.reactivestreams.client.MongoClient")
             return true

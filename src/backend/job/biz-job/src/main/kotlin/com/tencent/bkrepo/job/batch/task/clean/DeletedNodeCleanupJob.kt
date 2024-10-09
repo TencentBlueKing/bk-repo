@@ -35,6 +35,7 @@ import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.job.DELETED_DATE
@@ -48,9 +49,8 @@ import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
+import com.tencent.bkrepo.job.config.properties.MigrateRepoStorageJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.findOne
@@ -72,10 +72,10 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(DeletedNodeCleanupJobProperties::class)
 class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
+    private val migrateProperties: MigrateRepoStorageJobProperties,
     private val clusterProperties: ClusterProperties,
     private val migrateRepoStorageService: MigrateRepoStorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
-    private val separationTaskService: SeparationTaskService,
+    private val storageCredentialService: StorageCredentialService,
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
 
     data class Node(
@@ -136,15 +136,10 @@ class DeletedNodeCleanupJob(
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is DeletedNodeCleanupJobContext)
         // 仓库正在迁移时删除node会导致迁移任务分页查询数据重复或缺失，需要等迁移完后再执行清理
-        if (migrateRepoStorageService.migrating(row.projectId, row.repoName)) {
+        if (migrateProperties.enabled && migrateRepoStorageService.migrating(row.projectId, row.repoName)) {
             logger.info("repo[${row.projectId}/${row.repoName}] storage was migrating, skip clean node[${row.sha256}]")
             return
         }
-        if (separationTaskService.repoSeparationCheck(row.projectId, row.repoName)) {
-            logger.info("repo[${row.projectId}/${row.repoName}] was doing separation, skip clean node[${row.sha256}]")
-            return
-        }
-
         if (row.folder) {
             cleanupFolderNode(context, row.id, collectionName)
         } else {
@@ -259,8 +254,8 @@ class DeletedNodeCleanupJob(
     }
 
     private fun handleNodeWithUnknownRepo(sha256: String) {
-        val credentials = storageCredentialsClient.list().data
-        val defaultCredentials = storageCredentialsClient.findByKey().data
+        val credentials = storageCredentialService.list()
+        val defaultCredentials = storageCredentialService.findByKey(null)
         if (credentials.isNullOrEmpty() && defaultCredentials == null) return
         val keySet = mutableSetOf<String?>()
         if (!credentials.isNullOrEmpty()) {

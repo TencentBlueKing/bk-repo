@@ -15,9 +15,9 @@ import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.archive.request.UpdateCompressFileStatusRequest
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -29,7 +29,7 @@ import java.time.LocalDateTime
 class CompressServiceImpl(
     private val compressFileRepository: CompressFileRepository,
     private val storageService: StorageService,
-    private val fileReferenceClient: FileReferenceClient,
+    private val fileReferenceService: FileReferenceService,
 ) : CompressService {
 
     override fun compress(request: CompressFileRequest) {
@@ -99,7 +99,7 @@ class CompressServiceImpl(
                 status = CompressStatus.CREATED,
             )
             compressFileRepository.save(compressFile)
-            fileReferenceClient.increment(baseSha256, storageCredentialsKey)
+            fileReferenceService.increment(baseSha256, storageCredentialsKey)
             SpringContextUtils.publishEvent(FileEntityEvent(sha256, compressFile))
             logger.info("Compress file [$sha256] on $storageCredentialsKey.")
         }
@@ -133,7 +133,7 @@ class CompressServiceImpl(
                     storageService.deleteCompressed(sha256, storageCredentials)
                 }
                 // 压缩失败的已经解除了base sha256的引用
-                fileReferenceClient.decrement(file.baseSha256, storageCredentialsKey)
+                fileReferenceService.decrement(file.baseSha256, storageCredentialsKey)
             }
             /*
             * 解压是小概率事件，所以这里链长度我们就不减少，这样带来的问题是，

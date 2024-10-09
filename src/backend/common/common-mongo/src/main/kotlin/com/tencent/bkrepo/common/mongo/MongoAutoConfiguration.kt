@@ -35,12 +35,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.mongo.MongoProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.springframework.context.annotation.PropertySource
 import org.springframework.data.mongodb.MongoDatabaseFactory
 import org.springframework.data.mongodb.MongoTransactionManager
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver
 import org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter
+import org.springframework.data.mongodb.core.convert.MongoConverter
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext
 
@@ -75,9 +78,21 @@ class MongoAutoConfiguration {
         mappingContext.isAutoIndexCreation = mongoProperties.isAutoIndexCreation
 
         val converter = MappingMongoConverter(dbRefResolver, mappingContext)
-        converter.typeMapper = DefaultMongoTypeMapper(null)
+        converter.setTypeMapper(DefaultMongoTypeMapper(null))
         converter.afterPropertiesSet()
         converter.setMapKeyDotReplacement("#dot#")
         return converter
+    }
+
+    @Bean
+    @Primary
+    fun mongoProperties(): MongoProperties {
+        return MongoProperties()
+    }
+
+    @Bean
+    @Primary
+    fun mongoTemplate(factory: MongoDatabaseFactory, converter: MongoConverter?): MongoTemplate {
+        return MongoTemplate(factory, converter)
     }
 }

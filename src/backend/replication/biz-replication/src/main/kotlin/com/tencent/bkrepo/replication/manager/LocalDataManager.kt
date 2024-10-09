@@ -37,9 +37,11 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
@@ -48,9 +50,7 @@ import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -77,12 +77,12 @@ import java.time.format.DateTimeFormatter
  */
 @Component
 class LocalDataManager(
-    private val projectClient: ProjectClient,
+    private val projectService: ProjectService,
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties,
     private val mongoTemplate: MongoTemplate,
 ) {
@@ -113,7 +113,7 @@ class LocalDataManager(
         sha256: String, range: Range,
         currentStorageCredentials: StorageCredentials?
     ): InputStream? {
-        val allCredentials = storageCredentialsClient.list().data!! + storageProperties.defaultStorageCredentials()
+        val allCredentials = storageCredentialService.list() + storageProperties.defaultStorageCredentials()
         var result: InputStream? = null
         for (credential in allCredentials) {
             val key = credential.key
@@ -131,7 +131,7 @@ class LocalDataManager(
      * 项目不存在抛异常
      */
     fun findProjectById(projectId: String): ProjectInfo {
-        return projectClient.getProjectInfo(projectId).data
+        return projectService.getProjectInfo(projectId)
             ?: throw ProjectNotFoundException(projectId)
     }
 
@@ -139,7 +139,7 @@ class LocalDataManager(
      * 判断项目是否存在
      */
     fun existProject(projectId: String): Boolean {
-        return projectClient.getProjectInfo(projectId).data != null
+        return projectService.getProjectInfo(projectId) != null
     }
 
     /**
@@ -331,7 +331,7 @@ class LocalDataManager(
      */
     fun getRepoMetricInfo(projectId: String, repoName: String): Long {
         findRepoByName(projectId, repoName)
-        val projectMetrics = projectClient.getProjectMetrics(projectId).data ?: return 0
+        val projectMetrics = projectService.getProjectMetricsInfo(projectId) ?: return 0
         return projectMetrics.repoMetrics.firstOrNull { it.repoName == repoName }?.size ?: 0
     }
 

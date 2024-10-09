@@ -64,6 +64,10 @@ import moment from 'moment'
 
 export default {
   name: 'WebHookLog',
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     return {
       queryRule: {
@@ -82,10 +86,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     formatDate(date) {

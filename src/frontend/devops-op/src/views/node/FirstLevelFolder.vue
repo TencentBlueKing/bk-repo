@@ -66,6 +66,10 @@ import { statisticalFirstLevelFolder } from '@/api/node'
 import { convertFileSize } from '@/utils/file'
 
 export default {
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     return {
       projectSelect: '',
@@ -87,10 +91,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     queryProjects(queryStr, cb) {

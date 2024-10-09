@@ -31,11 +31,11 @@ import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
+import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.pojo.enums.ActionTypeMapping
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -43,7 +43,7 @@ import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.convertActionType
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 
@@ -59,7 +59,7 @@ open class BkIamV3PermissionServiceImpl(
     personalPathDao: PersonalPathDao,
     repoAuthConfigDao: RepoAuthConfigDao,
     repoClient: RepositoryClient,
-    projectClient: ProjectClient
+    projectService: ProjectService
 ) : PermissionServiceImpl(
     roleRepository,
     accountDao,
@@ -68,7 +68,7 @@ open class BkIamV3PermissionServiceImpl(
     personalPathDao,
     repoAuthConfigDao,
     repoClient,
-    projectClient
+    projectService
 ) {
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
         logger.debug("v3 checkPermission, request: $request")
@@ -178,7 +178,7 @@ open class BkIamV3PermissionServiceImpl(
             action = ActionTypeMapping.PROJECT_VIEW.id()
         )
         return if (pList.contains(StringPool.POUND)) {
-            projectClient.listProject().data?.map { it.name } ?: emptyList()
+            projectService.listProject().map { it.name }
         } else {
             pList
         }

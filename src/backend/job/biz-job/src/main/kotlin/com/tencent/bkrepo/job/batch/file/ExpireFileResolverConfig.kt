@@ -17,7 +17,7 @@ class ExpireFileResolverConfig {
         fileCacheService: FileCacheService,
         mongoTemplate: MongoTemplate
     ): FileRetainResolver {
-        return BasedRepositoryFileExpireResolver(
+        return BasedRepositoryNodeRetainResolver(
             expiredCacheFileCleanupJobProperties.repoConfig,
             scheduler,
             fileCacheService,

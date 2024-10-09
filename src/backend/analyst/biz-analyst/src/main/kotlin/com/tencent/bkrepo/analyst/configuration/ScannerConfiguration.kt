@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.analyst.configuration
 
+import com.mongodb.ConnectionString
+import com.mongodb.MongoClientSettings
+import com.mongodb.client.MongoClients
 import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskDispatcherFactory
 import com.tencent.bkrepo.analyst.dispatcher.SubtaskPoller
@@ -42,10 +45,19 @@ import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import com.tencent.bkrepo.repository.api.OperateLogClient
 import com.tencent.bkrepo.repository.api.ProjectUsageStatisticsClient
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.autoconfigure.mongo.MongoProperties
+import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.DependsOn
+import org.springframework.data.mongodb.MongoDatabaseFactory
+import org.springframework.data.mongodb.SpringDataMongoDB
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
+import org.springframework.data.mongodb.core.convert.MappingMongoConverter
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.function.Consumer
 
@@ -95,6 +107,40 @@ class ScannerConfiguration {
     ): Consumer<ArtifactEvent> {
         return Consumer {
             analystScanEventConsumer.accept(it)
+        }
+    }
+
+    @Bean
+    @ConfigurationProperties("spring.data.mongodb.analyst")
+    fun analystMongoProperties(): MongoProperties {
+        return MongoProperties()
+    }
+
+    @Bean
+    @DependsOn("mongoTemplate")
+    fun analystMongoTemplate(
+        mongoTemplate: MongoTemplate,
+        @Qualifier("analystMongoProperties") analystMongoProperties: MongoProperties,
+        converter: MappingMongoConverter?
+    ): MongoTemplate {
+        // 没有设置独立数据库时，使用统一的数据库
+        return if (analystMongoProperties.uri == MongoProperties.DEFAULT_URI) {
+            mongoTemplate
+        } else {
+            val connectionString = ConnectionString(analystMongoProperties.determineUri())
+            val settings =
+                MongoClientSettings.builder()
+                    .applyConnectionString(connectionString)
+                    .uuidRepresentation(analystMongoProperties.uuidRepresentation)
+                    .build()
+
+            val databaseFactory: MongoDatabaseFactory =
+                SimpleMongoClientDatabaseFactory(
+                    MongoClients.create(settings, SpringDataMongoDB.driverInformation()),
+                    analystMongoProperties.database ?: connectionString.database.orEmpty()
+                )
+
+            MongoTemplate(databaseFactory, converter)
         }
     }
 }

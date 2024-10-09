@@ -27,24 +27,18 @@
 
 package com.tencent.bkrepo.analyst.statemachine.iterator
 
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import org.slf4j.LoggerFactory
 
 class ProjectIdIterator(
-    private val projectClient: ProjectClient,
+    private val projectService: ProjectService,
     position: PageIteratePosition = PageIteratePosition()
 ) : PageableIterator<String>(position) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     override fun nextPageData(page: Int, pageSize: Int): List<String> {
         return if (page == FIRST_PAGE) {
-            val res = projectClient.listProject()
-            if (res.isNotOk()) {
-                logger.error("List projects failed: code[${res.code}], message[${res.message}]")
-                throw SystemErrorException()
-            }
-            return res.data!!.map { it.name }
+            return projectService.listProject().map { it.name }
         } else {
             emptyList()
         }
