@@ -28,15 +28,15 @@
 package com.tencent.bkrepo.ddc.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_BUCKET
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
 import com.tencent.bkrepo.ddc.controller.LegacyReferencesController.Companion.LEGACY_PREFIX
 import com.tencent.bkrepo.ddc.service.ReferenceArtifactService
+import com.tencent.bkrepo.ddc.utils.DdcUtils.DIR_BLOBS
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -51,9 +51,9 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("$LEGACY_PREFIX{projectId}/api/v1/c")
 class LegacyReferencesController(
     private val referenceArtifactService: ReferenceArtifactService,
+    private val permissionManager: PermissionManager,
 ) {
     @ApiOperation("获取ref")
-    @Permission(ResourceType.REPO, PermissionAction.READ)
     @GetMapping(
         "/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}.raw",
         "/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}",
@@ -68,6 +68,9 @@ class LegacyReferencesController(
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo
     ) {
+        permissionManager.checkNodePermission(
+            PermissionAction.DOWNLOAD, artifactInfo.projectId, artifactInfo.repoName, "/$DIR_BLOBS"
+        )
         referenceArtifactService.downloadRef(artifactInfo)
     }
 
@@ -75,23 +78,27 @@ class LegacyReferencesController(
         "/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}",
         consumes = [MediaType.APPLICATION_OCTET_STREAM_VALUE]
     )
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun put(
         @ApiParam(value = "ddc ref", required = true)
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo,
         file: ArtifactFile
     ) {
+        permissionManager.checkNodePermission(
+            PermissionAction.WRITE, artifactInfo.projectId, artifactInfo.repoName, "/$DIR_BLOBS"
+        )
         referenceArtifactService.createRef(artifactInfo, file)
     }
 
     @DeleteMapping("/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}")
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun delete(
         @ApiParam(value = "ddc ref", required = true)
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo
     ) {
+        permissionManager.checkNodePermission(
+            PermissionAction.DELETE, artifactInfo.projectId, artifactInfo.repoName, "/$DIR_BLOBS"
+        )
         referenceArtifactService.deleteRef(artifactInfo)
     }
 
