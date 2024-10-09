@@ -29,10 +29,10 @@ package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
-import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.common.metadata.service.fs.FsService
 import com.tencent.bkrepo.common.metadata.service.metadata.RMetadataService
 import com.tencent.bkrepo.fs.server.config.properties.StreamProperties
@@ -42,6 +42,7 @@ import com.tencent.bkrepo.fs.server.model.NodeAttribute
 import com.tencent.bkrepo.fs.server.request.BlockRequest
 import com.tencent.bkrepo.fs.server.request.FlushRequest
 import com.tencent.bkrepo.fs.server.request.StreamRequest
+import com.tencent.bkrepo.fs.server.service.node.RNodeService
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
@@ -65,7 +66,8 @@ class FileOperationService(
     private val fileNodeService: FileNodeService,
     private val streamProperties: StreamProperties,
     private val metadataService: RMetadataService,
-    private val fsService: FsService
+    private val fsService: FsService,
+    private val nodeService: RNodeService,
 ) {
 
     suspend fun read(nodeDetail: NodeDetail, range: Range): ArtifactInputStream? {
@@ -95,7 +97,7 @@ class FileOperationService(
     }
 
     suspend fun stream(streamRequest: StreamRequest, user: String): NodeDetail {
-        val nodeDetail = rRepositoryClient.createNode(buildNodeCreateRequest(streamRequest, user)).awaitSingle().data!!
+        val nodeDetail = nodeService.createNode(buildNodeCreateRequest(streamRequest, user))
         var reactiveArtifactFile = CoArtifactFileFactory.buildArtifactFile()
         val offset = AtomicLong(0)
         streamRequest.request.bodyToFlow<DataBuffer>().onCompletion {

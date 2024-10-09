@@ -37,8 +37,9 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.fs.FsService
-import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.parseExpireDate
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
@@ -79,7 +80,7 @@ class FsServiceImpl(
             }
             SpringContextUtils.publishEvent(NodeEventFactory.buildCreatedEvent(node))
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
-            return NodeBaseService.convertToDetail(node)!!
+            return convertToDetail(node)!!
         }
     }
 
@@ -93,7 +94,7 @@ class FsServiceImpl(
                 name = PathUtils.resolveName(fullPath),
                 fullPath = fullPath,
                 folder = folder,
-                expireDate = if (folder) null else NodeBaseService.parseExpireDate(expires),
+                expireDate = if (folder) null else parseExpireDate(expires),
                 size = if (folder) 0 else size ?: 0,
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,

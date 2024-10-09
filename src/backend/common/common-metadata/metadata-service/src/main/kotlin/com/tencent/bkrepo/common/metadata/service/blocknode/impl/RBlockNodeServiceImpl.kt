@@ -27,10 +27,13 @@
 
 package com.tencent.bkrepo.common.metadata.service.blocknode.impl
 
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.dao.blocknode.RBlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.RFileReferenceService
@@ -39,15 +42,20 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
-abstract class RAbstractBlockNodeService(
+@Service
+@Conditional(ReactiveCondition::class)
+class RBlockNodeServiceImpl(
     private val rBlockNodeDao: RBlockNodeDao,
-    private val rFileReferenceService: RFileReferenceService
+    private val rFileReferenceService: RFileReferenceService,
+    private val rNodeDao: RNodeDao
 ) : RBlockNodeService {
 
     override suspend fun createBlock(blockNode: TBlockNode, storageCredentials: StorageCredentials?): TBlockNode {
@@ -82,7 +90,7 @@ abstract class RAbstractBlockNodeService(
     }
 
     override suspend fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {
-        val nodeDetail = getNodeDetail(projectId, repoName, dstFullPath)
+        val nodeDetail = rNodeDao.findNode(projectId, repoName, dstFullPath) ?: throw NodeNotFoundException(dstFullPath)
         if (nodeDetail.folder) {
             val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, true)
             val blocks = rBlockNodeDao.find(Query(criteria))
@@ -133,9 +141,7 @@ abstract class RAbstractBlockNodeService(
         }
     }
 
-    abstract suspend fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail
-
     companion object {
-        private val logger = LoggerFactory.getLogger(RAbstractBlockNodeService::class.java)
+        private val logger = LoggerFactory.getLogger(RBlockNodeService::class.java)
     }
 }

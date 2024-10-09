@@ -66,6 +66,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeServiceImpl
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
