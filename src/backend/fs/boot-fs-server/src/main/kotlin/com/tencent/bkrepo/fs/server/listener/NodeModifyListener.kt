@@ -2,7 +2,7 @@ package com.tencent.bkrepo.fs.server.listener
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.fs.server.service.FileNodeService
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.runBlocking

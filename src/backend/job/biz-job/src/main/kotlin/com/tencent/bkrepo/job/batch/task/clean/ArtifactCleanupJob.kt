@@ -93,7 +93,7 @@ class ArtifactCleanupJob(
         return Query()
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(14)
 
 
     override fun run(row: RepoData, collectionName: String, context: JobContext) {

@@ -27,7 +27,22 @@
 
 package com.tencent.bkrepo.conan.pojo
 
-data class IndexInfo(
+import java.util.SortedSet
+
+class IndexInfo(
     var reference: String,
-    var revisions: List<RevisionInfo> = emptyList()
-)
+    var revisions: SortedSet<RevisionInfo> = sortedSetOf()
+) {
+    fun addRevision(revisionInfo: RevisionInfo) {
+        val exist = revisions.firstOrNull { revisionInfo.revision == it.revision }
+        if (exist != null) {
+            exist.time = revisionInfo.time
+        } else {
+            revisions.add(revisionInfo)
+        }
+    }
+
+    fun removeRevision(revision: String) {
+        revisions.removeIf { it.revision == revision }
+    }
+}

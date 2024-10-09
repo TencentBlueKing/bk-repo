@@ -27,22 +27,10 @@
 
 package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
-import java.io.File
-
 /**
  * 文件是否保留解析器，用于在清理文件时判断是否保留
  */
 interface FileRetainResolver {
-    /**
-     * 文件是否保留
-     *
-     * @param file 待解析文件
-     *
-     * @return true表示保留，否则不保留
-     */
-    fun retain(file: File): Boolean
-
-
     /**
      * 文件是否保留
      *

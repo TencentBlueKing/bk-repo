@@ -34,6 +34,7 @@ data class ConanRecipeDeleteRequest(
     override val refStr: String,
     override val pRefStr: String? = null,
     override val pRevPath: String? = null,
+    override val pRevision: String? = null,
     override val operator: String,
     val revision: String
 ): RevisionOperationRequest

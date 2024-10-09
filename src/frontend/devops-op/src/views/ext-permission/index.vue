@@ -83,6 +83,10 @@ import PermissionDeleteDialog from '@/views/ext-permission/components/Permission
 export default {
   name: 'ExtPermission',
   components: { PermissionCreateDialog, PermissionDetailDialog, PermissionDeleteDialog },
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     return {
       loading: false,
@@ -112,10 +116,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     formatDate(date) {

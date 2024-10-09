@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
@@ -52,9 +52,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
-import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
@@ -216,6 +216,10 @@ class NodeServiceImpl(
 
     override fun restoreNode(nodeRestoreRequest: NodeArchiveRestoreRequest): List<String> {
         return NodeArchiveSupport(this, archiveClient).restoreNode(nodeRestoreRequest)
+    }
+
+    override fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long?): Long {
+        return NodeArchiveSupport(this, archiveClient).getArchivableSize(projectId, repoName, days, size)
     }
 
     override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {

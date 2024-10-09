@@ -133,7 +133,7 @@ export default {
         if (isPipeline && !fullPath && !name && localRepo) {
             return Vue.prototype.$ajax.get(
                 `${prefix}/pipeline/list/${projectId}`
-            ).then(records => ({ records, totalRecords: 0 }))
+            ).then(records => ({ records, totalRecords: records.length }))
         } else {
             return Vue.prototype.$ajax.post(
                 localRepo ? `${prefix}/node/search` : `generic/${projectId}/${repoName}/search`,

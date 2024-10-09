@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.metadata.dao.repo
 
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.model.TRepository
-import com.tencent.bkrepo.common.metadata.util.RepoQueryHelper.buildSingleQuery
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildSingleQuery
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query

@@ -29,7 +29,7 @@ package com.tencent.bkrepo.fs.server
 
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.reactor.awaitSingle

@@ -31,5 +31,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("job.migrate-repo-storage")
 class MigrateRepoStorageJobProperties(
+    override var enabled: Boolean = false,
     override var cron: String = "0 0/5 * * * ?",
 ) : BatchJobProperties()

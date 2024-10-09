@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.metadata.dao.repo.StorageCredentialsDao
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
@@ -45,8 +46,7 @@ import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -67,7 +67,6 @@ internal class StorageCredentialServiceTest @Autowired constructor(
     private val storageCredentialsDao: StorageCredentialsDao,
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
-//    private val storageCredentialHelper: StorageCredentialHelper
 ) : ServiceBaseTest() {
 
     @BeforeEach

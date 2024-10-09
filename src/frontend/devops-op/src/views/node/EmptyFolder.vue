@@ -71,7 +71,11 @@ import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 
 export default {
-  name: 'Node',
+  name: 'EmptyFolder',
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     return {
       rules: {
@@ -93,10 +97,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     validateName(rule, value, callback) {

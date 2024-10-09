@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.conan.pojo
 
-import com.fasterxml.jackson.annotation.JsonAlias
+import com.fasterxml.jackson.annotation.JsonProperty
 
 data class ConanInfo(
     val settings: Map<String, String> = emptyMap(),
     val options: Map<String, String> = emptyMap(),
     val requires: List<String> = emptyList(),
-    @JsonAlias("recipe_hash")
+    @JsonProperty("recipe_hash")
     val recipeHash: String? = null,
 )

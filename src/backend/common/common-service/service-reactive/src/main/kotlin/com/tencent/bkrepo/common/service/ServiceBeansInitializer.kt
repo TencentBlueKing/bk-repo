@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.service
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
 import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
 import com.tencent.bkrepo.common.service.feign.ErrorCodeDecoder
+import com.tencent.bkrepo.common.service.feign.RClientConfiguration
 import com.tencent.bkrepo.common.service.log.NettyWebServerAccessLogCustomizer
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
@@ -46,6 +47,7 @@ val beans = beans {
     bean<ActuatorConfiguration>()
     bean<ErrorCodeDecoder>()
     bean<NettyWebServerAccessLogCustomizer>()
+    bean<RClientConfiguration>()
 }
 
 open class ServiceBeansInitializer : ApplicationContextInitializer<GenericApplicationContext> {

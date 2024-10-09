@@ -32,18 +32,29 @@
 package com.tencent.bkrepo.common.artifact.permission
 
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.PermissionCheckHandler
 import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.springframework.web.servlet.HandlerMapping
 
 class ArtifactPermissionCheckHandler(
     private val permissionManager: PermissionManager
 ) : PermissionCheckHandler {
     override fun onPermissionCheck(userId: String, permission: Permission) {
         when (permission.type) {
+            ResourceType.PROJECT -> {
+                val uriAttribute = HttpContextHolder
+                    .getRequest()
+                    .getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
+                require(uriAttribute is Map<*, *>)
+                val projectId = uriAttribute[PROJECT_ID]?.toString() ?: throw PermissionException()
+                permissionManager.checkProjectPermission(permission.action, projectId)
+            }
             ResourceType.REPO -> {
                 with(ArtifactContextHolder.getRepoDetail()!!) {
                     permissionManager.checkRepoPermission(

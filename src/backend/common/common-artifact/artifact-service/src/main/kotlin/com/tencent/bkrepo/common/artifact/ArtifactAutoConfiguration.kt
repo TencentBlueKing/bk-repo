@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.artifact.cns.CnsConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
-import com.tencent.bkrepo.common.artifact.interceptor.ArtifactDownloadInterceptorConfiguration
 import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
@@ -68,7 +67,6 @@ import org.springframework.context.annotation.PropertySource
     ArtifactResolverConfiguration::class,
     ArtifactViewModelConfiguration::class,
     ArtifactHealthConfiguration::class,
-    ArtifactDownloadInterceptorConfiguration::class,
     ArtifactClusterConfiguration::class,
     CnsConfiguration::class,
     ArtifactRouterControllerConfiguration::class,
