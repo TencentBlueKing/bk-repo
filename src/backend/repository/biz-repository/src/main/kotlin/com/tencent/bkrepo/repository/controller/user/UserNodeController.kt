@@ -216,18 +216,25 @@ class UserNodeController(
         @RequestAttribute userId: String,
         @RequestBody request: UserNodeLinkRequest,
     ): Response<NodeDetail> {
-        val linkReq = NodeLinkRequest(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            fullPath = request.fullPath,
-            targetProjectId = request.targetProjectId,
-            targetRepoName = request.targetRepoName,
-            targetFullPath = request.targetFullPath,
-            overwrite = request.overwrite,
-            nodeMetadata = request.nodeMetadata,
-            operator = userId,
-        )
-        return ResponseBuilder.success(nodeService.link(linkReq))
+        with(request) {
+            val linkReq = NodeLinkRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                targetProjectId = targetProjectId,
+                targetRepoName = targetRepoName,
+                targetFullPath = targetFullPath,
+                overwrite = overwrite,
+                nodeMetadata = nodeMetadata,
+                operator = userId,
+            )
+            // 校验源仓库与目标节点权限
+            permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName, userId = userId)
+            permissionManager.checkNodePermission(
+                PermissionAction.READ, targetProjectId, targetRepoName, targetFullPath, userId = userId
+            )
+            return ResponseBuilder.success(nodeService.link(linkReq))
+        }
     }
 
     @ApiOperation("更新节点")

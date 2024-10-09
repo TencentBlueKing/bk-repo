@@ -41,6 +41,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildNodeCleanEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
@@ -181,24 +182,6 @@ open class NodeDeleteSupport(
             )
         )
         return nodeDeleteResult
-    }
-
-    private fun buildCriteria(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-    ): Criteria {
-        val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
-        val normalizedPath = PathUtils.toPath(normalizedFullPath)
-        val escapedPath = PathUtils.escapeRegex(normalizedPath)
-        val criteria = where(TNode::projectId).isEqualTo(projectId)
-            .and(TNode::repoName).isEqualTo(repoName)
-            .and(TNode::deleted).isEqualTo(null)
-            .orOperator(
-                where(TNode::fullPath).regex("^$escapedPath"),
-                where(TNode::fullPath).isEqualTo(normalizedFullPath)
-            )
-        return criteria
     }
 
     private fun delete(

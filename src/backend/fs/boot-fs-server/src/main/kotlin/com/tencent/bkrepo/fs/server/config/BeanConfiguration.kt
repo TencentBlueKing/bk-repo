@@ -43,7 +43,6 @@ import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
-import com.tencent.bkrepo.fs.server.service.BlockNodeServiceImpl
 import com.tencent.bkrepo.fs.server.service.ClientService
 import com.tencent.bkrepo.fs.server.service.FileNodeService
 import com.tencent.bkrepo.fs.server.service.FileOperationService
@@ -70,7 +69,6 @@ val beans = beans {
     bean<RepositoryCache>()
     bean<ServerMetrics>()
     bean<ActuatorAuthFilter>()
-    bean<BlockNodeServiceImpl>()
     bean<ReactiveRequestContextFilter>()
     bean<CoArtifactFileFactory>()
     bean<CoStorageManager>()

@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.common.metadata.client
 
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -54,51 +54,14 @@ import reactor.core.publisher.Mono
 @RequestMapping("/service")
 interface RRepositoryClient {
 
-    @GetMapping("/node/detail/{projectId}/{repoName}")
-    fun getNodeDetail(
+    @PostMapping("/metadata/save")
+    fun saveMetadata(@RequestBody request: MetadataSaveRequest): Mono<Response<Void>>
+
+    @GetMapping("/metadata/list/{projectId}/{repoName}")
+    fun listMetadata(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam fullPath: String
-    ): Mono<Response<NodeDetail?>>
+    ): Mono<Response<Map<String, Any>>>
 
-    @PostMapping("/node/page/{projectId}/{repoName}")
-    fun listNodePage(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-        @RequestParam path: String,
-        @RequestBody option: NodeListOption = NodeListOption()
-    ): Mono<Response<Page<NodeInfo>>>
-
-    @DeleteMapping("/node/delete")
-    fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Mono<Response<NodeDeleteResult>>
-
-    @PostMapping("/node/rename")
-    fun renameNode(@RequestBody nodeRenameRequest: NodeRenameRequest): Mono<Response<Void>>
-
-    @PostMapping("/node/create")
-    fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Mono<Response<NodeDetail>>
-
-    @GetMapping("/node/size/{projectId}/{repoName}")
-    fun computeSize(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-        @RequestParam fullPath: String,
-        @RequestParam estimated: Boolean = false
-    ): Mono<Response<NodeSizeInfo>>
-
-    @PostMapping("/node/link")
-    fun link(@RequestBody nodeLinkRequest: NodeLinkRequest): Mono<Response<NodeDetail>>
-
-    @GetMapping("/repo/detail/{projectId}/{repoName}")
-    fun getRepoDetail(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-        @RequestParam type: String? = null
-    ): Mono<Response<RepositoryDetail?>>
-
-    @GetMapping("/repo/stat/{projectId}/{repoName}")
-    fun statRepo(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-    ): Mono<Response<NodeSizeInfo>>
 }

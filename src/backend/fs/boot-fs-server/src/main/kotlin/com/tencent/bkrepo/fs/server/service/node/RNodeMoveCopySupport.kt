@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.metadata.service.node.impl
+package com.tencent.bkrepo.fs.server.service.node
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -38,13 +38,8 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
-import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
-import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
-import com.tencent.bkrepo.common.metadata.service.node.NodeMoveCopyOperation
-import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper
@@ -65,22 +60,22 @@ import org.springframework.data.mongodb.core.query.Query
 /**
  * 节点移动/拷贝接口实现
  */
-open class NodeMoveCopySupport(
-    private val nodeBaseService: NodeBaseService
-) : NodeMoveCopyOperation {
+open class RNodeMoveCopySupport(
+    private val nodeBaseService: RNodeBaseService
+) : RNodeMoveCopyOperation {
 
-    private val nodeDao: NodeDao = nodeBaseService.nodeDao
-    private val repositoryDao: RepositoryDao = nodeBaseService.repositoryDao
-    private val storageCredentialService: StorageCredentialService = nodeBaseService.storageCredentialService
-    private val quotaService: QuotaService = nodeBaseService.quotaService
+    private val nodeDao = nodeBaseService.nodeDao
+    private val repositoryDao = nodeBaseService.repositoryDao
+    private val storageCredentialService = nodeBaseService.storageCredentialService
+    private val quotaService = nodeBaseService.quotaService
 
-    override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
+    override suspend fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         val dstNode = moveCopy(moveRequest, true)
         logger.info("Move node success: [$moveRequest]")
         return dstNode
     }
 
-    override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
+    override suspend fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
         val dstNode = moveCopy(copyRequest, false)
         logger.info("Copy node success: [$copyRequest]")
         return dstNode
@@ -89,7 +84,7 @@ open class NodeMoveCopySupport(
     /**
      * 处理节点操作请求
      */
-    private fun moveCopy(request: NodeMoveCopyRequest, move: Boolean): NodeDetail {
+    private suspend fun moveCopy(request: NodeMoveCopyRequest, move: Boolean): NodeDetail {
         with(resolveContext(request, move)) {
             preCheck(this)
             if (canIgnore(this)) {
@@ -124,7 +119,7 @@ open class NodeMoveCopySupport(
     /**
      * 移动/复制节点
      */
-    protected fun doMoveCopy(
+    protected suspend fun doMoveCopy(
         context: MoveCopyContext,
         node: TNode,
         dstPath: String,
@@ -165,7 +160,7 @@ open class NodeMoveCopySupport(
         }
     }
 
-    private fun checkQuota(context: MoveCopyContext, node: TNode, existNode: TNode?) {
+    private suspend fun checkQuota(context: MoveCopyContext, node: TNode, existNode: TNode?) {
         // 目录不占仓库容量，不需要检查
         if (node.folder) return
 
@@ -189,7 +184,7 @@ open class NodeMoveCopySupport(
         }
     }
 
-    private fun resolveContext(request: NodeMoveCopyRequest, move: Boolean): MoveCopyContext {
+    private suspend fun resolveContext(request: NodeMoveCopyRequest, move: Boolean): MoveCopyContext {
         with(request) {
             val srcFullPath = PathUtils.normalizeFullPath(srcFullPath)
             val dstProjectId = request.destProjectId ?: srcProjectId
@@ -231,7 +226,7 @@ open class NodeMoveCopySupport(
     /**
      * 移动/复制目录
      */
-    private fun moveCopyFolder(context: MoveCopyContext) {
+    private suspend fun moveCopyFolder(context: MoveCopyContext) {
         with(context) {
             // 目录 -> 文件: error
             if (dstNode?.folder == false) {
@@ -248,7 +243,7 @@ open class NodeMoveCopySupport(
                 PathUtils.combinePath(path, name)
             } else {
                 // 目录 -> 存在的目录
-                val path = toPath(dstNode.fullPath)
+                val path = toPath(dstNode!!.fullPath)
                 val name = srcNode.name
                 // 操作节点
                 doMoveCopy(this, srcNode, path, name)
@@ -258,7 +253,7 @@ open class NodeMoveCopySupport(
             val listOption = NodeListOption(includeFolder = true, includeMetadata = true, deep = true, sort = false)
             val query = buildSubNodesQuery(this, srcRootNodePath, listOption)
             // 目录下的节点 -> 创建好的目录
-            nodeDao.stream(query).stream().forEach {
+            nodeDao.stream(query).toIterable().forEach {
                 doMoveCopy(this, it, it.path.replaceFirst(srcRootNodePath, dstRootNodePath), it.name)
             }
         }
@@ -275,9 +270,9 @@ open class NodeMoveCopySupport(
     /**
      * 移动/复制文件
      */
-    open fun moveCopyFile(context: MoveCopyContext) {
+    open suspend fun moveCopyFile(context: MoveCopyContext) {
         with(context) {
-            val dstPath = if (dstNode?.folder == true) toPath(dstNode.fullPath) else resolveParent(dstFullPath)
+            val dstPath = if (dstNode?.folder == true) toPath(dstNode!!.fullPath) else resolveParent(dstFullPath)
             val dstName = if (dstNode?.folder == true) srcNode.name else resolveName(dstFullPath)
             // 创建dst父目录
             nodeBaseService.mkdirs(dstProjectId, dstRepoName, dstPath, operator)
@@ -285,16 +280,16 @@ open class NodeMoveCopySupport(
         }
     }
 
-    private fun findRepository(projectId: String, repoName: String): TRepository {
+    private suspend fun findRepository(projectId: String, repoName: String): TRepository {
         return repositoryDao.findByNameAndType(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
     }
 
-    private fun findCredential(key: String?): StorageCredentials? {
+    private suspend fun findCredential(key: String?): StorageCredentials? {
         return key?.let { storageCredentialService.findByKey(it) }
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(NodeMoveCopySupport::class.java)
+        private val logger = LoggerFactory.getLogger(RNodeMoveCopySupport::class.java)
     }
 }

@@ -99,9 +99,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     @Test
     fun testCreatePlan() {
         val node = NodeDetail(buildNodeInfo(UT_PROJECT_ID, UT_REPO_NAME))
-        whenever(nodeClient.getNodeDetail(anyString(), anyString(), anyString())).thenReturn(
-            Response(0, data = node)
-        )
+        whenever(nodeService.getNodeDetail(any(), anyOrNull())).thenReturn(node)
         val executeTime = System.currentTimeMillis()
         val request = ArtifactPreloadPlanCreateRequest(
             projectId = UT_PROJECT_ID,
