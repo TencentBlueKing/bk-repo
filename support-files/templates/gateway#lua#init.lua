@@ -57,7 +57,9 @@ config = {
     port = "__BK_CI_PORT__"
   },
   security_paths = {
-  }
+  },
+  service_in_container = "__BK_REPO_SERVICE_IN_CONTAINER__",
+  container_url = "__BK_REPO_URL_CONTAINER__"
 }
   
 require("init_common")
