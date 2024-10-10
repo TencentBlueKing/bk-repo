@@ -34,7 +34,9 @@ import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UploadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRepoRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRepoRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.UploadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
@@ -60,6 +62,16 @@ class RateLimiterAutoConfiguration {
         return RateLimiterMetrics(registry)
     }
 
+    @Bean(URL_REPO_RATELIMITER_SERVICE)
+    fun urlRepoRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>? = null
+    ): UrlRepoRateLimiterService {
+        return UrlRepoRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)
+    }
+
     @Bean(URL_RATELIMITER_SERVICE)
     fun urlRateLimiterService(
         taskScheduler: ThreadPoolTaskScheduler,
@@ -68,6 +80,16 @@ class RateLimiterAutoConfiguration {
         redisTemplate: RedisTemplate<String, String>? = null
     ): UrlRateLimiterService {
         return UrlRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)
+    }
+
+    @Bean(USER_URL_REPO_RATELIMITER_SERVICE)
+    fun userUrlRepoRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>? = null
+    ): UserUrlRepoRateLimiterService {
+        return UserUrlRepoRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate)
     }
 
     @Bean(UPLOAD_USAGE_RATELIMITER_SERVICE)
@@ -186,6 +208,9 @@ class RateLimiterAutoConfiguration {
         const val DOWNLOAD_USAGE_RATELIMITER_SERVICE = "downloadUsageRateLimiterService"
         const val UPLOAD_USAGE_RATELIMITER_SERVICE = "uploadUsageRateLimiterService"
         const val URL_RATELIMITER_SERVICE = "urlRateLimiterService"
+        const val URL_REPO_RATELIMITER_SERVICE = "urlRepoRateLimiterService"
+        const val USER_URL_REPO_RATELIMITER_SERVICE = "userUrlRepoRateLimiterService"
+
     }
 
 }

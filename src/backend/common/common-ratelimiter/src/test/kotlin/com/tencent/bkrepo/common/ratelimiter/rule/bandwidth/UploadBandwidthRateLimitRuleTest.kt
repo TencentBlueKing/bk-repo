@@ -79,6 +79,14 @@ class UploadBandwidthRateLimitRuleTest : BaseRuleTest() {
     )
 
     @Test
+    fun testIsEmpty() {
+        val uploadBandwidthRateLimitRule = UploadBandwidthRateLimitRule()
+        assertEquals(uploadBandwidthRateLimitRule.isEmpty(), true)
+        uploadBandwidthRateLimitRule.addRateLimitRule(l1)
+        assertEquals(uploadBandwidthRateLimitRule.isEmpty(), false)
+    }
+
+    @Test
     fun testBandwidthRateLimitRuleAndGetRateLimitRule() {
         val uploadBandwidthRateLimitRule = UploadBandwidthRateLimitRule()
         uploadBandwidthRateLimitRule.addRateLimitRule(l1)

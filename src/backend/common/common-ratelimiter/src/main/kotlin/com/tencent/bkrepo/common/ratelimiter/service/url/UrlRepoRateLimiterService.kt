@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,33 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.service.usage
+package com.tencent.bkrepo.common.ratelimiter.service.url
 
-
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
+import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
-import com.tencent.bkrepo.common.ratelimiter.rule.usage.UploadUsageRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRepoRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE
 import javax.servlet.http.HttpServletRequest
 
 /**
- * 上传容量限流器实现，针对project和repo
+ * urlRepo限流器实现
  */
-open class UploadUsageRateLimiterService(
+class UrlRepoRateLimiterService(
     taskScheduler: ThreadPoolTaskScheduler,
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
 ) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
+    override fun ignoreRequest(request: HttpServletRequest): Boolean {
+        if (rateLimiterProperties.specialUrls.contains(StringPool.POUND)) {
+            return false
+        }
+        return !rateLimiterProperties.specialUrls.contains(request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE))
+    }
+
     override fun buildResource(request: HttpServletRequest): String {
-        val (projectId, repoName) = getRepoInfoFromAttribute(request)
+        val (projectId, repoName) = try {
+            getRepoInfoFromAttribute(request)
+        } catch (e: InvalidResourceException) {
+            getRepoInfoFromBody(request)
+        }
         return if (repoName.isNullOrEmpty()) {
             "/$projectId/"
         } else {
@@ -60,7 +73,11 @@ open class UploadUsageRateLimiterService(
     }
 
     override fun buildExtraResource(request: HttpServletRequest): List<String> {
-        val (projectId, repoName) = getRepoInfoFromAttribute(request)
+        val (projectId, repoName) = try {
+            getRepoInfoFromAttribute(request)
+        } catch (e: InvalidResourceException) {
+            getRepoInfoFromBody(request)
+        }
         val result = mutableListOf<String>()
         if (!repoName.isNullOrEmpty()) {
             result.add("/$projectId/")
@@ -69,34 +86,19 @@ open class UploadUsageRateLimiterService(
     }
 
     override fun getApplyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
-        return when (request.method) {
-            in UPLOAD_REQUEST_METHOD -> {
-                var length = request.contentLengthLong
-                if (length == -1L) {
-                    logger.warn("content length of ${request.requestURI} is -1")
-                    length = 0
-                }
-                length
-            }
-            else -> 0
-        }
+        return 1
     }
 
     override fun getLimitDimensions(): List<String> {
-        return listOf(
-            LimitDimension.UPLOAD_USAGE.name
-        )
+        return listOf(LimitDimension.URL_REPO.name)
     }
 
     override fun getRateLimitRuleClass(): Class<out RateLimitRule> {
-        return UploadUsageRateLimitRule::class.java
-    }
-
-    override fun ignoreRequest(request: HttpServletRequest): Boolean {
-        return request.method !in UPLOAD_REQUEST_METHOD
+        return UrlRepoRateLimitRule::class.java
     }
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
-        return KEY_PREFIX + "UploadUsage:$resource"
+        return KEY_PREFIX + "UrlRepo:$resource"
     }
+
 }

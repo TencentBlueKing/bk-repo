@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,31 +25,48 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.rule.usage
+package com.tencent.bkrepo.common.ratelimiter.rule.url.user
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
+import com.tencent.bkrepo.common.ratelimiter.rule.PathResourceLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.common.PathNode
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils.getUserAndPath
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-/**
- * 下载用量限流配置规则实现
- * 如果配置了仓库级别限流配置，则该对应仓库下所有请求遵循这个配置，即同一仓库下所有请求共享这个容量限额；
- * 如果配置了项目级别限流配置，则对应项目下所有请求遵循这个配置，即同一项目下所有请求共享这个容量限额。
- */
-class DownloadUsageRateLimitRule : UploadUsageRateLimitRule() {
+class UserUrlRepoResourceLimitRule(
+    root: PathNode = PathNode("/"),
+    pathLengthCheck: Boolean = true,
+    private var user: String = StringPool.POUND,
+) : PathResourceLimitRule(root, pathLengthCheck) {
 
-    override fun filterResourceLimit(resourceLimit: ResourceLimit) {
-        if (resourceLimit.limitDimension != LimitDimension.DOWNLOAD_USAGE.name) {
-            throw InvalidResourceException(resourceLimit.limitDimension)
+    fun addUserUrlRepoResourceLimit(resourceLimit: ResourceLimit) {
+        if (resourceLimit.limitDimension !in userUrlRepoDimensionList) {
+            return
         }
-        if (resourceLimit.resource.isBlank()) {
-            throw InvalidResourceException(resourceLimit.resource)
+        val (userId, urlPath) = getUserAndPath(resourceLimit.resource)
+        if (!urlPath.startsWith("/") || user.isBlank()) {
+            logger.warn("$resourceLimit is invalid")
+            throw InvalidResourceException(urlPath)
+        }
+        user = userId
+        val resourceLimitCopy = resourceLimit.copy(resource = urlPath)
+        addPathResourceLimit(resourceLimitCopy, userUrlRepoDimensionList)
+    }
+
+    fun addUserUrlRepoResourceLimits(resourceLimits: List<ResourceLimit>) {
+        resourceLimits.forEach {
+            addUserUrlRepoResourceLimit(it)
         }
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(DownloadUsageRateLimitRule::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(UserUrlRepoResourceLimitRule::class.java)
+        private val userUrlRepoDimensionList = listOf(
+            LimitDimension.USER_URL_REPO.name
+        )
     }
 }

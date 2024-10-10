@@ -44,6 +44,10 @@ class UrlRateLimitRule : RateLimitRule {
     // 指定URL规则
     private val urlLimitRules: UrlResourceLimitRule = UrlResourceLimitRule()
 
+    override fun isEmpty(): Boolean {
+        return urlLimitRules.isEmpty()
+    }
+
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
         var realResource = resInfo.resource
         if (realResource.isBlank()) {

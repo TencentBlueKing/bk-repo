@@ -99,6 +99,14 @@ class UrlRateLimitRuleTest : BaseRuleTest() {
     )
 
     @Test
+    fun testIsEmpty() {
+        val urlRateLimitRule = UrlRateLimitRule()
+        assertEquals(urlRateLimitRule.isEmpty(), true)
+        urlRateLimitRule.addRateLimitRule(l1)
+        assertEquals(urlRateLimitRule.isEmpty(), false)
+    }
+
+    @Test
     fun testUrlRateLimitRuleAndGetRateLimitRule() {
         val urlRateLimitRule = UrlRateLimitRule()
         urlRateLimitRule.addRateLimitRule(l1)

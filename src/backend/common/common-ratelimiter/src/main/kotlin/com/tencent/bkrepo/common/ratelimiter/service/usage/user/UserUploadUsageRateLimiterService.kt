@@ -53,16 +53,22 @@ open class UserUploadUsageRateLimiterService(
 ) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun buildResource(request: HttpServletRequest): String {
-        val (projectId, repoName) = getRepoInfo(request)
+        val (projectId, repoName) = getRepoInfoFromAttribute(request)
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        return "$userId:/$projectId/$repoName/"
+        return if (repoName.isNullOrEmpty()) {
+            "$userId:/$projectId/"
+        } else {
+            "$userId:/$projectId/$repoName/"
+        }
     }
 
     override fun buildExtraResource(request: HttpServletRequest): List<String> {
-        val (projectId, _) = getRepoInfo(request)
+        val (projectId, repoName) = getRepoInfoFromAttribute(request)
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
         val result = mutableListOf<String>()
-        result.add("$userId:/$projectId/")
+        if (!repoName.isNullOrEmpty()) {
+            result.add("$userId:/$projectId/")
+        }
         result.add("$userId:")
         return result
     }

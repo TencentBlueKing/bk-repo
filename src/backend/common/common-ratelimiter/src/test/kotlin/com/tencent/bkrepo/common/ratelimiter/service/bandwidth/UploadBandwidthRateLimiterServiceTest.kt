@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateL
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterServiceTest
+import java.time.Duration
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -44,7 +45,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
-import java.time.Duration
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
@@ -123,7 +123,9 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     @Test
     fun getRepoInfoTest() {
-        val (projectId, repoName) = (rateLimiterService as UploadBandwidthRateLimiterService).getRepoInfo(request)
+        val (projectId, repoName) = (rateLimiterService as UploadBandwidthRateLimiterService).getRepoInfoFromAttribute(
+            request
+        )
         Assertions.assertEquals("blueking", projectId)
         Assertions.assertEquals("generic-local", repoName)
 

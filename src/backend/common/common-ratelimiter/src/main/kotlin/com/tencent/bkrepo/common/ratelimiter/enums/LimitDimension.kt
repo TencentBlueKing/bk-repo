@@ -32,9 +32,11 @@ package com.tencent.bkrepo.common.ratelimiter.enums
  */
 enum class LimitDimension {
     URL,   // 针对指定URL限流
+    URL_REPO, // 针对访问指定项目/仓库的url进行限流
     UPLOAD_USAGE, // 针对仓库上传总大小进行限流
     DOWNLOAD_USAGE,   // 针对仓库下载总大小进行限流
     USER_URL,  // 针对指定用户指定请求进行限流
+    USER_URL_REPO, // 针对指定用户访问指定项目/仓库的url进行限流
     USER_UPLOAD_USAGE,  // 针对指定用户上传总大小进行限流
     USER_DOWNLOAD_USAGE,  // 针对指定用户下载总大小进行限流
     UPLOAD_BANDWIDTH, // 针对项目维度上传带宽进行限流

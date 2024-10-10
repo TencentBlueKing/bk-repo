@@ -28,7 +28,15 @@
 package com.tencent.bkrepo.common.ratelimiter.service
 
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.bkrepo.common.api.exception.OverloadException
+import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedFixedWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedLeakyRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedSlidingWindowRateLimiter
@@ -55,16 +63,21 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRepoRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRepoRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.UploadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRateLimitRule
+import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpMethod
+import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
@@ -74,7 +87,7 @@ import javax.servlet.http.HttpServletRequest
  */
 abstract class AbstractRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
-    private val rateLimiterProperties: RateLimiterProperties,
+    val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
 ) : RateLimiterService {
@@ -107,11 +120,17 @@ abstract class AbstractRateLimiterService(
         if (!rateLimiterProperties.enabled) {
             return null
         }
-        val resInfo = ResInfo(
-            resource = buildResource(request),
-            extraResource = buildExtraResource(request)
-        )
-        val resLimitInfo = rateLimitRule?.getRateLimitRule(resInfo)
+        val resLimitInfo = try {
+            val resInfo = ResInfo(
+                resource = buildResource(request),
+                extraResource = buildExtraResource(request)
+            )
+            rateLimitRule?.getRateLimitRule(resInfo)
+        } catch (e: InvalidResourceException) {
+            logger.warn("Config is invalid for request ${request.requestURI}, e: ${e.message}")
+            null
+        }
+
         if (resLimitInfo == null) {
             logger.info("no rule in ${this.javaClass.simpleName} for request ${request.requestURI}")
             return null
@@ -124,6 +143,7 @@ abstract class AbstractRateLimiterService(
             return
         }
         if (ignoreRequest(request)) return
+        if (rateLimitRule == null || rateLimitRule!!.isEmpty()) return
         val resLimitInfo = getResLimitInfo(request) ?: return
         rateLimitCatch(
             request = request,
@@ -192,30 +212,86 @@ abstract class AbstractRateLimiterService(
             Algorithms.FIXED_WINDOW.name -> {
                 buildFixedWindowRateLimiter(resource, resourceLimit)
             }
+
             Algorithms.TOKEN_BUCKET.name -> {
                 buildTokenBucketRateLimiter(resource, resourceLimit)
             }
+
             Algorithms.SLIDING_WINDOW.name -> {
                 buildSlidingWindowRateLimiter(resource, resourceLimit)
             }
+
             Algorithms.LEAKY_BUCKET.name -> {
                 buildLeakyRateLimiter(resource, resourceLimit)
             }
+
             else -> {
                 throw InvalidResourceException("config algo is ${resourceLimit.algo}")
             }
         }
     }
 
-    fun getRepoInfo(request: HttpServletRequest): Pair<String?, String?> {
+    fun getRepoInfoFromAttribute(request: HttpServletRequest): Pair<String?, String?> {
         val projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
-            as Map<*, *>)["projectId"] as String?
+                as Map<*, *>)["projectId"] as String?
         val repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
-            as Map<*, *>)["repoName"] as String?
+                as Map<*, *>)["repoName"] as String?
         if (projectId.isNullOrEmpty()) {
             throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
         }
         return Pair(projectId, repoName)
+    }
+
+    fun getRepoInfoFromBody(request: HttpServletRequest): Pair<String?, String?> {
+        val limit = DataSize.ofMegabytes(1).toBytes()
+        val lengthCondition = request.contentLength in 1..limit
+        val typeCondition = request.contentType?.startsWith(MediaType.APPLICATION_JSON_VALUE) == true
+        if (lengthCondition && typeCondition) {
+            // 限制缓存大小
+            val multiReadRequest = MultipleReadHttpRequest(request, limit)
+            val queryModel = try {
+                multiReadRequest.inputStream.readJsonString<QueryModel>()
+            } catch (e: Exception) {
+                null
+            }
+            var (projectId, repoName) = getRepoInfoFromQueryModel(queryModel)
+            if (!projectId.isNullOrEmpty()) return Pair(projectId, repoName)
+            val mappedValue = objectMapper.readValue<Map<String, Any>>(multiReadRequest.inputStream)
+            projectId = mappedValue[PROJECT_ID] as? String
+            repoName = mappedValue[REPO_NAME] as? String
+            if (projectId.isNullOrEmpty()) {
+                throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
+            }
+            return Pair(projectId, repoName)
+        }
+        throw InvalidResourceException("Could not find projectId from body of request ${request.requestURI}")
+    }
+
+    private fun getRepoInfoFromQueryModel(queryModel: QueryModel?): Pair<String?, String?> {
+        if (queryModel == null) return Pair(null, null)
+        var projectId: String? = null
+        var repoName: String? = null
+        val rule = queryModel.rule
+        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
+            findKeyRule(PROJECT_ID, rule.rules)?.let {
+                it.value.toString().apply { projectId = this }
+                findKeyRule(REPO_NAME, rule.rules)?.let {
+                    if (it.operation == OperationType.EQ) {
+                        it.value.toString().apply { repoName = this }
+                    }
+                }
+            }
+        }
+        return Pair(projectId, repoName)
+    }
+
+    private fun findKeyRule(key: String, rules: List<Rule>): Rule.QueryRule? {
+        for (rule in rules) {
+            if (rule is Rule.QueryRule && rule.field == key) {
+                return rule
+            }
+        }
+        return null
     }
 
     /**
@@ -243,6 +319,8 @@ abstract class AbstractRateLimiterService(
             UserUrlRateLimitRule::class.java -> UserUrlRateLimitRule()
             UploadBandwidthRateLimitRule::class.java -> UploadBandwidthRateLimitRule()
             DownloadBandwidthRateLimitRule::class.java -> DownloadBandwidthRateLimitRule()
+            UrlRepoRateLimitRule::class.java -> UrlRepoRateLimitRule()
+            UserUrlRepoRateLimitRule::class.java -> UserUrlRepoRateLimitRule()
             else -> return
         }
         usageRules.addRateLimitRules(usageRuleConfigs)
@@ -302,7 +380,7 @@ abstract class AbstractRateLimiterService(
             pass = action(rateLimiter, realPermits)
             if (!pass) {
                 val msg = "${resLimitInfo.resource} has exceeded max rate limit: " +
-                    "${resLimitInfo.resourceLimit.limit} /${resLimitInfo.resourceLimit.duration}"
+                        "${resLimitInfo.resourceLimit.limit} /${resLimitInfo.resourceLimit.duration}"
                 if (rateLimiterProperties.dryRun) {
                     logger.warn(msg)
                 } else {
@@ -314,7 +392,7 @@ abstract class AbstractRateLimiterService(
         } catch (e: AcquireLockFailedException) {
             logger.warn(
                 "acquire lock failed for ${resLimitInfo.resource}" +
-                    " with ${resLimitInfo.resourceLimit}, e: ${e.message}"
+                        " with ${resLimitInfo.resourceLimit}, e: ${e.message}"
             )
             exception = e
         } catch (e: InvalidResourceException) {
@@ -379,14 +457,13 @@ abstract class AbstractRateLimiterService(
         resource: String,
         resourceLimit: ResourceLimit,
     ): RateLimiter {
+        val permitsPerSecond = (resourceLimit.limit / resourceLimit.duration.seconds.toDouble())
         return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            val permitsPerSecond = resourceLimit.limit / resourceLimit.duration.seconds
             TokenBucketRateLimiter(permitsPerSecond)
         } else {
             if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
                 throw InvalidResourceException("Resource limit config $resourceLimit is illegal")
             }
-            val permitsPerSecond = (resourceLimit.limit / resourceLimit.duration.seconds).toDouble()
             DistributedTokenBucketRateLimiter(
                 resource, permitsPerSecond, resourceLimit.capacity!!, redisTemplate!!
             )

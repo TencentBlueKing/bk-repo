@@ -35,10 +35,10 @@ import java.util.concurrent.TimeUnit
  * 单机令牌桶算法实现
  */
 class TokenBucketRateLimiter(
-    private val permitsPerSecond: Long,
+    private val permitsPerSecond: Double,
 ) : RateLimiter {
 
-    private val guavaRateLimiter = com.google.common.util.concurrent.RateLimiter.create(permitsPerSecond.toDouble())
+    private val guavaRateLimiter = com.google.common.util.concurrent.RateLimiter.create(permitsPerSecond)
 
     override fun tryAcquire(permits: Long): Boolean {
         try {

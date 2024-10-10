@@ -32,7 +32,9 @@ import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UploadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRepoRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRepoRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.UploadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
@@ -50,8 +52,16 @@ class RequestLimitCheckService(
 ) {
 
     @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.URL_REPO_RATELIMITER_SERVICE)
+    private lateinit var urlRepoRateLimiterService: UrlRepoRateLimiterService
+
+    @Autowired
     @Qualifier(RateLimiterAutoConfiguration.URL_RATELIMITER_SERVICE)
     private lateinit var urlRateLimiterService: UrlRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.USER_URL_REPO_RATELIMITER_SERVICE)
+    private lateinit var userUrlRepoRateLimiterService: UserUrlRepoRateLimiterService
 
     @Autowired
     @Qualifier(RateLimiterAutoConfiguration.UPLOAD_USAGE_RATELIMITER_SERVICE)
@@ -86,7 +96,8 @@ class RequestLimitCheckService(
             return
         }
         // TODO 可以优化
-        // TODO 不能全部遍历， 只有有的才查询
+        urlRepoRateLimiterService.limit(request)
+        userUrlRepoRateLimiterService.limit(request)
         userUrlRateLimiterService.limit(request)
         userUploadUsageRateLimiterService.limit(request)
         urlRateLimiterService.limit(request)

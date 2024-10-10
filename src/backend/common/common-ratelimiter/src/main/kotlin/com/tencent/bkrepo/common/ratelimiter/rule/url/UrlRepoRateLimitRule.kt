@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.rule.usage
+package com.tencent.bkrepo.common.ratelimiter.rule.url
 
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
@@ -38,14 +38,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * 上传用量限流配置规则实现
+ * 基于项目/仓库的URL限流配置规则实现
  */
-open class UploadUsageRateLimitRule : RateLimitRule {
+class UrlRepoRateLimitRule : RateLimitRule {
 
-    val usageLimitRules: PathResourceLimitRule = PathResourceLimitRule(pathLengthCheck = true)
+    val urlRepoLimitRules: PathResourceLimitRule = PathResourceLimitRule(pathLengthCheck = true)
 
     override fun isEmpty(): Boolean {
-        return usageLimitRules.isEmpty()
+        return urlRepoLimitRules.isEmpty()
     }
 
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
@@ -53,10 +53,10 @@ open class UploadUsageRateLimitRule : RateLimitRule {
         if (realResource.isBlank()) {
             return null
         }
-        var ruleLimit = usageLimitRules.getPathResourceLimit(realResource)
+        var ruleLimit = urlRepoLimitRules.getPathResourceLimit(realResource)
         if (ruleLimit == null && resInfo.extraResource.isNotEmpty()) {
             for (res in resInfo.extraResource) {
-                ruleLimit = usageLimitRules.getPathResourceLimit(res)
+                ruleLimit = urlRepoLimitRules.getPathResourceLimit(res)
                 if (ruleLimit != null) {
                     realResource = res
                     break
@@ -69,7 +69,7 @@ open class UploadUsageRateLimitRule : RateLimitRule {
 
     override fun addRateLimitRule(resourceLimit: ResourceLimit) {
         filterResourceLimit(resourceLimit)
-        usageLimitRules.addPathResourceLimit(resourceLimit, usageDimensionList)
+        urlRepoLimitRules.addPathResourceLimit(resourceLimit, urlRepoDimensionList)
     }
 
     override fun addRateLimitRules(resourceLimit: List<ResourceLimit>) {
@@ -83,7 +83,7 @@ open class UploadUsageRateLimitRule : RateLimitRule {
     }
 
     override fun filterResourceLimit(resourceLimit: ResourceLimit) {
-        if (resourceLimit.limitDimension != LimitDimension.UPLOAD_USAGE.name) {
+        if (resourceLimit.limitDimension != LimitDimension.URL_REPO.name) {
             throw InvalidResourceException(resourceLimit.limitDimension)
         }
         if (resourceLimit.resource.isBlank()) {
@@ -92,7 +92,7 @@ open class UploadUsageRateLimitRule : RateLimitRule {
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(UploadUsageRateLimitRule::class.java)
-        private val usageDimensionList = listOf(LimitDimension.UPLOAD_USAGE.name, LimitDimension.DOWNLOAD_USAGE.name)
+        private val logger: Logger = LoggerFactory.getLogger(UrlRepoRateLimitRule::class.java)
+        private val urlRepoDimensionList = listOf(LimitDimension.URL_REPO.name)
     }
 }

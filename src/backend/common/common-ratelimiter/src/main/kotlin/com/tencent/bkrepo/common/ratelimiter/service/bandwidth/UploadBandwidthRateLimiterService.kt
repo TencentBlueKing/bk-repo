@@ -52,12 +52,17 @@ open class UploadBandwidthRateLimiterService(
 ) : AbstractBandwidthRateLimiterService(taskScheduler, rateLimiterMetrics, redisTemplate, rateLimiterProperties) {
 
     override fun buildResource(request: HttpServletRequest): String {
-        val (projectId, repoName) = getRepoInfo(request)
-        return "/$projectId/$repoName/"
+        val (projectId, repoName) = getRepoInfoFromAttribute(request)
+        return if (repoName.isNullOrEmpty()) {
+            "/$projectId/"
+        } else {
+            "/$projectId/$repoName/"
+        }
     }
 
     override fun buildExtraResource(request: HttpServletRequest): List<String> {
-        val (projectId, _) = getRepoInfo(request)
+        val (projectId, repoName) = getRepoInfoFromAttribute(request)
+        if (repoName.isNullOrEmpty()) return emptyList()
         return listOf("/$projectId/")
     }
 

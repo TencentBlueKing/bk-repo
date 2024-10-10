@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.BaseRuleTest
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
@@ -113,6 +114,14 @@ class UserUrlRateLimitRuleTest : BaseRuleTest() {
         limitDimension = LimitDimension.USER_URL.name, limit = 52428800,
         duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
+
+    @Test
+    fun testIsEmpty() {
+        val userUrlRateLimitRule = UserUrlRateLimitRule()
+        assertEquals(userUrlRateLimitRule.isEmpty(), true)
+        userUrlRateLimitRule.addRateLimitRule(l1)
+        assertEquals(userUrlRateLimitRule.isEmpty(), false)
+    }
 
     @Test
     fun testUserUrlRateLimitRuleAndGetRateLimitRule() {

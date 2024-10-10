@@ -51,6 +51,10 @@ class UserUrlRateLimitRule : RateLimitRule {
     // 用户对应规则(限制每个用户的总请求次数)
     private val userLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
 
+    override fun isEmpty(): Boolean {
+        return userUrlLimitRules.isEmpty() && userLimitRules.isEmpty()
+    }
+
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
         var resLimitInfo = findConfigRule(resInfo.resource)
         if (resLimitInfo == null) {

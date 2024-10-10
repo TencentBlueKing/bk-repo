@@ -50,7 +50,7 @@ abstract class AbstractBandwidthRateLimiterService(
     taskScheduler: ThreadPoolTaskScheduler,
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
-    private val rateLimiterProperties: RateLimiterProperties,
+    rateLimiterProperties: RateLimiterProperties,
 ) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
 
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {

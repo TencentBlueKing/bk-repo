@@ -43,6 +43,10 @@ open class UploadBandwidthRateLimitRule(
     private val bandwidthLimitRules: BandwidthResourceLimitRule = BandwidthResourceLimitRule()
 ) : RateLimitRule {
 
+    override fun isEmpty(): Boolean {
+        return bandwidthLimitRules.isEmpty()
+    }
+
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
         var realResource = resInfo.resource
         if (realResource.isBlank()) {

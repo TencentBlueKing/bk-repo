@@ -37,6 +37,11 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 interface RateLimitRule {
 
     /**
+     * 是否存在相应配置规则
+     */
+    fun isEmpty(): Boolean
+
+    /**
      * 获取资源对应的规则
      * 优先查找resource， 如查不到对应规则，则通过extraResource查找
      * resource一般是特定类型，如特定用户，特定URL，特定项目仓库等

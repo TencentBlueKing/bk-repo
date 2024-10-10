@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.rule.usage.user
+package com.tencent.bkrepo.common.ratelimiter.rule.url.user
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
@@ -39,18 +39,15 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * 用户上传用量限流配置规则实现
- */
-open class UserUploadUsageRateLimitRule(
-    // 用户+用量对应规则
-    private val userUsageLimitRules: ConcurrentHashMap<String, UserUsageResourceLimitRule> = ConcurrentHashMap(),
+class UserUrlRepoRateLimitRule(
+    // 用户+urlRepo对应规则
+    private val userUrlRepoLimitRules: ConcurrentHashMap<String, UserUrlRepoResourceLimitRule> = ConcurrentHashMap(),
     // 用户对应规则
     private val userLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
 ) : RateLimitRule {
 
     override fun isEmpty(): Boolean {
-        return userUsageLimitRules.isEmpty() && userLimitRules.isEmpty()
+        return userUrlRepoLimitRules.isEmpty() && userLimitRules.isEmpty()
     }
 
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
@@ -78,9 +75,10 @@ open class UserUploadUsageRateLimitRule(
         if (path.isEmpty()) {
             userLimitRules[userId] = resourceLimit
         } else {
-            val userUsageResourceLimitRule = userUsageLimitRules.getOrDefault(userId, UserUsageResourceLimitRule())
-            userUsageResourceLimitRule.addUserUsageResourceLimit(resourceLimit)
-            userUsageLimitRules.putIfAbsent(userId, userUsageResourceLimitRule)
+            val userUrlRepoResourceLimitRule =
+                userUrlRepoLimitRules.getOrDefault(userId, UserUrlRepoResourceLimitRule())
+            userUrlRepoResourceLimitRule.addUserUrlRepoResourceLimit(resourceLimit)
+            userUrlRepoLimitRules.putIfAbsent(userId, userUrlRepoResourceLimitRule)
         }
     }
 
@@ -95,7 +93,7 @@ open class UserUploadUsageRateLimitRule(
     }
 
     override fun filterResourceLimit(resourceLimit: ResourceLimit) {
-        if (resourceLimit.limitDimension != LimitDimension.USER_UPLOAD_USAGE.name) {
+        if (resourceLimit.limitDimension != LimitDimension.USER_URL_REPO.name) {
             throw InvalidResourceException(resourceLimit.limitDimension)
         }
         if (resourceLimit.resource.isBlank()) {
@@ -117,7 +115,7 @@ open class UserUploadUsageRateLimitRule(
         if (userPattern) {
             user = StringPool.POUND
         }
-        val userUsageRule = userUsageLimitRules[user]
+        val userUsageRule = userUrlRepoLimitRules[user]
         var ruleLimit = userUsageRule?.getPathResourceLimit(resWithoutUser)
         if (ruleLimit == null && extraResource.isNotEmpty()) {
             for (res in extraResource) {
@@ -135,6 +133,6 @@ open class UserUploadUsageRateLimitRule(
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(UserUploadUsageRateLimitRule::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(UserUrlRepoRateLimitRule::class.java)
     }
 }

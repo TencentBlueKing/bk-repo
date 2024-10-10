@@ -47,6 +47,10 @@ open class PathResourceLimitRule(
     private val pathLengthCheck: Boolean = false
 ) {
 
+    fun isEmpty(): Boolean {
+        return root.getEdges().isEmpty() && root.getResourceLimit() == null
+    }
+
     /**
      * 添加资源对应的规则
      */
@@ -185,7 +189,7 @@ open class PathResourceLimitRule(
      */
     private fun isTemplateVariable(pathDir: String): Boolean {
         return pathDir.startsWith("{") && pathDir.endsWith("}") ||
-            pathDir == "*" || pathDir == "**"
+                pathDir == "*" || pathDir == "**"
     }
 
     /**

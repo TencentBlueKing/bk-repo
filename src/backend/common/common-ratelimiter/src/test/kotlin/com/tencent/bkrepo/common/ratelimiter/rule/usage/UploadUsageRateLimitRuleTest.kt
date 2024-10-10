@@ -79,6 +79,14 @@ class UploadUsageRateLimitRuleTest : BaseRuleTest() {
     )
 
     @Test
+    fun testIsEmpty() {
+        val uploadUsageRateLimitRule = UploadUsageRateLimitRule()
+        assertEquals(uploadUsageRateLimitRule.isEmpty(), true)
+        uploadUsageRateLimitRule.addRateLimitRule(l1)
+        assertEquals(uploadUsageRateLimitRule.isEmpty(), false)
+    }
+
+    @Test
     fun testUsageRateLimitRuleAndGetRateLimitRule() {
         val uploadUsageRateLimitRule = UploadUsageRateLimitRule()
         uploadUsageRateLimitRule.addRateLimitRule(l1)

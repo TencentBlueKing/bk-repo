@@ -39,7 +39,7 @@ class TokenBucketRateLimiterTest {
 
     @Test
     fun testTryAcquire() {
-        var ratelimiter = TokenBucketRateLimiter(5)
+        var ratelimiter = TokenBucketRateLimiter(5.0)
         val passed1 = ratelimiter.tryAcquire(1)
         Assertions.assertTrue(passed1)
         Thread.sleep(1000)
@@ -64,7 +64,7 @@ class TokenBucketRateLimiterTest {
 
     @Test
     fun testTryAcquireOnMultiThreads() {
-        val ratelimiter = TokenBucketRateLimiter(5)
+        val ratelimiter = TokenBucketRateLimiter(5.0)
         val passed1 = ratelimiter.tryAcquire(1)
         Assertions.assertTrue(passed1)
         Thread.sleep(1000)

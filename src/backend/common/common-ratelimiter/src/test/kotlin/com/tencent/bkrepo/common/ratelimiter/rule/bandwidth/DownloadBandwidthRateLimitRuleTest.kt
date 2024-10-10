@@ -79,6 +79,14 @@ class DownloadBandwidthRateLimitRuleTest : BaseRuleTest() {
     )
 
     @Test
+    fun testIsEmpty() {
+        val downloadBandwidthRateLimitRule = DownloadBandwidthRateLimitRule()
+        assertEquals(downloadBandwidthRateLimitRule.isEmpty(), true)
+        downloadBandwidthRateLimitRule.addRateLimitRule(l1)
+        assertEquals(downloadBandwidthRateLimitRule.isEmpty(), false)
+    }
+
+    @Test
     fun testBandwidthRateLimitRuleAndGetRateLimitRule() {
         val downloadBandwidthRateLimitRule = DownloadBandwidthRateLimitRule()
         downloadBandwidthRateLimitRule.addRateLimitRule(l1)
