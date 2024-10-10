@@ -1207,7 +1207,7 @@ export default {
                         {
                             subTitle: this.$t('pushGuideSubTitle'),
                             codeList: [
-                                `conan upload ${this.dependInputValue1 || this.packageName}/${this.dependInputValue2 || this.versionLabel} -r=${this.repoName}`
+                                `conan upload ${this.dependInputValue1 || this.packageName}/${this.dependInputValue2 || this.versionLabel} -r ${this.repoName}`
                             ]
                         }
                     ]
@@ -1272,7 +1272,7 @@ export default {
                         {
                             subTitle: this.$t('pushGuideSubTitle'),
                             codeList: [
-                                `conan upload ${this.packageName}/${this.versionLabel} -r=${this.repoName}`
+                                `conan upload ${this.packageName}/${this.versionLabel} -r ${this.repoName}`
                             ]
                         }
                     ]
