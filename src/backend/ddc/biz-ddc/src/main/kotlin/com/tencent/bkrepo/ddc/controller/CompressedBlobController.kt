@@ -30,10 +30,9 @@ package com.tencent.bkrepo.ddc.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
+import com.tencent.bkrepo.ddc.component.PermissionHelper
 import com.tencent.bkrepo.ddc.service.CompressedBlobService
-import com.tencent.bkrepo.ddc.utils.DdcUtils.DIR_BLOBS
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -48,7 +47,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class CompressedBlobController(
     private val compressedBlobService: CompressedBlobService,
-    private val permissionManager: PermissionManager,
+    private val permissionHelper: PermissionHelper,
 ) {
 
     @ApiOperation("获取压缩后的缓存")
@@ -61,9 +60,7 @@ class CompressedBlobController(
         @ArtifactPathVariable
         artifactInfo: CompressedBlobArtifactInfo,
     ) {
-        permissionManager.checkNodePermission(
-            PermissionAction.DOWNLOAD, artifactInfo.projectId, artifactInfo.repoName, "/${DIR_BLOBS}"
-        )
+        permissionHelper.checkPathPermission(PermissionAction.DOWNLOAD)
         compressedBlobService.get(artifactInfo)
     }
 
@@ -75,9 +72,7 @@ class CompressedBlobController(
         artifactInfo: CompressedBlobArtifactInfo,
         artifactFile: ArtifactFile
     ) {
-        permissionManager.checkNodePermission(
-            PermissionAction.WRITE, artifactInfo.projectId, artifactInfo.repoName, "/${DIR_BLOBS}"
-        )
+        permissionHelper.checkPathPermission(PermissionAction.WRITE)
         compressedBlobService.put(artifactInfo, artifactFile)
     }
 

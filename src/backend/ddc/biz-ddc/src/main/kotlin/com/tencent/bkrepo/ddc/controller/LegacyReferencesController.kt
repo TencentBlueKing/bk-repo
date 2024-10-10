@@ -30,13 +30,12 @@ package com.tencent.bkrepo.ddc.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_BUCKET
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
+import com.tencent.bkrepo.ddc.component.PermissionHelper
 import com.tencent.bkrepo.ddc.controller.LegacyReferencesController.Companion.LEGACY_PREFIX
 import com.tencent.bkrepo.ddc.service.ReferenceArtifactService
-import com.tencent.bkrepo.ddc.utils.DdcUtils.DIR_BLOBS
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -51,7 +50,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("$LEGACY_PREFIX{projectId}/api/v1/c")
 class LegacyReferencesController(
     private val referenceArtifactService: ReferenceArtifactService,
-    private val permissionManager: PermissionManager,
+    private val permissionHelper: PermissionHelper,
 ) {
     @ApiOperation("获取ref")
     @GetMapping(
@@ -68,9 +67,7 @@ class LegacyReferencesController(
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo
     ) {
-        permissionManager.checkNodePermission(
-            PermissionAction.DOWNLOAD, artifactInfo.projectId, artifactInfo.repoName, "/$DIR_BLOBS"
-        )
+        permissionHelper.checkPathPermission(PermissionAction.DOWNLOAD)
         referenceArtifactService.downloadRef(artifactInfo)
     }
 
@@ -84,9 +81,7 @@ class LegacyReferencesController(
         artifactInfo: ReferenceArtifactInfo,
         file: ArtifactFile
     ) {
-        permissionManager.checkNodePermission(
-            PermissionAction.WRITE, artifactInfo.projectId, artifactInfo.repoName, "/$DIR_BLOBS"
-        )
+        permissionHelper.checkPathPermission(PermissionAction.WRITE)
         referenceArtifactService.createRef(artifactInfo, file)
     }
 
@@ -96,9 +91,7 @@ class LegacyReferencesController(
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo
     ) {
-        permissionManager.checkNodePermission(
-            PermissionAction.DELETE, artifactInfo.projectId, artifactInfo.repoName, "/$DIR_BLOBS"
-        )
+        permissionHelper.checkPathPermission(PermissionAction.DELETE)
         referenceArtifactService.deleteRef(artifactInfo)
     }
 

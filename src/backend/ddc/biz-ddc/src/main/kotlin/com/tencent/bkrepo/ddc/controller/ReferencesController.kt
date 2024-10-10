@@ -32,12 +32,11 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository.Companion.HEADER_NAME_HASH
+import com.tencent.bkrepo.ddc.component.PermissionHelper
 import com.tencent.bkrepo.ddc.service.ReferenceArtifactService
-import com.tencent.bkrepo.ddc.utils.DdcUtils.DIR_BLOBS
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_JUPITER_INLINED_PAYLOAD
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY_PACKAGE
@@ -56,7 +55,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ReferencesController(
     private val referenceArtifactService: ReferenceArtifactService,
-    private val permissionManager: PermissionManager,
+    private val permissionHelper: PermissionHelper,
 ) {
 
     @ApiOperation("获取ref")
@@ -75,9 +74,7 @@ class ReferencesController(
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo,
     ) {
-        permissionManager.checkNodePermission(
-            PermissionAction.DOWNLOAD, artifactInfo.projectId, artifactInfo.repoName, "/$DIR_BLOBS"
-        )
+        permissionHelper.checkPathPermission(PermissionAction.DOWNLOAD)
         HttpContextHolder.getResponse().contentType = getResponseType(null, MEDIA_TYPE_UNREAL_COMPACT_BINARY)
         referenceArtifactService.downloadRef(artifactInfo)
     }
@@ -92,9 +89,7 @@ class ReferencesController(
         artifactInfo: ReferenceArtifactInfo,
         file: ArtifactFile
     ) {
-        permissionManager.checkNodePermission(
-            PermissionAction.WRITE, artifactInfo.projectId, artifactInfo.repoName, "/$DIR_BLOBS"
-        )
+        permissionHelper.checkPathPermission(PermissionAction.WRITE)
         artifactInfo.inlineBlobHash = HttpContextHolder.getRequest().getHeader(HEADER_NAME_HASH)
             ?: throw BadRequestException(PARAMETER_INVALID, "Missing expected header $HEADER_NAME_HASH")
         referenceArtifactService.createRef(artifactInfo, file)
@@ -111,9 +106,7 @@ class ReferencesController(
         @ApiParam("blob hash", required = true)
         @PathVariable hash: String,
     ) {
-        permissionManager.checkNodePermission(
-            PermissionAction.WRITE, artifactInfo.projectId, artifactInfo.repoName, "/$DIR_BLOBS"
-        )
+        permissionHelper.checkPathPermission(PermissionAction.WRITE)
         artifactInfo.inlineBlobHash = hash
         referenceArtifactService.finalize(artifactInfo)
     }
