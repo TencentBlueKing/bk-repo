@@ -71,6 +71,8 @@ import com.tencent.bkrepo.common.ratelimiter.rule.usage.UploadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRateLimitRule
 import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
+import java.util.concurrent.ConcurrentHashMap
+import javax.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
@@ -79,8 +81,6 @@ import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
-import java.util.concurrent.ConcurrentHashMap
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 限流器抽象实现
@@ -269,17 +269,22 @@ abstract class AbstractRateLimiterService(
 
     private fun getRepoInfoFromQueryModel(queryModel: QueryModel?): Pair<String?, String?> {
         if (queryModel == null) return Pair(null, null)
-        var projectId: String? = null
-        var repoName: String? = null
         val rule = queryModel.rule
         if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-            findKeyRule(PROJECT_ID, rule.rules)?.let {
-                it.value.toString().apply { projectId = this }
-                findKeyRule(REPO_NAME, rule.rules)?.let {
-                    if (it.operation == OperationType.EQ) {
-                        it.value.toString().apply { repoName = this }
-                    }
-                }
+            return findRepoInfoFromRule(rule)
+        }
+        return Pair(null, null)
+    }
+
+    private fun findRepoInfoFromRule(rule: Rule.NestedRule): Pair<String?, String?> {
+        var projectId: String? = null
+        var repoName: String? = null
+        findKeyRule(PROJECT_ID, rule.rules)?.let {
+            it.value.toString().apply { projectId = this }
+        }
+        findKeyRule(REPO_NAME, rule.rules)?.let {
+            if (it.operation == OperationType.EQ) {
+                it.value.toString().apply { repoName = this }
             }
         }
         return Pair(projectId, repoName)
@@ -310,7 +315,16 @@ abstract class AbstractRateLimiterService(
             }
             return
         }
-        val usageRules = when (getRateLimitRuleClass()) {
+        val usageRules = getRuleClass() ?: return
+        usageRules.addRateLimitRules(usageRuleConfigs)
+        rateLimitRule = usageRules
+        clearLimiterCache()
+        currentRuleHashCode = newRuleHashCode
+        logger.info("rules in ${this.javaClass.simpleName} for request has been refreshed!")
+    }
+
+    private fun getRuleClass(): RateLimitRule? {
+        return when (getRateLimitRuleClass()) {
             UrlRateLimitRule::class.java -> UrlRateLimitRule()
             UploadUsageRateLimitRule::class.java -> UploadUsageRateLimitRule()
             DownloadUsageRateLimitRule::class.java -> DownloadUsageRateLimitRule()
@@ -321,13 +335,8 @@ abstract class AbstractRateLimiterService(
             DownloadBandwidthRateLimitRule::class.java -> DownloadBandwidthRateLimitRule()
             UrlRepoRateLimitRule::class.java -> UrlRepoRateLimitRule()
             UserUrlRepoRateLimitRule::class.java -> UserUrlRepoRateLimitRule()
-            else -> return
+            else -> null
         }
-        usageRules.addRateLimitRules(usageRuleConfigs)
-        rateLimitRule = usageRules
-        clearLimiterCache()
-        currentRuleHashCode = newRuleHashCode
-        logger.info("rules in ${this.javaClass.simpleName} for request has been refreshed!")
     }
 
     private fun clearLimiterCache() {

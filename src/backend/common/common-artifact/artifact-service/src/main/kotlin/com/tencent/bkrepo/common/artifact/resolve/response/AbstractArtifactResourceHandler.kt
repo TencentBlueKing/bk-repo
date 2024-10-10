@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import org.slf4j.LoggerFactory

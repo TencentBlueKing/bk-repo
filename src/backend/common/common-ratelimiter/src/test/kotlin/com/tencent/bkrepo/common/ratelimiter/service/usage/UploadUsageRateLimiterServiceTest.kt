@@ -121,7 +121,8 @@ class UploadUsageRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     @Test
     fun getRepoInfoTest() {
-        val (projectId, repoName) = (rateLimiterService as UploadUsageRateLimiterService).getRepoInfoFromAttribute(request)
+        val (projectId, repoName) =
+            (rateLimiterService as UploadUsageRateLimiterService).getRepoInfoFromAttribute(request)
         Assertions.assertEquals("blueking", projectId)
         Assertions.assertEquals("generic-local", repoName)
 
