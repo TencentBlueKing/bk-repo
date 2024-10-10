@@ -32,6 +32,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("job.file-reference-cleanup")
 class FileReferenceCleanupJobProperties(
     override var cron: String = "0 0 4/6 * * ?",
+    override var sharding: Boolean = true,
     /**
      * 预期系统节点数
      * */
@@ -48,5 +49,5 @@ class FileReferenceCleanupJobProperties(
     /**
      * 忽略的存储凭据，这些存储的缓存将不执行清理
      */
-    var ignoredStorageCredentialsKeys: Set<String> = emptySet()
+    var ignoredStorageCredentialsKeys: Set<String> = emptySet(),
 ) : MongodbJobProperties()

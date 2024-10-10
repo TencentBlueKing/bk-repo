@@ -38,7 +38,10 @@ open class JobContext(
     // 执行成功数
     var success: AtomicLong = AtomicLong(),
     // 执行失败数
-    var failed: AtomicLong = AtomicLong()
+    var failed: AtomicLong = AtomicLong(),
+
+    // v2 job params
+    var executeContext: JobExecuteContext? = null,
 ) {
     override fun toString(): String {
         return "Success[$success], failed[$failed], total[$total]"
