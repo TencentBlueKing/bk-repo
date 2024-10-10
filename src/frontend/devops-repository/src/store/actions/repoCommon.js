@@ -168,7 +168,8 @@ export default {
         const urlMap = {
             docker: 'docker/ext/addr',
             npm: 'npm/ext/address',
-            helm: 'helm/ext/address'
+            helm: 'helm/ext/address',
+            conan: 'conan/ext/address'
         }
         if (!urlMap[repoType] || state.domain[repoType]) return
         Vue.prototype.$ajax.get(

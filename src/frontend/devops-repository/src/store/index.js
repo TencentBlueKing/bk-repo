@@ -44,7 +44,8 @@ const storeObject = {
         domain: {
             docker: '',
             npm: '',
-            helm: ''
+            helm: '',
+            conan: ''
         },
         clusterList: [],
         dependAccessTokenValue: '', // 依赖源仓库的使用指引中用户输入的访问令牌的值
