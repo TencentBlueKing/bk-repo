@@ -35,11 +35,11 @@
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
             this.getPermissionDialogConfig()
-            const hasShowLog = cookies.get('hasShowLog') || false
+            const hasShowLog = cookies.get('hasShowLog') || ''
             const logs = await getTrueVersion()
             if (logs.length > 0 && !this.ciMode && !this.isSubSaas) {
                 this.$store.commit('SET_VERSION_LOGS', logs)
-                if (!hasShowLog) {
+                if (hasShowLog !== logs[0].version) {
                     this.$refs.head.showVersionLogs()
                 }
             }

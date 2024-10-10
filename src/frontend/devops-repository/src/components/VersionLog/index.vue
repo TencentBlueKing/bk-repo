@@ -58,7 +58,8 @@
         },
         methods: {
             cancel () {
-                cookies.set('hasShowLog', true)
+                const BK_CI_DOMAIN = location.host.split('.').slice(1).join('.')
+                cookies.set('hasShowLog', this.versionLogs[0].version, { domain: BK_CI_DOMAIN, path: '/', expires: 366 })
                 this.show = false
             },
             handleItemClick (item, index) {
