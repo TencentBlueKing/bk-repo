@@ -1,7 +1,7 @@
 <template>
     <div class="bkrepo-main flex-column">
         <notice-component v-if="!ciMode && !isSubSaas" api-url="/web/repository/api/notice" />
-        <Header v-if="!ciMode && !isSubSaas" />
+        <Header ref="head" v-if="!ciMode && !isSubSaas" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
         <GlobalUploadViewport />
@@ -17,6 +17,7 @@
     import Login from '@repository/components/Login'
     import cookies from 'js-cookie'
     import { mapActions } from 'vuex'
+    import { getTrueVersion } from '@repository/utils/versionLogs'
     export default {
         components: { NoticeComponent, Header, Login },
         mixins: [mixin],
@@ -30,10 +31,18 @@
                 return subEnv
             }
         },
-        created () {
+        async created () {
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
             this.getPermissionDialogConfig()
+            const hasShowLog = cookies.get('hasShowLog') || ''
+            const logs = await getTrueVersion()
+            if (logs.length > 0 && !this.ciMode && !this.isSubSaas) {
+                this.$store.commit('SET_VERSION_LOGS', logs)
+                if (hasShowLog !== logs[0].version) {
+                    this.$refs.head.showVersionLogs()
+                }
+            }
             if (!this.isSubSaas && this.ciMode) {
                 this.loadDevopsUtils('/ui/devops-utils.js')
                 // 请求管理员信息
