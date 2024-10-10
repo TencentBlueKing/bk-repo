@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.util.HumanReadable.time
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import java.nio.file.Files

@@ -16,4 +16,6 @@ data:
     job.repoRefreshJobProperties.concurrentLevel: COLLECTION
     job.repoRefreshJobProperties.permitsPerSecond: 512
     job.repoRefreshJobProperties.types: HELM,OCI
+    job.deleted-node-cleanup.deletedNodeReserveDays: {{ .Values.repository.config.deletedNodeReserveDays }}
+    job.artifact-cleanup.enabled: true
 {{- end }}

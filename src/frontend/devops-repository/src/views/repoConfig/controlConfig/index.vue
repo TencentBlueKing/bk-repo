@@ -24,7 +24,7 @@
                         <bk-form-item :label="$t('metadata')" :label-width="80"
                             :property="`${type}.metadata`" required error-display-type="normal">
                             <bk-input class="w250" v-model.trim="controlConfigs[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
-                            <a class="f12 ml5" href="https://docs.bkci.net/services/bkrepo/meta" target="__blank">{{ $t('viewMetadataDocument') }}</a>
+                            <a class="f12 ml5" href="https://bk.tencent.com/docs/markdown/ZH/Devops/2.0/UserGuide/Services/Artifactory/meta.md" target="__blank">{{ $t('viewMetadataDocument') }}</a>
                         </bk-form-item>
                     </template>
                     <template v-if="controlConfigs[type].enable && type === 'ip_segment'">
@@ -166,6 +166,7 @@
                 get () {
                     if (this.baseData.name === 'pipeline') return 'pipeline'
                     if (this.baseData.public) {
+                        this.$emit('showPermissionConfigTab', false)
                         return 'public'
                     }
                     if (this.rootDirectoryPermission === 'DIR_CTRL') {
@@ -176,6 +177,7 @@
                         this.$emit('showPermissionConfigTab', true)
                         return 'strict'
                     }
+                    this.$emit('showPermissionConfigTab', false)
                     return 'default'
                 },
                 set (val) {

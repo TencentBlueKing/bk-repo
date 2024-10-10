@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.repository.service.metadata.impl.center
 
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
-import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.metadata.impl.MetadataServiceImpl

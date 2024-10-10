@@ -39,14 +39,14 @@ import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REGION
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.dao.ProjectDao
+import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach

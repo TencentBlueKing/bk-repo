@@ -33,7 +33,7 @@ import com.tencent.bk.sdk.iam.dto.callback.response.BaseDataResponseDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.InstanceInfoDTO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BkiamProjectResourceService(
-    private val projectClient: ProjectClient
+    private val projectService: ProjectService
 ): BkiamResourceBaseService {
     override fun resourceType(): ResourceType {
         return ResourceType.PROJECT
@@ -69,7 +69,7 @@ class BkiamProjectResourceService(
 
     private fun filterProjectInfo(idList: List<String>): List<InstanceInfoDTO> {
         logger.info("v3 filterProjectInfo, idList: $idList")
-        val projectPage = projectClient.rangeQuery(ProjectRangeQueryRequest(idList, 0, 10000)).data!!
+        val projectPage = projectService.rangeQuery(ProjectRangeQueryRequest(idList, 0, 10000))
 
         return  projectPage.records.map {
             val entity = InstanceInfoDTO()
@@ -90,7 +90,7 @@ class BkiamProjectResourceService(
             offset = page.offset
             limit = page.limit.toInt()
         }
-        val projectPage = projectClient.rangeQuery(ProjectRangeQueryRequest(idList, offset, limit)).data!!
+        val projectPage = projectService.rangeQuery(ProjectRangeQueryRequest(idList, offset, limit))
         val projects = projectPage.records.map {
             val entity = InstanceInfoDTO()
             entity.id = it!!.name

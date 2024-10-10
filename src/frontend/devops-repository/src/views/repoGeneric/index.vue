@@ -47,7 +47,7 @@
                     <span v-else> {{repoName + (searchFullPath || (selectedTreeNode && selectedTreeNode.fullPath) || '') }}</span>
                     <div class="repo-generic-actions bk-button-group">
                         <bk-button
-                            v-if="multiSelect.length && repoName !== 'pipeline'"
+                            v-if="showMultiDelete && repoName !== 'pipeline'"
                             @click="handlerMultiDownload">
                             {{$t('batchDownload')}}
                         </bk-button>
@@ -92,23 +92,38 @@
                     <template #empty>
                         <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)"></empty-data>
                     </template>
+                    <template #prepend v-if="showMultiDelete">
+                        <div id="showCount" style="background-color: #EAEBF0; height: 40px" class="flex-center">
+                            <div v-if="!selectedAll">
+                                <span> {{ $t('hasSelectTip', { 0: selectCount }) }}</span>
+                                <bk-link type="primary" @click="selectAllByType" theme="primary">{{ $t('changeSelectAllTip') }}</bk-link>
+                                <bk-divider direction="vertical" />
+                            </div>
+                            <div v-else>
+                                <span> {{ $t('selectAllTip', { 0: pagination.count }) }}</span>
+                            </div>
+                            <bk-link type="primary" @click="cancelSelect" theme="primary">{{ $t('clearSelectTip') }}</bk-link>
+                        </div>
+                    </template>
                     <bk-table-column :selectable="selectable" type="selection" width="60"></bk-table-column>
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
                         <template #default="{ row }">
-                            <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
-                            <span
-                                class="hover-btn disabled"
-                                v-if="!row.folder && row.metadata.forbidStatus"
-                                v-bk-tooltips="{ content: tooltipContent(row.metadata), placements: ['top'] }"
-                            >{{row.name}}</span>
-                            <!-- 文件夹支持: 鼠标悬浮时显示小手样式 -->
-                            <span v-else :class="{ 'hover-btn': row.folder }">{{ row.name }}</span>
-                            <scan-tag class="mr5 table-svg"
-                                v-if="showRepoScan(row)"
-                                :status="row.metadata.scanStatus"
-                                repo-type="generic"
-                                :full-path="row.fullPath">
-                            </scan-tag>
+                            <div @click="previewFile(row)">
+                                <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
+                                <span
+                                    class="hover-btn disabled"
+                                    v-if="!row.folder && row.metadata.forbidStatus"
+                                    v-bk-tooltips="{ content: tooltipContent(row.metadata), placements: ['top'] }"
+                                >{{row.name}}</span>
+                                <!-- 文件夹支持: 鼠标悬浮时显示小手样式 -->
+                                <span v-else :class="{ 'hover-btn': row.folder }">{{ row.name }}</span>
+                                <scan-tag class="mr5 table-svg"
+                                    v-if="showRepoScan(row)"
+                                    :status="row.metadata.scanStatus"
+                                    repo-type="generic"
+                                    :full-path="row.fullPath">
+                                </scan-tag>
+                            </div>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('size')" prop="size" width="90" :sortable="sortableRepo" show-overflow-tooltip>
@@ -206,10 +221,11 @@
 
         <generic-clean-dialog ref="genericCleanDialog" @refresh="refreshNodeChange"></generic-clean-dialog>
         <generic-detail ref="genericDetail"></generic-detail>
-        <generic-form-dialog ref="genericFormDialog" @refresh="refreshNodeChange"></generic-form-dialog>
+        <generic-form-dialog ref="genericFormDialog" @refresh="refreshNodeChange" @cancelSelect="cancelSelect"></generic-form-dialog>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
+        <preview-office-file-dialog ref="previewOfficeFileDialog"></preview-office-file-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
         <loading ref="loading" @closeLoading="closeLoading"></loading>
         <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
@@ -223,7 +239,7 @@
     import OperationList from '@repository/components/OperationList'
     import RepoTree from '@repository/components/RepoTree'
     import { getIconName } from '@repository/store/publicEnum'
-    import { convertFileSize, debounce, formatDate } from '@repository/utils'
+    import { convertFileSize, debounce, formatDate, routeBase } from '@repository/utils'
     import { beforeMonths, beforeYears } from '@repository/utils/date'
     import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import metadataTag from '@repository/views/repoCommon/metadataTag'
@@ -236,6 +252,7 @@
     import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
+    import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
 
     export default {
         name: 'repoGeneric',
@@ -254,7 +271,8 @@
             previewBasicFileDialog,
             compressedFileTable,
             iamDenyDialog,
-            genericCleanDialog
+            genericCleanDialog,
+            previewOfficeFileDialog
         },
         data () {
             return {
@@ -289,7 +307,9 @@
                 showData: {},
                 sortParams: [],
                 timer: null,
-                showMultiDelete: false
+                showMultiDelete: false,
+                selectedAll: false,
+                selectCount: 0
             }
         },
         computed: {
@@ -404,6 +424,40 @@
                 'getMultiFolderNumOfFolder',
                 'getPermissionUrl'
             ]),
+            cancelSelect () {
+                sessionStorage.removeItem(this.userInfo.name + 'SelectedPaths')
+                for (let i = 0; i < this.artifactoryList.length; i++) {
+                    this.$nextTick(() => {
+                        this.$refs.artifactoryTable.toggleRowSelection(this.artifactoryList[i], false)
+                    })
+                }
+                this.selectCount = 0
+                this.showMultiDelete = false
+            },
+            selectAllByType () {
+                this.getArtifactoryList({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    fullPath: this.selectedTreeNode?.fullPath,
+                    current: 1,
+                    limit: 10000,
+                    isPipeline: this.repoName === 'pipeline',
+                    searchFlag: false,
+                    localRepo: this.localRepo
+                }).then((res) => {
+                    const key = this.userInfo.name + 'SelectedPaths'
+                    sessionStorage.removeItem(key)
+                    for (let i = 0; i < this.artifactoryList.length; i++) {
+                        this.$nextTick(() => {
+                            this.$refs.artifactoryTable.toggleRowSelection(this.artifactoryList[i], true)
+                        })
+                    }
+                    const val = res.records.map(r => '\'' + r.projectId + '/' + r.repoName + r.fullPath + '\'').join('')
+                    sessionStorage.setItem(key, val)
+                    this.selectedAll = true
+                    this.selectCount = this.pagination.count
+                })
+            },
             showRepoScan (node) {
                 const indexOfLastDot = node.name.lastIndexOf('.')
                 let supportFileNameExt = false
@@ -622,15 +676,26 @@
                         this.artifactoryList = originData
                     }
                     const key = this.userInfo.name + 'SelectedPaths'
-                    const isCheckedPaths = sessionStorage.getItem(key) === null ? '' : sessionStorage.getItem(key)
-                    this.showMultiDelete = isCheckedPaths.length > 0 && isCheckedPaths.includes('\'' + this.projectId + '/' + this.repoName + '/')
-                    for (let i = 0; i < this.artifactoryList.length; i++) {
-                        const targetPath = '\'' + this.artifactoryList[i].projectId + '/' + this.artifactoryList[i].repoName + this.artifactoryList[i].fullPath + '\''
-                        if (isCheckedPaths.includes(targetPath)) {
-                            this.$nextTick(() => {
-                                this.$refs.artifactoryTable.toggleRowSelection(this.artifactoryList[i], true)
-                            })
+                    const originPathKey = this.userInfo.name + 'originPath'
+                    const originPathVal = sessionStorage.getItem(originPathKey) === null ? '' : sessionStorage.getItem(originPathKey)
+                    const targetOriginPath = this.projectId + this.repoName + (this.$route.query.path || '').split('/').filter(Boolean).toString()
+                    if (originPathVal === targetOriginPath) {
+                        const isCheckedPaths = sessionStorage.getItem(key) === null ? '' : sessionStorage.getItem(key)
+                        this.showMultiDelete = isCheckedPaths.length > 0
+                        this.selectedAll = isCheckedPaths.split("\'").filter(r => r !== '').length === this.pagination.count
+                        this.selectCount = isCheckedPaths.split("\'").filter(r => r !== '').length
+                        for (let i = 0; i < this.artifactoryList.length; i++) {
+                            const targetPath = '\'' + this.artifactoryList[i].projectId + '/' + this.artifactoryList[i].repoName + this.artifactoryList[i].fullPath + '\''
+                            if (isCheckedPaths.includes(targetPath)) {
+                                this.$nextTick(() => {
+                                    this.$refs.artifactoryTable.toggleRowSelection(this.artifactoryList[i], true)
+                                })
+                            }
                         }
+                    } else {
+                        sessionStorage.setItem(originPathKey, targetOriginPath)
+                        sessionStorage.removeItem(key)
+                        this.showMultiDelete = false
                     }
                 }).finally(() => {
                     this.isLoading = false
@@ -739,6 +804,27 @@
                     this.$set(item, 'loading', false)
                 })
             },
+            // 单击table打开文件夹
+            previewFile (row) {
+                if (row.fullPath.endsWith('txt')
+                    || row.fullPath.endsWith('sh')
+                    || row.fullPath.endsWith('bat')
+                    || row.fullPath.endsWith('json')
+                    || row.fullPath.endsWith('yaml')
+                    || row.fullPath.endsWith('xml')
+                    || row.fullPath.endsWith('log')
+                    || row.fullPath.endsWith('ini')
+                    || row.fullPath.endsWith('log')
+                    || row.fullPath.endsWith('properties')
+                    || row.fullPath.endsWith('toml')
+                    || row.fullPath.endsWith('docx')
+                    || row.fullPath.endsWith('xlsx')
+                    || row.fullPath.endsWith('xls')
+                    || row.fullPath.endsWith('pdf')) {
+                    const url = routeBase + '/' + this.projectId + '/filePreview/' + this.repoName + row.fullPath
+                    window.open(url, '_blank')
+                }
+            },
             // 双击table打开文件夹
             openFolder (row) {
                 if (!row.folder) return
@@ -839,6 +925,7 @@
                             fullPath
                         }).then(res => {
                             this.refreshNodeChange()
+                            this.cancelSelect()
                             if (folder) {
                                 if (totalRecords === res.deletedNumber) {
                                     this.$bkMessage({
@@ -1018,8 +1105,15 @@
                 }, 5000)
             },
             handlerMultiDownload () {
-                const fullPaths = this.multiSelect.map(r => r.fullPath)
-                customizeDownloadFile(this.projectId, this.repoName, fullPaths)
+                const key = this.userInfo.name + 'SelectedPaths'
+                const isCheckedPaths = sessionStorage.getItem(key).split('\'')
+                const paths = []
+                for (let i = 0; i < isCheckedPaths.length; i++) {
+                    if (isCheckedPaths[i].length > 0 && isCheckedPaths[i].startsWith(this.projectId + '/' + this.repoName)) {
+                        paths.push(isCheckedPaths[i].replace(this.projectId + '/' + this.repoName, ''))
+                    }
+                }
+                customizeDownloadFile(this.projectId, this.repoName, paths)
             },
             handlerForbid ({ fullPath, metadata: { forbidStatus } }) {
                 this.forbidMetadata({
@@ -1173,6 +1267,22 @@
                 })
             },
             async handlerPreviewBasicsFile (row) {
+                if (row.fullPath.endsWith('docx')
+                    || row.fullPath.endsWith('xlsx')
+                    || row.fullPath.endsWith('xls')
+                    || row.fullPath.endsWith('pdf')
+                ) {
+                    this.$refs.previewOfficeFileDialog.repoName = row.repoName
+                    this.$refs.previewOfficeFileDialog.projectId = row.projectId
+                    this.$refs.previewOfficeFileDialog.filePath = row.fullPath
+                    this.$refs.previewOfficeFileDialog.setDialogData({
+                        show: true,
+                        title: row.name,
+                        isLoading: true
+                    })
+                    this.$refs.previewOfficeFileDialog.setData()
+                    return
+                }
                 this.$refs.previewBasicFileDialog.setDialogData({
                     show: true,
                     title: row.name,
@@ -1315,6 +1425,10 @@
                     || name.endsWith('log')
                     || name.endsWith('properties')
                     || name.endsWith('toml')
+                    || name.endsWith('docx')
+                    || name.endsWith('xlsx')
+                    || name.endsWith('xls')
+                    || name.endsWith('pdf')
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {
@@ -1386,7 +1500,7 @@
                 let isCheckedPaths = sessionStorage.getItem(key) === null ? '' : sessionStorage.getItem(key)
                 const isChecked = selection.length
                 if (isChecked) {
-                    const paths = this.multiSelect.map(r => '\'' + r.projectId + '/' + r.repoName + r.fullPath + '\'').join('')
+                    const paths = this.multiSelect.filter(r => !isCheckedPaths.includes('\'' + r.projectId + '/' + r.repoName + r.fullPath + '\'')).map(r => '\'' + r.projectId + '/' + r.repoName + r.fullPath + '\'').join('')
                     isCheckedPaths = isCheckedPaths + paths
                 } else {
                     for (let i = 0; i < this.artifactoryList.length; i++) {
@@ -1394,7 +1508,9 @@
                         isCheckedPaths = isCheckedPaths.replace(targetPath, '')
                     }
                 }
-                this.showMultiDelete = isCheckedPaths.length > 0 && isCheckedPaths.includes('\'' + this.projectId + '/' + this.repoName + '/')
+                this.showMultiDelete = isCheckedPaths.length > 0
+                this.selectedAll = isCheckedPaths.split("\'").filter(r => r !== '').length === this.pagination.count
+                this.selectCount = isCheckedPaths.split("\'").filter(r => r !== '').length
                 sessionStorage.setItem(key, isCheckedPaths)
             },
 
@@ -1407,8 +1523,10 @@
                 } else {
                     isCheckedPaths = isCheckedPaths.replace('\'' + row.projectId + '/' + row.repoName + row.fullPath + '\'', '')
                 }
-                this.showMultiDelete = isCheckedPaths.length > 0 && isCheckedPaths.includes('\'' + this.projectId + '/' + this.repoName + '/')
+                this.showMultiDelete = isCheckedPaths.length > 0
                 sessionStorage.setItem(key, isCheckedPaths)
+                this.selectedAll = isCheckedPaths.split("\'").filter(r => r !== '').length === this.pagination.count
+                this.selectCount = isCheckedPaths.split("\'").filter(r => r !== '').length
             }
         }
     }
@@ -1417,6 +1535,9 @@
 .repo-generic-container {
     height: 100%;
     overflow: hidden;
+    ::v-deep .bk-link .bk-link-text {
+        font-size: 12px;
+    }
     .generic-header{
         height: 60px;
         background-color: white;

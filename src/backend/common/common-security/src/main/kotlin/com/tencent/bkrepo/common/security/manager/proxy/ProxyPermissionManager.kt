@@ -39,11 +39,13 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 
 class ProxyPermissionManager(
+    projectClient: ProjectClient,
     repositoryClient: RepositoryClient,
     permissionResource: ServicePermissionClient,
     externalPermissionResource: ServiceExternalPermissionClient,
@@ -51,6 +53,7 @@ class ProxyPermissionManager(
     nodeClient: NodeClient,
     httpAuthProperties: HttpAuthProperties
 ) : PermissionManager(
+    projectClient,
     repositoryClient,
     permissionResource,
     externalPermissionResource,

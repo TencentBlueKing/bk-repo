@@ -34,11 +34,12 @@ import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGener
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStore
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
-import io.milvus.client.MilvusClient
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusRestApiException
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -78,14 +79,20 @@ class ArtifactSimilarityPreloadPlanGenerator(
             val preloadHourOfDay = preloadProperties.preloadHourOfDay.sorted().ifEmpty { return null }
 
             // 查询相似路径，没有相似路径时不执行预加载
-            val projectPath = "/$projectId/$repoName$fullPath"
+            val projectPath = projectRepoFullPath(projectId, repoName, fullPath)
             val searchReq = SearchRequest(
                 query = projectPath,
                 topK = 10,
                 similarityThreshold = aiProperties.defaultSimilarityThreshold
             )
-            val docs = createVectorStore(0L).similaritySearch(searchReq).ifEmpty {
-                createVectorStore(1L).similaritySearch(searchReq)
+
+            val docs = try {
+                createVectorStore(0L).similaritySearch(searchReq).ifEmpty {
+                    createVectorStore(1L).similaritySearch(searchReq)
+                }
+            } catch (e: MilvusRestApiException) {
+                logger.error("search similar path failed: ${e.message}")
+                emptyList()
             }
             if (docs.isEmpty()) {
                 logger.info("no similarity path found for [$projectPath]")
@@ -95,17 +102,16 @@ class ArtifactSimilarityPreloadPlanGenerator(
             val now = LocalDateTime.now()
             val preloadHour = preloadHourOfDay.firstOrNull { it > now.hour }
                 ?: (preloadHourOfDay.first { (it + 24) > now.hour } + 24)
-            val preloadTimestamp = now
+            val preloadDateTime = now
                 // 设置预加载时间
                 .plusHours((preloadHour - now.hour).toLong())
                 .withMinute(0)
                 // 减去随机时间，避免同时多文件触发加载
                 .minusSeconds(Random.nextLong(0, preloadProperties.maxRandomSeconds))
-                // 转化为毫秒时间戳
-                .atZone(ZoneId.systemDefault())
-                .toEpochSecond() * 1000
+            // 转化为毫秒时间戳
+            val preloadTimestamp = preloadDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
             logger.info(
-                "similarity path[${docs.first().content}] found for [$projectPath], will preload on $preloadTimestamp"
+                "similarity path[${docs.first().content}] found for [$projectPath], will preload on $preloadDateTime"
             )
             return preloadTimestamp
         }

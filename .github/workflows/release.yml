@@ -18,8 +18,9 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           branch="${version%%-rc.*}"
-          rc="$(echo $version | grep -o '[0-9]*$')"
-          if [[ "$rc" == "1" ]]; then
+          IFS='.' read -ra ADDR <<< "$branch"
+          patch=${ADDR[2]}
+          if [[ "$patch" == "0" ]]; then
             git checkout -b release-$branch
             git push origin release-$branch
           fi

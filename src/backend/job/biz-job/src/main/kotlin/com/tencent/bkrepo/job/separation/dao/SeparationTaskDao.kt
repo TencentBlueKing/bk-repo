@@ -56,6 +56,7 @@ package com.tencent.bkrepo.job.separation.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.job.separation.model.TSeparationTask
+import com.tencent.bkrepo.job.separation.pojo.SeparationContent
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -76,10 +77,28 @@ class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
         return find(Query(criteria))
     }
 
-    fun exist(projectId: String, repoName: String, state: String): Boolean {
+    fun exist(
+        projectId: String, repoName: String, state: String,
+        content: SeparationContent? = null,
+        type: String? = null,
+        separationDate: LocalDateTime? = null,
+        overwrite: Boolean? = null
+    ): Boolean {
         val criteria = Criteria().and(TSeparationTask::projectId.name).isEqualTo(projectId)
             .and(TSeparationTask::repoName.name).isEqualTo(repoName)
             .and(TSeparationTask::state.name).ne(state)
+        separationDate?.let {
+            criteria.and(TSeparationTask::separationDate.name).isEqualTo(separationDate)
+        }
+        type?.let {
+            criteria.and(TSeparationTask::type.name).isEqualTo(type)
+        }
+        content?.let {
+            criteria.and(TSeparationTask::content.name).isEqualTo(content)
+        }
+        overwrite?.let {
+            criteria.and(TSeparationTask::overwrite.name).isEqualTo(overwrite)
+        }
         return exists(Query(criteria))
     }
 

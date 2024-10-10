@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.analyst.controller.user
 
 import com.tencent.bkrepo.analyst.pojo.license.SpdxLicenseInfo
+import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -35,7 +36,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam

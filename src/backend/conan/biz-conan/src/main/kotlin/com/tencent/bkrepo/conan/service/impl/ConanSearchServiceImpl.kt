@@ -27,20 +27,17 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
-import com.tencent.bkrepo.conan.constant.CONAN_INFOS
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.conan.constant.ConanMessageCode
 import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
-import com.tencent.bkrepo.conan.pojo.ConanFileReference
 import com.tencent.bkrepo.conan.pojo.ConanInfo
 import com.tencent.bkrepo.conan.pojo.ConanSearchResult
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanSearchService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildConanFileName
-import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
+import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackagePath
 import com.tencent.bkrepo.repository.api.PackageClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -50,6 +47,7 @@ class ConanSearchServiceImpl : ConanSearchService {
 
     @Autowired
     lateinit var packageClient: PackageClient
+
     @Autowired
     lateinit var commonService: CommonService
 
@@ -64,30 +62,34 @@ class ConanSearchServiceImpl : ConanSearchService {
         val list = if (pattern.isNullOrEmpty()) {
             recipes
         } else {
+            val realPattern = pattern.replace("*", ".*")
             val regex = if (ignoreCase) {
-                Regex(pattern, RegexOption.IGNORE_CASE)
+                Regex(realPattern, RegexOption.IGNORE_CASE)
             } else {
-                Regex(pattern)
+                Regex(realPattern)
             }
             recipes.filter { regex.containsMatchIn(it) }
+        }
+        if (list.isEmpty()) {
+            throw ConanSearchNotFoundException(
+                ConanMessageCode.CONAN_SEARCH_NOT_FOUND,
+                pattern ?: StringPool.EMPTY, "$projectId/$repoName"
+            )
         }
         return ConanSearchResult(list)
     }
 
     override fun searchPackages(pattern: String?, conanArtifactInfo: ConanArtifactInfo): Map<String, ConanInfo> {
         with(conanArtifactInfo) {
-            val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            val result = try {
-                commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
-            } catch (ignore: NodeNotFoundException) {
-                emptyMap()
+            val realRevision = if (revision.isNullOrEmpty()) {
+                val conanFileReference = convertToConanFileReference(conanArtifactInfo)
+                commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
+                commonService.getLastRevision(projectId, repoName, conanFileReference)?.revision ?: return emptyMap()
+            } else {
+                revision
             }
-            if (result.isEmpty()) {
-                throw ConanSearchNotFoundException(
-                    ConanMessageCode.CONAN_SEARCH_NOT_FOUND, buildReference(conanFileReference), getRepoIdentify()
-                )
-            }
-            return result
+            val conanFileReference = convertToConanFileReference(conanArtifactInfo, realRevision)
+            return commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
         }
     }
 
@@ -95,10 +97,9 @@ class ConanSearchServiceImpl : ConanSearchService {
         val result = mutableListOf<String>()
         packageClient.listAllPackageNames(projectId, repoName).data.orEmpty().forEach {
             packageClient.listAllVersion(projectId, repoName, it).data.orEmpty().forEach { pv ->
-                val conanInfo = pv.packageMetadata.first { m ->
-                    m.key == CONAN_INFOS
-                }.value.toJsonString().readJsonString<List<ConanFileReference>>()
-                result.add(buildConanFileName(conanInfo.first()))
+                pv.packageMetadata.toConanFileReference()?.apply {
+                    result.add(buildConanFileName(this))
+                }
             }
         }
         return result.sorted()

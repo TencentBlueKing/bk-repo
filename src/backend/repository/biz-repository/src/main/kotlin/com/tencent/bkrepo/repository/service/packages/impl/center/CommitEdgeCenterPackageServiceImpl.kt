@@ -29,17 +29,17 @@ package com.tencent.bkrepo.repository.service.packages.impl.center
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterPackageCondition
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.model.ClusterResource
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
-import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion

@@ -37,7 +37,7 @@ object Versions {
     const val Redline = "1.2.10"
     const val SkyWalkingApmToolkit = "8.10.0"
     const val Gson = "2.9.0"
-    const val ProtobufJava = "3.24.0"
+    const val ProtobufJava = "3.19.4"
     const val Guava = "31.1-jre"
     const val Shedlock = "4.12.0"
     const val JGit = "5.11.0.202103091610-r"
@@ -70,7 +70,6 @@ object Versions {
     const val JavaCpp = "1.5.9"
     const val Notice = "1.0.0"
     const val SpringCloudFunction = "3.2.11"
-    const val Milvus = "2.4.1"
     // it.ozimov:embedded-redis redis版本最高才2.8，不支持redis.replicate_commands()
     const val NewEmbeddedRedis = "1.4.3"
 }

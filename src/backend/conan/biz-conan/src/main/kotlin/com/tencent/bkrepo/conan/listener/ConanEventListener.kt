@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.conan.listener
 
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.conan.listener.event.ConanPackageDeleteEvent
 import com.tencent.bkrepo.conan.listener.event.ConanPackageUploadEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeDeleteEvent
@@ -53,7 +54,7 @@ class ConanEventListener(
      */
     @EventListener(ConanPackageDeleteEvent::class)
     fun handle(event: ConanPackageDeleteEvent) {
-        val task = ConanPackageDeleteOperation(event.request, commonService)
+        val task = ConanPackageDeleteOperation(event.request, commonService).trace()
         threadPoolExecutor.submit(task)
     }
 
@@ -62,7 +63,7 @@ class ConanEventListener(
      */
     @EventListener(ConanRecipeDeleteEvent::class)
     fun handle(event: ConanRecipeDeleteEvent) {
-        val task = ConanRecipeDeleteOperation(event.request, commonService)
+        val task = ConanRecipeDeleteOperation(event.request, commonService).trace()
         threadPoolExecutor.submit(task)
     }
 
@@ -71,7 +72,7 @@ class ConanEventListener(
      */
     @EventListener(ConanRecipeUploadEvent::class)
     fun handle(event: ConanRecipeUploadEvent) {
-        val task = ConanRecipeUploadOperation(event.request, commonService)
+        val task = ConanRecipeUploadOperation(event.request, commonService).trace()
         threadPoolExecutor.submit(task)
     }
 
@@ -80,7 +81,7 @@ class ConanEventListener(
      */
     @EventListener(ConanPackageUploadEvent::class)
     fun handle(event: ConanPackageUploadEvent) {
-        val task = ConanPackageUploadOperation(event.request, commonService)
+        val task = ConanPackageUploadOperation(event.request, commonService).trace()
         threadPoolExecutor.submit(task)
     }
 }

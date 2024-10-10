@@ -29,7 +29,7 @@ package com.tencent.bkrepo.fs.server.storage
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha1
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
@@ -80,7 +80,6 @@ class CoArtifactFile(
     }
 
     override fun getSize(): Long {
-        require(initialized)
         return receiver.getSize()
     }
 

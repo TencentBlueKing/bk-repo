@@ -413,6 +413,8 @@
     .showPermissionConfigTab {
         background-image: none!important;
         margin-top: 10px;
+        max-height: 40%;
+        overflow-y: auto;
         &:before {
             content: '';
             position: absolute;

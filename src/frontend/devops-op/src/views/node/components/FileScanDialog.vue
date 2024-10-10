@@ -1,6 +1,6 @@
 <template>
   <el-dialog title="创建扫描任务" :visible.sync="showDialog" :before-close="close" width="700px">
-    <template v-loading="loading">
+    <div v-loading="loading">
       <el-select
         v-model="selectedScanner"
         placeholder="请选择使用的扫描器"
@@ -11,7 +11,7 @@
         <el-button @click="close">取 消</el-button>
         <el-button type="primary" :disabled="!selectedScanner" @click="doScan">确 定</el-button>
       </div>
-    </template>
+    </div>
   </el-dialog>
 </template>
 

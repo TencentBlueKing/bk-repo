@@ -29,9 +29,10 @@ package com.tencent.bkrepo.job.migrate
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -51,7 +52,6 @@ import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildRepo
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildTask
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -103,7 +103,7 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
     private lateinit var repositoryClient: RepositoryClient
 
     @MockBean
-    private lateinit var storageCredentialsClient: StorageCredentialsClient
+    private lateinit var storageCredentialService: StorageCredentialService
 
     @MockBean(name = "migrateExecutor")
     private lateinit var mockMigrateExecutor: TaskExecutor
@@ -223,8 +223,8 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyOrNull())).thenReturn(
             Response(0, "", buildRepo()),
         )
-        whenever(storageCredentialsClient.findByKey(anyString()))
-            .thenReturn(Response(0, data = FileSystemCredentials()))
+        whenever(storageCredentialService.findByKey(anyString()))
+            .thenReturn(FileSystemCredentials())
         whenever(mockMigrateExecutor.execute(any())).thenReturn(MigrationContext(buildTask(), null, null))
         whenever(mockCorrectExecutor.execute(any())).thenReturn(MigrationContext(buildTask(), null, null))
     }

@@ -34,7 +34,7 @@ package com.tencent.bkrepo.repository.job
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.repository.pojo.download.DownloadsMigrationRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary

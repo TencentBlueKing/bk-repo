@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
-import com.tencent.bkrepo.fs.server.api.RAuthClient
+import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder

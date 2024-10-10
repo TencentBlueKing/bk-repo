@@ -140,7 +140,8 @@ class PypiLocalRepository(
                 artifactPath = nodeCreateRequest.fullPath,
                 overwrite = true,
                 createdBy = context.userId,
-                packageDescription = context.request.getParameter(SUMMARY)?.ifBlank { null }
+                packageDescription = context.request.getParameter(SUMMARY)?.ifBlank { null },
+                multiArtifact = true
             ),
             HttpContextHolder.getClientAddress()
         )
@@ -229,6 +230,7 @@ class PypiLocalRepository(
         val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
         val name = PackageKeys.resolvePypi(packageKey)
         val version = HttpContextHolder.getRequest().getParameter("version")
+        val contentPath = HttpContextHolder.getRequest().getParameter("contentPath")
         if (version.isNullOrBlank()) {
             // 删除包
             nodeClient.deleteNode(
@@ -251,7 +253,7 @@ class PypiLocalRepository(
                 NodeDeleteRequest(
                     context.projectId,
                     context.repoName,
-                    "/$name/$version",
+                    contentPath ?: "/$name/$version",
                     context.userId
                 )
             )
@@ -260,6 +262,7 @@ class PypiLocalRepository(
                 context.repoName,
                 packageKey,
                 version,
+                contentPath,
                 HttpContextHolder.getClientAddress()
             )
         }
@@ -276,6 +279,7 @@ class PypiLocalRepository(
         }
     }
 
+    // TODO 产品页面需要重新设计，支持同个版本包含多个制品
     fun getVersionDetail(context: ArtifactQueryContext): PypiArtifactVersionData? {
         val packageKey = context.request.getParameter("packageKey")
         val version = context.request.getParameter("version")
@@ -287,7 +291,7 @@ class PypiLocalRepository(
             packageKey,
             version
         ).data ?: return null
-        val artifactPath = trueVersion.contentPath ?: return null
+        val artifactPath = trueVersion.contentPaths?.firstOrNull() ?: trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
             val jarNode = nodeClient.getNodeDetail(
                 projectId, repoName, artifactPath

@@ -48,9 +48,24 @@ interface MongoReactiveDao<E> {
     suspend fun <T> find(query: Query, clazz: Class<T>): List<T>
 
     /**
+     * 通过查询对象查询文档集合，返回元素类型由clazz指定
+     */
+    suspend fun <T> findAll(clazz: Class<T>): List<T>
+
+    /**
      * 新增文档到数据库的集合中
      */
     suspend fun save(entity: E): E
+
+    /**
+     * 插入文档到数据库的集合中
+     */
+    suspend fun insert(entity: E): E
+
+    /**
+     * 更新单条文档
+     */
+    suspend fun updateFirst(query: Query, update: Update): UpdateResult
 
     /**
      * 更新文档
@@ -71,4 +86,9 @@ interface MongoReactiveDao<E> {
      * count
      */
     suspend fun count(query: Query): Long
+
+    /**
+     * 判断文档是否存在
+     */
+    suspend fun exists(query: Query): Boolean
 }

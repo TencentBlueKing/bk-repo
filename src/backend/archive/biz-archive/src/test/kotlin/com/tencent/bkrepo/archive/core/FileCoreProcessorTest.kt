@@ -10,7 +10,6 @@ import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -37,9 +36,6 @@ class FileCoreProcessorTest @Autowired constructor(
 
     @MockBean
     lateinit var fileReferenceClient: FileReferenceClient
-
-    @MockBean
-    lateinit var storageCredentialsClient: StorageCredentialsClient
 
     @MockBean
     lateinit var repositoryClient: RepositoryClient

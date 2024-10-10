@@ -9,7 +9,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties
@@ -45,7 +45,7 @@ class StreamService(
     /**
      * 创建推流地址
      * */
-    fun createStream(projectId: String, repoName: String): String {
+    fun createStream(projectId: String, repoName: String, display: Boolean): String {
         /*
         * 1. 创建媒体库
         * 2. 创建streams目录
@@ -58,6 +58,7 @@ class StreamService(
                 type = RepositoryType.MEDIA,
                 category = RepositoryCategory.LOCAL,
                 public = false,
+                display = display
             )
             repositoryClient.createRepo(createRepoRequest)
             val nodeCreateRequest = NodeCreateRequest(

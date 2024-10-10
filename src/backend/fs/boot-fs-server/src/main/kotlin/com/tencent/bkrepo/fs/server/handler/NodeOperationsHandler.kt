@@ -33,8 +33,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
-import com.tencent.bkrepo.fs.server.api.RGenericClient
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.NodeAttribute
@@ -76,7 +75,6 @@ import java.time.Duration
  * 处理节点操作的请求
  * */
 class NodeOperationsHandler(
-    rGenericClient: RGenericClient,
     private val rRepositoryClient: RRepositoryClient,
     private val fileNodeService: FileNodeService
 ) {
@@ -298,7 +296,7 @@ class NodeOperationsHandler(
                 nodeMetadata = listOf(fsAttr),
                 operator = user
             )
-            return rRepositoryClient.createNode(nodeCreateRequest).awaitSingle().data!!
+            return rRepositoryClient.createFsNode(nodeCreateRequest).awaitSingle().data!!
         }
     }
 

@@ -13,6 +13,13 @@ metadata:
 data:
   application.yml: |-
     repository:
+      notice:
+        {{- if or .Values.bkNotice.enabled }}
+        appCode: {{ .Values.bkNotice.appCode }}
+        appSecret: {{ .Values.bkNotice.appToken }}
+        apiBaseUrl: {{ .Values.bkNotice.apiBaseUrl }}
+        {{- end }}
       {{- if keys $.Values.repository.config }}
         {{- toYaml .Values.repository.config | nindent 6 }}
       {{- end}}
+    
