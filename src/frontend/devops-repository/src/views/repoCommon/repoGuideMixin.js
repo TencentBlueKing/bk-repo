@@ -1177,12 +1177,6 @@ export default {
                             codeList: [
                                 `conan user add -p ${this.accessToken} -r ${this.repoName} ${this.userName}`
                             ]
-                        },
-                        {
-                            subTitle: this.$t('conanCreditGuideSubTitle3'),
-                            codeList: [
-                                `conan remote login -p ${this.accessToken} ${this.repoName} ${this.userName}`
-                            ]
                         }
                     ]
                 },
@@ -1205,7 +1199,7 @@ export default {
                     ],
                     main: [
                         {
-                            subTitle: this.$t('pushGuideSubTitle'),
+                            subTitle: this.$t('pushGuideSubTitle') + '(conan1.x)',
                             codeList: [
                                 `conan upload ${this.dependInputValue1 || this.packageName}/${this.dependInputValue2 || this.versionLabel} -r ${this.repoName}`
                             ]
@@ -1258,19 +1252,13 @@ export default {
                             ]
                         },
                         {
-                            subTitle: this.$t('conanCreditGuideSubTitle3'),
-                            codeList: [
-                                `conan remote login -p <PERSONAL_ACCESS_TOKEN> ${this.repoName} ${this.userName}`
-                            ]
-                        },
-                        {
-                            subTitle: this.$t('helmPullGuideSubTitle'),
+                            subTitle: this.$t('conanPullGuideSubTitle'),
                             codeList: [
                                 `conan install ${this.packageName}/${this.versionLabel}@ -r ${this.repoName}`
                             ]
                         },
                         {
-                            subTitle: this.$t('pushGuideSubTitle'),
+                            subTitle: this.$t('pushGuideSubTitle') + '(conan1.x)',
                             codeList: [
                                 `conan upload ${this.packageName}/${this.versionLabel} -r ${this.repoName}`
                             ]

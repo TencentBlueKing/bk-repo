@@ -897,5 +897,5 @@
     "previewErrorTip": "文件预览失败",
     "conanCreditGuideSubTitle1":"1、在命令行执行以下命令配置远程仓库",
     "conanCreditGuideSubTitle2":"2、在命令行执行以下命令配置制品仓库凭据(conan1.x)",
-    "conanCreditGuideSubTitle3":"2、在命令行执行以下命令配置制品仓库凭据(conan2.x)"
+    "conanPullGuideSubTitle":"请在命令行执行以下命令进行拉取(conan1.x)："
 }
