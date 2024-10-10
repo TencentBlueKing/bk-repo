@@ -71,5 +71,5 @@ open class BatchJobProperties(
     /**
      * 任务是否动态分片
      * */
-    open var sharding: Boolean = true,
+    open var sharding: Boolean = false,
 )
