@@ -67,4 +67,9 @@ open class BatchJobProperties(
      * 工作组名称，为空则使用默认工作组
      * */
     open var workerGroup: String = "",
+
+    /**
+     * 任务是否动态分片
+     * */
+    open var sharding: Boolean = true,
 )
