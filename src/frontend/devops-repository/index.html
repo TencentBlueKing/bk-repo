@@ -65,6 +65,12 @@
         var ADD_FROM_LOGOUT = '__IS_FROM_LOGOUT__' || 'not'
         // 区分社区版与内部版  community -> 社区   tencent -> 内部
         var RELEASE_MODE = '__BK_REPO_RELEASE_MODE__' || 'community'
+        // 存放文档中心的产品名
+        var DOC_NAME = '__BK_REPO_DOCS_FQDN__' ? 'bk--docs--center' : 'doc'
+        // 文档中心的地址
+        var DOC_URL = /^https?/.test(PAAS_SERVICE_URL)
+            ? PAAS_SERVICE_URL + '/' + DOC_NAME + '/' :
+            'http://__BK_REPO_PAAS_FQDN__' + '/' + DOC_NAME + '/'
     </script>
     <script>
         const inIframe = self !== top
