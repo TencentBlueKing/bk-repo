@@ -230,12 +230,14 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     private fun determineCollectionNames(jobExecuteContext: JobExecuteContext?): List<String> {
         val collectionNames = collectionNames()
         if (collectionNames.size > 1 && jobExecuteContext != null && jobExecuteContext.broadcastTotal > 1) {
-            val index = jobExecuteContext.broadcastIndex
-            val total = jobExecuteContext.broadcastTotal
-            val shardingSize = ceil(collectionNames.size / total.toDouble()).toInt()
-            val startIndex = index * shardingSize
-            val endIndex = ((index + 1) * shardingSize).coerceAtMost(collectionNames.size)
-            return collectionNames.subList(startIndex, endIndex)
+            with(jobExecuteContext) {
+                // 根据job name增加随机性，避免大表任务固定在某一台机器上
+                val index = (getJobName().hashCode().and(65535) + broadcastIndex) % broadcastTotal
+                val shardingSize = ceil(collectionNames.size / broadcastTotal.toDouble()).toInt()
+                val startIndex = index * shardingSize
+                val endIndex = ((index + 1) * shardingSize).coerceAtMost(collectionNames.size)
+                return collectionNames.subList(startIndex, endIndex)
+            }
         }
         return collectionNames
     }
