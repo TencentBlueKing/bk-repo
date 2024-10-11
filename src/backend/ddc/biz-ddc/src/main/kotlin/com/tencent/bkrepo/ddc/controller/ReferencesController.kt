@@ -28,15 +28,14 @@
 package com.tencent.bkrepo.ddc.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository.Companion.HEADER_NAME_HASH
+import com.tencent.bkrepo.ddc.component.PermissionHelper
 import com.tencent.bkrepo.ddc.service.ReferenceArtifactService
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_JUPITER_INLINED_PAYLOAD
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
@@ -55,11 +54,11 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/{projectId}/api/v1/refs")
 @RestController
 class ReferencesController(
-    private val referenceArtifactService: ReferenceArtifactService
+    private val referenceArtifactService: ReferenceArtifactService,
+    private val permissionHelper: PermissionHelper,
 ) {
 
     @ApiOperation("获取ref")
-    @Permission(ResourceType.REPO, PermissionAction.READ)
     @GetMapping(
         "/{repoName}/{$PATH_VARIABLE_BUCKET}/{$PATH_VARIABLE_REF_ID}",
         produces = [
@@ -75,6 +74,7 @@ class ReferencesController(
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo,
     ) {
+        permissionHelper.checkPathPermission(PermissionAction.DOWNLOAD)
         HttpContextHolder.getResponse().contentType = getResponseType(null, MEDIA_TYPE_UNREAL_COMPACT_BINARY)
         referenceArtifactService.downloadRef(artifactInfo)
     }
@@ -83,13 +83,13 @@ class ReferencesController(
     @PutMapping(
         "/{repoName}/{$PATH_VARIABLE_BUCKET}/{$PATH_VARIABLE_REF_ID}",
     )
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun putObject(
         @ApiParam(value = "ddc ref", required = true)
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo,
         file: ArtifactFile
     ) {
+        permissionHelper.checkPathPermission(PermissionAction.WRITE)
         artifactInfo.inlineBlobHash = HttpContextHolder.getRequest().getHeader(HEADER_NAME_HASH)
             ?: throw BadRequestException(PARAMETER_INVALID, "Missing expected header $HEADER_NAME_HASH")
         referenceArtifactService.createRef(artifactInfo, file)
@@ -99,7 +99,6 @@ class ReferencesController(
     @PostMapping(
         "/{repoName}/{$PATH_VARIABLE_BUCKET}/{$PATH_VARIABLE_REF_ID}/finalize/{hash}",
     )
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun finalizeObject(
         @ApiParam(value = "ddc ref", required = true)
         @ArtifactPathVariable
@@ -107,6 +106,7 @@ class ReferencesController(
         @ApiParam("blob hash", required = true)
         @PathVariable hash: String,
     ) {
+        permissionHelper.checkPathPermission(PermissionAction.WRITE)
         artifactInfo.inlineBlobHash = hash
         referenceArtifactService.finalize(artifactInfo)
     }
