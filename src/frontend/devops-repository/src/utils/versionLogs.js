@@ -19,7 +19,8 @@ const VersionLogs = [
     'V1.4.1-beta.2.md',
     'V1.4.1-beta.3.md',
     'V1.4.1-beta.4.md',
-    'V1.5.1-beta.3.md'
+    'V1.5.1-beta.3.md',
+    'V1.5.2-rc.1.md'
 ]
 
 // 返回实际所有版本,同时进行排序
