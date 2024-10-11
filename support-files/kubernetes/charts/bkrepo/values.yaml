@@ -40,6 +40,9 @@ bkDomainScheme: http
 ## 是否强制跳转https配置
 forceHttps: false
 
+## 蓝鲸文档中心地址
+bkDocsCenterUrl:
+
 ## 日志采集配置
 bkLogConfig:
   enabled: false
