@@ -56,9 +56,10 @@
     line-height: 32px;
     padding: 0 12px;
     align-items: center;
+    color: #7b7d8a;
     &:hover{
         cursor: pointer;
-        color: #1848DE;
+        color: #f1ffff;
     }
 }
 .flex-align-center {
@@ -93,7 +94,6 @@
     text-align: center;
     &:hover {
         background-color: #EAF3FF;
-        color: #6BA3FF;
     }
 }
 .bkrepo-user-container {

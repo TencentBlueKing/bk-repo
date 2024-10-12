@@ -892,6 +892,13 @@
     "selectAllTip": "{0} pieces of total data have been selected，",
     "clearSelectTip":"Clear selection",
     "previewErrorTip": "File Preview Fail",
+    "helps": {
+        "documentation": "Documentation",
+        "releaseNote": "Release Notes",
+        "feedback": "Feedback",
+        "openSource": "Open Source"
+    },
+    "currentVersion": "Current",
     "conanCreditGuideSubTitle1":"1. Execute the following command on the command line to configure remote artifact repository",
     "conanCreditGuideSubTitle2":"2、Execute the following command on the command line to configure artifact repository credentials(conan1.x)",
     "conanRecipePlaceholder":"The format of RECIPE is <NAME>/VERSION>@<USER>/CHANNEL>",

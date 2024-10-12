@@ -51,7 +51,8 @@ const storeObject = {
         dependAccessTokenValue: '', // 依赖源仓库的使用指引中用户输入的访问令牌的值
         dependInputValue1: '', // 依赖源仓库的使用指引中用户的第一个输入框的值
         dependInputValue2: '', // 依赖源仓库的使用指引中用户的第二个输入框的值
-        dependInputValue3: '' // 依赖源仓库的使用指引中用户的第三个输入框的值
+        dependInputValue3: '', // 依赖源仓库的使用指引中用户的第三个输入框的值
+        versionLogs: []
     },
     getters: {
         masterNode (state) {
@@ -144,6 +145,9 @@ const storeObject = {
         },
         SET_REPO_PERMISSION_LIMIT (state, data) {
             state.permissionConfig = data
+        },
+        SET_VERSION_LOGS (state, data) {
+            state.versionLogs = data
         }
     },
     actions
