@@ -1175,7 +1175,7 @@ export default {
                         {
                             subTitle: this.$t('conanCreditGuideSubTitle2'),
                             codeList: [
-                                `conan user add -p ${this.accessToken} -r ${this.repoName} ${this.userName}`
+                                `conan user -p ${this.accessToken} -r ${this.repoName} ${this.userName}`
                             ]
                         }
                     ]
@@ -1186,22 +1186,16 @@ export default {
                     inputBoxList: [
                         {
                             key: 'dependInputValue1', // vux中存储的变量名
-                            label: this.$t('artifactName'), // 输入框左侧label文案
-                            placeholder: this.$t('artifactNamePlaceholder'), // 输入框提示文案
+                            label: 'RECIPE', // 输入框左侧label文案
+                            placeholder: this.$t('conanRecipePlaceholder'), // 输入框提示文案
                             methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
-                        },
-                        {
-                            key: 'dependInputValue2', // vux中存储的变量名
-                            label: this.$t('artifactVersion'), // 输入框左侧label文案
-                            placeholder: this.$t('packageVersionPlaceholder'), // 输入框提示文案
-                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2' // vuex中mutations中的方法名
                         }
                     ],
                     main: [
                         {
                             subTitle: this.$t('pushGuideSubTitle') + '(conan1.x)',
                             codeList: [
-                                `conan upload ${this.dependInputValue1 || this.packageName}/${this.dependInputValue2 || this.versionLabel} -r ${this.repoName}`
+                                `conan upload ${this.dependInputValue1} -r ${this.repoName}`
                             ]
                         }
                     ]
@@ -1212,22 +1206,16 @@ export default {
                     inputBoxList: [
                         {
                             key: 'dependInputValue1', // vux中存储的变量名
-                            label: this.$t('artifactName'), // 输入框左侧label文案
-                            placeholder: this.$t('artifactNamePlaceholder'), // 输入框提示文案
+                            label: 'RECIPE', // 输入框左侧label文案
+                            placeholder: this.$t('conanRecipePlaceholder'), // 输入框提示文案
                             methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
-                        },
-                        {
-                            key: 'dependInputValue2', // vux中存储的变量名
-                            label: this.$t('artifactVersion'), // 输入框左侧label文案
-                            placeholder: this.$t('packageVersionPlaceholder'), // 输入框提示文案
-                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2' // vuex中mutations中的方法名
                         }
                     ],
                     main: [
                         {
                             subTitle: this.$t('helmPullGuideSubTitle'),
                             codeList: [
-                                `conan install ${this.dependInputValue1 || this.packageName}/${this.dependInputValue2 || this.versionLabel}@ -r ${this.repoName}`
+                                `conan install ${this.dependInputValue1} -r ${this.repoName}`
                             ]
                         }
                     ]
@@ -1248,19 +1236,19 @@ export default {
                         {
                             subTitle: this.$t('conanCreditGuideSubTitle2'),
                             codeList: [
-                                `conan user add -p <PERSONAL_ACCESS_TOKEN> -r ${this.repoName} ${this.userName}`
+                                `conan user -p <PERSONAL_ACCESS_TOKEN> -r ${this.repoName} ${this.userName}`
                             ]
                         },
                         {
                             subTitle: this.$t('conanPullGuideSubTitle'),
                             codeList: [
-                                `conan install ${this.packageName}/${this.versionLabel}@ -r ${this.repoName}`
+                                `conan install ${this.packageName.split('@', 2)[0]}/${this.versionLabel}@${this.packageName.split('@', 2)[1]} -r ${this.repoName}`
                             ]
                         },
                         {
                             subTitle: this.$t('pushGuideSubTitle') + '(conan1.x)',
                             codeList: [
-                                `conan upload ${this.packageName}/${this.versionLabel} -r ${this.repoName}`
+                                `conan upload ${this.packageName.split('@', 2)[0]}/${this.versionLabel}@${this.packageName.split('@', 2)[1]} -r ${this.repoName}`
                             ]
                         }
                     ]
