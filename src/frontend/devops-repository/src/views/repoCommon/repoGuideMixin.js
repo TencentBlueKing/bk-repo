@@ -1242,13 +1242,13 @@ export default {
                         {
                             subTitle: this.$t('conanPullGuideSubTitle'),
                             codeList: [
-                                `conan install ${this.packageName.split('@', 2)[1].split('/', 2)[0]}/${this.versionLabel}@${this.packageName.split('@', 2)[0]}${this.packageName.split('@', 2)[1].split('/', 2)[1]} -r ${this.repoName}`
+                                `conan install ${this.packageName.split('@', 2)[1].split('/', 2)[0]}/${this.versionLabel}@${this.packageName.split('@', 2)[0]}/${this.packageName.split('@', 2)[1].split('/', 2)[1]} -r ${this.repoName}`
                             ]
                         },
                         {
                             subTitle: this.$t('pushGuideSubTitle') + '(conan1.x)',
                             codeList: [
-                                `conan upload ${this.packageName.split('@', 2)[1].split('/', 2)[0]}/${this.versionLabel}@${this.packageName.split('@', 2)[0]}${this.packageName.split('@', 2)[1].split('/', 2)[1]} -r ${this.repoName}`
+                                `conan upload ${this.packageName.split('@', 2)[1].split('/', 2)[0]}/${this.versionLabel}@${this.packageName.split('@', 2)[0]}/${this.packageName.split('@', 2)[1].split('/', 2)[1]} -r ${this.repoName}`
                             ]
                         }
                     ]
