@@ -3,7 +3,6 @@ package com.tencent.bkrepo.job.batch.file
 import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.FULL_PATH
