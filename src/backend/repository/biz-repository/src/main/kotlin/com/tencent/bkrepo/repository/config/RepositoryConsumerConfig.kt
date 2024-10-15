@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.repository.config
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.repository.listener.NodeUpdateAccessDateEventListener
+import com.tencent.bkrepo.common.metadata.listener.NodeUpdateAccessDateEventListener
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.Message
