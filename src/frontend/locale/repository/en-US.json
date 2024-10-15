@@ -893,5 +893,12 @@
     "changeSelectAllTip": "Select full data",
     "selectAllTip": "{0} pieces of total data have been selected，",
     "clearSelectTip":"Clear selection",
-    "previewErrorTip": "File Preview Fail"
+    "previewErrorTip": "File Preview Fail",
+    "helps": {
+        "documentation": "Documentation",
+        "releaseNote": "Release Notes",
+        "feedback": "Feedback",
+        "openSource": "Open Source"
+    },
+    "currentVersion": "Current"
 }

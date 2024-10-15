@@ -95,6 +95,8 @@ spec:
               value: {{ .Values.gateway.helmHost }}
             - name: BK_REPO_PAAS_FQDN
               value: {{ .Values.gateway.bkPaasUrl }}
+            - name: BK_REPO_DOCS_FQDN
+              value: {{ .Values.bkDocsCenterUrl }}
             - name: BK_REPO_PAAS_LOGIN_URL
               value: {{ .Values.gateway.bkLoginUrl }}
             - name: BK_REPO_SSM_IP0
