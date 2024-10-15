@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.listener
+package com.tencent.bkrepo.common.metadata.listener
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
@@ -45,12 +45,14 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.event.EventListener
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
@@ -69,6 +71,7 @@ import java.util.concurrent.atomic.LongAdder
  * 节点事件监听，用户统计目录size以及目录下文件个数
  */
 @Component
+@Conditional(SyncCondition::class)
 class NodeModifyEventListener(
     private val nodeService: NodeService,
     private val nodeDao: NodeDao,

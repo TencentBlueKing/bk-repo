@@ -25,15 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.listener
+package com.tencent.bkrepo.common.metadata.listener
 
-import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
+import com.tencent.bkrepo.common.artifact.properties.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -48,6 +50,7 @@ import java.time.format.DateTimeFormatter
  * 消费基于MQ传递的事件去更新对应access date
  */
 @Component
+@Conditional(SyncCondition::class)
 class NodeUpdateAccessDateEventListener(
     private val nodeDao: NodeDao,
     private val artifactEventProperties: ArtifactEventProperties,

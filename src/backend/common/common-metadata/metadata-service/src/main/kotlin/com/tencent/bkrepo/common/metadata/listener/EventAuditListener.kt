@@ -25,30 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.listener
+package com.tencent.bkrepo.common.metadata.listener
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 /**
- * 用于将事件发送到消息流的监听器
+ * 事件审计记录监听器
  */
 @Component
-class EventStreamListener(
-    private val messageSupplier: MessageSupplier
+@Conditional(SyncCondition::class)
+class EventAuditListener(
+    private val operateLogService: OperateLogService
 ) {
 
     /**
-     * 将事件发送到消息队列, 将需要依赖该事件的其余模块解耦开
+     * 将需要审计记录的事件持久化
      */
     @EventListener(ArtifactEvent::class)
     fun handle(event: ArtifactEvent) {
-        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+        operateLogService.saveEventAsync(event, HttpContextHolder.getClientAddress())
     }
 
-    companion object {
-        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
+    /**
+     * 将需要审计记录的事件持久化
+     */
+    @EventListener(List::class)
+    fun handleMulti(events: List<ArtifactEvent>) {
+        operateLogService.saveEventsAsync(
+            events,
+            events.first().data["realIpAddress"] as? String ?: HttpContextHolder.getClientAddress()
+        )
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,25 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.common.metadata.listener
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import java.time.Duration
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import org.springframework.context.annotation.Conditional
+import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
 
-@ConfigurationProperties("artifact.event")
-data class ArtifactEventProperties(
-    // 是否更新节点访问时间
-    var updateAccessDate: Boolean = false,
-    // 不更新节点访问时间的项目仓库
-    var filterProjectRepoKey: List<String> = emptyList(),
-    // 是否上报节点更新访问时间事件
-    var reportAccessDateEvent: Boolean = false,
-    // 导出到消息队列时的topic
-    var topic: String? = null,
-    // 更新访问时间频率， 当时间间隔小于该值时不更新, 默认1天
-    var accessDateDuration: Duration = Duration.ofDays(1),
-    // 是否消费上报节点更新访问时间事件去更新对应访问时间
-    var consumeAccessDateEvent: Boolean = false,
-    // 更新节点访问时间的项目仓库, 默认为空，当为空的情况下更新所有事件
-    var consumeProjectRepoKey: List<String> = emptyList(),
-)
+/**
+ * 用于将事件发送到消息流的监听器
+ */
+@Component
+@Conditional(SyncCondition::class)
+class EventStreamListener(
+    private val messageSupplier: MessageSupplier
+) {
+
+    /**
+     * 将事件发送到消息队列, 将需要依赖该事件的其余模块解耦开
+     */
+    @EventListener(ArtifactEvent::class)
+    fun handle(event: ArtifactEvent) {
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
+    companion object {
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
+    }
+}
