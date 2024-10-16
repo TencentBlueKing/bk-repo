@@ -5,12 +5,12 @@ import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import com.tencent.bkrepo.repository.service.node.NodeArchiveOperation
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Update

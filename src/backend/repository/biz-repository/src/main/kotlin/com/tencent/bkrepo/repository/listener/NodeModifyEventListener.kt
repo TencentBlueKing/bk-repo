@@ -47,8 +47,8 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.service.node.NodeService
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -316,7 +316,7 @@ class NodeModifyEventListener(
         includePrefix: String? = null,
         sourceNodes: List<String>? = null
     ) {
-        val action: ((List<TNode>) -> Unit) = {  nodeList ->
+        val action: ((List<TNode>) -> Unit) = { nodeList ->
             nodeList.forEach {
                 if (!sourceNodes.isNullOrEmpty() && !sourceNodes.contains(it.fullPath)) return@forEach
                 updateCache(
@@ -381,7 +381,7 @@ class NodeModifyEventListener(
         }
         val path = PathUtils.resolveParent(modifiedNode.srcFullPath!!)
         if (node.folder) {
-            val action: ((List<TNode>) -> Unit) = {  nodeList ->
+            val action: ((List<TNode>) -> Unit) = { nodeList ->
                 nodeList.forEach {
                     sourceNodes.add(combineFullPath(modifiedNode.fullPath, it.fullPath.removePrefix(path)))
                 }
