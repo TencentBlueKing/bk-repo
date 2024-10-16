@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/embedding")
 @Principal(type = PrincipalType.ADMIN)
 class UserEmbeddingController(
-    private val artifactAccessLogEmbeddingJob: ArtifactAccessLogEmbeddingJob
+    private val artifactAccessLogEmbeddingJob: ArtifactAccessLogEmbeddingJob?
 ) {
     @PostMapping("/project/{projectId}")
     fun embed(@PathVariable projectId: String) {
