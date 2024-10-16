@@ -184,7 +184,7 @@ export default {
                     title: this.$t('npmCreditGuideSubTitle1'),
                     optionType: 'setCredentials',
                     main: [
-                       
+
                         {
                             subTitle: this.$t('npmCreditGuideSubTitle3'),
                             codeList: [
@@ -761,7 +761,7 @@ export default {
                         {
                             subTitle: this.$t('helmInstallGuideSubTitle2'),
                             codeList: [
-                                'helm repo update'
+                                'helm repo update  '
                             ]
                         },
                         {
@@ -873,7 +873,6 @@ export default {
         },
         pypiGuide () {
             return [
-               
                 {
                     title: this.$t('pypiCreditGuideSubTitle1'),
                     optionType: 'setCredentials',
@@ -1159,6 +1158,102 @@ export default {
                         }
                     ]
                 }]
+        },
+        conanGuide () {
+            return [
+                {
+                    title: this.$t('setCredentials'),
+                    optionType: 'setCredentials',
+                    main: [
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle1'),
+                            codeList: [
+                                `conan remote add ${this.repoName} ${this.domain.conan}/${this.projectId}/${this.repoName}`
+
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle2'),
+                            codeList: [
+                                `conan user -p ${this.accessToken} -r ${this.repoName} ${this.userName}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('push'),
+                    optionType: 'push',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1', // vux中存储的变量名
+                            label: 'RECIPE', // 输入框左侧label文案
+                            placeholder: this.$t('conanRecipePlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('pushGuideSubTitle') + '(conan1.x)',
+                            codeList: [
+                                `conan upload ${this.dependInputValue1} -r ${this.repoName}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('pull'),
+                    optionType: 'pull',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1', // vux中存储的变量名
+                            label: 'RECIPE', // 输入框左侧label文案
+                            placeholder: this.$t('conanRecipePlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('helmPullGuideSubTitle'),
+                            codeList: [
+                                `conan install ${this.dependInputValue1} -r ${this.repoName}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        conanInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle1'),
+                            codeList: [
+                                `conan remote add ${this.repoName} ${this.domain.conan}/${this.projectId}/${this.repoName}`
+
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('conanCreditGuideSubTitle2'),
+                            codeList: [
+                                `conan user -p <PERSONAL_ACCESS_TOKEN> -r ${this.repoName} ${this.userName}`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('conanPullGuideSubTitle'),
+                            codeList: [
+                                `conan install ${this.packageName.split('@', 2)[1].split('/', 2)[0]}/${this.versionLabel}@${this.packageName.split('@', 2)[0]}/${this.packageName.split('@', 2)[1].split('/', 2)[1]} -r ${this.repoName}`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('pushGuideSubTitle') + '(conan1.x)',
+                            codeList: [
+                                `conan upload ${this.packageName.split('@', 2)[1].split('/', 2)[0]}/${this.versionLabel}@${this.packageName.split('@', 2)[0]}/${this.packageName.split('@', 2)[1].split('/', 2)[1]} -r ${this.repoName}`
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         articleGuide () {
             return this[`${guideMap[this.repoType] || this.repoType}Guide`]
