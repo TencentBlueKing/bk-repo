@@ -14,13 +14,13 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/embedding")
 @Principal(type = PrincipalType.ADMIN)
 class UserEmbeddingController(
-    private val artifactAccessLogEmbeddingJob: ArtifactAccessLogEmbeddingJob?
+    private val artifactAccessLogEmbeddingJob: ArtifactAccessLogEmbeddingJob
 ) {
     @PostMapping("/project/{projectId}")
     fun embed(@PathVariable projectId: String) {
         if (artifactAccessLogEmbeddingJob == null) {
             throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR, "unsupported operation")
         }
-        artifactAccessLogEmbeddingJob?.embedAccessLog(projectId)
+        artifactAccessLogEmbeddingJob.embedAccessLog(projectId)
     }
 }
