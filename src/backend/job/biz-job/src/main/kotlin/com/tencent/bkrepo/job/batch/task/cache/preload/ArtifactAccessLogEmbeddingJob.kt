@@ -147,6 +147,9 @@ class ArtifactAccessLogEmbeddingJob(
     }
 
     private fun VectorStore.insert(paths: Collection<AccessLog>) {
+        if (paths.isEmpty()) {
+            return
+        }
         val documents = paths.map {
             val metadata = mapOf(
                 METADATA_KEY_DOWNLOAD_TIMESTAMP to it.downloadTimestamp.joinToString(","),
