@@ -29,7 +29,6 @@ package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
@@ -53,7 +52,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.web.reactive.function.server.bodyToFlow
@@ -61,7 +59,6 @@ import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicLong
 
 class FileOperationService(
-    private val rRepositoryClient: RRepositoryClient,
     private val storageManager: CoStorageManager,
     private val fileNodeService: FileNodeService,
     private val streamProperties: StreamProperties,

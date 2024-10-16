@@ -30,13 +30,12 @@ package com.tencent.bkrepo.fs.server.handler
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.service.fs.FsService
+import com.tencent.bkrepo.common.metadata.service.metadata.RMetadataService
 import com.tencent.bkrepo.common.metadata.service.repo.RRepositoryService
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
-import com.tencent.bkrepo.common.metadata.service.metadata.RMetadataService
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.NodeAttribute
@@ -64,7 +63,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
-import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -78,7 +76,6 @@ import reactivefeign.client.ReadTimeoutException
  * 处理节点操作的请求
  * */
 class NodeOperationsHandler(
-    private val rRepositoryClient: RRepositoryClient,
     private val fileNodeService: FileNodeService,
     private val fsService: FsService,
     private val nodeService: RNodeService,
