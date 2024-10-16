@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.metadata
 
+import com.tencent.bkrepo.common.artifact.properties.ArtifactEventProperties
+import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.properties.OperateProperties
 import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -41,6 +43,8 @@ import org.springframework.context.annotation.Configuration
 @EnableConfigurationProperties(
     StorageProperties::class,
     OperateProperties::class,
-    ProjectUsageStatisticsProperties::class
+    ProjectUsageStatisticsProperties::class,
+    RouterControllerProperties::class,
+    ArtifactEventProperties::class
 )
 class MetadataAutoConfiguration
