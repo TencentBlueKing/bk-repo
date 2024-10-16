@@ -46,7 +46,7 @@ bk-repo是一个基于微服务架构设计的制品管理平台
 ## Getting started
 * [下载与编译](docs/install/compile.md)
 * [安装部署](docs/install/binary/README.md)
-* [API使用说明见这里](docs/apidoc/)
+* [API使用说明见这里](docs/apidoc-user/)
 * [使用Helm部署BKREPO到K8S环境](support-files/kubernetes/README.md)
 
 ## Support
