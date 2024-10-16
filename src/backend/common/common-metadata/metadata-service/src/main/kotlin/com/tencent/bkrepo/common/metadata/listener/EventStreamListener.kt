@@ -28,9 +28,7 @@
 package com.tencent.bkrepo.common.metadata.listener
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import org.springframework.context.annotation.Conditional
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
@@ -38,7 +36,6 @@ import org.springframework.stereotype.Component
  * 用于将事件发送到消息流的监听器
  */
 @Component
-@Conditional(SyncCondition::class)
 class EventStreamListener(
     private val messageSupplier: MessageSupplier
 ) {

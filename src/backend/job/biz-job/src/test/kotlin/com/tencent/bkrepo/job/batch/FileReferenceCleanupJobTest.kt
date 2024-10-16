@@ -29,14 +29,17 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.task.clean.FileReferenceCleanupJob
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
@@ -44,6 +47,7 @@ import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -80,6 +84,18 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @MockBean
     lateinit var repositoryService: RepositoryService
+
+    @MockBean
+    private lateinit var messageSupplier: MessageSupplier
+
+    @MockBean
+    private lateinit var servicePermissionClient: ServicePermissionClient
+
+    @MockBean
+    private lateinit var routerControllerClient: RouterControllerClient
+
+    @MockBean
+    private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
     @MockBean
     lateinit var jobSnapshotRepository: JobSnapshotRepository
