@@ -40,6 +40,7 @@ dependencies {
     api(project(":common:common-security"))
     api(project(":common:common-artifact:artifact-api"))
     api(project(":common:common-storage:storage-service"))
+    api(project(":common:common-ratelimiter"))
     api(project(":common:common-operate:operate-service"))
     api(project(":common:common-stream"))
     api(project(":common:common-metrics-push"))
