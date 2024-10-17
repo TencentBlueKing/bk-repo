@@ -209,7 +209,7 @@
 - 响应体
 
 ```json
-{
+ {
   "code": 0,
   "message": null,
   "data": {"deletedNumber": 0,
@@ -217,8 +217,8 @@
            "deletedTime": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
           },
   "traceId": null
-}
-```
+ }
+ ```
 
 ## 更新节点
 
@@ -428,56 +428,6 @@
   |subNodeCount|long|子节点数量（包括目录）|sub node count|
   |size|long|目录/文件大小|directory/file size|
 
-## 查询节点删除点
-
-- API: GET /repository/api/node/list-deleted/{projectId}/{repoName}/{fullPath}
-- API 名称: list_node_deleted
-- 功能说明：
-  - 中文：查询节点删除点
-  - English：list node deleted point
-- 请求体
-  此接口请求体为空
-
-- 请求字段说明
-
-  |字段|类型|是否必须|默认值|说明|Description|
-  |---|---|---|---|---|---|
-  |projectId|string|是|无|项目名称|project name|
-  |repoName|string|是|无|仓库名称|repo name|
-  |fullPath|string|是|无|删除的节点路径，可以为目录，也可以为文件|full path|
-
-- 响应体
-
-  ```json
-  {
-    "code": 0,
-    "message": null,
-    "data": [
-        {
-            "id": 1632451573064,
-            "fullPath": "/test.txt",
-            "size": 6,
-            "sha256": "a73ec2f6ed66564f5714ed3d02aa6b54a70f47f0ecc5348c72fbc804a4b5f61c",
-            "metadata": {},
-            "deletedBy": "system",
-            "deletedTime": "2021-09-24T10:46:13.064"
-        }
-    ],
-    "traceId": ""
-  }
-  ```
-
-- data字段说明
-
-  |字段|类型|说明|Description|
-  |---|---|---|---|
-  |id|long|删除点id|delete point id|
-  |fullPath|string|节点完整路径|node full path|
-  |size|long|节点大小|file size|
-  |sha256|string|节点sha256|file sha256|
-  |metadata|object|节点元数据，key-value键值对|node metadata|
-  |deletedBy|string|删除人|delete user|
-  |deletedTime|string|删除时间|delete time|
 
 ## 自定义搜索
 
@@ -588,86 +538,3 @@
   | repoName  | string | 节点所属仓库 | node repository name |
   | packages  | Int    | 节点数量     | node count           |
 
-
-## 清理最后修改时间早于{date}的文件节点
-
-- API: DELETE /repository/api/node/clean/{projectId}/{repoName}?date=yyyy-MM-dd'T'HH:mm:ss.SSSXXX
-
-- API 名称: delete_node_last_modified_before_date
-
-- 功能说明：
-
-  - 中文：清理最后修改时间早于{date}的文件节点
-  - English：delete node last modified before date
-
-- 请求体
-  此接口请求体为空
-
-- 请求字段说明
-
-  | 字段      | 类型   | 是否必须 | 默认值 | 说明     | Description  |
-  | --------- | ------ | -------- | ------ | -------- | ------------ |
-  | projectId | string | 是       | 无     | 项目名称 | project name |
-  | repoName  | string | 是       | 无     | 仓库名称 | repo name    |
-  | date      | string | 是       | 无     | 日期     | date time    |
-
-- 响应体
-
-  ```json
-  {
-    "code": 0,
-    "message": null,
-    "data": null,
-    "traceId": null
-  }
-  ```
-## 恢复归档节点
-
-- API: POST /repository/api/node/archive/restore
-
-- API 名称: restore_archive_node
-
-- 功能说明：
-
-  - 中文：恢复归档节点，根据路径或者指定元数据恢复归档的节点
-  - English：restore archive node 
-
-- 请求体
-
-  ``` json
-  {
-    "projectId": "",
-    "repoName": "",
-    "path": "",
-    "metadata": {
-      "buildId": "xxxx"
-    }
-  }
-  ```
-
-- 请求字段说明
-
-  | 字段        | 类型     | 是否必须 | 默认值       | 说明       | Description  |
-    |-----------|--------| -------- |-----------|----------|--------------|
-  | projectId | string | 是       | 无         | 项目名称     | project name |
-  | repoName  | string | 是       | 无         | 仓库名称     | repo name    |
-  | path      | string | 否       | null      | 恢复路径，可以是前缀 | path         |
-  | metadata  | map    | 否       | empty map | 元数据 | 元数据key,value |
-- 响应体
-
-  ```json
-  {
-      "code": 0,
-      "message": null,
-      "data": [
-          "/file1",
-          "/file2"
-      ],
-      "traceId": ""
-  }
-  ```
-
-- data字段说明
-
-  恢复的文件列表
-  
