@@ -28,10 +28,13 @@
 package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bk.audit.annotations.AuditRequestBody
 import com.tencent.bk.audit.context.ActionAuditContext
+import com.tencent.bkrepo.auth.constant.PROJECT_RESOURCE
+import com.tencent.bkrepo.auth.constant.PROJECT_VIEW_ACTION
 import com.tencent.bkrepo.auth.constant.REPO_CREATE_ACTION
 import com.tencent.bkrepo.auth.constant.REPO_DELETE_ACTION
 import com.tencent.bkrepo.auth.constant.REPO_EDIT_ACTION
@@ -91,6 +94,9 @@ class UserRepositoryController(
             instanceIds = "#repoName",
             instanceNames = "#repoName"
         ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_VIEW_CONTENT
     )
@@ -111,19 +117,6 @@ class UserRepositoryController(
         return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, type))
     }
 
-    @AuditEntry(
-        actionId = REPO_VIEW_ACTION
-    )
-    @ActionAuditRecord(
-        actionId = REPO_VIEW_ACTION,
-        instance = AuditInstanceRecord(
-            resourceType = REPO_RESOURCE,
-            instanceIds = "#repoName",
-            instanceNames = "#repoName"
-        ),
-        scopeId = "#projectId",
-        content = ActionAuditContent.REPO_VIEW_CONTENT
-    )
     @ApiOperation("根据名称查询仓库是否存在")
     @GetMapping("/exist/{projectId}/{repoName}")
     fun checkExist(
@@ -147,6 +140,12 @@ class UserRepositoryController(
             instanceIds = "#userRepoCreateRequest?.name",
             instanceNames = "#userRepoCreateRequest?.name"
         ),
+        attributes = [
+            AuditAttribute(
+                name = ActionAuditContent.PROJECT_CODE_TEMPLATE,
+                value = "#userRepoCreateRequest?.projectId"
+            ),
+        ],
         scopeId = "#userRepoCreateRequest?.projectId",
         content = ActionAuditContent.REPO_CREATE_CONTENT
     )
@@ -191,6 +190,9 @@ class UserRepositoryController(
             instanceIds = "#repoListOption?.name",
             instanceNames = "#repoListOption?.name",
         ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_LIST_CONTENT
     )
@@ -207,15 +209,18 @@ class UserRepositoryController(
     }
 
     @AuditEntry(
-        actionId = REPO_VIEW_ACTION
+        actionId = PROJECT_VIEW_ACTION
     )
     @ActionAuditRecord(
-        actionId = REPO_VIEW_ACTION,
+        actionId = PROJECT_VIEW_ACTION,
         instance = AuditInstanceRecord(
-            resourceType = REPO_RESOURCE,
-            instanceIds = "",
-            instanceNames = "",
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#projectId",
+            instanceNames = "#projectId",
         ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_LIST_CONTENT
     )
@@ -248,8 +253,11 @@ class UserRepositoryController(
             instanceIds = "#repoName",
             instanceNames = "#repoName",
         ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
         scopeId = "#projectId",
-        content = ActionAuditContent.REPO_VIEW_CONTENT
+        content = ActionAuditContent.REPO_QUOTE_VIEW_CONTENT
     )
     @ApiOperation("查询仓库配额")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
@@ -276,8 +284,11 @@ class UserRepositoryController(
             instanceIds = "#repoName",
             instanceNames = "#repoName",
         ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
         scopeId = "#projectId",
-        content = ActionAuditContent.REPO_EDIT_CONTENT
+        content = ActionAuditContent.REPO_QUOTE_EDIT_CONTENT
     )
     @ApiOperation("修改仓库配额")
     @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
@@ -315,8 +326,11 @@ class UserRepositoryController(
             instanceIds = "#repoName",
             instanceNames = "#repoName",
         ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
         scopeId = "#projectId",
-        content = ActionAuditContent.REPO_EDIT_CONTENT
+        content = ActionAuditContent.REPO_DELETE_CONTENT
     )
     @ApiOperation("删除仓库")
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
@@ -347,6 +361,9 @@ class UserRepositoryController(
             instanceIds = "#repoName",
             instanceNames = "#repoName",
         ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_EDIT_CONTENT
     )
@@ -387,6 +404,11 @@ class UserRepositoryController(
             instanceIds = "#userRepoCreateRequest?.name",
             instanceNames = "#userRepoCreateRequest?.name"
         ),
+        attributes = [
+            AuditAttribute(
+                name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#userRepoCreateRequest?.projectId"
+            ),
+        ],
         scopeId = "#userRepoCreateRequest?.projectId",
         content = ActionAuditContent.REPO_CREATE_CONTENT
     )
@@ -397,7 +419,6 @@ class UserRepositoryController(
         @RequestAttribute userId: String,
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest,
     ): Response<RepositoryDetail> {
-        ActionAuditContext.current().setInstance(userRepoCreateRequest)
         return this.createRepo(userId, userRepoCreateRequest)
     }
 

@@ -108,19 +108,6 @@ class UserProjectController(
         return ResponseBuilder.success()
     }
 
-    @AuditEntry(
-        actionId = PROJECT_VIEW_ACTION
-    )
-    @ActionAuditRecord(
-        actionId = PROJECT_VIEW_ACTION,
-        instance = AuditInstanceRecord(
-            resourceType = PROJECT_RESOURCE,
-            instanceIds = "#projectId",
-            instanceNames = "#projectId"
-        ),
-        scopeId = "#projectId",
-        content = ActionAuditContent.PROJECT_VIEW_CONTENT
-    )
     @ApiOperation("查询项目是否存在")
     @GetMapping("/exist/{projectId}")
     fun checkExist(
@@ -132,19 +119,6 @@ class UserProjectController(
         return ResponseBuilder.success(projectService.checkExist(projectId))
     }
 
-    @AuditEntry(
-        actionId = PROJECT_VIEW_ACTION
-    )
-    @ActionAuditRecord(
-        actionId = PROJECT_VIEW_ACTION,
-        instance = AuditInstanceRecord(
-            resourceType = PROJECT_RESOURCE,
-            instanceIds = "#name",
-            instanceNames = "#displayName"
-        ),
-        scopeId = "#name",
-        content = ActionAuditContent.PROJECT_VIEW_CONTENT
-    )
     @ApiOperation("校验项目参数是否存在")
     @GetMapping("/exist")
     fun checkProjectExist(
@@ -190,20 +164,6 @@ class UserProjectController(
         return ResponseBuilder.success(projectService.searchProject(option))
     }
 
-
-    @AuditEntry(
-        actionId = PROJECT_VIEW_ACTION
-    )
-    @ActionAuditRecord(
-        actionId = PROJECT_VIEW_ACTION,
-        instance = AuditInstanceRecord(
-            resourceType = PROJECT_RESOURCE,
-            instanceIds = "#name",
-            instanceNames = "#$?.name"
-        ),
-        scopeId = "#name",
-        content = ActionAuditContent.PROJECT_VIEW_CONTENT
-    )
     @ApiOperation("项目列表")
     @GetMapping("/list")
     fun listProject(
@@ -213,6 +173,19 @@ class UserProjectController(
         return ResponseBuilder.success(projectService.listPermissionProject(userId, option))
     }
 
+    @AuditEntry(
+        actionId = PROJECT_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#userProjectRequest?.name",
+            instanceNames = "#userProjectRequest?.displayName"
+        ),
+        scopeId = "#userProjectRequest?.name",
+        content = ActionAuditContent.PROJECT_CREATE_CONTENT
+    )
     @Deprecated("waiting kb-ci", replaceWith = ReplaceWith("createProject"))
     @ApiOperation("创建项目")
     @Principal(PrincipalType.PLATFORM)

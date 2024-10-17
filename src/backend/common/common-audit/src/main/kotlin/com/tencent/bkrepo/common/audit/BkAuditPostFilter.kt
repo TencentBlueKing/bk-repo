@@ -59,9 +59,7 @@ import com.tencent.bk.audit.model.AuditEvent
 
 class BkAuditPostFilter: AuditPostFilter {
     override fun map(auditEvent: AuditEvent): AuditEvent {
-        if (auditEvent.scopeType.isNullOrEmpty()) {
-            auditEvent.scopeType = "project"
-        }
+        auditEvent.scopeType = "project"
         return auditEvent
     }
 }
