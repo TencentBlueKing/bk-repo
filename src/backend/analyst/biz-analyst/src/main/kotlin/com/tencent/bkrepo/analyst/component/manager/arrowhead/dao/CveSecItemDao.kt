@@ -36,6 +36,7 @@ import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Repository
+import java.util.Locale
 
 @Repository
 class CveSecItemDao : ResultItemDao<TCveSecItem>() {
@@ -63,7 +64,7 @@ class CveSecItemDao : ResultItemDao<TCveSecItem>() {
                 continue
             }
 
-            val prefix = vulId.substring(0, indexOfDash).toLowerCase()
+            val prefix = vulId.substring(0, indexOfDash).lowercase(Locale.getDefault())
             when (prefix) {
                 "cve" -> cveIds.add(vulId)
                 "cnnvd" -> cnnvdIds.add(vulId)

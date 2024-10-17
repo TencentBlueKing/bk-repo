@@ -34,6 +34,7 @@ package com.tencent.bkrepo.helm.artifact.repository
 import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -137,7 +138,7 @@ class HelmRemoteRepository(
                     "in repo ${context.artifactInfo.getRepoIdentify()}"
             )
             val sha256 = artifactFile.getFileSha256()
-            nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))?.let {
                 if (it.sha256.equals(sha256)) {
                     logger.info("artifact [$fullPath] hits the cache.")
                     return artifactFile.getInputStream().artifactStream(Range.full(artifactFile.getSize()))

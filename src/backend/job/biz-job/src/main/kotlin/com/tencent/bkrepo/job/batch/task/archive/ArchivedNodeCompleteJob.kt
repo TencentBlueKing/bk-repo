@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.task.archive
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
@@ -37,16 +38,15 @@ import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.ArchivedNodeCompleteJobProperties
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
-import java.time.Duration
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.Duration
 import kotlin.reflect.KClass
 
 /**
@@ -62,7 +62,7 @@ import kotlin.reflect.KClass
 class ArchivedNodeCompleteJob(
     val properties: ArchivedNodeCompleteJobProperties,
     private val archiveClient: ArchiveClient,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val storageService: StorageService,
 ) : MongoDbBatchJob<ArchivedNodeRestoreJob.ArchiveFile, NodeContext>(properties) {
 
@@ -125,7 +125,7 @@ class ArchivedNodeCompleteJob(
             fullPath = fullPath,
             operator = SYSTEM_USER,
         )
-        nodeClient.archiveNode(nodeArchiveRequest)
+        nodeService.archiveNode(nodeArchiveRequest)
         // 删除原存储
         storageService.delete(sha256, storageCredentials)
     }

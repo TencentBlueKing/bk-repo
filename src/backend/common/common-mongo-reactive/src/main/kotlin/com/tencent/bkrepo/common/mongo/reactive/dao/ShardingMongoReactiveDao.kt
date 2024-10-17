@@ -42,7 +42,8 @@ import org.springframework.core.annotation.AnnotationUtils
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.index.IndexDefinition
 import org.springframework.data.mongodb.core.query.Query
 import java.lang.reflect.Field
@@ -52,7 +53,7 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
 
     @Suppress("LateinitUsage")
     @Autowired
-    lateinit var reactiveMongoOperations: ReactiveMongoOperations
+    lateinit var reactiveMongoTemplate: ReactiveMongoTemplate
 
     @Value("\${sharding.count:#{null}}")
     private val fixedShardingCount: Int? = null
@@ -129,8 +130,8 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
         }
     }
 
-    override fun determineReactiveMongoOperations(): ReactiveMongoOperations {
-        return reactiveMongoOperations
+    override fun determineReactiveMongoOperations(): ReactiveMongoTemplate {
+        return reactiveMongoTemplate
     }
 
     override fun determineCollectionName(query: Query): String {
@@ -144,6 +145,22 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
         val shardingValue = FieldUtils.readField(shardingField, entity, true)
         requireNotNull(shardingValue) { "Sharding value can not be empty !" }
 
+        return shardingKeyToCollectionName(shardingValue)
+    }
+
+    override fun determineCollectionName(aggregation: Aggregation): String {
+        var shardingValue: Any? = null
+        val pipeline = aggregation.toPipeline(Aggregation.DEFAULT_CONTEXT)
+        for (document in pipeline) {
+            if (document.containsKey("\$match")) {
+                val subDocument = document["\$match"]
+                require(subDocument is Document)
+                shardingValue = subDocument["projectId"]
+                break
+            }
+        }
+
+        requireNotNull(shardingValue) { "sharding value can not be empty!" }
         return shardingKeyToCollectionName(shardingValue)
     }
 

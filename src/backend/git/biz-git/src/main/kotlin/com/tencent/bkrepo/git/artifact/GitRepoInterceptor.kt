@@ -6,29 +6,29 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.git.config.GitProperties
+import com.tencent.bkrepo.git.constant.DOT_GIT
 import com.tencent.bkrepo.git.constant.GitMessageCode
 import com.tencent.bkrepo.git.constant.HubType
 import com.tencent.bkrepo.git.constant.PARAMETER_HUBTYPE
 import com.tencent.bkrepo.git.constant.PARAMETER_OWNER
-import com.tencent.bkrepo.git.constant.DOT_GIT
 import com.tencent.bkrepo.git.constant.PATH_SYNC
 import com.tencent.bkrepo.git.constant.X_DEVOPS_BUILD_ID
 import com.tencent.bkrepo.git.constant.X_DEVOPS_PIPELINE_ID
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
-import java.lang.IllegalArgumentException
+import java.util.Locale
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import org.springframework.beans.factory.annotation.Autowired
 
 class GitRepoInterceptor : HandlerInterceptor {
 
     @Autowired
-    lateinit var repositoryClient: RepositoryClient
+    lateinit var repositoryService: RepositoryService
 
     @Autowired
     lateinit var properties: GitProperties
@@ -38,7 +38,7 @@ class GitRepoInterceptor : HandlerInterceptor {
         val type = request.getParameter(PARAMETER_HUBTYPE)
         type ?: return true
         try {
-            val domain = properties.getDomain(HubType.valueOf(type.toUpperCase())) ?: let {
+            val domain = properties.getDomain(HubType.valueOf(type.uppercase(Locale.getDefault()))) ?: let {
                 throw ErrorCodeException(GitMessageCode.GIT_HUB_TYPE_NOT_SUPPORT, type)
             }
             val owner = request.getParameter(PARAMETER_OWNER)
@@ -58,7 +58,7 @@ class GitRepoInterceptor : HandlerInterceptor {
                     "$X_DEVOPS_PIPELINE_ID:${request.getHeader(X_DEVOPS_PIPELINE_ID)} " +
                     "sync request $uri"
             )
-            repositoryClient.getRepoDetail(projectId, realRepoName).data ?: let {
+            repositoryService.getRepoDetail(projectId, realRepoName) ?: let {
                 val req = RepoCreateRequest(
                     projectId = projectId,
                     name = realRepoName,
@@ -70,7 +70,7 @@ class GitRepoInterceptor : HandlerInterceptor {
                         url = uri
                     )
                 )
-                repositoryClient.createRepo(req)
+                repositoryService.createRepo(req)
                 logger.info("create projectId $projectId repo $realRepoName")
             }
             return true
