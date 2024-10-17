@@ -29,15 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.common.metadata.dao.node
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingMongoReactiveDao
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Page
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Query
@@ -53,11 +55,12 @@ import java.time.LocalDateTime
  * 节点 Dao
  */
 @Repository
-class NodeDao : HashShardingMongoDao<TNode>() {
+@Conditional(ReactiveCondition::class)
+class RNodeDao: ShardingMongoReactiveDao<TNode>() {
     /**
      * 查询节点
      */
-    fun findNode(projectId: String, repoName: String, fullPath: String): TNode? {
+    suspend fun findNode(projectId: String, repoName: String, fullPath: String): TNode? {
         // 系统设计上不保存根目录节点到数据库，但是有用户会手动创建根目录节点
         return this.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))
             ?: if (PathUtils.isRoot(fullPath)) buildRootNode(projectId, repoName) else null
@@ -66,7 +69,7 @@ class NodeDao : HashShardingMongoDao<TNode>() {
     /**
      * 查询节点是否存在
      */
-    fun exists(projectId: String, repoName: String, fullPath: String): Boolean {
+    suspend fun exists(projectId: String, repoName: String, fullPath: String): Boolean {
         if (PathUtils.isRoot(fullPath)) {
             return true
         }
@@ -76,7 +79,7 @@ class NodeDao : HashShardingMongoDao<TNode>() {
     /**
      * 更新目录下变更的文件数量以及涉及的文件大小
      */
-    fun incSizeAndNodeNumOfFolder(
+    suspend fun incSizeAndNodeNumOfFolder(
         projectId: String,
         repoName: String,
         fullPath: String,
@@ -103,7 +106,7 @@ class NodeDao : HashShardingMongoDao<TNode>() {
     /**
      * 设置目录下的文件数量以及文件大小
      */
-    fun setSizeAndNodeNumOfFolder(
+    suspend fun setSizeAndNodeNumOfFolder(
         projectId: String,
         repoName: String,
         fullPath: String,
@@ -122,7 +125,7 @@ class NodeDao : HashShardingMongoDao<TNode>() {
      *
      * @param includeDeleted 是否包含被删除的节点
      */
-    fun pageBySha256(
+    suspend fun pageBySha256(
         sha256: String,
         option: NodeListOption,
         includeDeleted: Boolean = false
