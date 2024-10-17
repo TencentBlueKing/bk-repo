@@ -55,7 +55,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.gte
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
@@ -126,7 +125,6 @@ class ArtifactAccessLogEmbeddingJob(
      *
      * @param projectId 需要对访问日志进行向量化的项目
      */
-    @Async
     fun embedAccessLog(projectId: String) {
         if (!properties.enabled) {
             return
