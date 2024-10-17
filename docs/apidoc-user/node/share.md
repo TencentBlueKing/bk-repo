@@ -80,7 +80,7 @@
   {
     "projectId": "",
     "repoName": "",
-    "fullPathList": [],
+    "fullPathList": "",
     "authorizedUserList": ["user1", "user2"],
     "authorizedIpList": ["192.168.1.1", "127.0.0.1"],
     "expireSeconds": 3600
