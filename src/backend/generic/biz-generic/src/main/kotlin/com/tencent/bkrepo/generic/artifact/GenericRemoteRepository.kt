@@ -63,11 +63,12 @@ import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveContentRange
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
@@ -77,7 +78,6 @@ import com.tencent.bkrepo.generic.artifact.remote.RemoteArtifactCacheLocks
 import com.tencent.bkrepo.generic.artifact.remote.RemoteArtifactCacheWriter
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -96,7 +96,7 @@ class GenericRemoteRepository(
     private val storageHealthMonitorHelper: StorageHealthMonitorHelper,
     private val asyncCacheWriter: AsyncRemoteArtifactCacheWriter,
     private val cacheLocks: RemoteArtifactCacheLocks,
-    private val metadataClient: MetadataClient,
+    private val metadataService: MetadataService,
 ) : RemoteRepository() {
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
@@ -277,7 +277,7 @@ class GenericRemoteRepository(
             storageManager = storageManager,
             cacheLocks = cacheLocks,
             remoteNodes = remoteNodes,
-            metadataClient = metadataClient,
+            metadataService = metadataService,
             monitor = monitor,
             contentLength = contentLength,
             storageProperties = storageProperties

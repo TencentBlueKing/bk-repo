@@ -291,6 +291,7 @@
                 }
                 fn.then(() => {
                     this.$emit('refresh')
+                    this.$emit('cancelSelect')
                     if (!this.webError) {
                         this.$bkMessage({
                             theme: 'success',

@@ -32,6 +32,12 @@ package com.tencent.bkrepo.conan.constant
  */
 const val X_CONAN_SERVER_CAPABILITIES = "X-Conan-Server-Capabilities"
 
+/**
+ *  send the headers to see if it is possible to skip uploading the file, because it
+ *  is already in the server
+ */
+const val X_CHECKSUM_DEPLOY = "X-Checksum-Deploy"
+const val X_CHECKSUM_SHA1 = "X-Checksum-Sha1"
 const val NAME = "name"
 const val VERSION = "version"
 const val USERNAME = "username"
@@ -52,6 +58,7 @@ const val CONANS_URL_TAG = "conans"
 const val CONANFILE = "conanfile.py"
 const val CONANFILE_TXT = "conanfile.txt"
 const val CONAN_MANIFEST = "conanmanifest.txt"
+
 // const val REVISIONS_FILE = "revisions.txt"
 const val CONANINFO = "conaninfo.txt"
 const val INDEX_JSON = "index.json"

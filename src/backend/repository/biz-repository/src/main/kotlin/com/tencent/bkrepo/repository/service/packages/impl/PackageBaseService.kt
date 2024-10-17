@@ -31,16 +31,16 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.repository.dao.PackageDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.model.ClusterResource
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
-import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.service.packages.PackageService
-import com.tencent.bkrepo.repository.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
@@ -143,6 +143,7 @@ abstract class PackageBaseService(
             downloads = 0,
             manifestPath = manifestPath,
             artifactPath = artifactPath,
+            artifactPaths = artifactPath?.let { mutableSetOf(it) },
             stageTag = stageTag.orEmpty(),
             metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
             tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),

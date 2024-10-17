@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.resolve.file
 
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import org.springframework.util.unit.DataSize
 import javax.servlet.MultipartConfigElement
 

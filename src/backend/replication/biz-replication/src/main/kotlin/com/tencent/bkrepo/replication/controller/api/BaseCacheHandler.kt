@@ -30,16 +30,16 @@ package com.tencent.bkrepo.replication.controller.api
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 @Component
 class BaseCacheHandler(
     storageProperties: StorageProperties,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
 ) {
 
     private val defaultCredentials = storageProperties.defaultStorageCredentials()
@@ -54,7 +54,7 @@ class BaseCacheHandler(
         if (storageKey.isNullOrBlank()) {
             return defaultCredentials
         }
-        return storageCredentialsClient.findByKey(storageKey).data ?: defaultCredentials
+        return storageCredentialService.findByKey(storageKey) ?: defaultCredentials
     }
 
     companion object {

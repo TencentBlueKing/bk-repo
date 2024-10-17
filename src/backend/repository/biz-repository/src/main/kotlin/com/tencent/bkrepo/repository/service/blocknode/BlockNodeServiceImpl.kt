@@ -28,11 +28,11 @@
 package com.tencent.bkrepo.repository.service.blocknode
 
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
-import com.tencent.bkrepo.common.metadata.dao.BlockNodeDao
+import com.tencent.bkrepo.common.metadata.dao.blocknode.BlockNodeDao
 import com.tencent.bkrepo.common.metadata.service.blocknode.impl.AbstractBlockNodeService
-import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
@@ -41,13 +41,9 @@ import org.springframework.stereotype.Service
 @Primary
 class BlockNodeServiceImpl(
     blockNodeDao: BlockNodeDao,
-    private val fileReferenceService: FileReferenceService,
+    fileReferenceService: FileReferenceService,
     private val nodeDao: NodeDao
-) : AbstractBlockNodeService(blockNodeDao) {
-
-    override fun incFileRef(sha256: String, credentialsKey: String?) {
-        fileReferenceService.increment(sha256, credentialsKey)
-    }
+) : AbstractBlockNodeService(blockNodeDao, fileReferenceService) {
 
     override fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail {
         val node = nodeDao.findNode(projectId, repoName, fullPath) ?: throw NodeNotFoundException(fullPath)

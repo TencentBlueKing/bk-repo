@@ -28,15 +28,15 @@
 package com.tencent.bkrepo.job.batch.task.stat
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.config.CacheProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.task.other.FileSynchronizeJob
 import com.tencent.bkrepo.job.config.properties.FileSystemStorageStatJobProperties
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -60,7 +60,7 @@ import java.time.LocalDateTime
 class FileSystemStorageStatJob(
     properties: FileSystemStorageStatJobProperties,
     private val storageProperties: StorageProperties,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val mongoTemplate: MongoTemplate
 ) : DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
@@ -131,7 +131,7 @@ class FileSystemStorageStatJob(
     }
 
     private fun findStoragePath(): Set<String> {
-        val list = storageCredentialsClient.list().data ?: return emptySet()
+        val list = storageCredentialService.list()
         val default = storageProperties.defaultStorageCredentials()
         val result = mutableSetOf<String>()
         list.forEach {

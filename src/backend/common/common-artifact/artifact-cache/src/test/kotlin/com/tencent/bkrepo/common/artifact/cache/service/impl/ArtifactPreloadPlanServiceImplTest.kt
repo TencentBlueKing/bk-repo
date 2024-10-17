@@ -34,21 +34,23 @@ import com.tencent.bkrepo.common.artifact.cache.UT_SHA256
 import com.tencent.bkrepo.common.artifact.cache.UT_USER
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.PreloadStrategyType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.util.existReal
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -91,6 +93,25 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
 
     @Test
     fun testCreatePlan() {
+        val node = NodeDetail(buildNodeInfo(UT_PROJECT_ID, UT_REPO_NAME))
+        whenever(nodeClient.getNodeDetail(anyString(), anyString(), anyString())).thenReturn(
+            Response(0, data = node)
+        )
+        val executeTime = System.currentTimeMillis()
+        val request = ArtifactPreloadPlanCreateRequest(
+            projectId = UT_PROJECT_ID,
+            repoName = UT_REPO_NAME,
+            fullPath = "/a/b/c.txt",
+            executeTime = executeTime
+        )
+        val createdPlan = preloadPlanService.createPlan(request)
+        assertEquals(UT_SHA256, createdPlan.sha256)
+        assertEquals(null, createdPlan.credentialsKey)
+        assertEquals(executeTime, createdPlan.executeTime)
+    }
+
+    @Test
+    fun testGeneratePlan() {
         // test repo credentials not match
         resetMock(repoName = UT_REPO_NAME2)
         preloadPlanService.generatePlan(OTHER_CREDENTIALS_KEY, UT_SHA256)
@@ -192,7 +213,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         Thread.sleep(1000L)
 
         // 确认缓存加载成功
-        Assertions.assertTrue(cacheFilePath.existReal())
+        assertTrue(cacheFilePath.existReal())
         storageService.delete(UT_SHA256, storageProperties.defaultStorageCredentials())
         artifactFile.delete()
     }

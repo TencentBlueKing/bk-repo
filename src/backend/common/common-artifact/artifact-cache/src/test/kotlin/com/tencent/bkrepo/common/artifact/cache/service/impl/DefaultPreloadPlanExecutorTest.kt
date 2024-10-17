@@ -28,14 +28,13 @@
 package com.tencent.bkrepo.common.artifact.cache.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.cache.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.UT_SHA256
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
@@ -172,8 +171,8 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
 
     private fun resetMock() {
         val defaultCredentials = storageProperties.defaultStorageCredentials() as FileSystemCredentials
-        whenever(storageCredentialsClient.findByKey(anyString())).thenReturn(
-            Response(0, null, defaultCredentials.copy(key = "test"))
+        whenever(storageCredentialService.findByKey(anyString())).thenReturn(
+            defaultCredentials.copy(key = "test")
         )
     }
 }

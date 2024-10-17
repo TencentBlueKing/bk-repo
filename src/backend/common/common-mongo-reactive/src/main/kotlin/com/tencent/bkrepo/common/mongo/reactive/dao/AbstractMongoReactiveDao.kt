@@ -29,16 +29,17 @@ package com.tencent.bkrepo.common.mongo.reactive.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
-import java.lang.reflect.ParameterizedType
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.MongoCollectionUtils
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import java.lang.reflect.ParameterizedType
 
 abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
 
@@ -58,6 +59,10 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         return find(query, classType)
     }
 
+    suspend fun findAll(): List<E> {
+        return findAll(classType)
+    }
+
     override suspend fun <T> find(query: Query, clazz: Class<T>): List<T> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao find: [$query] [$clazz]")
@@ -65,6 +70,24 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         return determineReactiveMongoOperations()
             .find(query, clazz, determineCollectionName(query))
             .collectList().awaitSingle()
+    }
+
+    override suspend fun <T> findAll(clazz: Class<T>): List<T> {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao findAll: [$clazz]")
+        }
+        return determineReactiveMongoOperations()
+            .findAll(clazz, determineCollectionName())
+            .collectList().awaitSingle()
+    }
+
+    override suspend fun updateFirst(query: Query, update: Update): UpdateResult {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao updateFirst: [$query], [$update]")
+        }
+        return determineReactiveMongoOperations()
+            .updateFirst(query, update, determineCollectionName(query))
+            .awaitSingle()
     }
 
     override suspend fun updateMulti(query: Query, update: Update): UpdateResult {
@@ -88,6 +111,12 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
     override suspend fun save(entity: E): E {
         return determineReactiveMongoOperations()
             .save(entity, determineCollectionName(entity))
+            .awaitSingle()
+    }
+
+    override suspend fun insert(entity: E): E {
+        return determineReactiveMongoOperations()
+            .insert(entity, determineCollectionName(entity))
             .awaitSingle()
     }
 
@@ -124,6 +153,26 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         return mongoOperations.count(query, collectName).awaitSingle()
     }
 
+    override suspend fun exists(query: Query): Boolean {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao exists: [$query]")
+        }
+        return determineReactiveMongoOperations().exists(query, determineCollectionName(query)).awaitSingle()
+    }
+
+    override suspend fun <T> findAndModify(
+        query: Query,
+        update: Update,
+        options: FindAndModifyOptions,
+        clazz: Class<T>
+    ): T? {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao findAndModify: [$query], [$update]")
+        }
+        return determineReactiveMongoOperations()
+            .findAndModify(query, update, options, clazz, determineCollectionName(query)).awaitSingle()
+    }
+
     protected open fun determineCollectionName(): String {
         var collectionName: String? = null
         if (classType.isAnnotationPresent(Document::class.java)) {
@@ -144,5 +193,10 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractMongoReactiveDao::class.java)
+
+        /**
+         * mongodb 默认id字段
+         */
+        const val ID = "_id"
     }
 }

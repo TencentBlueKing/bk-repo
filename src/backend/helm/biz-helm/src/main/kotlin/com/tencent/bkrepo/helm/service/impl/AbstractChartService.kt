@@ -58,6 +58,8 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWrite
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
@@ -95,11 +97,9 @@ import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.helm.utils.RemoteDownloadUtil
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
-import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -125,7 +125,7 @@ open class AbstractChartService : ArtifactService() {
     lateinit var nodeClient: NodeClient
 
     @Autowired
-    lateinit var metadataClient: MetadataClient
+    lateinit var metadataService: MetadataService
 
     @Autowired
     lateinit var packageMetadataClient: PackageMetadataClient
@@ -146,7 +146,7 @@ open class AbstractChartService : ArtifactService() {
     lateinit var lockOperation: LockOperation
 
     @Autowired
-    lateinit var proxyChannelClient: ProxyChannelClient
+    lateinit var proxyChannelService: ProxyChannelService
 
     @Autowired
     lateinit var properties: HelmProperties
@@ -694,12 +694,12 @@ open class AbstractChartService : ArtifactService() {
         repositoryDetail: RepositoryDetail,
         setting: ProxyChannelSetting
     ): RemoteConfiguration {
-        val proxyChannel = proxyChannelClient.getByUniqueId(
+        val proxyChannel = proxyChannelService.queryProxyChannel(
             projectId = repositoryDetail.projectId,
             repoName = repositoryDetail.name,
-            repoType = repositoryDetail.type.name,
+            repoType = repositoryDetail.type,
             name = setting.name
-        ).data!!
+        )!!
         // 构造RemoteConfiguration
         return (CompositeRepository.convertConfig(proxyChannel) as RemoteConfiguration)
     }

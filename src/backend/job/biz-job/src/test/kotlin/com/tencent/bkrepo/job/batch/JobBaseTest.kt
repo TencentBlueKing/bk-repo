@@ -66,7 +66,7 @@ import org.springframework.test.context.TestPropertySource
     ],
 )
 @ComponentScan(
-    basePackages = ["com.tencent.bkrepo.job"],
+    basePackages = ["com.tencent.bkrepo.job", "com.tencent.bkrepo.common.metadata"],
     excludeFilters = [
         ComponentScan.Filter(
             type = FilterType.ASSIGNABLE_TYPE,

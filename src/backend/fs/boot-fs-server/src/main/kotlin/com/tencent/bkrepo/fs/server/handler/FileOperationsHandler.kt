@@ -34,13 +34,14 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.fs.server.bodyToArtifactFile
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.io.RegionInputStreamResource
 import com.tencent.bkrepo.fs.server.request.BlockRequest
 import com.tencent.bkrepo.fs.server.request.FlushRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
+import com.tencent.bkrepo.fs.server.request.StreamRequest
 import com.tencent.bkrepo.fs.server.resolveRange
 import com.tencent.bkrepo.fs.server.service.FileOperationService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
@@ -59,6 +60,7 @@ import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.ServerResponse.temporaryRedirect
 import org.springframework.web.reactive.function.server.buildAndAwait
 import java.net.URI
+
 
 /**
  * 文件操作相关处理器
@@ -149,6 +151,13 @@ class FileOperationsHandler(
         val flushRequest = FlushRequest(request)
         fileOperationService.flush(flushRequest, user)
         return ReactiveResponseBuilder.success(blockNode)
+    }
+
+    suspend fun stream(request: ServerRequest): ServerResponse {
+        val user = ReactiveSecurityUtils.getUser()
+        val streamRequest = StreamRequest(request)
+        val nodeDetail = fileOperationService.stream(streamRequest, user)
+        return ReactiveResponseBuilder.success(nodeDetail)
     }
 
     companion object {

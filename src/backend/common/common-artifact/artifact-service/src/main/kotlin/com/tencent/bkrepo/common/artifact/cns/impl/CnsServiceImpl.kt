@@ -34,13 +34,13 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.cns.CnsProperties
 import com.tencent.bkrepo.common.artifact.cns.CnsService
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit
 class CnsServiceImpl(
     private val discoveryClient: DiscoveryClient,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties,
     private val cnsProperties: CnsProperties,
     private val serviceAuthManager: ServiceAuthManager
@@ -80,7 +80,7 @@ class CnsServiceImpl(
     private val restTemplate = RestTemplate()
 
     override fun exist(key: String?, sha256: String): Boolean {
-        val storageCredentials = storageCredentialsClient.findByKey(key).data
+        val storageCredentials = storageCredentialService.findByKey(key)
             ?: storageProperties.defaultStorageCredentials()
         return storageService.exist(sha256, storageCredentials)
     }

@@ -16,15 +16,18 @@
                 </forbid-tag>
             </div>
             <span class="package-card-description text-overflow" :title="cardData.description">{{ cardData.description }}</span>
-            <div class="package-card-data">
-                <template v-if="cardData.type">
+            <div class="package-card-data" v-if="cardData.type">
+                <template>
                     <div class="card-metadata" :title="$t('latestVersion') + ':' + `${cardData.latest}`"></div>
                     <div class="card-metadata" :title="$t('lastModified') + ':' + `${formatDate(cardData.lastModifiedDate)}`"></div>
                     <div class="card-metadata" :title="$t('versions') + ':' + `${cardData.versions}`"></div>
                     <div class="card-metadata" :title="$t('downloadStats') + ':' + `${cardData.downloads}`"></div>
                 </template>
-                <template v-else>
+            </div>
+            <div class="package-card-data-more" v-else>
+                <template>
                     <div class="card-metadata" :title="$t('repo') + ':' + `${cardData.repoName}`"></div>
+                    <div class="card-metadata" :title="$t('filePath') + ':' + `${cardData.fullPath}`"></div>
                     <div class="card-metadata" :title="$t('fileSize') + ':' + `${convertFileSize(cardData.size)}`"></div>
                     <div class="card-metadata" :title="$t('lastModified') + ':' + `${formatDate(cardData.lastModifiedDate)}`"></div>
                     <div class="card-metadata" :title="$t('created') + ':' + `${formatDate(cardData.createdDate)}`"></div>
@@ -138,6 +141,20 @@
         .package-card-data {
             display: grid;
             grid-template: auto / repeat(4, 1fr);
+            .card-metadata {
+                padding: 0 5px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                &:after {
+                    content: attr(title);
+                    color: var(--fontSubsidiaryColor);
+                }
+            }
+        }
+        .package-card-data-more {
+            display: grid;
+            grid-template: auto / repeat(5, 1fr);
             .card-metadata {
                 padding: 0 5px;
                 overflow: hidden;

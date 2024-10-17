@@ -114,11 +114,12 @@ class ClientService(
     suspend fun listClients(request: ClientListRequest): Page<ClientDetail> {
         val pageRequest = Pages.ofRequest(request.pageNumber, request.pageSize)
         val criteria = Criteria()
-        request.projectId?.let { criteria.and(TClient::projectId.name).isEqualTo(it) }
+        request.projectId?.let { criteria.and(TClient::projectId.name).regex(convertToRegex(it)) }
         request.repoName?.let { criteria.and(TClient::repoName.name).isEqualTo(it) }
         request.online?.let { criteria.and(TClient::online.name).isEqualTo(it) }
         request.ip?.let { criteria.and(TClient::ip.name).regex(convertToRegex(it)) }
         request.version?.let { criteria.and(TClient::version.name).regex(convertToRegex(it)) }
+        request.userId?.let { criteria.and(TClient::userId.name).isEqualTo(it) }
         val query = Query(criteria)
         val count = clientRepository.count(query)
         val data = clientRepository.find(query.with(pageRequest))

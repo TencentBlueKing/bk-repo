@@ -108,6 +108,10 @@ import { searchProjects } from '@/api/project'
 
 export default {
   name: 'ProjectMetrics',
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     return {
       loading: true,
@@ -124,10 +128,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     queryProjects(queryStr, cb) {

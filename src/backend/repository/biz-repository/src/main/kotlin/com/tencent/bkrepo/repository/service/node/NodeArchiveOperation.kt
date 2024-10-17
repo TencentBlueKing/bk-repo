@@ -21,4 +21,9 @@ interface NodeArchiveOperation {
      * 恢复归档节点
      * */
     fun restoreNode(nodeRestoreRequest: NodeArchiveRestoreRequest): List<String>
+
+    /**
+     * 获取可归档的节点大小
+     */
+    fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long? = null): Long
 }

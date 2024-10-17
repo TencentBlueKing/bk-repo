@@ -4,15 +4,20 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import com.tencent.bkrepo.repository.service.node.NodeArchiveOperation
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
+import java.time.Duration
 
 class NodeArchiveSupport(
     private val nodeBaseService: NodeBaseService,
@@ -64,6 +69,23 @@ class NodeArchiveSupport(
                 it.fullPath
             }
         }
+    }
+
+    override fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long?): Long {
+        val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(days.toLong()))
+        val criteria = where(TNode::folder).isEqualTo(false)
+            .and(TNode::deleted).isEqualTo(null)
+            .and(TNode::sha256).ne(FAKE_SHA256)
+            .and(TNode::archived).ne(true)
+            .and(TNode::projectId).isEqualTo(projectId)
+            .orOperator(
+                where(TNode::lastAccessDate).isEqualTo(null),
+                where(TNode::lastAccessDate).lt(cutoffTime),
+            ).apply {
+                repoName?.let { and(TNode::repoName).isEqualTo(it) }
+                size?.let { and(TNode::size).gt(it) }
+            }
+        return nodeBaseService.aggregateComputeSize(criteria)
     }
 
     companion object {

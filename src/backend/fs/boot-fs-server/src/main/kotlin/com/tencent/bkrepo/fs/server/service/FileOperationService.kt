@@ -29,26 +29,41 @@ package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.service.metadata.RMetadataService
+import com.tencent.bkrepo.fs.server.config.properties.StreamProperties
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.NodeAttribute
-import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.fs.server.request.BlockRequest
 import com.tencent.bkrepo.fs.server.request.FlushRequest
-import com.tencent.bkrepo.fs.server.storage.CoStorageManager
+import com.tencent.bkrepo.fs.server.request.StreamRequest
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
+import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
+import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.reactor.awaitSingle
+import org.springframework.core.io.buffer.DataBuffer
+import org.springframework.core.io.buffer.DataBufferUtils
+import org.springframework.web.reactive.function.server.bodyToFlow
 import java.time.LocalDateTime
+import java.util.concurrent.atomic.AtomicLong
 
 class FileOperationService(
     private val rRepositoryClient: RRepositoryClient,
     private val storageManager: CoStorageManager,
-    private val fileNodeService: FileNodeService
+    private val fileNodeService: FileNodeService,
+    private val streamProperties: StreamProperties,
+    private val metadataService: RMetadataService,
 ) {
 
     suspend fun read(nodeDetail: NodeDetail, range: Range): ArtifactInputStream? {
@@ -77,10 +92,61 @@ class FileOperationService(
         }
     }
 
+    suspend fun stream(streamRequest: StreamRequest, user: String): NodeDetail {
+        val nodeDetail = rRepositoryClient.createNode(buildNodeCreateRequest(streamRequest, user)).awaitSingle().data!!
+        var reactiveArtifactFile = CoArtifactFileFactory.buildArtifactFile()
+        val offset = AtomicLong(0)
+        streamRequest.request.bodyToFlow<DataBuffer>().onCompletion {
+            if (reactiveArtifactFile.getSize() > 0) {
+                storeBlockNode(reactiveArtifactFile, offset, user, streamRequest, true)
+                reactiveArtifactFile.close()
+            }
+        }.collect {
+            try {
+                reactiveArtifactFile.write(it)
+                val store = storeBlockNode(reactiveArtifactFile, offset, user, streamRequest)
+                if (store) {
+                    reactiveArtifactFile.close()
+                    reactiveArtifactFile = CoArtifactFileFactory.buildArtifactFile()
+                }
+            } finally {
+                DataBufferUtils.release(it)
+            }
+        }
+        return nodeDetail
+    }
+
+    private suspend fun storeBlockNode(
+        reactiveArtifactFile: CoArtifactFile,
+        offset: AtomicLong,
+        user: String,
+        streamRequest: StreamRequest,
+        lastBlock: Boolean = false
+    ): Boolean {
+        val blockSize = reactiveArtifactFile.getSize()
+        return if (blockSize >= streamProperties.blockSize.toBytes() || lastBlock) {
+            reactiveArtifactFile.finish()
+            val blockNode = TBlockNode(
+                createdBy = user,
+                createdDate = LocalDateTime.now(),
+                nodeFullPath = streamRequest.fullPath,
+                startPos = offset.toLong(),
+                sha256 = reactiveArtifactFile.getFileSha256(),
+                projectId = streamRequest.projectId,
+                repoName = streamRequest.repoName,
+                size = reactiveArtifactFile.getSize()
+            )
+            storageManager.storeBlock(reactiveArtifactFile, blockNode)
+            offset.addAndGet(blockSize)
+            true
+        } else {
+            false
+        }
+    }
+
     suspend fun flush(request: FlushRequest, user: String) {
         with(request) {
-            rRepositoryClient.listMetadata(projectId, repoName, fullPath).awaitSingle().data
-                ?.get(FS_ATTR_KEY) ?: let {
+            metadataService.listMetadata(projectId, repoName, fullPath)[FS_ATTR_KEY] ?: let {
                 val attributes = NodeAttribute(
                     uid = NodeAttribute.NOBODY,
                     gid = NodeAttribute.NOBODY,
@@ -97,7 +163,7 @@ class FileOperationService(
                     nodeMetadata = listOf(fsAttr),
                     operator = user
                 )
-                rRepositoryClient.saveMetadata(saveMetaDataRequest).awaitSingle()
+                metadataService.saveMetadata(saveMetaDataRequest)
             }
 
             val nodeSetLengthRequest = NodeSetLengthRequest(
@@ -109,5 +175,37 @@ class FileOperationService(
             )
             rRepositoryClient.setLength(nodeSetLengthRequest).awaitSingle()
         }
+    }
+
+    private fun buildNodeCreateRequest(
+        request: StreamRequest,
+        user: String
+    ): NodeCreateRequest {
+        val attributes = NodeAttribute(
+            uid = NodeAttribute.NOBODY,
+            gid = NodeAttribute.NOBODY,
+            mode = NodeAttribute.DEFAULT_MODE
+        )
+        val fsAttr = MetadataModel(
+            key = FS_ATTR_KEY,
+            value = attributes
+        )
+        return NodeCreateRequest(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            fullPath = request.fullPath,
+            folder = false,
+            overwrite = request.overwrite,
+            expires = request.expires,
+            size = request.size,
+            sha256 = FAKE_SHA256,
+            md5 = FAKE_MD5,
+            operator = user,
+            createdBy = user,
+            createdDate = LocalDateTime.now(),
+            lastModifiedBy = user,
+            lastModifiedDate = LocalDateTime.now(),
+            nodeMetadata = listOf(fsAttr)
+        )
     }
 }

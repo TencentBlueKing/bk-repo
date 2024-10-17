@@ -71,7 +71,8 @@ data class ArtifactPreloadPlan(
         status = status,
     )
 
-    fun artifactInfo() = "plan[$id] credentials[$credentialsKey] sha256[$sha256] size[$size]"
+    fun artifactInfo() =
+        "plan[$id] credentials[$credentialsKey] sha256[$sha256] size[$size] fullPath[$projectId/$repoName/$fullPath]"
 
     companion object {
         /**

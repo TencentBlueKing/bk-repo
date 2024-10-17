@@ -54,7 +54,7 @@ object ConanInfoLoadUtil {
         )
     }
 
-    private fun configParser(file: File): Map<String, List<String>> {
+    private fun configParser(file: File, allowFields: List<String> = listOf()): Map<String, List<String>> {
         val lines = FileUtils.readLines(file, StandardCharsets.UTF_8)
         val pattern = Regex("^\\[([a-z_]{2,50})]")
         var currentLines: MutableList<String>? = null
@@ -69,7 +69,7 @@ object ConanInfoLoadUtil {
                 field = m.groups[1]?.value
             }
             if (field != null) {
-                if (allowFields.contains(field)) {
+                if (allowFields.isEmpty() || allowFields.contains(field)) {
                     currentLines = mutableListOf()
                     result[field] = currentLines
                 } else {

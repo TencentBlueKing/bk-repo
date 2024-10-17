@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterPackageClient
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
@@ -84,10 +84,11 @@ class EdgePackageServiceImpl(
         repoName: String,
         packageKey: String,
         versionName: String,
+        contentPath: String?,
         realIpAddress: String?
     ) {
-        centerPackageClient.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress)
-        super.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress)
+        centerPackageClient.deleteVersion(projectId, repoName, packageKey, versionName, contentPath, realIpAddress)
+        super.deleteVersion(projectId, repoName, packageKey, versionName, contentPath, realIpAddress)
     }
 
     override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {

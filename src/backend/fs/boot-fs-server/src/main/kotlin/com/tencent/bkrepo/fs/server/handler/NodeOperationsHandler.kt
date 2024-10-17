@@ -33,8 +33,8 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
-import com.tencent.bkrepo.fs.server.api.RGenericClient
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.service.metadata.RMetadataService
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.NodeAttribute
@@ -76,9 +76,9 @@ import java.time.Duration
  * 处理节点操作的请求
  * */
 class NodeOperationsHandler(
-    rGenericClient: RGenericClient,
     private val rRepositoryClient: RRepositoryClient,
-    private val fileNodeService: FileNodeService
+    private val fileNodeService: FileNodeService,
+    private val metadataService: RMetadataService
 ) {
 
     suspend fun getNode(request: ServerRequest): ServerResponse {
@@ -126,8 +126,7 @@ class NodeOperationsHandler(
     @Suppress("UNCHECKED_CAST")
     suspend fun changeAttribute(request: ServerRequest): ServerResponse {
         with(ChangeAttributeRequest(request)) {
-            val preFsAttributeStr = rRepositoryClient.listMetadata(projectId, repoName, fullPath).awaitSingle().data
-                ?.get(FS_ATTR_KEY)
+            val preFsAttributeStr = metadataService.listMetadata(projectId, repoName, fullPath)[FS_ATTR_KEY]
             val attrMap = preFsAttributeStr as? Map<String, Any> ?: mapOf()
             val preFsAttribute = NodeAttribute(
                 uid = attrMap[NodeAttribute::uid.name] as? String ?: NOBODY,
@@ -157,7 +156,7 @@ class NodeOperationsHandler(
                 nodeMetadata = listOf(fsAttr),
                 operator = ReactiveSecurityUtils.getUser()
             )
-            rRepositoryClient.saveMetadata(saveMetaDataRequest).awaitSingle()
+            metadataService.saveMetadata(saveMetaDataRequest)
             return ReactiveResponseBuilder.success(attributes)
         }
     }
@@ -298,7 +297,7 @@ class NodeOperationsHandler(
                 nodeMetadata = listOf(fsAttr),
                 operator = user
             )
-            return rRepositoryClient.createNode(nodeCreateRequest).awaitSingle().data!!
+            return rRepositoryClient.createFsNode(nodeCreateRequest).awaitSingle().data!!
         }
     }
 

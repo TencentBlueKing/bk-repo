@@ -28,9 +28,13 @@
 package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.platformCredentials
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
@@ -42,7 +46,8 @@ import org.springframework.web.reactive.function.server.ServerResponse
  * 认证过滤器，处理服务器认证
  * */
 class AuthHandlerFilterFunction(
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
+    private val permissionService: PermissionService
 ) : CoHandlerFilterFunction {
 
     override suspend fun filter(
@@ -53,6 +58,18 @@ class AuthHandlerFilterFunction(
             return next(request)
         }
         var user = ANONYMOUS_USER
+
+        val platformAuthCredentials = request.platformCredentials()
+        if (platformAuthCredentials != null) {
+            request.exchange().attributes[PLATFORM_KEY] = permissionService.checkPlatformAccount(
+                accessKey = platformAuthCredentials.accessKey,
+                secretKey = platformAuthCredentials.secretKey
+            )
+            request.exchange().attributes[USER_KEY] =
+                request.headers().header(AUTH_HEADER_UID).firstOrNull() ?: ANONYMOUS_USER
+            return next(request)
+        }
+
         val token = if (request.path().startsWith("/service")) {
             request.headers().header("X-BKREPO-MS-UID").firstOrNull()?.let {
                 user = it

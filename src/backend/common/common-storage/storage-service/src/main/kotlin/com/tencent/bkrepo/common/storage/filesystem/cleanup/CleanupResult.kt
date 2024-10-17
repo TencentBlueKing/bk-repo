@@ -53,23 +53,15 @@ data class CleanupResult(
      * 根据保留策略保留的文件大小
      */
     var retainSize: Long = 0,
+    /**
+     * 保留的文件sha256
+     */
+    var retainSha256: MutableSet<String> = HashSet(),
 ) {
-
-    fun merge(vararg others: CleanupResult): CleanupResult {
-        others.forEach {
-            totalFile += it.totalFile
-            totalFolder += it.totalFolder
-            totalSize += it.totalSize
-            cleanupFile += it.cleanupFile
-            cleanupFolder += it.cleanupFolder
-            cleanupSize += it.cleanupSize
-            errorCount += it.errorCount
-        }
-        return this
-    }
 
     override fun toString(): String {
         return "$cleanupFile/$totalFile[${HumanReadable.size(cleanupSize)}/${HumanReadable.size(totalSize)}] " +
-            "files deleted,errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted."
+            "files deleted, errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted, " +
+                "retainCount[$retainFile], retainSize[${HumanReadable.size(retainSize)}]"
     }
 }

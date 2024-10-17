@@ -30,10 +30,10 @@ package com.tencent.bkrepo.repository.service.node.impl.center
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils
-import com.tencent.bkrepo.common.artifact.util.ClusterUtils.isEdgeRequest
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils.isEdgeRequest
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.repository.service.node.impl.NodeMoveCopySupport

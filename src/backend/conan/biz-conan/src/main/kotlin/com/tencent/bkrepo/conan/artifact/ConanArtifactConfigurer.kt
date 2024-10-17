@@ -34,9 +34,12 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.conan.artifact.repository.ConanLocalRepository
 import com.tencent.bkrepo.conan.artifact.repository.ConanRemoteRepository
 import com.tencent.bkrepo.conan.artifact.repository.ConanVirtualRepository
+import com.tencent.bkrepo.conan.config.ConanProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 
 @Configuration
+@EnableConfigurationProperties(ConanProperties::class)
 class ConanArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getRepositoryType() = RepositoryType.CONAN
     override fun getLocalRepository() = SpringContextUtils.getBean<ConanLocalRepository>()

@@ -48,7 +48,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
@@ -60,7 +60,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
-import com.tencent.bkrepo.repository.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageEventFactory
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildUpdatedEvent
@@ -272,35 +272,40 @@ class PackageServiceImpl(
         repoName: String,
         packageKey: String,
         versionName: String,
+        contentPath: String?,
         realIpAddress: String?
     ) {
         var tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         val packageId = tPackage.id!!
         val tPackageVersion = packageVersionDao.findByName(packageId, versionName) ?: return
         checkCluster(tPackageVersion)
-        packageVersionDao.deleteByName(packageId, tPackageVersion.name)
-        tPackage = packageDao.decreaseVersions(packageId) ?: return
+        val deleted = packageVersionDao.deleteByNameAndPath(packageId, tPackageVersion.name, contentPath)
+        if (deleted) {
+            tPackage = packageDao.decreaseVersions(packageId) ?: return
+        }
         if (tPackage.versions <= 0L) {
             packageDao.removeById(packageId)
             logger.info("Delete package [$projectId/$repoName/$packageKey-$versionName] because no version exist")
         } else {
-            if (tPackage.latest == tPackageVersion.name) {
+            if (deleted && tPackage.latest == tPackageVersion.name) {
                 val latestVersion = packageVersionDao.findLatest(packageId)
                 packageDao.updateLatestVersion(packageId, latestVersion?.name.orEmpty())
             }
         }
-        publishEvent(
-            PackageEventFactory.buildDeletedEvent(
-                projectId = projectId,
-                repoName = repoName,
-                packageType = tPackage.type,
-                packageKey = packageKey,
-                packageName = tPackage.name,
-                versionName = versionName,
-                createdBy = SecurityUtils.getUserId(),
-                realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
+        if (deleted) {
+            publishEvent(
+                PackageEventFactory.buildDeletedEvent(
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageType = tPackage.type,
+                    packageKey = packageKey,
+                    packageName = tPackage.name,
+                    versionName = versionName,
+                    createdBy = SecurityUtils.getUserId(),
+                    realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
+                )
             )
-        )
+        }
         logger.info("Delete package version[$projectId/$repoName/$packageKey-$versionName] success")
     }
 
@@ -357,7 +362,7 @@ class PackageServiceImpl(
         }
         packageVersionDao.save(tPackageVersion)
         publishEvent(
-            PackageEventFactory.buildUpdatedEvent(
+            buildUpdatedEvent(
                 request = request,
                 packageType = tPackage.type.name,
                 packageName = tPackage.name,
@@ -487,6 +492,7 @@ class PackageServiceImpl(
                 size = request.size
                 manifestPath = request.manifestPath
                 artifactPath = request.artifactPath
+                artifactPaths = buildArtifactPaths(request)
                 stageTag = request.stageTag.orEmpty()
                 metadata = MetadataUtils.compatibleConvertAndCheck(request.metadata, packageMetadata)
                 tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
@@ -497,6 +503,18 @@ class PackageServiceImpl(
             logger.info("Update package version[$oldVersion] success")
             publishEvent(buildUpdatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
         }
+    }
+
+    private fun TPackageVersion.buildArtifactPaths(request: PackageVersionCreateRequest): MutableSet<String>? {
+        request.artifactPath?.let {
+             return if (!request.multiArtifact) {
+                mutableSetOf(it)
+            } else {
+                artifactPaths?.add(it)
+                artifactPaths ?: mutableSetOf(it)
+            }
+        }
+        return null
     }
 
     /**
@@ -567,6 +585,7 @@ class PackageServiceImpl(
                     tags = it.tags.orEmpty(),
                     extension = it.extension.orEmpty(),
                     contentPath = it.artifactPath,
+                    contentPaths = it.artifactPaths ?: it.artifactPath?.let { path -> setOf(path) },
                     manifestPath = it.manifestPath,
                     clusterNames = it.clusterNames
                 )

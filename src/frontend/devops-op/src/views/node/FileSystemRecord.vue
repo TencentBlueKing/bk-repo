@@ -87,7 +87,11 @@ import { formatNormalDate } from '@/utils/date'
 import moment from 'moment'
 
 export default {
-  name: 'FileSystem',
+  name: 'FileSystemRecord',
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     return {
       loading: false,
@@ -114,10 +118,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     queryProjects(queryStr, cb) {

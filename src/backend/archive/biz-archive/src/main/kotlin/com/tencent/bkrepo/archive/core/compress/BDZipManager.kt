@@ -3,12 +3,12 @@ package com.tencent.bkrepo.archive.core.compress
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.config.ArchiveProperties
+import com.tencent.bkrepo.archive.core.TaskResult
 import com.tencent.bkrepo.archive.core.provider.FileProviderFactory
 import com.tencent.bkrepo.archive.core.provider.FileTask
+import com.tencent.bkrepo.archive.core.provider.PriorityFileProvider
 import com.tencent.bkrepo.archive.event.StorageFileCompressedEvent
 import com.tencent.bkrepo.archive.event.StorageFileUncompressedEvent
-import com.tencent.bkrepo.archive.core.provider.PriorityFileProvider
-import com.tencent.bkrepo.archive.core.TaskResult
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileRepository
@@ -17,11 +17,11 @@ import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.bksync.transfer.exception.TooLowerReuseRateException
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
@@ -50,7 +50,7 @@ class BDZipManager(
 
     @Autowired
     @Lazy
-    private lateinit var fileReferenceClient: FileReferenceClient
+    private lateinit var fileReferenceService: FileReferenceService
 
     @Autowired
     @Lazy
@@ -190,7 +190,7 @@ class BDZipManager(
                 if (it !is TooLowerReuseRateException) {
                     logger.error("Failed to compress file [$sha256].", it)
                 }
-                fileReferenceClient.decrement(baseSha256, storageCredentialsKey)
+                fileReferenceService.decrement(baseSha256, storageCredentialsKey)
                 file.status = CompressStatus.COMPRESS_FAILED
                 file.lastModifiedDate = LocalDateTime.now()
                 compressFileRepository.save(file)

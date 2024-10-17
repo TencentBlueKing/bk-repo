@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.model
 
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_METADATA_IDX
 import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_METADATA_IDX_DEF
 import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_NAME_IDX
@@ -61,7 +62,9 @@ data class TPackageVersion(
     var ordinal: Long,
     var downloads: Long,
     var manifestPath: String? = null,
+    @Deprecated("replace by artifactPaths")
     var artifactPath: String? = null,
+    var artifactPaths: MutableSet<String>? = null,
     var stageTag: List<String>,
     var metadata: List<TMetadata>,
     var tags: List<String>? = null,

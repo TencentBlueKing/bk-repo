@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.model.TNode
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
@@ -48,7 +48,7 @@ class LocalDatetimeRuleInterceptor : QueryRuleInterceptor {
         return rule is Rule.QueryRule && isSupportRule(rule)
     }
 
-    @Suppress("IMPLICIT_CAST_TO_ANY", "UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST")
     override fun intercept(rule: Rule, context: QueryContext): Criteria {
         require(rule is Rule.QueryRule)
 
