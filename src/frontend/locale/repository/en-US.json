@@ -778,8 +778,6 @@
     "relatedUsers":"Related Users",
     "assetUserTip": "Please start with g_",
     "createGroupToken": "Create Token",
-    "inFolderSearchPlaceholder":"Please enter a file/folder name to search",
-    "folderDirectory":"Folder directory",
     "batchDownload":"Batch download",
     "noFilenameErrorInfo":"Sorry, the server got the file name abnormally, please try again later",
     "batchDownloadBackTypeErrorInfo":"Batch download of files failed, please try again later",
@@ -900,5 +898,9 @@
         "feedback": "Feedback",
         "openSource": "Open Source"
     },
-    "currentVersion": "Current"
+    "currentVersion": "Current",
+    "conanCreditGuideSubTitle1":"1. Execute the following command on the command line to configure remote artifact repository",
+    "conanCreditGuideSubTitle2":"2、Execute the following command on the command line to configure artifact repository credentials(conan1.x)",
+    "conanRecipePlaceholder":"The format of RECIPE is <NAME>/VERSION>@<USER>/CHANNEL>",
+    "conanPullGuideSubTitle":"Please execute the following command on the command line to pull(conan1.x)："
 }

@@ -30,7 +30,6 @@ package com.tencent.bkrepo.common.metadata.client
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -104,16 +103,6 @@ interface RRepositoryClient {
         @PathVariable repoName: String,
         @RequestParam type: String? = null
     ): Mono<Response<RepositoryDetail?>>
-
-    @PostMapping("/metadata/save")
-    fun saveMetadata(@RequestBody request: MetadataSaveRequest): Mono<Response<Void>>
-
-    @GetMapping("/metadata/list/{projectId}/{repoName}")
-    fun listMetadata(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-        @RequestParam fullPath: String
-    ): Mono<Response<Map<String, Any>>>
 
     @GetMapping("/repo/stat/{projectId}/{repoName}")
     fun statRepo(

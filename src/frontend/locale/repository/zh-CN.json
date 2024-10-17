@@ -901,5 +901,9 @@
         "feedback": "问题反馈",
         "openSource": "开源社区"
     },
-    "currentVersion": "当前版本"
+    "currentVersion": "当前版本",
+    "conanCreditGuideSubTitle1":"1、在命令行执行以下命令配置远程仓库",
+    "conanCreditGuideSubTitle2":"2、在命令行执行以下命令配置制品仓库凭据(conan1.x)",
+    "conanRecipePlaceholder":"RECIPE的格式为<NAME>/VERSION>@<USER>/CHANNEL>",
+    "conanPullGuideSubTitle":"请在命令行执行以下命令进行拉取(conan1.x)："
 }
