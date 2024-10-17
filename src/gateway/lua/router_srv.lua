@@ -86,6 +86,7 @@ end
 -- 是否转发到容器服务
 if arrayUtil:isInArray(service_name, service_in_container) then
     ngx.var.target = config.container_url .. "/" .. service_name
+    return
 end
 
 ngx.var.target = hostUtil:get_addr(service_name)
