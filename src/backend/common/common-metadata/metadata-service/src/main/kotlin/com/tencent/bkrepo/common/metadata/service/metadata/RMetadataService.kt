@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata
+package com.tencent.bkrepo.common.metadata.service.metadata
 
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -37,7 +37,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 /**
  * 元数据服务接口
  */
-interface MetadataService {
+interface RMetadataService {
 
     /**
      * 查询节点的元数据
@@ -45,21 +45,21 @@ interface MetadataService {
      * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
      * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
      */
-    fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
+    suspend fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
 
     /**
      * 根据请求[request]保存或者更新元数据
      *
      * 如果元数据`key`已经存在则更新，否则创建新的
      */
-    fun saveMetadata(request: MetadataSaveRequest)
+    suspend fun saveMetadata(request: MetadataSaveRequest)
 
     /**
      * 根据请求[request]保存或者更新禁用元数据，只更新禁用相关元数据
      *
      * 如果元数据`key`已经存在则更新，否则创建新的
      */
-    fun addForbidMetadata(request: MetadataSaveRequest)
+    suspend fun addForbidMetadata(request: MetadataSaveRequest)
 
     /**
      * 根据请求[request]删除元数据
@@ -67,5 +67,5 @@ interface MetadataService {
      * @param request 删除元数据请求
      * @param allowDeleteSystemMetadata 是否允许删除系统元数据
      */
-    fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean = true)
+    suspend fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean = true)
 }

@@ -34,6 +34,7 @@ object JobUtils {
                 runnable = this::start,
                 scheduleConf = scheduleConf,
                 scheduleType = type,
+                sharding = batchJobProperties.sharding,
                 group = batchJobProperties.workerGroup,
             )
         }

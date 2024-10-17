@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata.impl.center
+package com.tencent.bkrepo.ddc.component
 
-import com.tencent.bkrepo.common.metadata.util.ClusterUtils
-import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
-import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
-import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.service.metadata.impl.MetadataServiceImpl
-import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.ddc.utils.DdcUtils.DIR_BLOBS
+import org.springframework.stereotype.Component
 
-@Service
-@Conditional(CommitEdgeCenterCondition::class)
-class CommitEdgeCenterMetadataServiceImpl(
-    nodeDao: NodeDao,
-    repositoryProperties: RepositoryProperties,
-    ciPermissionManager: CIPermissionManager
-) : MetadataServiceImpl(
-    nodeDao,
-    repositoryProperties,
-    ciPermissionManager
-) {
-
-    /**
-     * 检查节点地点
-     * 目录没有记录地点，不检查
-     */
-    override fun checkNodeCluster(node: TNode) {
-        if (!node.folder) {
-            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
-        }
+@Component
+class PermissionHelper(private val permissionManager: PermissionManager) {
+    fun checkPathPermission(action: PermissionAction) {
+        val repo = ArtifactContextHolder.getRepoDetail()!!
+        permissionManager.checkNodePermission(
+            action,
+            repo.projectId,
+            repo.name,
+            "/$DIR_BLOBS",
+            public = repo.public,
+            anonymous = false
+        )
     }
 }

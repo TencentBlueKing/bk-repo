@@ -29,33 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata.impl
+package com.tencent.bkrepo.common.metadata.service.metadata.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.artifact.constant.CUSTOM
-import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
-import com.tencent.bkrepo.common.metadata.util.ClusterUtils
-import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
-import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
-import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.message.RepositoryMessageCode
-import com.tencent.bkrepo.repository.model.TMetadata
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
+import com.tencent.bkrepo.common.metadata.model.TMetadata
+import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.service.metadata.RMetadataService
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildMetadataDeletedEvent
+import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildMetadataSavedEvent
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
+import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.service.metadata.MetadataService
-import com.tencent.bkrepo.repository.util.MetadataUtils
-import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataDeletedEvent
-import com.tencent.bkrepo.repository.util.NodeEventFactory.buildMetadataSavedEvent
-import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
@@ -67,21 +63,21 @@ import org.springframework.transaction.annotation.Transactional
 
 /**
  * 元数据服务实现类
+ * TODO: 增加流水线元数据检查
  */
 @Service
-@Conditional(DefaultCondition::class)
-class MetadataServiceImpl(
-    private val nodeDao: NodeDao,
+@Conditional(ReactiveCondition::class)
+class RMetadataServiceImpl(
+    private val nodeDao: RNodeDao,
     private val repositoryProperties: RepositoryProperties,
-    private val ciPermissionManager: CIPermissionManager
-) : MetadataService {
+) : RMetadataService {
 
-    override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
+    override suspend fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
         return MetadataUtils.toMap(nodeDao.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun saveMetadata(request: MetadataSaveRequest) {
+    override suspend fun saveMetadata(request: MetadataSaveRequest) {
         with(request) {
             if (metadata.isNullOrEmpty() && nodeMetadata.isNullOrEmpty()) {
                 logger.info("Metadata is empty, skip saving")
@@ -96,7 +92,6 @@ class MetadataServiceImpl(
                 metadata,
                 MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
             )
-            checkIfModifyPipelineMetadata(node, newMetadata.map { it.key })
             checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
             node.metadata = if (replace) {
                 newMetadata
@@ -111,7 +106,7 @@ class MetadataServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun addForbidMetadata(request: MetadataSaveRequest) {
+    override suspend fun addForbidMetadata(request: MetadataSaveRequest) {
         with(request) {
             val forbidMetadata = MetadataUtils.extractForbidMetadata(nodeMetadata!!)
             if (forbidMetadata.isNullOrEmpty()) {
@@ -123,7 +118,7 @@ class MetadataServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean) {
+    override suspend fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean) {
         with(request) {
             if (keyList.isEmpty()) {
                 logger.info("Metadata key list is empty, skip deleting")
@@ -135,7 +130,6 @@ class MetadataServiceImpl(
             // 检查是否有更新权限
             val node = nodeDao.findOne(query) ?: throw NodeNotFoundException(fullPath)
             ClusterUtils.checkContainsSrcCluster(node.clusterNames)
-            checkIfModifyPipelineMetadata(node, request.keyList)
             node.metadata?.forEach {
                 if (it.key in keyList && it.system && !allowDeleteSystemMetadata) {
                     throw PermissionException("No permission to update system metadata[${it.key}]")
@@ -154,21 +148,6 @@ class MetadataServiceImpl(
 
     fun checkNodeCluster(node: TNode) {
         return
-    }
-
-    private fun checkIfModifyPipelineMetadata(node: TNode, newMetadataKeys: Collection<String>) {
-        val pipelineSource = node.repoName == PIPELINE || node.repoName == CUSTOM
-        val pipelineMetadataKey = newMetadataKeys.find {
-            CIPermissionManager.PIPELINE_METADATA.any { m -> m.equals(it, true) }
-        }
-        val illegal = !node.folder && pipelineSource &&
-            pipelineMetadataKey != null && !ciPermissionManager.whiteListRequest()
-        if (illegal) {
-            ciPermissionManager.throwOrLogError(
-                messageCode = RepositoryMessageCode.PIPELINE_METADATA_UPDATE_NOT_ALLOWED,
-                pipelineMetadataKey!!
-            )
-        }
     }
 
     /**
@@ -196,6 +175,6 @@ class MetadataServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MetadataServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(RMetadataServiceImpl::class.java)
     }
 }

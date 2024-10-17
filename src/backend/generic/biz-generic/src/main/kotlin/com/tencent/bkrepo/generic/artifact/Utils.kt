@@ -32,13 +32,13 @@ import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
 import com.tencent.bkrepo.generic.config.PlatformProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -139,7 +139,12 @@ fun findRemoteMetadata(remoteNodes: List<Any>, fullPath: String): List<MetadataM
 /**
  * 从[remoteNodes]中查询出[fullPath]的父节点，将其元数据更新到[fullPath]的本地父节点
  */
-fun MetadataClient.updateParentMetadata(remoteNodes: List<Any>, projectId: String, repoName: String, fullPath: String) {
+fun MetadataService.updateParentMetadata(
+    remoteNodes: List<Any>,
+    projectId: String,
+    repoName: String,
+    fullPath: String
+) {
     val parents = PathUtils.resolveAncestorFolder(fullPath)
     for (parentFullPath in parents) {
         if (parentFullPath == ROOT) {
