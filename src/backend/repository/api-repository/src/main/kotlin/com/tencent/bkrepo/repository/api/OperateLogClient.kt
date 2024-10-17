@@ -31,8 +31,8 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
+import com.tencent.bkrepo.common.metadata.pojo.log.OpLogListOption
+import com.tencent.bkrepo.common.metadata.pojo.log.OperateLog
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeDownloadsClient")
 @RequestMapping("/service/log")
+@Deprecated("replace with OperateLogService")
 interface OperateLogClient {
 
     @ApiOperation("记录操作日志")

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
-import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
 import com.tencent.bkrepo.opdata.constant.DURATION
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_STRING

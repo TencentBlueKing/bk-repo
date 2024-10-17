@@ -72,6 +72,13 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
      */
     private var shardingCount: Int
 
+    /**
+     * 分表工具类
+     */
+    protected val shardingUtils by lazy {
+        determineShardingUtils()
+    }
+
     init {
         @Suppress("LeakingThis")
         val fieldsWithShardingKey = FieldUtils.getFieldsListWithAnnotation(classType, ShardingKey::class.java)
@@ -83,7 +90,7 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
         this.shardingColumn = determineShardingColumn()
 
         val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-        this.shardingCount = ShardingUtils.shardingCountFor(shardingKey.count)
+        this.shardingCount = shardingUtils.shardingCountFor(shardingKey.count)
     }
 
     @PostConstruct
@@ -222,7 +229,7 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
     }
 
     private fun shardingKeyToCollectionName(shardValue: Any): String {
-        val shardingSequence = ShardingUtils.shardingSequenceFor(shardValue, shardingCount)
+        val shardingSequence = shardingUtils.shardingSequenceFor(shardValue, shardingCount)
         return parseSequenceToCollectionName(shardingSequence)
     }
 
@@ -258,6 +265,8 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
             filteredList
         }.block() ?: emptyList()
     }
+
+    abstract fun determineShardingUtils(): ShardingUtils
 
     companion object {
         private val logger = LoggerFactory.getLogger(ShardingMongoReactiveDao::class.java)

@@ -43,4 +43,6 @@ dependencies {
     compileOnly(project(":common:common-mongo"))
     compileOnly(project(":common:common-service:service-servlet"))
     compileOnly(project(":common:common-service:service-reactive"))
+
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
 }

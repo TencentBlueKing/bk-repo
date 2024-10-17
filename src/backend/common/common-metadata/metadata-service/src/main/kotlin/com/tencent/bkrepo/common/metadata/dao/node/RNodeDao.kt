@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.mongo.reactive.dao.ShardingMongoReactiveDao
+import com.tencent.bkrepo.common.mongo.reactive.dao.HashShardingMongoReactiveDao
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Page
@@ -56,7 +56,7 @@ import java.time.LocalDateTime
  */
 @Repository
 @Conditional(ReactiveCondition::class)
-class RNodeDao: ShardingMongoReactiveDao<TNode>() {
+class RNodeDao: HashShardingMongoReactiveDao<TNode>() {
     /**
      * 查询节点
      */
