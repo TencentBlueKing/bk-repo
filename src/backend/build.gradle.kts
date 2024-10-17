@@ -76,6 +76,7 @@ allprojects {
             dependency("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter:${Versions.ReactiveFeign}")
             dependency("com.tencent.bk.sdk:crypto-java-sdk:${Versions.CryptoJavaSdk}")
             dependency("org.apache.tika:tika-core:${Versions.TiKa}")
+            dependency("com.tencent.bk.sdk:spring-boot-bk-audit-starter:${Versions.audit}")
         }
     }
 

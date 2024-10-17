@@ -25,36 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.enums
+package com.tencent.bkrepo.common.audit.constants
 
-enum class ResourceActionMapping(val resourceType: String, val actions: List<String>) {
-    PROJECT_ACTIONS(
-        ResourceType.PROJECT.id(), listOf(
-        ActionTypeMapping.PROJECT_CREATE.id(),
-        ActionTypeMapping.PROJECT_VIEW.id(),
-        ActionTypeMapping.PROJECT_EDIT.id(),
-        ActionTypeMapping.PROJECT_MANAGE.id(),
-        ActionTypeMapping.REPO_CREATE.id()
-    )
-    ),
-    REPO_ACTIONS(
-        ResourceType.REPO.id(),
-        listOf(
-            ActionTypeMapping.REPO_VIEW.id(),
-            ActionTypeMapping.REPO_EDIT.id(),
-            ActionTypeMapping.REPO_MANAGE.id(),
-            ActionTypeMapping.REPO_DELETE.id(),
-            ActionTypeMapping.NODE_CREATE.id()
-        )
-    ),
-    NODE_ACTIONS(
-        ResourceType.NODE.id(),
-        listOf(
-            ActionTypeMapping.NODE_DELETE.id(),
-            ActionTypeMapping.NODE_DOWNLOAD.id(),
-            ActionTypeMapping.NODE_EDIT.id(),
-            ActionTypeMapping.NODE_WRITE.id(),
-            ActionTypeMapping.NODE_VIEW.id()
-        )
-    );
+import com.tencent.bk.audit.constants.AuditAttributeNames.INSTANCE_ID
+import com.tencent.bk.audit.constants.AuditAttributeNames.INSTANCE_NAME
+
+@Suppress("MaxLineLength")
+object ActionAuditContent {
+
+    private const val CONTENT_TEMPLATE = "[{{$INSTANCE_NAME}}]({{$INSTANCE_ID}})"
+    private const val PROJECT_CODE_CONTENT_TEMPLATE = "[{{@PROJECT_CODE}}]"
+    const val PROJECT_CODE_TEMPLATE = "@PROJECT_CODE"
+    // 项目
+    const val PROJECT_CREATE_CONTENT = "create project $CONTENT_TEMPLATE"
+    const val PROJECT_EDIT_CONTENT = "update project $CONTENT_TEMPLATE"
+    const val PROJECT_VIEW_CONTENT = "get project $CONTENT_TEMPLATE"
+    //仓库
+    const val REPO_VIEW_CONTENT = "get repo info $CONTENT_TEMPLATE in project $PROJECT_CODE_CONTENT_TEMPLATE"
+    const val REPO_CREATE_CONTENT = "create repo info $CONTENT_TEMPLATE in project $PROJECT_CODE_CONTENT_TEMPLATE"
+    const val REPO_LIST_CONTENT = "list repo $CONTENT_TEMPLATE in project $PROJECT_CODE_CONTENT_TEMPLATE"
+    const val REPO_EDIT_CONTENT = "update repo $CONTENT_TEMPLATE in project $PROJECT_CODE_CONTENT_TEMPLATE"
+    const val REPO_DELETE_CONTENT = "delete repo $CONTENT_TEMPLATE in project $PROJECT_CODE_CONTENT_TEMPLATE"
 }

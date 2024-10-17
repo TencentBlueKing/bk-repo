@@ -31,6 +31,7 @@ package com.tencent.bkrepo.auth.pojo.enums
  * 权限中心v3 action映射关系
  */
 enum class ActionTypeMapping(val resType: String, val pAction: String) {
+    PROJECT_CREATE(ResourceType.PROJECT.name, PermissionAction.MANAGE.name),
     PROJECT_MANAGE(ResourceType.PROJECT.name, PermissionAction.MANAGE.name),
     PROJECT_VIEW(ResourceType.PROJECT.name, PermissionAction.READ.name),
     PROJECT_DOWNLOAD(ResourceType.PROJECT.name, PermissionAction.DOWNLOAD.name),

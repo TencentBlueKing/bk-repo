@@ -25,36 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.enums
+package com.tencent.bkrepo.auth.constant
 
-enum class ResourceActionMapping(val resourceType: String, val actions: List<String>) {
-    PROJECT_ACTIONS(
-        ResourceType.PROJECT.id(), listOf(
-        ActionTypeMapping.PROJECT_CREATE.id(),
-        ActionTypeMapping.PROJECT_VIEW.id(),
-        ActionTypeMapping.PROJECT_EDIT.id(),
-        ActionTypeMapping.PROJECT_MANAGE.id(),
-        ActionTypeMapping.REPO_CREATE.id()
-    )
-    ),
-    REPO_ACTIONS(
-        ResourceType.REPO.id(),
-        listOf(
-            ActionTypeMapping.REPO_VIEW.id(),
-            ActionTypeMapping.REPO_EDIT.id(),
-            ActionTypeMapping.REPO_MANAGE.id(),
-            ActionTypeMapping.REPO_DELETE.id(),
-            ActionTypeMapping.NODE_CREATE.id()
-        )
-    ),
-    NODE_ACTIONS(
-        ResourceType.NODE.id(),
-        listOf(
-            ActionTypeMapping.NODE_DELETE.id(),
-            ActionTypeMapping.NODE_DOWNLOAD.id(),
-            ActionTypeMapping.NODE_EDIT.id(),
-            ActionTypeMapping.NODE_WRITE.id(),
-            ActionTypeMapping.NODE_VIEW.id()
-        )
-    );
-}
+const val PROJECT_CREATE_ACTION = "PROJECT_CREATE"
+const val PROJECT_MANAGE_ACTION = "PROJECT_MANAGE"
+const val PROJECT_DOWNLOAD_ACTION = "PROJECT_DOWNLOAD"
+const val PROJECT_EDIT_ACTION = "PROJECT_EDIT"
+const val PROJECT_VIEW_ACTION = "PROJECT_VIEW"
+const val REPO_CREATE_ACTION = "REPO_CREATE"
+const val REPO_MANAGE_ACTION = "REPO_MANAGE"
+const val REPO_VIEW_ACTION = "REPO_VIEW"
+const val REPO_DOWNLOAD_ACTION = "REPO_DOWNLOAD"
+const val REPO_EDIT_ACTION = "REPO_EDIT"
+const val REPO_DELETE_ACTION = "REPO_DELETE"
+const val NODE_CREATE_ACTION = "NODE_CREATE"
+const val NODE_VIEW_ACTION = "NODE_VIEW"
+const val NODE_READ_ACTION = "NODE_READ"
+const val NODE_DOWNLOAD_ACTION = "NODE_DOWNLOAD"
+const val NODE_EDIT_ACTION = "NODE_EDIT"
+const val NODE_WRITE_ACTION = "NODE_WRITE"
+const val NODE_DELETE_ACTION = "NODE_DELETE"
+
+
+const val SYSTEM_RESOURCE = "SYSTEM"
+const val PROJECT_RESOURCE = "PROJECT"
+const val REPO_RESOURCE = "REPO"
+const val NODE_RESOURCE = "NODE"
+const val ENDPOINT_RESOURCE = "ENDPOINT"

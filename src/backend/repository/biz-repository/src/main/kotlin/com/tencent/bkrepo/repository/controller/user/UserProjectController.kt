@@ -27,9 +27,20 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.annotations.AuditRequestBody
+import com.tencent.bk.audit.context.ActionAuditContext
+import com.tencent.bkrepo.auth.constant.PROJECT_CREATE_ACTION
+import com.tencent.bkrepo.auth.constant.PROJECT_EDIT_ACTION
+import com.tencent.bkrepo.auth.constant.PROJECT_RESOURCE
+import com.tencent.bkrepo.auth.constant.PROJECT_VIEW_ACTION
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.audit.constants.ActionAuditContent
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -41,7 +52,6 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.UserProjectCreateRequest
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -62,11 +72,25 @@ class UserProjectController(
     private val permissionManager: PermissionManager,
     private val projectService: ProjectService
 ) {
+    @AuditEntry(
+        actionId = PROJECT_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#userProjectRequest?.name",
+            instanceNames = "#userProjectRequest?.displayName"
+        ),
+        scopeId = "#userProjectRequest?.name",
+        content = ActionAuditContent.PROJECT_CREATE_CONTENT
+    )
     @ApiOperation("创建项目")
     @Principal(PrincipalType.GENERAL)
     @PostMapping("/create")
     fun createProject(
         @RequestAttribute userId: String,
+        @AuditRequestBody
         @RequestBody userProjectRequest: UserProjectCreateRequest
     ): Response<Void> {
         val createRequest = with(userProjectRequest) {
@@ -79,10 +103,24 @@ class UserProjectController(
                 metadata = metadata
             )
         }
+        ActionAuditContext.current().setInstance(createRequest)
         projectService.createProject(createRequest)
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = PROJECT_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#projectId",
+            instanceNames = "#projectId"
+        ),
+        scopeId = "#projectId",
+        content = ActionAuditContent.PROJECT_VIEW_CONTENT
+    )
     @ApiOperation("查询项目是否存在")
     @GetMapping("/exist/{projectId}")
     fun checkExist(
@@ -94,6 +132,19 @@ class UserProjectController(
         return ResponseBuilder.success(projectService.checkExist(projectId))
     }
 
+    @AuditEntry(
+        actionId = PROJECT_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#name",
+            instanceNames = "#displayName"
+        ),
+        scopeId = "#name",
+        content = ActionAuditContent.PROJECT_VIEW_CONTENT
+    )
     @ApiOperation("校验项目参数是否存在")
     @GetMapping("/exist")
     fun checkProjectExist(
@@ -106,6 +157,20 @@ class UserProjectController(
         return ResponseBuilder.success(projectService.checkProjectExist(name, displayName))
     }
 
+
+    @AuditEntry(
+        actionId = PROJECT_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#name",
+            instanceNames = "#$?.name"
+        ),
+        scopeId = "#name",
+        content = ActionAuditContent.PROJECT_EDIT_CONTENT
+    )
     @ApiOperation("编辑项目")
     @PutMapping("/{name}")
     fun updateProject(
@@ -125,6 +190,20 @@ class UserProjectController(
         return ResponseBuilder.success(projectService.searchProject(option))
     }
 
+
+    @AuditEntry(
+        actionId = PROJECT_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#name",
+            instanceNames = "#$?.name"
+        ),
+        scopeId = "#name",
+        content = ActionAuditContent.PROJECT_VIEW_CONTENT
+    )
     @ApiOperation("项目列表")
     @GetMapping("/list")
     fun listProject(
