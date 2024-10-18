@@ -63,8 +63,8 @@ class RpmResourceController(
         actionId = NODE_WRITE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#rpmArtifactInfo?.artifactUri",
-            instanceNames = "#rpmArtifactInfo?.artifactUri"
+            instanceIds = "#rpmArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#rpmArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId"),
@@ -84,8 +84,8 @@ class RpmResourceController(
         actionId = NODE_DOWNLOAD_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#rpmArtifactInfo?.artifactUri",
-            instanceNames = "#rpmArtifactInfo?.artifactUri"
+            instanceIds = "#rpmArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#rpmArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId"),
@@ -147,8 +147,8 @@ class RpmResourceController(
         actionId = NODE_DELETE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#rpmArtifactInfo?.artifactUri",
-            instanceNames = "#rpmArtifactInfo?.artifactUri"
+            instanceIds = "#rpmArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#rpmArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId"),

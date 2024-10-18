@@ -199,8 +199,8 @@ class OciRegistryLocalRepository(
         actionId = NODE_WRITE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#context.artifactInfo?.artifactUri",
-            instanceNames = "#context.artifactInfo?.artifactUri"
+            instanceIds = "#context.artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#context.artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#context?.projectId"),
@@ -258,8 +258,8 @@ class OciRegistryLocalRepository(
         actionId = NODE_WRITE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#context.artifactInfo?.artifactUri",
-            instanceNames = "#context.artifactInfo?.artifactUri"
+            instanceIds = "#context.artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#context.artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#context?.projectId"),

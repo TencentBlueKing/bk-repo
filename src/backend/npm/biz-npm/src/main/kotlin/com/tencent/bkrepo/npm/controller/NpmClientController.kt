@@ -164,8 +164,8 @@ class NpmClientController(
         actionId = NODE_DOWNLOAD_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),

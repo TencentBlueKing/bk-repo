@@ -68,8 +68,8 @@ class ObjectController(
         actionId = NODE_WRITE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#lfsArtifactInfo?.artifactUri",
-            instanceNames = "#lfsArtifactInfo?.artifactUri"
+            instanceIds = "#lfsArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#lfsArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#lfsArtifactInfo?.projectId"),
@@ -90,8 +90,8 @@ class ObjectController(
         actionId = NODE_DOWNLOAD_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#lfsArtifactInfo?.artifactUri",
-            instanceNames = "#lfsArtifactInfo?.artifactUri"
+            instanceIds = "#lfsArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#lfsArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#lfsArtifactInfo?.projectId"),

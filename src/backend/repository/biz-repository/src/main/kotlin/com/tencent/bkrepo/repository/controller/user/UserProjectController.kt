@@ -139,7 +139,7 @@ class UserProjectController(
         instance = AuditInstanceRecord(
             resourceType = PROJECT_RESOURCE,
             instanceIds = "#name",
-            instanceNames = "#$?.name"
+            instanceNames = "#name"
         ),
         scopeId = "#name",
         content = ActionAuditContent.PROJECT_EDIT_CONTENT
@@ -150,8 +150,10 @@ class UserProjectController(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目ID", required = true)
         @PathVariable name: String,
+        @AuditRequestBody
         @RequestBody projectUpdateRequest: ProjectUpdateRequest
     ): Response<Boolean> {
+        ActionAuditContext.current().setInstance(projectUpdateRequest)
         permissionManager.checkProjectPermission(PermissionAction.UPDATE, name)
         return ResponseBuilder.success(projectService.updateProject(name, projectUpdateRequest))
     }

@@ -65,8 +65,8 @@ class ConanUploadDownloadController(
         actionId = NODE_DOWNLOAD_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#conanArtifactInfo?.artifactUri",
-            instanceNames = "#conanArtifactInfo?.artifactUri"
+            instanceIds = "#conanArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#conanArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
@@ -93,8 +93,8 @@ class ConanUploadDownloadController(
         actionId = NODE_WRITE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#conanArtifactInfo?.artifactUri",
-            instanceNames = "#conanArtifactInfo?.artifactUri"
+            instanceIds = "#conanArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#conanArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),

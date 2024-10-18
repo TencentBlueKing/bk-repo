@@ -61,8 +61,8 @@ class ComposerResourceController(
         actionId = NODE_DOWNLOAD_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#composerArtifactInfo?.artifactUri",
-            instanceNames = "#composerArtifactInfo?.artifactUri"
+            instanceIds = "#composerArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#composerArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#composerArtifactInfo?.projectId"),
@@ -98,8 +98,8 @@ class ComposerResourceController(
         actionId = NODE_WRITE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#composerArtifactInfo?.artifactUri",
-            instanceNames = "#composerArtifactInfo?.artifactUri"
+            instanceIds = "#composerArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#composerArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#composerArtifactInfo?.projectId"),

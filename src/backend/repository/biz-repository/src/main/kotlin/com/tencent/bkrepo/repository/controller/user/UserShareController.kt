@@ -83,8 +83,8 @@ class UserShareController(
         actionId = NODE_VIEW_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
@@ -112,8 +112,8 @@ class UserShareController(
         actionId = NODE_VIEW_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#batchShareRecordCreateRequest?.fullPathList",
-            instanceNames = "#batchShareRecordCreateRequest?.fullPathList",
+            instanceIds = "#batchShareRecordCreateRequest?.fullPathList.toString()",
+            instanceNames = "#batchShareRecordCreateRequest?.fullPathList.toString()",
         ),
         attributes = [
             AuditAttribute(
@@ -125,7 +125,7 @@ class UserShareController(
                 value = "#batchShareRecordCreateRequest?.repoName"
             )
         ],
-        scopeId = "#artifactInfo?.projectId",
+        scopeId = "#batchShareRecordCreateRequest?.projectId",
         content = ActionAuditContent.NODE_SHARE_CREATE_CONTENT
     )
     @ApiOperation("批量创建分享链接")
@@ -154,8 +154,8 @@ class UserShareController(
         actionId = NODE_DOWNLOAD_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri",
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()",
         ),
         attributes = [
             AuditAttribute(

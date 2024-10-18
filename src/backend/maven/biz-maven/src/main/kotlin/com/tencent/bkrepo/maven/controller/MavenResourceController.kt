@@ -58,8 +58,8 @@ class MavenResourceController(
         actionId = NODE_WRITE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#mavenArtifactInfo?.artifactUri",
-            instanceNames = "#mavenArtifactInfo?.artifactUri"
+            instanceIds = "#mavenArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#mavenArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#mavenArtifactInfo?.projectId"),
@@ -83,8 +83,8 @@ class MavenResourceController(
         actionId = NODE_DOWNLOAD_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#mavenArtifactInfo?.artifactUri",
-            instanceNames = "#mavenArtifactInfo?.artifactUri"
+            instanceIds = "#mavenArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#mavenArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#mavenArtifactInfo?.projectId"),
@@ -105,8 +105,8 @@ class MavenResourceController(
         actionId = NODE_DELETE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#mavenArtifactInfo?.artifactUri",
-            instanceNames = "#mavenArtifactInfo?.artifactUri"
+            instanceIds = "#mavenArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#mavenArtifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#mavenArtifactInfo?.projectId"),

@@ -81,8 +81,8 @@ class UserMetadataController(
         actionId = NODE_VIEW_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
@@ -110,8 +110,8 @@ class UserMetadataController(
         actionId = REPO_EDIT_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
@@ -150,8 +150,8 @@ class UserMetadataController(
         actionId = REPO_EDIT_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
@@ -188,8 +188,8 @@ class UserMetadataController(
         actionId = REPO_EDIT_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),

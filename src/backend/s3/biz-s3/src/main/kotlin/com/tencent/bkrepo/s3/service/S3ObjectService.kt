@@ -95,8 +95,8 @@ class S3ObjectService(
         actionId = NODE_DOWNLOAD_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
@@ -136,8 +136,8 @@ class S3ObjectService(
         actionId = NODE_WRITE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
@@ -228,13 +228,13 @@ class S3ObjectService(
         actionId = NODE_CREATE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
             AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
-            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#artifactInfo?.artifactUri")
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#artifactInfo?.getArtifactFullPath()")
         ],
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_COPY_CONTENT

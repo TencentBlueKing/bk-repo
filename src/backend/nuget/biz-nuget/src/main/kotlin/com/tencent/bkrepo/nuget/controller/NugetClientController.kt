@@ -89,8 +89,8 @@ class NugetClientController(
         actionId = NODE_WRITE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#publishInfo?.artifactUri",
-            instanceNames = "#publishInfo?.artifactUri"
+            instanceIds = "#publishInfo?.getArtifactFullPath()",
+            instanceNames = "#publishInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#publishInfo?.projectId"),
@@ -115,8 +115,8 @@ class NugetClientController(
         actionId = NODE_DOWNLOAD_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
@@ -152,8 +152,8 @@ class NugetClientController(
         actionId = NODE_DELETE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.artifactUri",
-            instanceNames = "#artifactInfo?.artifactUri"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
