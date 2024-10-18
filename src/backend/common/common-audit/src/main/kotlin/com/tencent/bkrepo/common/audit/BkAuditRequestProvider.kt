@@ -131,7 +131,6 @@ class BkAuditRequestProvider(
 
     companion object {
         private const val HEADER_USER_IDENTIFY_TENANT_ID = "X-User-Identify-Tenant-Id"
-        private const val HEADER_REQUEST_ID = "X-DEVOPS-RID"
         private val logger = LoggerFactory.getLogger(BkAuditRequestProvider::class.java)
     }
 }

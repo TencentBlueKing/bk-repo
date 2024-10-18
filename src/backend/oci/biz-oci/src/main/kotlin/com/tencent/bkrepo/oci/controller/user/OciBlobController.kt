@@ -42,7 +42,6 @@ import com.tencent.bkrepo.common.audit.ActionAuditContent
 import com.tencent.bkrepo.common.audit.NODE_DELETE_ACTION
 import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.BOLBS_UPLOAD_FIRST_STEP_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.BOLBS_UPLOAD_SECOND_STEP_URL
