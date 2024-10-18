@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact
 
+import com.tencent.bkrepo.common.artifact.audit.BkAuditConfiguration
 import com.tencent.bkrepo.common.artifact.cluster.ArtifactClusterConfiguration
 import com.tencent.bkrepo.common.artifact.cns.CnsConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
@@ -70,5 +71,6 @@ import org.springframework.context.annotation.PropertySource
     ArtifactClusterConfiguration::class,
     CnsConfiguration::class,
     ArtifactRouterControllerConfiguration::class,
+    BkAuditConfiguration::class,
 )
 class ArtifactAutoConfiguration

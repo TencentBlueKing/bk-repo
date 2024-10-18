@@ -32,13 +32,13 @@ import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bk.audit.annotations.AuditRequestBody
 import com.tencent.bk.audit.context.ActionAuditContext
-import com.tencent.bkrepo.common.audit.PROJECT_CREATE_ACTION
-import com.tencent.bkrepo.common.audit.PROJECT_EDIT_ACTION
-import com.tencent.bkrepo.common.audit.PROJECT_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_RESOURCE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal

@@ -31,7 +31,6 @@
 
 dependencies {
     api(project(":common:common-api"))
-    api(project(":common:common-audit"))
     api(project(":common:common-artifact:artifact-api"))
     api(project(":common:common-query:query-api"))
     api(project(":common:common-storage:storage-api"))

@@ -52,7 +52,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.audit
+package com.tencent.bkrepo.common.artifact.audit
 
 import com.tencent.bk.audit.filter.AuditPostFilter
 import com.tencent.bk.audit.model.AuditEvent

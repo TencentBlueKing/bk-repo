@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.audit
+package com.tencent.bkrepo.common.artifact.audit
 
 import com.tencent.bk.audit.constants.AuditAttributeNames.INSTANCE_ID
 import com.tencent.bk.audit.constants.AuditAttributeNames.INSTANCE_NAME

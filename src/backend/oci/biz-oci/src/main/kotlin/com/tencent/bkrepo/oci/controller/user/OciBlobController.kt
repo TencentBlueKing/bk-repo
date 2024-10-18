@@ -38,10 +38,10 @@ import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.audit.ActionAuditContent
-import com.tencent.bkrepo.common.audit.NODE_DELETE_ACTION
-import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
-import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.BOLBS_UPLOAD_FIRST_STEP_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.BOLBS_UPLOAD_SECOND_STEP_URL
