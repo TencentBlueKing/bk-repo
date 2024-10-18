@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
@@ -40,7 +41,6 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadP
 import com.tencent.bkrepo.job.migrate.utils.MigratedTaskNumberPriorityQueue
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
@@ -58,7 +58,7 @@ class MigrateExecutor(
     executingTaskRecorder: ExecutingTaskRecorder,
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     private val mongoTemplate: MongoTemplate
 ) : BaseTaskExecutor(
     properties,
@@ -134,14 +134,14 @@ class MigrateExecutor(
     override fun prepare(context: MigrationContext): MigrationContext {
         val task = context.task
 
-        val repo = repositoryClient.getRepoDetail(task.projectId, task.repoName).data!!
+        val repo = repositoryService.getRepoDetail(task.projectId, task.repoName)!!
         // 任务首次执行才更新仓库配置，从上次中断点继续执行时不需要重复更新
         return if (repo.storageCredentials?.key != task.dstStorageKey) {
             val startDate = LocalDateTime.now()
             val newTask = migrateRepoStorageTaskDao.updateStartDate(task.id!!, startDate)!!
             logger.info("update migrate task of [${task.projectId}/${task.repoName}] startDate[$startDate]")
             // 修改repository配置，保证之后上传的文件直接保存到新存储实例中，文件下载时，当前实例找不到的情况下会去默认存储找
-            repositoryClient.updateStorageCredentialsKey(task.projectId, task.repoName, task.dstStorageKey)
+            repositoryService.updateStorageCredentialsKey(task.projectId, task.repoName, task.dstStorageKey)
             logger.info("update repo[${task.projectId}/${task.repoName}] dstStorageKey[${task.dstStorageKey}]")
             context.copy(task = newTask.toDto())
         } else {

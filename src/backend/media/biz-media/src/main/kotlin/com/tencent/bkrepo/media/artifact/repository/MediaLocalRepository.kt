@@ -10,7 +10,7 @@ class MediaLocalRepository : LocalRepository() {
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, getArtifactFullPath(), context.userId)
-            nodeClient.deleteNode(nodeDeleteRequest)
+            nodeService.deleteNode(nodeDeleteRequest)
         }
     }
 }

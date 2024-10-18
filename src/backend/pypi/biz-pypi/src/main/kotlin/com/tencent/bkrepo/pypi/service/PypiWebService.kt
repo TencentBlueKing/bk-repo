@@ -34,6 +34,7 @@ package com.tencent.bkrepo.pypi.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -41,9 +42,9 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -53,7 +54,7 @@ import java.time.LocalDateTime
 
 @Service
 class PypiWebService(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val packageClient: PackageClient
 ) : ArtifactService() {
 
@@ -82,12 +83,14 @@ class PypiWebService(
         pageNumber: Int,
         pageSize: Int
     ): Page<PackageVersion> {
-        val data = nodeClient.listNodePage(
-            projectId = pypiArtifactInfo.projectId,
-            repoName = pypiArtifactInfo.repoName,
-            path = PathUtils.normalizePath(PackageKeys.resolvePypi(packageKey)),
+        val data = nodeService.listNodePage(
+            ArtifactInfo(
+                pypiArtifactInfo.projectId,
+                pypiArtifactInfo.repoName,
+                PathUtils.normalizePath(PackageKeys.resolvePypi(packageKey))
+            ),
             option = NodeListOption(pageNumber, pageSize, includeFolder = false, deep = true)
-        ).data!!
+        )
         val packageVersionList = data.records.map {
             val version = parseSemVersion(it.path).toString()
             val packageVersion = packageClient.findVersionByName(it.projectId, it.repoName, packageKey, version).data

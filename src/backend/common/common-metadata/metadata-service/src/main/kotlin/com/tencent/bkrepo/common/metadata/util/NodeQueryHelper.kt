@@ -277,7 +277,7 @@ object NodeQueryHelper {
         return Pair(null, emptyList())
     }
 
-    private fun listPermissionPaths(
+    fun listPermissionPaths(
         userId: String,
         projectId: String,
         repoName: String,

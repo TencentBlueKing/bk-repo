@@ -34,7 +34,7 @@ import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.InstanceInfoDTO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.service.bkiamv3.BkiamV3BaseService
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
@@ -46,7 +46,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BkiamRepoResourceService(
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     val mongoTemplate: MongoTemplate
 ): BkiamResourceBaseService, BkiamV3BaseService(mongoTemplate) {
     override fun resourceType(): ResourceType {
@@ -97,7 +97,7 @@ class BkiamRepoResourceService(
             offset = page.offset
             limit = page.limit.toInt()
         }
-        val repoPage = repositoryClient.rangeQuery(RepoRangeQueryRequest(idList, projectId, offset, limit)).data!!
+        val repoPage = repositoryService.rangeQuery(RepoRangeQueryRequest(idList, projectId, offset, limit))
         val repos = repoPage.records.map {
             val entity = InstanceInfoDTO()
             entity.id = it!!.id

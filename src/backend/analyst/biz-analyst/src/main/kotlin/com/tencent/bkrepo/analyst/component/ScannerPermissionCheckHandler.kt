@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
@@ -153,5 +154,5 @@ class ScannerPermissionCheckHandler(
     }
 
     private fun repoDetail(projectId: String, repoName: String) =
-        ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
+        ArtifactContextHolder.getRepoDetail(RepositoryId(projectId, repoName))
 }

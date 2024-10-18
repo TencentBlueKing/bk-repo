@@ -30,8 +30,10 @@ package com.tencent.bkrepo.common.mongo.reactive.dao
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import reactor.core.publisher.Flux
 
 /**
  * mongo db reactive 数据访问层接口
@@ -102,4 +104,14 @@ interface MongoReactiveDao<E> {
      * 查询并更新操作
      */
     suspend fun <T> findAndModify(query: Query, update: Update, options: FindAndModifyOptions, clazz: Class<T>): T?
+
+    /**
+     * 流查询
+     */
+    suspend fun <T> stream(query: Query, clazz: Class<T>): Flux<T>
+
+    /**
+     * 文档聚合操作
+     */
+    suspend fun <O> aggregate(aggregation: Aggregation, outputType: Class<O>): MutableList<O>
 }
