@@ -34,9 +34,11 @@ import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.file.BasedRepositoryNodeRetainResolver
 import com.tencent.bkrepo.job.config.properties.ExpiredCacheFileCleanupJobProperties
 import com.tencent.bkrepo.job.metrics.StorageCacheMetrics
 import org.slf4j.LoggerFactory
@@ -59,6 +61,7 @@ class ExpiredCacheFileCleanupJob(
     private val clusterProperties: ClusterProperties,
     private val storageProperties: StorageProperties,
     private val storageCacheMetrics: StorageCacheMetrics,
+    private val fileRetainResolver: BasedRepositoryNodeRetainResolver,
 ) : DefaultContextJob(properties) {
 
     data class TStorageCredentials(
@@ -74,6 +77,7 @@ class ExpiredCacheFileCleanupJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     override fun doStart0(jobContext: JobContext) {
+        fileRetainResolver.refreshRetainNode()
         // cleanup default storage
         if (DEFAULT_STORAGE_KEY !in properties.ignoredStorageCredentialsKeys) {
             cleanupStorage(storageProperties.defaultStorageCredentials())

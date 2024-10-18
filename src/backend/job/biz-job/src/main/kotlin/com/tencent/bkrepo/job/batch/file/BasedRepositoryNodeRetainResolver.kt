@@ -23,7 +23,6 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import java.time.LocalDateTime
 
@@ -32,16 +31,11 @@ import java.time.LocalDateTime
  * */
 class BasedRepositoryNodeRetainResolver(
     private val expireConfig: RepositoryExpireConfig,
-    taskScheduler: ThreadPoolTaskScheduler,
     private val fileCacheService: FileCacheService,
     private val mongoTemplate: MongoTemplate,
 ) : NodeRetainResolver {
 
     private var retainNodes = HashMap<String, RetainNode>()
-
-    init {
-        taskScheduler.scheduleWithFixedDelay(this::refreshRetainNode, expireConfig.cacheTime)
-    }
 
     override fun retain(sha256: String): Boolean {
         return retainNodes.contains(sha256)
@@ -51,7 +45,7 @@ class BasedRepositoryNodeRetainResolver(
         return retainNodes[sha256]
     }
 
-    private fun refreshRetainNode() {
+    fun refreshRetainNode() {
         logger.info("Refresh retain nodes start. size of nodes ${retainNodes.size}")
         try {
             val temp = HashMap<String, RetainNode>()
