@@ -46,7 +46,6 @@ class ArtifactPreloadStrategyDao : SimpleMongoDao<TArtifactPreloadStrategy>() {
         with(request) {
             val criteria = build(projectId, repoName)
                 .and(ID).isEqualTo(id)
-                .and(TArtifactPreloadStrategy::type.name).ne(PreloadStrategyType.INTELLIGENT.name)
             val update = Update()
             update.set(TArtifactPreloadStrategy::lastModifiedBy.name, operator)
             update.set(TArtifactPreloadStrategy::lastModifiedDate.name, LocalDateTime.now())
