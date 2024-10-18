@@ -130,6 +130,13 @@ class StorageHealthMonitor(
                         try {
                             val future = executorService.submit { checker.clean() }
                             future.get(1, TimeUnit.SECONDS)
+                        } catch (exception: ExecutionException) {
+                            val errorMsg = "Clean checker error: $exception"
+                            if (exception.cause is AccessDeniedException) {
+                                logger.error(errorMsg, exception)
+                            } else {
+                                logger.warn(errorMsg, exception)
+                            }
                         } catch (exception: Exception) {
                             logger.warn("Clean checker error: $exception", exception)
                         }

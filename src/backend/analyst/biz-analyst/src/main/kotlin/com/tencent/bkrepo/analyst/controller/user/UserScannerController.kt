@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.analyst.pojo.response.ScannerBase
 import com.tencent.bkrepo.analyst.service.ScannerService
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
+import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired

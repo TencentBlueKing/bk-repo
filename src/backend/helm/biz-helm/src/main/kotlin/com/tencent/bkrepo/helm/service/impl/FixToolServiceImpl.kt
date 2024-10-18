@@ -438,7 +438,7 @@ class FixToolServiceImpl : FixToolService, AbstractChartService() {
                     nodeMetadata = metadata,
                     operator = userId
                 )
-                metadataClient.saveMetadata(metadataSaveRequest)
+                metadataService.saveMetadata(metadataSaveRequest)
             } catch (e: Exception) {
                 logger.warn("error occurred while updating metadata of $node, error: ${e.message}")
             }

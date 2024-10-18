@@ -39,7 +39,7 @@ import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.service.metadata.PackageMetadataService
-import com.tencent.bkrepo.repository.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

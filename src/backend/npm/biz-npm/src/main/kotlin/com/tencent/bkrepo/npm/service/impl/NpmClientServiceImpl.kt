@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.audit.ActionAuditContent
 import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.audit.NODE_RESOURCE
@@ -81,7 +82,6 @@ import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
@@ -97,7 +97,7 @@ import kotlin.system.measureTimeMillis
 @Service
 class NpmClientServiceImpl(
     private val npmDependentHandler: NpmDependentHandler,
-    private val metadataClient: MetadataClient,
+    private val metadataService: MetadataService,
     private val npmPackageHandler: NpmPackageHandler
 ) : NpmClientService, AbstractNpmService() {
 
@@ -532,7 +532,7 @@ class NpmClientServiceImpl(
                 ?.contains(TGZ_FULL_PATH_WITH_DASH_SEPARATOR) ?: true
             val tgzFullPath = NpmUtils.getTgzPath(npmPackageMetaData.name!!, entry.key, pathWithDash)
             if (entry.value.any().containsKey("deprecated")) {
-                metadataClient.saveMetadata(
+                metadataService.saveMetadata(
                     MetadataSaveRequest(
                         projectId = artifactInfo.projectId,
                         repoName = artifactInfo.repoName,

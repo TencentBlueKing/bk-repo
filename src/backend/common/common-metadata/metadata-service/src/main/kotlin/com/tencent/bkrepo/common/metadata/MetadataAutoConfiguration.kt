@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.metadata
 
+import com.tencent.bkrepo.common.metadata.properties.OperateProperties
+import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -36,5 +38,9 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @ConditionalOnWebApplication
 @ComponentScan(basePackages = ["com.tencent.bkrepo.common.metadata"])
-@EnableConfigurationProperties(StorageProperties::class)
+@EnableConfigurationProperties(
+    StorageProperties::class,
+    OperateProperties::class,
+    ProjectUsageStatisticsProperties::class
+)
 class MetadataAutoConfiguration

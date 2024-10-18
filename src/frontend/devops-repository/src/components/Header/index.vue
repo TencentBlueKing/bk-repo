@@ -225,8 +225,7 @@
             },
             clickHelps (id) {
                 const languagePath = this.language === 'zh-cn' ? 'ZH' : 'EN'
-                const urlHead = document.location.protocol === 'https:' ? 'https://' : 'http://'
-                const url = urlHead + DOC_URL + '/markdown/' + languagePath + '/Devops/3.0/UserGuide/intro/README.md'
+                const url = DOC_URL + '/markdown/' + languagePath + '/Devops/3.0/UserGuide/intro/README.md'
                 switch (id) {
                     case 'documentation':
                         window.open(url, '_blank')

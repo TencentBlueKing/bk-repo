@@ -53,10 +53,10 @@ import com.tencent.bkrepo.common.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
 import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -85,7 +85,7 @@ import java.net.URLDecoder
 @Service
 class S3ObjectService(
     private val nodeClient: NodeClient,
-    private val metadataClient: MetadataClient
+    private val metadataService: MetadataService
 ) : ArtifactService() {
 
     @AuditEntry(
@@ -291,7 +291,7 @@ class S3ObjectService(
                 nodeMetadata = metadataHeader.map { MetadataModel(it, HeaderUtils.getHeader(it).toString()) },
                 replace = true
             )
-            metadataClient.saveMetadata(saveRequest)
+            metadataService.saveMetadata(saveRequest)
             return nodeDetail.copy(nodeMetadata = saveRequest.nodeMetadata!!)
         }
         return nodeDetail
