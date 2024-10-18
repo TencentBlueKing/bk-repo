@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.constant
+package com.tencent.bkrepo.common.audit
 
 const val PROJECT_CREATE_ACTION = "PROJECT_CREATE"
 const val PROJECT_MANAGE_ACTION = "PROJECT_MANAGE"

@@ -27,9 +27,18 @@
 
 package com.tencent.bkrepo.ddc.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_BUCKET
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
@@ -52,6 +61,24 @@ class LegacyReferencesController(
     private val referenceArtifactService: ReferenceArtifactService,
     private val permissionHelper: PermissionHelper,
 ) {
+
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.artifactUri",
+            instanceNames = "#artifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @ApiOperation("获取ref")
     @GetMapping(
         "/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}.raw",
@@ -71,6 +98,23 @@ class LegacyReferencesController(
         referenceArtifactService.downloadRef(artifactInfo)
     }
 
+    @AuditEntry(
+        actionId = NODE_WRITE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_WRITE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.artifactUri",
+            instanceNames = "#artifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     @PutMapping(
         "/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}",
         consumes = [MediaType.APPLICATION_OCTET_STREAM_VALUE]
@@ -85,6 +129,23 @@ class LegacyReferencesController(
         referenceArtifactService.createRef(artifactInfo, file)
     }
 
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.artifactUri",
+            instanceNames = "#artifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @DeleteMapping("/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}")
     fun delete(
         @ApiParam(value = "ddc ref", required = true)

@@ -27,8 +27,18 @@
 
 package com.tencent.bkrepo.lfs.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
+import com.tencent.bkrepo.common.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.audit.REPO_RESOURCE
 import com.tencent.bkrepo.lfs.artifact.LfsArtifactInfo
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
@@ -53,11 +63,45 @@ class ObjectController(
         return objectService.batch(projectId, repoName, request)
     }
 
+    @AuditEntry(
+        actionId = NODE_WRITE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_WRITE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#lfsArtifactInfo?.artifactUri",
+            instanceNames = "#lfsArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#lfsArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#lfsArtifactInfo?.repoName")
+        ],
+        scopeId = "#lfsArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     @PutMapping("/{projectId}/{repoName}/**")
     fun upload(@ArtifactPathVariable lfsArtifactInfo: LfsArtifactInfo, file: ArtifactFile) {
         objectService.upload(lfsArtifactInfo, file)
     }
 
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#lfsArtifactInfo?.artifactUri",
+            instanceNames = "#lfsArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#lfsArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#lfsArtifactInfo?.repoName")
+        ],
+        scopeId = "#lfsArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping("/{projectId}/{repoName}/**")
     fun download(@ArtifactPathVariable lfsArtifactInfo: LfsArtifactInfo) {
         objectService.download(lfsArtifactInfo)

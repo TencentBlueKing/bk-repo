@@ -31,8 +31,15 @@
 
 package com.tencent.bkrepo.maven.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.maven.api.MavenWebResource
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
@@ -48,11 +55,47 @@ class MavenWebController(
     private val mavenExtService: MavenExtService
 ) : MavenWebResource {
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#mavenArtifactInfo?.repoName",
+            instanceNames = "#mavenArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#mavenArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey")
+        ],
+        scopeId = "#mavenArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
+    )
     override fun deletePackage(mavenArtifactInfo: MavenDeleteArtifactInfo, packageKey: String): Response<Void> {
         mavenService.delete(mavenArtifactInfo, packageKey, null)
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#mavenArtifactInfo?.repoName",
+            instanceNames = "#mavenArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#mavenArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey"),
+            AuditAttribute(name = ActionAuditContent.VERSION_TEMPLATE, value = "#version")
+
+        ],
+        scopeId = "#mavenArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
+    )
     override fun deleteVersion(
         mavenArtifactInfo: MavenDeleteArtifactInfo,
         packageKey: String,

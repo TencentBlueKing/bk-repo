@@ -27,6 +27,10 @@
 
 package com.tencent.bkrepo.pypi.artifact.repository
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
@@ -41,6 +45,9 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.artifact.util.version.SemVersionParser
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -226,6 +233,23 @@ class PypiLocalRepository(
     /**
      * pypi 产品删除接口
      */
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactFullPath",
+            instanceNames = "#artifactFullPath"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#context?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#context?.repoName")
+        ],
+        scopeId = "#context?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     override fun remove(context: ArtifactRemoveContext) {
         val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
         val name = PackageKeys.resolvePypi(packageKey)

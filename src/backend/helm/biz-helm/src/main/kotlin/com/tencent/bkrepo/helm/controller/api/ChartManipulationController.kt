@@ -31,8 +31,16 @@
 
 package com.tencent.bkrepo.helm.controller.api
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.CHART_DELETE_VERSION_URL
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_PUSH_PLUGIN_URL
@@ -56,6 +64,23 @@ class ChartManipulationController(
     /**
      * helm push
      */
+    @AuditEntry(
+        actionId = NODE_WRITE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_WRITE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.artifactUri",
+            instanceNames = "#artifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     @PostMapping(HELM_PUSH_URL, HELM_PUSH_PLUGIN_URL)
     @ResponseStatus(HttpStatus.CREATED)
     fun upload(
@@ -69,6 +94,23 @@ class ChartManipulationController(
     /**
      * helm push prov
      */
+    @AuditEntry(
+        actionId = NODE_WRITE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_WRITE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.artifactUri",
+            instanceNames = "#artifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     @PostMapping(HELM_PUSH_PROV_URL)
     @ResponseStatus(HttpStatus.CREATED)
     fun uploadProv(
@@ -82,6 +124,23 @@ class ChartManipulationController(
     /**
      * delete chart version
      */
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.artifactUri",
+            instanceNames = "#artifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @DeleteMapping(CHART_DELETE_VERSION_URL)
     fun deleteVersion(
         @RequestAttribute userId: String,

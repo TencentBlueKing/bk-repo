@@ -31,11 +31,20 @@
 
 package com.tencent.bkrepo.nuget.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON
 import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_XML
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.DELETE_V2
@@ -73,6 +82,23 @@ class NugetClientController(
      * Content-Type multipart/form-data
      * A package with the provided ID and version already exists, status code 409
      */
+    @AuditEntry(
+        actionId = NODE_WRITE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_WRITE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#publishInfo?.artifactUri",
+            instanceNames = "#publishInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#publishInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#publishInfo?.repoName")
+        ],
+        scopeId = "#publishInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     @PutMapping(PUBLISH_V2)
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun publish(
@@ -82,6 +108,23 @@ class NugetClientController(
         nugetClientService.publish(userId, publishInfo)
     }
 
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.artifactUri",
+            instanceNames = "#artifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping(DOWNLOAD_V2)
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun download(
@@ -102,6 +145,23 @@ class NugetClientController(
     /**
      * nuget delete <packageID> <packageVersion> [ options ]
      */
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.artifactUri",
+            instanceNames = "#artifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @DeleteMapping(DELETE_V2)
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     fun delete(

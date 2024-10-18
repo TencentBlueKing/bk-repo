@@ -36,11 +36,11 @@ import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bk.audit.context.ActionAuditContext
-import com.tencent.bkrepo.auth.constant.NODE_CREATE_ACTION
-import com.tencent.bkrepo.auth.constant.NODE_DELETE_ACTION
-import com.tencent.bkrepo.auth.constant.NODE_EDIT_ACTION
-import com.tencent.bkrepo.auth.constant.NODE_RESOURCE
-import com.tencent.bkrepo.auth.constant.NODE_VIEW_ACTION
+import com.tencent.bkrepo.common.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.audit.NODE_EDIT_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -51,7 +51,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.audit.constants.ActionAuditContent
+import com.tencent.bkrepo.common.audit.ActionAuditContent
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
@@ -382,7 +382,7 @@ class UserNodeController(
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
             AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
-            AuditAttribute(name = ActionAuditContent.NEW_FULL_PATH_TEMPLATE, value = "#newFullPath")
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#newFullPath")
         ],
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_RENAME_CONTENT
@@ -446,7 +446,7 @@ class UserNodeController(
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#request?.srcProjectId"),
             AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#request?.srcRepoName"),
-            AuditAttribute(name = ActionAuditContent.NEW_FULL_PATH_TEMPLATE, value = "#request?.destFullPath")
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#request?.destFullPath")
         ],
         scopeId = "#request?.srcProjectId",
         content = ActionAuditContent.NODE_RENAME_CONTENT
@@ -488,7 +488,7 @@ class UserNodeController(
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
             AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
-            AuditAttribute(name = ActionAuditContent.NEW_FULL_PATH_TEMPLATE, value = "#newFullPath")
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#newFullPath")
         ],
         scopeId = "#request?.srcProjectId",
         content = ActionAuditContent.NODE_COPY_CONTENT

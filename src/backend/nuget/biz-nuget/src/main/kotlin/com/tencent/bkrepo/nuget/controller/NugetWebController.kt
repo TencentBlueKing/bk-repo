@@ -1,8 +1,15 @@
 package com.tencent.bkrepo.nuget.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
@@ -30,6 +37,24 @@ import org.springframework.web.bind.annotation.RestController
 class NugetWebController(
     private val nugetWebService: NugetWebService
 ) {
+
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
+    )
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @ApiOperation("删除仓库下的包")
     @DeleteMapping(NUGET_EXT_DELETE_PACKAGE)
@@ -43,6 +68,25 @@ class NugetWebController(
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey"),
+            AuditAttribute(name = ActionAuditContent.VERSION_TEMPLATE, value = "#version")
+
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
+    )
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @ApiOperation("删除仓库下的包版本")
     @DeleteMapping(NUGET_EXT_DELETE_VERSION)

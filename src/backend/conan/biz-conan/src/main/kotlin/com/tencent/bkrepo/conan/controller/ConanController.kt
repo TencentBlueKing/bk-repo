@@ -27,10 +27,18 @@
 
 package com.tencent.bkrepo.conan.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.conan.constant.CONANFILE
 import com.tencent.bkrepo.conan.constant.CONANINFO
@@ -181,6 +189,23 @@ class ConanController(
     /**
      * 获取package下文件
      */
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.artifactUri",
+            instanceNames = "#conanArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping(PACKAGE_REVISION_FILE_V2)
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getPackageRevisionFile(
@@ -192,6 +217,23 @@ class ConanController(
     /**
      * 上传文件
      */
+    @AuditEntry(
+        actionId = NODE_WRITE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_WRITE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.artifactUri",
+            instanceNames = "#conanArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     @PutMapping(PACKAGE_REVISION_FILE_V2)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun uploadPackageRevisionFile(
@@ -215,6 +257,23 @@ class ConanController(
     /**
      * 获取recipe下文件
      */
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.artifactUri",
+            instanceNames = "#conanArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping(RECIPE_REVISION_FILE_V2)
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getRecipeRevisionFile(
@@ -226,6 +285,23 @@ class ConanController(
     /**
      * 上传文件
      */
+    @AuditEntry(
+        actionId = NODE_WRITE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_WRITE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.artifactUri",
+            instanceNames = "#conanArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     @PutMapping(RECIPE_REVISION_FILE_V2)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun uploadRecipeRevisionFile(

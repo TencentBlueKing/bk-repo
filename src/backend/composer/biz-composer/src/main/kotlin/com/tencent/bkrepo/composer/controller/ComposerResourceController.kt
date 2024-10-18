@@ -31,7 +31,15 @@
 
 package com.tencent.bkrepo.composer.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.composer.api.ComposerResource
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
@@ -45,6 +53,24 @@ class ComposerResourceController(
     @Autowired
     private val composerService: ComposerService
 ) : ComposerResource {
+
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#composerArtifactInfo?.artifactUri",
+            instanceNames = "#composerArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#composerArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#composerArtifactInfo?.repoName")
+        ],
+        scopeId = "#composerArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     override fun installRequire(composerArtifactInfo: ComposerArtifactInfo) {
         composerService.installRequire(composerArtifactInfo)
     }
@@ -65,6 +91,23 @@ class ComposerResourceController(
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_WRITE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_WRITE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#composerArtifactInfo?.artifactUri",
+            instanceNames = "#composerArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#composerArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#composerArtifactInfo?.repoName")
+        ],
+        scopeId = "#composerArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     override fun deploy(composerArtifactInfo: ComposerArtifactInfo, file: ArtifactFile) {
         composerService.deploy(composerArtifactInfo, file)
     }

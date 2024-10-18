@@ -31,8 +31,15 @@
 
 package com.tencent.bkrepo.rpm.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.rpm.api.RpmWebResource
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
@@ -46,11 +53,48 @@ import org.springframework.web.bind.annotation.RestController
 class RpmResourceWebController(
     private val rpmWebService: RpmWebService
 ) : RpmWebResource {
+
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#rpmArtifactInfo?.repoName",
+            instanceNames = "#rpmArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey")
+        ],
+        scopeId = "#rpmArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
+    )
     override fun deletePackage(rpmArtifactInfo: RpmArtifactInfo, packageKey: String): Response<Void> {
         rpmWebService.deletePackage(rpmArtifactInfo, packageKey)
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#rpmArtifactInfo?.repoName",
+            instanceNames = "#rpmArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey"),
+            AuditAttribute(name = ActionAuditContent.VERSION_TEMPLATE, value = "#version")
+
+        ],
+        scopeId = "#rpmArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
+    )
     override fun deleteVersion(rpmArtifactInfo: RpmArtifactInfo, packageKey: String, version: String?): Response<Void> {
         rpmWebService.delete(rpmArtifactInfo, packageKey, version)
         return ResponseBuilder.success()

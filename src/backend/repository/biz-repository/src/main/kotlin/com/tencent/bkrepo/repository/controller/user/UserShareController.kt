@@ -36,9 +36,9 @@ import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bk.audit.context.ActionAuditContext
-import com.tencent.bkrepo.auth.constant.NODE_DOWNLOAD_ACTION
-import com.tencent.bkrepo.auth.constant.NODE_RESOURCE
-import com.tencent.bkrepo.auth.constant.NODE_VIEW_ACTION
+import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -47,7 +47,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.audit.constants.ActionAuditContent
+import com.tencent.bkrepo.common.audit.ActionAuditContent
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -183,7 +183,6 @@ class UserShareController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ) {
         val downloadUser = downloadUserId ?: userId
-        ActionAuditContext.current().addExtendData("token", token)
         ActionAuditContext.current().addExtendData("downloadUser", downloadUser)
         shareService.download(downloadUser, token, artifactInfo)
     }

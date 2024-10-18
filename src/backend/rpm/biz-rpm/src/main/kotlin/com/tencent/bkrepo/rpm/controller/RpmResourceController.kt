@@ -31,8 +31,20 @@
 
 package com.tencent.bkrepo.rpm.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.audit.ActionAuditContent
+import com.tencent.bkrepo.common.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
+import com.tencent.bkrepo.common.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.audit.REPO_RESOURCE
 import com.tencent.bkrepo.rpm.api.RpmResource
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import com.tencent.bkrepo.rpm.servcie.RpmService
@@ -43,22 +55,108 @@ import org.springframework.web.bind.annotation.RestController
 class RpmResourceController(
     private val rpmService: RpmService
 ) : RpmResource {
+
+    @AuditEntry(
+        actionId = NODE_WRITE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_WRITE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#rpmArtifactInfo?.artifactUri",
+            instanceNames = "#rpmArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#rpmArtifactInfo?.repoName")
+        ],
+        scopeId = "#rpmArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     override fun deploy(rpmArtifactInfo: RpmArtifactInfo, artifactFile: ArtifactFile) {
         rpmService.deploy(rpmArtifactInfo, artifactFile)
     }
 
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#rpmArtifactInfo?.artifactUri",
+            instanceNames = "#rpmArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#rpmArtifactInfo?.repoName")
+        ],
+        scopeId = "#rpmArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     override fun install(rpmArtifactInfo: RpmArtifactInfo) {
         rpmService.install(rpmArtifactInfo)
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#rpmArtifactInfo?.repoName",
+            instanceNames = "#rpmArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId")
+        ],
+        scopeId = "#rpmArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_EDIT_CONTENT
+    )
     override fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
+        ActionAuditContext.current().setInstance(groups)
         rpmService.addGroups(rpmArtifactInfo, groups)
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#rpmArtifactInfo?.repoName",
+            instanceNames = "#rpmArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId")
+        ],
+        scopeId = "#rpmArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_EDIT_CONTENT
+    )
     override fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
+        ActionAuditContext.current().setInstance(groups)
         rpmService.deleteGroups(rpmArtifactInfo, groups)
     }
 
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#rpmArtifactInfo?.artifactUri",
+            instanceNames = "#rpmArtifactInfo?.artifactUri"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#rpmArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#rpmArtifactInfo?.repoName")
+        ],
+        scopeId = "#rpmArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @DeleteMapping(RpmArtifactInfo.RPM)
     fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
         rpmService.delete(rpmArtifactInfo)
