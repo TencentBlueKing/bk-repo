@@ -37,8 +37,6 @@ import com.tencent.bkrepo.common.audit.ActionAuditContent
 import com.tencent.bkrepo.common.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.audit.NODE_WRITE_ACTION
-import com.tencent.bkrepo.common.audit.REPO_EDIT_ACTION
-import com.tencent.bkrepo.common.audit.REPO_RESOURCE
 import com.tencent.bkrepo.lfs.artifact.LfsArtifactInfo
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
