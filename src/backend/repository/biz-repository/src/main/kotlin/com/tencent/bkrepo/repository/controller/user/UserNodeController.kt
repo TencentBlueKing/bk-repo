@@ -36,11 +36,6 @@ import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bk.audit.context.ActionAuditContext
-import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
-import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
-import com.tencent.bkrepo.common.artifact.audit.NODE_EDIT_ACTION
-import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -49,9 +44,14 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
@@ -218,8 +218,8 @@ class UserNodeController(
         actionId = NODE_DELETE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#fullPaths",
-            instanceNames = "#fullPaths"
+            instanceIds = "#fullPaths.toString()",
+            instanceNames = "#fullPaths.toString()"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
@@ -245,6 +245,7 @@ class UserNodeController(
             fullPaths = fullPaths,
             operator = userId,
         )
+        ActionAuditContext.current().setInstance(nodesDeleteRequest)
         return ResponseBuilder.success(nodeService.deleteNodes(nodesDeleteRequest))
     }
 
@@ -278,15 +279,15 @@ class UserNodeController(
         actionId = NODE_DELETE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#fullPaths",
-            instanceNames = "#fullPaths"
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
         ),
         attributes = [
-            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
-            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#repoName"),
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
             AuditAttribute(name = ActionAuditContent.DATE_TEMPLATE, value = "#date")
-    ],
-        scopeId = "#projectId",
+        ],
+        scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_CLEAN_CONTENT
     )
     @ApiOperation("清理最后访问时间早于{date}的文件节点")
@@ -446,10 +447,15 @@ class UserNodeController(
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#request?.srcProjectId"),
             AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#request?.srcRepoName"),
-            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#request?.destFullPath")
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#request?.destFullPath"),
+            AuditAttribute(
+                name = ActionAuditContent.NEW_PROJECT_CODE_CONTENT_TEMPLATE,
+                value = "#request?.destProjectId"
+            ),
+            AuditAttribute(name = ActionAuditContent.NEW_REPO_NAME_CONTENT_TEMPLATE, value = "#request?.destRepoName"),
         ],
         scopeId = "#request?.srcProjectId",
-        content = ActionAuditContent.NODE_RENAME_CONTENT
+        content = ActionAuditContent.NODE_MOVE_CONTENT
     )
     @ApiOperation("移动节点")
     @PostMapping("/move")
@@ -486,9 +492,14 @@ class UserNodeController(
             instanceNames = "#request?.srcFullPath"
         ),
         attributes = [
-            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
-            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
-            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#newFullPath")
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#request?.srcProjectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#request?.srcRepoName"),
+            AuditAttribute(
+                name = ActionAuditContent.NEW_PROJECT_CODE_CONTENT_TEMPLATE,
+                value = "#request?.destProjectId"
+            ),
+            AuditAttribute(name = ActionAuditContent.NEW_REPO_NAME_CONTENT_TEMPLATE, value = "#request?.destRepoName"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#request?.destFullPath")
         ],
         scopeId = "#request?.srcProjectId",
         content = ActionAuditContent.NODE_COPY_CONTENT
