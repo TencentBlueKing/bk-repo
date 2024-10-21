@@ -37,6 +37,8 @@ class BasedRepositoryNodeRetainResolver(
 
     private var retainNodes = HashMap<String, RetainNode>()
 
+    private var lastUpdateTime: Long = -1
+
     override fun retain(sha256: String): Boolean {
         return retainNodes.contains(sha256)
     }
@@ -47,6 +49,10 @@ class BasedRepositoryNodeRetainResolver(
 
     fun refreshRetainNode() {
         logger.info("Refresh retain nodes start. size of nodes ${retainNodes.size}")
+        if (System.currentTimeMillis() < lastUpdateTime + expireConfig.cacheTime) {
+            logger.info("BasedRepositoryNodeRetainResolver was refreshed")
+            return
+        }
         try {
             val temp = HashMap<String, RetainNode>()
             val configs = expireConfig.repos.map { convertRepoConfigToFileCache(it) } + fileCacheService.list()
@@ -57,7 +63,7 @@ class BasedRepositoryNodeRetainResolver(
                         repoName = config.repoName,
                         fullPath = node[FULL_PATH].toString(),
                         sha256 = node[SHA256].toString(),
-                        size = node[SIZE].toString().toLong()
+                        size = node[SIZE].toString().toLong(),
                     )
                     temp[retainNode.sha256] = retainNode
                     logger.info("Retain node[$retainNode]")
@@ -67,17 +73,18 @@ class BasedRepositoryNodeRetainResolver(
         } catch (e: Exception) {
             logger.warn("An error occurred while refreshing retain node $e")
         }
+        lastUpdateTime = System.currentTimeMillis()
         logger.info("Refresh retain nodes finished. size of nodes ${retainNodes.size}")
     }
 
-    private fun convertRepoConfigToFileCache(repoConfig: RepoConfig):TFileCache {
+    private fun convertRepoConfigToFileCache(repoConfig: RepoConfig): TFileCache {
         return TFileCache(
             id = null,
             projectId = repoConfig.projectId,
             repoName = repoConfig.repoName,
             pathPrefix = repoConfig.pathPrefix,
             days = repoConfig.days,
-            size = expireConfig.size.toMegabytes()
+            size = expireConfig.size.toMegabytes(),
         )
     }
 
@@ -91,7 +98,7 @@ class BasedRepositoryNodeRetainResolver(
             size = tFileCache.size,
             dateTime = dateTime,
             collection = collectionName,
-            pathPrefixs = tFileCache.pathPrefix
+            pathPrefixs = tFileCache.pathPrefix,
         )
     }
 
@@ -102,7 +109,7 @@ class BasedRepositoryNodeRetainResolver(
         dateTime: LocalDateTime,
         collection: String,
         batchSize: Int = 20000,
-        pathPrefixs: List<String>
+        pathPrefixs: List<String>,
     ): Set<Map<String, Any?>> {
         val temp = mutableSetOf<Map<String, Any?>>()
         val prefixCri = pathPrefixs.map {
@@ -113,7 +120,7 @@ class BasedRepositoryNodeRetainResolver(
             Criteria.where(PROJECT).isEqualTo(projectId).and(REPO).isEqualTo(repoName)
                 .and(FOLDER).isEqualTo(false).and(SIZE).gte(DataSize.ofMegabytes(size).toBytes())
                 .and(LAST_ACCESS_DATE).gt(dateTime).andOperator(Criteria().orOperator(prefixCri))
-                .and(DELETED_DATE).isEqualTo(null)
+                .and(DELETED_DATE).isEqualTo(null),
         )
 
         val fields = query.fields()
@@ -139,10 +146,8 @@ class BasedRepositoryNodeRetainResolver(
         return temp
     }
 
-
     companion object {
         private val logger = LoggerFactory.getLogger(BasedRepositoryNodeRetainResolver::class.java)
         private const val COLLECTION_NODE_PREFIX = "node_"
-
     }
 }
