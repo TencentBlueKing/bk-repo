@@ -42,8 +42,10 @@ import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.response.DevxTokenInfo
 import com.tencent.devops.api.pojo.Response
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
@@ -57,6 +59,7 @@ import reactor.netty.http.client.HttpClient
 import reactor.netty.http.client.PrematureCloseException
 import reactor.netty.resources.ConnectionProvider
 import reactor.util.retry.RetryBackoffSpec
+import java.net.URLDecoder
 import java.time.Duration
 import java.util.concurrent.Executors
 
@@ -175,9 +178,12 @@ class DevxWorkspaceUtils(
         }
 
         suspend fun validateToken(devxToken: String): Mono<DevxTokenInfo> {
+            val token = withContext(Dispatchers.IO) {
+                URLDecoder.decode(devxToken, Charsets.UTF_8.name())
+            }
             return httpClient
                 .get()
-                .uri("${devXProperties.validateTokenUrl}?dToken=$devxToken")
+                .uri("${devXProperties.validateTokenUrl}?dToken=$token")
                 .header("X-DEVOPS-BK-TOKEN", devXProperties.authToken)
                 .exchangeToMono {
                     mono { parseDevxTokenInfo(it) }

@@ -32,6 +32,7 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
@@ -93,12 +94,12 @@ class LoginHandler(
             val workspace = DevxWorkspaceUtils.getWorkspace().awaitSingleOrNull() ?: throw AuthenticationException()
             val userId = createUser(workspace)
             val token = createToken(workspace.projectId, repoName, userId)
-            DevxLoginResponse(workspace.projectId, token)
+            DevxLoginResponse(workspace.projectId, token, StringPool.EMPTY)
         } else {
             val devxTokenInfo = DevxWorkspaceUtils.validateToken(devxToken).awaitSingle()
             createUser(devxTokenInfo.userId)
             val token = createToken(devxTokenInfo.projectId, repoName, devxTokenInfo.userId)
-            DevxLoginResponse(devxTokenInfo.projectId, token)
+            DevxLoginResponse(devxTokenInfo.projectId, token, devxTokenInfo.workspaceName)
         }
 
         return ReactiveResponseBuilder.success(response)

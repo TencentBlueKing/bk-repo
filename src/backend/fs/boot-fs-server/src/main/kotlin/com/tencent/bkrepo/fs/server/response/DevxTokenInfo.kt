@@ -29,5 +29,6 @@ package com.tencent.bkrepo.fs.server.response
 
 data class DevxTokenInfo(
     val userId: String,
-    val projectId: String
+    val projectId: String,
+    val workspaceName: String
 )
