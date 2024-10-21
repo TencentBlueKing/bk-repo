@@ -119,16 +119,12 @@ class BkIamV3ServiceImpl(
     @Value("\${auth.iam.applyJoinUserGroupUrl:}")
     private val applyJoinUserGroupUrl = ""
 
-    @Value("\${auth.iam.enable: false}")
-    var iamEnable: Boolean = false
-
     private val iamAuthCache = CacheBuilder.newBuilder()
         .maximumSize(1000)
         .expireAfterWrite(1, TimeUnit.MINUTES)
         .build<String, Boolean>()
 
     override fun checkIamConfiguration(): Boolean {
-        if (!iamEnable) return false
         if (iamConfiguration.systemId.isNullOrEmpty()) {
             return false
         }

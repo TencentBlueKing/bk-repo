@@ -35,7 +35,6 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
         DefaultGroupType.PROJECT_MANAGER.value,
         mapOf(
             ResourceType.PROJECT.id() to listOf(
-                ActionTypeMapping.PROJECT_CREATE.id(),
                 ActionTypeMapping.PROJECT_VIEW.id(),
                 ActionTypeMapping.PROJECT_EDIT.id(),
                 ActionTypeMapping.PROJECT_MANAGE.id(),

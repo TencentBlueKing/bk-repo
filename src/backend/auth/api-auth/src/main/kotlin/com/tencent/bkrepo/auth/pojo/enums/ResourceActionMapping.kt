@@ -30,7 +30,6 @@ package com.tencent.bkrepo.auth.pojo.enums
 enum class ResourceActionMapping(val resourceType: String, val actions: List<String>) {
     PROJECT_ACTIONS(
         ResourceType.PROJECT.id(), listOf(
-        ActionTypeMapping.PROJECT_CREATE.id(),
         ActionTypeMapping.PROJECT_VIEW.id(),
         ActionTypeMapping.PROJECT_EDIT.id(),
         ActionTypeMapping.PROJECT_MANAGE.id(),
