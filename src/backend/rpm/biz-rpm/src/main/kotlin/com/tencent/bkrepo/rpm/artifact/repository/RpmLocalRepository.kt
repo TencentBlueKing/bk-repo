@@ -465,7 +465,7 @@ class RpmLocalRepository(
                         val rpmPackagePojo = rpmVersion.toRpmPackagePojo(context.artifactInfo.getArtifactFullPath())
                         // 保存包版本
                         val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
-                        packageClient.createVersion(
+                        packageService.createPackageVersion(
                             PackageVersionCreateRequest(
                                 projectId = context.projectId,
                                 repoName = context.repoName,
@@ -536,7 +536,7 @@ class RpmLocalRepository(
             } ?: return null
 
             val packageKey = PackageKeys.ofRpm(rpmPackage.path, rpmPackage.name)
-            return packageClient.findVersionByName(projectId, repoName, packageKey, rpmPackage.version).data
+            return packageService.findVersionByName(projectId, repoName, packageKey, rpmPackage.version)
         }
     }
 
@@ -544,9 +544,9 @@ class RpmLocalRepository(
      * 返回包的版本数量
      */
     private fun getVersions(packageKey: String, context: ArtifactContext): Long? {
-        return packageClient.findPackageByKey(
+        return packageService.findPackageByKey(
             context.projectId, context.repoName, packageKey
-        ).data?.versions ?: return null
+        )?.versions ?: return null
     }
 
     /**
@@ -579,13 +579,13 @@ class RpmLocalRepository(
         val version = HttpContextHolder.getRequest().getParameter("version")
         if (version.isNullOrBlank()) {
             val versions = getVersions(packageKey, context)
-            val pages = packageClient.listVersionPage(
+            val pages = packageService.listVersionPage(
                 context.projectId,
                 context.repoName,
                 packageKey,
                 VersionListOption(0, versions!!.toInt(), null, null)
 
-            ).data?.records ?: return
+            ).records
 
             for (packageVersion in pages) {
                 val artifactFullPath = packageVersion.contentPath!!
@@ -596,12 +596,12 @@ class RpmLocalRepository(
             }
         } else {
             with(context.artifactInfo) {
-                val packageVersion = packageClient.findVersionByName(
+                val packageVersion = packageService.findVersionByName(
                     context.projectId,
                     context.repoName,
                     packageKey,
                     version
-                ).data ?: return
+                ) ?: return
                 val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, packageVersion.contentPath!!))
                     ?: return
                 removeRpmArtifact(node, packageVersion.contentPath!!, context, packageKey, version)
@@ -659,7 +659,7 @@ class RpmLocalRepository(
     }
 
     fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
-        packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
+        packageService.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
     }
 
     /**
@@ -678,21 +678,21 @@ class RpmLocalRepository(
         val version = context.request.getParameter("version")
         val name = packageKey.split(":").last()
         val path = packageKey.removePrefix("rpm://").split(":")[0]
-        val trueVersion = packageClient.findVersionByName(
+        val trueVersion = packageService.findVersionByName(
             context.projectId,
             context.repoName,
             packageKey,
             version
-        ).data ?: return null
+        ) ?: return null
         val artifactPath = trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
             val jarNode = nodeService.getNodeDetail(
                 ArtifactInfo(projectId, repoName, artifactPath)
             ) ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
-            val packageVersion = packageClient.findVersionByName(
+            val packageVersion = packageService.findVersionByName(
                 projectId, repoName, packageKey, version
-            ).data
+            )
             val count = packageVersion?.downloads ?: 0
             val rpmArtifactBasic = Basic(
                 path,
@@ -811,7 +811,7 @@ class RpmLocalRepository(
                 )
 
             )
-            packageClient.populatePackage(packagePopulateRequest)
+            packageService.populatePackage(packagePopulateRequest)
             logger.info("Success create version $packagePopulateRequest")
         }
     }

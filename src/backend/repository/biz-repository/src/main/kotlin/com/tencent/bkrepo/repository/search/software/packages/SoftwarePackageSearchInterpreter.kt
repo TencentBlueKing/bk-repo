@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.metadata.search.common.MetadataRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.SelectFieldInterceptor
-import com.tencent.bkrepo.repository.search.packages.PackageQueryContext
+import com.tencent.bkrepo.common.metadata.search.packages.PackageQueryContext
 import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareModelValidateInterceptor
 import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareRepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareRepoTypeRuleInterceptor

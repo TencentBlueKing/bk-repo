@@ -73,6 +73,7 @@ import com.tencent.bkrepo.nuget.util.NugetVersionUtils
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -95,9 +96,9 @@ class NugetLocalRepository(
     }
 
     private fun enumerateVersions(context: ArtifactQueryContext, packageId: String): List<String>? {
-        return packageClient.listExistPackageVersion(
-            context.projectId, context.repoName, PackageKeys.ofNuget(packageId)
-        ).data?.takeIf { it.isNotEmpty() }
+        return packageService.listExistPackageVersion(
+            context.projectId, context.repoName, PackageKeys.ofNuget(packageId), emptyList()
+        ).takeIf { it.isNotEmpty() }
     }
 
     private fun feed(artifactInfo: NugetArtifactInfo): Feed {
@@ -108,9 +109,13 @@ class NugetLocalRepository(
         with(context) {
             val packageName = (artifactInfo as NugetRegistrationArtifactInfo).packageName
             val registrationPath = context.getStringAttribute(REGISTRATION_PATH)
-            val packageVersionList =
-                packageClient.listAllVersion(projectId, repoName, PackageKeys.ofNuget(packageName)).data
-            if (packageVersionList.isNullOrEmpty()) return null
+            val packageVersionList = packageService.listAllVersion(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = PackageKeys.ofNuget(packageName),
+                option = VersionListOption()
+            )
+            if (packageVersionList.isEmpty()) return null
             val sortedVersionList = packageVersionList.stream().sorted { o1, o2 ->
                 NugetVersionUtils.compareSemVer(o1.name, o2.name)
             }.toList()
@@ -129,9 +134,8 @@ class NugetLocalRepository(
             val nugetArtifactInfo = artifactInfo as NugetRegistrationArtifactInfo
             val registrationPath = context.getStringAttribute(REGISTRATION_PATH)
             val packageKey = PackageKeys.ofNuget(nugetArtifactInfo.packageName)
-            val packageVersionList =
-                packageClient.listAllVersion(projectId, repoName, packageKey).data
-            if (packageVersionList.isNullOrEmpty()) return null
+            val packageVersionList = packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption())
+            if (packageVersionList.isEmpty()) return null
             val sortedVersionList = packageVersionList.stream().sorted { o1, o2 ->
                 NugetVersionUtils.compareSemVer(o1.name, o2.name)
             }.toList()
@@ -157,8 +161,7 @@ class NugetLocalRepository(
             val nugetArtifactInfo = artifactInfo as NugetRegistrationArtifactInfo
             val packageKey = PackageKeys.ofNuget(nugetArtifactInfo.packageName)
             // 确保version一定存在
-            packageClient.findVersionByName(projectId, repoName, packageKey, nugetArtifactInfo.version).data
-                ?: return null
+            packageService.findVersionByName(projectId, repoName, packageKey, nugetArtifactInfo.version) ?: return null
             try {
                 val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + '/' + registrationPath
                 return NugetV3RegistrationUtils.metadataToRegistrationLeaf(
@@ -175,9 +178,9 @@ class NugetLocalRepository(
         super.onUploadBefore(context)
         // 校验版本是否存在，存在则冲突
         with(context.artifactInfo as NugetPublishArtifactInfo) {
-            packageClient.findVersionByName(
+            packageService.findVersionByName(
                 projectId, repoName, PackageKeys.ofNuget(packageName.toLowerCase()), version
-            ).data?.let {
+            )?.let {
                 throw ErrorCodeException(
                     messageCode = NugetMessageCode.VERSION_EXISTED,
                     params = arrayOf(version),
@@ -231,11 +234,12 @@ class NugetLocalRepository(
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo as NugetDeleteArtifactInfo) {
             if (version.isNotBlank()) {
-                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
+                packageService.findVersionByName(projectId, repoName, packageName, version)?.let {
                     removeVersion(this, it, context.userId)
                 } ?: throw VersionNotFoundException(version)
             } else {
-                packageClient.listAllVersion(projectId, repoName, packageName).data.takeUnless { it.isNullOrEmpty() }
+                packageService.listAllVersion(projectId, repoName, packageName, VersionListOption())
+                    .takeUnless { it.isEmpty() }
                     ?.forEach { removeVersion(this, it, context.userId) }
                     ?: throw PackageNotFoundException(packageName)
             }
@@ -247,7 +251,7 @@ class NugetLocalRepository(
      */
     private fun removeVersion(artifactInfo: NugetDeleteArtifactInfo, version: PackageVersion, userId: String) {
         with(artifactInfo) {
-            packageClient.deleteVersion(
+            packageService.deleteVersion(
                 projectId,
                 repoName,
                 packageName,

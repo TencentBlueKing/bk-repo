@@ -7,7 +7,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
-import com.tencent.bkrepo.repository.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 

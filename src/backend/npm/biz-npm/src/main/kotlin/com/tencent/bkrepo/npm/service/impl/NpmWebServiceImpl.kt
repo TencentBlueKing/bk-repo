@@ -89,7 +89,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 logger.warn("node [$fullPath] don't found.")
                 throw NpmArtifactNotFoundException("node [$fullPath] don't found.")
             }
-            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
+            val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, version) ?: run {
                 logger.warn("packageKey [$packageKey] don't found.")
                 throw NpmArtifactNotFoundException("packageKey [$packageKey] don't found.")
             }
@@ -182,7 +182,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     private fun findNewLatest(request: PackageVersionDeleteRequest): String {
         return with(request) {
-            packageClient.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name)).data?.latest
+            packageService.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name))?.latest
                 ?: run {
                     val message =
                         "delete version by web operator to find new latest version failed with package [$name]"

@@ -61,6 +61,7 @@ import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -100,7 +101,6 @@ import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.helm.utils.RemoteDownloadUtil
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -139,7 +139,7 @@ open class AbstractChartService : ArtifactService() {
     lateinit var repositoryService: RepositoryService
 
     @Autowired
-    lateinit var packageClient: PackageClient
+    lateinit var packageService: PackageService
 
     @Autowired
     lateinit var artifactResourceWriter: ArtifactResourceWriter
@@ -377,14 +377,14 @@ open class AbstractChartService : ArtifactService() {
      * check package [key] version [version] exists
      */
     fun packageVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
-        return packageClient.findVersionByName(projectId, repoName, key, version).data?.let { true } ?: false
+        return packageService.findVersionByName(projectId, repoName, key, version)?.let { true } ?: false
     }
 
     /**
      * check package [key] exists
      */
     fun packageExist(projectId: String, repoName: String, key: String): Boolean {
-        return packageClient.findPackageByKey(projectId, repoName, key).data?.let { true } ?: false
+        return packageService.findPackageByKey(projectId, repoName, key)?.let { true } ?: false
     }
 
     /**
@@ -411,7 +411,7 @@ open class AbstractChartService : ArtifactService() {
                 description = description,
                 versionList = packageVersionList
             )
-            packageClient.populatePackage(packagePopulateRequest)
+            packageService.populatePackage(packagePopulateRequest)
         }
     }
 
@@ -429,12 +429,12 @@ open class AbstractChartService : ArtifactService() {
     ) {
         val contentPath = HelmUtils.getChartFileFullPath(chartInfo.name, chartInfo.version)
         try {
-            val packageVersion = packageClient.findVersionByName(
+            val packageVersion = packageService.findVersionByName(
                 projectId = projectId,
                 repoName = repoName,
                 packageKey = PackageKeys.ofHelm(chartInfo.name),
-                version = chartInfo.version
-            ).data
+                versionName = chartInfo.version
+            )
             if (packageVersion == null || isOverwrite) {
                 val packageVersionCreateRequest = ObjectBuilderUtil.buildPackageVersionCreateRequest(
                     userId = userId,
@@ -445,7 +445,7 @@ open class AbstractChartService : ArtifactService() {
                     isOverwrite = isOverwrite,
                     sourceType = sourceType
                 )
-                packageClient.createVersion(packageVersionCreateRequest).apply {
+                packageService.createPackageVersion(packageVersionCreateRequest).apply {
                     logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
                 }
             } else {
@@ -456,7 +456,7 @@ open class AbstractChartService : ArtifactService() {
                     size = size,
                     sourceType = sourceType
                 )
-                packageClient.updateVersion(packageVersionUpdateRequest).apply {
+                packageService.updateVersion(packageVersionUpdateRequest).apply {
                     logger.info("user: [$userId] update package version [$packageVersionUpdateRequest] success!")
                 }
             }

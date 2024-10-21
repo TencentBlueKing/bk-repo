@@ -35,10 +35,10 @@ import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -51,7 +51,7 @@ import org.springframework.stereotype.Component
 class IteratorManager(
     private val nodeSearchService: NodeSearchService,
     private val repositoryService: RepositoryService,
-    private val packageClient: PackageClient
+    private val packageService: PackageService
 ) {
     /**
      * 创建待扫描文件迭代器
@@ -75,7 +75,7 @@ class IteratorManager(
 
         val isPackageScanPlanType = scanTask.scanPlan != null && scanTask.scanPlan!!.type != RepositoryType.GENERIC.name
         return if (isPackageScanPlanType || packageRule(rule)) {
-            PackageIterator(packageClient, nodeSearchService, PackageIterator.PackageIteratePosition(rule))
+            PackageIterator(packageService, nodeSearchService, PackageIterator.PackageIteratePosition(rule))
         } else {
             NodeIterator(projectIdIterator, nodeSearchService, NodeIterator.NodeIteratePosition(rule))
         }
