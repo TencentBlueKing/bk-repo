@@ -56,6 +56,7 @@ import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
 import com.tencent.bkrepo.common.ratelimiter.interceptor.TargetRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
+import com.tencent.bkrepo.common.ratelimiter.model.TRateLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.DownloadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule
@@ -70,17 +71,19 @@ import com.tencent.bkrepo.common.ratelimiter.rule.usage.DownloadUsageRateLimitRu
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.UploadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
-import java.util.concurrent.ConcurrentHashMap
-import javax.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
+import java.util.concurrent.ConcurrentHashMap
+import javax.servlet.http.HttpServletRequest
 
 /**
  * 限流器抽象实现
@@ -90,7 +93,12 @@ abstract class AbstractRateLimiterService(
     val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
-) : RateLimiterService {
+    private val rateLimiterConfigService: RateLimiterConfigService,
+    ) : RateLimiterService {
+
+    @Value("\${spring.application.name}")
+    private lateinit var moduleName: String
+
 
     // 资源对应限限流算法缓存
     private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
@@ -307,8 +315,24 @@ abstract class AbstractRateLimiterService(
         val usageRuleConfigs = rateLimiterProperties.rules.filter {
             it.limitDimension in getLimitDimensions()
         }
+        val databaseConfig =
+            try {
+                rateLimiterConfigService.findByModuleName(moduleName)
+            } catch (ex: Exception) {
+                rateLimiterConfigService.list()
+            }
+        val configs = usageRuleConfigs.plus(databaseConfig.map { tRateLimit -> ResourceLimit(
+            algo = tRateLimit.algo,
+            resource = tRateLimit.resource,
+            limit = tRateLimit.limit,
+            limitDimension = tRateLimit.limitDimension,
+            duration = tRateLimit.duration,
+            capacity = tRateLimit.capacity,
+            scope = tRateLimit.scope,
+            targets = tRateLimit.targets
+        ) })
         // 配置规则变更后需要清理缓存的限流算法实现
-        val newRuleHashCode = usageRuleConfigs.hashCode()
+        val newRuleHashCode = configs.hashCode()
         if (currentRuleHashCode == newRuleHashCode) {
             if (rateLimiterCache.size > rateLimiterProperties.cacheCapacity) {
                 clearLimiterCache()
@@ -316,7 +340,7 @@ abstract class AbstractRateLimiterService(
             return
         }
         val usageRules = getRuleClass() ?: return
-        usageRules.addRateLimitRules(usageRuleConfigs)
+        usageRules.addRateLimitRules(configs)
         rateLimitRule = usageRules
         clearLimiterCache()
         currentRuleHashCode = newRuleHashCode

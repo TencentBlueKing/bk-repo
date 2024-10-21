@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import javax.servlet.http.HttpServletRequest
@@ -49,7 +50,8 @@ open class UploadBandwidthRateLimiterService(
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
-) : AbstractBandwidthRateLimiterService(taskScheduler, rateLimiterMetrics, redisTemplate, rateLimiterProperties) {
+    rateLimiterConfigService: RateLimiterConfigService
+) : AbstractBandwidthRateLimiterService(taskScheduler, rateLimiterMetrics, redisTemplate, rateLimiterProperties, rateLimiterConfigService) {
 
     override fun buildResource(request: HttpServletRequest): String {
         val (projectId, repoName) = getRepoInfoFromAttribute(request)
