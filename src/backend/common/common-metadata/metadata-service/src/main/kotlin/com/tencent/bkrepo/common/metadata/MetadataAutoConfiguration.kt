@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.metadata
 
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.properties.OperateProperties
 import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -41,6 +42,7 @@ import org.springframework.context.annotation.Configuration
 @EnableConfigurationProperties(
     StorageProperties::class,
     OperateProperties::class,
-    ProjectUsageStatisticsProperties::class
+    ProjectUsageStatisticsProperties::class,
+    RepositoryProperties::class,
 )
 class MetadataAutoConfiguration
