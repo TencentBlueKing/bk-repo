@@ -175,6 +175,7 @@ class RemoteDistributionController(
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#repoName"),
         ],
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_REPLICATION_CREATE_CONTENT
@@ -188,7 +189,6 @@ class RemoteDistributionController(
         @PathVariable repoName: String,
         @RequestBody requests: RemoteRunOnceTaskCreateRequest
     ): Response<Void> {
-        ActionAuditContext.current().setInstance(requests)
         remoteNodeService.createRunOnceTask(projectId, repoName, requests)
         return ResponseBuilder.success()
     }
@@ -209,6 +209,7 @@ class RemoteDistributionController(
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#repoName"),
             AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#name"),
         ],
         scopeId = "#projectId",

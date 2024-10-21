@@ -60,8 +60,8 @@ object ActionAuditContent {
     const val REPO_LIST_CONTENT = "list repos in project $PROJECT_CODE_CONTENT_TEMPLATE"
     const val REPO_EDIT_CONTENT = "update repo $CONTENT_TEMPLATE in project $PROJECT_CODE_CONTENT_TEMPLATE"
     const val REPO_DELETE_CONTENT = "delete repo $CONTENT_TEMPLATE in project $PROJECT_CODE_CONTENT_TEMPLATE"
-    const val REPO_REPLICATION_CREATE_CONTENT = "create replication task for repo $CONTENT_TEMPLATE in project $PROJECT_CODE_CONTENT_TEMPLATE"
-    const val REPO_REPLICATION_EXECUTE_CONTENT = "execute replication task [{{@NAME}}] for repo $CONTENT_TEMPLATE in project $PROJECT_CODE_CONTENT_TEMPLATE"
+    const val REPO_REPLICATION_CREATE_CONTENT = "create replication task in repo $PROJECT_CODE_CONTENT_TEMPLATE|$REPO_NAME_CONTENT_TEMPLATE"
+    const val REPO_REPLICATION_EXECUTE_CONTENT = "execute replication task [{{@NAME}}] in repo $PROJECT_CODE_CONTENT_TEMPLATE|$REPO_NAME_CONTENT_TEMPLATE"
     const val REPO_PACKAGE_DELETE_CONTENT = "delete package [{{@NAME}}] in repo $CONTENT_TEMPLATE project $PROJECT_CODE_CONTENT_TEMPLATE"
     const val REPO_PACKAGE_VERSION_DELETE_CONTENT = "delete version [{{@VERSION}}] of package [{{@NAME}}] in repo $CONTENT_TEMPLATE project $PROJECT_CODE_CONTENT_TEMPLATE"
 
