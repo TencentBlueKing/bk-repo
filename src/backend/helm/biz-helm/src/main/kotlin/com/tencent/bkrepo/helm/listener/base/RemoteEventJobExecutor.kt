@@ -31,13 +31,13 @@ import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 import com.tencent.bkrepo.helm.service.impl.HelmOperationService
 import com.tencent.bkrepo.helm.utils.HelmUtils
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -47,7 +47,7 @@ import org.springframework.stereotype.Component
 @Component
 class RemoteEventJobExecutor(
     private val helmOperationService: HelmOperationService,
-    private val packageClient: PackageClient
+    private val packageService: PackageService
 ) : AbstractEventJobExecutor() {
     /**
      * 执行同步
@@ -83,9 +83,9 @@ class RemoteEventJobExecutor(
         val packageKey = event.data["packageKey"].toString()
         val version = event.data["packageVersion"].toString()
         val packageName = event.data["packageName"].toString()
-        val packageVersion = packageClient.findVersionByName(
+        val packageVersion = packageService.findVersionByName(
             event.projectId, event.repoName, packageKey, version
-        ).data ?: return
+        ) ?: return
         if (packageVersion.metadata[SOURCE_TYPE] != ArtifactChannel.REPLICATION.name) return
         val fullPath = HelmUtils.getChartFileFullPath(packageName, version)
         SpringContextUtils.publishEvent(buildChartUploadEvent(

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.conan.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.conan.constant.ConanMessageCode
 import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
 import com.tencent.bkrepo.conan.pojo.ConanInfo
@@ -35,10 +36,10 @@ import com.tencent.bkrepo.conan.pojo.ConanSearchResult
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanSearchService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
-import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackagePath
-import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -46,7 +47,7 @@ import org.springframework.stereotype.Service
 class ConanSearchServiceImpl : ConanSearchService {
 
     @Autowired
-    lateinit var packageClient: PackageClient
+    lateinit var packageService: PackageService
 
     @Autowired
     lateinit var commonService: CommonService
@@ -95,8 +96,8 @@ class ConanSearchServiceImpl : ConanSearchService {
 
     fun searchRecipes(projectId: String, repoName: String): List<String> {
         val result = mutableListOf<String>()
-        packageClient.listAllPackageNames(projectId, repoName).data.orEmpty().forEach {
-            packageClient.listAllVersion(projectId, repoName, it).data.orEmpty().forEach { pv ->
+        packageService.listAllPackageName(projectId, repoName).forEach {
+            packageService.listAllVersion(projectId, repoName, it, VersionListOption()).forEach { pv ->
                 pv.packageMetadata.toConanFileReference()?.apply {
                     result.add(buildConanFileName(this))
                 }

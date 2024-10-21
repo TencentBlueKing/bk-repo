@@ -39,7 +39,7 @@ import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
 import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
-import com.tencent.bkrepo.repository.service.packages.PackageDownloadsService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController

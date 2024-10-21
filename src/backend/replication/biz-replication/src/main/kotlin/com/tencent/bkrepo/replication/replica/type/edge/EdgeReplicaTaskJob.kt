@@ -34,8 +34,9 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.UrlUtils
@@ -48,7 +49,6 @@ import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.util.OkHttpClientPool
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -64,7 +64,7 @@ class EdgeReplicaTaskJob(
     private val clusterProperties: ClusterProperties,
     private val replicationProperties: ReplicationProperties,
     private val nodeClient: NodeClient,
-    private val packageClient: PackageClient
+    private val packageService: PackageService
 ) {
 
     private val centerReplicaTaskClient: ClusterReplicaTaskClient
@@ -181,10 +181,10 @@ class EdgeReplicaTaskJob(
                 replicationProperties = replicationProperties
             )
             try {
-                val packageSummary = packageClient.findPackageByKey(projectId, repoName, packageKey!!).data
+                val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey!!)
                     ?: throw PackageNotFoundException(packageKey!!)
                 val packageVersion =
-                    packageClient.findVersionByName(projectId, repoName, packageKey!!, packageVersion!!).data
+                    packageService.findVersionByName(projectId, repoName, packageKey!!, packageVersion!!)
                         ?: throw VersionNotFoundException(packageVersion!!)
                 replicaContext.replicator.replicaPackageVersion(replicaContext, packageSummary, packageVersion)
                 status = ExecutionStatus.SUCCESS

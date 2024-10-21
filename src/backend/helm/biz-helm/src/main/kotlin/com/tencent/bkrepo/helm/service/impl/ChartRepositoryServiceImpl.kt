@@ -167,7 +167,7 @@ class ChartRepositoryServiceImpl(
                 logger.warn("node [$fullPath] don't found.")
                 throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, fullPath, "$projectId|$repoName")
             }
-            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
+            val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, version) ?: run {
                 logger.warn("packageKey [$packageKey] don't found.")
                 throw PackageNotFoundException(packageKey)
             }

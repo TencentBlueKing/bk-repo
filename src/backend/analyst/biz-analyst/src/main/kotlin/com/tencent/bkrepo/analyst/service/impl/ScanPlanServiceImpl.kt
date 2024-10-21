@@ -46,7 +46,6 @@ import com.tencent.bkrepo.analyst.pojo.response.ScanLicensePlanInfo
 import com.tencent.bkrepo.analyst.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.analyst.service.ScanPlanService
 import com.tencent.bkrepo.analyst.service.ScannerService
-import com.tencent.bkrepo.analyst.utils.Request
 import com.tencent.bkrepo.analyst.utils.RuleConverter
 import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.analyst.utils.ScanLicenseConverter
@@ -59,18 +58,18 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.api.PackageClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
 class ScanPlanServiceImpl(
-    private val packageClient: PackageClient,
+    private val packageService: PackageService,
     private val scanPlanDao: ScanPlanDao,
     private val scanTaskDao: ScanTaskDao,
     private val scannerDao: ScannerDao,
@@ -284,10 +283,7 @@ class ScanPlanServiceImpl(
                 fullPath = fullPath
             )
             if (fullPath == null) {
-                val packageVersion = Request.request {
-                    packageClient.findVersionByName(projectId, repoName, packageKey!!, version!!)
-                }
-
+                val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey!!, version!!)
                 fullPath = packageVersion?.contentPath ?: packageVersion?.manifestPath
                 fullPath ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey!!, version!!)
             }

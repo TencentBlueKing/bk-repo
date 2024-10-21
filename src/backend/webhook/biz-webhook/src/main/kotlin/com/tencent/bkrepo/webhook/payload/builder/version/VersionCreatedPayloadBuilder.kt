@@ -30,7 +30,7 @@ package com.tencent.bkrepo.webhook.payload.builder.version
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.payload.builder.EventPayloadBuilder
@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class VersionCreatedPayloadBuilder(
-    private val packageClient: PackageClient
+    private val packageService: PackageService
 ) : EventPayloadBuilder(
     eventType = EventType.VERSION_CREATED
 ) {
@@ -58,7 +58,7 @@ class VersionCreatedPayloadBuilder(
         packageKey: String,
         version: String
     ): PackageVersion {
-        return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+        return packageService.findVersionByName(projectId, repoName, packageKey, version)
             ?: throw NotFoundException(WebHookMessageCode.WEBHOOK_VERSION_NOT_FOUND)
     }
 }
