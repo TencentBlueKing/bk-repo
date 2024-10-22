@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.UT_SHA256
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
-import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
@@ -53,7 +52,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.MockBean
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Duration
@@ -70,9 +68,6 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
     private val preloadPlanExecutor: DefaultPreloadPlanExecutor,
     private val monitorHelper: StorageHealthMonitorHelper,
 ) : ArtifactPreloadBaseServiceTest(properties, storageService, fileLocator, storageProperties) {
-
-    @MockBean
-    private lateinit var artifactCacheMetrics: ArtifactCacheMetrics
 
     private lateinit var artifactFile: ArtifactFile
 
