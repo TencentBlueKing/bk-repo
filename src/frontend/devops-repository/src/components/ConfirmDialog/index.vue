@@ -8,7 +8,7 @@
         <div class="confirm-body">
             <div class="confirm-main">
                 <i :class="`bk-icon icon-${getIcon()}`"></i>
-                <span class="ml10">{{ message }}</span>
+                <span class="ml10 message-content">{{ message }}</span>
             </div>
             <span class="confirm-tip" :title="subMessage">{{ subMessage }}</span>
         </div>
@@ -93,6 +93,12 @@
         &.icon-close-circle-shape {
             color: var(--dangerColor);
         }
+    }
+    .message-content {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        word-break: break-all;
     }
     .confirm-tip {
         font-size: 12px;
