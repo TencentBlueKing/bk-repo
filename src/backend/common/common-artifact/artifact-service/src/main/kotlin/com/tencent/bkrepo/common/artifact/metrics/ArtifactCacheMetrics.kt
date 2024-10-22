@@ -79,9 +79,31 @@ class ArtifactCacheMetrics(
         }
     }
 
+    fun recordPreload(storageKey: String, projectId: String, size: Long, success: Boolean = true) {
+        if (success) {
+            Counter.builder(CACHE_PRELOAD_SIZE)
+                .baseUnit(BaseUnits.BYTES)
+                .tag(TAG_STORAGE_KEY, storageKey)
+                .tag(TAG_PROJECT_ID, projectId)
+                .description("storage preload size")
+                .register(registry)
+                .increment(size.toDouble())
+        }
+
+        Counter.builder(CACHE_PRELOAD_COUNT)
+            .tag(TAG_STORAGE_KEY, storageKey)
+            .tag(TAG_PROJECT_ID, projectId)
+            .tag("success", success.toString())
+            .description("storage preload count")
+            .register(registry)
+            .increment()
+    }
+
     private fun addMetrics(resource: ArtifactResource) {
         val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
         val projectId = repositoryDetail?.projectId
+        val repoName = repositoryDetail?.name
+        val fullPath = resource.node?.fullPath
         if (projectId == null || projectId.startsWith(CODE_PROJECT_PREFIX)
             || projectId.startsWith(CLOSED_SOURCE_PREFIX)
         ) {
@@ -101,18 +123,32 @@ class ArtifactCacheMetrics(
                 // 统计缓存访问时间分布
                 recordAccessInterval(inputStream.file.toPath(), credentials.cache.expireDuration)
             } else {
-                if (inputStream.range.total!! > LOG_CACHE_MISS_FILE_SIZE) {
-                    val fullPath = resource.node?.fullPath
-                    logger.info(
-                        "large file cache miss, " +
-                                "project[$projectId], repoName[${repositoryDetail.name}], fullPath[$fullPath]"
-                    )
+                val size = inputStream.range.total!!
+                if (size > artifactMetricsProperties.largeFileThreshold.toBytes()) {
+                    logger.info("large file cache miss, project[$projectId], repoName[$repoName], fullPath[$fullPath]")
+                    recordLargeFileCacheMiss(credentials.key(), projectId, size)
                 }
                 incMissCount(credentials.key(), projectId)
             }
             // 统计访问的缓存文件大小分布
             recordAccessCacheFileSize(inputStream.range.total!!)
         }
+    }
+
+    private fun recordLargeFileCacheMiss(storageKey: String, projectId: String, size: Long) {
+        Counter.builder(CACHE_COUNT_LARGE_MISS)
+            .tag("storageKey", storageKey)
+            .tag("projectId", projectId)
+            .description("large file storage cache miss count")
+            .register(registry)
+            .increment()
+
+        Counter.builder(CACHE_SIZE_LARGE_MISS)
+            .tag("storageKey", storageKey)
+            .tag("projectId", projectId)
+            .description("large file storage cache miss size")
+            .register(registry)
+            .increment(size.toDouble())
     }
 
     /**
@@ -183,12 +219,17 @@ class ArtifactCacheMetrics(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactCacheMetrics::class.java)
-        private const val LOG_CACHE_MISS_FILE_SIZE = 1L * 1024 * 1024 * 1024
         private const val MAX_CACHE_FILE_SIZE = 100.0 * 1024 * 1024 * 1024
         private const val MIN_CACHE_ACCESS_INTERVAL = 1000.0
         private const val CACHE_COUNT_HIT = "storage.cache.count.hit"
         private const val CACHE_COUNT_MISS = "storage.cache.count.miss"
+        private const val CACHE_COUNT_LARGE_MISS = "storage.cache.miss.large.count"
+        private const val CACHE_SIZE_LARGE_MISS = "storage.cache.miss.large.size"
         private const val CACHE_ACCESS_INTERVAL = "storage.cache.access.interval"
         private const val CACHE_ACCESS_FILE_SIZE = "storage.cache.access.file.size"
+        private const val CACHE_PRELOAD_SIZE = "storage.cache.preload.size"
+        private const val CACHE_PRELOAD_COUNT = "storage.cache.preload.count"
+        private const val TAG_STORAGE_KEY = "storageKey"
+        private const val TAG_PROJECT_ID = "projectId"
     }
 }
