@@ -36,6 +36,9 @@ import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
+import com.tencent.bkrepo.common.api.exception.OverloadException
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
+import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -75,6 +78,8 @@ class ArtifactDataReceiver(
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
     private val originPath: Path = path,
+    private val requestLimitCheckService: RequestLimitCheckService? = null,
+    private val contentLength: Long? = null,
 ) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
@@ -187,9 +192,15 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
+            requestLimitCheckService?.uploadBandwidthCheck(
+                length.toLong(),
+                receiveProperties.circuitBreakerThreshold
+            )
             writeData(chunk, offset, length)
         } catch (exception: IOException) {
             handleIOException(exception)
+        } catch (overloadEx: OverloadException) {
+            handleOverloadException(overloadEx)
         }
     }
 
@@ -203,6 +214,9 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
+            requestLimitCheckService?.uploadBandwidthCheck(
+                1, receiveProperties.circuitBreakerThreshold
+            )
             checkFallback()
             outputStream.write(b)
             listener.data(b)
@@ -210,6 +224,8 @@ class ArtifactDataReceiver(
             checkThreshold()
         } catch (exception: IOException) {
             handleIOException(exception)
+        } catch (overloadEx: OverloadException) {
+            handleOverloadException(overloadEx)
         }
     }
 
@@ -222,8 +238,13 @@ class ArtifactDataReceiver(
         if (startTime == 0L) {
             startTime = System.nanoTime()
         }
+        var rateLimitFlag = false
+        val exception: Exception? = null
         try {
-            val input = source.rateLimit(receiveProperties.rateLimit.toBytes())
+            val input = requestLimitCheckService?.bandwidthCheck(
+                source, receiveProperties.circuitBreakerThreshold, contentLength
+            ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
+            rateLimitFlag = input is CommonRateLimitInputStream
             val buffer = ByteArray(bufferSize)
             input.use {
                 var bytes = input.read(buffer)
@@ -234,6 +255,12 @@ class ArtifactDataReceiver(
             }
         } catch (exception: IOException) {
             handleIOException(exception)
+        } catch (overloadEx: OverloadException) {
+            handleOverloadException(overloadEx)
+        } finally {
+            if (rateLimitFlag) {
+                requestLimitCheckService?.bandwidthFinish(exception)
+            }
         }
     }
 
@@ -322,14 +349,26 @@ class ArtifactDataReceiver(
      * 处理IO异常
      */
     private fun handleIOException(exception: IOException) {
-        finished = true
-        endTime = System.nanoTime()
-        close()
+        finishWithException()
         if (IOExceptionUtils.isClientBroken(exception)) {
             throw ArtifactReceiveException(exception.message.orEmpty())
         } else {
             throw exception
         }
+    }
+
+    /**
+     * 处理限流请求
+     */
+    private fun handleOverloadException(exception: OverloadException) {
+        finishWithException()
+        throw exception
+    }
+
+    private fun finishWithException() {
+        finished = true
+        endTime = System.nanoTime()
+        close()
     }
 
     /**
