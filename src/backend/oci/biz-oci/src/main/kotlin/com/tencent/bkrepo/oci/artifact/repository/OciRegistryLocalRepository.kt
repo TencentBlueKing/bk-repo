@@ -49,7 +49,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_WRITE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
@@ -193,10 +193,10 @@ class OciRegistryLocalRepository(
      * Pushing a blob monolithically ：A single POST request
      */
     @AuditEntry(
-        actionId = NODE_WRITE_ACTION
+        actionId = NODE_CREATE_ACTION
     )
     @ActionAuditRecord(
-        actionId = NODE_WRITE_ACTION,
+        actionId = NODE_CREATE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#context.artifactInfo?.getArtifactFullPath()",
@@ -252,10 +252,10 @@ class OciRegistryLocalRepository(
      * 2 blob POST PATCH with PUT 上传的put模块处理
      */
     @AuditEntry(
-        actionId = NODE_WRITE_ACTION
+        actionId = NODE_CREATE_ACTION
     )
     @ActionAuditRecord(
-        actionId = NODE_WRITE_ACTION,
+        actionId = NODE_CREATE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#context.artifactInfo?.getArtifactFullPath()",

@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_WRITE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.lfs.artifact.LfsArtifactInfo
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
@@ -62,10 +62,10 @@ class ObjectController(
     }
 
     @AuditEntry(
-        actionId = NODE_WRITE_ACTION
+        actionId = NODE_CREATE_ACTION
     )
     @ActionAuditRecord(
-        actionId = NODE_WRITE_ACTION,
+        actionId = NODE_CREATE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#lfsArtifactInfo?.getArtifactFullPath()",

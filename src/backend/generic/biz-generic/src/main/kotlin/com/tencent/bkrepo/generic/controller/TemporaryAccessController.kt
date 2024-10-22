@@ -46,7 +46,7 @@ import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_WRITE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -189,10 +189,10 @@ class TemporaryAccessController(
     }
 
     @AuditEntry(
-        actionId = NODE_WRITE_ACTION
+        actionId = NODE_CREATE_ACTION
     )
     @ActionAuditRecord(
-        actionId = NODE_WRITE_ACTION,
+        actionId = NODE_CREATE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#artifactInfo?.getArtifactFullPath()",

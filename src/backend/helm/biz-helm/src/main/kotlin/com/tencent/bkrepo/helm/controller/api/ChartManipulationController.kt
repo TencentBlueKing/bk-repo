@@ -40,7 +40,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_WRITE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.CHART_DELETE_VERSION_URL
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_PUSH_PLUGIN_URL
@@ -65,10 +65,10 @@ class ChartManipulationController(
      * helm push
      */
     @AuditEntry(
-        actionId = NODE_WRITE_ACTION
+        actionId = NODE_CREATE_ACTION
     )
     @ActionAuditRecord(
-        actionId = NODE_WRITE_ACTION,
+        actionId = NODE_CREATE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#artifactInfo?.getArtifactFullPath()",
@@ -95,10 +95,10 @@ class ChartManipulationController(
      * helm push prov
      */
     @AuditEntry(
-        actionId = NODE_WRITE_ACTION
+        actionId = NODE_CREATE_ACTION
     )
     @ActionAuditRecord(
-        actionId = NODE_WRITE_ACTION,
+        actionId = NODE_CREATE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#artifactInfo?.getArtifactFullPath()",

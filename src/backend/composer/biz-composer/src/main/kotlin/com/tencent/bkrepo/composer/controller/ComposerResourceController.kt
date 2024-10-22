@@ -37,9 +37,9 @@ import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_WRITE_ACTION
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.composer.api.ComposerResource
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
@@ -92,10 +92,10 @@ class ComposerResourceController(
     }
 
     @AuditEntry(
-        actionId = NODE_WRITE_ACTION
+        actionId = NODE_CREATE_ACTION
     )
     @ActionAuditRecord(
-        actionId = NODE_WRITE_ACTION,
+        actionId = NODE_CREATE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#composerArtifactInfo?.getArtifactFullPath()",
