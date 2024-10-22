@@ -36,8 +36,8 @@ import com.tencent.bkrepo.common.artifact.constant.CUSTOM
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
-import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
+import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectUsageStatistics
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE

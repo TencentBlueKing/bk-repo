@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
+import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping

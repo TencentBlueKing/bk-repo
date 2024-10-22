@@ -61,7 +61,7 @@
 
 ### 用户token列表
 
-- API:POST  /auth/api/user/list/token/{uid}
+- API:GET  /auth/api/user/list/token/{uid}
 - API 名称: list_user_token
 - 功能说明：
 	- 中文：新增用户token
@@ -180,7 +180,7 @@
 
 ### 校验用户token
 
-- API:POST /auth/api/user/login?uid=owen&token=blueking
+- API:POST /auth/api/user/token
 - API 名称: check_user_token
 - 功能说明：
 	- 中文：校验用户token
@@ -238,7 +238,7 @@
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
-|uid|string|是|无|用户id|the user id|
+|x-bkrepo-uid|header|是|无|用户id|the user id|
 |bkrepo_ticket|cookie|是|无|用户token|the user token|
 
 - output:

@@ -26,7 +26,8 @@
                 size="small"
                 :enable-virtual-scroll="projectList && projectList.length > 3000"
                 :list="projectList">
-                <bk-option v-for="option in projectList"
+                <bk-option
+                    v-for="option in projectList"
                     :key="option.id"
                     :id="option.id"
                     :name="option.name">
@@ -68,13 +69,35 @@
                         :class="['bkci-dropdown-item']"
                         @click="changeLanguage(item.id)">
                         <Icon class="mr5" :name="item.icon" style="vertical-align: top;margin-bottom: 2px;" size="20" />
-                        {{item.name}}
+                        {{ item.name }}
+                    </li>
+                </template>
+            </bk-popover>
+            <bk-popover
+                theme="light navigation-message"
+                placement="bottom"
+                :arrow="false"
+                trigger="click"
+                ref="popoverRef"
+                class="popover"
+            >
+                <div class="flag-box">
+                    <Icon name="help-document" size="20" />
+                </div>
+                <template slot="content">
+                    <li
+                        v-for="(item, index) in helps"
+                        :key="index"
+                        :class="['bkci-dropdown-item']"
+                        @click="clickHelps(item.id)">
+                        {{ $t(`helps.${item.name}`) }}
                     </li>
                 </template>
             </bk-popover>
         </div>
         <User />
         <project-info-dialog ref="projectInfoDialog"></project-info-dialog>
+        <version-log ref="versionLogDialog"></version-log>
     </div>
 </template>
 <script>
@@ -82,9 +105,10 @@
     import projectInfoDialog from '@repository/views/projectManage/projectInfoDialog'
     import { mapState, mapActions } from 'vuex'
     import cookies from 'js-cookie'
+    import VersionLog from '@repository/components/VersionLog'
     export default {
-        name: 'bkrepoHeader',
-        components: { User, projectInfoDialog },
+        name: 'BkrepoHeader',
+        components: { VersionLog, User, projectInfoDialog },
         props: {
             icons: {
                 type: Array,
@@ -108,11 +132,29 @@
                 curLang: {
                     id: '',
                     icon: ''
-                }
+                },
+                helps: [
+                    {
+                        name: 'documentation',
+                        id: 'documentation'
+                    },
+                    {
+                        name: 'releaseNote',
+                        id: 'releaseNote'
+                    },
+                    {
+                        name: 'feedback',
+                        id: 'feedback'
+                    },
+                    {
+                        name: 'openSource',
+                        id: 'openSource'
+                    }
+                ]
             }
         },
         computed: {
-            ...mapState(['projectList', 'userInfo']),
+            ...mapState(['projectList', 'userInfo', 'versionLogs']),
             projectId () {
                 return this.$route.params.projectId
             }
@@ -180,6 +222,34 @@
                 this.$router.replace({
                     name: 'projectManage'
                 })
+            },
+            clickHelps (id) {
+                const languagePath = this.language === 'zh-cn' ? 'ZH' : 'EN'
+                const url = DOC_URL + '/markdown/' + languagePath + '/Devops/3.0/UserGuide/intro/README.md'
+                switch (id) {
+                    case 'documentation':
+                        window.open(url, '_blank')
+                        break
+                    case 'releaseNote':
+                        if (this.versionLogs.length > 0) {
+                            this.$refs.versionLogDialog.show = true
+                            this.$refs.versionLogDialog.versionLogs = this.versionLogs
+                            this.$refs.versionLogDialog.markdown = this.versionLogs[0].content
+                        }
+                        break
+                    case 'feedback':
+                        window.open('https://bk.tencent.com/s-mart/community/question', '_blank')
+                        break
+                    default:
+                        window.open('https://github.com/TencentBlueKing/bk-repo', '_blank')
+                }
+            },
+            showVersionLogs () {
+                if (this.versionLogs.length > 0) {
+                    this.$refs.versionLogDialog.show = true
+                    this.$refs.versionLogDialog.versionLogs = this.versionLogs
+                    this.$refs.versionLogDialog.markdown = this.versionLogs[0].content
+                }
             }
         }
     }
@@ -230,14 +300,36 @@
     }
 }
 .flag-box{
-    margin-top: 7px;
-    border-radius:15px;
-    width: 30px;
-    height: 30px;
-    display: flex;
     align-items: center;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 16px;
+    height: 32px;
     justify-content: center;
+    position: relative;
+    width: 32px;
+    margin-right: 8px;
+    color: #7b7d8a;
     &:hover {
+        color: #f1ffff;
+        background-color: #253146;
+    }
+}
+.flag-box-help{
+    align-items: center;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 16px;
+    height: 32px;
+    justify-content: center;
+    position: relative;
+    width: 32px;
+    margin-right: 8px;
+    color: #7b7d8a;
+    &:hover {
+        color: #f1ffff;
         background-color: #253146;
     }
 }

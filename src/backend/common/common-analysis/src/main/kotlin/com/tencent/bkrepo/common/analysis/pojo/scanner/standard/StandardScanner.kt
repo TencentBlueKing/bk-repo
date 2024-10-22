@@ -29,8 +29,8 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.constant.CharPool.COLON
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
-import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
+import com.tencent.bkrepo.common.metadata.annotation.Sensitive
+import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

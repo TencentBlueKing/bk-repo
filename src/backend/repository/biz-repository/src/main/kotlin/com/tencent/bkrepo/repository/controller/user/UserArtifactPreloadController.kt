@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
@@ -111,6 +112,14 @@ class UserArtifactPreloadController(
     ): Response<List<ArtifactPreloadStrategy>> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         return ResponseBuilder.success(preloadStrategyService.list(projectId, repoName))
+    }
+
+    @ApiOperation("创建预加载计划")
+    @PostMapping("/plan")
+    fun preload(@RequestBody request: ArtifactPreloadPlanCreateRequest): Response<ArtifactPreloadPlan> {
+        checkPreloadEnabled(preloadPlanService, preloadStrategyService)
+        permissionManager.checkRepoPermission(PermissionAction.MANAGE, request.projectId, request.repoName)
+        return ResponseBuilder.success(preloadPlanService.createPlan(request))
     }
 
     @ApiOperation("分页查询预加载计划")

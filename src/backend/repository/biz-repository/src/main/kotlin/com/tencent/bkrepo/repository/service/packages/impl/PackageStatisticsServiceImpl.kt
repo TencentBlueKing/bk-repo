@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.service.packages.impl
 
-import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
+import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.pojo.software.CountResult
@@ -9,6 +9,7 @@ import com.tencent.bkrepo.repository.service.packages.PackageStatisticsService
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
+import java.util.Locale
 
 @Service
 class PackageStatisticsServiceImpl(
@@ -20,10 +21,10 @@ class PackageStatisticsServiceImpl(
         projectId: String,
         packageName: String?
     ): List<ProjectPackageOverview> {
-        val criteria = Criteria.where(TPackage::type.name).`is`(repoType.toUpperCase())
+        val criteria = Criteria.where(TPackage::type.name).`is`(repoType.uppercase(Locale.getDefault()))
         projectId.let { criteria.and(TPackage::projectId.name).`is`(projectId) }
         packageName?.let {
-            val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(packageName)
+            val escapedValue = EscapeUtils.escapeRegexExceptWildcard(packageName)
             val regexPattern = escapedValue.replace("*", ".*")
             criteria.and(TPackage::name.name).regex("^$regexPattern$")
         }

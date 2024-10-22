@@ -119,7 +119,6 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
             return false
         }
         logger.info("Start to execute async job[${getJobName()}]")
-        stop = false
         val jobContext = createJobContext()
         val wasExecuted = if (isExclusive) {
             var wasExecuted = false
@@ -134,10 +133,6 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
             doStart(jobContext)
             true
         }
-        if (stop) {
-            logger.info("Job[${getJobName()}] stop execution.Execute result: $jobContext")
-            return true
-        }
         if (!wasExecuted) {
             logger.info("Job[${getJobName()}] already execution.")
         }
@@ -147,8 +142,9 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     /**
      * 启动任务的具体实现
      * */
-    private fun doStart(jobContext: C) {
+    fun doStart(jobContext: C) {
         try {
+            stop = false
             inProcess = true
             lastBeginTime = LocalDateTime.now()
             if (isFailover()) {
