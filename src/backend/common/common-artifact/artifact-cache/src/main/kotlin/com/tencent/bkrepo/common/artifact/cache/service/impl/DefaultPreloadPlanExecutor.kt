@@ -104,7 +104,7 @@ class DefaultPreloadPlanExecutor(
             }
             val throughput = load(plan, credentials)
             logger.info("preload success, ${plan.artifactInfo()}, throughput[$throughput]")
-            listener?.onPreloadSuccess(plan)
+            listener?.onPreloadSuccess(plan, throughput)
         } catch (e: Exception) {
             listener?.onPreloadFailed(plan)
             logger.warn("preload failed, ${plan.artifactInfo()}", e)
