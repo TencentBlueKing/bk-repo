@@ -55,7 +55,7 @@ class GitLocalRepository : LocalRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            val node = nodeService.getNodeDetail(artifactInfo)
             val responseName = artifactInfo.getResponseName()
             storageManager.loadArtifactInputStream(node, storageCredentials)?.let {
                 return ArtifactResource(it, responseName, node, ArtifactChannel.PROXY, useDisposition)

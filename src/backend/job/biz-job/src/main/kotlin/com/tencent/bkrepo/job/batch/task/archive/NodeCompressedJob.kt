@@ -30,21 +30,21 @@ package com.tencent.bkrepo.job.batch.task.archive
 import com.tencent.bkrepo.archive.CompressStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.CompleteCompressRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeCompressedJobProperties
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.Duration
 import kotlin.reflect.KClass
 
 /**
@@ -60,11 +60,10 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(NodeCompressedJobProperties::class)
 class NodeCompressedJob(
     properties: NodeCompressedJobProperties,
-    val nodeClient: NodeClient,
+    val nodeService: NodeService,
     val archiveClient: ArchiveClient,
     val storageService: StorageService,
-) :
-    MongoDbBatchJob<NodeCompressedJob.CompressFile, NodeContext>(properties) {
+) : MongoDbBatchJob<NodeCompressedJob.CompressFile, NodeContext>(properties) {
     override fun createJobContext(): NodeContext {
         return NodeContext()
     }
@@ -96,7 +95,7 @@ class NodeCompressedJob(
                     fullPath = it.fullPath,
                     operator = lastModifiedBy,
                 )
-                nodeClient.compressedNode(compressedRequest)
+                nodeService.compressedNode(compressedRequest)
             }
             storageService.delete(sha256, storageCredentials)
             val request = CompleteCompressRequest(sha256, storageCredentialsKey, lastModifiedBy)

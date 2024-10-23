@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.VulnerabilityItem
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.analyst.component.manager.knowledgebase.TCve
 import java.time.LocalDateTime
+import java.util.Locale
 
 object Converter {
     /**
@@ -63,5 +64,6 @@ object Converter {
         }
     }
 
-    private fun pocIdOf(vulnerabilityId: String) = "${TrivyScanner.TYPE.toLowerCase()}-$vulnerabilityId"
+    private fun pocIdOf(vulnerabilityId: String) =
+        "${TrivyScanner.TYPE.lowercase(Locale.getDefault())}-$vulnerabilityId"
 }

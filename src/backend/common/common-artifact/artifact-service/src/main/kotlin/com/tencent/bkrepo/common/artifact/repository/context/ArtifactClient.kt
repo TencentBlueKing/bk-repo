@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.common.artifact.repository.context
 
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,21 +41,21 @@ import org.springframework.beans.factory.annotation.Autowired
 open class ArtifactClient {
 
     @Autowired
-    private lateinit var repositoryClient: RepositoryClient
+    private lateinit var repositoryService: RepositoryService
 
     @Autowired
-    private lateinit var nodeClient: NodeClient
+    private lateinit var nodeService: NodeService
 
     open fun getRepositoryDetailOrNull(
         projectId: String,
         repoName: String,
         repoType: String
     ): RepositoryDetail? {
-        return repositoryClient.getRepoDetail(projectId, repoName, repoType).data
+        return repositoryService.getRepoDetail(projectId, repoName, repoType)
     }
 
     open fun getNodeDetailOrNull(projectId: String, repoName: String, fullPath: String): NodeDetail? {
-        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
     }
 
     open fun listNode(
@@ -63,10 +65,13 @@ open class ArtifactClient {
         includeFolder: Boolean,
         deep: Boolean
     ): List<NodeInfo>? {
-        return nodeClient.listNode(projectId, repoName, fullPath, includeFolder, deep).data
+        return nodeService.listNode(
+            ArtifactInfo(projectId, repoName, fullPath),
+            NodeListOption(includeFolder = includeFolder, deep = deep)
+        )
     }
 
     open fun updateAccessDate(request: NodeUpdateAccessDateRequest) {
-        nodeClient.updateNodeAccessDate(request)
+        nodeService.updateNodeAccessDate(request)
     }
 }

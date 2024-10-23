@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
@@ -57,7 +58,6 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
 import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.OkHttpClientPool
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.cluster.ClusterNodeClient
 import com.tencent.bkrepo.repository.api.cluster.ClusterRepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -78,7 +78,7 @@ import java.time.LocalDateTime
 class EdgePullReplicaExecutor(
     private val clusterProperties: ClusterProperties,
     private val projectService: ProjectService,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     private val storageManager: StorageManager,
     private val replicaRecordService: ReplicaRecordService
 ) {
@@ -143,7 +143,7 @@ class EdgePullReplicaExecutor(
             fullPath = fullPath
         ).data ?: throw NodeNotFoundException(fullPath)
 
-        val localRepo = repositoryClient.getRepoDetail(localProjectId, localRepoName).data
+        val localRepo = repositoryService.getRepoDetail(localProjectId, localRepoName)
             ?: createProjectAndRepo(centerRepo, localProjectId, localRepoName)
         // 手动重试时，需要把仓库信息添加到request attribute中
         HttpContextHolder.getRequestOrNull()?.setAttribute(REPO_KEY, localRepo)
@@ -207,7 +207,7 @@ class EdgePullReplicaExecutor(
             description = centerRepo.description,
             operator = centerRepo.createdBy
         )
-        return repositoryClient.createRepo(repoCreateRequest).data!!
+        return repositoryService.createRepo(repoCreateRequest)
     }
 
     private fun buildNodeCreateRequest(

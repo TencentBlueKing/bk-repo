@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
@@ -36,7 +37,6 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.FINISHING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -48,7 +48,7 @@ class FinishExecutor(
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -64,7 +64,7 @@ class FinishExecutor(
         val newContext = checkExecutable(context, MIGRATE_FAILED_NODE_FINISHED.name, FINISHING.name) ?: return null
         with(newContext.task) {
             logger.info("migrate finished, task[${newContext.task}]")
-            repositoryClient.unsetOldStorageCredentialsKey(projectId, repoName)
+            repositoryService.unsetOldStorageCredentialsKey(projectId, repoName)
             migrateRepoStorageTaskDao.removeById(id!!)
             logger.info("clean migrate task[${projectId}/${repoName}] success")
             return context

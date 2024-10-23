@@ -28,8 +28,9 @@
 package com.tencent.bkrepo.webhook.payload.builder.node
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.payload.builder.EventPayloadBuilder
@@ -42,10 +43,10 @@ abstract class NodePayloadBuilder(
 ) {
 
     @Autowired
-    private lateinit var nodeClient: NodeClient
+    private lateinit var nodeService: NodeService
 
     fun getNode(projectId: String, repoName: String, fullPath: String): NodeDetail {
-        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             ?: throw NotFoundException(WebHookMessageCode.WEBHOOK_NODE_NOT_FOUND)
     }
 }

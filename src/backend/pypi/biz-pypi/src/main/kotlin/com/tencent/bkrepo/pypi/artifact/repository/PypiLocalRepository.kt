@@ -29,6 +29,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -79,6 +80,7 @@ import com.tencent.bkrepo.repository.constant.SHA256
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -216,7 +218,7 @@ class PypiLocalRepository(
             select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
             rule = rule
         )
-        val nodeList: List<Map<String, Any?>>? = nodeClient.queryWithoutCount(queryModel).data?.records
+        val nodeList: List<Map<String, Any?>>? = nodeSearchService.searchWithoutCount(queryModel).records
         if (nodeList != null) {
             return XmlUtil.nodeLis2Values(nodeList)
         }
@@ -233,7 +235,7 @@ class PypiLocalRepository(
         val contentPath = HttpContextHolder.getRequest().getParameter("contentPath")
         if (version.isNullOrBlank()) {
             // 删除包
-            nodeClient.deleteNode(
+            nodeService.deleteNode(
                 NodeDeleteRequest(
                     context.projectId,
                     context.repoName,
@@ -249,7 +251,7 @@ class PypiLocalRepository(
             )
         } else {
             // 删除版本
-            nodeClient.deleteNode(
+            nodeService.deleteNode(
                 NodeDeleteRequest(
                     context.projectId,
                     context.repoName,
@@ -293,9 +295,9 @@ class PypiLocalRepository(
         ).data ?: return null
         val artifactPath = trueVersion.contentPaths?.firstOrNull() ?: trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
-            val jarNode = nodeClient.getNodeDetail(
-                projectId, repoName, artifactPath
-            ).data ?: return null
+            val jarNode = nodeService.getNodeDetail(
+                ArtifactInfo(projectId, repoName, artifactPath)
+            ) ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
             val packageVersion = packageClient.findVersionByName(
                 projectId, repoName, packageKey, version
@@ -323,21 +325,18 @@ class PypiLocalRepository(
             logger.info("Get simple html, artifactInfo: $this")
             // 请求不带包名，返回包名列表.
             if (packageName == null) {
-                val nodeList = nodeClient.listNode(projectId, repoName, ROOT, includeFolder = true).data
-                    ?.filter { it.folder }?.takeIf { it.isNotEmpty() }
-                    ?: throw PypiSimpleNotFoundException(StringPool.SLASH)
+                val nodeList = nodeService.listNode(
+                    ArtifactInfo(projectId, repoName, ROOT),
+                    NodeListOption(includeFolder = true)
+                ).filter { it.folder }.takeIf { it.isNotEmpty() } ?: throw PypiSimpleNotFoundException(StringPool.SLASH)
                 // 过滤掉'根节点',
                 return buildPypiPageContent(PACKAGE_INDEX_TITLE, buildPackageListContent(nodeList))
             }
             // 请求中带包名，返回对应包的文件列表。
-            val nodes = nodeClient.listNode(
-                projectId = projectId,
-                repoName = repoName,
-                path = "/$packageName",
-                includeFolder = false,
-                deep = true,
-                includeMetadata = true
-            ).data
+            val nodes = nodeService.listNode(
+                ArtifactInfo(projectId, repoName, "/$packageName"),
+                NodeListOption(includeFolder = false, deep = true, includeMetadata = true)
+            )
             if (!nodes.isNullOrEmpty()) {
                 return buildPypiPageContent(
                     String.format(VERSION_INDEX_TITLE, packageName),
@@ -361,7 +360,7 @@ class PypiLocalRepository(
                     .path("^/${packageName!!.replace("-", NON_ALPHANUMERIC_SEQ_REGEX)}/", OperationType.REGEX_I)
                     .excludeFolder()
                     .build()
-                val records = nodeClient.queryWithoutCount(queryModel).data!!.records
+                val records = nodeSearchService.searchWithoutCount(queryModel).records
                 nodeList.addAll(records)
                 pageNumber++
             } while (records.size == PAGE_SIZE)

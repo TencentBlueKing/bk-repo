@@ -41,11 +41,11 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
-import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
 

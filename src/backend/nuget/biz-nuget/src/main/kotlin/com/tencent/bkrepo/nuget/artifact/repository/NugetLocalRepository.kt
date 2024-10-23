@@ -35,6 +35,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -256,7 +257,7 @@ class NugetLocalRepository(
             val nugetPath = version.contentPath.orEmpty()
             if (nugetPath.isNotBlank()) {
                 val request = NodeDeleteRequest(projectId, repoName, nugetPath, userId)
-                nodeClient.deleteNode(request)
+                nodeService.deleteNode(request)
             }
         }
     }
@@ -265,13 +266,13 @@ class NugetLocalRepository(
         with(context) {
             val nugetArtifactInfo = artifactInfo as NugetDownloadArtifactInfo
             val nuspecFullPath = NugetUtils.getNuspecFullPath(nugetArtifactInfo.packageName, nugetArtifactInfo.version)
-            val nuspecNode = nodeClient.getNodeDetail(projectId, repoName, nuspecFullPath).data
+            val nuspecNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, nuspecFullPath))
             val inputStream = if (nuspecNode != null) {
                 storageManager.loadArtifactInputStream(nuspecNode, storageCredentials)
             } else {
                 val nupkgFullPath =
                     NugetUtils.getNupkgFullPath(nugetArtifactInfo.packageName, nugetArtifactInfo.version)
-                val nupkgNode = nodeClient.getNodeDetail(projectId, repoName, nupkgFullPath).data
+                val nupkgNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, nupkgFullPath))
                 storageManager.loadArtifactInputStream(nupkgNode, storageCredentials)?.use {
                     it.resolverNuspecMetadata().byteInputStream()
                 }
