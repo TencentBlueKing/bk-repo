@@ -37,9 +37,12 @@ dependencies {
         exclude(module = "service-servlet")
     }
     api(project(":common:common-service:service-base"))
+    api(project(":common:common-stream"))
 
     compileOnly(project(":common:common-mongo-reactive"))
     compileOnly(project(":common:common-mongo"))
     compileOnly(project(":common:common-service:service-servlet"))
     compileOnly(project(":common:common-service:service-reactive"))
+
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
 }

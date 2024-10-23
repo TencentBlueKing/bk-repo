@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 -- 访问限制微服务 --
 local allow_services = { "auth", "repository", "generic", "docker", "oci", "maven", "job",
                        "helm", "pypi", "opdata", "rpm", "s3", "git", "npm", "fs-server","analyst",
-                       "replication", "git", "nuget", "composer", "media", "ddc", "conan" }
+                       "replication", "git", "nuget", "composer", "media", "ddc", "conan","job-schedule" }
 local service_name = ngx.var.service
 
 if not arrayUtil:isInArray(service_name, allow_services) then
@@ -65,6 +65,14 @@ end
 -- 访问限制的工具
 local access_util = nil
 
+-- 哪些服务需要转到容器中 --
+local service_in_container = {} -- service in container
+if config.service_in_container ~= nil and config.service_in_container ~= "" then
+    for c_service in string.gmatch(config.service_in_container, "([^,]+)") do
+        table.insert(service_in_container, c_service)
+    end
+end
+
 -- 限制访问频率
 if access_util then
     local access_result, err = access_util:isAccess()
@@ -73,6 +81,12 @@ if access_util then
         ngx.exit(503)
         return
     end
+end
+
+-- 是否转发到容器服务
+if arrayUtil:isInArray(service_name, service_in_container) then
+    ngx.var.target = config.container_url .. "/" .. service_name
+    return
 end
 
 ngx.var.target = hostUtil:get_addr(service_name)

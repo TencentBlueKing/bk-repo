@@ -39,13 +39,9 @@ class ConanPackageUploadOperation(
 ) : AbstractRevisionOperation(request, commonService) {
 
     override fun handleEvent(indexInfo: IndexInfo) {
-        // TODO 上传事件可以合为一个
         with(request as ConanPackageUploadRequest) {
-            logger.info("${indexInfo.reference} Package's revision $revision info will be added into index.json")
-            val newRevisions = mutableListOf<RevisionInfo>()
-            newRevisions.addAll(indexInfo.revisions)
-            newRevisions.add(RevisionInfo(revision, dateStr))
-            indexInfo.revisions = newRevisions
+            logger.info("${indexInfo.reference} Package's revision $pRevision info will be added into index.json")
+            indexInfo.addRevision(RevisionInfo(pRevision!!, dateStr))
         }
     }
 }

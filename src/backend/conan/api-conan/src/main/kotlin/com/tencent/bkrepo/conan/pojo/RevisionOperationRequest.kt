@@ -35,4 +35,5 @@ interface RevisionOperationRequest {
     val operator: String
     val pRevPath: String?
     val pRefStr: String?
+    val pRevision: String?
 }

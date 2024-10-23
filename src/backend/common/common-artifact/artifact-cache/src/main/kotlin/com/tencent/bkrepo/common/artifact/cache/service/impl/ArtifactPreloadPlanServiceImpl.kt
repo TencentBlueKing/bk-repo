@@ -29,22 +29,30 @@ package com.tencent.bkrepo.common.artifact.cache.service.impl
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
+import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan.Companion.STATUS_PENDING
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan.Companion.toDto
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadStrategyService
 import com.tencent.bkrepo.common.artifact.cache.service.PreloadPlanExecutor
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -63,12 +71,41 @@ class ArtifactPreloadPlanServiceImpl(
     private val preloadStrategies: Map<String, ArtifactPreloadPlanGenerator>,
     private val properties: ArtifactPreloadProperties,
     private val preloadPlanExecutor: PreloadPlanExecutor,
+    private val preloadProperties: ArtifactPreloadProperties,
+    private val cacheMetrics: ArtifactCacheMetrics,
 ) : ArtifactPreloadPlanService {
     private val repositoryCache = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterWrite(5, TimeUnit.MINUTES)
         .build(CacheLoader.from<String, RepositoryInfo> { getRepo(it) })
-    private val listener = DefaultPreloadListener(preloadPlanDao)
+    private val listener = DefaultPreloadListener(preloadPlanDao, cacheMetrics)
+
+    override fun createPlan(request: ArtifactPreloadPlanCreateRequest): ArtifactPreloadPlan {
+        with(request) {
+            val now = LocalDateTime.now()
+            if (System.currentTimeMillis() - executeTime > preloadProperties.planTimeout.toMillis()) {
+                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "execute time[$executeTime] too earlier")
+            }
+
+            val node = getNode(projectId, repoName, fullPath)
+            val repo = repositoryCache.get(buildRepoId(projectId, repoName))
+            return preloadPlanDao.insert(
+                TArtifactPreloadPlan(
+                    id = null,
+                    createdDate = now,
+                    lastModifiedDate = now,
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    sha256 = node.sha256!!,
+                    size = node.size,
+                    credentialsKey = repo.storageCredentialsKey,
+                    executeTime = executeTime,
+                    status = STATUS_PENDING,
+                )
+            ).toDto()
+        }
+    }
 
     override fun generatePlan(credentialsKey: String?, sha256: String) {
         if (!properties.enabled) {
@@ -146,7 +183,7 @@ class ArtifactPreloadPlanServiceImpl(
         if (sizeNotMatch || pathNotMatch || createTimeNotMatch) {
             logger.info(
                 "${node.projectId}/${node.repoName}${node.fullPath} not match preload strategy, " +
-                    "node size[${node.size}], node createdDateTime[$createdDateTime]"
+                        "node size[${node.size}], node createdDateTime[$createdDateTime]"
             )
             return null
         }
@@ -175,6 +212,19 @@ class ArtifactPreloadPlanServiceImpl(
     }
 
     private fun buildRepoId(projectId: String, repoName: String) = "${projectId}$REPO_ID_DELIMITERS$repoName"
+
+    private fun getNode(projectId: String, repoName: String, fullPath: String): NodeDetail {
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            ?: throw ArtifactNotFoundException("$projectId/$repoName$fullPath not found")
+        if (node.folder) {
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "folder is unsupported")
+        }
+        if (node.sha256 == FAKE_SHA256 || node.size == 0L) {
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "fake node is unsupported")
+        }
+
+        return node
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactPreloadPlanServiceImpl::class.java)

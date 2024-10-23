@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.router.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
@@ -59,8 +60,8 @@ import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
 import com.tencent.bkrepo.common.metadata.listener.ResourcePermissionListener
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
@@ -68,7 +69,8 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import io.mockk.every
 import io.mockk.mockk
@@ -96,6 +98,7 @@ import org.springframework.test.context.TestPropertySource
     SpringContextUtils::class,
     NodeDao::class,
     RouterControllerProperties::class,
+    RepositoryProperties::class
 )
 @ComponentScan(value = ["com.tencent.bkrepo.repository.service", "com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
@@ -140,6 +143,11 @@ open class ServiceBaseTest {
     @Autowired
     lateinit var storageCredentialHelper: StorageCredentialHelper
 
+    @MockBean
+    lateinit var resourceClearService: ResourceClearService
+
+    @Autowired
+    lateinit var repositoryServiceHelper: RepositoryServiceHelper
 
     fun initMock() {
         val tracer = mockk<OtelTracer>()

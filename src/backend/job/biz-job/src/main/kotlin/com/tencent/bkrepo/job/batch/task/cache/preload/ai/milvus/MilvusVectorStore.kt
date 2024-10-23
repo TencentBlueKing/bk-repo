@@ -108,7 +108,7 @@ class MilvusVectorStore(
         val results = ArrayList<Document>()
         val respSearch = milvusClient.search(req)
         for (vector in respSearch) {
-            val similarity = getResultSimilarity((vector[DISTANCE_FIELD_NAME] as Double).toFloat())
+            val similarity = getResultSimilarity(vector[DISTANCE_FIELD_NAME].toString().toFloat())
             if (similarity < request.similarityThreshold) {
                 continue
             }

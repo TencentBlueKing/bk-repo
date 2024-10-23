@@ -31,7 +31,6 @@ import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
-import com.tencent.bkrepo.common.artifact.cache.pojo.PreloadStrategyType
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -46,7 +45,6 @@ class ArtifactPreloadStrategyDao : SimpleMongoDao<TArtifactPreloadStrategy>() {
         with(request) {
             val criteria = build(projectId, repoName)
                 .and(ID).isEqualTo(id)
-                .and(TArtifactPreloadStrategy::type.name).ne(PreloadStrategyType.INTELLIGENT.name)
             val update = Update()
             update.set(TArtifactPreloadStrategy::lastModifiedBy.name, operator)
             update.set(TArtifactPreloadStrategy::lastModifiedDate.name, LocalDateTime.now())

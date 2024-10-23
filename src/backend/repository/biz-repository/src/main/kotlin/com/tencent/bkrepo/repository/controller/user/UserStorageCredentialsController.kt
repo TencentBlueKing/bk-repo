@@ -33,7 +33,7 @@ package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
+import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder

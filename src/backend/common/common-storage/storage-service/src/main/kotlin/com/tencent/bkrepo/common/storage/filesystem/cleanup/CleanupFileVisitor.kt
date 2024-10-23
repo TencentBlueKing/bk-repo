@@ -78,7 +78,7 @@ class CleanupFileVisitor(
         try {
             val file = filePath.toFile()
             val expired = fileExpireResolver.isExpired(file)
-            val retain = fileRetainResolver?.retain(file) ?: false
+            val retain = fileRetainResolver?.retain(file.name) ?: false
 
             var shouldDelete = expired && !isNFSTempFile(filePath)
             if (shouldDelete && !isTempFile) {
@@ -101,6 +101,7 @@ class CleanupFileVisitor(
             if (shouldDelete && retain) {
                 result.retainFile += 1
                 result.retainSize += size
+                result.retainSha256.add(file.name)
                 onFileRetained(filePath, size)
             }
         } catch (ignored: Exception) {

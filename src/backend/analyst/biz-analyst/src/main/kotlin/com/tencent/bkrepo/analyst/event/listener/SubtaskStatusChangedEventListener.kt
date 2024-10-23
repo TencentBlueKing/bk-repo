@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -44,6 +43,7 @@ import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.analyst.service.ScanPlanService
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
@@ -51,7 +51,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class SubtaskStatusChangedEventListener(
-    private val metadataClient: MetadataClient,
+    private val metadataService: MetadataService,
     private val packageMetadataClient: PackageMetadataClient,
     private val scanPlanService: ScanPlanService
 ) {
@@ -149,7 +149,7 @@ class SubtaskStatusChangedEventListener(
                     fullPath = fullPath,
                     nodeMetadata = metadata
                 )
-                metadataClient.saveMetadata(request)
+                metadataService.saveMetadata(request)
             } else {
                 val request = PackageMetadataSaveRequest(
                     projectId = projectId,

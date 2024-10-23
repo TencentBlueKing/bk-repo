@@ -32,6 +32,7 @@ object Release {
 
 object Versions {
     const val DevopsBoot = "0.0.9"
+    const val DevopsBootSNAPSHOT = "0.0.10-SNAPSHOT"
     const val Jersey = "2.35"
     const val Jsoup = "1.17.2"
     const val Redline = "1.2.10"

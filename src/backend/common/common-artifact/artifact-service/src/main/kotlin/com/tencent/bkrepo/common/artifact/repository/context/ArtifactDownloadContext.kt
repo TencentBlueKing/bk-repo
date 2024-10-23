@@ -35,8 +35,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
-import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptorFactory
+import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptorFactory
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion

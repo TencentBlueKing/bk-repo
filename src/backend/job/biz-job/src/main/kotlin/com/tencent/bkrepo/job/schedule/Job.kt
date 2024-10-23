@@ -9,5 +9,6 @@ data class Job(
     val scheduleConf: String,
     val scheduleType: JobScheduleType,
     val group: String,
+    val sharding: Boolean,
     val runnable: Runnable,
 )

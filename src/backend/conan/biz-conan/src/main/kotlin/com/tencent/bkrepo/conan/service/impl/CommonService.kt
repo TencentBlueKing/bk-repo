@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.conan.service.impl
 
 import com.tencent.bkrepo.common.api.constant.CharPool
-import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -40,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.conan.config.ConanProperties
 import com.tencent.bkrepo.conan.constant.CONANS_URL_TAG
 import com.tencent.bkrepo.conan.constant.ConanMessageCode
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
@@ -54,16 +54,16 @@ import com.tencent.bkrepo.conan.pojo.IndexInfo
 import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.RevisionInfo
 import com.tencent.bkrepo.conan.utils.ConanInfoLoadUtil
-import com.tencent.bkrepo.conan.utils.PathUtils.buildExportFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildOriginalConanFileName
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildPackageRevisionFolderPath
-import com.tencent.bkrepo.conan.utils.PathUtils.buildReference
-import com.tencent.bkrepo.conan.utils.PathUtils.buildRevisionPath
-import com.tencent.bkrepo.conan.utils.PathUtils.getPackageConanInfoFile
-import com.tencent.bkrepo.conan.utils.PathUtils.getPackageRevisionsFile
-import com.tencent.bkrepo.conan.utils.PathUtils.getRecipeRevisionsFile
-import com.tencent.bkrepo.conan.utils.PathUtils.joinString
+import com.tencent.bkrepo.conan.utils.ConanPathUtils
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildExportFolderPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageRevisionFolderPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildRevisionPath
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageConanInfoFile
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.getRecipeRevisionsFile
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.joinString
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -76,13 +76,18 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 @Component
-class CommonService {
+class CommonService(
+    private val properties: ConanProperties
+) {
     @Autowired
     lateinit var nodeClient: NodeClient
+
     @Autowired
     lateinit var storageManager: StorageManager
+
     @Autowired
     lateinit var repositoryClient: RepositoryClient
+
     @Autowired
     lateinit var lockOperation: LockOperation
 
@@ -254,7 +259,7 @@ class CommonService {
         return result
     }
 
-    fun checkNodeExist(
+    fun getNodeDetail(
         projectId: String,
         repoName: String,
         path: String,
@@ -335,12 +340,14 @@ class CommonService {
     ): RevisionInfo? {
         val revPath = getRecipeRevisionsFile(conanFileReference)
         val refStr = buildReference(conanFileReference)
-        return getLatestRevision(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
+        return lockAction(projectId, repoName, revPath) {
+            getLatestRevision(
+                projectId = projectId,
+                repoName = repoName,
+                revPath = revPath,
+                refStr = refStr
+            )
+        }
     }
 
     fun getLastPackageRevision(
@@ -350,12 +357,14 @@ class CommonService {
     ): RevisionInfo? {
         val revPath = getPackageRevisionsFile(packageReference)
         val refStr = buildPackageReference(packageReference)
-        return getLatestRevision(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
+        return lockAction(projectId, repoName, revPath) {
+            getLatestRevision(
+                projectId = projectId,
+                repoName = repoName,
+                revPath = revPath,
+                refStr = refStr
+            )
+        }
     }
 
     fun getLatestRevision(
@@ -371,7 +380,6 @@ class CommonService {
             refStr = refStr
         )
         if (indexJson.revisions.isEmpty()) {
-            // TODO revisions 列表中数据要以time进行比较排序，最新数据放在前面
             val revisionV1Path = joinString(revPath, DEFAULT_REVISION_V1)
             nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return null
             return RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now()))
@@ -386,7 +394,6 @@ class CommonService {
         revPath: String,
         refStr: String
     ): IndexInfo {
-        // TODO 所有加/ 的都需要优化
         val fullPath = "/$revPath"
         val indexNode = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return IndexInfo(refStr)
         val repo = repositoryClient.getRepoDetail(projectId, repoName).data
@@ -402,8 +409,7 @@ class CommonService {
         repoName: String,
         revPath: String,
     ): List<String> {
-        nodeClient.getNodeDetail(projectId, repoName, revPath).data
-            ?: throw NodeNotFoundException(revPath)
+        nodeClient.getNodeDetail(projectId, repoName, revPath).data ?: return emptyList()
         return nodeClient.listNode(projectId, repoName, revPath, includeFolder = true, deep = false).data!!.map {
             it.name
         }
@@ -440,7 +446,7 @@ class CommonService {
         fullPath: String,
         indexInfo: IndexInfo
     ) {
-        val(artifactFile, nodeCreateRequest) = buildFileAndNodeCreateRequest(
+        val (artifactFile, nodeCreateRequest) = buildFileAndNodeCreateRequest(
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
@@ -466,7 +472,7 @@ class CommonService {
         packageReference: PackageReference
     ): Map<String, Map<String, String>> {
         val path = buildPackageRevisionFolderPath(packageReference)
-        val files = getDownloadPath(projectId, repoName, path).mapValues { EMPTY }
+        val files = getDownloadPath(projectId, repoName, path)
         return mapOf("files" to files)
     }
 
@@ -480,7 +486,7 @@ class CommonService {
         conanFileReference: ConanFileReference
     ): Map<String, Map<String, String>> {
         val path = buildRevisionPath(conanFileReference)
-        val files = getDownloadPath(projectId, repoName, path).mapValues { EMPTY }
+        val files = getDownloadPath(projectId, repoName, path)
         return mapOf("files" to files)
     }
 
@@ -494,12 +500,14 @@ class CommonService {
     ): IndexInfo {
         val revPath = getRecipeRevisionsFile(conanFileReference)
         val refStr = buildReference(conanFileReference)
-        return getRevisionsList(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
+        return lockAction(projectId, repoName, revPath) {
+            getRevisionsList(
+                projectId = projectId,
+                repoName = repoName,
+                revPath = revPath,
+                refStr = refStr
+            )
+        }
     }
 
     /**
@@ -512,12 +520,14 @@ class CommonService {
     ): IndexInfo {
         val revPath = getPackageRevisionsFile(packageReference)
         val refStr = buildPackageReference(packageReference)
-        return getRevisionsList(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
+        return lockAction(projectId, repoName, revPath) {
+            getRevisionsList(
+                projectId = projectId,
+                repoName = repoName,
+                revPath = revPath,
+                refStr = refStr
+            )
+        }
     }
 
     /**
@@ -529,37 +539,16 @@ class CommonService {
         conanFileReference: ConanFileReference
     ): Map<String, ConanInfo> {
         val result = mutableMapOf<String, ConanInfo>()
-        val revPath = getRecipeRevisionsFile(conanFileReference)
-        val refStr = buildReference(conanFileReference)
-        val indexJson = getRevisionsList(
-            projectId = projectId,
-            repoName = repoName,
-            revPath = revPath,
-            refStr = refStr
-        )
-        val revisions = indexJson.revisions.ifEmpty {
-//            val revisionV1Path = joinString("/$revPath", DEFAULT_REVISION_V1)
-//            nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return emptyMap()
-//            listOf(RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now())))
-            emptyList()
-        }
-
-        revisions.forEach {
-            val conf = conanFileReference.copy(revision = it.revision)
-            val tempRevPath = getPackageRevisionsFile(conf)
-            val packageIds = getPackageIdList(projectId, repoName, tempRevPath)
-            packageIds.forEach { packageId ->
-                val packageReference = PackageReference(conf, packageId)
-                val prevPath = getPackageRevisionsFile(packageReference)
-                val prefStr = buildPackageReference(packageReference)
-                val packageIndexJson = getRevisionsList(
-                    projectId = projectId,
-                    repoName = repoName,
-                    revPath = prevPath,
-                    refStr = prefStr
-                )
-                val lastRevision = packageIndexJson.revisions.first()
-                val path = getPackageConanInfoFile(packageReference.copy(revision = lastRevision.revision))
+        val tempRevPath = getPackageRevisionsFile(conanFileReference)
+        val packageIds = getPackageIdList(projectId, repoName, tempRevPath)
+        packageIds.forEach { packageId ->
+            val packageReference = PackageReference(conanFileReference, packageId)
+            getLastPackageRevision(
+                projectId = projectId,
+                repoName = repoName,
+                packageReference = packageReference,
+            )?.let {
+                val path = getPackageConanInfoFile(packageReference.copy(revision = it.revision))
                 result[packageId] = getContentOfConanInfoFile(projectId, repoName, path)
             }
         }
@@ -584,6 +573,10 @@ class CommonService {
         }
     }
 
+    fun getDomain(): String {
+        return properties.domain
+    }
+
     private fun buildRedisKey(projectId: String, repoName: String, revPath: String): String {
         return "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName/$revPath"
     }
@@ -592,12 +585,13 @@ class CommonService {
      * 获取请求URL前缀，用于生成上传或者下载路径
      */
     private fun getRequestUrlPrefix(conanFileReference: ConanFileReference): String {
-        val requestUrl = HttpContextHolder.getRequest().requestURL.toString()
-        val prefixUrl = requestUrl.substring(
-            0, requestUrl.indexOf(buildOriginalConanFileName(conanFileReference))
-        ).trimEnd(CharPool.SLASH).removeSuffix(CONANS_URL_TAG)
+        val requestUri = HttpContextHolder.getRequest().requestURI
+        val prefixPath = requestUri.substring(
+            0, requestUri.indexOf(ConanPathUtils.buildOriginalConanFileName(conanFileReference))
+        ).trimEnd(CharPool.SLASH).removeSuffix(CONANS_URL_TAG).trimEnd(CharPool.SLASH)
         return joinString(
-            prefixUrl,
+            properties.domain,
+            prefixPath,
             UPLOAD_URL_PREFIX
         )
     }
