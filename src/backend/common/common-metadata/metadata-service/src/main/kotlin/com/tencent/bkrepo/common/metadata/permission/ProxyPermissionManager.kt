@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.manager.proxy
+package com.tencent.bkrepo.common.metadata.permission
 
 import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
@@ -35,31 +35,33 @@ import com.tencent.bkrepo.auth.api.proxy.ProxyUserClient
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 
 class ProxyPermissionManager(
-    projectClient: ProjectClient,
-    repositoryClient: RepositoryClient,
+    projectService: ProjectService,
+    repositoryService: RepositoryService,
     permissionResource: ServicePermissionClient,
     externalPermissionResource: ServiceExternalPermissionClient,
     userResource: ServiceUserClient,
     nodeClient: NodeClient,
-    httpAuthProperties: HttpAuthProperties
+    httpAuthProperties: HttpAuthProperties,
+    principalManager: PrincipalManager
 ) : PermissionManager(
-    projectClient,
-    repositoryClient,
+    projectService,
+    repositoryService,
     permissionResource,
     externalPermissionResource,
     userResource,
     nodeClient,
-    httpAuthProperties
+    httpAuthProperties,
+    principalManager
 ) {
 
     private val proxyPermissionClient: ProxyPermissionClient by lazy { ProxyFeignClientFactory.create("auth") }

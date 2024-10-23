@@ -29,7 +29,7 @@ package com.tencent.bkrepo.ddc.component
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.ddc.utils.DdcUtils.DIR_BLOBS
 import org.springframework.stereotype.Component
 

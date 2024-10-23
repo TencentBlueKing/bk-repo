@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
@@ -47,7 +47,7 @@ import javax.servlet.http.HttpServletResponse
 
 class ActuatorAuthInterceptor(
     private val authenticationManager: AuthenticationManager,
-    private val permissionManager: PermissionManager
+    private val principalManager: PrincipalManager
 ) : HandlerInterceptorAdapter() {
 
     private val antPathMatcher = AntPathMatcher()
@@ -65,7 +65,7 @@ class ActuatorAuthInterceptor(
             val parts = decodedHeader.split(StringPool.COLON)
             require(parts.size >= 2)
             val userId = authenticationManager.checkUserAccount(parts[0], parts[1])
-            permissionManager.checkPrincipal(userId, PrincipalType.ADMIN)
+            principalManager.checkPrincipal(userId, PrincipalType.ADMIN)
             return true
         } catch (exception: AuthenticationException) {
             throw exception
