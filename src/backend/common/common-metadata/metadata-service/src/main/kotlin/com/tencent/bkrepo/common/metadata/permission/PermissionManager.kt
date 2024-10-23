@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.manager
+package com.tencent.bkrepo.common.metadata.permission
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
@@ -48,20 +48,22 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
+import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -81,13 +83,14 @@ import java.util.concurrent.TimeUnit
  * 权限管理类
  */
 open class PermissionManager(
-    private val projectClient: ProjectClient,
-    private val repositoryClient: RepositoryClient,
+    private val projectService: ProjectService,
+    private val repositoryService: RepositoryService,
     private val permissionResource: ServicePermissionClient,
     private val externalPermissionResource: ServiceExternalPermissionClient,
     private val userResource: ServiceUserClient,
-    private val nodeClient: NodeClient,
-    private val httpAuthProperties: HttpAuthProperties
+    private val nodeService: NodeService,
+    private val httpAuthProperties: HttpAuthProperties,
+    private val principalManager: PrincipalManager
 ) {
 
     private val httpClient =
@@ -202,25 +205,7 @@ open class PermissionManager(
      * @param principalType 身份类型
      */
     open fun checkPrincipal(userId: String, principalType: PrincipalType) {
-        val platformId = SecurityUtils.getPlatformId()
-        checkAnonymous(userId, platformId)
-
-        if (principalType == PrincipalType.ADMIN) {
-            if (!isAdminUser(userId)) {
-                throw PermissionException()
-            }
-        } else if (principalType == PrincipalType.PLATFORM) {
-            if (userId.isEmpty()) {
-                logger.warn("platform auth with empty userId[$platformId,$userId]")
-            }
-            if (platformId == null && !isAdminUser(userId)) {
-                throw PermissionException()
-            }
-        } else if (principalType == PrincipalType.GENERAL) {
-            if (userId.isEmpty() || userId == ANONYMOUS_USER) {
-                throw PermissionException()
-            }
-        }
+        principalManager.checkPrincipal(userId, principalType)
     }
 
     /**
@@ -286,7 +271,7 @@ open class PermissionManager(
      */
     open fun queryProjectEnabledStatus(projectId: String): Boolean {
         return try {
-            projectClient.isProjectEnabled(projectId).data!!
+            projectService.isProjectEnabled(projectId)
         } catch (e: Exception) {
             true
         }
@@ -296,7 +281,7 @@ open class PermissionManager(
      * 查询仓库信息
      */
     open fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
-        return repositoryClient.getRepoInfo(projectId, repoName).data ?: throw RepoNotFoundException(repoName)
+        return repositoryService.getRepoInfo(projectId, repoName) ?: throw RepoNotFoundException(repoName)
     }
 
     private fun serviceRequestCheck(): Boolean {
@@ -326,6 +311,7 @@ open class PermissionManager(
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId(),
     ) {
+
         // 判断是否开启认证
         if (!httpAuthProperties.enabled) {
             return
@@ -458,9 +444,8 @@ open class PermissionManager(
         val nodeDetailList = if (repoName.isNullOrBlank() || paths.isNullOrEmpty()) {
             null
         } else if (paths.size == 1) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, paths.first()).data ?: throw NodeNotFoundException(
-                paths.first()
-            )
+            val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, paths.first()))
+                ?: throw NodeNotFoundException(paths.first())
             listOf(node)
         } else {
             queryNodeDetailList(projectId, repoName, paths)
@@ -483,8 +468,8 @@ open class PermissionManager(
             val option = NodeListOption(
                 pageNumber = pageNumber, pageSize = 1000, includeFolder = true, includeMetadata = true, deep = true
             )
-            val records = nodeClient.listNodePage(projectId, repoName, prefix, option).data?.records
-            if (records.isNullOrEmpty()) {
+            val records = nodeService.listNodePage(ArtifactInfo(projectId, repoName, prefix), option).records
+            if (records.isEmpty()) {
                 break
             }
             nodeDetailList.addAll(records.filter { paths.contains(it.fullPath) }.map { NodeDetail(it) })

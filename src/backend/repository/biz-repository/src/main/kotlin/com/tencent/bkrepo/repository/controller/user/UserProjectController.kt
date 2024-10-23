@@ -30,7 +30,8 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -41,7 +42,6 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.UserProjectCreateRequest
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam

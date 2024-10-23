@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.auth.service.impl
 
+import com.tencent.bkrepo.auth.dao.ProxyDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TProxy
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
@@ -37,15 +38,14 @@ import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatusRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
-import com.tencent.bkrepo.auth.dao.ProxyDao
 import com.tencent.bkrepo.auth.service.ProxyService
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
