@@ -56,7 +56,6 @@ import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
 import com.tencent.bkrepo.common.ratelimiter.interceptor.TargetRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
-import com.tencent.bkrepo.common.ratelimiter.model.TRateLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.DownloadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule

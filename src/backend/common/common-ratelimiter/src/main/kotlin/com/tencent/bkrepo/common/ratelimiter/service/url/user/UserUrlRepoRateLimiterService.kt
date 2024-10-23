@@ -55,7 +55,13 @@ class UserUrlRepoRateLimiterService(
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
     private val rateLimiterConfigService: RateLimiterConfigService
-) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService) {
+) : AbstractRateLimiterService(
+    taskScheduler,
+    rateLimiterProperties,
+    rateLimiterMetrics,
+    redisTemplate,
+    rateLimiterConfigService
+) {
 
     override fun ignoreRequest(request: HttpServletRequest): Boolean {
         if (rateLimiterProperties.specialUrls.contains(StringPool.POUND)) {

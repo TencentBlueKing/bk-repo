@@ -51,7 +51,13 @@ open class UploadBandwidthRateLimiterService(
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
     rateLimiterConfigService: RateLimiterConfigService
-) : AbstractBandwidthRateLimiterService(taskScheduler, rateLimiterMetrics, redisTemplate, rateLimiterProperties, rateLimiterConfigService) {
+) : AbstractBandwidthRateLimiterService(
+    taskScheduler,
+    rateLimiterMetrics,
+    redisTemplate,
+    rateLimiterProperties,
+    rateLimiterConfigService
+) {
 
     override fun buildResource(request: HttpServletRequest): String {
         val (projectId, repoName) = getRepoInfoFromAttribute(request)
