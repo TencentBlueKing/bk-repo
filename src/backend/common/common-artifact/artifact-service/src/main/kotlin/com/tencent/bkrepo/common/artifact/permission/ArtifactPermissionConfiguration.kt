@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.permission
 
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.permission.PermissionCheckHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
