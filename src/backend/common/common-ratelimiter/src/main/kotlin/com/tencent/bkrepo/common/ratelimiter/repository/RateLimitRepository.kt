@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,19 +29,36 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api("io.micrometer:micrometer-registry-prometheus")
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-redis"))
-    api(project(":common:common-api"))
-    api(project(":common:common-security"))
-    api(project(":common:common-mongo"))
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
-    testImplementation(project(":common:common-redis"))
-    testImplementation("com.github.codemonstur:embedded-redis:${Versions.NewEmbeddedRedis}") {
-        exclude("org.slf4j", "slf4j-simple")
+package com.tencent.bkrepo.common.ratelimiter.repository
+
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.ratelimiter.model.TRateLimit
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
+
+@Repository
+class RateLimitRepository : SimpleMongoDao<TRateLimit>() {
+
+    fun existsById(id: String) : Boolean {
+        return find(Query(TRateLimit::id.isEqualTo(id))).isNotEmpty()
+    }
+
+    fun existsByResourceAndLimitDimension(resource: String, limitDimension: String) : Boolean {
+        return exists(
+            Query(
+                Criteria.where(TRateLimit::resource.name).isEqualTo(resource)
+                    .and(TRateLimit::limitDimension.name).isEqualTo(limitDimension)
+            )
+        )
+    }
+
+    fun findByModuleName(moduleName: String): List<TRateLimit> {
+        return find(
+            Query(
+                Criteria.where(TRateLimit::moduleName.name).regex("$moduleName")
+            )
+        )
     }
 }

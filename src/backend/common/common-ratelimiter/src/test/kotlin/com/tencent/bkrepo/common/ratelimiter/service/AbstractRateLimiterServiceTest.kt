@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import io.micrometer.core.instrument.MeterRegistry
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestInstance
@@ -62,6 +63,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
     lateinit var rateLimiterProperties: RateLimiterProperties
     lateinit var taskScheduler: ThreadPoolTaskScheduler
     lateinit var rateLimiterMetrics: RateLimiterMetrics
+    lateinit var rateLimiterConfigService: RateLimiterConfigService
 
     @MockBean
     private lateinit var meterRegistry: MeterRegistry

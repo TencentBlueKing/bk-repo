@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
@@ -51,7 +52,8 @@ class UserUrlRateLimiterService(
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
-) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+    rateLimiterConfigService: RateLimiterConfigService,
+    ) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService) {
 
     override fun buildResource(request: HttpServletRequest): String {
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER

@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import javax.servlet.http.HttpServletRequest
@@ -47,7 +48,8 @@ class UserDownloadUsageRateLimiterService(
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
-) : UserUploadUsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+    rateLimiterConfigService: RateLimiterConfigService
+) : UserUploadUsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService) {
 
     override fun getApplyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
         if (applyPermits == null) {

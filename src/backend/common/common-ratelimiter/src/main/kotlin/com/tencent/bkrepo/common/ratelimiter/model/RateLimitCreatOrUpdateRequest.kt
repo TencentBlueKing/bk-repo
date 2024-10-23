@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,19 +29,26 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api("io.micrometer:micrometer-registry-prometheus")
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-redis"))
-    api(project(":common:common-api"))
-    api(project(":common:common-security"))
-    api(project(":common:common-mongo"))
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
-    testImplementation(project(":common:common-redis"))
-    testImplementation("com.github.codemonstur:embedded-redis:${Versions.NewEmbeddedRedis}") {
-        exclude("org.slf4j", "slf4j-simple")
-    }
-}
+package com.tencent.bkrepo.common.ratelimiter.model
+
+data class RateLimitCreatOrUpdateRequest(
+    val id: String? = null,
+    // 算法选择
+    var algo: String,
+    // 资源标识
+    var resource: String,
+    // 限流维度
+    var limitDimension: String,
+    // 限流值
+    var limit: Long,
+    // 限流周期
+    var duration: Long,
+    // 桶容量(令牌桶和漏桶使用)
+    var capacity: Long? = null,
+    // 生效范围
+    var scope: String,
+    // 指定机器上运行
+    var targets: List<String>? = emptyList(),
+    // 模块名
+    var moduleName: List<String>? = null
+)

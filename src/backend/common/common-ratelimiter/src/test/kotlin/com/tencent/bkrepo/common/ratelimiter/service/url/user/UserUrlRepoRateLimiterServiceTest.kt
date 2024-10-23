@@ -84,7 +84,8 @@ class UserUrlRepoRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
             taskScheduler = scheduler,
             rateLimiterProperties = rateLimiterProperties,
             redisTemplate = redisTemplate,
-            rateLimiterMetrics = rateLimiterMetrics
+            rateLimiterMetrics = rateLimiterMetrics,
+            rateLimiterConfigService = rateLimiterConfigService
         )
         (rateLimiterService as UserUrlRepoRateLimiterService).refreshRateLimitRule()
     }

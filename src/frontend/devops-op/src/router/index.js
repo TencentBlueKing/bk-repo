@@ -24,6 +24,7 @@ export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
 export const ROUTER_NAME_FILE_CACHE = 'FileCache'
 export const ROUTER_NAME_FILE_SYSTEM_RECORD = 'FileSystemRecord'
 export const ROUTER_NAME_REPO_CONFIG = 'RepoConfig'
+export const ROUTER_NAME_RATE_LIMITER_CONFIG = 'RateLimiterConfig'
 
 Vue.use(Router)
 
@@ -142,6 +143,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_FILE_CACHE,
         meta: { title: '缓存管理', icon: 'file' },
         component: () => import('@/views/node/FileCache')
+      },
+      {
+        path: 'rateLimiter',
+        name: ROUTER_NAME_RATE_LIMITER_CONFIG,
+        meta: { title: '文件限流配置', icon: 'file' },
+        component: () => import('@/views/node/RateLimiter')
       },
       {
         path: 'fileSystem',

@@ -71,7 +71,8 @@ class DownloadUsageRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
             taskScheduler = scheduler,
             rateLimiterProperties = rateLimiterProperties,
             redisTemplate = redisTemplate,
-            rateLimiterMetrics = rateLimiterMetrics
+            rateLimiterMetrics = rateLimiterMetrics,
+            rateLimiterConfigService = rateLimiterConfigService
         )
         (rateLimiterService as DownloadUsageRateLimiterService).refreshRateLimitRule()
     }

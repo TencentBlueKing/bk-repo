@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedExceptio
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.ratelimiter.stream.RateCheckContext
 import org.slf4j.Logger
@@ -51,7 +52,8 @@ abstract class AbstractBandwidthRateLimiterService(
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
     rateLimiterProperties: RateLimiterProperties,
-) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+    rateLimiterConfigService: RateLimiterConfigService,
+) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService) {
 
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
         throw UnsupportedOperationException()

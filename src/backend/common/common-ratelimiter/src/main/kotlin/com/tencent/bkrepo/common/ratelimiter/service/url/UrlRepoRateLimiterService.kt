@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRepoRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE
@@ -50,7 +51,8 @@ class UrlRepoRateLimiterService(
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
-) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate) {
+    rateLimiterConfigService: RateLimiterConfigService
+) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService) {
 
     override fun ignoreRequest(request: HttpServletRequest): Boolean {
         if (rateLimiterProperties.specialUrls.contains(StringPool.POUND)) {
