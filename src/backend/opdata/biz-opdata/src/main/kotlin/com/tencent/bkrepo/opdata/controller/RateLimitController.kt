@@ -89,18 +89,7 @@ class RateLimitController(
     @GetMapping("/config")
     fun getConfig(): Response<String> {
         val config = rateLimiterProperties
-        val resouce = ResourceLimit(
-            algo = "FIXED_WINDOW",
-            resource = "/",
-            limitDimension = "URL",
-            duration = Duration.ofSeconds(6000),
-            limit = 10000,
-            capacity = 10,
-            scope = "LOCAL",
-            targets = listOf("127.0.0.1")
-        )
-        return ResponseBuilder.success(listOf(resouce).toJsonString())
-//        return ResponseBuilder.success(config.rules.toJsonString())
+        return ResponseBuilder.success(config.rules.toJsonString())
     }
 
 }
