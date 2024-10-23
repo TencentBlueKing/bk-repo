@@ -57,7 +57,7 @@ class RateLimitRepository : SimpleMongoDao<TRateLimit>() {
     fun findByModuleName(moduleName: String): List<TRateLimit> {
         return find(
             Query(
-                Criteria.where(TRateLimit::moduleName.name).isEqualTo(moduleName)
+                Criteria.where(TRateLimit::moduleName.name).regex("$moduleName")
             )
         )
     }
