@@ -50,15 +50,23 @@ class DistributedSlidingWindowRateLimiter(
             var acquireResult = false
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.slidingWindowRateLimiterScript, List::class.java)
+                // 时间统一从redis server获取
+                // lua脚本中使用命令获取时间指令需要配合replicate_commands()使用，但是由于redis只有在某个特定版本上才支持该指令，
+                // 所以无法从lua脚本中去获取时间，只能分为多次调用。
+                val currentTime = redisTemplate.execute {
+                        connection -> connection.time()
+                } ?: System.currentTimeMillis()
+                val currentSeconds = (currentTime / 1000)
+                val random =  System.nanoTime()
                 // 注意， 由于redis expire只支持秒为单位，所以周期最小单位为秒
                 val results = redisTemplate.execute(
-                    redisScript, getKeys(key), limit.toString(),
-                    (duration.seconds).toString(), permits.toString()
+                    redisScript, getKeys(key), limit.toString(), (duration.seconds).toString(),
+                    permits.toString(), currentSeconds.toString(), random.toString()
                 )
                 acquireResult = results[0] == 1L
             }
             if (logger.isDebugEnabled) {
-                logger.debug("acquire distributed sliding window rateLimiter elapsed time: $elapsedTime")
+                logger.debug("acquire distributed sliding window rateLimiter elapsed time: $elapsedTime ms")
             }
             return acquireResult
         } catch (e: Exception) {

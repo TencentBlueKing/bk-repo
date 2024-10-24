@@ -37,10 +37,10 @@ import java.nio.charset.StandardCharsets
  */
 object LuaScript {
     private val logger = LoggerFactory.getLogger(LuaScript::class.java)
-    private const val FIX_WINDOW_RATE_LIMITER_FILE_PATH = "META-INF/fix-window-rate-limiter.lua"
-    private const val TOKEN_BUCKET_RATE_LIMITER_FILE_PATH = "META-INF/token-bucket-rate-limiter.lua"
-    private const val SLIDING_WINDOW_RATE_LIMITER_FILE_PATH = "META-INF/sliding-window-rate-limiter.lua"
-    private const val LEAKY_RATE_LIMITER_FILE_PATH = "META-INF/leaky-rate-limiter.lua"
+    private const val FIX_WINDOW_RATE_LIMITER_FILE_PATH = "fix-window-rate-limiter.lua"
+    private const val TOKEN_BUCKET_RATE_LIMITER_FILE_PATH = "token-bucket-rate-limiter.lua"
+    private const val SLIDING_WINDOW_RATE_LIMITER_FILE_PATH = "sliding-window-rate-limiter.lua"
+    private const val LEAKY_RATE_LIMITER_FILE_PATH = "leaky-rate-limiter.lua"
 
     lateinit var fixWindowRateLimiterScript: String
     lateinit var tokenBucketRateLimiterScript: String

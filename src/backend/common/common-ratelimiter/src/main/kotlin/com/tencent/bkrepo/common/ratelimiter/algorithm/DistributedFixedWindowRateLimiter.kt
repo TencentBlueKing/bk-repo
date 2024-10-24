@@ -57,7 +57,7 @@ class DistributedFixedWindowRateLimiter(
                 acquireResult = result == 1L
             }
             if (logger.isDebugEnabled) {
-                logger.debug("acquire distributed fixed window rateLimiter elapsed time: $elapsedTime")
+                logger.debug("acquire distributed fixed window rateLimiter elapsed time: $elapsedTime ms")
             }
             return acquireResult
         } catch (e: Exception) {
