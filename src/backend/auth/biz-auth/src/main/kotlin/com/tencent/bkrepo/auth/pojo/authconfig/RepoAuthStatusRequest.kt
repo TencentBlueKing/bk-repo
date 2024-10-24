@@ -37,7 +37,8 @@ data class RepoAuthStatusRequest(
     val projectId: String,
     val repoName: String,
     val accessControlMode: AccessControlMode?,
-    val officeDenyGroupSet: Set<String> = emptySet()
+    val officeDenyGroupSet: Set<String> = emptySet(),
+    val bkiamv3Check: Boolean = false
 
 )
 
