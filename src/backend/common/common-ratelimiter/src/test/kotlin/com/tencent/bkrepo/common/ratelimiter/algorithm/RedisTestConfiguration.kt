@@ -35,7 +35,7 @@ import javax.annotation.PreDestroy
 
 @TestConfiguration
 class RedisTestConfiguration {
-    private val redisServer = RedisServer.newRedisServer().build()
+    private val redisServer = RedisServer.builder().build()
 
     @PostConstruct
     fun postConstruct() {

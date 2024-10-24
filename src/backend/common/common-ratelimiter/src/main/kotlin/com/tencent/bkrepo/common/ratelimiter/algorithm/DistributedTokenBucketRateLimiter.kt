@@ -49,14 +49,21 @@ class DistributedTokenBucketRateLimiter(
             var acquireResult: Boolean
             val elapsedTime = measureTimeMillis {
                 val redisScript = DefaultRedisScript(LuaScript.tokenBucketRateLimiterScript, List::class.java)
+                // 时间统一从redis server获取
+                // lua脚本中使用命令获取时间指令需要配合replicate_commands()使用，但是由于redis只有在某个特定版本上才支持该指令，
+                // 所以无法从lua脚本中去获取时间，只能分为多次调用。
+                val currentTime = redisTemplate.execute {
+                    connection -> connection.time()
+                } ?: System.currentTimeMillis()
+                val currentSeconds = (currentTime / 1000)
                 val results = redisTemplate.execute(
                     redisScript, getKeys(key), permitsPerSecond.toString(),
-                    capacity.toString(), permits.toString()
+                    capacity.toString(), permits.toString(), currentSeconds.toString()
                 )
                 acquireResult = results[0] == 1L
             }
             if (logger.isDebugEnabled) {
-                logger.debug("acquire distributed token bucket rateLimiter elapsed time: $elapsedTime")
+                logger.debug("acquire distributed token bucket rateLimiter elapsed time: $elapsedTime ms")
             }
             return acquireResult
         } catch (e: Exception) {

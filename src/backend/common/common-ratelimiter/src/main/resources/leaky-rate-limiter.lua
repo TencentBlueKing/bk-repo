@@ -1,4 +1,3 @@
-redis.replicate_commands()
 local leaky_bucket_key = KEYS[1]
 -- last update key
 local last_bucket_key = KEYS[2]
@@ -9,8 +8,7 @@ local capacity = tonumber(ARGV[2])
 -- request count
 local requested = tonumber(ARGV[3])
 -- current timestamp seconds
-local currentTime = redis.call('TIME')
-local now = tonumber(currentTime[1])
+local now = tonumber(ARGV[4])
 
 -- the key life time
 local key_lifetime = math.ceil((capacity / rate) + 1)
