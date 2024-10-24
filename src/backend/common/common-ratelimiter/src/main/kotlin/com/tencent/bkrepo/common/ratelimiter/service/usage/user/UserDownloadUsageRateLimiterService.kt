@@ -49,7 +49,13 @@ class UserDownloadUsageRateLimiterService(
     rateLimiterMetrics: RateLimiterMetrics,
     redisTemplate: RedisTemplate<String, String>? = null,
     rateLimiterConfigService: RateLimiterConfigService
-) : UserUploadUsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService) {
+) : UserUploadUsageRateLimiterService(
+    taskScheduler,
+    rateLimiterProperties,
+    rateLimiterMetrics,
+    redisTemplate,
+    rateLimiterConfigService
+) {
 
     override fun getApplyPermits(request: HttpServletRequest, applyPermits: Long?): Long {
         if (applyPermits == null) {

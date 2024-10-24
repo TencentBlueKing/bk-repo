@@ -79,7 +79,13 @@ class RateLimiterAutoConfiguration {
         redisTemplate: RedisTemplate<String, String>? = null,
         rateLimiterConfigService: RateLimiterConfigService
     ): UrlRepoRateLimiterService {
-        return UrlRepoRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService)
+        return UrlRepoRateLimiterService(
+            taskScheduler,
+            rateLimiterProperties,
+            rateLimiterMetrics,
+            redisTemplate,
+            rateLimiterConfigService
+        )
     }
 
     @Bean(URL_RATELIMITER_SERVICE)
@@ -90,7 +96,13 @@ class RateLimiterAutoConfiguration {
         redisTemplate: RedisTemplate<String, String>? = null,
         rateLimiterConfigService: RateLimiterConfigService
     ): UrlRateLimiterService {
-        return UrlRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService)
+        return UrlRateLimiterService(
+            taskScheduler,
+            rateLimiterProperties,
+            rateLimiterMetrics,
+            redisTemplate,
+            rateLimiterConfigService
+        )
     }
 
     @Bean(USER_URL_REPO_RATELIMITER_SERVICE)
@@ -101,7 +113,13 @@ class RateLimiterAutoConfiguration {
         redisTemplate: RedisTemplate<String, String>? = null,
         rateLimiterConfigService: RateLimiterConfigService
     ): UserUrlRepoRateLimiterService {
-        return UserUrlRepoRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService)
+        return UserUrlRepoRateLimiterService(
+            taskScheduler,
+            rateLimiterProperties,
+            rateLimiterMetrics,
+            redisTemplate,
+            rateLimiterConfigService
+        )
     }
 
     @Bean(UPLOAD_USAGE_RATELIMITER_SERVICE)
@@ -112,7 +130,13 @@ class RateLimiterAutoConfiguration {
         redisTemplate: RedisTemplate<String, String>? = null,
         rateLimiterConfigService: RateLimiterConfigService
     ): UploadUsageRateLimiterService {
-        return UploadUsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService)
+        return UploadUsageRateLimiterService(
+            taskScheduler,
+            rateLimiterProperties,
+            rateLimiterMetrics,
+            redisTemplate,
+            rateLimiterConfigService
+        )
     }
 
     @Bean(DOWNLOAD_USAGE_RATELIMITER_SERVICE)
@@ -123,7 +147,13 @@ class RateLimiterAutoConfiguration {
         redisTemplate: RedisTemplate<String, String>? = null,
         rateLimiterConfigService: RateLimiterConfigService
     ): DownloadUsageRateLimiterService {
-        return DownloadUsageRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService)
+        return DownloadUsageRateLimiterService(
+            taskScheduler,
+            rateLimiterProperties,
+            rateLimiterMetrics,
+            redisTemplate,
+            rateLimiterConfigService
+        )
     }
 
     @Bean(USER_DOWNLOAD_USAGE_RATELIMITER_SERVICE)

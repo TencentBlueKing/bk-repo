@@ -53,7 +53,13 @@ abstract class AbstractBandwidthRateLimiterService(
     redisTemplate: RedisTemplate<String, String>? = null,
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterConfigService: RateLimiterConfigService,
-) : AbstractRateLimiterService(taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService) {
+) : AbstractRateLimiterService(
+    taskScheduler,
+    rateLimiterProperties,
+    rateLimiterMetrics,
+    redisTemplate,
+    rateLimiterConfigService
+) {
 
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
         throw UnsupportedOperationException()

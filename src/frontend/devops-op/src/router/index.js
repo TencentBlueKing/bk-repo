@@ -145,12 +145,6 @@ export const asyncRoutes = [
         component: () => import('@/views/node/FileCache')
       },
       {
-        path: 'rateLimiter',
-        name: ROUTER_NAME_RATE_LIMITER_CONFIG,
-        meta: { title: '文件限流配置', icon: 'file' },
-        component: () => import('@/views/node/RateLimiter')
-      },
-      {
         path: 'fileSystem',
         name: ROUTER_NAME_FILE_SYSTEM,
         meta: { title: '客户端管理', icon: 'file' },
@@ -317,6 +311,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_REPO_CONFIG,
         meta: { title: 'REPO配置管理', icon: 'permission' },
         component: () => import('@/views/repoConfig/index')
+      }
+    ]
+  },
+  {
+    path: '/rateLimiter',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_RATE_LIMITER_CONFIG,
+        meta: { title: '限流管理', icon: 'permission' },
+        component: () => import('@/views/rateLimitConfg/RateLimiter')
       }
     ]
   },

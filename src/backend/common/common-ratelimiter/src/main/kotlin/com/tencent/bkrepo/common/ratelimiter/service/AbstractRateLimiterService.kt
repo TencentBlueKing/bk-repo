@@ -56,7 +56,6 @@ import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
 import com.tencent.bkrepo.common.ratelimiter.interceptor.TargetRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
-import com.tencent.bkrepo.common.ratelimiter.model.TRateLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.DownloadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule
@@ -315,12 +314,13 @@ abstract class AbstractRateLimiterService(
         val usageRuleConfigs = rateLimiterProperties.rules.filter {
             it.limitDimension in getLimitDimensions()
         }
-        val databaseConfig =
-            try {
-                rateLimiterConfigService.findByModuleName(moduleName)
-            } catch (ex: Exception) {
-                rateLimiterConfigService.list()
-            }
+        val databaseConfig = try {
+            rateLimiterConfigService.findByModuleNameAndLimitDimension(
+                moduleName, getLimitDimensions().first())
+        } catch (e: Exception) {
+            logger.error("system error: $e")
+            listOf()
+        }
         val configs = usageRuleConfigs.plus(databaseConfig.map { tRateLimit -> ResourceLimit(
             algo = tRateLimit.algo,
             resource = tRateLimit.resource,
