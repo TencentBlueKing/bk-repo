@@ -92,7 +92,7 @@ class BkIamV3ServiceImpl(
     private val managerService: V2ManagerService,
     private val managerServiceV1: ManagerService,
     private val authManagerRepository: BkIamAuthManagerRepository,
-    val mongoTemplate: MongoTemplate
+    mongoTemplate: MongoTemplate
 ) : BkIamV3Service, BkiamV3BaseService(mongoTemplate) {
 
 
@@ -155,8 +155,8 @@ class BkIamV3ServiceImpl(
     ): String? {
         logger.debug(
             "v3 getPermissionUrl, userId: ${request.uid}, projectId: ${request.projectId}, " +
-                "repoName: ${request.repoName} resourceType: ${request.resourceType}, " +
-                "action: ${request.action}, path: ${request.path}"
+                    "repoName: ${request.repoName} resourceType: ${request.resourceType}, " +
+                    "action: ${request.action}, path: ${request.path}"
         )
         if (!checkIamConfiguration()) return null
         return if (request.projectId.isNullOrEmpty() && request.repoName.isNullOrEmpty()) {
@@ -177,7 +177,7 @@ class BkIamV3ServiceImpl(
                 resourceType, projectId, repoName, path
             )
             val action = BkIamV3Utils.convertActionType(request.resourceType, request.action)
-            val resourceType = request.resourceType.toLowerCase()
+            val resourceType = request.resourceType.lowercase()
             if (repoName != null && !checkBkiamv3Config(projectId, repoName)) return null
             authManagerRepository.findByTypeAndResourceIdAndParentResId(
                 ResourceType.PROJECT, projectId!!, null
@@ -228,7 +228,7 @@ class BkIamV3ServiceImpl(
             } catch (e: Exception) {
                 logger.error(
                     "v3 getPermissionUrl with userId: $uid, action: $action," +
-                        " pUrlRequest: $pUrlRequest\" error: ${e.message}"
+                            " pUrlRequest: $pUrlRequest\" error: ${e.message}"
                 )
                 StringPool.EMPTY
             }
@@ -247,7 +247,7 @@ class BkIamV3ServiceImpl(
     ): Boolean {
         logger.debug(
             "v3 validateResourcePermission, userId: $userId, projectId: $projectId, repoName: $repoName" +
-                " resourceType: $resourceType, action: $action, resourceId: $resourceId, appId: $appId"
+                    " resourceType: $resourceType, action: $action, resourceId: $resourceId, appId: $appId"
         )
         if (!checkIamConfiguration()) return false
         val instanceDTO = InstanceDTO()
@@ -286,7 +286,7 @@ class BkIamV3ServiceImpl(
         } catch (e: Exception) {
             logger.error(
                 "try bkiamv3 check with userId: $userId, action: $action," +
-                    " instanceDTO: $instanceDTO\" error: ${e.message}"
+                        " instanceDTO: $instanceDTO\" error: ${e.message}"
             )
             allowed = false
         }
@@ -314,7 +314,7 @@ class BkIamV3ServiceImpl(
     ): List<String> {
         logger.debug(
             "v3 listPermissionResources, userId: $userId, projectId: $projectId" +
-                " resourceType: $resourceType, action: $action"
+                    " resourceType: $resourceType, action: $action"
         )
         if (!checkIamConfiguration()) return emptyList()
         val actionDto = ActionDTO()
@@ -521,14 +521,14 @@ class BkIamV3ServiceImpl(
             }
             logger.debug(
                 "v3 create grade manager for repo [${projectInfo.name}|$repoName]," +
-                    " projectManagerId: $projectManagerId"
+                        " projectManagerId: $projectManagerId"
             )
             val secondManagerMembers = mutableSetOf<String>()
             secondManagerMembers.add(userId)
             val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
                 .name(
                     "$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}" +
-                        "-$REPO_DEFAULT_NAME-${repoDetail.name}"
+                            "-$REPO_DEFAULT_NAME-${repoDetail.name}"
                 )
                 .description(
                     IamGroupUtils.buildManagerDescription(
@@ -680,13 +680,13 @@ class BkIamV3ServiceImpl(
         // 赋予权限
         try {
             createRoleGroupMember(defaultGroupType, roleId, members)
-            val actions = DefaultGroupTypeAndActions.get(defaultGroupType.name.toLowerCase()).actions
+            val actions = DefaultGroupTypeAndActions.get(defaultGroupType.name.lowercase()).actions
             grantGroupPermission(projectResInfo, repoResInfo, roleId, actions)
         } catch (e: Exception) {
             managerService.deleteRoleGroupV2(roleId)
             logger.error(
                 "v3 create iam group permission fail : $projectResInfo|$repoResInfo" +
-                    " iamRoleId = $roleId | groupInfo = ${defaultGroupType.value}",
+                        " iamRoleId = $roleId | groupInfo = ${defaultGroupType.value}",
                 e
             )
         }

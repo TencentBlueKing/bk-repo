@@ -107,14 +107,14 @@ open class BkIamV3PermissionServiceImpl(
             val resourceId = bkiamV3Service.getResourceId(
                 resourceType, projectId, repoName, path
             ) ?: StringPool.EMPTY
-            return if (checkDefaultRepository(resourceType, resourceId, repoName)) {
+            return if (checkDefaultRepository(resourceType, repoName)) {
                 checkBkIamV3ProjectPermission(projectId!!, uid, action)
             } else {
                 bkiamV3Service.validateResourcePermission(
                     userId = uid,
                     projectId = projectId!!,
                     repoName = repoName,
-                    resourceType = resourceType.toLowerCase(),
+                    resourceType = resourceType.lowercase(),
                     action = convertActionType(resourceType, action),
                     resourceId = resourceId,
                     appId = appId
@@ -126,14 +126,9 @@ open class BkIamV3PermissionServiceImpl(
     /**
      * 针对默认创建的4个仓库不开启v3-rbac校验，只校验项目权限
      */
-    private fun checkDefaultRepository(resourceType: String, resourceId: String, repoName: String?): Boolean {
+    private fun checkDefaultRepository(resourceType: String, repoName: String?): Boolean {
         return when (resourceType) {
-            ResourceType.SYSTEM.toString() -> false
-            ResourceType.PROJECT.toString() -> false
-            ResourceType.REPO.toString() -> {
-                defaultRepoList.contains(resourceId)
-            }
-            ResourceType.NODE.toString() -> {
+            ResourceType.NODE.toString(), ResourceType.REPO.toString() -> {
                 defaultRepoList.contains(repoName)
             }
             else -> false
@@ -184,10 +179,7 @@ open class BkIamV3PermissionServiceImpl(
         }
     }
 
-    private fun mergeResult(
-        list: List<String>,
-        v3list: List<String>
-    ): List<String> {
+    private fun mergeResult(list: List<String>, v3list: List<String>): List<String> {
         val set = mutableSetOf<String>()
         set.addAll(list)
         set.addAll(v3list)

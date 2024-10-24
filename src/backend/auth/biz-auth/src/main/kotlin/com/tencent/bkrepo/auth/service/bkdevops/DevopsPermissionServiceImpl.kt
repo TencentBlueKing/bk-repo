@@ -105,8 +105,8 @@ class DevopsPermissionServiceImpl constructor(
 
         // bkiamv3权限校验
         if (matchBkiamv3Cond(request)) {
-            // 当有v3权限时，返回成功；如没有v3权限则按devops账号体系继续进行判断
-            if (checkBkIamV3Permission(request)) return true
+            // 开启iamv3
+            return checkBkIamV3Permission(request)
         }
 
         return checkDevopsPermission(request)
