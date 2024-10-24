@@ -41,6 +41,14 @@
                     </template>
                 </bk-form-item>
             </template>
+            <bk-form-item
+                :label="$t('bkPermissionCheck')"
+                v-if="!specialRepoEnum().includes(baseData.name)">
+                <bk-radio-group v-model="bkiamv3Check">
+                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                </bk-radio-group>
+            </bk-form-item>
             <bk-form-item :label="$t('blackUserList')" property="blackList" error-display-type="normal" v-if="isDevx">
                 <div class="mb10 flex-between-center">
                     <bk-select
@@ -62,18 +70,16 @@
                 <bk-button theme="primary" @click="save()">{{$t('save')}}</bk-button>
             </bk-form-item>
         </bk-form>
-        <add-user-dialog ref="addUserDialog" :visible.sync="showAddUserDialog" @complete="handleAddUsers"></add-user-dialog>
     </div>
 </template>
 <script>
     import { mapActions } from 'vuex'
-    import AddUserDialog from '@repository/components/AddUserDialog/addUserDialog'
     import { specialRepoEnum } from '@repository/store/publicEnum'
     import CardRadioGroup from '@repository/components/CardRadioGroup'
 
     export default {
         name: 'controlConfig',
-        components: { CardRadioGroup, AddUserDialog },
+        components: { CardRadioGroup },
         props: {
             baseData: Object
         },
@@ -136,11 +142,11 @@
                     }
                 },
                 blackList: [],
-                showAddUserDialog: false,
                 filenameRule,
                 metadataRule,
                 ipSegmentRule,
-                roleList: []
+                roleList: [],
+                bkiamv3Check: false
             }
         },
         computed: {
@@ -183,19 +189,19 @@
                 set (val) {
                     if (val === 'public') {
                         this.$emit('showPermissionConfigTab', false)
-                        this.baseData.public = true
+                        this.controlConfigs.public = true
                         this.rootDirectoryPermission = null
                     } else if (val === 'folder') {
                         this.$emit('showPermissionConfigTab', true)
-                        this.baseData.public = false
+                        this.controlConfigs.public = false
                         this.rootDirectoryPermission = 'DIR_CTRL'
                     } else if (val === 'strict') {
                         this.$emit('showPermissionConfigTab', true)
-                        this.baseData.public = false
+                        this.controlConfigs.public = false
                         this.rootDirectoryPermission = 'STRICT'
                     } else if (val === 'default') {
                         this.$emit('showPermissionConfigTab', false)
-                        this.baseData.public = false
+                        this.controlConfigs.public = false
                         this.rootDirectoryPermission = 'DEFAULT'
                     } else {
                         this.$emit('showPermissionConfigTab', false)
@@ -249,10 +255,14 @@
             }).then((res) => {
                 this.rootDirectoryPermission = res.accessControlMode
                 this.blackList = res.officeDenyGroupSet
+                this.bkiamv3Check = res.bkiamv3Check
             })
             this.getRoleListHandler()
         },
         methods: {
+            specialRepoEnum () {
+                return specialRepoEnum
+            },
             ...mapActions(['updateRepoInfo', 'getRootPermission', 'getProjectRoleList', 'createOrUpdateRootPermission']),
             getRoleListHandler () {
                 this.getProjectRoleList({ projectId: this.projectId }).then(res => {
@@ -269,41 +279,6 @@
                     name: 'userGroup'
                 })
             },
-            addUserGroup () {
-                this.$refs.roleForm.clearError()
-                this.editRoleConfig = {
-                    show: true,
-                    loading: false,
-                    id: '',
-                    name: '',
-                    description: '',
-                    users: [],
-                    originUsers: []
-                }
-            },
-            showAddDialog () {
-                this.showAddUserDialog = true
-                this.$refs.addUserDialog.editUserConfig = {
-                    users: this.editRoleConfig.users,
-                    originUsers: this.editRoleConfig.originUsers,
-                    search: '',
-                    newUser: ''
-                }
-            },
-            handleAddUsers (users) {
-                this.editRoleConfig.originUsers = users
-                this.editRoleConfig.users = users
-            },
-            deleteUser (index) {
-                const temp = []
-                for (let i = 0; i < this.editRoleConfig.users.length; i++) {
-                    if (i !== index) {
-                        temp.push(this.editRoleConfig.users[i])
-                    }
-                }
-                this.editRoleConfig.users = temp
-                this.editRoleConfig.originUsers = temp
-            },
             async save () {
                 await this.$refs.controlForm.validate()
                 try {
@@ -312,7 +287,8 @@
                         projectId: this.projectId,
                         repoName: this.repoName,
                         accessControlMode: this.rootDirectoryPermission,
-                        officeDenyGroupSet: this.blackList
+                        officeDenyGroupSet: this.blackList,
+                        bkiamv3Check: this.bkiamv3Check
                     }
                     const configBody = this.getRepoConfigBody()
                     await this.updateRepoInfo({
@@ -384,9 +360,6 @@
                             )
                         }
                     }
-                }
-                if (!specialRepoEnum.includes(this.baseData.name)) {
-                    body.configuration.settings.bkiamv3Check = this.baseData.configuration.settings.bkiamv3Check
                 }
                 return body
             }

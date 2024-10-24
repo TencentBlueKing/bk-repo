@@ -35,14 +35,6 @@
                     <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <bk-form-item
-                :label="$t('bkPermissionCheck')"
-                v-if="!specialRepoEnum.includes(repoBaseInfo.name) && rbacStatus">
-                <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
-                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
-                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
-                </bk-radio-group>
-            </bk-form-item>
             <template v-if="repoBaseInfo.type === 'rpm'">
                 <bk-form-item :label="$t('enabledFileLists')">
                     <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
@@ -139,7 +131,6 @@
                 showIamDenyDialog: false,
                 showData: {},
                 title: this.$t('createRepository'),
-                rbacStatus: false,
                 accessControl: 'DEFAULT'
             }
         },
@@ -235,14 +226,11 @@
             }
         },
         methods: {
-            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'getIamPermissionStatus', 'createOrUpdateRootPermission']),
+            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'createOrUpdateRootPermission']),
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
                 this.$refs.repoBaseInfo && this.$refs.repoBaseInfo.clearError()
-                this.getIamPermissionStatus().then(res => {
-                    this.rbacStatus = res
-                })
             },
             cancel () {
                 this.accessControl = 'DEFAULT'
@@ -284,9 +272,6 @@
                             )
                         }
                     }
-                }
-                if (!specialRepoEnum.includes(this.repoBaseInfo.name)) {
-                    body.configuration.settings.bkiamv3Check = this.repoBaseInfo.configuration.settings.bkiamv3Check
                 }
                 this.loading = true
                 this.createRepo({
