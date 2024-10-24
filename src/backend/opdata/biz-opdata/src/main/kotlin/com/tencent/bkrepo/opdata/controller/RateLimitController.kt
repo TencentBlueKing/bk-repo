@@ -43,7 +43,7 @@ class RateLimitController(
         }
         rateLimiterConfigService.getById(request.id!!).let {
             if (it != null &&
-                (!it.resource.equals(request.resource) || !it.limitDimension.equals(request.limitDimension)) &&
+                updateCheckResource(it, request) &&
                 rateLimiterConfigService.checkExist(request)
             ) {
                 throw ErrorCodeException(
@@ -54,6 +54,10 @@ class RateLimitController(
         }
         rateLimiterConfigService.update(request)
         return ResponseBuilder.success()
+    }
+
+    private fun updateCheckResource(tRateLimit: TRateLimit, request: RateLimitCreatOrUpdateRequest): Boolean {
+        return (tRateLimit.resource != request.resource || tRateLimit.limitDimension != request.limitDimension)
     }
 
     // 新增
