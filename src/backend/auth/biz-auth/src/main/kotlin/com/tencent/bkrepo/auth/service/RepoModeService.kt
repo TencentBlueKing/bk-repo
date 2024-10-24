@@ -42,7 +42,8 @@ interface RepoModeService {
         projectId: String,
         repoName: String,
         accessControlMode: AccessControlMode?,
-        officeDenyGroupSet: Set<String>
+        officeDenyGroupSet: Set<String>,
+        bkiamv3Check: Boolean
     ): RepoModeStatus?
 
     fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus

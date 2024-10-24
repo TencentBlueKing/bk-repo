@@ -52,7 +52,6 @@ import com.tencent.bkrepo.auth.condition.MultipleAuthCondition
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
-import com.tencent.bkrepo.auth.constant.BKIAMV3_CHECK
 import com.tencent.bkrepo.auth.dao.repository.BkIamAuthManagerRepository
 import com.tencent.bkrepo.auth.model.TBkIamAuthManager
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupType
@@ -60,6 +59,7 @@ import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupTypeAndActions
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.iam.ResourceInfo
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.service.RepoModeService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.BkIamV3Utils
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildId
@@ -104,10 +104,13 @@ class BkIamV3ServiceImpl(
     @Lazy
     private lateinit var nodeClient: NodeClient
 
-
     @Autowired
     @Lazy
     private lateinit var userService: UserService
+
+    @Autowired
+    @Lazy
+    private lateinit var repoModeService: RepoModeService
 
     @Autowired
     @Lazy
@@ -144,8 +147,7 @@ class BkIamV3ServiceImpl(
         // 如果配置是bkiamv3，默认走bkiamv3校验
         if (ciAuthServer == AUTH_CONFIG_TYPE_VALUE_BKIAMV3) return true
         if (projectId != null && repoName != null) {
-            val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data ?: return false
-            return repoInfo.configuration.getBooleanSetting(BKIAMV3_CHECK) ?: false
+            return repoModeService.getAccessControlStatus(projectId, repoName).bkiamv3Check
         }
         return false
     }
