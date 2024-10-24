@@ -50,5 +50,6 @@ data class TRepoAuthConfig(
     var accessControlMode: AccessControlMode?,
     var officeDenyGroupSet: Set<String>?,
     var lastModifiedBy: String,
-    val lastModifiedDate: LocalDateTime
+    val lastModifiedDate: LocalDateTime,
+    val bkiamv3Check: Boolean?
 )

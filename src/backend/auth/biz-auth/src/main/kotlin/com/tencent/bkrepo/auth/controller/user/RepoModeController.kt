@@ -65,10 +65,14 @@ class RepoModeController(
     ): Response<RepoModeStatus> {
         with(request) {
             preCheckProjectAdmin(projectId)
-            repoModeService.createOrUpdateConfig(projectId, repoName, accessControlMode, officeDenyGroupSet)
-            return ResponseBuilder.success(
-                repoModeService.getAccessControlStatus(projectId, repoName)
+            repoModeService.createOrUpdateConfig(
+                projectId,
+                repoName,
+                accessControlMode,
+                officeDenyGroupSet,
+                bkiamv3Check
             )
+            return ResponseBuilder.success(repoModeService.getAccessControlStatus(projectId, repoName))
         }
     }
 
