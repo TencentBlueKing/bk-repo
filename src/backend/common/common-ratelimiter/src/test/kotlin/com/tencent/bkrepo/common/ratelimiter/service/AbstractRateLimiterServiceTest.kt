@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
+import com.tencent.bkrepo.common.ratelimiter.repository.RateLimitRepository
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
@@ -68,6 +69,9 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
     @MockBean
     private lateinit var meterRegistry: MeterRegistry
 
+    @MockBean
+    private lateinit var rateLimitRepository: RateLimitRepository
+
     fun init() {
         request = MockHttpServletRequest()
         val scheduler = ThreadPoolTaskScheduler()
@@ -75,6 +79,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         taskScheduler = scheduler
         rateLimiterProperties = RateLimiterProperties()
         rateLimiterMetrics = RateLimiterMetrics(meterRegistry)
+        rateLimiterConfigService = RateLimiterConfigService(rateLimitRepository)
     }
 
 
