@@ -6,9 +6,8 @@ local key = KEYS[1]
 local limit = tonumber(ARGV[1])
 local interval = tonumber(ARGV[2])
 local count = tonumber(ARGV[3])
-local now_mill = tonumber(ARGV[4])
-local now_sec = tonumber(ARGV[5])
-local random = tonumber(ARGV[6])
+local now_sec = tonumber(ARGV[4])
+local random = tonumber(ARGV[5])
 
 -- 删除时间窗口之外的令牌
 redis.call('zremrangebyscore', key, 0, now_sec - interval)
