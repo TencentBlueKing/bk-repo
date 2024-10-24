@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.service.packages.PackageService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -49,9 +48,7 @@ import java.net.URL
  * 公共远程仓库
  */
 @Component
-class CommonRemoteRepository(
-    private val packageService: PackageService
-) : RemoteRepository() {
+class CommonRemoteRepository : RemoteRepository() {
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
         logger.info("Will prepare to create remote download url...")
         val type = context.repositoryDetail.type

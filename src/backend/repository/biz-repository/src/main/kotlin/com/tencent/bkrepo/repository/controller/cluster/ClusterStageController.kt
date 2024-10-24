@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.cluster.ClusterStageClient
 import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
-import com.tencent.bkrepo.repository.service.packages.StageService
+import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 

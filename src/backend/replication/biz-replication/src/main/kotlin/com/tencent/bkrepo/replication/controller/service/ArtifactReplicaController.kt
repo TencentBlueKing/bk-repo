@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
@@ -43,7 +44,6 @@ import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -73,7 +73,7 @@ class ArtifactReplicaController(
     private val projectService: ProjectService,
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
-    private val packageClient: PackageClient,
+    private val packageService: PackageService,
     private val metadataService: MetadataService,
     private val userResource: ServiceUserClient,
     private val permissionManager: PermissionManager
@@ -181,18 +181,19 @@ class ArtifactReplicaController(
     override fun checkPackageVersionExist(
         request: PackageVersionExistCheckRequest
     ): Response<Boolean> {
-        val packageVersion = packageClient.findVersionByName(
+        val packageVersion = packageService.findVersionByName(
             request.projectId,
             request.repoName,
             request.packageKey,
             request.versionName
-        ).data
+        )
         return ResponseBuilder.success(packageVersion != null)
     }
 
     override fun replicaPackageVersionCreatedRequest(
         request: PackageVersionCreateRequest
     ): Response<Void> {
-        return packageClient.createVersion(request)
+        packageService.createPackageVersion(request)
+        return ResponseBuilder.success()
     }
 }

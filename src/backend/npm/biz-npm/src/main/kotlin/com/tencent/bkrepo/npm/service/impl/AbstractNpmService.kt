@@ -34,6 +34,7 @@ package com.tencent.bkrepo.npm.service.impl
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -45,7 +46,6 @@ import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.properties.NpmProperties
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.Logger
@@ -64,7 +64,7 @@ open class AbstractNpmService {
 	lateinit var repositoryClient: RepositoryClient
 
 	@Autowired
-	lateinit var packageClient: PackageClient
+	lateinit var packageService: PackageService
 
 	@Autowired
 	lateinit var npmProperties: NpmProperties
@@ -83,21 +83,21 @@ open class AbstractNpmService {
 	 * check package exists
 	 */
 	fun packageExist(projectId: String, repoName: String, key: String): Boolean {
-		return packageClient.findPackageByKey(projectId, repoName, key).data?.let { true } ?: false
+		return packageService.findPackageByKey(projectId, repoName, key)?.let { true } ?: false
 	}
 
 	/**
 	 * check package version exists
 	 */
 	fun packageVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
-		return packageClient.findVersionByName(projectId, repoName, key, version).data?.let { true } ?: false
+		return packageService.findVersionByName(projectId, repoName, key, version)?.let { true } ?: false
 	}
 
 	/**
 	 * check package history version exists
 	 */
 	fun packageHistoryVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
-		val packageSummary = packageClient.findPackageByKey(projectId, repoName, key).data ?: return false
+		val packageSummary = packageService.findPackageByKey(projectId, repoName, key) ?: return false
 		return packageSummary.historyVersion.contains(version)
 	}
 

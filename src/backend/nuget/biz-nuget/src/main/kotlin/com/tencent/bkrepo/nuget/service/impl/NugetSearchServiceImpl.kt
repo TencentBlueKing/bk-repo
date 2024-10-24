@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.nuget.service.impl
 
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.request.NugetSearchRequest
 import com.tencent.bkrepo.nuget.pojo.response.search.NugetSearchResponse
@@ -9,16 +10,16 @@ import com.tencent.bkrepo.nuget.service.NugetSearchService
 import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
 import com.tencent.bkrepo.nuget.util.NugetVersionUtils
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import kotlin.streams.toList
 
 @Service
 class NugetSearchServiceImpl(
-    private val packageClient: PackageClient
+    private val packageService: PackageService
 ) : NugetSearchService {
     override fun search(artifactInfo: NugetArtifactInfo, searchRequest: NugetSearchRequest): NugetSearchResponse {
         logger.info("handling search request in repo [${artifactInfo.getRepoIdentify()}], parameter: $searchRequest")
@@ -32,9 +33,9 @@ class NugetSearchServiceImpl(
             val packageListOption = PackageListOption(pageSize = 1000, packageName = q)
 
             while (true) {
-                val page = packageClient.listPackagePage(
+                val page = packageService.listPackagePage(
                     artifactInfo.projectId, artifactInfo.repoName, packageListOption
-                ).data?.records.takeUnless { it.isNullOrEmpty() } ?: break
+                ).records.takeUnless { it.isEmpty() } ?: break
                 packageListOption.pageNumber++
                 val pageResult = page.map {
                     buildSearchResponseData(it, this, v3RegistrationUrl)
@@ -54,7 +55,7 @@ class NugetSearchServiceImpl(
         v3RegistrationUrl: String
     ): SearchResponseData {
         with(packageSummary) {
-            val packageVersionList = packageClient.listAllVersion(projectId, repoName, key).data!!
+            val packageVersionList = packageService.listAllVersion(projectId, repoName, key, VersionListOption())
             // preRelease需要处理
             val sortedPackageVersionList =
                 packageVersionList.stream()

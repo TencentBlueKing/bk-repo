@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -96,7 +97,6 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils.buildBlobsFolderPath
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -131,7 +131,7 @@ class OciOperationServiceImpl(
     private val nodeClient: NodeClient,
     private val metadataService: MetadataService,
     private val packageMetadataClient: PackageMetadataClient,
-    private val packageClient: PackageClient,
+    private val packageService: PackageService,
     private val storageManager: StorageManager,
     private val repositoryClient: RepositoryClient,
     private val ociProperties: OciProperties,
@@ -150,12 +150,12 @@ class OciOperationServiceImpl(
         packageKey: String,
         version: String
     ) {
-        packageClient.findVersionByName(
+        packageService.findVersionByName(
             projectId = projectId,
             repoName = repoName,
             packageKey = packageKey,
-            version = version
-        ).data ?: throw OciVersionNotFoundException(
+            versionName = version
+        ) ?: throw OciVersionNotFoundException(
             OciMessageCode.OCI_VERSION_NOT_FOUND, "$packageKey/$version", "$projectId|$repoName"
         )
     }
@@ -170,12 +170,12 @@ class OciOperationServiceImpl(
             val repoDetail = getRepositoryInfo(artifactInfo)
             val packageKey = PackageKeys.ofName(repoDetail.type.name.toLowerCase(), packageName)
             if (version.isNotBlank()) {
-                packageClient.findVersionByName(
+                packageService.findVersionByName(
                     projectId = projectId,
                     repoName = repoName,
                     packageKey = packageKey,
-                    version = version
-                ).data?.let {
+                    versionName = version
+                )?.let {
                     removeVersion(
                         artifactInfo = this,
                         version = it.name,
@@ -183,7 +183,7 @@ class OciOperationServiceImpl(
                         packageKey = packageKey
                     )
                 } ?: throw VersionNotFoundException(version)
-                if (!packageClient.listAllVersion(projectId, repoName, packageKey).data.isNullOrEmpty()) {
+                if (packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption()).isNotEmpty()) {
                     return
                 }
                 // 当没有版本时删除删除package目录
@@ -192,7 +192,7 @@ class OciOperationServiceImpl(
                 // 删除package目录
                 deleteNode(projectId, repoName, "${StringPool.SLASH}$packageName", userId)
                 //删除package下所有版本
-                packageClient.deletePackage(
+                packageService.deletePackage(
                     projectId,
                     repoName,
                     packageKey
@@ -217,7 +217,7 @@ class OciOperationServiceImpl(
                 version = version,
                 userId = userId
             )
-            packageClient.deleteVersion(projectId, repoName, packageKey, version)
+            packageService.deleteVersion(projectId, repoName, packageKey, version)
         }
     }
 
@@ -294,7 +294,7 @@ class OciOperationServiceImpl(
             ) ?: throw OciVersionNotFoundException(
                 OciMessageCode.OCI_VERSION_NOT_FOUND, "$packageKey/$version", "$projectId|$repoName"
             )
-            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data!!
+            val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, version)!!
             val basicInfo = ObjectBuildUtils.buildBasicInfo(nodeDetail, packageVersion)
             return PackageVersionInfo(basicInfo, packageVersion.packageMetadata)
         }
@@ -716,7 +716,7 @@ class OciOperationServiceImpl(
                 repoType = repoType,
                 userId = userId
             )
-            packageClient.createVersion(request)
+            packageService.createPackageVersion(request)
             savePackageMetaData(
                 projectId = projectId,
                 repoName = repoName,
@@ -901,10 +901,7 @@ class OciOperationServiceImpl(
         name?.let {
             queryModel.name("*$name*", OperationType.MATCH)
         }
-        val result = packageClient.searchPackage(queryModel.build()).data ?: run {
-            logger.warn("find repo list failed: [$projectId, $repoName] ")
-            return OciImageResult(0, emptyList())
-        }
+        val result = packageService.searchPackage(queryModel.build())
         val data = mutableListOf<OciImage>()
         result.records.forEach {
             val imageName = it[OCI_PACKAGE_NAME] as String
@@ -938,12 +935,12 @@ class OciOperationServiceImpl(
         val artifactInfo = OciArtifactInfo(projectId, repoName, StringPool.EMPTY, StringPool.EMPTY)
         val repoDetail = getRepositoryInfo(artifactInfo)
         val packageKey = PackageKeys.ofName(repoDetail.type.name.toLowerCase(), packageName)
-        val result = packageClient.listVersionPage(
+        val result = packageService.listVersionPage(
             projectId,
             repoName,
             packageKey,
             VersionListOption(pageNumber, pageSize, tag, null)
-        ).data ?: return OciTagResult(0, emptyList())
+        )
         val data = mutableListOf<OciTag>()
         result.records.forEach {
             val name = it.name

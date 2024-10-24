@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.conan.constant.ConanMessageCode
@@ -57,9 +58,9 @@ import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildBasicInfo
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -72,7 +73,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
     lateinit var nodeClient: NodeClient
 
     @Autowired
-    lateinit var packageClient: PackageClient
+    lateinit var packageService: PackageService
 
     @Autowired
     lateinit var commonService: CommonService
@@ -87,7 +88,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                 nodeClient.deleteNode(request)
                 val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
                 val packageKey = PackageKeys.ofConan(refStr)
-                packageClient.deleteVersion(projectId, repoName, packageKey, version)
+                packageService.deleteVersion(projectId, repoName, packageKey, version)
             } else {
                 val conanFileReference = convertToConanFileReference(conanArtifactInfo, revision)
                 val rootPath = PathUtils.normalizeFullPath(buildRevisionPath(conanFileReference))
@@ -175,16 +176,16 @@ class ConanDeleteServiceImpl : ConanDeleteService {
 
     override fun removePackageByKey(conanArtifactInfo: ConanArtifactInfo, packageKey: String) {
         with(conanArtifactInfo) {
-            packageClient.listAllVersion(projectId, repoName, packageKey).data.orEmpty().forEach {
+            packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption()).forEach {
                 deleteVersion(projectId, repoName, packageKey, it, false)
             }
-            packageClient.deletePackage(projectId, repoName, packageKey)
+            packageService.deletePackage(projectId, repoName, packageKey)
         }
     }
 
     override fun removePackageVersion(conanArtifactInfo: ConanArtifactInfo, packageKey: String, version: String) {
         with(conanArtifactInfo) {
-            val versionDetail = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: return
+            val versionDetail = packageService.findVersionByName(projectId, repoName, packageKey, version) ?: return
             deleteVersion(projectId, repoName, packageKey, versionDetail)
         }
     }
@@ -199,7 +200,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
         conanArtifactInfo: ConanArtifactInfo, packageKey: String, version: String
     ): PackageVersionInfo {
         with(conanArtifactInfo) {
-            val versionDetail = packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+            val versionDetail = packageService.findVersionByName(projectId, repoName, packageKey, version)
                 ?: throw VersionNotFoundException(version)
             if (versionDetail.contentPath.isNullOrEmpty()) throw VersionNotFoundException(version)
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, versionDetail.contentPath!!).data ?: run {
@@ -223,7 +224,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
         val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
         nodeClient.deleteNode(request)
         if (deleteVersion) {
-            packageClient.deleteVersion(projectId, repoName, packageKey, versionDetail.name)
+            packageService.deleteVersion(projectId, repoName, packageKey, versionDetail.name)
         }
     }
 

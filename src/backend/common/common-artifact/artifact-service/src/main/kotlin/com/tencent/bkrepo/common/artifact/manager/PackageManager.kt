@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.artifact.manager
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
@@ -41,11 +41,11 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
  * 包版本相关Manager
  */
 class PackageManager(
-    private val packageClient: PackageClient
+    private val packageService: PackageService
 ) {
 
     fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary {
-        return packageClient.findPackageByKey(projectId, repoName, packageKey).data
+        return packageService.findPackageByKey(projectId, repoName, packageKey)
             ?: throw NotFoundException(ArtifactMessageCode.PACKAGE_NOT_FOUND, packageKey)
     }
 
@@ -55,7 +55,7 @@ class PackageManager(
         packageKey: String,
         version: String
     ): PackageVersion {
-        return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+        return packageService.findVersionByName(projectId, repoName, packageKey, version)
             ?: throw NotFoundException(ArtifactMessageCode.VERSION_NOT_FOUND, version)
     }
 
@@ -65,7 +65,7 @@ class PackageManager(
         packageKey: String,
         tag: String
     ): String {
-        return packageClient.findVersionNameByTag(projectId, repoName, packageKey, tag).data
+        return packageService.findVersionNameByTag(projectId, repoName, packageKey, tag)
             ?: throw NotFoundException(ArtifactMessageCode.VERSION_NOT_FOUND, tag)
     }
 }

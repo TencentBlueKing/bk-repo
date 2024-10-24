@@ -38,6 +38,7 @@ dependencies {
     }
     api(project(":common:common-service:service-base"))
     api(project(":common:common-stream"))
+    api(project(":common:common-query:query-mongo"))
 
     compileOnly(project(":common:common-mongo-reactive"))
     compileOnly(project(":common:common-mongo"))
