@@ -54,8 +54,8 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="作用模块" prop="moduleName">
-        <el-select v-model="rateLimit.moduleName" multiple clearable placeholder="请选择">
+      <el-form-item label="作用模块" prop="moduleName" :rules="[{ required: true, message: '作用模块不能为空'}]">
+        <el-select v-model="rateLimit.moduleName" multiple filterable collapse-tags placeholder="请选择">
           <el-option
             v-for="item in moduleNameOptions"
             :key="item.value"
@@ -63,6 +63,7 @@
             :value="item.value"
           />
         </el-select>
+        <el-checkbox v-model="moduleSelectAll" style="margin-left: 10px">全选</el-checkbox>
       </el-form-item>
       <el-form-item
         v-for="(item,index) in rateLimit.targets"
@@ -297,7 +298,8 @@ export default {
           value: 'media',
           label: 'media'
         }
-      ]
+      ],
+      moduleSelectAll: false
     }
   },
   watch: {
@@ -307,6 +309,16 @@ export default {
         this.showDialog = true
       } else {
         this.close()
+      }
+    },
+    moduleSelectAll: function(newVal) {
+      if (newVal) {
+        this.rateLimit.moduleName = []
+        this.moduleNameOptions.forEach(moduleName => {
+          this.rateLimit.moduleName.push(moduleName.value)
+        })
+      } else {
+        this.rateLimit.moduleName = []
       }
     }
   },
@@ -327,6 +339,8 @@ export default {
     },
     close() {
       this.showDialog = false
+      this.moduleSelectAll = false
+      this.rateLimit = this.newRateLimit()
       this.$refs['form'].resetFields()
       this.$emit('update:visible', false)
     },
@@ -337,7 +351,6 @@ export default {
           return
         }
       }
-      console.log(this.rateLimit.moduleName.length < 1)
       this.$refs['form'].validate((valid) => {
         if (valid) {
           const rateLimit = this.rateLimit
@@ -382,7 +395,6 @@ export default {
         this.rateLimit = this.newRateLimit()
       } else {
         this.rateLimit = _.cloneDeep(this.updatingRateLimit)
-        console.log(this.rateLimit)
         if (this.rateLimit.targets.length === 0) {
           this.rateLimit.targets = ['']
         }
@@ -400,7 +412,7 @@ export default {
         limit: '',
         capacity: '',
         scope: 'LOCAL',
-        moduleName: [],
+        moduleName: ['repository'],
         targets: ['']
       }
       return rateLimit

@@ -93,7 +93,7 @@
 </template>
 <script>
 
-import CreateOrUpdateRateLimitDialog from '@/views/node/components/CreateOrUpdateRateLimitDialog'
+import CreateOrUpdateRateLimitDialog from '@/views/rateLimitConfg/components/CreateOrUpdateRateLimitDialog'
 import { getRateLimitConfig, queryRateLimits, deleteRateLimit } from '@/api/rateLimit'
 
 export default {
