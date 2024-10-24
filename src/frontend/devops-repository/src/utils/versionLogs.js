@@ -23,32 +23,33 @@ const VersionLogs = [
     'V1.5.2-rc.1.md'
 ]
 
-// 返回实际所有版本,同时进行排序
-export async function getTrueVersion () {
-    const language = cookies.get('blueking_language') || 'zh-cn'
-    const languagePath = language === 'zh-cn' ? 'cn/' : 'en/'
+// 返回实际所有排序版本（注：版本号务必正确,不检查文件是否存在）
+export function getTrueVersions () {
     const realLogs = []
     for (const version of VersionLogs) {
-        const markdownFilePath = '/ui/versionLogs/' + languagePath + version
-        const response = await fetch(markdownFilePath)
-        if (response.ok) {
-            const data = version.replace('.md', '').split('_', 2)
-            let time = ''
-            if (data.length < 2) {
-                time = ''
-            } else {
-                time = data[1]
-            }
-            const markdown = await response.text()
-            const logProperty = {
-                version: data[0],
-                time: time,
-                content: markdown
-            }
-            realLogs.push(logProperty)
+        const data = version.replace('.md', '').split('_', 2)
+        let time = ''
+        if (data.length < 2) {
+            time = ''
+        } else {
+            time = data[1]
         }
+        const logProperty = {
+            version: data[0],
+            time: time
+        }
+        realLogs.push(logProperty)
     }
     return sortLogs(realLogs)
+}
+
+export async function getVersionContext (version) {
+    const language = cookies.get('blueking_language') || 'zh-cn'
+    const languagePath = language === 'zh-cn' ? 'cn/' : 'en/'
+    const markdownFilePath = '/ui/versionLogs/' + languagePath + version + '.md'
+    const response = await fetch(markdownFilePath)
+    const markdown = await response.text()
+    return markdown
 }
 
 function sortLogs (realLogs) {

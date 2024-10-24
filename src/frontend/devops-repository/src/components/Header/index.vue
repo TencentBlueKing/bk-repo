@@ -106,6 +106,7 @@
     import { mapState, mapActions } from 'vuex'
     import cookies from 'js-cookie'
     import VersionLog from '@repository/components/VersionLog'
+    import { getVersionContext } from '@repository/utils/versionLogs'
     export default {
         name: 'BkrepoHeader',
         components: { VersionLog, User, projectInfoDialog },
@@ -223,7 +224,7 @@
                     name: 'projectManage'
                 })
             },
-            clickHelps (id) {
+            async clickHelps (id) {
                 const languagePath = this.language === 'zh-cn' ? 'ZH' : 'EN'
                 const url = DOC_URL + '/markdown/' + languagePath + '/Devops/3.0/UserGuide/intro/README.md'
                 switch (id) {
@@ -234,7 +235,7 @@
                         if (this.versionLogs.length > 0) {
                             this.$refs.versionLogDialog.show = true
                             this.$refs.versionLogDialog.versionLogs = this.versionLogs
-                            this.$refs.versionLogDialog.markdown = this.versionLogs[0].content
+                            this.$refs.versionLogDialog.markdown = await getVersionContext(this.versionLogs[0].version)
                         }
                         break
                     case 'feedback':
@@ -244,11 +245,11 @@
                         window.open('https://github.com/TencentBlueKing/bk-repo', '_blank')
                 }
             },
-            showVersionLogs () {
+            async showVersionLogs () {
                 if (this.versionLogs.length > 0) {
                     this.$refs.versionLogDialog.show = true
                     this.$refs.versionLogDialog.versionLogs = this.versionLogs
-                    this.$refs.versionLogDialog.markdown = this.versionLogs[0].content
+                    this.$refs.versionLogDialog.markdown = await getVersionContext(this.versionLogs[0].version)
                 }
             }
         }
