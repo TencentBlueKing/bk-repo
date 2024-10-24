@@ -27,10 +27,18 @@
 
 package com.tencent.bkrepo.conan.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.conan.constant.DEFAULT_REVISION_V1
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
@@ -63,6 +71,23 @@ class ConanDeleteController(
      * Remove any existing recipes or its packages created.
      * Will remove all revisions, packages and package revisions (parent folder)
      */
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#conanArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @DeleteMapping(REMOVE_RECIPE_V1)
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun removeRecipe(
@@ -75,12 +100,30 @@ class ConanDeleteController(
     /**
      * if packageIds is empty, then will remove all packages
      */
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#conanArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @PostMapping(REMOVE_PACKAGES_V1)
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun removePackages(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo,
         @RequestBody removeRequest: PackageIdRemoveRequest
     ): ResponseEntity<Any> {
+        ActionAuditContext.current().setInstance(removeRequest)
         conanDeleteService.removePackages(conanArtifactInfo, DEFAULT_REVISION_V1, removeRequest.packageIds)
         return ConanCommonController.buildResponse(StringPool.EMPTY)
     }
@@ -89,12 +132,30 @@ class ConanDeleteController(
      * The remove files is a part of the upload process,
      * where the revision in v1 will always be DEFAULT_REVISION_V1
      */
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#conanArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @PostMapping(REMOVE_FILES_V1)
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun removeRecipeFiles(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo,
         @RequestBody fileRemoveRequest: FileRemoveRequest
     ): ResponseEntity<Any> {
+        ActionAuditContext.current().setInstance(fileRemoveRequest)
         conanDeleteService.removeRecipeFiles(conanArtifactInfo, fileRemoveRequest.files)
         return ConanCommonController.buildResponse(StringPool.EMPTY)
     }
@@ -103,6 +164,23 @@ class ConanDeleteController(
      * Remove any existing recipes or its packages created.
      * Will remove all revisions, packages and package revisions (parent folder)
      */
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#conanArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @DeleteMapping(REMOVE_RECIPE_V2, REMOVE_RECIPE_REVISIONS_V2)
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun removeRecipeV2(
@@ -118,6 +196,23 @@ class ConanDeleteController(
      * - If PRev is NOT specified but RRev is specified (package_recipe_revision_url)
      * it will remove all the package revisions
      */
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#conanArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @DeleteMapping(REMOVE_PACKAGE_RECIPE_REVISION_V2, REMOVE_PACKAGE_REVISION_V2)
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun removePackagesV2(
@@ -130,6 +225,23 @@ class ConanDeleteController(
     /**
      * Remove all packages from a RREV
      */
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#conanArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#conanArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#conanArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#conanArtifactInfo?.repoName")
+        ],
+        scopeId = "#conanArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @DeleteMapping(REMOVE_ALL_PACKAGE_UNDER_REVISION_V2)
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun removeAllPackagesV2(

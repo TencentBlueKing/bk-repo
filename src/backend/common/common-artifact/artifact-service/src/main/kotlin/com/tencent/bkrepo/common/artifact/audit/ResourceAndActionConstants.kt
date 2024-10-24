@@ -25,35 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.enums
+package com.tencent.bkrepo.common.artifact.audit
 
-enum class ResourceActionMapping(val resourceType: String, val actions: List<String>) {
-    PROJECT_ACTIONS(
-        ResourceType.PROJECT.id(), listOf(
-        ActionTypeMapping.PROJECT_VIEW.id(),
-        ActionTypeMapping.PROJECT_EDIT.id(),
-        ActionTypeMapping.PROJECT_MANAGE.id(),
-        ActionTypeMapping.REPO_CREATE.id()
-    )
-    ),
-    REPO_ACTIONS(
-        ResourceType.REPO.id(),
-        listOf(
-            ActionTypeMapping.REPO_VIEW.id(),
-            ActionTypeMapping.REPO_EDIT.id(),
-            ActionTypeMapping.REPO_MANAGE.id(),
-            ActionTypeMapping.REPO_DELETE.id(),
-            ActionTypeMapping.NODE_CREATE.id()
-        )
-    ),
-    NODE_ACTIONS(
-        ResourceType.NODE.id(),
-        listOf(
-            ActionTypeMapping.NODE_DELETE.id(),
-            ActionTypeMapping.NODE_DOWNLOAD.id(),
-            ActionTypeMapping.NODE_EDIT.id(),
-            ActionTypeMapping.NODE_WRITE.id(),
-            ActionTypeMapping.NODE_VIEW.id()
-        )
-    );
-}
+const val PROJECT_CREATE_ACTION = "project_create"
+const val PROJECT_MANAGE_ACTION = "project_manage"
+const val PROJECT_DOWNLOAD_ACTION = "project_download"
+const val PROJECT_EDIT_ACTION = "project_edit"
+const val PROJECT_VIEW_ACTION = "project_view"
+const val REPO_CREATE_ACTION = "repo_create"
+const val REPO_MANAGE_ACTION = "repo_manage"
+const val REPO_VIEW_ACTION = "repo_view"
+const val REPO_DOWNLOAD_ACTION = "repo_download"
+const val REPO_EDIT_ACTION = "repo_edit"
+const val REPO_DELETE_ACTION = "repo_delete"
+const val NODE_CREATE_ACTION = "node_create"
+const val NODE_VIEW_ACTION = "node_view"
+const val NODE_READ_ACTION = "node_read"
+const val NODE_DOWNLOAD_ACTION = "node_download"
+const val NODE_EDIT_ACTION = "node_edit"
+const val NODE_WRITE_ACTION = "node_write"
+const val NODE_DELETE_ACTION = "node_delete"
+
+
+const val SYSTEM_RESOURCE = "system"
+const val PROJECT_RESOURCE = "project"
+const val REPO_RESOURCE = "repo"
+const val NODE_RESOURCE = "node"
+const val ENDPOINT_RESOURCE = "endpoint"

@@ -1,7 +1,14 @@
 package com.tencent.bkrepo.nuget.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.DOWNLOAD_MANIFEST
@@ -33,6 +40,23 @@ class NugetPackageContentController(
      *
      * return binary stream
      */
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping(DOWNLOAD_V3)
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun downloadPackageContent(
@@ -48,6 +72,23 @@ class NugetPackageContentController(
      *
      * return xml document
      */
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping(DOWNLOAD_MANIFEST)
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun downloadPackageManifest(

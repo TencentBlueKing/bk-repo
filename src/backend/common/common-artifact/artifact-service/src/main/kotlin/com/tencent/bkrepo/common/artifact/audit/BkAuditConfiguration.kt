@@ -25,35 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.enums
+package com.tencent.bkrepo.common.artifact.audit
 
-enum class ResourceActionMapping(val resourceType: String, val actions: List<String>) {
-    PROJECT_ACTIONS(
-        ResourceType.PROJECT.id(), listOf(
-        ActionTypeMapping.PROJECT_VIEW.id(),
-        ActionTypeMapping.PROJECT_EDIT.id(),
-        ActionTypeMapping.PROJECT_MANAGE.id(),
-        ActionTypeMapping.REPO_CREATE.id()
-    )
-    ),
-    REPO_ACTIONS(
-        ResourceType.REPO.id(),
-        listOf(
-            ActionTypeMapping.REPO_VIEW.id(),
-            ActionTypeMapping.REPO_EDIT.id(),
-            ActionTypeMapping.REPO_MANAGE.id(),
-            ActionTypeMapping.REPO_DELETE.id(),
-            ActionTypeMapping.NODE_CREATE.id()
-        )
-    ),
-    NODE_ACTIONS(
-        ResourceType.NODE.id(),
-        listOf(
-            ActionTypeMapping.NODE_DELETE.id(),
-            ActionTypeMapping.NODE_DOWNLOAD.id(),
-            ActionTypeMapping.NODE_EDIT.id(),
-            ActionTypeMapping.NODE_WRITE.id(),
-            ActionTypeMapping.NODE_VIEW.id()
-        )
-    );
+import com.tencent.bk.audit.AuditRequestProvider
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
+
+@Configuration
+@ConditionalOnProperty(name = ["audit.enabled"], havingValue = "true", matchIfMissing = true)
+class BkAuditConfiguration {
+    @Bean
+    @Primary
+    fun bkAuditRequestProvider(
+        artifactMetricsProperties: ArtifactMetricsProperties
+    ): AuditRequestProvider {
+        return BkAuditRequestProvider(artifactMetricsProperties)
+    }
+
+    @Bean
+    fun bkAuditPostFilter(): BkAuditPostFilter {
+        return BkAuditPostFilter()
+    }
 }

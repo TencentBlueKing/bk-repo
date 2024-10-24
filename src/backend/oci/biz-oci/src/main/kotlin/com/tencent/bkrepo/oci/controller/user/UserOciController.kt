@@ -27,10 +27,17 @@
 
 package com.tencent.bkrepo.oci.controller.user
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.oci.constant.OCI_PACKAGE_NAME
@@ -91,6 +98,23 @@ class UserOciController(
         )
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
+    )
     @ApiOperation("删除仓库下的包")
     @DeleteMapping(OCI_PACKAGE_DELETE_URL)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
@@ -104,6 +128,25 @@ class UserOciController(
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey"),
+            AuditAttribute(name = ActionAuditContent.VERSION_TEMPLATE, value = "#version")
+
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
+    )
     @ApiOperation("删除仓库下的包版本")
     @DeleteMapping(OCI_VERSION_DELETE_URL)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)

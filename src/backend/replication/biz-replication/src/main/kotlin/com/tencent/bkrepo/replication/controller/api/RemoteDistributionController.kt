@@ -27,9 +27,16 @@
 
 package com.tencent.bkrepo.replication.controller.api
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
@@ -57,6 +64,7 @@ import org.springframework.web.bind.annotation.RestController
 class RemoteDistributionController(
     private val remoteNodeService: RemoteNodeService
 ) {
+
     @ApiOperation("创建远端集群节点")
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/create/{projectId}/{repoName}")
@@ -150,9 +158,27 @@ class RemoteDistributionController(
         return ResponseBuilder.success()
     }
 
+
     /**
      * 创建一次性分发任务
      */
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#repoName",
+            instanceNames = "#repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#repoName"),
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.REPO_REPLICATION_CREATE_CONTENT
+    )
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/create/runOnceTask/{projectId}/{repoName}")
     fun createRunOnceTask(
@@ -166,9 +192,28 @@ class RemoteDistributionController(
         return ResponseBuilder.success()
     }
 
+
     /**
      * 手动调用一次性执行任务
      */
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#repoName",
+            instanceNames = "#repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#repoName"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#name"),
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.REPO_REPLICATION_EXECUTE_CONTENT
+    )
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/execute/runOnceTask/{projectId}/{repoName}")
     fun executeRunOnceTask(

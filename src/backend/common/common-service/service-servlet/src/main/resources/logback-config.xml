@@ -10,11 +10,34 @@
     <property name="logging.access.file" value="${logging.path}/${spring.application.name}-access.log"/>
     <property name="logging.file.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS}|%X{ip:--}|%F|%L|%level|%X{err_code:-0}|%X{traceId:--}|%X{spanId:--}|||[%t] %m%ex%n"/>
     <property name="logging.console.pattern" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${logging.pattern.level:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} [%clr(%X{traceId:-},%X{spanId:-})] %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+    <!-- 审计日志样式 -->
+    <property name="AUDIT_EVENT_LOG_PATTERN" value="%m%n"/>
+    <property name="AUDIT_EVENT_LOG_FILE" value="${logging.path}/${spring.application.name}-audit_event.log"/>
 
     <!-- 彩色日志依赖的渲染类 -->
     <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
     <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
     <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
+
+    <!-- 审计事件日志 Appender -->
+    <appender name="audit-event-appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${AUDIT_EVENT_LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${AUDIT_EVENT_LOG_FILE}-%d{yyyy-MM-dd}.log.%i</fileNamePattern>
+            <maxFileSize>1GB</maxFileSize>
+            <maxHistory>3</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${AUDIT_EVENT_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 审计事件日志 Logger，name 值固定为"bk_audit" -->
+    <logger name="bk_audit" level="INFO" additivity="false">
+        <appender-ref ref="audit-event-appender"/>
+    </logger>
 
     <appender name="app_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${logging.app.file}</file>
