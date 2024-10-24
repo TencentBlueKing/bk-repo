@@ -23,7 +23,7 @@ import java.nio.file.NoSuchFileException
 class RandomAccessArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageCredentials: StorageCredentials,
-    storageProperties: StorageProperties
+    storageProperties: StorageProperties,
 ) : ArtifactFile {
 
     /**
@@ -43,7 +43,9 @@ class RandomAccessArtifactFile(
 
     init {
         val path = storageCredentials.upload.location.toPath()
-        receiver = ArtifactDataReceiver(storageProperties.receive, storageProperties.monitor, path)
+        receiver = ArtifactDataReceiver(
+            storageProperties.receive, storageProperties.monitor, path,
+        )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {
             receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)

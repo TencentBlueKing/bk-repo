@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -226,6 +227,8 @@ class ChartRepositoryServiceImpl(
         context.putAttribute(FULL_PATH, HelmUtils.getIndexCacheYamlFullPath())
         try {
             ArtifactContextHolder.getRepository().download(context)
+        } catch (e: OverloadException) {
+            throw e
         } catch (e: Exception) {
             logger.warn("Error occurred while downloading index.yaml, error: ${e.message}")
             throw HelmFileNotFoundException(
@@ -333,6 +336,8 @@ class ChartRepositoryServiceImpl(
         context.putAttribute(FILE_TYPE, CHART)
         try {
             ArtifactContextHolder.getRepository().download(context)
+        } catch (e: OverloadException) {
+            throw e
         } catch (e: ArtifactDownloadForbiddenException) {
             throw e
         } catch (e: Exception) {
@@ -350,6 +355,8 @@ class ChartRepositoryServiceImpl(
         context.putAttribute(FILE_TYPE, PROV)
         try {
             ArtifactContextHolder.getRepository().download(context)
+        } catch (e: OverloadException) {
+            throw e
         } catch (e: Exception) {
             logger.warn("Error occurred while installing prov, error: ${e.message}")
             throw HelmFileNotFoundException(
