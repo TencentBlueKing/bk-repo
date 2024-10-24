@@ -211,12 +211,9 @@
         created () {
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
-            this.getIamPermissionStatus().then(res => {
-                this.rbacStatus = res
-            })
         },
         methods: {
-            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl', 'getIamPermissionStatus']),
+            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl']),
             toRepoList () {
                 this.$router.push({
                     name: 'repositories'
