@@ -189,7 +189,7 @@ open class PathResourceLimitRule(
      */
     private fun isTemplateVariable(pathDir: String): Boolean {
         return pathDir.startsWith("{") && pathDir.endsWith("}") ||
-                pathDir == "*" || pathDir == "**"
+                pathDir == "*" || pathDir == "**" || pathDir.contains('*')
     }
 
     /**
