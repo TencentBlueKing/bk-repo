@@ -120,7 +120,7 @@ class CacheStorageService(
         val cacheClient = getCacheClient(credentials)
         val loadCacheFirst = isLoadCacheFirst(range, credentials)
         if (loadCacheFirst) {
-            loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let {
+            loadArtifactStreamFromCache(credentials, cacheClient, path, filename, range)?.let {
                 cacheFileEventPublisher.publishCacheFileAccessEvent(path, filename, range.total!!, credentials)
                 return it.apply { putMetadata(METADATA_KEY_CACHE_ENABLED, true) }
             }
@@ -268,6 +268,7 @@ class CacheStorageService(
      * 所以这里需要将两个步骤合在一起，以是否成功新建文件流为最终结果，如果这过程中文件被移除，
      * 则认为加载失败，返回null。
      *
+     * @param credentials 存储凭据
      * @param cacheClient 缓存客户端
      * @param path 文件路径
      * @param filename 文件名
@@ -275,13 +276,22 @@ class CacheStorageService(
      * @return 成功返回构件流，否则返回null
      * */
     private fun loadArtifactStreamFromCache(
+        credentials: StorageCredentials,
         cacheClient: FileSystemClient,
         path: String,
         filename: String,
         range: Range,
     ): ArtifactInputStream? {
         try {
-            return cacheClient.load(path, filename)?.artifactStream(range)
+            var ais = cacheClient.load(path, filename)?.artifactStream(range)
+            if (ais == null && credentials.cache.oldPath != null) {
+                // 可能缓存路径正在迁移中，尝试从旧缓存路径中加载数据
+                ais = getOldCacheClient(credentials)!!.load(path, filename)?.artifactStream(range)
+                if (ais != null) {
+                    logger.info("load [$filename] from old cache path of [${credentials.key}]")
+                }
+            }
+            return ais
         } catch (e: Exception) {
             logger.warn("Can't load file from cache.", e)
         }
@@ -307,6 +317,10 @@ class CacheStorageService(
 
     private fun getCacheClient(credentials: StorageCredentials): FileSystemClient {
         return FileSystemClient(credentials.cache.path)
+    }
+
+    private fun getOldCacheClient(credentials: StorageCredentials): FileSystemClient? {
+        return credentials.cache.oldPath?.let { FileSystemClient(it) }
     }
 
     private fun getStagingClient(credentials: StorageCredentials): FileSystemClient {

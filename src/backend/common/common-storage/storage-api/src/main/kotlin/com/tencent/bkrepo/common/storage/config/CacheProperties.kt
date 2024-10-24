@@ -46,6 +46,10 @@ data class CacheProperties(
      */
     var path: String = "data/cached",
     /**
+     * 迁移存储时记录旧的存储路径
+     */
+    var oldPath: String? = null,
+    /**
      * 优先从缓存加载文件
      */
     var loadCacheFirst: Boolean = true,
