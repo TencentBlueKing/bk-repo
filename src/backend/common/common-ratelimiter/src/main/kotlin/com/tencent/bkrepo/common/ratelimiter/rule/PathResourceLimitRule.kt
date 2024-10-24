@@ -211,6 +211,6 @@ open class PathResourceLimitRule(
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(PathResourceLimitRule::class.java)
-        private const val PATH_REGEX = "(^[a-zA-Z0-9\\-\\.\\/_]+\$)"
+        private const val PATH_REGEX = ".*"
     }
 }
