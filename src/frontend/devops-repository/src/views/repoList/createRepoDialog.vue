@@ -35,6 +35,14 @@
                     <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
+            <bk-form-item
+                :label="$t('bkPermissionCheck')"
+                v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
+                <bk-radio-group v-model="bkiamv3Check">
+                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                </bk-radio-group>
+            </bk-form-item>
             <template v-if="repoBaseInfo.type === 'rpm'">
                 <bk-form-item :label="$t('enabledFileLists')">
                     <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
@@ -109,11 +117,6 @@
                 officeNetwork: false,
                 ipSegment: '',
                 whitelistUser: ''
-            },
-            configuration: {
-                settings: {
-                    bkiamv3Check: false
-                }
             }
         }
     }
@@ -131,7 +134,8 @@
                 showIamDenyDialog: false,
                 showData: {},
                 title: this.$t('createRepository'),
-                accessControl: 'DEFAULT'
+                accessControl: 'DEFAULT',
+                bkiamv3Check: false
             }
         },
         computed: {
@@ -312,7 +316,8 @@
                 const body = {
                     projectId: this.projectId,
                     repoName: this.repoBaseInfo.name,
-                    accessControlMode: this.accessControl
+                    accessControlMode: this.accessControl,
+                    bkiamv3Check: this.bkiamv3Check
                 }
                 this.createOrUpdateRootPermission({
                     body: body

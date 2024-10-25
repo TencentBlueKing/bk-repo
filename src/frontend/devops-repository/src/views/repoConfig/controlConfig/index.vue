@@ -9,46 +9,43 @@
                 </card-radio-group>
             </bk-form-item>
             <template v-if="(repoType === 'generic' || repoType === 'ddc') && repoName !== 'pipeline'">
-                <bk-form-item v-for="type in genericInterceptorsList" :key="type"
+                <bk-form-item
+                    v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
                     <bk-radio-group v-model="controlConfigs[type].enable">
                         <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
                         <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                     </bk-radio-group>
                     <template v-if="controlConfigs[type].enable && ['mobile', 'web'].includes(type)">
-                        <bk-form-item :label="$t('fileName')" :label-width="80" class="mt10"
+                        <bk-form-item
+                            :label="$t('fileName')" :label-width="80" class="mt10"
                             :property="`${type}.filename`" required error-display-type="normal">
                             <bk-input class="w250" v-model.trim="controlConfigs[type].filename"></bk-input>
                             <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('fileNameRule')"></i>
                         </bk-form-item>
-                        <bk-form-item :label="$t('metadata')" :label-width="80"
+                        <bk-form-item
+                            :label="$t('metadata')" :label-width="80"
                             :property="`${type}.metadata`" required error-display-type="normal">
                             <bk-input class="w250" v-model.trim="controlConfigs[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
                             <a class="f12 ml5" href="https://bk.tencent.com/docs/markdown/ZH/Devops/2.0/UserGuide/Services/Artifactory/meta.md" target="__blank">{{ $t('viewMetadataDocument') }}</a>
                         </bk-form-item>
                     </template>
                     <template v-if="controlConfigs[type].enable && type === 'ip_segment'">
-                        <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
+                        <bk-form-item
+                            :label="$t('IP')" :label-width="150" class="mt10"
                             :property="`${type}.ipSegment`" :required="!controlConfigs[type].officeNetwork" error-display-type="normal">
                             <bk-input class="w250 mr10" v-model.trim="controlConfigs[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
                             <bk-checkbox v-model="controlConfigs[type].officeNetwork">{{ $t('office_networkDownload') }}</bk-checkbox>
                             <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('office_networkDownloadTips')"></i>
                         </bk-form-item>
-                        <bk-form-item :label="$t('whiteUser')" :label-width="150"
+                        <bk-form-item
+                            :label="$t('whiteUser')" :label-width="150"
                             :property="`${type}.whitelistUser`" error-display-type="normal">
                             <bk-input class="w250" v-model.trim="controlConfigs[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
                         </bk-form-item>
                     </template>
                 </bk-form-item>
             </template>
-            <bk-form-item
-                :label="$t('bkPermissionCheck')"
-                v-if="!specialRepoEnum().includes(baseData.name)">
-                <bk-radio-group v-model="bkiamv3Check">
-                    <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
-                    <bk-radio :value="false">{{ $t('close') }}</bk-radio>
-                </bk-radio-group>
-            </bk-form-item>
             <bk-form-item :label="$t('blackUserList')" property="blackList" error-display-type="normal" v-if="isDevx">
                 <div class="mb10 flex-between-center">
                     <bk-select
@@ -57,7 +54,8 @@
                         :multiple="true"
                         searchable
                         :placeholder="$t('controlConfigPlaceholder')">
-                        <bk-option v-for="option in roleList"
+                        <bk-option
+                            v-for="option in roleList"
                             :key="option.id"
                             :id="option.id"
                             :name="option.name">
@@ -74,11 +72,11 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
-    import { specialRepoEnum } from '@repository/store/publicEnum'
     import CardRadioGroup from '@repository/components/CardRadioGroup'
+    import { specialRepoEnum } from '@/store/publicEnum'
 
     export default {
-        name: 'controlConfig',
+        name: 'ControlConfig',
         components: { CardRadioGroup },
         props: {
             baseData: Object
@@ -122,6 +120,7 @@
                 }
             ]
             return {
+                specialRepoEnum,
                 rootDirectoryPermission: '',
                 controlConfigs: {
                     mobile: {
@@ -146,7 +145,7 @@
                 metadataRule,
                 ipSegmentRule,
                 roleList: [],
-                bkiamv3Check: false
+                authMode: undefined
             }
         },
         computed: {
@@ -255,14 +254,11 @@
             }).then((res) => {
                 this.rootDirectoryPermission = res.accessControlMode
                 this.blackList = res.officeDenyGroupSet
-                this.bkiamv3Check = res.bkiamv3Check
+                this.authMode = res
             })
             this.getRoleListHandler()
         },
         methods: {
-            specialRepoEnum () {
-                return specialRepoEnum
-            },
             ...mapActions(['updateRepoInfo', 'getRootPermission', 'getProjectRoleList', 'createOrUpdateRootPermission']),
             getRoleListHandler () {
                 this.getProjectRoleList({ projectId: this.projectId }).then(res => {
@@ -288,7 +284,7 @@
                         repoName: this.repoName,
                         accessControlMode: this.rootDirectoryPermission,
                         officeDenyGroupSet: this.blackList,
-                        bkiamv3Check: this.bkiamv3Check
+                        bkiamv3Check: false
                     }
                     const configBody = this.getRepoConfigBody()
                     await this.updateRepoInfo({
