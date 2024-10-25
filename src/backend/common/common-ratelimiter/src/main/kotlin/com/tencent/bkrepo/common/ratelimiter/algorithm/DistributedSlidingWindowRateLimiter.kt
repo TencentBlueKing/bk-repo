@@ -29,12 +29,12 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.redis.LuaScript
+import java.time.Duration
+import kotlin.system.measureTimeMillis
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
-import java.time.Duration
-import kotlin.system.measureTimeMillis
 
 /**
  * 分布式滑动窗口算法实现
@@ -53,11 +53,11 @@ class DistributedSlidingWindowRateLimiter(
                 // 时间统一从redis server获取
                 // lua脚本中使用命令获取时间指令需要配合replicate_commands()使用，但是由于redis只有在某个特定版本上才支持该指令，
                 // 所以无法从lua脚本中去获取时间，只能分为多次调用。
-                val currentTime = redisTemplate.execute {
-                        connection -> connection.time()
+                val currentTime = redisTemplate.execute { connection ->
+                    connection.time()
                 } ?: System.currentTimeMillis()
                 val currentSeconds = (currentTime / 1000)
-                val random =  System.nanoTime()
+                val random = (currentTime % 1000)
                 // 注意， 由于redis expire只支持秒为单位，所以周期最小单位为秒
                 val results = redisTemplate.execute(
                     redisScript, getKeys(key), limit.toString(), (duration.seconds).toString(),
@@ -66,7 +66,10 @@ class DistributedSlidingWindowRateLimiter(
                 acquireResult = results[0] == 1L
             }
             if (logger.isDebugEnabled) {
-                logger.debug("acquire distributed sliding window rateLimiter elapsed time: $elapsedTime ms")
+                logger.debug(
+                    "acquire distributed sliding window rateLimiter" +
+                            " elapsed time: $elapsedTime ms, acquireResult: $acquireResult"
+                )
             }
             return acquireResult
         } catch (e: Exception) {

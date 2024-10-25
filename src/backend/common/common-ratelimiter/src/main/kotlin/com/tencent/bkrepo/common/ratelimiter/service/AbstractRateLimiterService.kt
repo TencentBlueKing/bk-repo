@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.ratelimiter.service
 
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -96,7 +97,7 @@ abstract class AbstractRateLimiterService(
     ) : RateLimiterService {
 
     @Value("\${spring.application.name}")
-    private lateinit var moduleName: String
+    var moduleName: String = StringPool.EMPTY
 
 
     // 资源对应限限流算法缓存

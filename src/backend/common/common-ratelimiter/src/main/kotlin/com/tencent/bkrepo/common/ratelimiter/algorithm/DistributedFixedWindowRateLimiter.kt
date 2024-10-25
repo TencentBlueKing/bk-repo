@@ -29,12 +29,12 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.redis.LuaScript
+import java.time.Duration
+import kotlin.system.measureTimeMillis
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
-import java.time.Duration
-import kotlin.system.measureTimeMillis
 
 /**
  * 分布式固定时间窗口算法实现
@@ -57,7 +57,10 @@ class DistributedFixedWindowRateLimiter(
                 acquireResult = result == 1L
             }
             if (logger.isDebugEnabled) {
-                logger.debug("acquire distributed fixed window rateLimiter elapsed time: $elapsedTime ms")
+                logger.debug(
+                    "acquire distributed fixed window rateLimiter " +
+                            "elapsed time: $elapsedTime ms, acquireResult: $acquireResult"
+                )
             }
             return acquireResult
         } catch (e: Exception) {
