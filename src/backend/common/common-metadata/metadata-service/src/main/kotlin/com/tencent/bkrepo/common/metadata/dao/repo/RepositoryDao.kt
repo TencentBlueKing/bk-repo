@@ -82,4 +82,5 @@ class RepositoryDao : SimpleMongoDao<TRepository>() {
         val update = Update().unset(TRepository::oldCredentialsKey.name)
         updateFirst(query, update)
     }
+
 }

@@ -83,7 +83,7 @@ interface BkIamV3Service {
     ): List<String>
 
     /**
-     * 刷新项目以及旗下仓库对应的权限中心权限
+     * 刷新项目以及其下仓库对应的权限中心权限
      */
     fun refreshProjectManager(userId: String? = null, projectId: String): Boolean
 
@@ -91,19 +91,12 @@ interface BkIamV3Service {
     /**
      * 创建项目分级管理员
      */
-    fun createGradeManager(
-        userId: String,
-        projectId: String,
-        repoName: String? = null
-    ): String?
+    fun createGradeManager(userId: String, projectId: String, repoName: String? = null): String?
 
     /**
      * 删除分级管理员
      */
-    fun deleteGradeManager(
-        projectId: String,
-        repoName: String? = null
-    ): Boolean
+    fun deleteGradeManager(projectId: String, repoName: String? = null): Boolean
 
     /**
      * 资源id转换
@@ -114,5 +107,5 @@ interface BkIamV3Service {
     /**
      * 查询列表中的项目是否已生成rbac默认用户组
      */
-    fun getExistRbacDefaultGroupProjectIds(ids: List<String>) : Map<String, Boolean>
+    fun getExistRbacDefaultGroupProjectIds(ids: List<String>): Map<String, Boolean>
 }

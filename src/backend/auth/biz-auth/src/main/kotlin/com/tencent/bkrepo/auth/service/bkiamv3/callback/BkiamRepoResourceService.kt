@@ -47,8 +47,8 @@ import org.springframework.stereotype.Component
 @Component
 class BkiamRepoResourceService(
     private val repositoryClient: RepositoryClient,
-    val mongoTemplate: MongoTemplate
-): BkiamResourceBaseService, BkiamV3BaseService(mongoTemplate) {
+    mongoTemplate: MongoTemplate
+) : BkiamResourceBaseService, BkiamV3BaseService(mongoTemplate) {
     override fun resourceType(): ResourceType {
         return ResourceType.REPO
     }

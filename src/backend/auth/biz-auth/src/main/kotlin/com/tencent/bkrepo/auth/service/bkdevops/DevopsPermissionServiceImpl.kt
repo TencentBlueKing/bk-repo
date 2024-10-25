@@ -199,6 +199,11 @@ class DevopsPermissionServiceImpl constructor(
         }
     }
 
+    private fun matchDevopsRepoCond(repoName: String?): Boolean {
+        return repoName != null && defaultRepoList.contains(repoName)
+    }
+
+
     private fun checkProjectPermission(context: CheckPermissionContext): Boolean {
         with(context) {
             // 只有用户为非项目管理员，代码才会走到这里, action为MANAGE需要项目管理员权限
@@ -206,8 +211,8 @@ class DevopsPermissionServiceImpl constructor(
                 logger.debug("project request need manage permission [$context]")
                 return false
             }
+            // 项目权限暂时以devops为准
             return isDevopsProjectMember(userId, projectId, action)
-                    || checkBkIamV3ProjectPermission(projectId, userId, action)
         }
     }
 
@@ -304,5 +309,6 @@ class DevopsPermissionServiceImpl constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevopsPermissionServiceImpl::class.java)
+        private val defaultRepoList = listOf(CUSTOM, PIPELINE, LOG, REPORT)
     }
 }

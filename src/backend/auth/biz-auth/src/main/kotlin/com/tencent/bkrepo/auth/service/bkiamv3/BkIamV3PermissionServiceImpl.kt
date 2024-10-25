@@ -27,10 +27,6 @@
 
 package com.tencent.bkrepo.auth.service.bkiamv3
 
-import com.tencent.bkrepo.auth.constant.CUSTOM
-import com.tencent.bkrepo.auth.constant.LOG
-import com.tencent.bkrepo.auth.constant.PIPELINE
-import com.tencent.bkrepo.auth.constant.REPORT
 import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
@@ -103,50 +99,33 @@ open class BkIamV3PermissionServiceImpl(
 
     fun checkBkIamV3Permission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            if (projectId == null) return false
+            if (projectId == null) {
+                return false
+            }
             val resourceId = bkiamV3Service.getResourceId(
                 resourceType, projectId, repoName, path
             ) ?: StringPool.EMPTY
-            return if (checkDefaultRepository(resourceType, repoName)) {
-                checkBkIamV3ProjectPermission(projectId!!, uid, action)
-            } else {
-                bkiamV3Service.validateResourcePermission(
-                    userId = uid,
-                    projectId = projectId!!,
-                    repoName = repoName,
-                    resourceType = resourceType.lowercase(),
-                    action = convertActionType(resourceType, action),
-                    resourceId = resourceId,
-                    appId = appId
-                )
-            }
+            return bkiamV3Service.validateResourcePermission(
+                userId = uid,
+                projectId = projectId!!,
+                repoName = repoName,
+                resourceType = resourceType.lowercase(),
+                action = convertActionType(resourceType, action),
+                resourceId = resourceId,
+                appId = appId
+            )
         }
     }
 
-    /**
-     * 针对默认创建的4个仓库不开启v3-rbac校验，只校验项目权限
-     */
-    private fun checkDefaultRepository(resourceType: String, repoName: String?): Boolean {
-        return when (resourceType) {
-            ResourceType.NODE.toString(), ResourceType.REPO.toString() -> {
-                defaultRepoList.contains(repoName)
-            }
-            else -> false
-        }
-    }
 
-    fun checkBkIamV3ProjectPermission(projectId: String, userId: String, action: String): Boolean {
+    fun checkBkIamV3ProjectPermission(userId: String, projectId: String, action: String): Boolean {
         logger.info("v3 checkBkIamV3ProjectPermission userId: $userId, projectId: $projectId, action: $action")
         return bkiamV3Service.validateResourcePermission(
             userId = userId,
             projectId = projectId,
             repoName = null,
             resourceType = ResourceType.PROJECT.id(),
-            action = try {
-                convertActionType(ResourceType.PROJECT.name, action)
-            } catch (e: IllegalArgumentException) {
-                ActionTypeMapping.PROJECT_MANAGE.id()
-            },
+            action = convertActionType(ResourceType.PROJECT.name, action),
             resourceId = projectId,
             appId = null
         )
@@ -188,7 +167,6 @@ open class BkIamV3PermissionServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(BkIamV3PermissionServiceImpl::class.java)
-        private val defaultRepoList = listOf(CUSTOM, PIPELINE, LOG, REPORT)
     }
 }
 

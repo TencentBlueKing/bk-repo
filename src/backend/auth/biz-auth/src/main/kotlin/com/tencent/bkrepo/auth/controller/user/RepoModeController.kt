@@ -33,8 +33,12 @@ import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
 import com.tencent.bkrepo.auth.pojo.authconfig.RepoAuthStatusRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RepoModeService
+import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -48,6 +52,12 @@ class RepoModeController(
     private val repoModeService: RepoModeService,
     permissionService: PermissionService
 ) : OpenResource(permissionService) {
+
+    @Autowired
+    private var bkIamV3Service: BkIamV3Service? = null
+
+    @Autowired
+    lateinit var lockOperation: LockOperation
 
     @GetMapping("/query")
     fun getStatus(
@@ -66,14 +76,38 @@ class RepoModeController(
         with(request) {
             preCheckProjectAdmin(projectId)
             repoModeService.createOrUpdateConfig(
-                projectId,
-                repoName,
-                accessControlMode,
-                officeDenyGroupSet,
-                bkiamv3Check
+                projectId = projectId,
+                repoName = repoName,
+                accessControlMode = accessControlMode,
+                officeDenyGroupSet = officeDenyGroupSet,
+                bkiamv3Check = bkiamv3Check
             )
+            if (bkIamV3Service != null && bkiamv3Check) {
+                lockAction(projectId) {
+                    val userId = SecurityUtils.getUserId()
+                    bkIamV3Service!!.createGradeManager(userId, projectId, repoName)
+                }
+            }
             return ResponseBuilder.success(repoModeService.getAccessControlStatus(projectId, repoName))
         }
+    }
+
+    fun <T> lockAction(projectId: String, action: () -> T): T {
+        val lockKey = "${AUTH_LOCK_KEY_PREFIX}$projectId"
+        val lock = lockOperation.getLock(lockKey)
+        return if (lockOperation.getSpinLock(lockKey, lock)) {
+            try {
+                action()
+            } finally {
+                lockOperation.close(lockKey, lock)
+            }
+        } else {
+            action()
+        }
+    }
+
+    companion object {
+        const val AUTH_LOCK_KEY_PREFIX = "auth:lock:gradeCreate:"
     }
 
 }
