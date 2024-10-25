@@ -53,7 +53,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -69,8 +69,8 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
-import com.tencent.bkrepo.repository.service.node.NodeSearchService
-import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -216,18 +216,25 @@ class UserNodeController(
         @RequestAttribute userId: String,
         @RequestBody request: UserNodeLinkRequest,
     ): Response<NodeDetail> {
-        val linkReq = NodeLinkRequest(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            fullPath = request.fullPath,
-            targetProjectId = request.targetProjectId,
-            targetRepoName = request.targetRepoName,
-            targetFullPath = request.targetFullPath,
-            overwrite = request.overwrite,
-            nodeMetadata = request.nodeMetadata,
-            operator = userId,
-        )
-        return ResponseBuilder.success(nodeService.link(linkReq))
+        with(request) {
+            val linkReq = NodeLinkRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                targetProjectId = targetProjectId,
+                targetRepoName = targetRepoName,
+                targetFullPath = targetFullPath,
+                overwrite = overwrite,
+                nodeMetadata = nodeMetadata,
+                operator = userId,
+            )
+            // 校验源仓库与目标节点权限
+            permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName, userId = userId)
+            permissionManager.checkNodePermission(
+                PermissionAction.READ, targetProjectId, targetRepoName, targetFullPath, userId = userId
+            )
+            return ResponseBuilder.success(nodeService.link(linkReq))
+        }
     }
 
     @ApiOperation("更新节点")

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.conan.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -140,7 +141,7 @@ class ConanLocalRepository : LocalRepository() {
         with(context.artifactInfo as ConanArtifactInfo) {
             val fullPath = generateFullPath(this)
             logger.info("File $fullPath will be downloaded in repo $projectId|$repoName")
-            val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
+            val node = nodeService.getNodeDetail(ArtifactInfo(context.projectId, context.repoName, fullPath))
             node?.let {
                 context.artifactInfo.setArtifactMappingUri(node.fullPath)
                 downloadIntercept(context, node)

@@ -223,10 +223,7 @@ class NpmFixToolServiceImpl(
 		val packageManagerList = mutableListOf<PackageManagerResponse>()
 		// 查找所有仓库
 		logger.info("starting add package manager function to historical data.")
-		val repositoryList = repositoryClient.pageByType(0, 1000, "NPM").data?.records ?: run {
-			logger.warn("no npm repository found, return.")
-			return emptyList()
-		}
+		val repositoryList = repositoryService.listRepoPageByType("NPM", 0, 1000).records
 		val npmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
 		logger.info(
 			"find [${npmLocalRepositoryList.size}] NPM local" +
@@ -333,7 +330,7 @@ class NpmFixToolServiceImpl(
 			select = mutableListOf(),
 			rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
 		)
-		val queryResult = nodeClient.queryWithoutCount(queryModel).data!!
+		val queryResult = nodeSearchService.searchWithoutCount(queryModel)
 		return queryResult.records.associateBy(
 			{ resolverVersion(packageName, it["fullPath"] as String) },
 			{ resolveNode(it) }
@@ -363,7 +360,7 @@ class NpmFixToolServiceImpl(
 			select = mutableListOf(),
 			rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
 		)
-		return nodeClient.queryWithoutCount(queryModel).data!!
+		return nodeSearchService.searchWithoutCount(queryModel)
 	}
 
 	private fun resolveNode(record: Map<String, Any?>): NodeInfo {

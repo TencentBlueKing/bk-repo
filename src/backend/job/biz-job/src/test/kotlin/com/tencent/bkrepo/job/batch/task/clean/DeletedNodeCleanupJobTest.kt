@@ -1,11 +1,15 @@
 package com.tencent.bkrepo.job.batch.task.clean
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -14,6 +18,7 @@ import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -41,6 +46,21 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
     private val deletedNodeCleanupJob: DeletedNodeCleanupJob,
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
+
+    @MockBean
+    private lateinit var messageSupplier: MessageSupplier
+
+    @MockBean
+    private lateinit var servicePermissionClient: ServicePermissionClient
+
+    @MockBean
+    private lateinit var routerControllerClient: RouterControllerClient
+
+    @MockBean
+    private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
+
+    @MockBean
+    private lateinit var archiveClient: ArchiveClient
 
     @MockBean
     private lateinit var migrateRepoStorageService: MigrateRepoStorageService

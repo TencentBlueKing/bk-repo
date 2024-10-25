@@ -141,7 +141,7 @@ class NugetVirtualRepository(
         val repoList = virtualConfiguration.repositoryList
         // 分隔出本地仓库和远程仓库
         val repoCategoryMap = repoList.map {
-            repositoryClient.getRepoDetail(it.projectId, it.name).data!!
+            repositoryService.getRepoDetail(it.projectId, it.name)!!
         }.groupBy { it.category }
         // 分别查询出本地仓库和远程仓库下面的数组，然后在进行整合
         val allRemoteReposPageItems = repoCategoryMap[RepositoryCategory.REMOTE].orEmpty().stream().map {

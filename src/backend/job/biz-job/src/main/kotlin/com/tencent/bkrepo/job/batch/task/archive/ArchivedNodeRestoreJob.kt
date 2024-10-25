@@ -30,19 +30,19 @@ package com.tencent.bkrepo.job.batch.task.archive
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.ArchivedNodeRestoreJobProperties
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
-import java.time.Duration
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.Duration
 import kotlin.reflect.KClass
 
 /**
@@ -57,7 +57,7 @@ import kotlin.reflect.KClass
 class ArchivedNodeRestoreJob(
     private val properties: ArchivedNodeRestoreJobProperties,
     private val archiveClient: ArchiveClient,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService
 ) : MongoDbBatchJob<ArchivedNodeRestoreJob.ArchiveFile, NodeContext>(properties) {
 
     override fun createJobContext(): NodeContext {
@@ -87,7 +87,7 @@ class ArchivedNodeRestoreJob(
                     fullPath = fullPath,
                     operator = lastModifiedBy,
                 )
-                nodeClient.restoreNode(request)
+                nodeService.restoreNode(request)
                 context.count.incrementAndGet()
                 context.size.addAndGet(it.size)
                 logger.info("Success to restore node $projectId/$repoName/$fullPath.")

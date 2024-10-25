@@ -49,7 +49,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
@@ -75,6 +75,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeClient", primary = false)
 @RequestMapping("/service/node")
+@Deprecated("replace with NodeService")
 interface NodeClient {
 
     @ApiOperation("根据路径查看节点详情")
