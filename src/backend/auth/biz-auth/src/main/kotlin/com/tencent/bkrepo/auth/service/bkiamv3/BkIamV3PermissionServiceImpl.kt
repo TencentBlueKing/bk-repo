@@ -90,11 +90,9 @@ open class BkIamV3PermissionServiceImpl(
     /**
      * 判断仓库创建时是否开启权限校验
      */
-    fun matchBkiamv3Cond(request: CheckPermissionRequest): Boolean {
-        with(request) {
-            if (!bkiamV3Service.checkIamConfiguration()) return false
-            return bkiamV3Service.checkBkiamv3Config(projectId, repoName)
-        }
+    fun matchBkiamv3Cond(projectId: String?, repoName: String?): Boolean {
+        if (!bkiamV3Service.checkIamConfiguration()) return false
+        return bkiamV3Service.checkBkiamv3Config(projectId, repoName)
     }
 
     fun checkBkIamV3Permission(request: CheckPermissionRequest): Boolean {

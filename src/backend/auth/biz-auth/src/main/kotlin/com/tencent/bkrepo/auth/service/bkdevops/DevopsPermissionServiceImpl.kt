@@ -103,9 +103,13 @@ class DevopsPermissionServiceImpl constructor(
         // 校验平台账号操作范围
         if (request.appId != null && !checkPlatformPermission(request)) return false
 
-        // bkiamv3权限校验
-        if (matchBkiamv3Cond(request)) {
-            // 开启iamv3
+        // 兼容bkiam权限与devops权限
+        if (matchBkiamv3Cond(request.projectId, request.repoName) && matchDevopsRepoCond(request.repoName)) {
+            return checkBkIamV3Permission(request) || checkDevopsPermission(request)
+        }
+
+        // 采用bkiamv3权限
+        if (matchBkiamv3Cond(request.projectId, request.repoName) && !matchDevopsRepoCond(request.repoName)) {
             return checkBkIamV3Permission(request)
         }
 

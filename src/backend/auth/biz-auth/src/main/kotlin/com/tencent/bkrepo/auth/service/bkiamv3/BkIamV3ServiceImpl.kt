@@ -149,7 +149,7 @@ class BkIamV3ServiceImpl(
         // 如果配置是bkiamv3，默认走bkiamv3校验
         if (realm == AUTH_CONFIG_TYPE_VALUE_BKIAMV3) return true
         if (projectId != null && repoName != null) {
-            return repoModeService.getAccessControlStatus(projectId, repoName).bkiamv3Check
+            return repoModeService.bkiamv3Check(projectId, repoName)
         }
         return false
     }

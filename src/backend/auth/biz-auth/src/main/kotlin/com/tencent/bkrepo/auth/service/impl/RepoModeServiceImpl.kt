@@ -69,10 +69,13 @@ class RepoModeServiceImpl(
         var controlMode = AccessControlMode.DEFAULT
         var officeDenyGroupSet = emptySet<String>()
         var bkiamv3Check = false
-        if (permissionDao.listByResourceAndRepo(ResourceType.NODE.name, projectId, repoName).isNotEmpty()) {
+
+        val result = repoAuthDao.findOneByProjectRepo(projectId, repoName)
+        if (result == null &&
+            permissionDao.listByResourceAndRepo(ResourceType.NODE.name, projectId, repoName).isNotEmpty()
+        ) {
             controlMode = AccessControlMode.DIR_CTRL
         }
-        val result = repoAuthDao.findOneByProjectRepo(projectId, repoName)
         if (result != null) {
             if (result.officeDenyGroupSet != null) {
                 officeDenyGroupSet = result.officeDenyGroupSet!!
@@ -86,13 +89,17 @@ class RepoModeServiceImpl(
             }
             bkiamv3Check = result.bkiamv3Check ?: false
         }
-        val id = repoAuthDao.upsertProjectRepo(projectId, repoName, controlMode, officeDenyGroupSet, bkiamv3Check)
         return RepoModeStatus(
-            id = id,
+            id = null,
             accessControlMode = controlMode,
             officeDenyGroupSet = officeDenyGroupSet,
             bkiamv3Check = bkiamv3Check
         )
+    }
+
+    override fun bkiamv3Check(projectId: String, repoName: String): Boolean {
+        val result = repoAuthDao.findOneByProjectRepo(projectId, repoName) ?: return false
+        return result.bkiamv3Check!!
     }
 
 }
