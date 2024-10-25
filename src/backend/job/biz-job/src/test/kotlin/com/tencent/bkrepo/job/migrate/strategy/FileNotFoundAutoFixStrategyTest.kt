@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.job.migrate.strategy
 
 import com.sun.xml.internal.messaging.saaj.util.ByteInputStream
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -17,7 +17,6 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.insertFailedNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -67,7 +66,7 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
     private lateinit var fileReferenceService: FileReferenceService
 
     @MockBean
-    private lateinit var repositoryClient: RepositoryClient
+    private lateinit var repositoryService: RepositoryService
 
     @MockBean
     private lateinit var storageService: StorageService
@@ -80,8 +79,8 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
             .thenReturn(FileSystemCredentials())
         whenever(fileReferenceService.increment(anyString(), anyOrNull(), any()))
             .thenReturn(true)
-        whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyOrNull()))
-            .thenReturn(Response(0, "", MigrateTestUtils.buildRepo()))
+        whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull()))
+            .thenReturn(MigrateTestUtils.buildRepo())
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
         migrateFailedNodeDao.remove(Query())
         archiveMigrateFailedNodeDao.remove(Query())

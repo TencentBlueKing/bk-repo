@@ -27,23 +27,25 @@
 
 package com.tencent.bkrepo.ddc.service
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
 import com.tencent.bkrepo.ddc.model.TDdcBlob
 import com.tencent.bkrepo.ddc.pojo.Blob
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.repository.BlobRepository
-import com.tencent.bkrepo.repository.api.NodeClient
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
 class BlobService(
     private val blobRepository: BlobRepository,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val storageManager: StorageManager
 ) {
     fun create(blob: Blob): Blob {
@@ -86,8 +88,8 @@ class BlobService(
 
     fun loadBlob(blob: Blob): ArtifactInputStream {
         val repo =
-            ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(blob.projectId, blob.repoName))
-        val node = nodeClient.getNodeDetail(blob.projectId, blob.repoName, blob.fullPath).data
+            ArtifactContextHolder.getRepoDetail(RepositoryId(blob.projectId, blob.repoName))
+        val node = nodeService.getNodeDetail(ArtifactInfo(blob.projectId, blob.repoName, blob.fullPath))
             ?: throw BlobNotFoundException(blob.projectId, blob.repoName, blob.blobId.toString())
         return storageManager.loadArtifactInputStream(node, repo.storageCredentials)
             ?: throw BlobNotFoundException(blob.projectId, blob.repoName, blob.blobId.toString())

@@ -68,11 +68,12 @@ import com.tencent.bkrepo.auth.util.IamGroupUtils
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -82,6 +83,7 @@ import org.springframework.context.annotation.Lazy
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -102,7 +104,7 @@ class BkIamV3ServiceImpl(
 
     @Autowired
     @Lazy
-    private lateinit var nodeClient: NodeClient
+    private lateinit var nodeService: NodeService
 
     @Autowired
     @Lazy
@@ -114,7 +116,7 @@ class BkIamV3ServiceImpl(
 
     @Autowired
     @Lazy
-    private lateinit var repositoryClient: RepositoryClient
+    private lateinit var repositoryService: RepositoryService
 
     @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}")
     private var realm: String = ""
@@ -175,7 +177,7 @@ class BkIamV3ServiceImpl(
         with(request) {
             val resourceId = getResourceId(resourceType, projectId, repoName, path)
             val action = BkIamV3Utils.convertActionType(request.resourceType, request.action)
-            val resourceType = request.resourceType.lowercase()
+            val resourceType = request.resourceType.lowercase(Locale.getDefault())
             if (repoName != null && !checkBkiamv3Config(projectId, repoName)) return null
             authManagerRepository.findByTypeAndResourceIdAndParentResId(
                 ResourceType.PROJECT, projectId!!, null
@@ -295,12 +297,12 @@ class BkIamV3ServiceImpl(
     }
 
     override fun convertRepoResourceId(projectId: String, repoName: String): String? {
-        return repositoryClient.getRepoInfo(projectId, repoName).data?.id
+        return repositoryService.getRepoInfo(projectId, repoName)?.id
     }
 
     override fun convertNodeResourceId(projectId: String, repoName: String, fullPath: String): String? {
         val index = HashShardingUtils.shardingSequenceFor(projectId, 256).toString()
-        val nodeId = nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.nodeInfo?.id ?: return null
+        val nodeId = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))?.nodeInfo?.id ?: return null
         return buildId(nodeId, index)
     }
 
@@ -470,7 +472,7 @@ class BkIamV3ServiceImpl(
      */
     private fun createRepoGradeManager(userId: String, projectId: String, repoName: String): String? {
         val projectInfo = projectService.getProjectInfo(projectId)!!
-        val repoDetail = repositoryClient.getRepoInfo(projectId, repoName).data!!
+        val repoDetail = repositoryService.getRepoInfo(projectId, repoName)!!
         // 如果已经创建repo管理员，则返回
         var repoManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.REPO, repoName, projectId
@@ -658,7 +660,7 @@ class BkIamV3ServiceImpl(
         // 赋予权限
         try {
             createRoleGroupMember(defaultGroupType, roleId, members)
-            val actions = DefaultGroupTypeAndActions.get(defaultGroupType.name.lowercase()).actions
+            val actions = DefaultGroupTypeAndActions.get(defaultGroupType.name.lowercase(Locale.getDefault())).actions
             grantGroupPermission(projectResInfo, repoResInfo, roleId, actions)
         } catch (e: Exception) {
             managerService.deleteRoleGroupV2(roleId)

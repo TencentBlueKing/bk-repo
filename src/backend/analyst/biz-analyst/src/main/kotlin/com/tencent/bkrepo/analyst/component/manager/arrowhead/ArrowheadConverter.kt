@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import org.springframework.stereotype.Component
+import java.util.Locale
 
 @Component("${ArrowheadScanner.TYPE}Converter")
 class ArrowheadConverter(private val licenseService: SpdxLicenseService) : ScannerConverter {
@@ -57,10 +58,10 @@ class ArrowheadConverter(private val licenseService: SpdxLicenseService) : Scann
         result as Page<ApplicationItem>
         // 查询数据库中存放的applicationItem时已经过滤了只存在license的项，license一定存在
         val licenseIds = result.records.map { it.license!!.name }.distinct()
-        val licenses = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.toLowerCase() }
+        val licenses = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.lowercase(Locale.getDefault()) }
 
         val reports = result.records.map {
-            val detail = licenses[it.license!!.name.toLowerCase()]
+            val detail = licenses[it.license!!.name.lowercase(Locale.getDefault())]
             FileLicensesResultDetail(
                 licenseId = it.license!!.name,
                 fullName = detail?.name ?: "",
@@ -144,9 +145,10 @@ class ArrowheadConverter(private val licenseService: SpdxLicenseService) : Scann
         overview[LicenseOverviewKey.overviewKeyOf(LicenseOverviewKey.TOTAL)] = licenses.size.toLong()
 
         // 获取许可证详情
-        val licenseInfo = licenseService.listLicenseByIds(licenseIds.toList()).mapKeys { it.key.toLowerCase() }
+        val licenseInfo =
+            licenseService.listLicenseByIds(licenseIds.toList()).mapKeys { it.key.lowercase(Locale.getDefault()) }
         for (license in licenses) {
-            val detail = licenseInfo[license.license!!.name.toLowerCase()]
+            val detail = licenseInfo[license.license!!.name.lowercase(Locale.getDefault())]
             if (detail == null) {
                 incLicenseOverview(overview, LicenseNature.UNKNOWN.natureName)
                 continue

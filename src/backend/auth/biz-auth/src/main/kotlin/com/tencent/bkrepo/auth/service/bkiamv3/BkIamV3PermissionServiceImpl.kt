@@ -40,7 +40,7 @@ import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.convertActionType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.slf4j.LoggerFactory
 
 /**
@@ -54,7 +54,7 @@ open class BkIamV3PermissionServiceImpl(
     permissionDao: PermissionDao,
     personalPathDao: PersonalPathDao,
     repoAuthConfigDao: RepoAuthConfigDao,
-    repoClient: RepositoryClient,
+    repositoryService: RepositoryService,
     projectService: ProjectService
 ) : PermissionServiceImpl(
     roleRepository,
@@ -63,7 +63,7 @@ open class BkIamV3PermissionServiceImpl(
     userDao,
     personalPathDao,
     repoAuthConfigDao,
-    repoClient,
+    repositoryService,
     projectService
 ) {
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
@@ -117,20 +117,6 @@ open class BkIamV3PermissionServiceImpl(
         }
     }
 
-
-    fun checkBkIamV3ProjectPermission(userId: String, projectId: String, action: String): Boolean {
-        logger.info("v3 checkBkIamV3ProjectPermission userId: $userId, projectId: $projectId, action: $action")
-        return bkiamV3Service.validateResourcePermission(
-            userId = userId,
-            projectId = projectId,
-            repoName = null,
-            resourceType = ResourceType.PROJECT.id(),
-            action = convertActionType(ResourceType.PROJECT.name, action),
-            resourceId = projectId,
-            appId = null
-        )
-    }
-
     private fun listV3PermissionRepo(projectId: String, userId: String): List<String> {
         val pList = bkiamV3Service.listPermissionResources(
             userId = userId,
@@ -139,7 +125,7 @@ open class BkIamV3PermissionServiceImpl(
             action = ActionTypeMapping.REPO_VIEW.id()
         )
         return if (pList.contains(StringPool.POUND)) {
-            repoClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
+            repositoryService.listRepo(projectId).map { it.name }
         } else {
             pList
         }

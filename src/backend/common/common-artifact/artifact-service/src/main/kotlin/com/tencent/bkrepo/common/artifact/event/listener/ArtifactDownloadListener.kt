@@ -33,7 +33,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
-import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
+import com.tencent.bkrepo.common.artifact.properties.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeUpdateAccessDateEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
