@@ -77,6 +77,7 @@ open class DefaultArtifactResourceWriter(
     @Throws(ArtifactResponseException::class, OverloadException::class)
     override fun write(resource: ArtifactResource): Throughput {
         responseRateLimitCheck()
+        downloadRateLimitCheck(resource)
         TraceHeaderUtils.setResponseHeader()
         return if (resource.containsMultiArtifact()) {
             writeMultiArtifact(resource)
