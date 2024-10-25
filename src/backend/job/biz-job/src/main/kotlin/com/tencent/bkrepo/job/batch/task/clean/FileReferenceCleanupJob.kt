@@ -34,6 +34,7 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -136,13 +137,17 @@ class FileReferenceCleanupJob(
                 return
             }
             var successToDeleted = cleanupRelatedResources(sha256, credentialsKey)
-            if (storageService.exist(sha256, storageCredentials)) {
+            val existsRefOfMappingStorage = existsRefOfMappingStorage(row, collectionName)
+            if (!existsRefOfMappingStorage && storageService.exist(sha256, storageCredentials)) {
                 storageService.delete(sha256, storageCredentials)
                 successToDeleted = true
             }
             if (!successToDeleted) {
                 context.fileMissing.incrementAndGet()
-                logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
+                logger.warn(
+                    "File[$sha256] is missing on [$storageCredentials] or " +
+                            "existsRefOfMappingStorage[$existsRefOfMappingStorage], skip cleaning up."
+                )
             }
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
@@ -215,6 +220,39 @@ class FileReferenceCleanupJob(
         val fpp = bf.expectedFpp()
         logger.info("Build bloom filter successful,count: $count,fpp: $fpp")
         return bf
+    }
+
+    /**
+     * 是否存在映射存储相同sha256的引用
+     */
+    private fun existsRefOfMappingStorage(ref: FileReferenceData, collectionName: String): Boolean {
+        // 查询是否存在映射的key
+        val self = ref.credentialsKey ?: DEFAULT_STORAGE_KEY
+        var mappingKey: String? = null
+        for (pair in properties.storageKeyMapping) {
+            if (self == pair.key) {
+                mappingKey = pair.value
+                break
+            }
+            if (self == pair.value) {
+                mappingKey = pair.key
+                break
+            }
+        }
+        if (mappingKey == null) {
+            return false
+        }
+
+        // 兼容默认存储
+        val mappingStorageKey = if (mappingKey == DEFAULT_STORAGE_KEY) {
+            null
+        } else {
+            mappingKey
+        }
+
+        // 查询映射存储中是否存在对应的引用
+        val criteria = Criteria.where(SHA256).isEqualTo(ref.sha256).and(CREDENTIALS).isEqualTo(mappingStorageKey)
+        return mongoTemplate.exists(Query(criteria), collectionName)
     }
 
     private fun getCredentials(key: String): StorageCredentials? {

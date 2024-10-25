@@ -50,4 +50,11 @@ class FileReferenceCleanupJobProperties(
      * 忽略的存储凭据，这些存储的缓存将不执行清理
      */
     var ignoredStorageCredentialsKeys: Set<String> = emptySet(),
+    /**
+     * 存储迁移中，且新旧存储使用的后端存储为同一个（例如同一个对象存储桶），
+     * 此时需要设置映射关系，避免迁移结束旧存储引用减到0后将后端存储的数据删除，导致数据丢失
+     *
+     * 增加映射关系后会检查映射的StorageCredentialsKey是否存在对应引用，存在时将不删存储仅删除存储自身的引用
+     */
+    var storageKeyMapping: Map<String, String> = emptyMap(),
 ) : MongodbJobProperties()
