@@ -60,6 +60,6 @@ class ArtifactFileMethodArgumentResolver : HandlerMethodArgumentResolver {
     }
 
     private fun resolveOctetStream(request: HttpServletRequest): ArtifactFile {
-        return ArtifactFileFactory.build(request.inputStream, request.contentLengthLong)
+        return ArtifactFileFactory.buildWithRateLimiter(request.inputStream, request.contentLengthLong)
     }
 }
