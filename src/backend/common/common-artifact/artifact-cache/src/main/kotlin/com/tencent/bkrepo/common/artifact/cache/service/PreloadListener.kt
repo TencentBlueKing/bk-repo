@@ -28,10 +28,11 @@
 package com.tencent.bkrepo.common.artifact.cache.service
 
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 
 interface PreloadListener {
     fun onPreloadStart(plan: ArtifactPreloadPlan)
-    fun onPreloadSuccess(plan: ArtifactPreloadPlan)
+    fun onPreloadSuccess(plan: ArtifactPreloadPlan, throughput: Throughput? = null)
     fun onPreloadFailed(plan: ArtifactPreloadPlan)
     fun onPreloadFinished(plan: ArtifactPreloadPlan)
 }

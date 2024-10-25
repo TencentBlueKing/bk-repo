@@ -30,8 +30,14 @@ package com.tencent.bkrepo.common.artifact.cache.service.impl
 import com.tencent.bkrepo.common.artifact.cache.dao.ArtifactPreloadPlanDao
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.service.PreloadListener
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 
-class DefaultPreloadListener(private val preloadPlanDao: ArtifactPreloadPlanDao) : PreloadListener {
+class DefaultPreloadListener(
+    private val preloadPlanDao: ArtifactPreloadPlanDao,
+    private val cacheMetrics: ArtifactCacheMetrics,
+) : PreloadListener {
     override fun onPreloadStart(plan: ArtifactPreloadPlan) {
         // 使用乐观锁尝试更新计划执行状态
         if (preloadPlanDao.remove(plan.id!!).deletedCount != 1L) {
@@ -39,7 +45,15 @@ class DefaultPreloadListener(private val preloadPlanDao: ArtifactPreloadPlanDao)
         }
     }
 
-    override fun onPreloadSuccess(plan: ArtifactPreloadPlan) = Unit
-    override fun onPreloadFailed(plan: ArtifactPreloadPlan) = Unit
+    override fun onPreloadSuccess(plan: ArtifactPreloadPlan, throughput: Throughput?) {
+        record(plan, true, throughput?.bytes ?: 0L)
+    }
+    override fun onPreloadFailed(plan: ArtifactPreloadPlan) = record(plan, false)
     override fun onPreloadFinished(plan: ArtifactPreloadPlan) = Unit
+
+    private fun record(plan: ArtifactPreloadPlan, success: Boolean, size: Long = 0L) {
+        val storageKey = plan.credentialsKey ?: DEFAULT_STORAGE_KEY
+        val projectId = plan.projectId ?: "unknown"
+        cacheMetrics.recordPreload(storageKey, projectId, size, success)
+    }
 }

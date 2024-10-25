@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanServi
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadStrategyService
 import com.tencent.bkrepo.common.artifact.cache.service.PreloadPlanExecutor
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -71,12 +72,13 @@ class ArtifactPreloadPlanServiceImpl(
     private val properties: ArtifactPreloadProperties,
     private val preloadPlanExecutor: PreloadPlanExecutor,
     private val preloadProperties: ArtifactPreloadProperties,
+    private val cacheMetrics: ArtifactCacheMetrics,
 ) : ArtifactPreloadPlanService {
     private val repositoryCache = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterWrite(5, TimeUnit.MINUTES)
         .build(CacheLoader.from<String, RepositoryInfo> { getRepo(it) })
-    private val listener = DefaultPreloadListener(preloadPlanDao)
+    private val listener = DefaultPreloadListener(preloadPlanDao, cacheMetrics)
 
     override fun createPlan(request: ArtifactPreloadPlanCreateRequest): ArtifactPreloadPlan {
         with(request) {

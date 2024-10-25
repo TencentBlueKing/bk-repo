@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.innercos.http
 
-import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.tencent.bkrepo.common.api.util.XmlUtils
 import okhttp3.Response
 
 abstract class HttpResponseHandler<T> {
@@ -41,13 +41,12 @@ abstract class HttpResponseHandler<T> {
     open fun keepConnection(response: Response): Boolean = false
 
     companion object {
-        val xmlMapper: XmlMapper = XmlMapper()
 
         fun readXmlToMap(response: Response): Map<*, *> {
             return readXmlValue(response)
         }
         inline fun <reified T> readXmlValue(response: Response): T {
-            return xmlMapper.readValue(response.body?.string(), T::class.java)
+            return XmlUtils.objectMapper.readValue(response.body?.string(), T::class.java)
         }
     }
 }

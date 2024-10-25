@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.PreloadStrategyType
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
@@ -59,6 +60,7 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.util.unit.DataSize
 import java.time.LocalDateTime
 import kotlin.contracts.ExperimentalContracts
@@ -73,6 +75,9 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     private val preloadStrategyService: ArtifactPreloadStrategyServiceImpl,
     private val preloadPlanService: ArtifactPreloadPlanServiceImpl,
 ) : ArtifactPreloadBaseServiceTest(properties, storageService, fileLocator, storageProperties) {
+
+    @MockBean
+    private lateinit var artifactCacheMetrics: ArtifactCacheMetrics
 
     @BeforeAll
     fun before() {
