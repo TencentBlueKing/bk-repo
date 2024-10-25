@@ -42,6 +42,16 @@ import java.time.Duration
         def = "{'resource': 1,'limitDimension': 1}",
         background = true,
         unique = true
+    ),
+    CompoundIndex(
+        name = "moduleName_idx",
+        def = "{'moduleName': 1}",
+        background = true
+    ),
+    CompoundIndex(
+        name = "limitDimension_idx",
+        def = "{'limitDimension': 1}",
+        background = true
     )
 )
 data class TRateLimit(
