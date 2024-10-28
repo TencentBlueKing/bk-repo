@@ -99,6 +99,8 @@ abstract class AbstractRateLimiterService(
     @Value("\${spring.application.name}")
     var moduleName: String = StringPool.EMPTY
 
+    @Value("\${spring.cloud.client.ip-address}")
+    var host: String = "127.0.0.1"
 
     // 资源对应限限流算法缓存
     private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
@@ -107,7 +109,7 @@ abstract class AbstractRateLimiterService(
         RateLimiterInterceptorChain(
             mutableListOf(
                 MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics),
-                TargetRateLimiterInterceptorAdaptor()
+                TargetRateLimiterInterceptorAdaptor(host)
             )
         )
 

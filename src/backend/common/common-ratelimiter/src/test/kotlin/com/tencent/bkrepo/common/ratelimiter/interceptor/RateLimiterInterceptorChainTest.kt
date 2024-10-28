@@ -99,7 +99,7 @@ class RateLimiterInterceptorChainTest {
     @Test
     fun testTargetDoBeforeLimit() {
         val chain = RateLimiterInterceptorChain()
-        chain.addInterceptor(TargetRateLimiterInterceptorAdaptor())
+        chain.addInterceptor(TargetRateLimiterInterceptorAdaptor("127.0.0.1"))
         val resourceLimit = ResourceLimit(
             algo = Algorithms.FIXED_WINDOW.name, resource = "/project1/",
             limitDimension = LimitDimension.URL.name, limit = 52428800,

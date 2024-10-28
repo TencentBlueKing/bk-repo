@@ -34,10 +34,9 @@ import org.springframework.beans.factory.annotation.Value
 /**
  * 执行限流机器判断
  */
-class TargetRateLimiterInterceptorAdaptor : RateLimiterInterceptorAdapter() {
-
-    @Value("\${spring.cloud.client.ip-address}")
-    private var host: String = "127.0.0.1"
+class TargetRateLimiterInterceptorAdaptor(
+    private val host: String
+) : RateLimiterInterceptorAdapter() {
 
     override fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit) {
         if (resourceLimit.targets.isNotEmpty() && !resourceLimit.targets.contains(host)) {
