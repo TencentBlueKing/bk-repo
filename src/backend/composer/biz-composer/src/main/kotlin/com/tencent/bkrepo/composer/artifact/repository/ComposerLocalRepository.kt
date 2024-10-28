@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
@@ -61,7 +62,6 @@ import com.tencent.bkrepo.composer.util.JsonUtil
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperJson
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperPackageJson
 import com.tencent.bkrepo.composer.util.pojo.ComposerArtifact
-import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -80,7 +80,7 @@ import java.io.ByteArrayInputStream
 import java.io.InputStreamReader
 
 @Component
-class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepository() {
+class ComposerLocalRepository(private val stageService: StageService) : LocalRepository() {
 
     // 默认值为方便本地调试
     // 服务域名,例：bkrepo.com
@@ -511,7 +511,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
             val jarNode = nodeService.getNodeDetail(
                 ArtifactInfo(projectId, repoName, artifactPath)
             ) ?: return null
-            val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
+            val stageTag = stageService.query(projectId, repoName, packageKey, version)
             val packageVersion = packageService.findVersionByName(
                 projectId, repoName, packageKey, version
             )

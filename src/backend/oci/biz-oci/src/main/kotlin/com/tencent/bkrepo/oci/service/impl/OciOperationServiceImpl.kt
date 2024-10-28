@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
@@ -100,7 +101,6 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils.buildBlobsFolderPath
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
-import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -135,7 +135,7 @@ class OciOperationServiceImpl(
     private val nodeService: NodeService,
     private val nodeSearchService: NodeSearchService,
     private val metadataService: MetadataService,
-    private val packageMetadataClient: PackageMetadataClient,
+    private val packageMetadataService: PackageMetadataService,
     private val packageService: PackageService,
     private val storageManager: StorageManager,
     private val repositoryService: RepositoryService,
@@ -750,7 +750,7 @@ class OciOperationServiceImpl(
             userId = SecurityUtils.getUserId()
         )
         try {
-            packageMetadataClient.saveMetadata(metadataSaveRequest)
+            packageMetadataService.saveMetadata(metadataSaveRequest)
         } catch (ignore: Exception) {
         }
     }

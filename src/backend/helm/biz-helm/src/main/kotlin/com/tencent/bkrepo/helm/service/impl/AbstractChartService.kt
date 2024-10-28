@@ -59,6 +59,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
@@ -101,7 +102,6 @@ import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.helm.utils.RemoteDownloadUtil
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
-import com.tencent.bkrepo.repository.api.PackageMetadataClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -133,7 +133,7 @@ open class AbstractChartService : ArtifactService() {
     lateinit var metadataService: MetadataService
 
     @Autowired
-    lateinit var packageMetadataClient: PackageMetadataClient
+    lateinit var packageMetadataService: PackageMetadataService
 
     @Autowired
     lateinit var repositoryService: RepositoryService

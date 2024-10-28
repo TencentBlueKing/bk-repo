@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import com.tencent.bkrepo.common.metadata.util.version.SemVersion
 import com.tencent.bkrepo.common.metadata.util.version.SemVersionParser
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -71,7 +72,6 @@ import com.tencent.bkrepo.pypi.util.HtmlUtils
 import com.tencent.bkrepo.pypi.util.PypiVersionUtils.toPypiPackagePojo
 import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
-import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.constant.FULL_PATH
 import com.tencent.bkrepo.repository.constant.METADATA
 import com.tencent.bkrepo.repository.constant.NAME
@@ -93,7 +93,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class PypiLocalRepository(
-    private val stageClient: StageClient,
+    private val stageService: StageService,
     private val pypiProperties: PypiProperties
 ) : LocalRepository() {
 
@@ -298,7 +298,7 @@ class PypiLocalRepository(
             val jarNode = nodeService.getNodeDetail(
                 ArtifactInfo(projectId, repoName, artifactPath)
             ) ?: return null
-            val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
+            val stageTag = stageService.query(projectId, repoName, packageKey, version)
             val packageVersion = packageService.findVersionByName(
                 projectId, repoName, packageKey, version
             )

@@ -54,6 +54,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -62,7 +63,6 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -130,7 +130,7 @@ import java.time.LocalDateTime
 
 @Component
 class RpmLocalRepository(
-    private val stageClient: StageClient,
+    private val stageService: StageService,
     private val jobService: JobService
 ) : LocalRepository() {
 
@@ -689,7 +689,7 @@ class RpmLocalRepository(
             val jarNode = nodeService.getNodeDetail(
                 ArtifactInfo(projectId, repoName, artifactPath)
             ) ?: return null
-            val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
+            val stageTag = stageService.query(projectId, repoName, packageKey, version)
             val packageVersion = packageService.findVersionByName(
                 projectId, repoName, packageKey, version
             )

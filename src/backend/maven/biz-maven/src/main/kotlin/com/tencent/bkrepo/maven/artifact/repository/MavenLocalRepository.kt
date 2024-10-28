@@ -50,6 +50,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -97,7 +98,6 @@ import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotNonUniqueUri
 import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotUri
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.maven.util.MavenUtil
-import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -130,7 +130,7 @@ import java.util.regex.Pattern
 
 @Component
 class MavenLocalRepository(
-    private val stageClient: StageClient,
+    private val stageService: StageService,
     private val mavenMetadataService: MavenMetadataService,
     private val mavenProperties: MavenProperties,
 ) : LocalRepository() {
@@ -1257,7 +1257,7 @@ class MavenLocalRepository(
                 ArtifactInfo(projectId, repoName, trueVersion.contentPath!!)
             ) ?: return null
             val type = jarNode.nodeMetadata.find { it.key == METADATA_KEY_PACKAGING }?.value as String?
-            val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
+            val stageTag = stageService.query(projectId, repoName, packageKey, version)
             val packageVersion = packageService.findVersionByName(
                 projectId, repoName, packageKey, version
             )
