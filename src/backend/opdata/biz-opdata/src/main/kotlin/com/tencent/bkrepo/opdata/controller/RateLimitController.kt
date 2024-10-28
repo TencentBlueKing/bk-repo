@@ -61,7 +61,11 @@ class RateLimitController(
                 limitDimension = limitDimension
             )
             val modules = ArrayList<String>()
-            tRateLimits.forEach { tRateLimit -> modules.addAll(tRateLimit.moduleName) }
+            tRateLimits.forEach { tRateLimit ->
+                if(id == null || !tRateLimit.id.equals(id)) {
+                    modules.addAll(tRateLimit.moduleName)
+                    }
+                }
             if (modules.isNotEmpty()) {
                 modules.retainAll(moduleName)
                 if (modules.isNotEmpty()) {
