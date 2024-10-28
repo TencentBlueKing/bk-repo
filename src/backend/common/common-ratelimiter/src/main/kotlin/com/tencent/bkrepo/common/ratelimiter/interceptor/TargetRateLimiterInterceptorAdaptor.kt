@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.ratelimiter.interceptor
 
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
-import org.springframework.beans.factory.annotation.Value
 
 /**
  * 执行限流机器判断
